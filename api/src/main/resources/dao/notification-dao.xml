@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.notification.NotificationDao" id="notificationDao" autowire="byName">
+        <property name="notificationSequence" value="pipeline.s_notification"/>
+        <property name="createNotificationQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.notification (
+                        notification_id,
+                        severity,
+                        title,
+                        body,
+                        state,
+                        created_date,
+                        blocking)
+                    VALUES (
+                        :NOTIFICATION_ID,
+                        :SEVERITY,
+                        :TITLE,
+                        :BODY,
+                        :STATE,
+                        :CREATED_DATE,
+                        :BLOCKING)
+                ]]>
+            </value>
+        </property>
+        <property name="updateNotificationQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.notification SET
+                        severity = :SEVERITY,
+                        title = :TITLE,
+                        body = :BODY,
+                        state = :STATE,
+                        created_date = :CREATED_DATE,
+                        blocking = :BLOCKING
+                    WHERE
+                        notification_id = :NOTIFICATION_ID
+                ]]>
+            </value>
+        </property>
+        <property name="listNotificationsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        n.notification_id,
+                        n.severity,
+                        n.title,
+                        n.body,
+                        n.state,
+                        n.created_date,
+                        n.blocking
+                    FROM
+                        pipeline.notification n
+                ]]>
+            </value>
+        </property>
+        <property name="filterNotificationsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        n.notification_id,
+                        n.severity,
+                        n.title,
+                        n.body,
+                        n.state,
+                        n.created_date,
+                        n.blocking
+                    FROM
+                        pipeline.notification n
+                    @WHERE@
+                ]]>
+            </value>
+        </property>
+        <property name="loadNotificationQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        n.notification_id,
+                        n.severity,
+                        n.title,
+                        n.body,
+                        n.state,
+                        n.created_date,
+                        n.blocking
+                    FROM
+                        pipeline.notification n
+                    WHERE n.notification_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteNotificationQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.notification WHERE notification_id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

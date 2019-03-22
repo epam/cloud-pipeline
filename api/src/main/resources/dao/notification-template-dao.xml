@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.notification.NotificationTemplateDao" id="notificationTemplateDao" autowire="byName">
+        <property name="createNotificationTemplateQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.notification_template (
+                        id,
+                        name,
+                        subject,
+                        body)
+                    VALUES (
+                        :ID,
+                        :NAME,
+                        :SUBJECT,
+                        :BODY)
+                ]]>
+            </value>
+        </property>
+        <property name="loadNotificationTemplateQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        nt.id,
+                        nt.name,
+                        nt.subject,
+                        nt.body
+                    FROM
+                        pipeline.notification_template nt
+                    WHERE nt.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllNotificationTemplatesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        nt.id,
+                        nt.name,
+                        nt.subject,
+                        nt.body
+                    FROM
+                        pipeline.notification_template nt
+                ]]>
+            </value>
+        </property>
+        <property name="updateNotificationTemplateQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.notification_template SET
+                        name = :NAME,
+                        subject = :SUBJECT,
+                        body = :BODY
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteNotificationTemplateQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.notification_template WHERE id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

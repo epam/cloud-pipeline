@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.region.AwsRegionDao" id="awsRegionDao" autowire="byName">
+        <property name="createAwsRegionQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.aws_region (
+                        region_id,
+                        name,
+                        is_default,
+                        cors_rules,
+                        policy,
+                        kms_key_id,
+                        kms_key_arn,
+                        owner,
+                        created_date,
+                        efs_hosts)
+                    VALUES (
+                        :REGION_ID,
+                        :NAME,
+                        :IS_DEFAULT,
+                        :CORS_RULES,
+                        :POLICY,
+                        :KMS_KEY_ID,
+                        :KMS_KEY_ARN,
+                        :OWNER,
+                        :CREATED_DATE,
+                        :EFS_HOSTS)
+                ]]>
+            </value>
+        </property>
+        <property name="loadAwsRegionByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.aws_region_id,
+                        r.region_id,
+                        r.name,
+                        r.is_default,
+                        r.cors_rules,
+                        r.policy,
+                        r.kms_key_id,
+                        r.kms_key_arn,
+                        r.owner,
+                        r.created_date,
+                        r.efs_hosts
+                    FROM
+                        pipeline.aws_region r
+                    WHERE r.aws_region_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDefaultAwsRegionQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.aws_region_id,
+                        r.region_id,
+                        r.name,
+                        r.is_default,
+                        r.cors_rules,
+                        r.policy,
+                        r.kms_key_id,
+                        r.kms_key_arn,
+                        r.owner,
+                        r.created_date,
+                        r.efs_hosts
+                    FROM
+                        pipeline.aws_region r
+                    WHERE r.is_default = TRUE
+                ]]>
+            </value>
+        </property>
+        <property name="loadAwsRegionByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.aws_region_id,
+                        r.region_id,
+                        r.name,
+                        r.is_default,
+                        r.cors_rules,
+                        r.policy,
+                        r.kms_key_id,
+                        r.kms_key_arn,
+                        r.owner,
+                        r.created_date,
+                        r.efs_hosts
+                    FROM
+                        pipeline.aws_region r
+                    WHERE r.name = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAwsRegionByAwsRegionQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.aws_region_id,
+                        r.region_id,
+                        r.name,
+                        r.is_default,
+                        r.cors_rules,
+                        r.policy,
+                        r.kms_key_id,
+                        r.kms_key_arn,
+                        r.owner,
+                        r.created_date,
+                        r.efs_hosts
+                    FROM
+                        pipeline.aws_region r
+                    WHERE r.region_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllAwsRegionsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.aws_region_id,
+                        r.region_id,
+                        r.name,
+                        r.is_default,
+                        r.cors_rules,
+                        r.policy,
+                        r.kms_key_id,
+                        r.kms_key_arn,
+                        r.owner,
+                        r.created_date,
+                        r.efs_hosts
+                    FROM
+                        pipeline.aws_region r
+                    ORDER BY
+                        r.aws_region_id
+                ]]>
+            </value>
+        </property>
+        <property name="updateAwsRegionQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.aws_region SET
+                        region_id = :REGION_ID,
+                        name = :NAME,
+                        is_default = :IS_DEFAULT,
+                        cors_rules = :CORS_RULES,
+                        policy = :POLICY,
+                        kms_key_id = :KMS_KEY_ID,
+                        kms_key_arn = :KMS_KEY_ARN,
+                        owner = :OWNER,
+                        created_date = :CREATED_DATE,
+                        efs_hosts = :EFS_HOSTS
+                    WHERE
+                        aws_region_id = :AWS_REGION_ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAwsRegionQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.aws_region
+                    WHERE
+                        aws_region_id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

@@ -1,0 +1,15 @@
+.parameters-text-default {
+
+}
+
+.parameters-text-highlighted {
+  background-color: yellow;
+}
+
+.row {
+  cursor: pointer;
+}
+
+.runs-search-table {
+  background-color: white;
+}

@@ -1,0 +1,31 @@
+[ {
+  "name" : "default",
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "nonPause" : false,
+    "main_file" : "demultiplex.sh",
+    "instance_size" : "Standard_D8s_v3",
+    "instance_disk" : "100",
+    "docker_image" : "ngs/bcl2fastq:2.20",
+    "timeout" : 0,
+    "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+    "language" : "other",
+    "parameters" : {
+      "MACHINE_RUN_FOLDER" : {
+        "type" : "input",
+        "required" : false
+      },
+      "ANALYSIS_FOLDER" : {
+        "type" : "output",
+        "required" : false
+      },
+      "SAMPLE_SHEET" : {
+        "type" : "string",
+        "required" : false
+      }
+    },
+    "is_spot" : false,
+    "awsRegionId" : 1
+  },
+  "default" : true
+} ]

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.dts.DtsRegistryDao" id="dtsRegistryDao" autowire="byName">
+        <property name="dtsRegistrySequence" value="pipeline.s_dts_registry"/>
+        <property name="createDtsRegistryQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.dts_registry (
+                        id,
+                        name,
+                        schedulable,
+                        created_date,
+                        url,
+                        prefixes)
+                    VALUES (
+                        :ID,
+                        :NAME,
+                        :SCHEDULABLE,
+                        :CREATED_DATE,
+                        :URL,
+                        :PREFIXES)
+                ]]>
+            </value>
+        </property>
+        <property name="loadDtsRegistryQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id,
+                        r.name,
+                        r.schedulable,
+                        r.created_date,
+                        r.url,
+                        r.prefixes
+                    FROM
+                        pipeline.dts_registry r
+                    WHERE r.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllDtsRegistriesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id,
+                        r.name,
+                        r.schedulable,
+                        r.created_date,
+                        r.url,
+                        r.prefixes
+                    FROM
+                        pipeline.dts_registry r
+                    ORDER BY
+                        r.id
+                ]]>
+            </value>
+        </property>
+        <property name="updateDtsRegistryQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.dts_registry SET
+                        url = :URL,
+                        name = :NAME,
+                        schedulable = :SCHEDULABLE,
+                        prefixes = :PREFIXES
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDtsRegistryQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.dts_registry
+                    WHERE
+                        id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

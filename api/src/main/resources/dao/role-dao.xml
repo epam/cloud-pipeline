@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.user.RoleDao" id="roleDao" autowire="byName">
+        <property name="roleSequence" value="pipeline.s_role"/>
+        <property name="createRoleQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.role (
+                        id,
+                        name,
+                        predefined,
+                        user_default,
+                        default_storage_id)
+                    VALUES (
+                        :ROLE_ID,
+                        :ROLE_NAME,
+                        :ROLE_PREDEFINED,
+                        :ROLE_USER_DEFAULT,
+                        :ROLE_DEFAULT_STORAGE_ID)
+                ]]>
+            </value>
+        </property>
+        <property name="updateRoleQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.role SET
+                        name = :ROLE_NAME,
+                        user_default = :ROLE_USER_DEFAULT,
+                        default_storage_id = :ROLE_DEFAULT_STORAGE_ID
+                    WHERE id = :ROLE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRoleQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.role WHERE id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadRoleQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                    WHERE
+                        r.id = ?
+
+                ]]>
+            </value>
+        </property>
+        <property name="loadRolesByStorageIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                    WHERE
+                        r.default_storage_id = ?
+
+                ]]>
+            </value>
+        </property>
+        <property name="loadRoleByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                    WHERE
+                        r.name = ?
+
+                ]]>
+            </value>
+        </property>
+        <property name="loadRoleListQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                    WHERE
+                        r.id in (:IDS)
+
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRolesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                ]]>
+            </value>
+        </property>
+        <property name="loadUserDefaultRolesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.id as role_id,
+                        r.name as role_name,
+                        r.predefined as role_predefined,
+                        r.user_default as role_user_default,
+                        r.default_storage_id as role_default_storage_id
+                    FROM
+                        pipeline.role r
+                    WHERE
+                        r.user_default = TRUE
+                ]]>
+            </value>
+        </property>
+        <property name="loadRolesWithUsersQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                      r.id as role_id,
+                      r.name as role_name,
+                      r.predefined as role_predefined,
+                      r.user_default as role_user_default,
+                      r.default_storage_id as role_default_storage_id,
+                      u.id as user_id,
+                      u.name as user_name,
+                      u.groups as user_groups,
+                      u.attributes as attributes,
+                      u.default_storage_id as user_default_storage_id
+                    FROM pipeline.role r
+                    LEFT JOIN pipeline.user_roles m ON r.id = m.role_id
+                    LEFT JOIN pipeline.user u ON m.user_id = u.id;
+                ]]>
+            </value>
+        </property>
+        <property name="loadRoleWithUsersQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                      r.id as role_id,
+                      r.name as role_name,
+                      r.predefined as role_predefined,
+                      r.user_default as role_user_default,
+                      r.default_storage_id as role_default_storage_id,
+                      u.id as user_id,
+                      u.name as user_name,
+                      u.groups as user_groups,
+                      u.attributes as attributes,
+                      u.default_storage_id as user_default_storage_id
+                    FROM pipeline.role r
+                    LEFT JOIN pipeline.user_roles m ON r.id = m.role_id
+                    LEFT JOIN pipeline.user u ON m.user_id = u.id
+                    WHERE r.id = ?;
+
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRolesReferencesQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.user_roles WHERE role_id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

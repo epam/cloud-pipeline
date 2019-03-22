@@ -1,0 +1,22 @@
+.tools-header-buttons button {
+  margin-left: 5px;
+}
+
+.hidden-item {
+  display: none;
+}
+
+.code-editor {
+  height: 300px;
+  background-color: #efefef;
+  border: 1px solid #ccc;
+}
+
+.code-editor-label {
+  margin-right: 15px;
+  font-weight: bolder;
+}
+
+.description-column, .labels-column {
+  width: 300px;
+}

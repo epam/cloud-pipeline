@@ -1,0 +1,55 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <p>Dear user,</p>
+    <p>*** This is a system generated email, do not reply to this email ***</p>
+    <p>There is a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, that has been waiting in the queue for more than ${CP_DOLLAR}templateParameters.get("timeThreshold") minutes</p>
+    <br />
+    <p>If you consider the waiting time normal, please ignore this email</p>
+    <p>Otherwise, please log into the <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/run/${CP_DOLLAR}templateParameters.get("id")/plain">$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</a> and check the job's status</p>
+    <p>If anything went wrong with the initialization of that job, please terminate it and restart if needed.</p>
+    <br />
+    <p><b>Job details:</b></p>
+    <table>
+        <tr>
+            <td>Run #</td>
+            <td><a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/run/${CP_DOLLAR}templateParameters.get("id")/plain">${CP_DOLLAR}templateParameters.get("id")</a></td>
+        </tr>
+        <tr>
+            <td>Job/Tool</td>#if( ${CP_DOLLAR}templateParameters.get("pipelineName") )<td>${CP_DOLLAR}templateParameters.get("pipelineName")</td>#else<td>${CP_DOLLAR}templateParameters.get("dockerImage")</td>#end
+        </tr>
+        <tr>
+            <td>Running Time</td>
+            <td>${CP_DOLLAR}templateParameters.get("runningTime") minutes</td>
+        </tr>
+        <tr>
+            <td>Start Date</td>${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}templateParameters.get("startDate")))<td>${CP_DOLLAR}calendar.getTime().toString()</td>
+        </tr>
+        <tr>
+            <td>Instance Type</td>
+            <td>${CP_DOLLAR}templateParameters.get("instance").get("nodeType")</td>
+        </tr>
+        <tr>
+            <td>Instance Disk</td>
+            <td>${CP_DOLLAR}templateParameters.get("instance").get("nodeDisk")</td>
+        </tr>
+    </table>
+    <br />
+    <p>Best regards,</p>
+    <p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>
+</body>
+
+</html>

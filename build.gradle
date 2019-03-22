@@ -1,0 +1,141 @@
+group 'com.epam.pipeline'
+
+def buildNumber = hasProperty("buildNumber") ? buildNumber : ""
+def profile = hasProperty("profile") ? profile : ""
+
+allprojects {
+    version = new Version(major: 0, minor: 14, patch: 0, build: buildNumber)
+    task printVersion {
+        doFirst {
+            println "Project version is $version"
+        }
+    }
+}
+
+class Version {
+    int major, minor, patch
+    String build
+
+    String toString() {
+        "$major.$minor.$patch${build ? ".$build" : ''}"
+    }
+}
+
+
+task cleanPipe(type: Delete) {
+    group = 'build'
+    delete "$project.rootDir/dist/pipe-common.tar.gz"
+}
+
+task buildPipe(type: Tar, dependsOn: cleanPipe) {
+    group = 'build'
+    from("$project.rootDir/workflows/pipe-common/")
+    baseName = 'pipe-common'
+    destinationDir = file("$project.rootDir/dist/")
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+    doLast {
+        delete "$project.rootDir/api/src/main/resources/static/pipe-common.tar.gz"
+        copy {
+            from "$project.rootDir/dist/pipe-common.tar.gz"
+            into "$project.rootDir/api/src/main/resources/static/"
+        }
+    }
+}
+
+task runMkdocs(type: Exec) {
+    doFirst {
+        delete fileTree("$rootDir/docs/site")
+    }
+    commandLine "mkdocs", "build"
+    workingDir = "$rootDir/docs"
+}
+
+task buildDoc(type: Tar) {
+    dependsOn runMkdocs
+    from("$rootDir/docs/site") {
+    }
+    archiveName = "cloud-pipeline-docs.tar.gz"
+    destinationDir file("$rootDir/dist")
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+}
+
+task buildAll(dependsOn: [":core:build",  "client:buildUI", buildPipe, buildDoc,
+                          ":pipe-cli:build", ":sge-cli:build",":jwt-generator:shadowJar", ":api:build"]) {
+    group = 'build'
+}
+
+task installDist(dependsOn: buildAll) {
+    group = 'distribution'
+    doLast {
+        mkdir("$project.buildDir/install/pipeline")
+        def dirs = files(
+                "$rootDir/deploy/",
+                "$rootDir/docker/",
+                "$rootDir/workflows/",
+                "$rootDir/scripts/autoscaling/")
+
+        dirs.each {
+            dir ->
+                mkdir("$project.buildDir/install/pipeline/$dir.name")
+                copy {
+                    from dir
+                    into "$project.buildDir/install/pipeline/$dir.name"
+                }
+        }
+
+        mkdir("$project.buildDir/install/pipeline/pipe-cli")
+        copy {
+            from "$rootDir/pipe-cli/dist/"
+            into "$project.buildDir/install/pipeline/pipe-cli"
+        }
+
+        copy {
+            from "$rootDir/api/build/libs/"
+            into "$project.buildDir/install/pipeline/"
+        }
+
+        copy {
+            from "$rootDir/jwt-generator/build/libs/"
+            into "$project.buildDir/install/pipeline/"
+        }
+    }
+}
+
+task distZip(type: Zip, dependsOn: installDist) {
+    group = 'distribution'
+    from("$project.buildDir/install/pipeline/") {
+        into 'pipeline/'
+    }
+    include '**/**'
+    archiveName 'pipeline.zip'
+    destinationDir(file("$project.buildDir/install/dist"))
+    doLast {
+        mkdir("$project.buildDir/install/dist")
+    }
+}
+
+task distTar(type: Tar, dependsOn: installDist) {
+    group = 'distribution'
+    from("$project.buildDir/install/pipeline/") {
+        into 'pipeline/'
+    }
+    include '**/**'
+    archiveName 'pipeline.tar'
+    destinationDir(file("$project.buildDir/install/dist"))
+    doLast {
+        mkdir("$project.buildDir/install/dist")
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '3.4.1'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+task clean(type: Delete) {
+    group = "build"
+    delete(project.buildDir)
+}
+

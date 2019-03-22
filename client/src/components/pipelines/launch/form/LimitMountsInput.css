@@ -1,0 +1,28 @@
+.limit-mounts-input {
+  flex: 1;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding-left: 5px;
+  overflow: auto;
+  cursor: text;
+  max-height: 128px;
+  padding-right: 20px;
+}
+
+.limit-mounts-input:focus, .limit-mounts-input:hover {
+  border-color: #49a9ee;
+  outline: 0;
+}
+
+.limit-mounts-input.disabled {
+  color: rgba(0, 0, 0, 0.25);
+  background-color: #f7f7f7;
+  cursor: default;
+}
+
+.storage {
+  padding: 2px;
+  border: 1px solid #f0f0f0;
+  border-radius: 2px;
+  margin-right: 2px;
+}

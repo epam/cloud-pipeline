@@ -1,0 +1,35 @@
+
+task clean(type: Delete) {
+    group = 'build'
+    delete("$project.rootDir/sge-cli/dist")
+}
+
+task build(type: Exec) {
+    group = 'build'
+    doFirst {
+        copy {
+            from('setup.py')
+            into('temp')
+        }
+        def proj = file('setup.py')
+        def text = proj.getText("UTF-8")
+        text = text.replaceAll(/(version='.+')/, "version=\'$version\'")
+        proj.write(text, "UTF-8")
+    }
+    commandLine 'python', "$project.rootDir/sge-cli/setup.py", 'sdist'
+    doLast {
+        copy {
+            from('temp/setup.py')
+            into('.')
+        }
+        delete("$project.rootDir/sge-cli/temp")
+        delete("$project.rootDir/api/src/main/resources/static/PipelineQSUB.tar.gz")
+        copy {
+            from("$project.rootDir/sge-cli/dist/PipelineQSUB-${version}.tar.gz")
+            into("$project.rootDir/api/src/main/resources/static/")
+            rename { String fileName ->
+                fileName.replace("PipelineQSUB-${version}", "PipelineQSUB")
+            }
+        }
+    }
+}

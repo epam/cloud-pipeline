@@ -1,0 +1,12 @@
+rootProject.name = 'pipeline'
+
+include 'core'
+include 'api'
+include 'client'
+include 'pipe-cli'
+include 'jwt-generator'
+include 'sge-cli'
+include 'notifier'
+include 'notifier:smtp'
+include 'docker-comp-scan'
+

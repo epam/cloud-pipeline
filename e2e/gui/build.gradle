@@ -1,0 +1,49 @@
+group 'com.epam.pipeline.autotests'
+version '1.0'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+ext {
+    testngVersion = '6.11'
+    seleniumVersion = '3.8.1'
+    selenideVersion = '4.10.01'
+    logVersion = '1.2'
+    jacksonVersion = '2.9.3'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //Selenium
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-chrome-driver', version: seleniumVersion
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-api', version: seleniumVersion
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: seleniumVersion
+
+    compile group: 'commons-logging', name: 'commons-logging', version: logVersion
+
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: jacksonVersion
+
+    // https://mvnrepository.com/artifact/org.testng/testng
+    testCompile group: 'org.testng', name: 'testng', version: testngVersion
+
+    testCompile group: 'com.codeborne', name: 'selenide', version: selenideVersion
+}
+
+test() {
+    testLogging.showStandardStreams = true
+    useTestNG() {
+        suites 'testng.xml'
+    }
+}
+
+task prerequisites(type: Test) {
+    useTestNG {
+        suites 'prerequisites.xml'
+    }
+}
+
+test.dependsOn prerequisites

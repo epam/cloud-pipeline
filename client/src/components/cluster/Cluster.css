@@ -1,0 +1,86 @@
+.cluster-card {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+}
+
+.table > div > div {
+  filter: none !important;
+}
+
+.node-main-info {
+  font-size: 20px;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.refresh-button-container {
+  text-align: right;
+}
+
+.header-link,
+.header-link:hover {
+  color: #666;
+}
+
+.cluster-node-row,
+.cluster-node-row-name,
+.cluster-node-row-pipeline,
+.cluster-node-row-labels,
+.cluster-node-row-addresses,
+.cluster-node-row-created {
+  cursor: pointer;
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.node-label {
+  border: 1px solid #ccc;
+  color: #888;
+  border-radius: 4px;
+  margin-left: 1px;
+  padding: 1px 3px;
+  font-size: xx-small;
+}
+
+.node-label[label="RUNID"] {
+  color: #09ab5a;
+  border-color: #09ab5a;
+  font-size: x-small;
+  font-weight: bold;
+}
+
+.node-label[label="RUNID"]:hover {
+  background-color: #09ab5a;
+  color: #fff;
+  font-weight: normal;
+}
+
+.node-label[label="KUBEADM.ALPHA.KUBERNETES.IO/ROLE"],
+.node-label[label="NODE-ROLE.KUBERNETES.IO/MASTER"],
+.node-label[label="CLOUD-PIPELINE/ROLE"] {
+  color: #0F83D8;
+  border-color: #0F83D8;
+  font-size: x-small;
+}
+
+.filter-popover-container {
+  background-color: white;
+  padding: 5px;
+  border-radius: 4px;
+  min-width: 100px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .2);
+}
+
+.filter-actions-buttons-container {
+  margin: 5px 10px;
+}
+

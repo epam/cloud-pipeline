@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="daoHelper" class="com.epam.pipeline.dao.DaoHelper" autowire="byName">
+        <property name="createIdQuery">
+            <value>
+                <![CDATA[
+                        SELECT NEXTVAL(:SEQUENCE_NAME)
+                ]]>
+            </value>
+        </property>
+        <property name="createIdsQuery">
+            <value>
+                <![CDATA[
+                        SELECT NEXTVAL(:SEQUENCE_NAME) FROM generate_series(1,:LIMIT)
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

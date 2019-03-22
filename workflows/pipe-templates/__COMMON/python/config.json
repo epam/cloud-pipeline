@@ -1,0 +1,13 @@
+[{
+  "name" : "default",
+  "default" : true,
+  "description" : "Initial default configuration",
+  "configuration": {
+    "main_file" : "@.py",
+    "instance_size" : "m5.large",
+    "instance_disk" : "20",
+    "docker_image" : "library/centos:7",
+    "cmd_template" : "python $SCRIPTS_DIR/src/[main_file]",
+    "parameters": {}
+  }
+}]

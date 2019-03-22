@@ -1,0 +1,41 @@
+[
+    {
+        "username": "USER1",
+        "firstname": "USER1",
+        "lastname": "Brown",
+        "email": "john@pipeline.com",
+        "roles": [
+            "ROLE_PIPELINE_MANAGER",
+            "ROLE_FOLDER_MANAGER",
+            "ROLE_CONFIGURATION_MANAGER",
+            "ROLE_USER",
+            "ROLE_STORAGE_MANAGER",
+            "ROLE_TOOL_GROUP_MANAGER",
+            "ROLE_ENTITIES_MANAGER"
+        ]
+    },
+    {
+        "username": "USER2",
+        "firstname": "USER2",
+        "lastname": "White",
+        "email": "dan@pipeline.com",
+        "roles": [
+            "ROLE_PIPELINE_MANAGER",
+            "ROLE_FOLDER_MANAGER",
+            "ROLE_CONFIGURATION_MANAGER",
+            "ROLE_USER",
+            "ROLE_STORAGE_MANAGER",
+            "ROLE_TOOL_GROUP_MANAGER",
+            "ROLE_ENTITIES_MANAGER"
+        ]
+    },
+    {
+        "username": "USER3",
+        "firstname": "USER3",
+        "lastname": "Yellow",
+        "email": "ben@pipeline.com",
+        "roles": [
+            "ROLE_USER"
+        ]
+    }
+]

@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Validate SSO and SSL certificates
+if [ -z "$CP_API_SRV_CERT_DIR" ]; then
+    export CP_API_SRV_CERT_DIR="/opt/api/pki"
+fi
+
+if [ ! -f "$CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12" ]; then
+    echo "SSL p12 key pair not found at $CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12, but it is required to setup HTTPS for the API Service. Exiting"
+    exit 1
+fi
+
+if [ ! -f "$CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12" ]; then
+    echo "SSO p12 key pair not found at $CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12, but it is required to setup Single Sign-On for the API Service. Exiting"
+    exit 1
+fi
+
+if [ ! -f "$CP_API_SRV_CERT_DIR/jwt.key.private" ] || [ ! -f "$CP_API_SRV_CERT_DIR/jwt.key.public" ]; then
+    echo "JWT private/publuc key pair not found at $CP_API_SRV_CERT_DIR/jwt.key.[public/private], but it is required to setup JWT authentication of the CLI and integrated services. Exiting"
+    exit 1
+else
+    # If JWT keys are found - export their values to initialize application.properties (jwt.key.[public/private])
+    export CP_API_JWT_KEY_PUBLIC=$(<$CP_API_SRV_CERT_DIR/jwt.key.public)
+    export CP_API_JWT_KEY_PRIVATE=$(<$CP_API_SRV_CERT_DIR/jwt.key.private)
+fi
+
+# Validate SSO Federation metadata
+
+if [ -z "$CP_API_SRV_FED_META_DIR" ]; then
+    export CP_API_SRV_FED_META_DIR="/opt/api/sso"
+fi
+
+if [ ! -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
+    echo "SSO Metadata not found at $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml, but it is required to setup Single Sign-On for the API Service. Exiting"
+    exit 1
+fi
+
+
+mkdir -p $CP_API_HOME/keystore/
+
+# Import SSL cert
+keytool -importkeystore -deststorepass changeit \
+        -destkeypass changeit \
+        -destkeystore $CP_API_HOME/keystore/store.jks \
+        -srckeystore $CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12 \
+        -srcstoretype PKCS12 \
+        -srcstorepass changeit \
+        -alias ssl \
+        -noprompt
+
+if [ $? -ne 0 ]; then
+    echo "An error occured while importing SSL p12 key pair $CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12 into the API Service. Exiting"
+    exit 1
+fi
+
+# Import SSO cert
+keytool -importkeystore -deststorepass changeit \
+        -destkeypass changeit \
+        -destkeystore $CP_API_HOME/keystore/store.jks \
+        -srckeystore $CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12 \
+        -srcstoretype PKCS12 \
+        -srcstorepass changeit \
+        -alias sso \
+        -noprompt
+
+if [ $? -ne 0 ]; then
+    echo "An error occured while importing SSO p12 key pair $CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12 into the API Service. Exiting"
+    exit 1
+fi
+
+ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
+if [ -f "$ca_cert_path" ]; then
+    echo "Importing CA cert into global java keystore"
+    keytool  -import \
+            -trustcacerts \
+            -keystore /usr/lib/jvm/jre/lib/security/cacerts \
+            -storepass changeit \
+            -noprompt \
+            -alias cp-ca \
+            -file $ca_cert_path
+fi
+
+echo "Importing API SSL cert into global java keystore"
+keytool  -import \
+         -trustcacerts \
+         -keystore /usr/lib/jvm/jre/lib/security/cacerts \
+         -storepass changeit \
+         -noprompt \
+         -alias cp-api-srv \
+         -file $CP_API_SRV_CERT_DIR/ssl-public-cert.pem
+
+echo "Importing IdP signing cert into API keystore"
+keytool  -import \
+         -keystore $CP_API_HOME/keystore/store.jks \
+         -storepass changeit \
+         -noprompt \
+         -alias idp \
+         -file $CP_IDP_CERT_DIR/idp-public-cert.pem
+
+API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
+mkdir -p $(dirname $API_RUN_TIME_LOG)
+touch $API_RUN_TIME_LOG
+
+nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+
+sleep 5
+
+tail -F $API_RUN_TIME_LOG

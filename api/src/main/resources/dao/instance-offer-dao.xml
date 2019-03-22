@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.cluster.InstanceOfferDao" id="instanceOfferDao" autowire="byName">
+        <property name="createInstanceOfferQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.instance_offer (
+                        sku,
+                        term_type,
+                        unit,
+                        price_per_unit,
+                        currency,
+                        instance_type,
+                        tenancy,
+                        operating_system,
+                        product_family,
+                        volume_type,
+                        price_list_publish_date,
+                        vcpu,
+                        memory,
+                        memory_unit,
+                        instance_family,
+                        gpu,
+                        region)
+                    VALUES (
+                        :SKU,
+                        :TERM_TYPE,
+                        :UNIT,
+                        :PRICE_PER_UNIT,
+                        :CURRENCY,
+                        :INSTANCE_TYPE,
+                        :TENANCY,
+                        :OPERATING_SYSTEM,
+                        :PRODUCT_FAMILY,
+                        :VOLUME_TYPE,
+                        :PRICE_LIST_PUBLISH_DATE,
+                        :VCPU,
+                        :MEMORY,
+                        :MEMORY_UNIT,
+                        :INSTANCE_FAMILY,
+                        :GPU,
+                        :REGION)
+                ]]>
+            </value>
+        </property>
+        <property name="removeInstanceOffersQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.instance_offer
+                ]]>
+            </value>
+        </property>
+        <property name="removeInstanceOffersForRegionQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.instance_offer
+                    WHERE region = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadInstanceOfferQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        i.sku,
+                        i.term_type,
+                        i.unit,
+                        i.price_per_unit,
+                        i.currency,
+                        i.instance_type,
+                        i.tenancy,
+                        i.operating_system,
+                        i.product_family,
+                        i.volume_type,
+                        i.price_list_publish_date,
+                        i.vcpu,
+                        i.memory,
+                        i.memory_unit,
+                        i.instance_family,
+                        i.gpu,
+                        i.region
+                    FROM
+                        pipeline.instance_offer i
+                    @WHERE@
+                    ORDER BY i.price_per_unit ASC
+                ]]>
+            </value>
+        </property>
+        <property name="loadInstanceTypesQuery">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT ON (instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu)
+                        i.sku,
+                        i.instance_type,
+                        i.operating_system,
+                        i.vcpu,
+                        i.memory,
+                        i.memory_unit,
+                        i.instance_family,
+                        i.gpu,
+                        i.price_per_unit
+                    FROM
+                        pipeline.instance_offer i
+                    @WHERE@
+                    ORDER BY instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, price_per_unit ASC;
+                ]]>
+            </value>
+        </property>
+        <property name="loadFirstInstanceOffer">
+            <value>
+                <![CDATA[
+                    SELECT
+                        i.sku,
+                        i.term_type,
+                        i.unit,
+                        i.price_per_unit,
+                        i.currency,
+                        i.instance_type,
+                        i.tenancy,
+                        i.operating_system,
+                        i.product_family,
+                        i.volume_type,
+                        i.price_list_publish_date,
+                        i.vcpu,
+                        i.memory,
+                        i.memory_unit,
+                        i.instance_family,
+                        i.gpu,
+                        i.region
+                    FROM
+                        pipeline.instance_offer i
+                    LIMIT 1
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

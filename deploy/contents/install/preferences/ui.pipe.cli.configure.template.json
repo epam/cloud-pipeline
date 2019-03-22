@@ -1,0 +1,5 @@
+{
+    "Linux": "pipe configure --auth-token {user.jwt.token} --api https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/ --timezone local --proxy ''",
+    "Windows": "pipe configure --auth-token {user.jwt.token} --api https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/ --timezone local --proxy pac",
+    "Other": "pipe configure --auth-token {user.jwt.token} --api https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/ --timezone local --proxy ''"
+  }

@@ -1,0 +1,39 @@
+.dropdown-menu {
+  border-right: none;
+}
+
+.checkbox-cell {
+  width: 30px;
+  cursor: pointer;
+}
+
+.actions-cell {
+  width: 90px;
+  text-align: right;
+  cursor: pointer;
+}
+
+.cell {
+  cursor: pointer;
+}
+
+.row {
+  font-size: 10pt;
+  padding: 4px 0;
+  z-index: 1040;
+  border-bottom: 1px solid #eee;
+  background-color: white;
+  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.row:last-child {
+  border-bottom: 1px solid transparent;
+}
+
+.row i {
+  margin-right: 10px;
+  cursor: move;
+  vertical-align: middle;
+}

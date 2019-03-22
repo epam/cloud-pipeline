@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.issue.AttachmentDao" autowire="byName">
+        <property name="attachmentSequenceName" value="pipeline.s_attachment" />
+        <property name="createAttachmentQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.attachment (
+                        attachment_id,
+                        attachment_name,
+                        path,
+                        created_date,
+                        owner
+                    ) VALUES (
+                        :ATTACHMENT_ID,
+                        :ATTACHMENT_NAME,
+                        :PATH,
+                        :CREATED_DATE,
+                        :OWNER
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAttachmentQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.attachment WHERE attachment_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAttachmentsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.attachment WHERE attachment_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAttachmentsByIssueIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.attachment WHERE issue_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAttachmentsByCommentIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.attachment WHERE comment_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttachmentQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attachment_id,
+                        attachment_name,
+                        issue_id,
+                        comment_id,
+                        path,
+                        created_date,
+                        owner
+                    FROM
+                        pipeline.attachment
+                    WHERE
+                        attachment_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttachmentByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attachment_id,
+                        attachment_name,
+                        issue_id,
+                        comment_id,
+                        path,
+                        created_date,
+                        owner
+                    FROM
+                        pipeline.attachment
+                    WHERE
+                        attachment_name = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttachmentsByIssueIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attachment_id,
+                        attachment_name,
+                        issue_id,
+                        comment_id,
+                        path,
+                        created_date,
+                        owner
+                    FROM
+                        pipeline.attachment
+                    WHERE
+                        issue_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttachmentsByCommentIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attachment_id,
+                        attachment_name,
+                        issue_id,
+                        comment_id,
+                        path,
+                        created_date,
+                        owner
+                    FROM
+                        pipeline.attachment
+                    WHERE
+                        comment_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="loadAttachmentIdsByIssueIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        attachment_id,
+                        attachment_name,
+                        issue_id,
+                        comment_id,
+                        path,
+                        created_date,
+                        owner
+                    FROM
+                        pipeline.attachment
+                    WHERE
+                        issue_id IN (:list)
+                ]]>
+            </value>
+        </property>
+        <property name="updateAttachmentIssueIdQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.attachment
+                    SET issue_id = :ISSUE_ID
+                    WHERE attachment_id = :ATTACHMENT_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateAttachmentCommentIdQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.attachment
+                    SET comment_id = :COMMENT_ID
+                    WHERE attachment_id = :ATTACHMENT_ID
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

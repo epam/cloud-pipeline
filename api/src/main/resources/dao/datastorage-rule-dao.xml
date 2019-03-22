@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao" id="dataStorageRuleSequence" autowire="byName">
+        <property name="createDataStorageRuleQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage_rule (
+                        pipeline_id,
+                        file_mask,
+                        move_to_sts,
+                        created_date)
+                    VALUES (
+                        :PIPELINE_ID,
+                        :FILE_MASK,
+                        :MOVE_TO_STS,
+                        :CREATED_DATE)
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDataStorageRuleQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_rule
+                    WHERE pipeline_id = ? and file_mask = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRulesByPipelineQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage_rule
+                    WHERE pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllDataStorageRulesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        file_mask,
+                        move_to_sts,
+                        created_date
+                    FROM
+                        pipeline.datastorage_rule
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageRulesForPipelineQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        file_mask,
+                        move_to_sts,
+                        created_date
+                    FROM
+                        pipeline.datastorage_rule
+                    WHERE
+                        pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageRuleQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        file_mask,
+                        move_to_sts,
+                        created_date
+                    FROM
+                        pipeline.datastorage_rule
+                    WHERE
+                        pipeline_id = ? and file_mask = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

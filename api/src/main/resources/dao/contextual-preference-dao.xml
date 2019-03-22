@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.contextual.ContextualPreferenceDao" id="contextualPreferenceDao"
+          autowire="byName">
+        <constructor-arg>
+            <value>
+                <!--upsertContextualPreferenceQuery-->
+                <![CDATA[
+                    INSERT INTO pipeline.contextual_preference AS pref (
+                        name,
+                        value,
+                        type,
+                        created_date,
+                        level,
+                        resource_id)
+                    VALUES (
+                        :NAME,
+                        :VALUE,
+                        :TYPE,
+                        :CREATED_DATE,
+                        :LEVEL,
+                        :RESOURCE_ID)
+                    ON CONFLICT (name, level, resource_id) DO UPDATE SET
+                        value = :VALUE,
+                        type = :TYPE,
+                        created_date = :CREATED_DATE
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadContextualPreferenceQuery-->
+                <![CDATA[
+                    SELECT
+                        p.name,
+                        p.value,
+                        p.type,
+                        p.created_date,
+                        p.level,
+                        p.resource_id
+                    FROM
+                        pipeline.contextual_preference p
+                    WHERE p.name = ?
+                    AND p.level = ?
+                    AND p.resource_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadContextualPreferenceByNameQuery-->
+                <![CDATA[
+                    SELECT
+                        p.name,
+                        p.value,
+                        p.type,
+                        p.created_date,
+                        p.level,
+                        p.resource_id
+                    FROM
+                        pipeline.contextual_preference p
+                    WHERE p.name = ?
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--loadAllContextualPreferencesQuery-->
+                <![CDATA[
+                    SELECT
+                        p.name,
+                        p.value,
+                        p.type,
+                        p.created_date,
+                        p.level,
+                        p.resource_id
+                    FROM
+                        pipeline.contextual_preference p
+                ]]>
+            </value>
+        </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteContextualPreferenceQuery-->
+                <![CDATA[
+                    DELETE FROM pipeline.contextual_preference
+                    WHERE name = ?
+                    AND level = ?
+                    AND resource_id = ?
+                ]]>
+            </value>
+        </constructor-arg>
+    </bean>
+</beans>

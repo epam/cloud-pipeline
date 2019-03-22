@@ -1,0 +1,68 @@
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+NODE_COUNT="$1"
+WORKER_SETUP_KEYS="InitializeSSHKeys"
+WORKER_SETUP_TASK="InitializeWorkers"
+
+
+######################################################
+# Check input parameters
+######################################################
+if [ ! -z "$NODE_COUNT" ] && (( "$NODE_COUNT" <= 0)) && [ "$CP_CAP_SGE_AUTOSCALE" != "true" ]
+then
+    pipe_log_fail "Node count must be greater than zero" "$WORKER_SETUP_TASK"
+    exit 1
+fi
+
+
+######################################################
+# Generate master ssh keys
+######################################################
+pipe_log_info "Generating ssh keys" "$WORKER_SETUP_KEYS"
+
+eval "mkdir -p ${SHARED_FOLDER}/keys && \
+mkdir -p /root/.ssh/ && \
+cp -f /etc/ssh/ssh_host_rsa_key /root/.ssh/id_rsa && \
+cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/id_rsa.pub && \
+cp -f /etc/ssh/ssh_host_rsa_key.pub /root/.ssh/authorized_keys && \
+cp -f /etc/ssh/ssh_host_rsa_key ${SHARED_FOLDER}/keys/id_rsa && \
+cp -f /root/.ssh/id_rsa.pub ${SHARED_FOLDER}/keys/id_rsa.pub && \
+echo "StrictHostKeyChecking no" >> /root/.ssh/config"
+
+if [ $? -ne 0 ]
+then
+    pipe_log_fail "Failed to generate master ssh keys" "$WORKER_SETUP_KEYS"
+    exit 1
+fi
+
+pipe_log_success "Finished keys setup" "$WORKER_SETUP_KEYS"
+
+######################################################
+# Setup up worker nodes
+######################################################
+if [ ! -z "$NODE_COUNT" ] && (( "$NODE_COUNT" > 0 ))
+then
+    pipe_log_info "Started cluster workers setup. $NODE_COUNT worker node(s) will be attached" "$WORKER_SETUP_TASK"
+    eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_workers.py --nodes_number ${NODE_COUNT}"
+
+    if [ $? -ne 0 ]
+    then
+        pipe_log_fail "Failed to setup cluster" "$WORKER_SETUP_TASK"
+        exit 1
+    fi
+
+    pipe_log_success "Finished cluster setup" "$WORKER_SETUP_TASK"
+fi

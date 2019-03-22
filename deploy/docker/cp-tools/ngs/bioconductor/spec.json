@@ -1,0 +1,6 @@
+{
+    "short_description": "FIXME This is a stub",
+    "instance_type": "m5.large",
+    "disk_size": "20",
+    "default_command": "sleep infinity"
+}

@@ -1,0 +1,20 @@
+.statusUnknown {
+  padding-left: 20px;
+  vertical-align: middle;
+}
+
+.default {
+  padding-left: 0;
+  vertical-align: middle;
+}
+
+div.time-info {
+  margin-top: 2px;
+  vertical-align: middle;
+}
+
+div.time-info > span {
+  padding-left: 22px;
+  font-size: smaller;
+  vertical-align: middle;
+}

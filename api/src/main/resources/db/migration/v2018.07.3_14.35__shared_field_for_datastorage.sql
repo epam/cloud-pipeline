@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.datastorage ADD COLUMN shared BOOLEAN NOT NULL DEFAULT FALSE;

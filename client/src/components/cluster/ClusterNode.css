@@ -1,0 +1,114 @@
+.node-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.table > div > div {
+  filter: none !important;
+}
+
+.node-main-info {
+  font-size: 20px;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.row-menu {
+  border-bottom: 1px solid #e9e9e9;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.tabs-menu {
+  border-bottom: none;
+  text-transform: uppercase;
+}
+
+.tabs-menu li a {
+  height: 36px;
+}
+
+.pod-container-indicator {
+  margin-right: 5px;
+  font-size: xx-small;
+  border-radius: 5px;
+  padding: 1px 5px;
+  border: 1px solid #cccccc;
+  background-color: #fafafa;
+}
+
+.main-info-part {
+  padding: 10px;
+}
+
+.key-cell {
+  font-weight: bold;
+}
+
+.value-cell {
+
+}
+
+.table-row-even {
+
+}
+
+.table-row-odd {
+  background-color: #fafafa;
+}
+
+.table-title {
+  font-weight: bold;
+}
+
+.label {
+
+}
+
+.full-height-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.half-height-container {
+  flex: 0.5;
+}
+
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  padding: 1px;
+  height: 100%;
+}
+
+.chart-col > div {
+  border: 1px solid #f1f1f1;
+  box-shadow: 1px 1px 1px 0 #ddd;
+  height: 100%;
+}
+
+.chart-container {
+  flex: 1;
+  margin: 5px;
+  padding: 5px;
+  display: flex;
+  text-align: center;
+}
+
+.chart-container-80 {
+  height: 80px;
+  margin: 5px;
+  padding: 5px;
+  display: flex;
+  text-align: center;
+}
+
+.two-charts-row {
+  flex: 0.5;
+  min-height: 300px;
+}

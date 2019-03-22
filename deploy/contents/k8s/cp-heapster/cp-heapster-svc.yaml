@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    task: monitoring
+    kubernetes.io/cluster-service: 'true'
+    kubernetes.io/name: Heapster
+    cloud-pipeline/cp-heapster: "true"
+  name: cp-heapster
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: 30095
+    targetPort: 8082
+    name: cp-heapster-port-http
+  selector:
+    cloud-pipeline/cp-heapster: "true"

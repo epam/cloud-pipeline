@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# "https://<SRV>:<PORT>/pipeline/restapi/"
+SYNC_GIT_API="${1:-$SYNC_GIT_API}"
+
+# "JWT"
+SYNC_GIT_API_KEY="${2:-$SYNC_GIT_API_KEY}"
+
+if [ -z $SYNC_GIT_API ] || [ -z $SYNC_GIT_API_KEY ]; then
+    echo "API URL and KEY shall be specified"
+    exit 1
+fi
+
+SYNC_GIT_HOME="/opt/api/scripts/git-role-management"
+SYNC_GIT_PERIOD=${SYNC_GIT_PERIOD:-300}
+
+# Configure
+python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_API_KEY
+
+# Start sync loop
+mkdir -p /opt/git-sync/logs
+while "true"; do
+    python $SYNC_GIT_HOME/syncgit.py sync | tee -a /opt/git-sync/logs/syncgit.log
+    sleep $SYNC_GIT_PERIOD
+done

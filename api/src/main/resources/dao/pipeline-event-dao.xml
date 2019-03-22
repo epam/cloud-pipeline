@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.event.EventDao" id="pipelineEventDao" autowire="byName">
+        <property name="insertUpdateEventQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.pipeline_event (
+                        operation,
+	                    stamp,
+	                    object_type,
+	                    object_id)
+                    VALUES ('U', now(), ?, ?)
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

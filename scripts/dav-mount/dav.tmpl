@@ -1,0 +1,187 @@
+#!/bin/bash
+
+#############
+# Common functions/constants
+#############
+
+uuencode=0
+binary=0
+b64=1
+
+tmp_location=~/.pipe/tmp/fs
+wfs_bin=$tmp_location/wfs
+s3fs_bin=$tmp_location/s3fs
+jq_bin=$tmp_location/jq
+
+function extract_payload()
+{
+	payload_location=$1
+	mkdir -p $payload_location
+	match=$(grep --text --line-number '^PAYLOAD:$' $0 | cut -d ':' -f 1)
+	payload_start=$((match + 1))
+	if [[ $binary -ne 0 ]]; then
+		tail -n +$payload_start $0 | tar -zxf - -C $payload_location
+	fi
+	if [[ $uuencode -ne 0 ]]; then
+		tail -n +$payload_start $0 | uudecode | tar -zxf - -C $payload_location
+	fi
+	if [[ $b64 -ne 0 ]]; then
+		tail -n +$payload_start $0 | base64 --decode | tar -zxf - -C $payload_location
+	fi
+	chmod +x $payload_location/*
+}
+
+
+#############
+# Parse arguments/options
+#############
+
+positional=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -t|--token)
+    dav_token="$2"
+    shift # past argument
+    shift # past value
+    ;;
+	-nfs|-fs|-efs|--mount-file-system-storages)
+    is_nfs="yes"
+    shift # past argument
+    ;;
+	-s3|-blob|-obj|--mount-object-storages)
+    is_object="yes"
+    shift # past argument
+    ;;
+    *)    # unknown option
+    positional+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${positional[@]}" # restore positional parameters
+
+
+#############
+# Validate arguments
+#############
+
+mount_point="$1"
+
+if [ -z "$mount_point" ]; then
+    echo "ERROR: Mount point shall be specified as a first positional argument"
+    exit 1
+fi
+
+if [ -z "$dav_token" ]; then
+    echo "ERROR: -t|--token is a mandatory parameter. Please retrieve it from the Cloud Pipeline GUI (Settings -> CLI -> Generate Access Key)"
+    exit 1
+fi
+
+if [ -z "$is_nfs" ] && [ -z "$is_object" ]; then
+	echo "ERROR: at least one of the flags shall be explicitly set: \"-obj|--mount-object-storages\" and/or \"-fs|--mount-file-system-storages\""
+	exit 1
+fi
+
+dav_user=$(echo $dav_token | cut -d "." -f 2 | base64 --decode 2>/dev/null | sed -n 's|.*"sub":"\([^"]*\)".*|\1|p')
+if [ -z "$dav_user" ]; then
+	echo "ERROR: Unable to get username from the token provided"
+	exit 1
+fi
+
+# TODO: retrive this from the Cloud Pipeline settings
+api_url=""
+dav_mount_url=""
+
+
+#############
+# Check/create mount point
+#############
+
+if [ -z $mount_point ]; then
+	echo "ERROR: Mount point is not specified. Pass it as a first argument"
+	exit 1
+fi
+if [ ! -d $mount_point ]; then
+	echo "Mount point $mount_point does not exist, creating"
+	mkdir -p "$mount_point"
+	if [ $? -ne 0 ]; then
+		echo "ERROR: Unable to create $mount_point directory"
+		exit 1
+	fi
+fi
+
+#############
+# Extract webdavfs binary
+#############
+
+extract_payload "$tmp_location"
+
+
+#############
+# Do mount
+#############
+
+# Mount file storages via WebDAV if requested
+if [ "$is_nfs" == "yes" ]; then
+	dav_mount_point="$mount_point/file-storage"
+	mkdir -p $dav_mount_point
+	wfs_uid=$(id -u $(whoami))
+	wfs_gid=$(id -g $(whoami))
+	"$wfs_bin" "$dav_mount_url/$dav_user/" "$dav_mount_point" -ocookie="bearer=${dav_token}",rw,allow_other,uid=$wfs_uid,gid=$wfs_gid,mode=0774 -D
+	echo "File storages are mounted to $dav_mount_point"
+	echo "To unmount - use \"umount $dav_mount_point\""
+fi
+
+# Mount object storages if requested
+if [ "$is_object" == "yes" ]; then
+
+obj_mount_point="$mount_point/object-storage"
+mkdir -p $obj_mount_point
+
+curl -X GET --header "Authorization: Bearer $dav_token" \
+	--header 'Accept: application/json' \
+	"$api_url/datastorage/mount" -k -s \
+		| $jq_bin -r '.payload[] | select ( .type == "S3" ) | [ .id, .path, .regionName ] | @tsv' | \
+while read storage
+do
+        storage_items=($storage);
+		storage_id=${storage_items[0]}
+		storage_path=${storage_items[1]}
+		storage_region=${storage_items[2]}
+
+		storage_mount_point=$obj_mount_point/$storage_path
+		mkdir -p $storage_mount_point
+
+		storage_credentials=$(curl -X POST --header "Authorization: Bearer $dav_token" \
+			--header 'Content-Type: application/json' \
+			--header 'Accept: application/json' \
+			-d "[ { \"id\": $storage_id, \"read\": true, \"write\": true } ]" \
+			"$api_url/datastorage/tempCredentials/" \
+			-k -s | $jq_bin -r '[ .payload.accessKey, .payload.keyID, .payload.token ] | @tsv')
+		storage_credentials=($storage_credentials)
+		storage_accessKey=${storage_credentials[0]}
+		storage_keyID=${storage_credentials[1]}
+		storage_token=${storage_credentials[2]}
+
+		export AWS_SHARED_CREDENTIALS_FILE=$tmp_location/$storage_id.sts
+cat > $AWS_SHARED_CREDENTIALS_FILE <<EOL
+[default]
+aws_access_key_id = $storage_keyID
+aws_secret_access_key = $storage_accessKey
+aws_session_token = $storage_token
+EOL
+		
+nohup $s3fs_bin --dir-mode 0774 --file-mode 0774 -o rw -o allow_other \
+	--stat-cache-ttl 0s --type-cache-ttl 0s \
+	-f --region $storage_region $storage_path $storage_mount_point > $tmp_location/object_storage_logs_${storage_id}.log 2>&1 &
+done
+
+echo "Object storages are mounted to $obj_mount_point"
+echo "To unmount - use \"for dir in \$(ls $obj_mount_point); do umount $obj_mount_point/\$dir && rm -rf $obj_mount_point\$dir; done\""
+
+fi
+
+exit 0

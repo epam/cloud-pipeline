@@ -1,0 +1,61 @@
+{
+  "regions": [
+    {
+      "name": "eu-central-1",
+      "default": true,
+      "networks": {
+        "eu-central-1a": "subnet-30355359",
+        "eu-central-1b": "subnet-a428addf",
+        "eu-central-1c": "subnet-a42a19ee"
+      },
+      "amis": [
+        {
+          "instance_mask": "p*",
+          "ami": "ami-da8101b5",
+          "init_script": "/home/centos/api/scripts/init_cuda.sh"
+        },
+        {
+          "instance_mask": "g*",
+          "ami": "ami-041a0abb9d7ee2067",
+          "init_script": "/home/centos/api/scripts/init_nvidia.sh"
+        },
+        {
+          "instance_mask": "*",
+          "ami": "ami-52f3733d",
+          "init_script": "/home/centos/api/scripts/init_amzn.sh"
+        }
+      ],
+      "security_group_ids": [
+        "sg-77f2b41e",
+        "sg-c47344ad"
+      ]
+    },
+    {
+      "name": "eu-west-1",
+      "networks": {
+        "eu-west-1a": "subnet-ca96b0bd",
+        "eu-west-1b": "subnet-606e1739",
+        "eu-west-1c": "subnet-fd3d0498"
+      },
+      "amis": [
+        {
+          "instance_mask": "p*",
+          "ami": "ami-8b769366",
+          "init_script": "/home/centos/api/scripts/init_cuda.sh"
+        },
+        {
+          "instance_mask": "*",
+          "ami": "ami-9d769370",
+          "init_script": "/home/centos/api/scripts/init_amzn.sh"
+        }
+      ],
+      "security_group_ids": [
+        "sg-221f8c46",
+        "sg-87c7e3e3"
+      ]
+    }
+  ],
+  "tags": {
+      "Project": "CloudPipeline"
+    }
+}

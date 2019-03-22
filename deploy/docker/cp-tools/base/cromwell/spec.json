@@ -1,0 +1,6 @@
+{
+    "short_description": "Cromwell is a Workflow Management System geared towards scientific workflows",
+    "instance_type": "m5.large",
+    "disk_size": "50",
+    "default_command": "sleep infinity"
+}

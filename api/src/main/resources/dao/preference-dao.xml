@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.preference.PreferenceDao" id="preferenceDao" autowire="byName">
+        <property name="upsertPreferenceQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.preference AS pref (
+                        preference_name,
+                        created_date,
+                        value,
+                        preference_group,
+                        description,
+                        visible,
+                        preference_type)
+                    VALUES (
+                        :PREFERENCE_NAME,
+                        :CREATED_DATE,
+                        :VALUE,
+                        :PREFERENCE_GROUP,
+                        :DESCRIPTION,
+                        :VISIBLE,
+                        :PREFERENCE_TYPE)
+                    ON CONFLICT (preference_name) DO UPDATE SET
+                        value = :VALUE,
+                        preference_group = :PREFERENCE_GROUP,
+                        description = :DESCRIPTION,
+                        visible = :VISIBLE,
+                        preference_type = :PREFERENCE_TYPE
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllPreferencesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        p.preference_name,
+                        p.created_date,
+                        p.value,
+                        p.preference_group,
+                        p.description,
+                        p.visible,
+                        p.preference_type
+                    FROM pipeline.preference p
+                ]]>
+            </value>
+        </property>
+        <property name="loadVisiblePreferencesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        p.preference_name,
+                        p.created_date,
+                        p.value,
+                        p.preference_group,
+                        p.description,
+                        p.visible,
+                        p.preference_type
+                    FROM pipeline.preference p
+                    WHERE p.visible
+                ]]>
+            </value>
+        </property>
+        <property name="deletePreferenceQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.preference WHERE preference_name = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadPreferenceByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        p.preference_name,
+                        p.created_date,
+                        p.value,
+                        p.preference_group,
+                        p.description,
+                        p.visible,
+                        p.preference_type
+                    FROM
+                        pipeline.preference p
+                    WHERE p.preference_name = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

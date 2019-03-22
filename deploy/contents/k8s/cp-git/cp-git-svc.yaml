@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-git: "true"
+  name: cp-git
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    nodePort: 30080
+    port: 30080
+    targetPort: 30080
+    name: cp-git-port-http
+  type: NodePort
+  selector:
+    cloud-pipeline/cp-git: "true"

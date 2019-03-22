@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="text/javascript" src="jwt-decode.js"></script>
+</head>
+<body>
+<p id = owner> </p>
+<script>
+var result = document.cookie.match(new RegExp('bearer=([^;]+)'));
+if (result) {
+    var token = result[1];
+    var decoded = jwt_decode(token);
+    document.getElementById("owner").innerHTML = decoded['sub'];
+}
+</script>
+</body>
+</html>

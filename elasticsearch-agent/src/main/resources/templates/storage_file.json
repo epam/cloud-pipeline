@@ -1,0 +1,33 @@
+{
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "doc_type": { "type": "keyword", "store": true },
+        "id": {"type": "keyword", "store": true, "index": false },
+        "parentId": {"type": "keyword", "store": true, "index": false },
+        "name": {"type": "text", "store": true, "index": false},
+        "lastModified": { "type": "date", "format": "yyyy-MM-dd'T'HH:mm:ss'Z'" },
+        "size": { "type": "long" },
+        "path": { "type": "text", "analyzer": "file_path_analyzer", "copy_to": ["id", "name"]},
+        "storage_id": { "type": "long", "copy_to": "parentId"},
+        "storage_name": { "type": "text" },
+        "storage_region": { "type": "keyword" },
+        "tags": { "type": "text" },
+        "allowed_users": { "type": "keyword" },
+        "denied_users": { "type": "keyword" },
+        "allowed_groups": { "type": "keyword" },
+        "denied_groups": { "type": "keyword" }
+      }
+    }
+  },
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "file_path_analyzer": { "tokenizer": "file_path_tokenizer" }
+      },
+      "tokenizer": {
+        "file_path_tokenizer": { "type": "simple_pattern_split", "pattern": "/"}
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+.parameter-name {
+  border: 1px dashed #ccc;
+  text-align: right;
+}
+
+.parameter.wrong {
+  border-color: red;
+}
+
+span.error {
+  color: red;
+  font-size: xx-small;
+}

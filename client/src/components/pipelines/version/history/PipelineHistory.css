@@ -1,0 +1,12 @@
+.run-table {
+  overflow-y: auto;
+}
+
+.run-table > div > div {
+  filter: none !important;
+}
+
+.container {
+  height: 100%;
+  overflow-y: auto;
+}

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.pipeline.RunLogDao" id="pipelineLogDao" autowire="byName">
+        <property name="createPipelineLogQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.pipeline_run_log (
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance)
+                    VALUES (
+                        :RUN_ID,
+                        :LOG_DATE,
+                        :STATUS,
+                        :LOG_TEXT,
+                        :TASK_NAME,
+                        :INSTANCE)
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllLogsByRunIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = ?
+                    ORDER BY
+                        log_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllLogsForTaskQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = ? and task_name = ?
+                    ORDER BY
+                        log_date
+                ]]>
+            </value>
+        </property>
+        <property name="loadTasksByRunIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        tasks.task_name,
+                        tasks.status,
+                        tasks.instance,
+                        start.created,
+                        run.started,
+                        tasks.log_date as finished
+                    FROM(
+                        SELECT DISTINCT ON(task_name)
+                            task_name,
+                            status,
+                            instance,
+                            run_id,
+                            log_date
+                        FROM
+                            pipeline.pipeline_run_log
+                        WHERE
+                            run_id = :RUN_ID
+                        ORDER BY task_name, log_date DESC
+                    ) as tasks
+                     LEFT JOIN
+                      (SELECT DISTINCT ON (task_name)
+                         task_name,
+                         run_id,
+                         log_date AS created
+                       FROM pipeline.pipeline_run_log
+                       WHERE
+                         run_id = :RUN_ID
+                       ORDER BY task_name, log_date)
+                        AS start ON tasks.run_id = start.run_id AND tasks.task_name = start.task_name
+                      LEFT JOIN
+                      (SELECT DISTINCT ON (task_name)
+                         task_name,
+                         run_id,
+                         log_date AS started
+                       FROM pipeline.pipeline_run_log
+                       WHERE
+                         run_id = :RUN_ID AND log_text LIKE '%Started container with docker%'
+                       ORDER BY task_name, log_date DESC)
+                        AS run ON tasks.run_id = run.run_id AND tasks.task_name = run.task_name
+                    ORDER BY tasks.log_date;
+                ]]>
+            </value>
+        </property>
+        <property name="loadTaskStatusQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        tasks.task_name,
+                        tasks.status,
+                        tasks.instance
+                    FROM(
+                        SELECT DISTINCT ON(task_name)
+                            task_name,
+                            status,
+                            instance,
+                            log_date
+                        FROM
+                            pipeline.pipeline_run_log
+                        WHERE
+                            run_id = ? and task_name = ?
+                        ORDER BY task_name, log_date DESC
+                    ) as tasks
+                    ORDER BY tasks.log_date;
+                ]]>
+            </value>
+        </property>
+        <property name="loadTaskForInstanceQuery">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT
+                        task_name,
+                        status,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = ? AND instance = ?
+                    LIMIT 1
+                ]]>
+            </value>
+        </property>
+        <property name="deleteLogsByPipelineQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.pipeline_run_log as log
+                    USING
+                        pipeline.pipeline_run AS run
+                    WHERE
+                        run.run_id = log.run_id AND run.pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

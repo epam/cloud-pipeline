@@ -1,0 +1,116 @@
+[
+    {
+        "name": "CP_DISABLE_WORKER_ENDPOINTS",
+        "type": "boolean",
+        "description": "Disable Endpoint URLs for worker nodes, if a cluster run is scheduled. Only master node will expose Endpoint URL",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_DISABLE_RUN_ENDPOINTS",
+        "type": "boolean",
+        "description": "Disable Endpoint URL for a current run. If a cluster run is scheduled - worker nodes will still expose expose Endpoint URL",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SGE",
+        "type": "boolean",
+        "description": "Enables Grid Engine for a current run",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_S3_FUSE_TYPE",
+        "type": "string",
+        "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
+        "defaultValue": "goofys"
+    },
+    {
+        "name": "CP_S3_FUSE_STAT_CACHE",
+        "type": "string",
+        "description": "Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency",
+        "defaultValue": "1m0s"
+    },
+    {
+        "name": "CP_S3_FUSE_TYPE_CACHE",
+        "type": "string",
+        "description": "Applied to goofys FUSE. How long to cache name -> file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency",
+        "defaultValue": "1m0s"
+    },
+    {
+        "name": "CP_CAP_SGE_MASTER_CORES",
+        "type": "string",
+        "description": "Allow to limit Grid Engine master cores usage (0 - do not use)",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_NFS",
+        "type": "boolean",
+        "description": "Enables shared filesystem (NFS) for a current run. If a cluster run is scheduled - worker nodes will mount NFS share",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_NFS_THREADS",
+        "type": "string",
+        "description": "Number of NFS threads to use. If empty - cores * 4, but not more that 32",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_CAP_NFS_SYNC_MODE",
+        "type": "string",
+        "description": "NFS server will use sync/async mode. Allows to manage performance",
+        "defaultValue": "sync"
+    },
+    {
+        "name": "RUN_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)",
+        "defaultValue": ""
+    },
+    {
+        "name": "COMMON_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes",
+        "defaultValue": ""
+    },
+    {
+        "name": "ANALYSIS_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations",
+        "defaultValue": ""
+    },
+    {
+        "name": "INPUT_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the S3 buckets automatically",
+        "defaultValue": ""
+    },
+    {
+        "name": "CONFIG_DIR",
+        "type": "string",
+        "description": "Defines a folder within a compute node, which is typically used for storing configuration files",
+        "defaultValue": ""
+    },
+    {
+        "name": "SHARED_FOLDER",
+        "type": "string",
+        "description": "Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR",
+        "defaultValue": ""
+    },
+    {
+        "name": "CP_TRANSFER_BUCKET",
+        "type": "string",
+        "description": "Defines a bucket name that will be used to transfer file from on-premise DTS to the Cloud and vice-versa",
+        "defaultValue": "project.DataStorage"
+    },
+    {
+        "name": "CP_CAP_SGE_AUTOSCALE",
+        "type": "boolean",
+        "description": "Enables SGE Autoscaling",
+        "defaultValue": "false"
+    },
+    {
+        "name": "CP_CAP_SGE_AUTOSCALE_WORKERS",
+        "type": "int",
+        "description": "Maximum number of additional SGE workers",
+        "defaultValue": "3"
+    }
+]

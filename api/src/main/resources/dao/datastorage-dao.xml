@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.DataStorageDao" id="dataStorageDao" autowire="byName">
+        <property name="dataStorageSequence" value="pipeline.s_datastorage"/>
+        <property name="createDataStorageQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.datastorage (
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id
+                    ) VALUES (
+                        :DATASTORAGE_ID,
+                        :DATASTORAGE_NAME,
+                        :DESCRIPTION,
+                        :DATASTORAGE_TYPE,
+                        :PATH,
+                        :STS_DURATION,
+                        :LTS_DURATION,
+                        :FOLDER_ID,
+                        :CREATED_DATE,
+                        :OWNER,
+                        :ENABLE_VERSIONING,
+                        :BACKUP_DURATION,
+                        :DATASTORAGE_LOCKED,
+                        :MOUNT_POINT,
+                        :MOUNT_OPTIONS,
+                        :SHARED,
+                        :ALLOWED_CIDRS,
+                        :AWS_REGION_ID
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="updateDataStorageQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.datastorage SET
+                        datastorage_name = :DATASTORAGE_NAME,
+                        description = :DESCRIPTION,
+                        sts_duration = :STS_DURATION,
+                        lts_duration = :LTS_DURATION,
+                        folder_id = :FOLDER_ID,
+                        owner = :OWNER,
+                        enable_versioning = :ENABLE_VERSIONING,
+                        backup_duration = :BACKUP_DURATION,
+                        mount_point = :MOUNT_POINT,
+                        mount_options = :MOUNT_OPTIONS
+                    WHERE
+                        datastorage_id = :DATASTORAGE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDataStorageQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.datastorage WHERE datastorage_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllDataStoragesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    ORDER BY datastorage_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadRootDataStoragesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        folder_id ISNULL
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        datastorage_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        lower(datastorage_name) = lower(:DATASTORAGE_NAME) or lower(path) = lower(:PATH)
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStorageByNameAndParentIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        (lower(datastorage_name) = lower(:DATASTORAGE_NAME) or lower(path) = lower(:PATH))
+                        and folder_id = :FOLDER_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadDataStoragesByNFSRootPath">
+            <value>
+                <![CDATA[
+                    SELECT
+                        datastorage_id,
+                        datastorage_name,
+                        description,
+                        datastorage_type,
+                        path,
+                        sts_duration,
+                        lts_duration,
+                        folder_id,
+                        created_date,
+                        owner,
+                        enable_versioning,
+                        backup_duration,
+                        locked as datastorage_locked,
+                        mount_point,
+                        mount_options,
+                        shared,
+                        allowed_cidrs,
+                        region_id as aws_region_id
+                    FROM
+                        pipeline.datastorage
+                    WHERE
+                        path like ?
+                ]]>
+            </value>
+        </property>
+        <property name="updateStorageLocksQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.datastorage SET
+                        locked = :LOCKED
+                    WHERE
+                        datastorage_id IN (:IDS)
+                ]]>
+            </value>
+        </property>
+        <property name="loadStorageCountQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*) FROM pipeline.datastorage
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllStoragesWithParentsQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+	                    SELECT
+		                    d.datastorage_id,
+                            d.datastorage_name,
+                            d.description,
+                            d.datastorage_type,
+                            d.path,
+                            d.sts_duration,
+                            d.lts_duration,
+                            d.created_date,
+                            d.owner,
+                            d.enable_versioning,
+                            d.backup_duration,
+                            d.locked as datastorage_locked,
+                            d.mount_point,
+                            d.mount_options,
+                            d.shared,
+                            d.allowed_cidrs,
+                            d.region_id as aws_region_id,
+                            c.folder_id,
+                            c.parent_id AS parent_folder_id
+	                    FROM pipeline.datastorage d
+	                    LEFT JOIN pipeline.folder c ON d.folder_id = c.folder_id
+	                    WHERE d.datastorage_id IN
+	                        (SELECT datastorage_id
+	                        FROM pipeline.datastorage
+	                        ORDER BY datastorage_id
+	                        LIMIT @LIMIT@ OFFSET @OFFSET@)
+	                    UNION
+	                    SELECT
+		                    null as datastorage_id,
+                            null as datastorage_name,
+                            null as description,
+                            null as datastorage_type,
+                            null as path,
+                            null as sts_duration,
+                            null as lts_duration,
+                            null as created_date,
+                            null as owner,
+                            null as enable_versioning,
+                            null as backup_duration,
+                            null as datastorage_locked,
+                            null as mount_point,
+                            null as mount_options,
+                            null as shared,
+                            null as allowed_cidrs,
+                            null as aws_region_id,
+		                    m.folder_id,
+                            m.parent_id AS parent_folder_id
+	                    FROM pipeline.folder m
+	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
+	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+        <property name="loadStorageWithParentsQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+	                    SELECT
+		                    d.datastorage_id,
+                            d.datastorage_name,
+                            d.description,
+                            d.datastorage_type,
+                            d.path,
+                            d.sts_duration,
+                            d.lts_duration,
+                            d.created_date,
+                            d.owner,
+                            d.enable_versioning,
+                            d.backup_duration,
+                            d.locked as datastorage_locked,
+                            d.mount_point,
+                            d.mount_options,
+                            d.shared,
+                            d.allowed_cidrs,
+                            d.region_id as aws_region_id,
+                            c.folder_id,
+                            c.parent_id AS parent_folder_id
+	                    FROM pipeline.datastorage d
+	                    LEFT JOIN pipeline.folder c ON d.folder_id = c.folder_id
+	                    WHERE d.datastorage_id = ?
+	                    UNION
+	                    SELECT
+		                    null as datastorage_id,
+                            null as datastorage_name,
+                            null as description,
+                            null as datastorage_type,
+                            null as path,
+                            null as sts_duration,
+                            null as lts_duration,
+                            null as created_date,
+                            null as owner,
+                            null as enable_versioning,
+                            null as backup_duration,
+                            null as datastorage_locked,
+                            null as mount_point,
+                            null as mount_options,
+                            null as shared,
+                            null as allowed_cidrs,
+                            null as aws_region_id,
+		                    m.folder_id,
+                            m.parent_id AS parent_folder_id
+	                    FROM pipeline.folder m
+	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
+	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

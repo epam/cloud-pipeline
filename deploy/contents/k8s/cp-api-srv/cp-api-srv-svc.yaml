@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-api-srv: "true"
+  name: cp-api-srv
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    nodePort: 31080
+    port: 31080
+    targetPort: 8080
+    name: cp-api-srv-port-https
+  type: NodePort
+  selector:
+    cloud-pipeline/cp-api-srv: "true"

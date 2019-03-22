@@ -1,0 +1,90 @@
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+MASTER_RUN_ID="$1"
+SHARED_PATH="$2"
+
+FS_SETUP_TASK="InitializeWorker"
+
+######################################################
+# Check input parameters
+######################################################
+if [ -z "$SHARED_PATH" ]
+then
+    pipe_log_fail "Shared directory is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
+fi
+if [ -z "$MASTER_RUN_ID" ]
+then
+    pipe_log_fail "Master node run id is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
+fi
+
+######################################################
+# Wait for master node
+######################################################
+MASTER_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${MASTER_RUN_ID} --task-name InitializeSSHKeys")
+
+if [ $? -ne 0 ]
+then
+    exit 1
+fi
+
+MASTER_INFO=($MASTER_INFO_RESULT)
+MASTER_NAME=${MASTER_INFO[-2]}
+MASTER_IP=${MASTER_INFO[-1]}
+
+if [ -z "$MASTER_IP" ]
+then
+    pipe_log_fail "Master node IP is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
+else
+    pipe_log_info "Master node IP: ${MASTER_IP}" "$FS_SETUP_TASK"
+fi
+if [ -z "$MASTER_NAME" ]
+then
+    pipe_log_fail "Master node name is not defined, exiting" "$FS_SETUP_TASK"
+    exit 1
+else
+    pipe_log_info "Master node name: ${MASTER_NAME}" "$FS_SETUP_TASK"
+fi
+
+
+#####################################################
+# Copy SSH keys to worker node
+#####################################################
+COPY_KEYS_CMD="mkdir -p /root/.ssh/ && cat ${SHARED_PATH}/keys/id_rsa >> /root/.ssh/id_rsa && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/id_rsa.pub && cat ${SHARED_PATH}/keys/id_rsa.pub >> /root/.ssh/authorized_keys && chmod 600 /root/.ssh/*"
+eval "$COPY_KEYS_CMD"
+if [ $? -ne 0 ]
+then
+    pipe_log_fail "Failed to copy SSH keys to worker node" "$FS_SETUP_TASK"
+    exit 1
+else
+    pipe_log_info "Successfully copied SSH keys to worker node" "$FS_SETUP_TASK"
+fi
+
+#####################################################
+# Add master node to hosts file
+#####################################################
+HOSTS_CMD="echo  -e \"${MASTER_IP}\t${MASTER_NAME}\" >> /etc/hosts;"
+eval "$HOSTS_CMD"
+if [ $? -ne 0 ]
+then
+    pipe_log_fail "Failed to setup hosts file on worker node" "$FS_SETUP_TASK"
+    exit 1
+else
+    pipe_log_info "Successfully set up hosts file on worker node" "$FS_SETUP_TASK"
+fi
+
+pipe_log_success "Finished NFS client setup" "$FS_SETUP_TASK"

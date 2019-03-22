@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.metadata_entity_class ADD external_class_name VARCHAR(100) NULL;

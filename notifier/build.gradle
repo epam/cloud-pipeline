@@ -1,0 +1,17 @@
+plugins {
+    id "org.sonarqube" version "2.6.1"
+}
+
+group 'com.epam.pipeline'
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}

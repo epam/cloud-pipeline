@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.pipeline_run ALTER COLUMN node_aws_region TYPE TEXT USING node_aws_region::TEXT;

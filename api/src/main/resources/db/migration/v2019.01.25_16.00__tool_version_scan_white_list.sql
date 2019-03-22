@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool_version_scan ADD COLUMN white_list BOOLEAN DEFAULT FALSE;

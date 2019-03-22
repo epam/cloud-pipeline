@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.elasticsearchagent.dao.PipelineEventDao" id="pipelineEventDao" autowire="byName">
+        <property name="createEventQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.pipeline_event (
+                        operation,
+                        stamp,
+                        object_type,
+                        object_id,
+                        data)
+                    VALUES (
+                        :OPERATION,
+                        :STAMP,
+                        :OBJECT_TYPE,
+                        :OBJECT_ID,
+                        to_jsonb(:DATA::jsonb))
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllEventsByObjectTypeQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        *
+                    FROM
+                        pipeline.pipeline_event
+                    WHERE
+                        object_type = :OBJECT_TYPE AND stamp < :STAMP
+                ]]>
+            </value>
+        </property>
+        <property name="deleteEventQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.pipeline_event
+                    WHERE object_id = :OBJECT_ID AND stamp < :STAMP AND object_type = :OBJECT_TYPE
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

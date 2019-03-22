@@ -1,0 +1,5 @@
+Sample:ID,Name,Location:Path
+1,CantonS.09-28_test.bai,http://example.com/demo_data/CantonS.09-28.trim.dm606.realign.bai
+2,CantonS.09-28_test.bam,http://example.com/demo_data/CantonS.09-28.trim.dm606.realign.bam
+3,CantonS.09-28_test.vcf.gz,http://example.com/demo_data/CantonS.09-28.trim.dm606.realign.vcf.gz
+4,SRR7780481_test.sra,ftp://ftp-example.com/demo-data/SRR7780481.sra

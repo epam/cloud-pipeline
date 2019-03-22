@@ -1,0 +1,4 @@
+.tool-autocomplete input,
+.tool-autocomplete > div {
+  border-radius: 0 4px 4px 0 !important;
+}

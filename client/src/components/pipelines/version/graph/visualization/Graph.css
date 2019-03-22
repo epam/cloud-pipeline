@@ -1,0 +1,95 @@
+.luigi-graph-style {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  margin: 0;
+}
+
+.luigi-graph-style > div,
+.luigi-graph-style > div > canvas {
+  left: 0;
+  width: 100%;
+}
+
+.wdl-graph {
+  width: 100%;
+  height: 100%;
+}
+
+.wdl-graph-container {
+  width: 100%;
+  height: 100%;
+}
+
+.wdl-graph-container svg,
+.wdl-graph-container div {
+  width: 100%;
+  height: 100%;
+}
+
+.wdl-graph-toolbar {
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+  padding: 5px;
+}
+
+.wdl-graph-toolbar button {
+  margin-left: 2px;
+  margin-right: 2px;
+}
+
+.wdl-graph-toolbar .background {
+  margin: -5px;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: black;
+  opacity: 0.1;
+}
+
+.graph-container {
+  background-color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.graph-container-full-screen {
+  background-color: white;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+}
+
+.graph-interface {
+  position: relative;
+  top: -30px;
+  font-size: 20px;
+  color: #108ee9;
+}
+
+.graph-interface-button {
+  padding-right: 20px;
+}
+
+.graph-interface-button-icon {
+  color: #108ee9;
+}
+
+.graph-interface-button-icon-disabled {
+  cursor: default;
+  color: grey;
+  opacity: 0.5;
+}
+
+.graph-interface:hover {
+  cursor: pointer;
+}

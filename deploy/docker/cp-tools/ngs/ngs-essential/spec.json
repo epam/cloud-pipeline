@@ -1,0 +1,6 @@
+{
+    "short_description": "All-in-one NGS secondary analysis toolset, providing key analysis application for QC, Aligning, Variant Calling, Annotation",
+    "instance_type": "m5.xlarge",
+    "disk_size": "100",
+    "default_command": "sleep infinity"
+}

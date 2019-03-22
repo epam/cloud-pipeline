@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.metadata.MetadataDao" id="metadataDao" autowire="byName">
+        <property name="createMetadataItemQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.metadata (
+                        entity_id,
+                        entity_class,
+                        data)
+                    VALUES (
+                        :ENTITY_ID,
+                        :ENTITY_CLASS,
+                        to_jsonb(:DATA::jsonb))
+                ]]>
+            </value>
+        </property>
+        <property name="uploadMetadataItemQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata SET
+                        data = to_jsonb(:DATA::jsonb)
+                    WHERE
+                        entity_id = :ENTITY_ID
+                    AND
+                        entity_class = :ENTITY_CLASS
+                ]]>
+            </value>
+        </property>
+        <property name="uploadMetadataItemKeyQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata SET
+                        data = jsonb_set(data, @KEY@, @VALUE@, true)
+                    WHERE
+                        entity_id = :ENTITY_ID
+                    AND
+                        entity_class = :ENTITY_CLASS
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataItemQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        entity_id,
+                        entity_class,
+                        data
+                    FROM
+                        pipeline.metadata
+                    WHERE
+                        entity_id = ?
+                    AND
+                        entity_class = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataItemsQuery">
+            <value>
+                <![CDATA[
+                SELECT
+                        entity_id,
+                        entity_class,
+                        data
+                    FROM
+                        pipeline.metadata AS m
+                    WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataItemsWithIssuesQuery">
+            <value>
+                <![CDATA[
+                SELECT
+                    CASE WHEN m.entity_id IS NULL THEN i.entity_id ELSE m.entity_id END,
+                    CASE WHEN m.entity_class IS NULL THEN i.entity_class ELSE m.entity_class END,
+                    m.data,
+                    count(i.issue_id) AS issues_count
+                FROM
+                    pipeline.metadata AS m
+                    FULL OUTER JOIN issue AS i ON i.entity_id = m.entity_id AND i.entity_class = m.entity_class
+                WHERE (m.entity_id, m.entity_class) IN (@ENTITIES@)
+                    OR (i.entity_id, i.entity_class) IN (@ENTITIES@)
+                    GROUP BY m.entity_id, m.entity_class, m.data, i.entity_id, i.entity_class
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataItemQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.metadata
+                    WHERE
+                        entity_id = ?
+                    AND
+                        entity_class = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataItemKeyQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata SET
+                        data = data - @KEY@
+                    WHERE
+                        entity_id = :ENTITY_ID
+                    AND
+                        entity_class = :ENTITY_CLASS
+                ]]>
+            </value>
+        </property>
+        <property name="searchMetadataByClassAndKeyValueQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        m.entity_id,
+                        m.entity_class
+                    FROM
+                        pipeline.metadata m
+                    WHERE
+                        m.entity_class = ?
+                    AND
+                        m.data @> CAST(? AS jsonb)
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

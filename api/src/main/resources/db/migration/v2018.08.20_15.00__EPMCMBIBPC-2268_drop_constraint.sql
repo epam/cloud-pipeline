@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS pipeline.tool_version DROP CONSTRAINT IF EXISTS unique_2;

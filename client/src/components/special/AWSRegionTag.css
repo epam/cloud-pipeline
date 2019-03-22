@@ -1,0 +1,36 @@
+.container {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.container.normal {
+
+}
+
+.container.small {
+  font-size: smaller;
+}
+
+.container.large {
+  font-size: larger;
+}
+
+.title {
+  white-space: nowrap;
+}
+
+.flag::before {
+  content: "\00a0";
+}
+
+.flag {
+  margin-left: 4px;
+  margin-right: 4px;
+  background: no-repeat 50%;
+  background-size: contain;
+  position: relative;
+  display: inline-block;
+  width: 1.33333333em;
+  line-height: 1em;
+}
+

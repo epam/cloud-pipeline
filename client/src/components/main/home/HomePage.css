@@ -1,0 +1,76 @@
+.global-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.sticky-header {
+  position: fixed;
+  left: 64px;
+  right: 20px;
+  top: 0;
+  padding: 5px 0 5px 10px;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.sticky-header h1 {
+  z-index: 2;
+}
+
+.sticky-header-background {
+  position: absolute;
+  background-color: #eee;
+  top: -20px;
+  bottom: 0;
+  left: -50px;
+  right: -50px;
+  -webkit-filter: blur(10px);
+  -ms-filter: blur(10px);
+  filter: blur(10px);
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  flex: 1;
+}
+
+.panel {
+  border: 1px solid #ccc;
+  background-color: #fff;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-left: 1px;
+}
+
+.panel-header {
+  width: 100%;
+  padding: 5px;
+  cursor: move;
+}
+
+.panel-header-title {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.panel-header-close-icon {
+  cursor: pointer;
+  padding: 5px;
+}
+
+.panel-content {
+  padding: 5px;
+  flex: 1;
+  overflow: auto;
+}
+
+.panel-header-actions > i,
+.panel-header-actions > button {
+  margin-left: 5px;
+}
