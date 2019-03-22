@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.tool.ToolGroupDao" id="toolGroupDao" autowire="byName">
+        <property name="toolGroupSequenceName" value="pipeline.s_tool_group"/>
+        <property name="loadAllToolGroupsQuery">
+            <value>
+                <![CDATA[
+                    SELECT 
+                        id,
+                        group_name,
+                        registry_id,
+                        description,
+                        owner
+                    FROM
+                        pipeline.tool_group
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolGroupsByRegistryIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT 
+                        id,
+                        group_name,
+                        registry_id,
+                        description,
+                        owner
+                    FROM
+                        pipeline.tool_group
+                    WHERE
+                        registry_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolGroupQuery">
+            <value>
+                <![CDATA[
+                    SELECT 
+                        id,
+                        group_name,
+                        registry_id,
+                        description,
+                        owner
+                    FROM
+                        pipeline.tool_group
+                    WHERE
+                        id = ?                
+                ]]>
+            </value>
+        </property>
+        <property name="createToolGroupQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.tool_group (
+                        id,
+                        group_name,
+                        registry_id,
+                        description,
+                        owner
+                    )
+                    VALUES (
+                        :ID,
+                        :GROUP_NAME,
+                        :REGISTRY_ID,
+                        :DESCRIPTION,
+                        :OWNER
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolGroupQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.tool_group WHERE id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolGroupByNameAndRegistryIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        id,
+                        group_name,
+                        registry_id,
+                        description,
+                        owner
+                    FROM
+                        pipeline.tool_group
+                    WHERE
+                        group_name = ? AND registry_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="updateToolGroupQuery">
+            <value>
+                <![CDATA[
+                    UPDATE
+                        pipeline.tool_group
+                    SET
+                        owner = :OWNER,
+                        description = :DESCRIPTION
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolGroupsByNameAndRegistryNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        g.id,
+                        g.group_name,
+                        g.registry_id,
+                        g.description,
+                        g.owner
+                    FROM
+                        pipeline.tool_group g
+                        LEFT JOIN pipeline.docker_registry r ON r.id = g.registry_id
+                    WHERE
+                        g.group_name = :GROUP_NAME
+                        AND (:REGISTRY_NAME IS NULL OR r.path = :REGISTRY_NAME)
+                ]]>
+            </value>
+        </property>
+
+    </bean>
+</beans>

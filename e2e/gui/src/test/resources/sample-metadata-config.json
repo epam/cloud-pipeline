@@ -1,0 +1,40 @@
+[ {
+  "name" : "default",
+  "configuration" : {
+    "main_file" : "singlesamplevariantcalling.sh",
+    "instance_size" : "{{instance_type}}",
+    "instance_disk" : "20",
+    "docker_image" : "{{docker_image}}",
+    "timeout" : 0,
+    "cmd_template" : "bash $SCRIPTS_DIR/src/[main_file]",
+    "language" : "other",
+    "parameters" : {
+      "REFERENCE_GENOME_PATH" : {
+        "type" : "input",
+        "required" : false
+      },
+      "PANEL" : {
+        "type" : "input",
+        "required" : false
+      },
+      "FASTQ_R1" : {
+        "type" : "input",
+        "required" : false
+      },
+      "FASTQ_R2" : {
+        "type" : "input",
+        "required" : false
+      },
+      "SAMPLE_NAME" : {
+        "type" : "string",
+        "required" : false
+      },
+      "RESULT_DIR" : {
+        "type" : "output",
+        "required" : false
+      }
+    },
+    "is_spot" : true
+  },
+  "default" : true
+} ]

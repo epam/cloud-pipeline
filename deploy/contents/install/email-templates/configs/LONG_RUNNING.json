@@ -1,0 +1,8 @@
+{
+    "keepInformedAdmins":true,
+    "keepInformedOwner":true,
+    "enabled":true,
+    "resendDelay": 600,
+    "threshold": 259200,
+    "subject":"Job #$templateParameters[\"id\"] is running for a long time"
+}

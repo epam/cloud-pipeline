@@ -1,0 +1,85 @@
+.tools-header-buttons button {
+  margin-left: 5px;
+}
+
+.hidden-item {
+  display: none;
+}
+
+.code-editor {
+  height: 300px;
+  background-color: #efefef;
+  border: 1px solid #ccc;
+  line-height: 1.5;
+}
+
+.code-editor-label {
+  margin-right: 15px;
+  font-weight: bolder;
+}
+
+.description-column,
+.labels-column {
+  width: 300px;
+}
+
+.ports-container {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 3px;
+}
+
+.ports-container > div.header {
+  border-bottom: 1px solid #ddd;
+  margin: 0;
+  padding: 0 5px;
+}
+
+.ports-container > div.header:last-child {
+  border-bottom: none;
+}
+
+.ports-column {
+  flex: 1;
+  padding: 5px;
+}
+
+.ports-action-column {
+  width: 40px;
+  text-align: right;
+}
+
+.not-valid,
+.not-valid input {
+  border-color: red;
+}
+
+.valid,
+.valid input {
+  border-color: #d9d9d9 !important;
+}
+
+.valid:focus,
+.valid input:focus {
+  border-color: #49a9ee !important;
+  box-shadow: 0 0 0 2px rgba(16, 142, 233, 0.2) !important;
+}
+
+.port-collapsible-header,
+.port-collapsible-header:focus,
+.port-collapsible-header:active {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.port-collapsible-header:hover {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.port-collapsible-header i {
+  font-size: larger;
+  margin-right: 5px;
+}
+
+.port-collapsible-header span {
+  margin-top: 1px;
+}

@@ -1,0 +1,6 @@
+{
+    "short_description": "Cell Ranger is a set of analysis pipelines that process Chromium single-cell RNA-seq output to align reads, generate feature-barcode matrices and perform clustering and gene expression analysis",
+    "instance_type": "r5.xlarge",
+    "disk_size": "100",
+    "default_command": "sleep infinity"
+}

@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cp-notifier
+  namespace: default
+  labels:
+    cloud-pipeline/cp-notifier: "true"
+spec:
+  nodeSelector:
+    cloud-pipeline/cp-notifier: "true"
+  tolerations:
+  - key: node-role.kubernetes.io/master
+    effect: NoSchedule
+  containers:
+    - name: cp-notifier
+      image: lifescience/cloud-pipeline:notifier-$CP_VERSION
+      imagePullPolicy: "IfNotPresent"
+      command: ["/init"]
+      envFrom:
+      - configMapRef:
+          name: cp-config-global
+      volumeMounts:
+        - mountPath: /opt/notifier/logs
+          name: notifier-logs
+  volumes:
+    - name: notifier-logs
+      hostPath:
+        path: /opt/notifier/logs
+  imagePullSecrets:
+    - name: cp-distr-docker-registry-secret
+    

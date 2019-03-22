@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.datastorage ADD COLUMN allowed_cidrs TEXT;

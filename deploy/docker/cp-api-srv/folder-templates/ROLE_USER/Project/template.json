@@ -1,0 +1,27 @@
+{
+    "name": "@@",
+    "metadata": {
+        "type": {
+            "value": "project"
+        },
+         "DataStorage": {
+            "value": "s3://cloud-pipeline-@@-storage",
+            "type": "bucket"
+        },
+         "ProjectID": {
+            "value": "@@"
+        }
+    },
+    "children": [
+        {
+            "name": "Method-Configurations"
+        }
+    ],
+    "datastorages": [
+        {
+            "name": "@@-storage",
+            "path": "cloud-pipeline-@@-storage",
+            "type": "S3"
+        }
+    ]
+}

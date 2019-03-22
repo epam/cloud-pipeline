@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.cloud_region ADD resource_group text NULL;

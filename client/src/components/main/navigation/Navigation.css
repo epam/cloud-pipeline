@@ -1,0 +1,100 @@
+.navigation-container {
+  background-color: #2796dd;
+  height: 100vh;
+}
+
+.navigation-menu {
+  background-color: #2796dd;
+}
+
+.search-control {
+  width: 200px;
+}
+
+.logo-menu-item {
+  background-color: transparent !important;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  height: 44px;
+  width: 60px;
+  margin: 2px;
+  border-radius: 0;
+}
+
+.navigation-menu-item {
+  color: white !important;
+  background-color: transparent !important;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  height: 44px;
+  margin: 2px;
+  width: 60px;
+}
+
+.navigation-menu-item-selected {
+  color: white !important;
+  background-color: #2282bf !important;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  height: 44px;
+  margin: 2px;
+  width: 60px;
+}
+
+.highlighted-navigation-menu-item {
+  color: white !important;
+  background-color: transparent !important;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  height: 44px;
+  margin: 2px;
+  padding: 0;
+  width: 60px;
+}
+
+.highlighted-navigation-menu-item-selected {
+  color: white !important;
+  background-color: #2282bf !important;
+  text-transform: uppercase;
+  border: 0 solid transparent;
+  height: 44px;
+  margin: 2px;
+  padding: 0;
+  width: 60px;
+}
+
+.navigation-menu-item i,
+.navigation-menu-item-selected i,
+.highlighted-navigation-menu-item i,
+.highlighted-navigation-menu-item-selected i {
+  font-weight: bold;
+  font-size: large !important;
+  margin: 0;
+  text-decoration: none;
+}
+
+.navigation-menu-item:hover,
+.navigation-menu-item-selected:hover,
+.highlighted-navigation-menu-item:hover,
+.highlighted-navigation-menu-item-selected:hover {
+  color: white;
+  background-color: #2282bf;
+}
+
+.navigation-menu-item:active,
+.navigation-menu-item-selected:active,
+.highlighted-navigation-menu-item:active,
+.highlighted-navigation-menu-item-selected:active {
+  background-color: #217db7;
+}
+
+.counter-badge {
+  vertical-align: top;
+  font-size: larger;
+  color: #0cff87;
+  margin-left: 5px;
+}
+
+.highlighted-icon {
+  color: #0cff87;
+}

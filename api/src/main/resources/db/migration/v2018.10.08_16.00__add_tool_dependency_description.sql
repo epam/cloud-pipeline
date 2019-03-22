@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool_dependency ADD COLUMN dependency_description TEXT NULL;

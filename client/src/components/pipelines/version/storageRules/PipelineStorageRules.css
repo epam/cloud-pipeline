@@ -1,0 +1,8 @@
+.container {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.table > div > div {
+  filter: none !important;
+}

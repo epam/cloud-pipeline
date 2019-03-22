@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.pipeline.PipelineDao" id="pipelineDao" autowire="byName">
+        <property name="pipelineSequence" value="pipeline.s_pipeline"/>
+        <property name="createPipelineQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.pipeline (
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked)
+                    VALUES (
+                        :PIPELINE_ID,
+                        :PIPELINE_NAME,
+                        :REPOSITORY,
+                        :DESCRIPTION,
+                        :FOLDER_ID,
+                        :CREATED_DATE,
+                        :OWNER,
+                        :REPOSITORY_TOKEN,
+                        :REPOSITORY_TYPE,
+                        :PIPELINE_LOCKED)
+                ]]>
+            </value>
+        </property>
+        <property name="updatePipelineQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline SET
+                        pipeline_name = :PIPELINE_NAME,
+                        description = :DESCRIPTION,
+                        folder_id = :FOLDER_ID,
+                        owner = :OWNER,
+                        repository_token = :REPOSITORY_TOKEN
+                    WHERE
+                        pipeline_id = :PIPELINE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllPipelinesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked as pipeline_locked
+                    FROM
+                        pipeline.pipeline
+                    ORDER BY pipeline_id
+                ]]>
+            </value>
+        </property>
+        <property name="deletePipelineQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.pipeline WHERE pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadPipelineByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked as pipeline_locked
+                    FROM
+                        pipeline.pipeline
+                    WHERE
+                        pipeline_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadPipelineByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked as pipeline_locked
+                    FROM
+                        pipeline.pipeline
+                    WHERE
+                        lower(pipeline_name) = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadPipelineByRepoUrlQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked as pipeline_locked
+                    FROM
+                        pipeline.pipeline
+                    WHERE
+                        repository = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadRootPipelinesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        pipeline_id,
+                        pipeline_name,
+                        repository,
+                        description,
+                        folder_id,
+                        created_date,
+                        owner,
+                        repository_token,
+                        repository_type,
+                        locked as pipeline_locked
+                    FROM
+                        pipeline.pipeline
+                    WHERE
+                        folder_id ISNULL
+                ]]>
+            </value>
+        </property>
+        <property name="updatePipelineLocksQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline SET
+                        locked = :LOCKED
+                    WHERE
+                        pipeline_id IN (:IDS)
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllPipelinesWithParentsQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+	                    SELECT
+		                    p.pipeline_id,
+                            p.description,
+                            p.created_date,
+                            p.repository,
+                            p.pipeline_name,
+                            p.repository_token,
+                            p.repository_type,
+                            p.locked AS pipeline_locked,
+		                    p.owner,
+		                    c.folder_id,
+                            c.parent_id AS parent_folder_id
+	                    FROM pipeline.pipeline p
+	                    LEFT JOIN pipeline.folder c ON p.folder_id = c.folder_id
+	                    WHERE p.pipeline_id IN
+	                        (SELECT pipeline_id
+	                        FROM pipeline.pipeline
+	                        ORDER BY pipeline_id
+	                        LIMIT @LIMIT@ OFFSET @OFFSET@)
+	                    UNION
+	                    SELECT
+		                    null AS pipeline_id,
+		                    null AS description,
+		                    null AS created_date,
+                            null AS repository,
+                            null AS pipeline_name,
+                            null AS repository_token,
+                            null AS repository_type,
+                            null AS pipeline_locked,
+		                    null AS owner,
+		                    m.folder_id,
+                            m.parent_id AS parent_folder_id
+	                    FROM pipeline.folder m
+	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
+	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+        <property name="loadPipelineWithParentsQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+	                    SELECT
+		                    p.pipeline_id,
+                            p.description,
+                            p.created_date,
+                            p.repository,
+                            p.pipeline_name,
+                            p.repository_token,
+                            p.repository_type,
+                            p.locked AS pipeline_locked,
+		                    p.owner,
+		                    c.folder_id,
+                            c.parent_id AS parent_folder_id
+	                    FROM pipeline.pipeline p
+	                    LEFT JOIN pipeline.folder c ON p.folder_id = c.folder_id
+	                    WHERE p.pipeline_id = ?
+	                    UNION
+	                    SELECT
+		                    null AS pipeline_id,
+		                    null AS description,
+		                    null AS created_date,
+                            null AS repository,
+                            null AS pipeline_name,
+                            null AS repository_token,
+                            null AS repository_type,
+                            null AS pipeline_locked,
+		                    null AS owner,
+		                    m.folder_id,
+                            m.parent_id AS parent_folder_id
+	                    FROM pipeline.folder m
+	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
+	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+        <property name="loadPipelinesCountQuery">
+            <value>
+                <![CDATA[
+                    SELECT count(*) FROM pipeline.pipeline
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

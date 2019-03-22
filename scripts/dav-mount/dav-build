@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Check for payload format option (default is uuencode).
+base64=1
+if [[ "$1" == '--binary' ]]; then
+	binary=1
+	uuencode=0
+	b64=0
+	shift
+fi
+if [[ "$1" == '--uuencode' ]]; then
+	binary=0
+	uuencode=1
+	b64=0
+	shift
+fi
+if [[ "$1" == '--base64' ]]; then
+	binary=0
+	uuencode=0
+	b64=1
+	shift
+fi
+
+if [[ ! "$1" ]]; then
+	echo "Usage: $0 [--binary | --uuencode | --base64] PAYLOAD_FILE"
+	exit 1
+fi
+
+output_name="${DAV_BUILD_OUTPUT_PATH:-dav}"
+
+if [[ $binary -ne 0 ]]; then
+	# Append binary data.
+	sed \
+		-e 's/uuencode=./uuencode=0/' \
+		-e 's/binary=./binary=1/' \
+		-e 's/b64=./b64=0/' \
+			 dav.tmpl >"$output_name"
+	echo "PAYLOAD:" >> "$output_name"
+
+	cat $1 >>"$output_name"
+fi
+if [[ $uuencode -ne 0 ]]; then
+	# Append uuencoded data.
+	sed \
+		-e 's/uuencode=./uuencode=1/' \
+		-e 's/binary=./binary=0/' \
+		-e 's/b64=./b64=0/' \
+			 dav.tmpl >"$output_name"
+	echo "PAYLOAD:" >> "$output_name"
+
+	cat $1 | uuencode - >>"$output_name"
+fi
+if [[ $b64 -ne 0 ]]; then
+	# Append base64 data.
+	sed \
+		-e 's/uuencode=./uuencode=0/' \
+		-e 's/binary=./binary=0/' \
+		-e 's/b64=./b64=1/' \
+			 dav.tmpl >"$output_name"
+	echo "PAYLOAD:" >> "$output_name"
+
+	cat $1 | base64 >>"$output_name"
+fi
+
+chmod +x "$output_name"

@@ -1,0 +1,24 @@
+.actions {
+  margin-top: 10px;
+}
+
+.actions button {
+  margin-left: 5px;
+}
+
+.preference-row {
+  padding-bottom: 6px;
+}
+
+.even-row {
+  background-color: #f9f9f9;
+}
+
+.last-row {
+
+}
+
+.code-editor {
+  line-height: 1.25;
+  width: 100%;
+}

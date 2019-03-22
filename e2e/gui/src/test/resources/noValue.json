@@ -1,0 +1,12 @@
+{
+  "main_file" : "${PIPE_NAME}.sh",
+  "instance_size" : "{{instance_type}}",
+  "instance_disk" : "20",
+  "docker_image" : "library/centos:7",
+  "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+  "parameters": {
+    "param": {
+      "required": false
+    }
+  }
+}

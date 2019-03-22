@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS t_acl_entry ON pipeline.acl_entry;

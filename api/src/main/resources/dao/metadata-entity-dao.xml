@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.metadata.MetadataEntityDao" id="MetadataEntityDao" autowire="byName">
+        <property name="metadataEntitySequence" value="PIPELINE.S_METADATA_ENTITY"/>
+        <property name="createMetadataEntityQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.metadata_entity (
+                        entity_id,
+                        class_id,
+                        parent_id,
+                        entity_name,
+                        external_id,
+                        data)
+                    VALUES (
+                        :ENTITY_ID,
+                        :CLASS_ID,
+                        :PARENT_ID,
+                        :ENTITY_NAME,
+                        :EXTERNAL_ID,
+                        to_jsonb(:DATA::jsonb))
+                ]]>
+            </value>
+        </property>
+        <property name="updateMetadataEntityQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata_entity SET
+                        entity_id = :ENTITY_ID,
+                        class_id = :CLASS_ID,
+                        parent_id = :PARENT_ID,
+                        entity_name = :ENTITY_NAME,
+                        external_id = :EXTERNAL_ID,
+                        data = to_jsonb(:DATA::jsonb)
+                    WHERE
+                        entity_id = :ENTITY_ID
+                ]]>
+            </value>
+        </property>
+        <property name="updateMetadataEntityDataKeyQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata_entity SET
+                        data = jsonb_set(data, @KEY@, @VALUE@, true)
+                    WHERE
+                        entity_id = :ENTITY_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllMetadataEntitiesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        e.data,
+                        c.external_class_name
+                    FROM
+                        pipeline.metadata_entity e
+                    INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                    ORDER BY e.entity_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataEntityByIdQuery">
+            <value>
+                <![CDATA[
+                     SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        e.data,
+                        c.external_class_name
+                     FROM
+                        pipeline.metadata_entity e
+                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                     WHERE
+                        e.entity_id = ?
+                     ORDER BY e.entity_id
+                ]]>
+            </value>
+        </property>
+        <property name="insertCopiesOfExistentMetadataEntitiesQuery">
+            <value>
+                <![CDATA[
+                     INSERT INTO pipeline.metadata_entity (
+                        entity_id,
+                        class_id,
+                        parent_id,
+                        entity_name,
+                        external_id,
+                        data
+                     ) SELECT
+                        NEXTVAL('pipeline.s_metadata_entity') AS entity_id,
+                        class_id,
+                        ? AS parent_id,
+                        entity_name,
+                        external_id,
+                        data
+                     FROM pipeline.metadata_entity e WHERE e.parent_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadRootMetadataEntityQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        e.entity_id,
+                        c.class_name,
+                        e.data,
+                        null as parent_id,
+                        null as class_id,
+                        null as entity_name,
+                        null as external_id,
+                        c.external_class_name
+                    FROM
+                        pipeline.metadata_entity e
+                    INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                    WHERE
+                        e.parent_id ISNULL
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataEntityByClassNameAndFolderIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        e.data,
+                        c.external_class_name
+                     FROM
+                        pipeline.metadata_entity e
+                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                     WHERE
+                        e.parent_id = ?
+                        AND
+                        c.class_name = ?
+                     ORDER BY e.entity_id
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataEntityDataKeyQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.metadata_entity SET
+                        data = data - @KEY@
+                    WHERE
+                        entity_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataEntityItemQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.metadata_entity
+                    WHERE
+                        entity_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataInFolderQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.metadata_entity
+                    WHERE
+                        parent_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataEntitiesQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.metadata_entity
+                    WHERE
+                        entity_id IN (:ENTITIES_IDS)
+                ]]>
+            </value>
+        </property>
+        <property name="deleteMetadataClassInProjectQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.metadata_entity e
+                    WHERE
+                        e.parent_id = :PARENT_ID AND e.class_id = :CLASS_ID;
+                ]]>
+            </value>
+        </property>
+        <property name="recursiveFilterQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+                      SELECT
+                        p.folder_id,
+                        p.parent_id,
+                        p.folder_name,
+                        p.created_date,
+                        p.owner
+                      FROM
+                        folder p
+                      WHERE folder_id = :PARENT_ID
+                      UNION
+                      SELECT
+                        f.folder_id,
+                        f.parent_id,
+                        f.folder_name,
+                        f.created_date,
+                        f.owner
+                      FROM
+                        pipeline.folder f
+                        INNER JOIN children c ON c.folder_id = f.parent_id
+                    )
+                    SELECT
+                      e.entity_id,
+                      c.class_id,
+                      c.class_name,
+                      e.parent_id,
+                      e.entity_name,
+                      e.external_id,
+                      e.data,
+                      c.external_class_name
+                    FROM
+                      children f
+                        LEFT JOIN metadata_entity e ON f.folder_id = e.parent_id
+                        INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
+                    WHERE
+                      class_name = :CLASS_NAME @WHERE_CLAUSE@
+                    @ORDER_CLAUSE@
+                    LIMIT :LIMIT OFFSET :OFFSET;
+                ]]>
+            </value>
+        </property>
+        <property name="baseFilterQuery">
+            <value>
+                <![CDATA[
+                     SELECT
+                      e.entity_id,
+                      c.class_id,
+                      c.class_name,
+                      e.parent_id,
+                      e.entity_name,
+                      e.external_id,
+                      e.data,
+                      c.external_class_name
+                    FROM
+                      metadata_entity e
+                        INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
+                    WHERE
+                      class_name = :CLASS_NAME AND parent_id = :PARENT_ID @WHERE_CLAUSE@
+                    @ORDER_CLAUSE@
+                    LIMIT :LIMIT OFFSET :OFFSET;
+                ]]>
+            </value>
+        </property>
+        <property name="recursiveFilterCountQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+                      SELECT
+                        p.folder_id,
+                        p.parent_id,
+                        p.folder_name,
+                        p.created_date,
+                        p.owner
+                      FROM
+                        folder p
+                      WHERE folder_id = :PARENT_ID
+                      UNION
+                      SELECT
+                        f.folder_id,
+                        f.parent_id,
+                        f.folder_name,
+                        f.created_date,
+                        f.owner
+                      FROM
+                        pipeline.folder f
+                        INNER JOIN children c ON c.folder_id = f.parent_id
+                    )
+                    SELECT
+                       count(*) as count
+                    FROM
+                      children f
+                        LEFT JOIN metadata_entity e ON f.folder_id = e.parent_id
+                        INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
+                    WHERE
+                      class_name = :CLASS_NAME @WHERE_CLAUSE@;
+                ]]>
+            </value>
+        </property>
+        <property name="baseFilterCountQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        count(*) as count
+                    FROM
+                      metadata_entity e
+                        INNER JOIN metadata_entity_class c ON e.class_id = c.class_id
+                    WHERE
+                      class_name = :CLASS_NAME AND parent_id = :PARENT_ID @WHERE_CLAUSE@;
+                ]]>
+            </value>
+        </property>
+        <property name="externalIdClauseQuery">
+            <value>
+                <![CDATA[
+                     LOWER(e.external_id) LIKE '%@QUERY@%'
+                ]]>
+            </value>
+        </property>
+        <property name="searchClauseQuery">
+            <value>
+                <![CDATA[
+                    EXISTS(
+                        SELECT 1
+                        FROM jsonb_each(e.data) AS e(key, value)
+                        WHERE LOWER(e.value ->> 'value') LIKE '%@QUERY@%'
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataKeysQuery">
+            <value>
+                <![CDATA[
+                    SELECT DISTINCT jsonb_object_keys(data) as key
+                    FROM metadata_entity
+                    WHERE parent_id = ? AND class_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataKeysRecursiveQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                      m.class_id,
+                      m.class_name,
+                      m.entity_id,
+                      m.key,
+                      m.data->m.key->>'type' as type,
+                      m.external_class_name
+                    FROM (
+                      WITH RECURSIVE children AS (
+                        SELECT
+                          p.folder_id,
+                          p.parent_id,
+                          p.folder_name,
+                          p.created_date,
+                          p.owner
+                        FROM
+                          folder p
+                        WHERE folder_id = :PARENT_ID
+                        UNION
+                        SELECT
+                          f.folder_id,
+                          f.parent_id,
+                          f.folder_name,
+                          f.created_date,
+                          f.owner
+                        FROM
+                          pipeline.folder f
+                          INNER JOIN children c ON c.folder_id = f.parent_id
+                      )
+                      SELECT DISTINCT ON (c.class_id, class_name, key)
+                        c.class_id,
+                        c.class_name,
+                        m.entity_id,
+                        jsonb_object_keys(m.data) as key,
+                        m.data,
+                        c.external_class_name
+                      FROM metadata_entity m
+                        INNER JOIN
+                        children ON children.folder_id = m.parent_id
+                        LEFT JOIN metadata_entity_class c on c.class_id = m.class_id
+                    ) AS m
+                    ;
+                ]]>
+            </value>
+        </property>
+        <property name="loadEntitiesInProjectQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE folders AS (
+                    SELECT
+                        p.folder_id,
+                        p.parent_id,
+                        p.folder_name,
+                        p.created_date,
+                        p.owner
+                    FROM
+                        folder p
+                    WHERE folder_id = :PARENT_ID
+                    UNION
+                    SELECT
+                        f.folder_id,
+                        f.parent_id,
+                        f.folder_name,
+                        f.created_date,
+                        f.owner
+                    FROM
+                        pipeline.folder f
+                    INNER JOIN folders c ON c.folder_id = f.parent_id
+                    )
+                    SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        NULL as data,
+                        c.c.external_class_name
+                    FROM pipeline.metadata_entity e
+                    INNER JOIN folders ON folders.folder_id = e.parent_id
+                    INNER JOIN metadata_entity_class c on c.class_id = e.class_id
+                    WHERE c.class_name = :CLASS_NAME;
+                ]]>
+            </value>
+        </property>
+        <property name="loadByExternalIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        e.data,
+                        c.external_class_name
+                     FROM
+                        pipeline.metadata_entity e
+                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                     WHERE
+                        e.parent_id = ? AND c.class_name = ?
+                        AND e.external_id = ANY(values %s)
+                     ORDER BY e.entity_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadBylIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        e.entity_id,
+                        e.class_id,
+                        c.class_name,
+                        e.parent_id,
+                        e.entity_name,
+                        e.external_id,
+                        e.data,
+                        c.external_class_name
+                     FROM
+                        pipeline.metadata_entity e
+                     INNER JOIN pipeline.metadata_entity_class c ON e.class_id = c.class_id
+                     WHERE
+                        e.entity_id = ANY(values %s)
+                     ORDER BY e.entity_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllReferencesQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE links AS (
+                        SELECT
+                          p.entity_id,
+                          p.entity_name,
+                          p.external_id,
+                          p.class_name,
+                          p.class_id,
+                          p.parent_id,
+                          p.field_name,
+                          p.field_type,
+                          p.field_value,
+                          p.data,
+						  p.external_class_name
+                        FROM (SELECT
+                                entity_id,
+                                external_id,
+                                entity_name,
+                                c.class_id,
+                                class_name,
+                                parent_id,
+                                data,
+                                key as field_name,
+                                regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
+                                CASE
+                                WHEN value->>'value' LIKE '[%' THEN jsonb_array_elements_text((value->>'value')::jsonb)
+                                ELSE value->>'value'
+                                END AS field_value,
+								c.external_class_name AS external_class_name
+                              FROM
+                                metadata_entity m
+                                LEFT JOIN metadata_entity_class c ON c.class_id = m.class_id,
+                                  jsonb_each(data)
+                              WHERE m.entity_id IN (:IDS)) AS p
+
+                        UNION
+
+                        SELECT
+                          d.entity_id,
+                          d.entity_name,
+                          d.external_id,
+                          d.class_name,
+                          d.class_id,
+                          d.parent_id,
+                          d.field_name,
+                          d.field_type,
+                          d.field_value,
+                          d.data,
+						  d.external_class_name
+                        FROM (SELECT
+                                entity_id,
+                                external_id,
+                                entity_name,
+                                c.class_id,
+                                class_name,
+                                parent_id,
+                                data,
+                                key as field_name,
+                                regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
+                                CASE
+                                WHEN value->>'value' LIKE '[%' THEN jsonb_array_elements_text((value->>'value')::jsonb)
+                                ELSE value->>'value'
+                                END AS field_value,
+							    c.external_class_name AS external_class_name
+                              FROM
+                                metadata_entity m
+                                LEFT JOIN metadata_entity_class c ON c.class_id = m.class_id,
+                                  jsonb_each(data)
+                              WHERE m.parent_id = :PARENT_ID) AS d
+                        INNER JOIN links l ON l.parent_id = d.parent_id AND l.field_value = d.external_id AND l.field_type = d.class_name
+                    )
+                    SELECT DISTINCT
+                      entity_id,
+                      entity_name,
+                      class_id,
+                      class_name,
+                      external_id,
+                      parent_id,
+                      data,
+					  external_class_name
+                    FROM links;
+                ]]>
+            </value>
+        </property>
+        <property name="loadMetadataEntityWithParentsQuery">
+            <value>
+                <![CDATA[
+                    WITH RECURSIVE children AS (
+	                    SELECT
+	                        p.entity_id,
+                            p.entity_name::VARCHAR(100),
+                            p.external_id,
+                            p.class_id,
+                            p.parent_id,
+                            p.data,
+						    f.folder_id AS folder_id,
+                            f.parent_id AS parent_folder_id
+                        FROM pipeline.metadata_entity p
+		                LEFT JOIN pipeline.folder f ON p.parent_id = f.folder_id
+	                    WHERE p.entity_id = ?
+	                    UNION
+	                    SELECT
+		                    null AS entity_id,
+                            null::VARCHAR(100) AS entity_name,
+                            null AS external_id,
+                            null AS class_id,
+                            null AS parent_id,
+                            null AS data,
+		                    m.folder_id AS folder_id,
+                            m.parent_id AS parent_folder_id
+	                    FROM pipeline.folder m
+	                    INNER JOIN children t ON t.parent_folder_id = m.folder_id
+	                ) SELECT * FROM children;
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

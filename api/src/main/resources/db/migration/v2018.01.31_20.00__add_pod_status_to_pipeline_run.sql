@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.pipeline_run ADD pod_status TEXT;

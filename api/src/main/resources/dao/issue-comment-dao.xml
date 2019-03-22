@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.issue.IssueCommentDao" id="issueCommentDao" autowire="byName">
+        <property name="issueCommentSequence" value="pipeline.s_issue_comment"/>
+        <property name="createIssueCommentQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.issue_comment (
+                        comment_id,
+                        issue_id,
+                        comment_text,
+                        comment_author,
+                        created_date,
+                        updated_date)
+                    VALUES (
+                        :COMMENT_ID,
+                        :ISSUE_ID,
+                        :COMMENT_TEXT,
+                        :COMMENT_AUTHOR,
+                        :CREATED_DATE,
+                        :UPDATED_DATE)
+                ]]>
+            </value>
+        </property>
+        <property name="loadIssueCommentByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        c.comment_id,
+                        c.issue_id,
+                        c.comment_text,
+                        c.comment_author,
+                        c.created_date,
+                        c.updated_date
+                    FROM
+                        pipeline.issue_comment c
+                    WHERE
+                        c.comment_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllCommentsForIssueQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        c.comment_id,
+                        c.issue_id,
+                        c.comment_text,
+                        c.comment_author,
+                        c.created_date,
+                        c.updated_date
+                    FROM
+                        pipeline.issue_comment c
+                    WHERE
+                        c.issue_id = ?
+                    ORDER BY
+                        c.comment_id
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllCommentsForIssuesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        c.comment_id,
+                        c.issue_id,
+                        c.comment_text,
+                        c.comment_author,
+                        c.created_date,
+                        c.updated_date
+                    FROM
+                        pipeline.issue_comment c
+                    WHERE
+                        c.issue_id in (@in@)
+                    ORDER BY
+                        c.comment_id
+                ]]>
+            </value>
+        </property>
+        <property name="updateIssueCommentQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.issue_comment SET
+                        comment_text = :COMMENT_TEXT,
+                        updated_date = :UPDATED_DATE
+                    WHERE
+                        comment_id = :COMMENT_ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteIssueCommentQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.issue_comment
+                    WHERE
+                        comment_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteAllCommentsForIssueQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.issue_comment
+                    WHERE
+                        issue_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteCommentsForIssuesListQuery">
+        <value>
+            <![CDATA[
+                    DELETE FROM
+                        pipeline.issue_comment
+                    WHERE
+                        issue_id IN (:ISSUES_IDS)
+                ]]>
+        </value>
+    </property>
+    </bean>
+</beans>

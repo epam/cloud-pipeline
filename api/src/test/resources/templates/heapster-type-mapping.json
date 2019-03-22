@@ -1,0 +1,159 @@
+{
+  "cpu": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "CpuMetricsTimestamp": {
+        "type": "date"
+      },
+      "Metrics": {
+        "properties": {
+          "cpu/limit": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/node_allocatable": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/node_capacity": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/node_reservation": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/node_utilization": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/request": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/usage": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          },
+          "cpu/usage_rate": {
+            "properties": {
+              "value": {
+                "type": "double"
+              }
+            }
+          }
+        }
+      },
+      "MetricsTags": {
+        "properties": {
+          "cluster_name": {
+            "type": "keyword"
+          },
+          "container_base_image": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "container_name": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "host_id": {
+            "type": "keyword"
+          },
+          "hostname": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "labels": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "namespace_id": {
+            "type": "keyword"
+          },
+          "namespace_name": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "nodename": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "pod_id": {
+            "type": "keyword"
+          },
+          "pod_name": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "resource_id": {
+            "type": "keyword"
+          },
+          "schedulable": {
+            "type": "text",
+            "fields": {
+              "keyword": {
+                "type": "keyword",
+                "ignore_above":256
+              }
+            }
+          },
+          "type": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}

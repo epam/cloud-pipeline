@@ -1,0 +1,6 @@
+{
+    "short_description": "Ubuntu is a Debian-based Linux operating system",
+    "instance_type": "m5.large",
+    "disk_size": "50",
+    "default_command": "sleep infinity"
+}

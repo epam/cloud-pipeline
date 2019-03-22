@@ -1,0 +1,15 @@
+[{
+  "name" : "default",
+  "default" : true,
+  "description" : "Initial default configuration",
+  "configuration": {
+    "main_file" : "@.py",
+    "main_class" : "DefaultPipeline",
+    "instance_size" : "m5.large",
+    "instance_disk" : "20",
+    "language" : "luigi",
+    "docker_image" : "library/luigi:latest",
+    "cmd_template" : "python $SCRIPTS_DIR/src/[main_file] [main_class] --local-scheduler --workers 3 [sys-params] [user-params]",
+    "parameters": {}
+  }
+}]

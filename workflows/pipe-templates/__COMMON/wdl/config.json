@@ -1,0 +1,14 @@
+[{
+  "name" : "default",
+  "default" : true,
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "main_file" : "@.wdl",
+    "instance_size" : "m5.large",
+    "instance_disk" : "20",
+    "docker_image" : "library/cromwell:latest",
+    "language" : "wdl",
+    "cmd_template" : "cromwell $SCRIPTS_DIR/src/[main_file]",
+    "parameters": {}
+  }
+}]

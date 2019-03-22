@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-search-elk
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-elk: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-elk: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-search-elk
+          image: sebp/elk:651
+          securityContext:
+            privileged: true
+          imagePullPolicy: "IfNotPresent"
+          command: ["bash"]
+          args: ["-c", "ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/start.sh"]
+          env:
+          - name: ES_HEAP_SIZE
+            value: 4g
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/lib/elasticsearch
+              name: search-elk-data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9200
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: search-elk-data
+          hostPath:
+            path: /opt/search-elk/data
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

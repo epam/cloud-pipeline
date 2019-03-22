@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.tool ADD COLUMN short_description TEXT;

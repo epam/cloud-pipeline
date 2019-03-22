@@ -1,0 +1,13 @@
+{
+  "main_file" : "capture_pipeline.py",
+  "main_class" : "CapturePipeline",
+  "parameters": {
+    "sample" : null,
+    "read1": null,
+    "read2" : null,
+    "reference": "/mnt/reference/human19/hg19.fa",
+    "result-dir" : "/mnt/data/family1/result",
+    "roi-panel": "/mnt/target/targets.sorted.bed",
+    "abra-panel" : "/mnt/target/targets.abra.bed"
+  }
+}

@@ -1,0 +1,10 @@
+Package: PositiveTest
+Priority: recommended
+Version: 1.0
+Depends: R (>= 2.5.0), stats
+ByteCompile: yes
+NeedsCompilation: yes
+Packaged: 2015-06-29 08:37:00 UTC; ripley
+Author: Matt Wand [aut],
+  Brian Ripley [trl, cre, ctb] (R port and updates)
+Built: R 3.4.2; x86_64-pc-linux-gnu; "Wed, 27 Sep 2017 13:55:08 +0000"; unix

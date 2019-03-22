@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-docker-comp
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-docker-comp: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-docker-comp: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-docker-comp
+          image: lifescience/cloud-pipeline:docker-comp-$CP_VERSION
+          imagePullPolicy: "IfNotPresent"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/docker-comp/wd
+              name: docker-comp-wd
+      volumes:
+        - name: docker-comp-wd
+          hostPath:
+            path: /opt/docker-comp/wd
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

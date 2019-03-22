@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-clair: "true"
+  name: cp-clair
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    nodePort: 31083
+    port: 31083
+    targetPort: 8080
+    name: cp-clair-port-http
+  type: NodePort
+  selector:
+    cloud-pipeline/cp-clair: "true"

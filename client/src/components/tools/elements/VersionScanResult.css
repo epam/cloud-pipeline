@@ -1,0 +1,34 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+.white-list {
+  opacity: 0.25;
+}
+
+.container-item {
+  margin-left: 1px;
+}
+
+.critical {
+  background-color: #e8404b;
+}
+
+.high {
+  background-color: #fd854e;
+}
+
+.medium {
+  background-color: #fed954;
+}
+
+.low {
+  background-color: #7dccc0;
+}
+
+.negligible {
+  background-color: #7c7f79;
+  opacity: 0.5;
+}

@@ -1,0 +1,5 @@
+Starting mounting remote data storages.
+Fetching list of allowed storages...
+available storage(s). Checking mount options.
+
+Finished data storage mounting

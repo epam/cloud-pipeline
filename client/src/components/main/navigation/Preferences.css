@@ -1,0 +1,20 @@
+.table {
+  overflow-y: auto;
+}
+
+.table > div > div {
+  filter: none !important;
+}
+
+.preference-group-row {
+  cursor: pointer;
+}
+
+.preference-group-row td {
+  padding: 6px !important;
+}
+
+.preference-group-row.selected {
+  background-color: #ebf6fd;
+  font-weight: bold;
+}

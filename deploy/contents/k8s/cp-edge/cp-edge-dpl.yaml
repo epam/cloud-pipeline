@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-edge
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-edge: "true"
+        cloud-pipeline/role: "EDGE"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-edge: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-edge
+          image: lifescience/cloud-pipeline:edge-$CP_VERSION
+          imagePullPolicy: "IfNotPresent"
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/log
+              name: edge-logs
+            - mountPath: /opt/api/pki
+              name: api-pki
+              readOnly: true
+            - mountPath: /opt/edge/pki
+              name: edge-pki
+              readOnly: true
+      volumes:
+        - name: edge-logs
+          hostPath:
+            path: /opt/edge/logs
+        - name: api-pki
+          hostPath:
+            path: /opt/api/pki
+        - name: edge-pki
+          hostPath:
+            path: /opt/edge/pki
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

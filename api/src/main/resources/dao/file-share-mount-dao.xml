@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.FileShareMountDao" id="fileShareMountDao" autowire="byName">
+        <property name="fileShareMountSequence" value="pipeline.s_file_share_mount"/>
+        <property name="createShareMountQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.file_share_mount (
+                        id,
+                        region_id,
+                        mount_root,
+                        mount_type,
+                        mount_options)
+                    VALUES (
+                        :ID,
+                        :REGION_ID,
+                        :MOUNT_ROOT,
+                        :MOUNT_TYPE,
+                        :MOUNT_OPTIONS)
+                ]]>
+            </value>
+        </property>
+        <property name="loadShareMountByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        sm.id,
+                        sm.region_id,
+                        sm.mount_root,
+                        sm.mount_type,
+                        sm.mount_options
+                    FROM
+                        pipeline.file_share_mount sm
+                    WHERE sm.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllShareMountByRegionIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        sm.id,
+                        sm.region_id,
+                        sm.mount_root,
+                        sm.mount_type,
+                        sm.mount_options
+                    FROM
+                        pipeline.file_share_mount sm
+                    WHERE sm.region_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="updateShareMountQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.file_share_mount SET
+                        region_id = :REGION_ID,
+                        mount_root = :MOUNT_ROOT,
+                        mount_type = :MOUNT_TYPE,
+                        mount_options = :MOUNT_OPTIONS
+                    WHERE
+                        id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="deleteShareMountQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.file_share_mount
+                    WHERE
+                        id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

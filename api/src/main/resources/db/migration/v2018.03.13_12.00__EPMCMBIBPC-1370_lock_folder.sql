@@ -1,0 +1,4 @@
+ALTER TABLE pipeline.folder ADD locked BOOLEAN DEFAULT FALSE NULL;
+ALTER TABLE pipeline.pipeline ADD locked BOOLEAN DEFAULT FALSE NULL;
+ALTER TABLE pipeline.datastorage ADD locked BOOLEAN DEFAULT FALSE NULL;
+ALTER TABLE pipeline.configuration ADD locked BOOLEAN DEFAULT FALSE NULL;

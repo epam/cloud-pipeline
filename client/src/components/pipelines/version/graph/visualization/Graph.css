@@ -1,0 +1,194 @@
+.luigi-graph-style {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  margin: 0;
+}
+
+.luigi-graph-style > div,
+.luigi-graph-style > div > canvas {
+  left: 0;
+  width: 100%;
+}
+
+.wdl-graph {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.wdl-graph-container {
+  width: 100%;
+  height: 100%;
+}
+
+.wdl-graph-container svg,
+.wdl-graph-container div {
+  width: 100%;
+  height: 100%;
+}
+
+.panel-buttons-row {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 9;
+  transform: rotate(-90deg);
+  transform-origin: right bottom;
+}
+
+.properties-button.selected {
+  font-weight: bold;
+}
+
+.wdl-graph-side-panel.left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+  z-index: 5;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  -webkit-transition: background-color 250ms, box-shadow 250ms;
+  -moz-transition: background-color 250ms, box-shadow 250ms;
+  -ms-transition: background-color 250ms, box-shadow 250ms;
+  -o-transition: background-color 250ms, box-shadow 250ms;
+  transition: background-color 250ms, box-shadow 250ms;
+}
+
+.wdl-graph-side-panel.left .separator {
+  height: 1px;
+  width: 100%;
+  background-color: #dedede;
+  margin: 10px 0;
+}
+
+.wdl-appearance-button {
+  margin: 5px;
+  line-height: initial;
+  opacity: 0.5;
+  -webkit-transition: opacity 250ms;
+  -moz-transition: opacity 250ms;
+  -ms-transition: opacity 250ms;
+  -o-transition: opacity 250ms;
+  transition: opacity 250ms;
+}
+
+.wdl-appearance-button.no-fade {
+  opacity: 1;
+  -webkit-transition: none;
+  -moz-transition: none;
+  -ms-transition: none;
+  -o-transition: none;
+  transition: none;
+}
+
+.wdl-appearance-button:focus {
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.wdl-appearance-button.active:focus {
+  border-color: #108ee9;
+  color: #fff;
+}
+
+.wdl-graph-side-panel.left:hover {
+  background-color: rgba(255, 255, 255, 0.75);
+  box-shadow: 5px 0 15px rgba(255, 255, 255, 0.75);
+}
+
+.wdl-graph-side-panel.left:hover .wdl-appearance-button,
+.wdl-appearance-button:hover {
+  opacity: 1;
+}
+
+.wdl-graph-side-panel.right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  height: 100%;
+  width: 30%;
+  min-width: 250px;
+  max-width: 75%;
+  z-index: 5;
+  background-color: #fefefe;
+  border-left: 1px solid #ccc;
+  box-shadow: #999 -2px 0 3px -2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wdl-graph-side-panel-content-container {
+  flex: 1;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.wdl-graph-side-panel-content {
+  flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.wdl-graph-side-panel-content button {
+  margin: 0 2px;
+}
+
+.wdl-graph-side-panel-section {
+  flex-direction: column;
+  border-top: 1px solid #ccc;
+  padding-top: 5px;
+  margin-top: 5px;
+}
+
+.graph-container {
+  background-color: white;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.graph-container-full-screen {
+  background-color: white;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+}
+
+.graph-interface {
+  position: relative;
+  top: -30px;
+  font-size: 20px;
+  color: #108ee9;
+}
+
+.graph-interface-button {
+  padding-right: 20px;
+}
+
+.graph-interface-button-icon {
+  color: #108ee9;
+}
+
+.graph-interface-button-icon-disabled {
+  cursor: default;
+  color: grey;
+  opacity: 0.5;
+}
+
+.graph-interface:hover {
+  cursor: pointer;
+}

@@ -1,0 +1,88 @@
+<?xml version='1.0'?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<qhost xmlns:xsd="https://github.com/gridengine/gridengine/raw/master/source/dist/util/resources/schemas/qhost/qhost.xsd">
+    <host name='global'>
+        <hostvalue name='arch_string'>-</hostvalue>
+        <hostvalue name='num_proc'>-</hostvalue>
+        <hostvalue name='m_socket'>-</hostvalue>
+        <hostvalue name='m_core'>-</hostvalue>
+        <hostvalue name='m_thread'>-</hostvalue>
+        <hostvalue name='np_load_avg'>-</hostvalue>
+        <hostvalue name='mem_total'>-</hostvalue>
+        <hostvalue name='mem_used'>-</hostvalue>
+        <hostvalue name='swap_total'>-</hostvalue>
+        <hostvalue name='swap_used'>-</hostvalue>
+    </host>
+    <host name='i-002'>
+        <hostvalue name='arch_string'>lx-amd64</hostvalue>
+        <hostvalue name='num_proc'>176</hostvalue>
+        <hostvalue name='m_socket'>4</hostvalue>
+        <hostvalue name='m_core'>88</hostvalue>
+        <hostvalue name='m_thread'>176</hostvalue>
+        <hostvalue name='np_load_avg'>0.00</hostvalue>
+        <hostvalue name='mem_total'>1007.8G</hostvalue>
+        <hostvalue name='mem_used'>7.5G</hostvalue>
+        <hostvalue name='swap_total'>16.0G</hostvalue>
+        <hostvalue name='swap_used'>1.7M</hostvalue>
+        <queue name='main.q'>
+            <queuevalue qname='main.q' name='qtype_string'>BIP</queuevalue>
+            <queuevalue qname='main.q' name='slots_used'>2</queuevalue>
+            <queuevalue qname='main.q' name='slots'>88</queuevalue>
+            <queuevalue qname='main.q' name='slots_resv'>3</queuevalue>
+            <queuevalue qname='main.q' name='state_string'></queuevalue>
+        </queue>
+    </host>
+    <host name='i-003'>
+        <hostvalue name='arch_string'>lx-amd64</hostvalue>
+        <hostvalue name='num_proc'>176</hostvalue>
+        <hostvalue name='m_socket'>4</hostvalue>
+        <hostvalue name='m_core'>88</hostvalue>
+        <hostvalue name='m_thread'>176</hostvalue>
+        <hostvalue name='np_load_avg'>0.00</hostvalue>
+        <hostvalue name='mem_total'>1007.8G</hostvalue>
+        <hostvalue name='mem_used'>7.5G</hostvalue>
+        <hostvalue name='swap_total'>16.0G</hostvalue>
+        <hostvalue name='swap_used'>1.2M</hostvalue>
+        <queue name='main.q'>
+            <queuevalue qname='main.q' name='qtype_string'>BIP</queuevalue>
+            <queuevalue qname='main.q' name='slots_used'>0</queuevalue>
+            <queuevalue qname='main.q' name='slots'>88</queuevalue>
+            <queuevalue qname='main.q' name='slots_resv'>0</queuevalue>
+            <queuevalue qname='main.q' name='state_string'></queuevalue>
+        </queue>
+    </host>
+    <host name='i-004'>
+        <hostvalue name='arch_string'>lx-amd64</hostvalue>
+        <hostvalue name='num_proc'>16</hostvalue>
+        <hostvalue name='m_socket'>2</hostvalue>
+        <hostvalue name='m_core'>8</hostvalue>
+        <hostvalue name='m_thread'>16</hostvalue>
+        <hostvalue name='np_load_avg'>0.00</hostvalue>
+        <hostvalue name='mem_total'>94.4G</hostvalue>
+        <hostvalue name='mem_used'>1.6G</hostvalue>
+        <hostvalue name='swap_total'>96.0G</hostvalue>
+        <hostvalue name='swap_used'>2.5G</hostvalue>
+        <queue name='test.q'>
+            <queuevalue qname='test.q' name='qtype_string'>BIP</queuevalue>
+            <queuevalue qname='test.q' name='slots_used'>0</queuevalue>
+            <queuevalue qname='test.q' name='slots'>8</queuevalue>
+            <queuevalue qname='test.q' name='slots_resv'>0</queuevalue>
+            <queuevalue qname='test.q' name='state_string'></queuevalue>
+        </queue>
+    </host>
+</qhost>

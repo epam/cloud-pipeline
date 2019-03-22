@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Validate SSO certificates
+if [ -z "$CP_IDP_CERT_DIR" ]; then
+    export CP_IDP_CERT_DIR="/opt/idp/pki"
+fi
+
+if [ ! -f "$CP_IDP_CERT_DIR/idp-private-key.pem" ]; then
+    echo "Signing private key not found at $CP_IDP_CERT_DIR/idp-private-key.pem, but it is required to setup SSO via a Basic IdP. Exiting"
+    exit 1
+fi
+
+if [ ! -f "$CP_IDP_CERT_DIR/idp-public-cert.pem" ]; then
+    echo "Signing public certificate not found at $CP_IDP_CERT_DIR/idp-public-cert.pem, but it is required to setup SSO via a Basic IdP. Exiting"
+    exit 1
+fi
+
+if [ ! -f "$CP_IDP_CERT_DIR/ssl-private-key.pem" ]; then
+    echo "SSL private key for the IdP is not found at $CP_IDP_CERT_DIR/ssl-private-key.pem, but it is required to setup secure communication with IdP. Exiting"
+    exit 1
+fi
+
+if [ ! -f "$CP_IDP_CERT_DIR/ssl-public-cert.pem" ]; then
+    echo "SSL certificate for the IdP is not found at $CP_IDP_CERT_DIR/ssl-public-cert.pem, but it is required to setup secure communication with IdP. Exiting"
+    exit 1
+fi
+
+# Add default admin user
+default_admin_name=${CP_DEFAULT_ADMIN_NAME:-pipe_admin}
+default_admin_pass=${CP_DEFAULT_ADMIN_PASS:-pipe_admin}
+default_admin_email=${CP_DEFAULT_ADMIN_EMAIL:-"pipe_admin@nowhere.com"}
+
+echo "Adding default admin user as:"
+echo "-> Name: $default_admin_name"
+echo "-> Pass: $default_admin_pass"
+echo "-> Email: $default_admin_email"
+
+saml-idp add-user   "$default_admin_name" \
+                    "$default_admin_pass" \
+                    --firstName "$default_admin_name" \
+                    --lastName "$default_admin_name" \
+                    --email "$default_admin_email"
+
+echo "Starting IdP:"
+saml-idp    --cert  "$CP_IDP_CERT_DIR/idp-public-cert.pem" \
+            --key   "$CP_IDP_CERT_DIR/idp-private-key.pem" \
+            --port  8080 \
+            --check \
+            --https \
+            --httpsPrivateKey "$CP_IDP_CERT_DIR/ssl-private-key.pem" \
+            --httpsCert "$CP_IDP_CERT_DIR/ssl-public-cert.pem"
+            

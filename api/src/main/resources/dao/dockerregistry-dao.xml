@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.docker.DockerRegistryDao" id="dockerRegistryDao" autowire="byName">
+        <property name="dockerRegistrySequence" value="pipeline.s_docker_registry"/>
+        <property name="createDockerRegistryQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.docker_registry (
+                        id,
+                        path,
+                        description,
+                        ca_cert,
+                        secret_name,
+                        user_name,
+                        password,
+                        pipeline_auth,
+                        external_url,
+                        owner,
+                        security_scan_enabled)
+                    VALUES (
+                        :REGISTRY_ID,
+                        :REGISTRY_PATH,
+                        :REGISTRY_DESCRIPTION,
+                        :CA_CERT,
+                        :SECRET_NAME,
+                        :USER_NAME,
+                        :PASSWORD,
+                        :PIPELINE_AUTH,
+                        :EXTERNAL_URL,
+                        :OWNER,
+                        :SECURITY_SCAN_ENABLED)
+                ]]>
+            </value>
+        </property>
+        <property name="updateDockerRegistryQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.docker_registry SET
+                        description = :REGISTRY_DESCRIPTION,
+                        owner = :OWNER,
+                        ca_cert = :CA_CERT,
+                        secret_name = :SECRET_NAME,
+                        password = :PASSWORD,
+                        user_name = :USER_NAME,
+                        pipeline_auth = :PIPELINE_AUTH,
+                        external_url = :EXTERNAL_URL,
+                        security_scan_enabled = :SECURITY_SCAN_ENABLED
+                    WHERE
+                        id = :REGISTRY_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistryWithContentQuery">
+            <value>
+                <![CDATA[
+                  SELECT
+                      dr.id as registry_id,
+                      dr.path as registry_path,
+                      dr.description as registry_description,
+                      dr.secret_name,
+                      NULL as ca_cert,
+                      NULL as user_name,
+                      NULL as password,
+                      dr.pipeline_auth,
+                      dr.external_url,
+                      dr.owner,
+                      dr.security_scan_enabled,
+                      g.id as group_id,
+                      g.group_name as group_name,
+                      g.description as group_description,
+                      g.owner as group_owner,
+                      t.id as tool_id,
+                      t.image as tool_image,
+                      t.cpu as tool_cpu,
+                      t.ram as tool_ram,
+                      t.default_command as tool_default_command,
+                      t.labels as tool_labels,
+                      t.endpoints as tool_endpoints,
+                      NULL as tool_description,
+                      t.short_description as tool_short_description,
+                      t.owner as tool_owner,
+                      t.icon_id as tool_icon_id
+                  FROM
+                      pipeline.docker_registry dr
+                  LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
+                  LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  WHERE
+                      dr.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistriesWithContentQuery">
+            <value>
+                <![CDATA[
+                  SELECT
+                      dr.id as registry_id,
+                      dr.path as registry_path,
+                      dr.description as registry_description,
+                      dr.secret_name,
+                      NULL as ca_cert,
+                      NULL as user_name,
+                      NULL as password,
+                      dr.pipeline_auth,
+                      dr.external_url,
+                      dr.owner,
+                      dr.security_scan_enabled,
+                      g.id as group_id,
+                      g.group_name as group_name,
+                      g.description as group_description,
+                      g.owner as group_owner,
+                      t.id as tool_id,
+                      t.image as tool_image,
+                      t.cpu as tool_cpu,
+                      t.ram as tool_ram,
+                      t.default_command as tool_default_command,
+                      t.labels as tool_labels,
+                      t.endpoints as tool_endpoints,
+                      NULL as tool_description,
+                      t.short_description as tool_short_description,
+                      t.owner as tool_owner,
+                      t.icon_id as tool_icon_id
+                  FROM
+                      pipeline.docker_registry dr
+                  LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
+                  LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  ORDER BY
+                      dr.id
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllDockerRegistriesQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dr.id as registry_id,
+                        dr.path as registry_path,
+                        dr.description as registry_description,
+                        dr.secret_name,
+                        dr.ca_cert,
+                        dr.user_name,
+                        dr.password,
+                        dr.pipeline_auth,
+                        dr.external_url,
+                        dr.owner,
+                        dr.security_scan_enabled,
+                        t.id as tool_id,
+                        t.image as tool_image,
+                        t.cpu as tool_cpu,
+                        t.ram as tool_ram,
+                        t.default_command as tool_default_command,
+                        t.labels as tool_labels,
+                        t.endpoints as tool_endpoints,
+                        t.description as tool_description,
+                        t.short_description as tool_short_description,
+                        t.icon_id as tool_icon_id
+                    FROM
+                        pipeline.docker_registry dr
+                        LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                    ORDER BY
+                        dr.id
+                ]]>
+            </value>
+        </property>
+        <property name="deleteDockerRegistryQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.docker_registry WHERE id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistryByIdQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dr.id as registry_id,
+                        dr.path as registry_path,
+                        dr.description as registry_description,
+                        dr.ca_cert,
+                        dr.secret_name,
+                        dr.user_name,
+                        dr.password,
+                        dr.pipeline_auth,
+                        dr.external_url,
+                        dr.owner,
+                        dr.security_scan_enabled,
+                        t.id as tool_id,
+                        t.image as tool_image,
+                        t.cpu as tool_cpu,
+                        t.ram as tool_ram,
+                        t.default_command as tool_default_command,
+                        t.labels as tool_labels,
+                        t.endpoints as tool_endpoints,
+                        t.description as tool_description,
+                        t.short_description as tool_short_description,
+                        t.icon_id as tool_icon_id
+                    FROM
+                        pipeline.docker_registry dr
+                        LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                    WHERE
+                        dr.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistryByNameQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dr.id as registry_id,
+                        dr.path as registry_path,
+                        dr.description as registry_description,
+                        dr.ca_cert,
+                        dr.secret_name,
+                        dr.user_name,
+                        dr.password,
+                        dr.pipeline_auth,
+                        dr.external_url,
+                        dr.owner,
+                        dr.security_scan_enabled,
+                        t.id as tool_id,
+                        t.image as tool_image,
+                        t.cpu as tool_cpu,
+                        t.ram as tool_ram,
+                        t.default_command as tool_default_command,
+                        t.labels as tool_labels,
+                        t.endpoints as tool_endpoints,
+                        t.description as tool_description,
+                        t.short_description as tool_short_description,
+                        t.icon_id as tool_icon_id
+                    FROM
+                        pipeline.docker_registry dr
+                        LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                    WHERE
+                        dr.path = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistryByExtUrlQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dr.id as registry_id,
+                        dr.path as registry_path,
+                        dr.description as registry_description,
+                        dr.ca_cert,
+                        dr.secret_name,
+                        dr.user_name,
+                        dr.password,
+                        dr.pipeline_auth,
+                        dr.external_url,
+                        dr.owner,
+                        dr.security_scan_enabled,
+                        t.id as tool_id,
+                        t.image as tool_image,
+                        t.cpu as tool_cpu,
+                        t.ram as tool_ram,
+                        t.default_command as tool_default_command,
+                        t.labels as tool_labels,
+                        t.endpoints as tool_endpoints,
+                        t.description as tool_description,
+                        t.short_description as tool_short_description,
+                        t.icon_id as tool_icon_id
+                    FROM
+                        pipeline.docker_registry dr
+                        LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                    WHERE
+                        dr.external_url = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistriesWithCertsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                      dr.id as registry_id,
+                      dr.path as registry_path,
+                      dr.description as registry_description,
+                      dr.ca_cert,
+                      dr.secret_name,
+                      dr.user_name,
+                      dr.password,
+                      dr.pipeline_auth,
+                      dr.external_url,
+                      dr.owner,
+                      dr.security_scan_enabled,
+                      g.id as group_id,
+                      g.group_name as group_name,
+                      g.description as group_description,
+                      g.owner as group_owner,
+                      t.id as tool_id,
+                      t.image as tool_image,
+                      t.cpu as tool_cpu,
+                      t.ram as tool_ram,
+                      t.default_command as tool_default_command,
+                      t.labels as tool_labels,
+                      t.endpoints as tool_endpoints,
+                      NULL as tool_description,
+                      t.short_description as tool_short_description,
+                      t.owner as tool_owner,
+                      t.icon_id as tool_icon_id
+                  FROM
+                      pipeline.docker_registry dr
+                  LEFT JOIN pipeline.tool_group g ON g.registry_id = dr.id
+                  LEFT JOIN pipeline.tool t ON t.tool_group_id = g.id
+                  WHERE
+                      dr.ca_cert NOTNULL AND length(dr.ca_cert) > 0
+                ]]>
+            </value>
+        </property>
+        <property name="loadDockerRegistriesWithSecurityScanEnabledQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dr.id as registry_id,
+                        dr.path as registry_path,
+                        dr.description as registry_description,
+                        dr.secret_name,
+                        dr.ca_cert,
+                        dr.user_name,
+                        dr.password,
+                        dr.pipeline_auth,
+                        dr.external_url,
+                        dr.owner,
+                        dr.security_scan_enabled,
+                        t.id as tool_id,
+                        t.image as tool_image,
+                        t.cpu as tool_cpu,
+                        t.ram as tool_ram,
+                        t.default_command as tool_default_command,
+                        t.labels as tool_labels,
+                        t.endpoints as tool_endpoints,
+                        t.description as tool_description,
+                        t.short_description as tool_short_description,
+                        t.icon_id as tool_icon_id
+                    FROM
+                        pipeline.docker_registry dr
+                        LEFT JOIN pipeline.tool t ON t.registry_id = dr.id
+                    WHERE
+                        dr.security_scan_enabled
+                    ORDER BY
+                        dr.id
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

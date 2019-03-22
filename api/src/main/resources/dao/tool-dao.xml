@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.tool.ToolDao" id="toolDao" autowire="byName">
+        <property name="toolSequence" value="pipeline.s_tool"/>
+        <property name="toolIconSequence" value="pipeline.s_tool_icon"/>
+        <property name="createToolQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.tool (
+                        id,
+                        image,
+                        description,
+                        short_description,
+                        cpu,
+                        ram,
+                        registry_id,
+                        tool_group_id,
+                        default_command,
+                        labels,
+                        endpoints,
+                        owner,
+                        disk,
+                        instance_type)
+                    VALUES (
+                        :ID,
+                        :IMAGE,
+                        :DESCRIPTION,
+                        :SHORT_DESCRIPTION,
+                        :CPU,
+                        :RAM,
+                        :REGISTRY_ID,
+                        :TOOL_GROUP_ID,
+                        :DEFAULT_COMMAND,
+                        :LABELS,
+                        :ENDPOINTS,
+                        :OWNER,
+                        :DISK,
+                        :INSTANCE_TYPE)
+                ]]>
+            </value>
+        </property>
+        <property name="updateToolQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.tool SET
+                        cpu = :CPU,
+                        ram = :RAM,
+                        description = :DESCRIPTION,
+                        short_description = :SHORT_DESCRIPTION,
+                        default_command = :DEFAULT_COMMAND,
+                        labels = :LABELS,
+                        endpoints = :ENDPOINTS,
+                        owner = :OWNER,
+                        disk = :DISK,
+                        instance_type = :INSTANCE_TYPE
+                    WHERE
+                        image = :IMAGE AND registry_id = :REGISTRY_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllToolsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    WHERE
+                        (:REGISTRY_ID IS NULL OR t.registry_id = :REGISTRY_ID)
+                    AND
+                        (array_length(:LABELS_TO_SEARCH, 1) IS NULL
+                        OR array_length(:LABELS_TO_SEARCH, 1) = 0
+                        OR :LABELS_TO_SEARCH && t.labels)
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    AND
+                        t.id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.tool WHERE id = :ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolByRegistryAndImageQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    WHERE
+                        t.image = :IMAGE
+                        AND
+                        (:REGISTRY_ID IS NULL OR t.registry_id = :REGISTRY_ID)
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsByGroupQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    WHERE
+                        t.tool_group_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsWithIssueCountByGroupQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name,
+						count(i.issue_id) AS issues_count
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+					LEFT JOIN issue AS i ON i.entity_id = t.id AND i.entity_class = 'TOOL'
+                    WHERE
+                        t.tool_group_id = ?
+					GROUP BY t.id, dr.path, dr.secret_name
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolsFromOtherRegistriesByImageQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    WHERE
+                        t.image = :IMAGE AND dr.path != :REGISTRY
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolByGroupAndImageQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        t.id,
+                        t.image,
+                        t.description,
+                        t.short_description,
+                        t.cpu,
+                        t.ram,
+                        t.registry_id,
+                        t.tool_group_id,
+                        t.default_command,
+                        t.labels,
+                        t.endpoints,
+                        t.owner,
+                        t.disk,
+                        t.instance_type,
+                        t.icon_id,
+                        dr.path as registry,
+                        dr.secret_name
+                    FROM
+                        pipeline.tool t
+                    INNER JOIN pipeline.docker_registry dr ON (t.registry_id = dr.id)
+                    WHERE
+                        t.tool_group_id = :TOOL_GROUP_ID
+                        AND t.image = :IMAGE
+                ]]>
+            </value>
+        </property>
+        <property name="updateToolIconQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.tool_icon (
+                        icon_id,
+                        tool_id,
+                        file_name,
+                        icon
+                    ) VALUES (
+                        ?,
+                        ?,
+                        ?,
+                        ?
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="updateToolIconIdQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.tool SET icon_id = ? WHERE id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadToolIconQuery">
+            <value>
+                <![CDATA[
+                    SELECT file_name, icon FROM pipeline.tool_icon WHERE tool_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteToolIconQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.tool_icon WHERE tool_id = ?
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

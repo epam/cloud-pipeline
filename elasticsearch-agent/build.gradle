@@ -1,0 +1,116 @@
+plugins {
+    id 'io.spring.dependency-management' version '1.0.6.RELEASE'
+    id 'org.springframework.boot' version '2.0.2.RELEASE'
+    id "org.sonarqube" version "2.6.1"
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'jacoco'
+
+group 'com.epam.pipeline'
+
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+bootJar {
+    archiveName "elasticsearch-agent.jar"
+    manifest {
+        attributes(
+                "Implementation-Version": "$version")
+    }
+}
+
+repositories {
+    jcenter()
+
+    maven {
+        url artifactoryURL
+        credentials {
+            username = artifactoryUser
+            password = artifactoryPassword
+        }
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'com.epam.pipeline:bom:0.13.1'
+    }
+}
+
+ext {
+    versionElasticsearch = '6.4.2'
+}
+
+dependencies {
+
+    // Core library
+    compile(group: 'com.epam.pipeline', name: 'model', version: '0.15.0.43')
+
+    //SpringBoot
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
+
+    // Elasticsearch
+    compile group: 'org.elasticsearch.client', name: 'elasticsearch-rest-client', version: project.ext.versionElasticsearch
+    compile group: 'org.elasticsearch.client', name: 'elasticsearch-rest-high-level-client', version: project.ext.versionElasticsearch
+    compile group: 'org.elasticsearch', name: 'elasticsearch', version: project.ext.versionElasticsearch
+    testCompile group: 'org.elasticsearch.client', name: 'transport', version: project.ext.versionElasticsearch
+
+    // DB
+    // Pool
+    compile group: 'com.mchange', name: 'c3p0'
+    //Postgres
+    compile group: 'org.postgresql', name: 'postgresql'
+
+    // Logging
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl'
+
+    // Apache Commons
+    compile group: 'commons-io', name: "commons-io"
+    compile group: 'org.apache.commons', name: "commons-lang3"
+    compile group: 'org.apache.commons', name: "commons-collections4"
+
+    //Lombok
+    compile "org.projectlombok:lombok:1.18.2"
+    testCompile group: 'org.projectlombok', name: 'lombok'
+
+    // Retrofit
+    compile group: 'com.squareup.retrofit2', name: 'retrofit'
+    compile group: 'com.squareup.retrofit2', name: 'converter-jackson'
+    compile group: 'com.squareup.okhttp3', name: 'okhttp'
+
+    // Jackson
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.6'
+
+    // Swagger
+    compile group: 'io.springfox', name: 'springfox-swagger2'
+    compile group: 'io.springfox', name: 'springfox-swagger-ui'
+
+    // AWS
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-s3', version: '1.11.301'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-sts', version: '1.11.211'
+
+    //Tests
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-test'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api'
+    testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-engine'
+    testCompile group: 'org.hamcrest', name: 'hamcrest-all'
+
+    testCompile group: 'org.mockito', name: 'mockito-core'
+    testCompile group: 'org.mockito', name: 'mockito-junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+
+    reports {
+        html.enabled = true
+    }
+}

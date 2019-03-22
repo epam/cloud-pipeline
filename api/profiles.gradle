@@ -1,0 +1,29 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+def escape(String s) {
+    return s.replace("\\", "\\\\")
+}
+
+// copies properties file and filers resources based on environment
+task copyConfiguration {
+    doLast {
+        println "Target profile: $profile"
+        // specifies the content root directory? used to store
+        //filterTokens.putAt("rootDirPath", profile == "dev" ? escape(rootDir.absolutePath)  : "")
+        filterTokens.putAt("rootDirPath", escape(rootDir.absolutePath))
+
+        copy {
+            from "profiles/$profile"
+            into "$buildDir/resources/main"
+            include "*/"
+            filter(ReplaceTokens, tokens: project.filterTokens)
+        }
+
+        copy {
+            from "profiles/test"
+            into "$buildDir/resources/test"
+            include "*/"
+            filter(ReplaceTokens, tokens: project.filterTokens)
+        }
+    }
+}

@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.pipeline_run ADD price_per_hour NUMERIC(2) DEFAULT 0;

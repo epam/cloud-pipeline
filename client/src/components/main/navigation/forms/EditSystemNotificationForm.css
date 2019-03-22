@@ -1,0 +1,14 @@
+.info {
+  color: green;
+  font-size: larger;
+}
+
+.warning {
+  color: #ff8818;
+  font-size: larger;
+}
+
+.critical {
+  color: #c01911;
+  font-size: larger;
+}

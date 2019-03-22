@@ -1,0 +1,7 @@
+{
+    "short_description": "Docker image used in E2E automated tests to verify HTTP endpoints and SSH access",
+    "instance_type": "m5.large",
+    "disk_size": "20",
+    "default_command": "/start.sh",
+    "endpoints": [ "{ \"name\": \"E2E-Endpoint\", \"nginx\": { \"port\": \"8081\" }, \"isDefault\": false }" ]
+}
