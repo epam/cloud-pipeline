@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import copy
+import time
 from threading import Lock
 
 try:
@@ -174,6 +175,16 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
 class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
 
+    _COPY_SUCCESS_STATUS = 'success'
+    _COPY_PENDING_STATUS = 'pending'
+    _COPY_ABORTED_STATUS = 'aborted'
+    _COPY_FAILED_STATUS = 'failed'
+    _COPY_TERMINAL_STATUSES = [_COPY_SUCCESS_STATUS, _COPY_ABORTED_STATUS, _COPY_FAILED_STATUS]
+    _SYNC_COPY_SIZE_LIMIT = (256 - 1) * 1024 * 1024  # 255 Mb
+    _POLLS_TIMEOUT = 10  # 10 seconds
+    _POLLS_LIMIT = 60 * 60 * 3  # 3 hours
+    _POLLS_ATTEMPTS = _POLLS_LIMIT / _POLLS_TIMEOUT
+
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
                  quiet=False, size=None, tags=(), skip_existing=False):
         full_path = path
@@ -191,12 +202,33 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         source_blob_url = self.service.make_blob_url(source_wrapper.bucket.path, full_path,
                                                      sas_token=source_credentials.session_token.lstrip('?'))
         destination_tags = self._destination_tags(source_wrapper, full_path, tags)
-        # TODO 08.02.19: Show progress using AzureProgressPercentage.callback(relative_path, size, quiet)
-        self.service.copy_blob(destination_wrapper.bucket.path, destination_path, source_blob_url,
+        destination_bucket = destination_wrapper.bucket.path
+        sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
+        progress_callback = AzureProgressPercentage.callback(full_path, size, quiet)
+        progress_callback(0, size)
+        self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
                                metadata=destination_tags,
-                               requires_sync=True)
+                               requires_sync=sync_copy)
+        if not sync_copy:
+            self._wait_for_copying(destination_bucket, destination_path, full_path)
+        progress_callback(size, size)
         if clean:
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
+
+    def _wait_for_copying(self, destination_bucket, destination_path, full_path):
+        for _ in range(0, TransferBetweenAzureBucketsManager._POLLS_ATTEMPTS):
+            time.sleep(TransferBetweenAzureBucketsManager._POLLS_TIMEOUT)
+            copying_status = self._get_copying_status(destination_bucket, destination_path)
+            if copying_status in TransferBetweenAzureBucketsManager._COPY_TERMINAL_STATUSES:
+                if copying_status == TransferBetweenAzureBucketsManager._COPY_SUCCESS_STATUS:
+                    return
+                else:
+                    raise RuntimeError('Blob copying from %s to %s has failed.' % (full_path, destination_path))
+        raise RuntimeError('Blob copying from %s to %s has failed.' % (full_path, destination_path))
+
+    def _get_copying_status(self, destination_bucket, destination_path):
+        blob = self.service.get_blob_properties(destination_bucket, destination_path)
+        return blob.properties.copy.status
 
     def _destination_tags(self, source_wrapper, full_path, raw_tags):
         tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
