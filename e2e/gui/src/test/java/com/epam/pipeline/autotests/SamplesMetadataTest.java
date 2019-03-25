@@ -30,6 +30,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
@@ -84,7 +85,7 @@ public class SamplesMetadataTest
 
     private final String instanceDisk = "20";
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String priceType = "Spot";
+    private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
 
     private final String configJson = "/sample-metadata-config.json";
     private final String launchScript = "singlesamplevariantcalling.sh";
@@ -386,9 +387,13 @@ public class SamplesMetadataTest
                 .firstVersion()
                 .codeTab()
                 .clickOnFile("config.json")
-                .editFile(configuration -> Utils.readResourceFully(configJson)
-                        .replace("{{docker_image}}", dockerImage)
-                        .replace("{{instance_type}}", C.DEFAULT_INSTANCE))
+                .editFile(configuration -> {
+                    final boolean isSpot = Objects.equals(priceType, "Spot");
+                    return Utils.readResourceFully(configJson)
+                            .replace("{{docker_image}}", dockerImage)
+                            .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
+                            .replace("{{is_spot}}", String.valueOf(isSpot));
+                })
                 .deleteExtraBrackets(110)
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)

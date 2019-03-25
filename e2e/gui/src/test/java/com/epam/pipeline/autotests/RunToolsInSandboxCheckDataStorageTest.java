@@ -36,7 +36,7 @@ public class RunToolsInSandboxCheckDataStorageTest
     private final String defaultCommand = "/start.sh";
     private final String type = C.DEFAULT_INSTANCE;
     private final String disk = "15";
-    private final String price = "Spot";
+    private final String price = C.DEFAULT_INSTANCE_PRICE_TYPE;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;

@@ -23,7 +23,11 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.enabled;
@@ -56,9 +60,12 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
     private final String defaultConfigurationName = "default";
+    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
+    private final String defaultDisk = "15";
     private String configurationName = "test_conf";
     private final String pipeline795 = resourceName("epmcmbibpc-795");
     private final String pipeline1241 = resourceName("epmcmbibpc-1241");
@@ -100,6 +107,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(combobox("Price type"), have(selectedValue("On-demand")));
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1257")
     public void changeInstancePriceTypeToSpotInConfigurationFile() {
@@ -120,6 +128,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(combobox("Price type"), have(selectedValue("Spot")));
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1263")
     public void validationOfDefaultPriceType() {
@@ -133,6 +142,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")));
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1241")
     public void validationOfRunPipelineUsingOnDemandInstance() {
@@ -224,7 +234,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     public void priceTypeValidation() {
         onLaunchPage()
                 .expandTab(collapsiblePanel("Advanced"))
-                .ensure(combobox("Price type"), have(selectedValue("Spot")))
+                .ensure(combobox("Price type"), have(selectedValue(defaultPriceType)))
                 .ensure(hintOf(fieldWithLabel("Price type")), visible)
                 .ensure(byText("Timeout (min)"), visible)
                 .ensure(hintOf(fieldWithLabel("Timeout (min)")), visible)
@@ -274,28 +284,29 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @Test(priority = 4, dependsOnMethods = "validationOfEditNewConfiguration")
     @TestCase("EPMCMBIBPC-799")
     public void validationOfEditConfigurationInConfigurationFile() {
+        final String newConf = "new_conf";
         onPipelinePage()
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName(configurationName, profiles);
-                    profile.name = "new_conf";
-                    profile.configuration.instanceDisk = "15";
+                    profile.name = newConf;
+                    profile.configuration.instanceDisk = defaultDisk;
                     profile.configuration.timeout = "1";
                     return profiles;
                 }))
                 .saveAndCommitWithMessage("test: Change configuration using config.json")
                 .onTab(PipelineConfigurationTabAO.class)
-                .ensure(profileWithName("new_conf"), exist.because("Profile was renamed during file editing."))
+                .ensure(profileWithName(newConf), exist.because("Profile was renamed during file editing."))
                 .ensure(profileWithName("conf"), not(exist).because("Profile was renamed during file editing."))
-                .editConfiguration("new_conf", profile ->
+                .editConfiguration(newConf, profile ->
                         profile.expandTab(EXEC_ENVIRONMENT)
                                .expandTab(ADVANCED_PANEL)
-                               .ensure(NAME, value("new_conf"))
-                               .ensure(DISK, value("15"))
+                                .ensure(NAME, value(newConf))
+                                .ensure(DISK, value(defaultDisk))
                                .ensure(TIMEOUT, value("1"))
                 );
-        configurationName = "new_conf";
+        configurationName = newConf;
     }
 
     @Test(priority = 5, dependsOnMethods = "validationOfEditConfigurationInConfigurationFile")
@@ -304,7 +315,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         onPipelinePage()
                 .runPipeline()
                 .chooseConfiguration(configurationName)
-                .ensure(DISK, value("15"))
+                .ensure(DISK, value(defaultDisk))
                 .ensure(TIMEOUT, value("1"));
     }
 
@@ -315,8 +326,8 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->
-                                            instance.ensure(DISK, text("15"))
-                                                    .ensure(TYPE, text(C.DEFAULT_INSTANCE))
+                        instance.ensure(DISK, text(defaultDisk))
+                                .ensure(TYPE, text(C.DEFAULT_INSTANCE))
                 )
                 .waitForCompletion();
     }

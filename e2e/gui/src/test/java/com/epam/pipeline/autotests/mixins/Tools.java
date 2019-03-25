@@ -35,7 +35,7 @@ public interface Tools extends Navigation {
     String defaultCommand = "/start.sh";
     String defaultInstanceType = C.DEFAULT_INSTANCE;
     String defaultDiskSize = "20";
-    String defaultPriceType = "Spot";
+    String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
 
     default void fallbackToToolDefaultState(final String registryName,
                                             final String groupName,
