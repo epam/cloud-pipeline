@@ -86,7 +86,7 @@ class AzureInstanceProvider(object):
         try:
             ins_key = read_ssh_key(ins_key_path)
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
-            instance_name = "i-" + uuid.uuid4().hex[0:16]
+            instance_name = "az-" + uuid.uuid4().hex[0:16]
             self.create_public_ip_address(instance_name, run_id)
             self.create_nic(instance_name, run_id)
             return self.create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
