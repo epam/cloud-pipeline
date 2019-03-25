@@ -60,4 +60,7 @@ public class CloudRegionVO {
     private String meterRegionName;
     private String azureApiUrl;
     private String priceOfferId;
+
+    //GCP
+    private String project;
 }

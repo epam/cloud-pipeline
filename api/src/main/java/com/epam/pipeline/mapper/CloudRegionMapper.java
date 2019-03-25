@@ -23,30 +23,36 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPRegion;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface CloudRegionMapper {
 
+    String UNSUPPORTED_CLOUD_PROVIDER = "Unsupported cloud provider: ";
+
     default CloudRegionVO toCloudRegionVO(AbstractCloudRegion cloudRegion) {
         if (cloudRegion instanceof AwsRegion) {
             return toAwsRegionVO((AwsRegion) cloudRegion);
         } else if (cloudRegion instanceof AzureRegion) {
             return toAzureRegionVO((AzureRegion) cloudRegion);
+        } else if (cloudRegion instanceof GCPRegion) {
+            return toGCPRegionVO((GCPRegion) cloudRegion);
         }
-        throw new IllegalArgumentException(
-                "Unsupported cloud getProvider: " + cloudRegion.getProvider());
+        throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + cloudRegion.getProvider());
     }
 
     default AbstractCloudRegion toEntity(CloudRegionVO dto) {
-        if (CloudProvider.AWS == dto.getProvider()) {
+        final CloudProvider provider = dto.getProvider();
+        if (CloudProvider.AWS == provider) {
             return toAwsRegion(dto);
-        } else if (CloudProvider.AZURE == dto.getProvider()) {
+        } else if (CloudProvider.AZURE == provider) {
             return toAzureRegion(dto);
+        } else if (CloudProvider.GCP == provider) {
+            return toGCPRegion(dto);
         }
-        throw new IllegalArgumentException(
-                "Unsupported cloud getProvider: " + dto.getProvider());
+        throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + provider);
     }
 
     default AbstractCloudRegionCredentials toCredentialsEntity(CloudRegionVO dto) {
@@ -55,8 +61,7 @@ public interface CloudRegionMapper {
         } else if (CloudProvider.AZURE == dto.getProvider()) {
             return toAzureRegionCredentials(dto);
         }
-        throw new IllegalArgumentException(
-                "Unsupported cloud getProvider: " + dto.getProvider());
+        throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + dto.getProvider());
     }
 
     @Mapping(target = "storageAccount", ignore = true)
@@ -83,6 +88,18 @@ public interface CloudRegionMapper {
     @Mapping(target = "storageAccountKey", ignore = true)
     CloudRegionVO toAzureRegionVO(AzureRegion azureRegion);
 
+    @Mapping(target = "corsRules", ignore = true)
+    @Mapping(target = "policy", ignore = true)
+    @Mapping(target = "kmsKeyId", ignore = true)
+    @Mapping(target = "kmsKeyArn", ignore = true)
+    @Mapping(target = "profile", ignore = true)
+    @Mapping(target = "sshKeyName", ignore = true)
+    @Mapping(target = "tempCredentialsRole", ignore = true)
+    @Mapping(target = "backupDuration", ignore = true)
+    @Mapping(target = "versioningEnabled", ignore = true)
+    @Mapping(target = "storageAccountKey", ignore = true)
+    CloudRegionVO toGCPRegionVO(GCPRegion gcpRegion);
+
     @Mapping(target = "aclClass", ignore = true)
     @Mapping(target = "mask", ignore = true)
     @Mapping(target = "parent", ignore = true)
@@ -100,6 +117,15 @@ public interface CloudRegionMapper {
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "fileShareMounts", ignore = true)
     AzureRegion toAzureRegion(CloudRegionVO azureRegion);
+
+    @Mapping(target = "aclClass", ignore = true)
+    @Mapping(target = "mask", ignore = true)
+    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "owner", ignore = true)
+    @Mapping(target = "locked", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "fileShareMounts", ignore = true)
+    GCPRegion toGCPRegion(CloudRegionVO azureRegion);
 
     @Mapping(target = "provider", ignore = true)
     AzureRegionCredentials toAzureRegionCredentials(CloudRegionVO azureRegion);

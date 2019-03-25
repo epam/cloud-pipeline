@@ -13,8 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.epam.pipeline.entity.region;
 
-public class RegionLabels {
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * Google Cloud Platform region. Holds settings and authorization options
+ * related to GCP deployment.
+ */
+@NoArgsConstructor
+@Getter
+@Setter
+public class GCPRegion extends AbstractCloudRegion {
+
+    private CloudProvider provider = CloudProvider.GCP;
+    /**
+     * Optional path to service account secret json file, if
+     * it is not specified, APPLICATION_DEFAULT credentials will
+     * be used for authorization
+     */
+    private String authFile;
+    private String sshPublicKeyPath;
+    private String project;
 }

@@ -42,6 +42,7 @@ enum CloudRegionParameters {
     METER_REGION_NAME,
     AZURE_API_URL,
     PRICE_OFFER_ID,
+    PROJECT,
     MOUNT_ID,
     MOUNT_ROOT,
     MOUNT_OPTIONS,

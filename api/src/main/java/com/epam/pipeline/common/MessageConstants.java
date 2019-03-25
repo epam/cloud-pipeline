@@ -416,6 +416,10 @@ public final class MessageConstants {
             "error.datastorage.azure.item.already.exists";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
 
+    //GCP
+    public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
+    public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
+
     private MessageConstants() {
         // no-op
     }
