@@ -62,8 +62,7 @@ public class S3StorageProviderTest extends AbstractSpringTest {
         when(bucket.getName()).thenReturn(bucketName);
         when(amazonClient.createBucket(any(CreateBucketRequest.class)))
                 .thenReturn(bucket);
-        when(s3Helper.getDefaultS3Client())
-                .thenReturn(amazonClient);
+        doReturn(amazonClient).when(s3Helper).getDefaultS3Client();
         AwsRegion region = new AwsRegion();
         region.setId(REGION_ID);
         region.setRegionCode("us-east-1");
