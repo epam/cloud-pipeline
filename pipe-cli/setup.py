@@ -39,6 +39,7 @@ setup(
         'pypac==0.8.1',
         'beautifulsoup4==4.6.1',
         'azure-storage-blob==1.5.0'
+        'google-cloud-storage==1.14.0'
     ],
     entry_points='''
         [console_scripts]

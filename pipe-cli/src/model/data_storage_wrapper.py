@@ -30,6 +30,7 @@ from ..config import ConfigNotFoundError
 from ..utilities.storage.s3 import S3BucketOperations
 from ..utilities.storage.local import LocalOperations
 from ..utilities.storage.azure import AzureListingManager, AzureDeleteManager, AzureBucketOperations
+from ..utilities.storage.gs import GsRestoreManager, GsListingManager, GsDeleteManager, GsBucketOperations
 from ..utilities.storage.common import StorageOperations
 from .data_storage_wrapper_type import WrapperType
 import shutil
@@ -54,6 +55,12 @@ class DataStorageWrapper(object):
         (WrapperType.LOCAL, WrapperType.AZURE): AzureBucketOperations.get_upload_manager,
         (WrapperType.FTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
+
+        (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
+        (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
+        (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -90,7 +97,8 @@ class DataStorageWrapper(object):
     def __get_storage_wrapper(cls, bucket, relative_path, *args, **kwargs):
         _suppliers = {
             WrapperType.S3: S3BucketWrapper.build_wrapper,
-            WrapperType.AZURE: AzureBucketWrapper.build_wrapper
+            WrapperType.AZURE: AzureBucketWrapper.build_wrapper,
+            WrapperType.GS: GsBucketWrapper.build_wrapper,
         }
         if bucket.type in _suppliers:
             supplier = _suppliers[bucket.type]
@@ -335,6 +343,28 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
         if write or not self.service:
             self.service = AzureBucketOperations.get_blob_service(self.bucket, read, write)
         return self.service
+
+
+class GsBucketWrapper(CloudDataStorageWrapper):
+
+    @classmethod
+    def build_wrapper(cls, root_bucket, relative_path, init=True, *args, **kwargs):
+        wrapper = GsBucketWrapper(root_bucket, relative_path)
+        if init:
+            GsBucketOperations.init_wrapper(wrapper, *args, **kwargs)
+        return wrapper
+
+    def get_restore_manager(self):
+        return GsRestoreManager(self._storage_client(), self.bucket)
+
+    def get_list_manager(self, show_versions):
+        return GsListingManager(self._storage_client(), self.bucket)
+
+    def get_delete_manager(self, versioning):
+        return GsDeleteManager(self._storage_client(), self.bucket)
+
+    def _storage_client(self):
+        return GsBucketOperations.get_client(self.bucket)
 
 
 class LocalFileSystemWrapper(DataStorageWrapper):
