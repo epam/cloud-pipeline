@@ -3,15 +3,7 @@ from __future__ import absolute_import
 import copy
 import time
 from threading import Lock
-
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
-
 from datetime import timedelta, datetime
-
-import io
 import os
 import click
 
@@ -23,7 +15,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager
+    AbstractDeleteManager, UrlIO
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -99,13 +91,6 @@ class AzureListingManager(AzureManager, AbstractListingManager):
             if prefix.endswith(item.name):
                 return True
         return False
-
-    def get_file_size(self, relative_path):
-        items = self.list_items(relative_path, show_all=True, recursive=True)
-        for item in items:
-            if item.name == relative_path:
-                return item.size
-        return None
 
     def get_file_tags(self, relative_path):
         return dict(self.service.get_blob_metadata(self.bucket.path, relative_path))
@@ -289,16 +274,6 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
                                            progress_callback=progress_callback)
         if clean:
             source_wrapper.delete_item(source_key)
-
-
-class UrlIO(io.BytesIO):
-
-    def __init__(self, url):
-        super(UrlIO, self).__init__()
-        self.io = urlopen(url)
-
-    def read(self, n=10):
-        return self.io.read(n)
 
 
 class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager):

@@ -1,5 +1,12 @@
+import io
 import os
 import re
+
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
+
 from abc import abstractmethod, ABCMeta
 
 import click
@@ -194,6 +201,13 @@ class AbstractListingManager:
         """
         pass
 
+    def get_file_size(self, relative_path):
+        items = self.list_items(relative_path, show_all=True, recursive=True)
+        for item in items:
+            if item.name == relative_path:
+                return item.size
+        return None
+
 
 class AbstractDeleteManager:
     __metaclass__ = ABCMeta
@@ -224,3 +238,13 @@ class AbstractRestoreManager:
         :param version: Version to be restored.
         """
         pass
+
+
+class UrlIO(io.BytesIO):
+
+    def __init__(self, url):
+        super(UrlIO, self).__init__()
+        self.io = urlopen(url)
+
+    def read(self, n=10):
+        return self.io.read(n)
