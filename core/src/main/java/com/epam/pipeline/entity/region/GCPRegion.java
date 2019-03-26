@@ -37,4 +37,5 @@ public class GCPRegion extends AbstractCloudRegion {
     private String authFile;
     private String sshPublicKeyPath;
     private String project;
+    private String applicationName;
 }

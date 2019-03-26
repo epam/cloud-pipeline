@@ -56,12 +56,13 @@ public interface CloudRegionMapper {
     }
 
     default AbstractCloudRegionCredentials toCredentialsEntity(CloudRegionVO dto) {
-        if (CloudProvider.AWS == dto.getProvider()) {
+        final CloudProvider provider = dto.getProvider();
+        if (CloudProvider.AWS == provider || CloudProvider.GCP == provider) {
             return null;
-        } else if (CloudProvider.AZURE == dto.getProvider()) {
+        } else if (CloudProvider.AZURE == provider) {
             return toAzureRegionCredentials(dto);
         }
-        throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + dto.getProvider());
+        throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + provider);
     }
 
     @Mapping(target = "storageAccount", ignore = true)
