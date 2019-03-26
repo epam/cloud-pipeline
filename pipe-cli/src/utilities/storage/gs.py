@@ -12,6 +12,7 @@ from src.api.data_storage import DataStorage
 from src.config import Config
 from src.model.data_storage_item_model import DataStorageItemModel, DataStorageItemLabelModel
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
+from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
     AbstractDeleteManager, AbstractTransferManager, UrlIO
@@ -88,7 +89,8 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         self.listing_manager = GsListingManager(self.client, self.bucket)
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
-        # TODO 25.03.19: Handle exclude and include filters.
+        if version or hard_delete:
+            raise RuntimeError('Versions deletion is not available yet for GCP cloud provider.')
         # TODO 25.03.19: Handle version and hard delete.
         prefix = StorageOperations.get_prefix(relative_path)
         check_file = True
@@ -97,8 +99,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
             check_file = False
         bucket = self.client.get_bucket(self.bucket.path)
         if not recursive:
-            blob = bucket.blob(prefix)
-            blob.delete()
+            self._delete_blob(bucket.blob(prefix), exclude, include)
         else:
             blob_names_for_deletion = []
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
@@ -108,8 +109,20 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                 if self.__file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
             for blob_name in blob_names_for_deletion:
-                blob = bucket.blob(blob_name)
-                blob.delete()
+                self._delete_blob(bucket.blob(blob_name), exclude, include, prefix)
+
+    def _delete_blob(self, blob, exclude, include, prefix=None):
+        if self._is_matching_delete_filters(blob.name, exclude, include, prefix):
+            blob.delete()
+
+    def _is_matching_delete_filters(self, blob_name, exclude, include, prefix=None):
+        if prefix:
+            relative_file_name = StorageOperations.get_item_name(blob_name, prefix=prefix + self.delimiter)
+            file_name = StorageOperations.get_prefix(relative_file_name)
+        else:
+            file_name = blob_name
+        return PatternMatcher.match_any(file_name, include) \
+               and not PatternMatcher.match_any(file_name, exclude, default=False)
 
     def __file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
