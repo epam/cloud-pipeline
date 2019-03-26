@@ -63,11 +63,12 @@ class GsListingManager(GsManager, AbstractListingManager):
                                            max_results=page_size if not show_all else None,
                                            delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None,
                                            versions=self.show_versions)
-        # TODO 25.03.19: Handle prefixes and store them as folders.
-        absolute_items = [self._to_storage_item(blob) for blob in blobs_iterator]
+        absolute_files = [self._to_storage_file(blob) for blob in blobs_iterator]
+        absolute_folders = [self._to_storage_folder(name) for name in blobs_iterator.prefixes]
+        absolute_items = absolute_files + absolute_folders
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
-    def _to_storage_item(self, blob):
+    def _to_storage_file(self, blob):
         item = DataStorageItemModel()
         item.name = blob.name
         item.path = item.name
@@ -86,6 +87,13 @@ class GsListingManager(GsManager, AbstractListingManager):
         relative_item.name = StorageOperations.get_item_name(relative_item.name, prefix)
         relative_item.path = relative_item.name
         return relative_item
+
+    def _to_storage_folder(self, name):
+        item = DataStorageItemModel()
+        item.name = name
+        item.path = item.name
+        item.type = 'Folder'
+        return item
 
     def get_file_tags(self, relative_path):
         bucket = self.client.get_bucket(self.bucket.path)
