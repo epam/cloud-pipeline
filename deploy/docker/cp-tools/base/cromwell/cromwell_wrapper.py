@@ -23,7 +23,7 @@ import subprocess
 GENERATE_INPUTS_TASK = "GenerateInputsJson"
 CROMWELL_TASK = "RunWDL"
 VARIABLE_DELIMITER = ","
-OPTIONAL_PARAMETER = "?"
+OPTIONAL_PARAMETER = ["?",  "optional",  "Optional"]
 
 def get_variable_value(variable_name):
     Logger.log_task_event(GENERATE_INPUTS_TASK, "Getting value of: {}".format(variable_name))
@@ -79,7 +79,7 @@ else:
                 env_key = re.sub(r'\.', '_', key)
 		variable_value = get_variable_value(env_key)
 		if not variable_value:
-			if OPTIONAL_PARAMETER in template_data[key]:				
+			if any(param in template_data[key] for param in OPTIONAL_PARAMETER):
 				empty_optional.append(key)
 				continue
    			else:
