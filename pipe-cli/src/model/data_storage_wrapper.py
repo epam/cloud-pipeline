@@ -222,12 +222,31 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def exists(self):
         return self.exists_flag
 
+    def get_items(self):
+        return self.get_list_manager().get_items(self.path)
+
+    def is_empty(self, relative=None):
+        if not self.exists():
+            return True
+        if self.is_file():
+            return False
+        if relative:
+            delimiter = StorageOperations.PATH_SEPARATOR
+            path = self.path.rstrip(delimiter) + delimiter + relative
+        else:
+            path = self.path
+        return not self.get_list_manager().folder_exists(path)
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
     @abstractmethod
     def get_restore_manager(self):
         pass
 
     @abstractmethod
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         pass
 
     @abstractmethod
@@ -261,9 +280,6 @@ class S3BucketWrapper(CloudDataStorageWrapper):
             return not S3BucketOperations.path_exists(self, relative, session=self.session)
         return self.is_empty_flag
 
-    def get_items(self):
-        return S3BucketOperations.get_items(self, session=self.session)
-
     def get_file_download_uri(self, relative_path):
         download_url_model = None
         try:
@@ -286,7 +302,7 @@ class S3BucketWrapper(CloudDataStorageWrapper):
     def get_restore_manager(self):
         return S3BucketOperations.get_restore_manager(self)
 
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         return S3BucketOperations.get_list_manager(self, show_versions=show_versions)
 
     def get_delete_manager(self, versioning):
@@ -310,21 +326,6 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
 
     def get_type(self):
         return WrapperType.AZURE
-
-    def is_empty(self, relative=None):
-        if not self.exists():
-            return True
-        if self.is_file():
-            return False
-        if relative:
-            delimiter = StorageOperations.PATH_SEPARATOR
-            path = self.path.rstrip(delimiter) + delimiter + relative
-        else:
-            path = self.path
-        return not self.get_list_manager().folder_exists(path)
-
-    def get_items(self):
-        return self.get_list_manager().get_items(self.path)
 
     def get_restore_manager(self):
         raise RuntimeError('Versioning is not supported by AZURE cloud provider')
@@ -353,6 +354,9 @@ class GsBucketWrapper(CloudDataStorageWrapper):
         if init:
             StorageOperations.init_wrapper(wrapper, *args, **kwargs)
         return wrapper
+
+    def get_type(self):
+        return WrapperType.GS
 
     def get_restore_manager(self):
         return GsRestoreManager(self._storage_client(write=True), self)

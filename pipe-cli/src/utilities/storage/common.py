@@ -185,6 +185,18 @@ class StorageOperations:
             default_tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return default_tags
 
+    @classmethod
+    def get_items(cls, listing_manager, relative_path, delimiter=PATH_SEPARATOR):
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter)
+        for item in listing_manager.list_items(prefix, recursive=True, show_all=True):
+            if not StorageOperations.is_relative_path(item.name, prefix):
+                continue
+            if item.name == relative_path:
+                item_relative_path = os.path.basename(item.name)
+            else:
+                item_relative_path = StorageOperations.get_item_name(item.name, prefix + delimiter)
+            yield ('File', item.name, item_relative_path, item.size)
+
 
 class AbstractTransferManager:
     __metaclass__ = ABCMeta
@@ -226,6 +238,31 @@ class AbstractListingManager:
         :param show_all: Specifies if all items have to be listed.
         """
         pass
+
+    def get_items(self, relative_path):
+        """
+        Returns all files under the given relative path in forms of tuples with the following structure:
+        ('File', full_path, relative_path, size)
+
+        :param relative_path: Path to a folder or a file.
+        :return: Generator of file tuples.
+        """
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(StorageOperations.PATH_SEPARATOR)
+        for item in self.list_items(prefix, recursive=True, show_all=True):
+            if not StorageOperations.is_relative_path(item.name, prefix):
+                continue
+            if item.name == relative_path:
+                item_relative_path = os.path.basename(item.name)
+            else:
+                item_relative_path = StorageOperations.get_item_name(item.name, prefix + StorageOperations.PATH_SEPARATOR)
+            yield ('File', item.name, item_relative_path, item.size)
+
+    def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
+        for item in self.list_items(prefix, show_all=True):
+            if prefix.endswith(item.name):
+                return True
+        return False
 
     @abstractmethod
     def get_file_tags(self, relative_path):

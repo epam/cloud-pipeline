@@ -500,6 +500,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item.path = name
         return item
 
+    def get_items(self, relative_path):
+        return S3BucketOperations.get_items(self.bucket, session=self.session)
+
 
 class ObjectTaggingManager(StorageItemManager):
 
