@@ -248,6 +248,26 @@ def increment_or_fail(num_rep, rep, error_message):
     return rep
 
 
+def read_ssh_key(ssh_pub_key):
+    with open(ssh_pub_key) as f:
+        content = f.readlines()
+        if len(content) != 1 and not content[0].startswith("ssh-rsa"):
+            raise RuntimeError("Wrong format of ssh pub key!")
+    ins_key = content[0]
+    return ins_key
+
+
+def poll_instance(sock, timeout, ip, port):
+    result = -1
+    sock.settimeout(float(timeout))
+    try:
+        result = sock.connect_ex((ip, port))
+    except Exception as e:
+        pass
+    sock.settimeout(None)
+    return result
+
+
 def resource_tags():
     tags = {}
     config_regions, config_tags = load_cloud_config()

@@ -25,12 +25,9 @@ def main():
     old_id = args.old_id
     new_id = args.new_id
 
-    # TODO
-    project_id = None
-
     kube_provider = kubeprovider.KubeProvider()
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
-    cloud_provider = gcpprovider.GCPInstanceProvider(project_id, cloud_region)
+    cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
 
     ins_id = cloud_provider.find_and_tag_instance(old_id, new_id)
     nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

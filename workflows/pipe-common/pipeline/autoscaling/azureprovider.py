@@ -26,15 +26,6 @@ from azure.mgmt.network import NetworkManagementClient
 import utils
 
 
-def read_ssh_key(ssh_pub_key):
-    with open(ssh_pub_key) as f:
-        content = f.readlines()
-        if len(content) != 1 and not content[0].startswith("ssh-rsa"):
-            raise RuntimeError("Wrong format of ssh pub key!")
-    ins_key = content[0]
-    return ins_key
-
-
 def azure_resource_type_cmp(r1, r2):
     if str(r1.type).split('/')[-1] == "virtualMachines":
         return -1
@@ -84,7 +75,7 @@ class AzureInstanceProvider(object):
 
     def run_instance(self, ins_type, ins_hdd, ins_img, ins_key_path, run_id, kms_encyr_key_id, kube_ip, kubeadm_token):
         try:
-            ins_key = read_ssh_key(ins_key_path)
+            ins_key = utils.read_ssh_key(ins_key_path)
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
             self.create_public_ip_address(instance_name, run_id)

@@ -19,13 +19,16 @@ from pipeline import Logger, TaskStatus, PipelineAPI
 from pipeline.autoscaling import awsprovider, kubeprovider, utils
 
 
-def run_instance(bid_price, aws_provider, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+def run_instance(bid_price, aws_provider, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
+                 num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+
     user_data_script = utils.get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token)
     if is_spot:
-        ins_id, ins_ip = aws_provider.find_spot_instance(aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                                         user_data_script, num_rep, time_rep)
+        ins_id, ins_ip = aws_provider.find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+                                                         kms_encyr_key_id, user_data_script, num_rep, time_rep)
     else:
-        ins_id, ins_ip = aws_provider.run_on_demand_instance(aws_provider, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
+        ins_id, ins_ip = aws_provider.run_on_demand_instance(aws_provider, ins_img, ins_key, ins_type, ins_hdd,
+                                                             kms_encyr_key_id, run_id, user_data_script,
                                                              num_rep, time_rep)
     return ins_id, ins_ip
 

@@ -19,28 +19,15 @@ from pipeline import TaskStatus
 from pipeline.autoscaling import gcpprovider, kubeprovider, utils
 
 
-def run_instance(bid_price, aws_provider, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
-                 num_rep, run_id, time_rep, kube_ip, kubeadm_token):
-    user_data_script = utils.get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token)
-    if is_spot:
-        ins_id, ins_ip = aws_provider.find_spot_instance(aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
-                                                         ins_hdd, kms_encyr_key_id,  user_data_script, num_rep, time_rep)
-    else:
-        ins_id, ins_ip = aws_provider.run_on_demand_instance(aws_provider, aws_region, ins_img, ins_key, ins_type,
-                                                             ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                                             num_rep, time_rep)
-    return ins_id, ins_ip
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ins_key", type=str, required=True)
     parser.add_argument("--run_id", type=str, required=True)
     parser.add_argument("--cluster_name", type=str, required=False)
     parser.add_argument("--cluster_role", type=str, required=False)
-    parser.add_argument("--ins_type", type=str, default='m4.large')
+    parser.add_argument("--ins_type", type=str, default='n1-standart-2')
     parser.add_argument("--ins_hdd", type=int, default=30)
-    parser.add_argument("--ins_img", type=str, default='ami-f68f3899')
+    parser.add_argument("--ins_img", type=str, required=True)
     parser.add_argument("--num_rep", type=int, default=100)
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
@@ -88,9 +75,7 @@ def main():
                                               str(bid_price)))
 
     try:
-        #TODO
-        project_id = None
-        cloud_provider = gcpprovider.GCPInstanceProvider(project_id, cloud_region)
+        cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
 
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = utils.get_allowed_instance_image(cloud_region, ins_type, ins_img)
@@ -104,8 +89,8 @@ def main():
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(bid_price, cloud_provider, cloud_region, ins_hdd, kms_encyr_key_id, ins_img,
-                                          ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token)
+            ins_id, ins_ip = cloud_provider.run_instance(ins_type, ins_hdd, ins_img, ins_key, run_id,
+                                                         kms_encyr_key_id, kube_ip, kubeadm_token)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

@@ -25,6 +25,7 @@ from itertools import groupby
 from operator import itemgetter
 import sys
 
+from pipeline import TaskStatus
 from pipeline.autoscaling import utils
 
 ROOT_DEVICE_DEFAULT = {
@@ -65,9 +66,9 @@ class AWSInstanceProvider(object):
             'Values': [run_id]
         }
 
-    def run_on_demand_instance(self, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep):
+    def run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep):
         utils.pipe_log('Creating on demand instance')
-        allowed_networks = utils.get_networks_config(aws_region)
+        allowed_networks = utils.get_networks_config(self.cloud_region)
         additional_args = {}
         subnet_id = None
         if allowed_networks and len(allowed_networks) > 0:
@@ -75,10 +76,10 @@ class AWSInstanceProvider(object):
             az_name = allowed_networks.items()[az_num][0]
             subnet_id = allowed_networks.items()[az_num][1]
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
-            additional_args = { 'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(aws_region)}
+            additional_args = { 'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
         else:
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-            additional_args = { 'SecurityGroupIds': utils.get_security_groups(aws_region)}
+            additional_args = { 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
         response = self.ec2.run_instances(
             ImageId=ins_img,
             MinCount=1,
@@ -107,10 +108,9 @@ class AWSInstanceProvider(object):
             utils.pipe_log('- Waiting for status checks completion...')
             sleep(time_rep)
             status_code = self.get_current_status(ins_id)
-            rep = utils.increment_or_fail(num_rep,
+            rep = self.increment_or_fail(num_rep,
                                           rep,
                                           'Exceeded retry count ({}) for instance ({}) status check'.format(num_rep, ins_id),
-                                          ec2_client=ec2,
                                           kill_instance_id_on_fail=ins_id)
         utils.pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
 
@@ -176,17 +176,6 @@ class AWSInstanceProvider(object):
             block_device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
         return block_device_spec
 
-    @staticmethod
-    def poll_instance(sock, timeout, ip, port):
-        result = -1
-        sock.settimeout(float(timeout))
-        try:
-            result = sock.connect_ex((ip, port))
-        except Exception as e:
-            pass
-        sock.settimeout(None)
-        return result
-
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         utils.pipe_log('Checking instance ({}) boot state'.format(ins_id))
         port=8888
@@ -194,13 +183,12 @@ class AWSInstanceProvider(object):
         ipaddr = response['Reservations'][0]['Instances'][0]['PrivateIpAddress']
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         utils.pipe_log('- Waiting for instance boot up...')
-        result = AWSInstanceProvider.poll_instance(sock, time_rep, ipaddr, port)
+        result = utils.poll_instance(sock, time_rep, ipaddr, port)
         rep = 0
         while result != 0:
             sleep(time_rep)
-            result = AWSInstanceProvider.poll_instance(sock, time_rep, ipaddr, port)
-            rep = utils.increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
-                                          ec2_client=self.ec2,
+            result = utils.poll_instance(sock, time_rep, ipaddr, port)
+            rep = self.increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                           kill_instance_id_on_fail=ins_id)
         utils.pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
@@ -284,8 +272,8 @@ class AWSInstanceProvider(object):
         if allowed_networks and len(allowed_networks) > 0:
             zones = list(allowed_networks.keys())
         else:
-            zones = get_availability_zones(self.ec2)
-        history = ec2.describe_spot_price_history(
+            zones = self.get_availability_zones()
+        history = self.ec2.describe_spot_price_history(
             StartTime=datetime.today() - timedelta(hours=hours),
             EndTime=datetime.today(),
             InstanceTypes=[instance_type],
@@ -307,13 +295,13 @@ class AWSInstanceProvider(object):
                            status=TaskStatus.FAILURE)
             sys.exit(5)
 
-    def find_spot_instance(self, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
+    def find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
         utils.pipe_log('Creating spot request')
 
         utils.pipe_log('- Checking spot prices for current region...')
-        spot_prices = self.get_spot_prices(self.ec2, aws_region, ins_type)
+        spot_prices = self.get_spot_prices(self.ec2, self.cloud_region, ins_type)
 
-        allowed_networks = utils.get_networks_config(aws_region)
+        allowed_networks = utils.get_networks_config(self.cloud_region)
         cheapest_zone = ''
         if len(spot_prices) == 0:
             utils.pipe_log('- Unable to get prices for a spot of type {}, cheapest zone can not be determined'.format(ins_type))
@@ -334,11 +322,11 @@ class AWSInstanceProvider(object):
             subnet_id = allowed_networks[cheapest_zone]
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
             specifications['SubnetId'] = subnet_id
-            specifications['SecurityGroupIds'] = utils.get_security_groups(aws_region)
+            specifications['SecurityGroupIds'] = utils.get_security_groups(self.cloud_region)
             specifications['Placement'] = { 'AvailabilityZone': cheapest_zone }
         else:
             utils.pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
-            specifications['SecurityGroupIds'] = utils.get_security_groups(aws_region)
+            specifications['SecurityGroupIds'] = utils.get_security_groups(self.cloud_region)
 
         current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
         response = self.ec2.request_spot_instances(
@@ -409,10 +397,9 @@ class AWSInstanceProvider(object):
                 instance_reservation = instance['Reservations'][0]['Instances'][0] if instance else None
                 if not instance_reservation or 'PrivateIpAddress' not in instance_reservation or not instance_reservation['PrivateIpAddress']:
                     utils.pipe_log('- Spot request {} is already fulfilled but PrivateIpAddress is not yet assigned. Still waiting...'.format(request_id))
-                    rep = utils.increment_or_fail(num_rep, rep,
+                    rep = self.increment_or_fail(num_rep, rep,
                                                   'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
                                                   .format(num_rep, status),
-                                                  ec2_client=ec2,
                                                   kill_instance_id_on_fail=ins_id)
                     sleep(time_rep)
                     continue
@@ -483,7 +470,7 @@ class AWSInstanceProvider(object):
         return '', ''
 
     def get_instance_names(self, ins_id):
-        response = self.describe_instances(InstanceIds=[ins_id])
+        response = self.ec2.describe_instances(InstanceIds=[ins_id])
         nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
         nodename = nodename_full.split('.', 1)[0]
 
@@ -522,3 +509,14 @@ class AWSInstanceProvider(object):
         else:
             utils.pipe_log('Tag ({}) is already set for instance ({}). Skip tagging\n-'.format(run_id, ins_id))
         return ins_id, ins_ip
+
+    def increment_or_fail(self, num_rep, rep, error_message, kill_instance_id_on_fail=None):
+        rep = rep + 1
+        if rep > num_rep:
+            if kill_instance_id_on_fail:
+                utils.pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
+                         'See more details below'.format(kill_instance_id_on_fail))
+                self.ec2.terminate_instance(kill_instance_id_on_fail)
+
+            raise RuntimeError(error_message)
+        return rep
