@@ -205,13 +205,3 @@ class Pipeline(API):
         params['parentRunId'] = parent_node
         params['parentNodeId'] = parent_node
 
-    @classmethod
-    def __add_parent_node_params(cls, params, parent_node):
-        run_model = PipelineRun.get(parent_node)
-        for ins_param in run_model.instance:
-            if ins_param[0] == 'nodeDisk':
-                params['hddSize'] = ins_param[1]
-            elif ins_param[0] == 'nodeType':
-                params['instanceType'] = ins_param[1]
-        params['parentRunId'] = parent_node
-        params['parentNodeId'] = parent_node
