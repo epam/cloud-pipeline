@@ -36,5 +36,5 @@
     },
     "is_spot" : true
   },
-  "default" : true
+  "default" : "{{is_spot}}"
 } ]

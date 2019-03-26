@@ -48,7 +48,7 @@ public class PipelineDockerCommitTest
     private final String toolVersion = "latest";
     private final String diskSize = "19";
     private final String instanceType = C.DEFAULT_INSTANCE;
-    private final String priceType = "Spot";
+    private final String priceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
 
     @BeforeClass
     public void removeTool() {

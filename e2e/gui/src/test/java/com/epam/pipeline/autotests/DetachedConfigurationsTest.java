@@ -93,7 +93,7 @@ public class DetachedConfigurationsTest
     private final String pipelineDefaultProfile = "default";
     private final String defaultDisk = "21";
     private final String defaultInstanceType = C.DEFAULT_INSTANCE;
-    private final String defaultPriceType = "Spot";
+    private final String defaultPriceType = C.DEFAULT_INSTANCE_PRICE_TYPE;
 
     private final String pipelineCustomProfile = "custom-pipe-conf";
     private final String customDisk = "22";
@@ -257,7 +257,7 @@ public class DetachedConfigurationsTest
                 .ensure(PIPELINE, empty)
                 .ensure(IMAGE, empty)
                 .ensure(INSTANCE_TYPE, Condition.or("Empty or placeholder", empty, text("Instance type")))
-                .ensure(PRICE_TYPE, text("Spot"))
+                .ensure(PRICE_TYPE, text(defaultPriceType))
                 .ensure(DISK, empty)
         );
     }
@@ -427,7 +427,7 @@ public class DetachedConfigurationsTest
                     .ensure(hintOf(priceType()), visible)
                     .ensure(hintOf(timeout()), visible)
                     .ensure(hintOf(startIdle()), visible)
-                    .ensure(priceType(), text("Spot"))
+                    .ensure(priceType(), text(defaultPriceType))
             );
     }
 

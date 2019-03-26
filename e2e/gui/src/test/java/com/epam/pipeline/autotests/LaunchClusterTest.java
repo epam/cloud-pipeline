@@ -85,7 +85,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .stopRunIfPresent(getRunId());
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-2620"})
     public void invalidValuesOnConfigureClusterPopUp() {
         library()

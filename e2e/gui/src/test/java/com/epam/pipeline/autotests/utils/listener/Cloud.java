@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.pipeline.autotests.utils;
+package com.epam.pipeline.autotests.utils.listener;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public enum Cloud {
+    AWS("aws"),
+    AZURE("azure");
 
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface TestCase {
-    String[] value();
+    public final String cloudProvider;
+
+    Cloud(final String cloudProvider) {
+        this.cloudProvider = cloudProvider;
+    }
 }
