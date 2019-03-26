@@ -46,7 +46,8 @@ class StorageOperations:
         if prefix.endswith(delimiter):
             prefix = prefix[:-1]
             check_file = False
-        for item in wrapper.get_list_manager().list_items(prefix, show_all=True, versioning=versioning):
+        listing_manager = wrapper.get_list_manager(show_versions=versioning)
+        for item in listing_manager.list_items(prefix, show_all=True):
             if prefix.endswith(item.name.rstrip(delimiter)) and (check_file or item.type == 'Folder'):
                 wrapper.exists_flag = True
                 wrapper.is_file_flag = item.type == 'File'

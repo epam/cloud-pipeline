@@ -357,7 +357,7 @@ class GsBucketWrapper(CloudDataStorageWrapper):
     def get_restore_manager(self):
         return GsRestoreManager(self._storage_client(write=True), self)
 
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         return GsListingManager(self._storage_client(), self.bucket, show_versions)
 
     def get_delete_manager(self, versioning):
