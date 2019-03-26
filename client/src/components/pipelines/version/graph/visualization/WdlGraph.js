@@ -21,6 +21,7 @@ import {observable} from 'mobx';
 import Pipeline from '../../../../../models/pipelines/Pipeline';
 import VersionParameters from '../../../../../models/pipelines/VersionParameters';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
+import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import pipeline from 'pipeline-builder';
 import 'pipeline-builder/dist/pipeline.css';
 import styles from './Graph.css';
@@ -54,7 +55,8 @@ function reportWDLError (error) {
   pipeline: new Pipeline(params.pipelineId),
   pipelineId: params.pipelineId,
   pipelineVersion: params.version,
-  pipelines
+  pipelines,
+  allowedInstanceTypes: new AllowedInstanceTypes()
 }))
 @observer
 export default class WdlGraph extends Graph {
@@ -876,13 +878,13 @@ export default class WdlGraph extends Graph {
         modified = true;
         action.data.command = command;
       }
-      let runtime;
+      let runtimeDocker;
       if (values.hasOwnProperty('runtime.docker')) {
-        runtime = {
+        runtimeDocker = {
           docker: values['runtime.docker']
         };
       }
-      if (action && runtime) {
+      if (action && runtimeDocker) {
         const runtimeAreEqual = (r1, r2) => {
           if (!!r1 !== !!r2) {
             return false;
@@ -892,11 +894,41 @@ export default class WdlGraph extends Graph {
           }
           return r1.docker === r2.docker;
         };
-        if (!runtimeAreEqual(action.data.runtime, runtime)) {
+        if (!runtimeAreEqual(action.data.runtime, runtimeDocker)) {
           modified = true;
-          action.data.runtime = runtime;
+          if (!action.data.runtime) {
+            action.data.runtime = {};
+          }
+          action.data.runtime.docker = runtimeDocker.docker;
           if (!action.data.runtime.docker) {
             delete action.data.runtime.docker;
+          }
+        }
+      }
+      let runtimeNode;
+      if (values.hasOwnProperty('runtime.node')) {
+        runtimeNode = {
+          node: values['runtime.node']
+        };
+      }
+      if (action && runtimeNode) {
+        const runtimeAreEqual = (r1, r2) => {
+          if (!!r1 !== !!r2) {
+            return false;
+          }
+          if (!r1 && !r2) {
+            return true;
+          }
+          return r1.node === r2.node;
+        };
+        if (!runtimeAreEqual(action.data.runtime, runtimeNode)) {
+          modified = true;
+          if (!action.data.runtime) {
+            action.data.runtime = {};
+          }
+          action.data.runtime.node = runtimeNode.node;
+          if (!action.data.runtime.node) {
+            delete action.data.runtime.node;
           }
         }
       }
@@ -932,6 +964,7 @@ export default class WdlGraph extends Graph {
     const EditWDLItemComponent = this.editWDLItemComponent;
     const itemDetails = this.state.editableTask && <EditWDLItemComponent
       onInitialize={this.initializeItemEditForm}
+      allowedInstanceTypes={this.props.allowedInstanceTypes}
       workflow={this.workflow}
       task={this.state.editableTask}
       type={this.state.editableTask ? this.state.editableTask.type : undefined}

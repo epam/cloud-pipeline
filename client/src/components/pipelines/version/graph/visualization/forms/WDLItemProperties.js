@@ -29,6 +29,9 @@ import {
   parseRawDockerImageValue,
   WDLRuntimeDockerFormItem
 } from './form-items/WDLRuntimeDockerFormItem';
+import {
+  WDLInstanceTypeFormItem
+} from './form-items/WDLInstanceTypeFormItem';
 import {reservedRegExp} from './utilities/reserved';
 import styles from './WDLItemProperties.css';
 
@@ -36,6 +39,7 @@ export function prepareTask (task) {
   if (task && task.type === 'task') {
     let command = task.command;
     let docker;
+    let node;
     if (command) {
       const parts = command.split('\n');
       if (parts[0].trim().toLowerCase().startsWith('task_script=') &&
@@ -57,11 +61,15 @@ export function prepareTask (task) {
     if (task.runtime && task.runtime.docker) {
       docker = parseRawDockerImageValue(task.runtime.docker);
     }
+    if (task.runtime && task.runtime.node) {
+      node = task.runtime.node;
+    }
     return {
       ...task,
       command,
       runtime: {
-        docker
+        docker,
+        node
       }
     };
   }
@@ -98,7 +106,8 @@ export class WDLItemProperties extends React.Component {
     onInitialize: PropTypes.func,
     onChange: PropTypes.func,
     pending: PropTypes.bool,
-    readOnly: PropTypes.bool
+    readOnly: PropTypes.bool,
+    allowedInstanceTypes: PropTypes.object
   };
 
   formItemLayout = {
@@ -122,6 +131,7 @@ export class WDLItemProperties extends React.Component {
   @observable inputPortsComponent;
   @observable outputPortsComponent;
   @observable dockerImageComponent;
+  @observable instanceTypeComponent;
 
   initializeInputPortsComponent = (component) => {
     this.inputPortsComponent = component;
@@ -135,6 +145,10 @@ export class WDLItemProperties extends React.Component {
     this.dockerImageComponent = component;
   };
 
+  initializeInstanceTypeComponent = (component) => {
+    this.instanceTypeComponent = component;
+  };
+
   unInitializeInputPortsComponent = () => {
     this.inputPortsComponent = undefined;
   };
@@ -145,6 +159,10 @@ export class WDLItemProperties extends React.Component {
 
   unInitializeDockerImageComponent = () => {
     this.dockerImageComponent = undefined;
+  };
+
+  unInitializeInstanceTypeComponent = () => {
+    this.instanceTypeComponent = undefined;
   };
 
   initializeEditor = (editor) => {
@@ -160,6 +178,7 @@ export class WDLItemProperties extends React.Component {
       this.inputPortsComponent && this.inputPortsComponent.reset();
       this.outputPortsComponent && this.outputPortsComponent.reset();
       this.dockerImageComponent && this.dockerImageComponent.reset();
+      this.instanceTypeComponent && this.instanceTypeComponent.reset();
       nextProps.form.resetFields();
     }
   }
@@ -319,6 +338,27 @@ export class WDLItemProperties extends React.Component {
                 onInitialize={this.initializeDockerImageComponent}
                 onUnMount={this.unInitializeDockerImageComponent}
                 disabled={this.props.readOnly} />
+            )}
+          </Form.Item>
+          <Form.Item
+            key="edit-wdl-form-instance-type-container"
+            style={{marginBottom: 5}}
+            className={
+              this.isTask
+                ? 'edit-wdl-form-instance-type-container'
+                : `edit-wdl-form-instance-type-container ${styles.hiddenItem}`
+            }>
+            {this.props.form.getFieldDecorator('runtime.node',
+              {
+                initialValue: this.props.task && this.props.task.runtime
+                  ? this.props.task.runtime.node
+                  : undefined
+              })(
+              <WDLInstanceTypeFormItem
+                onInitialize={this.initializeInstanceTypeComponent}
+                onUnMount={this.unInitializeInstanceTypeComponent}
+                disabled={this.props.readOnly}
+                allowedInstanceTypes={this.props.allowedInstanceTypes} />
             )}
           </Form.Item>
           <Form.Item
