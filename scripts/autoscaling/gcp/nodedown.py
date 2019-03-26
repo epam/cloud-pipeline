@@ -31,19 +31,19 @@ def main():
 
     cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
     try:
-        ins_id = cloud_provider.find_instance(run_id)
+        instance = cloud_provider.find_instance(run_id)
     except Exception:
-        ins_id = None
-    if ins_id is None:
+        instance = None
+    if instance is None:
         kube_provider.delete_kube_node(None, run_id)
     else:
         try:
-            nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
+            nodename, nodename_full = cloud_provider.get_instance_names(instance['name'])
         except Exception:
             nodename = None
 
         kube_provider.delete_kube_node(nodename, run_id)
-        cloud_provider.terminate_instance(ins_id)
+        cloud_provider.terminate_instance(instance['name'])
 
 
 if __name__ == '__main__':
