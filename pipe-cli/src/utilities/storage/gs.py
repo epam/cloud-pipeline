@@ -45,9 +45,10 @@ class GsManager:
 
 class GsListingManager(GsManager, AbstractListingManager):
 
-    def __init__(self, client, bucket):
+    def __init__(self, client, bucket, show_versions=False):
         super(GsListingManager, self).__init__(client)
         self.bucket = bucket
+        self.show_versions = show_versions
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
                    show_all=False):
@@ -55,8 +56,9 @@ class GsListingManager(GsManager, AbstractListingManager):
         bucket = self.client.get_bucket(self.bucket.path)
         blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None,
                                            max_results=page_size if not show_all else None,
-                                           delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None)
-        # TODO 25.03.19: Handle prefixes as folders.
+                                           delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None,
+                                           versions=self.show_versions)
+        # TODO 25.03.19: Handle prefixes and store them as folders.
         absolute_items = [self._to_storage_item(blob) for blob in blobs_iterator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
@@ -68,6 +70,7 @@ class GsListingManager(GsManager, AbstractListingManager):
         item.changed = self._to_local_timezone(blob.updated)
         item.size = blob.size
         item.labels = [DataStorageItemLabelModel('StorageClass', blob.storage_class)]
+        item.version = blob.generation
         return item
 
     def _to_local_timezone(self, utc_datetime):
@@ -78,6 +81,12 @@ class GsListingManager(GsManager, AbstractListingManager):
         relative_item.name = StorageOperations.get_item_name(relative_item.name, prefix)
         relative_item.path = relative_item.name
         return relative_item
+
+    def get_file_tags(self, relative_path):
+        bucket = self.client.get_bucket(self.bucket.path)
+        blob = bucket.blob(relative_path)
+        blob.reload()  # TODO 26.03.19: Is this operation required?
+        return blob.metadata
 
 
 class GsDeleteManager(GsManager, AbstractDeleteManager):
@@ -106,7 +115,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                 if item.name == prefix and check_file:
                     blob_names_for_deletion = [item.name]
                     break
-                if self.__file_under_folder(item.name, prefix):
+                if self._file_under_folder(item.name, prefix):
                     blob_names_for_deletion.append(item.name)
             for blob_name in blob_names_for_deletion:
                 self._delete_blob(bucket.blob(blob_name), exclude, include, prefix)
@@ -124,7 +133,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         return PatternMatcher.match_any(file_name, include) \
                and not PatternMatcher.match_any(file_name, exclude, default=False)
 
-    def __file_under_folder(self, file_path, folder_path):
+    def _file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
 
 
@@ -133,13 +142,21 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
     def __init__(self, client, wrapper):
         super(GsRestoreManager, self).__init__(client)
         self.wrapper = wrapper
+        self.listing_manager = GsListingManager(self.client, self.wrapper.bucket, show_versions=True)
 
     def restore_version(self, version):
-        # TODO 25.03.19: Add merged tags to the uploading blob.
         path = self.wrapper.bucket.path
         source_bucket = self.client.get_bucket(path)
         source_blob = source_bucket.blob(self.wrapper.path)
-        source_bucket.copy_blob(source_blob, source_bucket, path, source_generation=int(version))
+        if version:
+            source_bucket.copy_blob(source_blob, source_bucket, path, source_generation=int(version))
+        else:
+            items = self.listing_manager.list_items(path, show_all=True)
+            if not items:
+                raise RuntimeError('Latest version was not found for the specified file.')
+            latest_item = items[-1]
+            latest_version = latest_item.version
+            source_bucket.copy_blob(source_blob, source_bucket, path, source_generation=int(latest_version))
 
 
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
@@ -156,15 +173,23 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s'
                                % (full_path, destination_path))
                 return
-        # TODO 25.03.19: Add merged tags to the uploading blob.
         source_bucket = self.client.get_bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
         destination_bucket = self.client.get_bucket(destination_wrapper.bucket.path)
         progress_callback = GsProgressPercentage.callback(full_path, size, quiet)
         source_bucket.copy_blob(source_blob, destination_bucket, destination_path)
+        destination_blob = destination_bucket.blob(destination_path)
+        destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
+        destination_blob.patch()
         progress_callback(size, size)
         if clean:
             source_blob.delete()
+
+    def _destination_tags(self, source_wrapper, full_path, raw_tags):
+        tags = StorageOperations.parse_tags(raw_tags) if raw_tags \
+            else source_wrapper.get_list_manager().get_file_tags(full_path)
+        tags.update(StorageOperations.source_tags(tags, full_path, source_wrapper))
+        return tags
 
 
 class GsDownloadManager(GsManager, AbstractTransferManager):
@@ -214,10 +239,10 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        # TODO 25.03.19: Add tags to the uploading blob.
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.get_bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
+        blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
         progress_callback(size)
         if clean:
@@ -246,10 +271,10 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
                 if not quiet:
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
-        # TODO 25.03.19: Add tags to the uploading blob.
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.get_bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
+        blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(UrlIO(source_key))
         progress_callback(size)
 

@@ -201,6 +201,10 @@ class AbstractListingManager:
         """
         pass
 
+    @abstractmethod
+    def get_file_tags(self, relative_path):
+        pass
+
     def get_file_size(self, relative_path):
         items = self.list_items(relative_path, show_all=True, recursive=True)
         for item in items:
