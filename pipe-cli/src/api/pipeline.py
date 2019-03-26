@@ -164,7 +164,6 @@ class Pipeline(API):
                 params[key] = {'value': parameter_value[0], 'type': parameter_value[1]}
             payload['params'] = params
         data = json.dumps(payload)
-        print(str(data))
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
 
