@@ -66,7 +66,7 @@ class AzureInstanceProvider(object):
 
         return vm_name, private_ip
 
-    def get_node_names(self, ins_id):
+    def get_instance_names(self, ins_id):
         public_ip = self.network_client.public_ip_addresses.get(
             self.resource_group_name,
             ins_id + '-ip'
@@ -92,8 +92,8 @@ class AzureInstanceProvider(object):
             return self.create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
                                   ins_key, "pipeline", kms_encyr_key_id)
         except Exception as e:
+            print e
             self.delete_all_by_run_id(run_id)
-            raise e
 
     def create_public_ip_address(self, instance_name, run_id):
         public_ip_addess_params = {

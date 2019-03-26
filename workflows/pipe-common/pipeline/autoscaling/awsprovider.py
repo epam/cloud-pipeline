@@ -503,7 +503,7 @@ class AWSInstanceProvider(object):
                     return instances[0]['InstanceId']
         return None
 
-    def terminate_ec2_node(self, node_internal_ip):
+    def terminate_node(self, node_internal_ip):
         instance_id = self.get_aws_instance_id(node_internal_ip)
         if instance_id is not None:
             self.ec2.terminate_instances(InstanceIds=[instance_id])

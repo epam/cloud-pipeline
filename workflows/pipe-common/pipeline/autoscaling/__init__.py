@@ -14,4 +14,6 @@
 
 from .kubeprovider import *
 from .azureprovider import *
+from .gcpprovider import *
+from .awsprovider import *
 from .utils import *

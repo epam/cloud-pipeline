@@ -28,7 +28,7 @@ def main():
     cloud_provider = awsprovider.AWSCloudProvider(cloud_region)
 
     kube_provider.delete_kubernetes_node_by_name(args.node_name)
-    cloud_provider.terminate_ec2_node(args.internal_ip)
+    cloud_provider.terminate_node(args.internal_ip)
 
 
 if __name__ == '__main__':

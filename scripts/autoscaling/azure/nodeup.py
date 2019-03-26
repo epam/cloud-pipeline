@@ -17,6 +17,7 @@ import argparse
 
 from pipeline.autoscaling import azureprovider, kubeprovider, utils
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ins_key", type=str, required=True)
@@ -75,7 +76,8 @@ def main():
         if allowed_instance and allowed_instance["instance_mask"]:
             utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
                            '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                               ami=allowed_instance["instance_mask_ami"], instance_type=ins_type))
+                                                               ami=allowed_instance["instance_mask_ami"],
+                                                               instance_type=ins_type))
             ins_img = allowed_instance["instance_mask_ami"]
 
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
@@ -86,15 +88,16 @@ def main():
 
         kube_provider = kubeprovider.KubeProvider()
 
-        nodename_full, nodename = cloud_provider.get_node_names(ins_id)
+        nodename_full, nodename = cloud_provider.get_instance_names(ins_id)
 
         nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full, num_rep, time_rep)
         kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, cloud_region)
-        utils.pipe_log('Node created:\n- {}\n- {}'.format(ins_id, ins_ip))
+        utils.pipe_log('Node created:\n'
+                       '- {}\n'
+                       '- {}'.format(ins_id, ins_ip))
 
         # External process relies on this output
         print(ins_id + "\t" + ins_ip + "\t" + nodename)
-
         utils.pipe_log('{} task finished'.format(utils.NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
         utils.pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)

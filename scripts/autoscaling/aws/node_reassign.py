@@ -26,14 +26,12 @@ def main():
     new_id = args.new_id
 
     kube_provider = kubeprovider.KubeProvider()
-
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
     cloud_provider = awsprovider.AWSCloudProvider(cloud_region)
 
     ins_id = cloud_provider.find_and_tag_instance(old_id, new_id)
     nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
-
-    nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full)
+    nodename = kube_provider.verify_node_exists(ins_id, nodename, nodename_full)
     kube_provider.change_label(nodename, new_id, cloud_region)
 
 

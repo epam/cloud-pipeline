@@ -30,7 +30,7 @@ def main():
     cloud_provider = azureprovider.AzureInstanceProvider(cloud_region)
 
     ins_id = cloud_provider.find_and_tag_instance(old_id, new_id)
-    nodename, nodename_full = cloud_provider.get_node_names(ins_id)
+    nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
     nodename = kube_provider.verify_node_exists(nodename, nodename_full, ins_id)
     kube_provider.change_label(nodename, new_id, cloud_region)
 

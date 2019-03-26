@@ -23,12 +23,15 @@ def main():
     parser.add_argument("--node_name", "-n", type=str, required=True)
     args = parser.parse_args()
 
+    # TODO
+    project_id = None
+
     kube_provider = kubeprovider.KubeProvider()
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
-    cloud_provider = gcpprovider.GCPCloudProvider(cloud_region)
+    cloud_provider = gcpprovider.GCPInstanceProvider(project_id, cloud_region)
 
     kube_provider.delete_kubernetes_node_by_name(args.node_name)
-    cloud_provider.terminate_ec2_node(args.internal_ip)
+    cloud_provider.terminate_instance_by_ip(args.internal_ip)
 
 
 if __name__ == '__main__':

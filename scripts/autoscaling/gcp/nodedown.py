@@ -29,7 +29,9 @@ def main():
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
     kube_provider.delete_kubernetes_node_by_name(args.node_name)
 
-    cloud_provider = gcpprovider.GCPCloudProvider(cloud_region)
+    # TODO
+    project_id = None
+    cloud_provider = gcpprovider.GCPInstanceProvider(project_id, cloud_region)
     try:
         ins_id = cloud_provider.find_instance(run_id)
     except Exception:
@@ -38,7 +40,7 @@ def main():
         kube_provider.delete_kube_node(None, run_id)
     else:
         try:
-            nodename, nodename_full = cloud_provider.get_names_of_instance(ins_id)
+            nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
         except Exception:
             nodename = None
 
