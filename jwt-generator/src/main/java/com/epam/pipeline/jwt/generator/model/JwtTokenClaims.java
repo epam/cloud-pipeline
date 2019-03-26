@@ -26,9 +26,9 @@ public class JwtTokenClaims {
     public static final String CLAIM_USER_NAME = "user_name";
     public static final String CLAIM_ORG_UNIT_ID = "org_unit_id";
     public static final String CLAIM_ROLE = "role";
-    public static final String CLAIM_ROLES = "withRoles";
+    public static final String CLAIM_ROLES = "roles";
     public static final String CLAIM_GROUP = "group";
-    public static final String CLAIM_GROUPS = "withGroups";
+    public static final String CLAIM_GROUPS = "groups";
     @JsonProperty("jti")
     private String jwtTokenId;
     @JsonProperty("user_id")
