@@ -305,7 +305,7 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         wrapper = AzureBucketWrapper(root_bucket, relative_path)
         if init:
-            AzureBucketOperations.init_wrapper(wrapper)
+            StorageOperations.init_wrapper(wrapper, versioning=versioning)
         return wrapper
 
     def get_type(self):
@@ -351,7 +351,7 @@ class GsBucketWrapper(CloudDataStorageWrapper):
     def build_wrapper(cls, root_bucket, relative_path, init=True, *args, **kwargs):
         wrapper = GsBucketWrapper(root_bucket, relative_path)
         if init:
-            GsBucketOperations.init_wrapper(wrapper, *args, **kwargs)
+            StorageOperations.init_wrapper(wrapper, *args, **kwargs)
         return wrapper
 
     def get_restore_manager(self):

@@ -378,35 +378,10 @@ class ProxyBlockBlobService(RefreshingBlockBlobService):
         super(ProxyBlockBlobService, self)._apply_host(request, operation_context, retry_context)
 
         request_url = self.protocol + '://' + request.host
-        self._httpclient.proxies = AzureBucketOperations.get_proxy_config(request_url)
+        self._httpclient.proxies = StorageOperations.get_proxy_config(request_url)
 
 
 class AzureBucketOperations:
-    __config__ = None
-
-    @classmethod
-    def get_proxy_config(cls, target_url=None):
-        if cls.__config__ is None:
-            cls.__config__ = Config.instance()
-        if cls.__config__.proxy is None:
-            return None
-        else:
-            return cls.__config__.resolve_proxy(target_url=target_url)
-
-    @classmethod
-    def init_wrapper(cls, wrapper):
-        delimiter = StorageOperations.PATH_SEPARATOR
-        prefix = StorageOperations.get_prefix(wrapper.path)
-        check_file = True
-        if prefix.endswith(delimiter):
-            prefix = prefix[:-1]
-            check_file = False
-        for item in wrapper.get_list_manager().list_items(prefix, show_all=True):
-            if prefix.endswith(item.name.rstrip(delimiter)) and (check_file or item.type == 'Folder'):
-                wrapper.exists_flag = True
-                wrapper.is_file_flag = item.type == 'File'
-                break
-        return wrapper
 
     @classmethod
     def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):

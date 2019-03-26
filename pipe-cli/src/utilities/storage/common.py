@@ -27,6 +27,31 @@ class StorageOperations:
     CP_SOURCE_TAG = 'CP_SOURCE'
     CP_OWNER_TAG = 'CP_OWNER'
     STORAGE_PATH = '%s://%s/%s'
+    __config__ = None
+
+    @classmethod
+    def get_proxy_config(cls, target_url=None):
+        if cls.__config__ is None:
+            cls.__config__ = Config.instance()
+        if cls.__config__.proxy is None:
+            return None
+        else:
+            return cls.__config__.resolve_proxy(target_url=target_url)
+
+    @classmethod
+    def init_wrapper(cls, wrapper, versioning=False):
+        delimiter = StorageOperations.PATH_SEPARATOR
+        prefix = StorageOperations.get_prefix(wrapper.path)
+        check_file = True
+        if prefix.endswith(delimiter):
+            prefix = prefix[:-1]
+            check_file = False
+        for item in wrapper.get_list_manager().list_items(prefix, show_all=True, versioning=versioning):
+            if prefix.endswith(item.name.rstrip(delimiter)) and (check_file or item.type == 'Folder'):
+                wrapper.exists_flag = True
+                wrapper.is_file_flag = item.type == 'File'
+                break
+        return wrapper
 
     @classmethod
     def get_prefix(cls, path, delimiter=PATH_SEPARATOR):

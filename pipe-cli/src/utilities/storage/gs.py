@@ -2,6 +2,11 @@ import copy
 import os
 from datetime import datetime, timedelta
 
+try:
+    from urllib.parse import urlparse  # Python 3
+except ImportError:
+    from urlparse import urlparse  # Python 2
+
 import click
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
@@ -310,21 +315,25 @@ class _RefreshingCredentials(Credentials):
         headers['authorization'] = 'Bearer {}'.format(_helpers.from_bytes(self.temporary_credentials.session_token))
 
 
+class _ProxySession(AuthorizedSession):
+
+    def request(self, method, url, data=None, headers=None, **kwargs):
+        parsed_url = urlparse(url)
+        request_url = '%s://%s' % (parsed_url.scheme, parsed_url.netloc)
+        self.proxies = StorageOperations.get_proxy_config(request_url)
+        return super(_ProxySession, self).request(method, url, data, headers, **kwargs)
+
+
 class _RefreshingClient(Client):
     MAX_REFRESH_ATTEMPTS = 100
 
     def __init__(self, bucket, read, write, refresh_credentials):
         credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write))
-        session = AuthorizedSession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
+        session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
 
 class GsBucketOperations:
-
-    @classmethod
-    def init_wrapper(cls, wrapper, versioning=False):
-        # TODO 25.03.19: Method is not implemented yet.
-        raise RuntimeError('Method is not implemented yet.')
 
     @classmethod
     def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):
@@ -347,5 +356,6 @@ class GsBucketOperations:
         return TransferFromHttpOrFtpToGsManager(client)
 
     @classmethod
-    def get_client(cls, bucket, read, write):
-        return _RefreshingClient(bucket, read, write, refresh_credentials=GsTemporaryCredentials.from_environment)
+    def get_client(cls, *args, **kwargs):
+        return _RefreshingClient(*args, refresh_credentials=GsTemporaryCredentials.from_environment,
+                                 **kwargs)
