@@ -128,7 +128,6 @@ class Pipeline(API):
         if parent_node is not None:
             cls.__add_parent_node_params(payload, parent_node)
         data = json.dumps(payload)
-        print(str(data))
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
 
