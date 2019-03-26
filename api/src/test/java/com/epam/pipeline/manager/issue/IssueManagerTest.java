@@ -55,15 +55,16 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.IssueMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+@Transactional
 public class IssueManagerTest extends AbstractSpringTest {
     private static final String TEST_SYSTEM_DATA_STORAGE = "testStorage";
 
@@ -132,7 +133,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreateIssue() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
@@ -149,7 +149,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void creatingIssueForNonExistentEntityShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         Long nonExistentEntityId = 1L;
@@ -161,7 +160,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void creatingIssueWithEmptyNameShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO("", ISSUE_TEXT, entityVO);
@@ -169,7 +167,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testUpdateIssue() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
@@ -186,7 +183,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updatingClosedIssueShouldThrowException() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         Issue closedIssue = getClosedIssue();
@@ -196,7 +192,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testDeleteIssueWithComment() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -207,7 +202,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreateComment() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -226,7 +220,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void creatingCommentForNonExistentIssueShouldThrowException() {
         IssueCommentVO commentVO = getCommentVO(COMMENT_TEXT);
         Long nonExistentIssueId = 1L;
@@ -234,7 +227,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void creatingCommentForClosedIssueShouldThrowException() {
         Issue issue = getClosedIssue();
         IssueCommentVO commentVO = getCommentVO(COMMENT_TEXT);
@@ -242,7 +234,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void creatingCommentWithEmptyTextShouldThrowException() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -251,7 +242,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadIssueWithComments() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -263,7 +253,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testUpdateComment() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -277,7 +266,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testDeleteComment() {
         IssueComment comment = registerComment();
         Long issueId = comment.getIssueId();
@@ -287,7 +275,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testLoadAndDeleteIssuesForEntity() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
@@ -308,14 +295,12 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testDeleteIssuesForNonExistingEntity() {
         List<Issue> issues = issueManager.deleteIssuesForEntity(new EntityVO(1L, AclClass.FOLDER));
         assertTrue(CollectionUtils.isEmpty(issues));
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testDeleteIssuesWhenEntityWasDeleted() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         Folder folder = new Folder();
@@ -331,7 +316,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void createIssueWithAttachments() throws InterruptedException {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
@@ -351,7 +335,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void createCommentWithAttachments() {
         Issue issue = registerIssue();
         Long issueId = issue.getId();
@@ -370,7 +353,6 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void updateIssueWithAttachments() {
         when(authManager.getAuthorizedUser()).thenReturn(AUTHOR);
         IssueVO issueVO = getIssueVO(ISSUE_NAME, ISSUE_TEXT, entityVO);
@@ -396,7 +378,7 @@ public class IssueManagerTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @Ignore("test relies on timeout")
     public void updateCommentWithAttachments() throws InterruptedException {
         Attachment newAttachment = new Attachment();
         newAttachment.setPath("///");
