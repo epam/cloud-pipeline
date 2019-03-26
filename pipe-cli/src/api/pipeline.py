@@ -21,6 +21,7 @@ from ..model.pipeline_run_parameters_model import PipelineRunParametersModel
 from ..model.pipeline_run_model import PipelineRunModel, PriceType
 from ..model.datastorage_rule_model import DataStorageRuleModel
 from ..model.instance_price import InstancePrice
+from ..api.pipeline_run import PipelineRun
 
 TYPE_VALUE_DELIMITER = '?'
 TYPE_DEFAULT = 'string'
@@ -125,15 +126,17 @@ class Pipeline(API):
         if region_id is not None:
             payload['cloudRegionId'] = region_id
         if parent_node is not None:
-            payload['parentNodeId'] = parent_node
+            cls.__add_parent_node_params(payload, parent_node)
         data = json.dumps(payload)
+        print(str(data))
         response_data = api.call('run', data)
         return PipelineRunModel.load(response_data['payload'])
 
     @classmethod
     def launch_command(cls, instance_disk, instance_type,
                        docker_image, cmd_template, parameters,
-                       timeout=None, instance_count=None, price_type=None):
+                       timeout=None, instance_count=None, price_type=None,
+                       region_id=None, parent_node=None):
         api = cls.instance()
         payload = {}
         if instance_disk is not None:
@@ -150,6 +153,10 @@ class Pipeline(API):
             payload['nodeCount'] = instance_count
         if price_type:
             payload['isSpot'] = price_type == PriceType.SPOT
+        if region_id is not None:
+            payload['cloudRegionId'] = region_id
+        if parent_node is not None:
+            cls.__add_parent_node_params(payload, parent_node)
         if parameters is not None:
             params = {}
             for key in parameters.keys():
@@ -185,3 +192,15 @@ class Pipeline(API):
             api_url += '&config={}'.format(config_name)
         response_data = api.call(api_url, json.dumps(data))
         return InstancePrice.load(response_data['payload'])
+
+    @classmethod
+    def __add_parent_node_params(cls, params, parent_node):
+        run_model = PipelineRun.get(parent_node)
+        for ins_param in run_model.instance:
+            if ins_param[0] == 'nodeDisk':
+                params['hddSize'] = ins_param[1]
+            elif ins_param[0] == 'nodeType':
+                params['instanceType'] = ins_param[1]
+        params['parentRunId'] = parent_node
+        params['parentNodeId'] = parent_node
+
