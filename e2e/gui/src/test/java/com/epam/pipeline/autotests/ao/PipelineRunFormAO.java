@@ -24,8 +24,6 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.interactions.Actions;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -119,16 +117,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setCommand(String command) {
-        SelenideElement commandField = $$(byAttribute("role", "presentation"))
-                .findBy(attribute("style", "padding-right: 0.1px;"));
-
-        Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
-        for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
-        }
-        action.perform();
-
-        Utils.clickAndSendKeysWithSlashes(commandField, command);
+        SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+        Utils.clearTextField(defaultCommand);
+        Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
         return this;
     }
 

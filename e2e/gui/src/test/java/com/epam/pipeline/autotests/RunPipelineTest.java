@@ -43,7 +43,6 @@ import static com.epam.pipeline.autotests.ao.NodePage.*;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;

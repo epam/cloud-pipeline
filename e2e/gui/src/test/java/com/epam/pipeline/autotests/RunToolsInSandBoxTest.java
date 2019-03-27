@@ -131,7 +131,7 @@ public class RunToolsInSandBoxTest
                 .validateOnlyMyPipelines();
 
         open(pipelineUrl);
-        new ToolPageAO()
+        new ToolPageAO(pipelineUrl)
                 .sleep(5, SECONDS)
                 .screenshot("test500screenshot")
                 .assertPageTitleIs("401 Authorization Required");

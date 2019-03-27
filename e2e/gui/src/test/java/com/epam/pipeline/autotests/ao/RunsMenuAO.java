@@ -143,7 +143,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         sleep(3, MINUTES);
         open(endpointURL);
 
-        return new ToolPageAO();
+        return new ToolPageAO(endpointURL);
     }
 
     public RunsMenuAO validateStoppedStatus(String runId) {

@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -27,6 +28,18 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
+
+    @AfterMethod(alwaysRun = true)
+    @Override
+    public void removePipeline() {
+        super.removePipeline();
+    }
+
+    @AfterMethod(alwaysRun = true)
+    @Override
+    public void removeNode() {
+        super.removeNode();
+    }
 
     @Test
     @TestCase({"EPMCMBIBPC-975"})
