@@ -646,8 +646,8 @@ read -r -d '' payload <<-EOF
     "sshPublicKeyPath": "$CP_PREF_CLUSTER_SSH_KEY_PATH",
     "meterRegionName": "$azure_meter_name",
     "azureApiUrl": "$CP_AZURE_API_URL",
-    "priceOfferId": "$CP_AZURE_OFFER_DURABLE_ID"
-    "corsRules":"$cors_rules"
+    "priceOfferId": "$CP_AZURE_OFFER_DURABLE_ID",
+    "corsRules": "$cors_rules"
 }
 EOF
 
@@ -660,7 +660,13 @@ EOF
     call_api_register_region_result=$?
     if [ $call_api_register_region_result -ne 0 ]; then
         print_err "Error occured while registering a region ($region_name):"
+        echo "========"
+        echo "Request:"
+        echo "$payload"
+        echo "========"
+        echo "Response:"
         echo "$call_api_register_region_response"
+        echo "========"
         return 1
     else
         local region_id=$(api_get_region_id "$region_name")
