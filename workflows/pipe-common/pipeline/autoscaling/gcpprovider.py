@@ -105,17 +105,24 @@ class GCPInstanceProvider(object):
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.find_instance(old_id)
-        instance.labels['name'] = new_id
-        self.client.instances().insert(
-            project=self.project_id,
-            zone=self.cloud_region,
-            body=instance).execute()
+        if instance:
+            labels = instance['labels']
+            labels['name'] = new_id
+            labels_body = {'labels': labels, 'labelFingerprint': instance['labelFingerprint']}
+            reassign = self.client.instances().setLabels(
+                project=self.project_id,
+                zone=self.cloud_region,
+                instance=instance['name'],
+                body=labels_body).execute()
+            self.wait_for_operation(reassign['name'])
+        else:
+            raise RuntimeError('Instance with id: {} not found!'.format(old_id))
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
         instance = self.find_instance(run_id)
         if instance and len(instance['networkInterfaces'][0]) > 0:
-            ins_id = instance.name
+            ins_id = instance['name']
             ins_ip = instance['networkInterfaces'][0]['networkIP']
             utils.pipe_log('Found existing instance (ID: {}, IP: {}) for RunID {}\n-'.format(ins_id, ins_ip, run_id))
         else:
@@ -143,9 +150,10 @@ class GCPInstanceProvider(object):
 
     def get_instance_names(self, ins_id):
         for instance in self.__list_instances():
-            if instance.name == ins_id:
+            instance_name = instance['name']
+            if instance_name == ins_id:
                 # according to https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
-                return '{}.{}.c.{}.internal'.format(instance.name, self.cloud_region, self.project_id), instance.name
+                return '{}.{}.c.{}.internal'.format(instance_name, self.cloud_region, self.project_id), instance_name
         return None, None
 
     def find_instance(self, run_id):
