@@ -44,7 +44,7 @@ ENV PATH="$PATH:$CROMWELL_HOME"
 
 # Copy cromwell files to the image
 # It also creates cromwell home directory
-COPY cromwell cromwell.conf cromwell_wrapper.py $CROMWELL_HOME/
+COPY cromwell cromwell.conf cromwell_wrapper.py options.json $CROMWELL_HOME/
 
 # Make cromwell starter script executable
 RUN chmod +x $CROMWELL_HOME/cromwell
