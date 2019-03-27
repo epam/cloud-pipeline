@@ -135,9 +135,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
             check_file = False
         bucket = self.client.get_bucket(self.bucket.path)
         if not recursive and not hard_delete:
-            blob = bucket.blob(prefix)
-            self._set_generation(blob, version)
-            self._delete_blob(blob, exclude, include)
+            self._delete_blob(self._blob(bucket, prefix, version), exclude, include)
         else:
             blobs_for_deletion = []
             self.listing_manager.show_versions = version is not None or hard_delete
@@ -147,41 +145,37 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                         matching_item_versions = [item_version for item_version in item.versions
                                                   if item_version.version == version]
                         if matching_item_versions:
-                            blob = bucket.blob(item.name)
-                            self._set_generation(blob, matching_item_versions[0].version)
-                            blobs_for_deletion = [blob]
+                            blobs_for_deletion = [self._blob(bucket, item.name, matching_item_versions[0].version)]
                     else:
-                        item_blobs_for_deletion = self._prepare_item_deletion(bucket, item, prefix, exclude, include,
-                                                                              hard_delete)
-                        blobs_for_deletion.extend(item_blobs_for_deletion)
+                        blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
                     break
                 if self._file_under_folder(item.name, prefix):
-                    item_blobs_for_deletion = self._prepare_item_deletion(bucket, item, prefix, exclude, include,
-                                                                          hard_delete)
-                    blobs_for_deletion.extend(item_blobs_for_deletion)
+                    blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
             for blob in blobs_for_deletion:
                 self._delete_blob(blob, exclude, include, prefix)
 
-    def _prepare_item_deletion(self, bucket, item, prefix, exclude, include, hard_delete):
-        blobs_for_deletion = []
+    def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
-            blob = bucket.blob(item.name)
-            if not item.deleted:
-                self._delete_blob(blob, exclude, include, prefix)
-            self._set_generation(blob, item.version)
-            blobs_for_deletion.append(blob)
-            for item_version in item.versions:
-                blob = bucket.blob(item.name)
-                self._set_generation(blob, item_version.version)
-                blobs_for_deletion.append(blob)
+            blobs_for_deletion = [self._blob(bucket, item.name, item.version)]
+            blobs_for_deletion.extend([self._blob(bucket, item.name, item_version.version)
+                                       for item_version in item.versions])
+            return blobs_for_deletion
         else:
-            blob = bucket.blob(item.name)
-            blobs_for_deletion.append(blob)
-        return blobs_for_deletion
+            return [bucket.blob(item.name)]
 
-    def _set_generation(self, blob, version):
-        if version:
-            blob._patch_property('generation', int(version))
+    def _blob(self, bucket, blob_name, generation):
+        """
+        Returns blob instance with the specified name and generation.
+
+        The current method is a workaround for the absence of support for the operation in the official SDK.
+        The support for such an operation was requested implemented in #7444 pull request that is
+        already merged. Therefore, as long as google-cloud-storage==1.15.0 is released the usage of the current
+        method should be replaced with the usage of a corresponding SDK method.
+        """
+        blob = bucket.blob(blob_name)
+        if generation:
+            blob._patch_property('generation', int(generation))
+        return blob
 
     def _delete_blob(self, blob, exclude, include, prefix=None):
         if self._is_matching_delete_filters(blob.name, exclude, include, prefix):
