@@ -16,9 +16,13 @@
 
 package com.epam.pipeline.manager.region;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.Assert;
 
 import java.util.List;
 
@@ -60,5 +64,17 @@ public interface CloudRegionHelper<R extends AbstractCloudRegion, C extends Abst
      */
     default C mergeCredentials(final C oldCredentials, final C updatedCredentials) {
         return updatedCredentials;
+    }
+
+    /**
+     * Validates that provided regionCode is a valid identifier for Cloud provider.
+     * @param regionCode to validate
+     */
+    default void validateRegionCode(final String regionCode, final MessageHelper messageHelper) {
+        Assert.isTrue(StringUtils.isNotBlank(regionCode),
+                messageHelper.getMessage(MessageConstants.ERROR_REGION_REGIONID_MISSING));
+        Assert.isTrue(loadAvailableRegions().contains(regionCode),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_REGION_REGIONID_INVALID, regionCode));
     }
 }

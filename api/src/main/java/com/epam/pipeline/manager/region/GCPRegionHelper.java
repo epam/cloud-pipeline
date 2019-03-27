@@ -21,12 +21,13 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
 import java.util.List;
 
 
@@ -35,11 +36,11 @@ import java.util.List;
 public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractCloudRegionCredentials> {
 
     private final MessageHelper messageHelper;
+    private final PreferenceManager preferenceManager;
 
     @Override
     public void validateRegion(final GCPRegion region, final AbstractCloudRegionCredentials credentials) {
-        Assert.state(StringUtils.isNotBlank(region.getRegionCode()),
-                messageHelper.getMessage(MessageConstants.ERROR_REGION_REGIONID_MISSING));
+        validateRegionCode(region.getRegionCode(), messageHelper);
         Assert.state(StringUtils.isNotBlank(region.getProject()),
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_PROJECT_REQUIRED));
         Assert.state(StringUtils.isNotBlank(region.getSshPublicKeyPath()),
@@ -48,8 +49,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
 
     @Override
     public List<String> loadAvailableRegions() {
-        //TODO:implement
-        return Collections.emptyList();
+        return preferenceManager.getPreference(SystemPreferences.GCP_REGION_LIST);
     }
 
     @Override

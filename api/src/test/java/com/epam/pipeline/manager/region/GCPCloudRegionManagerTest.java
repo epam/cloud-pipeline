@@ -19,9 +19,10 @@ package com.epam.pipeline.manager.region;
 import com.epam.pipeline.controller.vo.CloudRegionVO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
-import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import org.junit.Before;
 
 import java.util.Collections;
 import java.util.Date;
@@ -30,12 +31,19 @@ import java.util.List;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
 
 public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     private static final String GCP_PROJECT = "Project";
     private static final String GCP_PROJECT_CHANGED = "Bio";
     private static final String SSH_PUB_PATH = "/ssh.pub";
+
+    @Before
+    public void initGCPPreferences() {
+        doReturn(Collections.singletonList(validRegionId())).when(preferenceManager)
+                .getPreference(SystemPreferences.GCP_REGION_LIST);
+    }
 
     @Override
     AbstractCloudRegion commonRegion() {
@@ -74,7 +82,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     @Override
     String validRegionId() {
-        return "us-central";
+        return "us-central1";
     }
 
     @Override
@@ -91,7 +99,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     @Override
     List<CloudRegionHelper> helpers() {
-        return Collections.singletonList(new GCPRegionHelper(messageHelper));
+        return Collections.singletonList(new GCPRegionHelper(messageHelper, preferenceManager));
     }
 
     @Override
