@@ -25,6 +25,7 @@ from itertools import groupby
 from operator import itemgetter
 import sys
 
+from cloudprovider import *
 from pipeline import TaskStatus
 from pipeline.autoscaling import utils
 
@@ -34,7 +35,7 @@ ROOT_DEVICE_DEFAULT = {
 }
 
 
-class AWSInstanceProvider(object):
+class AWSInstanceProvider(AbstractInstanceProvider):
 
     def __init__(self, cloud_region, num_rep=10):
         self.cloud_region = cloud_region
@@ -59,122 +60,22 @@ class AWSInstanceProvider(object):
         else:
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
 
-    @staticmethod
-    def run_id_filter(run_id):
-        return {
-            'Name': 'tag:Name',
-            'Values': [run_id]
-        }
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+                     num_rep, time_rep, kube_ip, kubeadm_token):
 
-    def run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep):
-        utils.pipe_log('Creating on demand instance')
-        allowed_networks = utils.get_networks_config(self.cloud_region)
-        additional_args = {}
-        subnet_id = None
-        if allowed_networks and len(allowed_networks) > 0:
-            az_num = randint(0, len(allowed_networks)-1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
-            utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
-            additional_args = { 'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
+        ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)
+        if ins_id:
+            return ins_id, ins_ip
+
+        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+        if is_spot:
+            ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+                                                             kms_encyr_key_id, user_data_script, num_rep, time_rep)
         else:
-            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-            additional_args = { 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
-        response = self.ec2.run_instances(
-            ImageId=ins_img,
-            MinCount=1,
-            MaxCount=1,
-            KeyName=ins_key,
-            InstanceType=ins_type,
-            UserData=user_data_script,
-            BlockDeviceMappings=[self.root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
-            TagSpecifications=[
-                {
-                    'ResourceType': 'instance',
-                    "Tags": utils.get_tags(run_id)
-                }
-            ],
-            **additional_args
-        )
-        ins_id = response['Instances'][0]['InstanceId']
-        ins_ip = response['Instances'][0]['PrivateIpAddress']
-
-        utils.pipe_log('- Instance created. ID: {}, IP: {}'.format(ins_id, ins_ip))
-
-        status_code = self.get_current_status(ins_id)
-
-        rep = 0
-        while status_code != 16:
-            utils.pipe_log('- Waiting for status checks completion...')
-            sleep(time_rep)
-            status_code = self.get_current_status(ins_id)
-            rep = self.increment_or_fail(num_rep,
-                                          rep,
-                                          'Exceeded retry count ({}) for instance ({}) status check'.format(num_rep, ins_id),
-                                          kill_instance_id_on_fail=ins_id)
-        utils.pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
-
-        ebs_tags = utils.resource_tags()
-        if ebs_tags:
-            instance_description = self.ec2.describe_instances(InstanceIds=[ins_id])['Reservations'][0]['Instances'][0]
-            volumes = instance_description['BlockDeviceMappings']
-            for volume in volumes:
-                self.ec2.create_tags(
-                    Resources=[volume['Ebs']['VolumeId']],
-                    Tags=ebs_tags)
-
+            ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd,
+                                                                 kms_encyr_key_id, run_id, user_data_script,
+                                                                 num_rep, time_rep)
         return ins_id, ins_ip
-
-    def get_current_status(self, ins_id):
-        response = self.ec2.describe_instance_status(InstanceIds=[ins_id])
-        if len(response['InstanceStatuses']) > 0:
-            return response['InstanceStatuses'][0]['InstanceState']['Code']
-        else:
-            return -1
-
-    def root_device(self, ins_img):
-        try:
-            utils.pipe_log('- Getting image {} block device mapping details'.format(ins_img))
-            img_details = self.ec2.describe_images(ImageIds=[ins_img])
-            utils.pipe_log('- Block device mapping details received. Proceeding with validation'.format(ins_img))
-
-            if len(img_details["Images"]) == 0:
-                raise RuntimeError("No images found for {}".format(ins_img))
-            img_obj = img_details["Images"][0]
-
-            if "BlockDeviceMappings" not in img_obj or len(img_obj["BlockDeviceMappings"]) == 0:
-                raise RuntimeError("No BlockDeviceMappings found for {}".format(ins_img))
-
-            block_device_obj = img_obj["BlockDeviceMappings"][0]
-            block_device_name = block_device_obj["DeviceName"]
-            if "Ebs" not in block_device_obj:
-                raise RuntimeError("No Ebs definition found for device {} in image {}".format(block_device_name, ins_img))
-
-            device_spec = {
-                "DeviceName": block_device_name,
-                "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
-            }
-            return device_spec
-        except Exception as e:
-            utils.pipe_log('Error while getting image {} root device, using default device: {}\n{}'.format(ins_img,
-                                                                                                           ROOT_DEVICE_DEFAULT["DeviceName"],
-                                                                                                           str(e)))
-            return ROOT_DEVICE_DEFAULT
-
-    @staticmethod
-    def block_device(ins_hdd, kms_encyr_key_id):
-        block_device_spec = {
-            "DeviceName": "/dev/sdb",
-            "Ebs": {
-                "VolumeSize": ins_hdd,
-                "VolumeType": "gp2",
-                "DeleteOnTermination": True,
-                "Encrypted": True
-            }
-        }
-        if kms_encyr_key_id:
-            block_device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
-        return block_device_spec
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         utils.pipe_log('Checking instance ({}) boot state'.format(ins_id))
@@ -188,8 +89,8 @@ class AWSInstanceProvider(object):
         while result != 0:
             sleep(time_rep)
             result = utils.poll_instance(sock, time_rep, ipaddr, port)
-            rep = self.increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
-                                          kill_instance_id_on_fail=ins_id)
+            rep = self.__increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
+                                           kill_instance_id_on_fail=ins_id)
         utils.pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
     def find_and_tag_instance(self, old_id, new_id):
@@ -253,6 +154,18 @@ class AWSInstanceProvider(object):
 
         utils.pipe_log('Instance {} state is changed from {} to {}'.format(instance_id, prev_state, current_state))
 
+    def get_instance_names(self, ins_id):
+        response = self.ec2.describe_instances(InstanceIds=[ins_id])
+        nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
+        nodename = nodename_full.split('.', 1)[0]
+
+        return nodename, nodename_full
+
+    def terminate_instance_by_ip(self, node_internal_ip):
+        instance_id = self.__get_aws_instance_id(node_internal_ip)
+        if instance_id is not None:
+            self.ec2.terminate_instances(InstanceIds=[instance_id])
+
     @staticmethod
     def get_mean(values):
         n = 0
@@ -262,17 +175,139 @@ class AWSInstanceProvider(object):
             n += 1
         return sum / n
 
-    def get_availability_zones(self):
+    @staticmethod
+    def run_id_filter(run_id):
+        return {
+            'Name': 'tag:Name',
+            'Values': [run_id]
+        }
+
+    def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
+                                 num_rep, time_rep):
+        utils.pipe_log('Creating on demand instance')
+        allowed_networks = utils.get_networks_config(self.cloud_region)
+        additional_args = {}
+        subnet_id = None
+        if allowed_networks and len(allowed_networks) > 0:
+            az_num = randint(0, len(allowed_networks) - 1)
+            az_name = allowed_networks.items()[az_num][0]
+            subnet_id = allowed_networks.items()[az_num][1]
+            utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
+            additional_args = {'SubnetId': subnet_id, 'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
+        else:
+            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
+            additional_args = {'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
+        response = self.ec2.run_instances(
+            ImageId=ins_img,
+            MinCount=1,
+            MaxCount=1,
+            KeyName=ins_key,
+            InstanceType=ins_type,
+            UserData=user_data_script,
+            BlockDeviceMappings=[self.__root_device(ins_img),
+                                 AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+            TagSpecifications=[
+                {
+                    'ResourceType': 'instance',
+                    "Tags": utils.get_tags(run_id)
+                }
+            ],
+            **additional_args
+        )
+        ins_id = response['Instances'][0]['InstanceId']
+        ins_ip = response['Instances'][0]['PrivateIpAddress']
+
+        utils.pipe_log('- Instance created. ID: {}, IP: {}'.format(ins_id, ins_ip))
+
+        status_code = self.get_current_status(ins_id)
+
+        rep = 0
+        while status_code != 16:
+            utils.pipe_log('- Waiting for status checks completion...')
+            sleep(time_rep)
+            status_code = self.get_current_status(ins_id)
+            rep = self.__increment_or_fail(num_rep,
+                                           rep,
+                                           'Exceeded retry count ({}) for instance ({}) status check'.format(num_rep,
+                                                                                                             ins_id),
+                                           kill_instance_id_on_fail=ins_id)
+        utils.pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
+
+        ebs_tags = utils.resource_tags()
+        if ebs_tags:
+            instance_description = self.ec2.describe_instances(InstanceIds=[ins_id])['Reservations'][0]['Instances'][0]
+            volumes = instance_description['BlockDeviceMappings']
+            for volume in volumes:
+                self.ec2.create_tags(
+                    Resources=[volume['Ebs']['VolumeId']],
+                    Tags=ebs_tags)
+
+        return ins_id, ins_ip
+
+    def get_current_status(self, ins_id):
+        response = self.ec2.describe_instance_status(InstanceIds=[ins_id])
+        if len(response['InstanceStatuses']) > 0:
+            return response['InstanceStatuses'][0]['InstanceState']['Code']
+        else:
+            return -1
+
+    def __root_device(self, ins_img):
+        try:
+            utils.pipe_log('- Getting image {} block device mapping details'.format(ins_img))
+            img_details = self.ec2.describe_images(ImageIds=[ins_img])
+            utils.pipe_log('- Block device mapping details received. Proceeding with validation'.format(ins_img))
+
+            if len(img_details["Images"]) == 0:
+                raise RuntimeError("No images found for {}".format(ins_img))
+            img_obj = img_details["Images"][0]
+
+            if "BlockDeviceMappings" not in img_obj or len(img_obj["BlockDeviceMappings"]) == 0:
+                raise RuntimeError("No BlockDeviceMappings found for {}".format(ins_img))
+
+            block_device_obj = img_obj["BlockDeviceMappings"][0]
+            block_device_name = block_device_obj["DeviceName"]
+            if "Ebs" not in block_device_obj:
+                raise RuntimeError(
+                    "No Ebs definition found for device {} in image {}".format(block_device_name, ins_img))
+
+            device_spec = {
+                "DeviceName": block_device_name,
+                "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
+            }
+            return device_spec
+        except Exception as e:
+            utils.pipe_log('Error while getting image {} root device, using default device: {}\n{}'.format(ins_img,
+                                                                                                           ROOT_DEVICE_DEFAULT[
+                                                                                                               "DeviceName"],
+                                                                                                           str(e)))
+            return ROOT_DEVICE_DEFAULT
+
+    @staticmethod
+    def block_device(ins_hdd, kms_encyr_key_id):
+        block_device_spec = {
+            "DeviceName": "/dev/sdb",
+            "Ebs": {
+                "VolumeSize": ins_hdd,
+                "VolumeType": "gp2",
+                "DeleteOnTermination": True,
+                "Encrypted": True
+            }
+        }
+        if kms_encyr_key_id:
+            block_device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
+        return block_device_spec
+
+    def __get_availability_zones(self):
         zones = self.ec2.describe_availability_zones()
         return [zone['ZoneName'] for zone in zones['AvailabilityZones']]
 
-    def get_spot_prices(self, aws_region, instance_type, hours=3):
+    def __get_spot_prices(self, aws_region, instance_type, hours=3):
         prices = []
         allowed_networks = utils.get_networks_config(aws_region)
         if allowed_networks and len(allowed_networks) > 0:
             zones = list(allowed_networks.keys())
         else:
-            zones = self.get_availability_zones()
+            zones = self.__get_availability_zones()
         history = self.ec2.describe_spot_price_history(
             StartTime=datetime.today() - timedelta(hours=hours),
             EndTime=datetime.today(),
@@ -295,11 +330,11 @@ class AWSInstanceProvider(object):
                            status=TaskStatus.FAILURE)
             sys.exit(5)
 
-    def find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
+    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
         utils.pipe_log('Creating spot request')
 
         utils.pipe_log('- Checking spot prices for current region...')
-        spot_prices = self.get_spot_prices(self.ec2, self.cloud_region, ins_type)
+        spot_prices = self.__get_spot_prices(self.ec2, self.cloud_region, ins_type)
 
         allowed_networks = utils.get_networks_config(self.cloud_region)
         cheapest_zone = ''
@@ -316,7 +351,7 @@ class AWSInstanceProvider(object):
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': [self.root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+            'BlockDeviceMappings': [self.__root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
         }
         if allowed_networks and cheapest_zone in allowed_networks:
             subnet_id = allowed_networks[cheapest_zone]
@@ -359,9 +394,9 @@ class AWSInstanceProvider(object):
                 if e.response['Error']['Code'] != "InvalidSpotInstanceRequestID.NotFound":
                     raise e
 
-            rep = utils.increment_or_fail(num_rep,
-                                          rep,
-                                          'Exceeded retry count ({}) while waiting for spot request {}'.format(num_rep, request_id))
+            rep = self.__increment_or_fail(num_rep, rep,
+                                           'Exceeded retry count ({}) while waiting for spot request {}'.format(num_rep, request_id),
+                                           kill_instance_id_on_fail=ins_id)
 
             utils.pipe_log('- Spot request {} is not yet available. Still waiting...'.format(request_id))
             sleep(time_rep)
@@ -387,9 +422,9 @@ class AWSInstanceProvider(object):
                 except Exception as describe_ex:
                     if describe_ex.response['Error']['Code'] == "InvalidInstanceID.NotFound":
                         utils.pipe_log('- Spot request {} is already fulfilled but instance id {} can not be found yet. Still waiting...'.format(request_id, ins_id))
-                        rep = utils.increment_or_fail(num_rep, rep,
-                                                      'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
-                                                      .format(num_rep, status))
+                        rep = self.__increment_or_fail(num_rep, rep,
+                                                       'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'.format(num_rep, status),
+                                                       kill_instance_id_on_fail=ins_id)
                         sleep(time_rep)
                         continue
                     else:
@@ -397,10 +432,9 @@ class AWSInstanceProvider(object):
                 instance_reservation = instance['Reservations'][0]['Instances'][0] if instance else None
                 if not instance_reservation or 'PrivateIpAddress' not in instance_reservation or not instance_reservation['PrivateIpAddress']:
                     utils.pipe_log('- Spot request {} is already fulfilled but PrivateIpAddress is not yet assigned. Still waiting...'.format(request_id))
-                    rep = self.increment_or_fail(num_rep, rep,
-                                                  'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
-                                                  .format(num_rep, status),
-                                                  kill_instance_id_on_fail=ins_id)
+                    rep = self.__increment_or_fail(num_rep, rep,
+                                                   'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'.format(num_rep, status),
+                                                   kill_instance_id_on_fail=ins_id)
                     sleep(time_rep)
                     continue
                 ins_ip = instance_reservation['PrivateIpAddress']
@@ -421,9 +455,9 @@ class AWSInstanceProvider(object):
                 break
             last_status = status
             utils.pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
-            rep = utils.increment_or_fail(num_rep, rep,
-                                          'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
-                                          .format(num_rep, status))
+            rep = self.__increment_or_fail(num_rep, rep,
+                                           'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'.format(num_rep, status),
+                                           kill_instance_id_on_fail=ins_id)
             sleep(time_rep)
 
         self.exit_if_spot_unavailable(run_id, last_status)
@@ -439,7 +473,7 @@ class AWSInstanceProvider(object):
         return status == 'not-scheduled-yet' or status == 'pending-evaluation' \
                or status == 'pending-fulfillment' or status == 'fulfilled'
 
-    def check_spot_request_exists(self, num_rep, run_id, time_rep):
+    def __check_spot_request_exists(self, num_rep, run_id, time_rep):
         utils.pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
         for interation in range(0, 5):
             response = self.ec2.describe_spot_instance_requests(Filters=[self.run_id_filter(run_id)])
@@ -449,7 +483,7 @@ class AWSInstanceProvider(object):
                 utils.pipe_log('- Spot request for RunID {} already exists: SpotInstanceRequestId: {}, Status: {}'.format(run_id, request_id, status))
                 rep = 0
                 if status == 'request-canceled-and-instance-running':
-                    return self.tag_and_get_instance(response, run_id)
+                    return self.__tag_and_get_instance(response, run_id)
                 if AWSInstanceProvider.wait_for_fulfilment(status):
                     while status != 'fulfilled':
                         utils.pipe_log('- Spot request ({}) is not yet fulfilled. Waiting...'.format(request_id))
@@ -464,19 +498,12 @@ class AWSInstanceProvider(object):
                         if rep > num_rep:
                             AWSInstanceProvider.exit_if_spot_unavailable(run_id, status)
                             return '', ''
-                    return self.tag_and_get_instance(response, run_id)
+                    return self.__tag_and_get_instance(response, run_id)
             sleep(5)
         utils.pipe_log('No spot request for RunID {} found\n-'.format(run_id))
         return '', ''
 
-    def get_instance_names(self, ins_id):
-        response = self.ec2.describe_instances(InstanceIds=[ins_id])
-        nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
-        nodename = nodename_full.split('.', 1)[0]
-
-        return nodename, nodename_full
-
-    def get_aws_instance_id(self, node_internal_ip):
+    def __get_aws_instance_id(self, node_internal_ip):
         if node_internal_ip is None:
             return None
         # Trying to find node by internal ip address:
@@ -490,12 +517,7 @@ class AWSInstanceProvider(object):
                     return instances[0]['InstanceId']
         return None
 
-    def terminate_node(self, node_internal_ip):
-        instance_id = self.get_aws_instance_id(node_internal_ip)
-        if instance_id is not None:
-            self.ec2.terminate_instances(InstanceIds=[instance_id])
-
-    def tag_and_get_instance(self, response, run_id):
+    def __tag_and_get_instance(self, response, run_id):
         ins_id = response['SpotInstanceRequests'][0]['InstanceId']
         utils.pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
         instance = self.ec2.describe_instances(InstanceIds=[ins_id])
@@ -510,7 +532,7 @@ class AWSInstanceProvider(object):
             utils.pipe_log('Tag ({}) is already set for instance ({}). Skip tagging\n-'.format(run_id, ins_id))
         return ins_id, ins_ip
 
-    def increment_or_fail(self, num_rep, rep, error_message, kill_instance_id_on_fail=None):
+    def __increment_or_fail(self, num_rep, rep, error_message, kill_instance_id_on_fail=None):
         rep = rep + 1
         if rep > num_rep:
             if kill_instance_id_on_fail:

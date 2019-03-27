@@ -2,6 +2,7 @@ import os
 import socket
 import time
 import uuid
+from cloudprovider import *
 from random import randint
 from time import sleep
 
@@ -14,15 +15,16 @@ INSTANCE_USER_NAME = "pipeline"
 NO_BOOT_DEVICE_NAME = 'sdb1'
 
 
-class GCPInstanceProvider(object):
+class GCPInstanceProvider(AbstractInstanceProvider):
 
     def __init__(self, cloud_region):
         self.cloud_region = cloud_region
         self.project_id = os.environ["GCP_PROJECT_ID"]
         self.client = discovery.build('compute', 'v1')
 
-    def run_instance(self, ins_type, ins_hdd, ins_img, ins_key_path, run_id, kms_encyr_key_id, kube_ip, kubeadm_token):
-        ssh_pub_key = utils.read_ssh_key(ins_key_path)
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+                     num_rep, time_rep, kube_ip, kubeadm_token):
+        ssh_pub_key = utils.read_ssh_key(ins_key)
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
 
         allowed_networks = utils.get_networks_config(self.cloud_region)
@@ -92,7 +94,7 @@ class GCPInstanceProvider(object):
             zone=self.cloud_region,
             body=body).execute()
 
-        self.wait_for_operation(response['name'])
+        self.__wait_for_operation(response['name'])
 
         ip_response = self.client.instances().get(
             project=self.project_id,
@@ -104,7 +106,7 @@ class GCPInstanceProvider(object):
         return instance_name, private_ip
 
     def find_and_tag_instance(self, old_id, new_id):
-        instance = self.find_instance(old_id)
+        instance = self.__find_instance(old_id)
         if instance:
             labels = instance['labels']
             labels['name'] = new_id
@@ -114,13 +116,13 @@ class GCPInstanceProvider(object):
                 zone=self.cloud_region,
                 instance=instance['name'],
                 body=labels_body).execute()
-            self.wait_for_operation(reassign['name'])
+            self.__wait_for_operation(reassign['name'])
         else:
             raise RuntimeError('Instance with id: {} not found!'.format(old_id))
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
-        instance = self.find_instance(run_id)
+        instance = self.__find_instance(run_id)
         if instance and len(instance['networkInterfaces'][0]) > 0:
             ins_id = instance['name']
             ins_ip = instance['networkInterfaces'][0]['networkIP']
@@ -134,7 +136,7 @@ class GCPInstanceProvider(object):
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         utils.pipe_log('Checking instance ({}) boot state'.format(ins_id))
         port = 8888
-        response = self.find_instance(run_id)
+        response = self.__find_instance(run_id)
         ipaddr = response['networkInterfaces'][0]['networkIP']
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         utils.pipe_log('- Waiting for instance boot up...')
@@ -157,11 +159,9 @@ class GCPInstanceProvider(object):
         return None, None
 
     def find_instance(self, run_id):
-        items = self.__list_instances()
-        if items:
-            filtered = [ins for ins in items if 'labels' in ins and ins['labels']['name'] == run_id]
-            if filtered and len(filtered) == 1:
-                return filtered[0]
+        instance = self.__find_instance(run_id)
+        if instance:
+            return instance['name']
         return None
 
     def terminate_instance(self, ins_id):
@@ -170,13 +170,21 @@ class GCPInstanceProvider(object):
             zone=self.cloud_region,
             instance=ins_id).execute()
 
-        self.wait_for_operation(delete['name'])
+        self.__wait_for_operation(delete['name'])
 
     def terminate_instance_by_ip(self, internal_ip):
         items = self.__list_instances()
         for instance in items:
             if instance['networkInterfaces'][0]['networkIP'] == internal_ip:
                 self.terminate_instance(instance.name)
+
+    def __find_instance(self, run_id):
+        items = self.__list_instances()
+        if items:
+            filtered = [ins for ins in items if 'labels' in ins and ins['labels']['name'] == run_id]
+            if filtered and len(filtered) == 1:
+                return filtered[0]
+        return None
 
     def __list_instances(self):
         result = self.client.instances().list(
@@ -218,7 +226,7 @@ class GCPInstanceProvider(object):
             }
         }
 
-    def wait_for_operation(self, operation):
+    def __wait_for_operation(self, operation):
         while True:
             result = self.client.zoneOperations().get(
                 project=self.project_id,

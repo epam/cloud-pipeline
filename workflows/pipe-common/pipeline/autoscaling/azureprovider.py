@@ -22,6 +22,7 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from cloudprovider import *
 
 import utils
 
@@ -34,7 +35,7 @@ def azure_resource_type_cmp(r1, r2):
     return 0
 
 
-class AzureInstanceProvider(object):
+class AzureInstanceProvider(AbstractInstanceProvider):
 
     def __init__(self, zone):
         self.zone = zone
@@ -42,6 +43,20 @@ class AzureInstanceProvider(object):
         self.network_client = get_client_from_auth_file(NetworkManagementClient)
         self.compute_client = get_client_from_auth_file(ComputeManagementClient)
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
+
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+                     num_rep, time_rep, kube_ip, kubeadm_token):
+        try:
+            ins_key = utils.read_ssh_key(ins_key)
+            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
+            instance_name = "az-" + uuid.uuid4().hex[0:16]
+            self.__create_public_ip_address(instance_name, run_id)
+            self.__create_nic(instance_name, run_id)
+            return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
+                                  ins_key, "pipeline", kms_encyr_key_id)
+        except Exception as e:
+            print e
+            self.__delete_all_by_run_id(run_id)
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
@@ -73,20 +88,55 @@ class AzureInstanceProvider(object):
 
         return None
 
-    def run_instance(self, ins_type, ins_hdd, ins_img, ins_key_path, run_id, kms_encyr_key_id, kube_ip, kubeadm_token):
-        try:
-            ins_key = utils.read_ssh_key(ins_key_path)
-            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
-            instance_name = "az-" + uuid.uuid4().hex[0:16]
-            self.create_public_ip_address(instance_name, run_id)
-            self.create_nic(instance_name, run_id)
-            return self.create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
-                                  ins_key, "pipeline", kms_encyr_key_id)
-        except Exception as e:
-            print e
-            self.delete_all_by_run_id(run_id)
+    def check_instance(self, ins_id, run_id, num_rep, time_rep):
+        pass
 
-    def create_public_ip_address(self, instance_name, run_id):
+    def terminate_instance(self, ins_id):
+        instance = self.compute_client.virtual_machines.get(self.resource_group_name, ins_id)
+        if 'Name' in instance.tags:
+            self.__delete_all_by_run_id(instance.tags['Name'])
+        else:
+            self.compute_client.virtual_machines.delete(self.resource_group_name, ins_id).wait()
+
+    def terminate_instance_by_ip(self, node_internal_ip):
+        nics = self.network_client.network_interfaces.list(resource_group_name=self.resource_group_name)
+        for nic in nics:
+            if nic.ip_configurations[0].private_ip_address == node_internal_ip:
+                if nic.tags and 'Name' in nic.tags:
+                    self.__delete_all_by_run_id(nic.tags['Name'])
+                else:
+                    raise RuntimeError("Cannot find instance with internal ip: {}".format(node_internal_ip))
+
+    def find_and_tag_instance(self, old_id, new_id):
+        ins_id = None
+        for resource in self.resource_client.resources.list(
+                filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
+            resource_group = resource.id.split('/')[4]
+            resource_type = str(resource.type).split('/')[-1]
+            if resource_type == "virtualMachines":
+                ins_id = resource.name
+                resource = self.compute_client.virtual_machines.get(resource_group, resource.name)
+                resource.tags["Name"] = new_id
+                self.compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
+            elif resource_type == "networkInterfaces":
+                resource = self.network_client.network_interfaces.get(resource_group, resource.name)
+                resource.tags["Name"] = new_id
+                self.network_client.network_interfaces.create_or_update(resource_group, resource.name, resource)
+            elif resource_type == "publicIPAddresses":
+                resource = self.network_client.public_ip_addresses.get(resource_group, resource.name)
+                resource.tags["Name"] = new_id
+                self.network_client.public_ip_addresses.create_or_update(resource_group, resource.name, resource)
+            elif resource_type == "disks":
+                resource = self.compute_client.disks.get(resource_group, resource.name)
+                resource.tags["Name"] = new_id
+                self.compute_client.disks.create_or_update(resource_group, resource.name, resource)
+
+        if ins_id is not None:
+            return ins_id
+        else:
+            raise RuntimeError("Failed to find instance {}".format(old_id))
+
+    def __create_public_ip_address(self, instance_name, run_id):
         public_ip_addess_params = {
             'location': self.zone,
             'public_ip_allocation_method': 'Dynamic',
@@ -103,7 +153,7 @@ class AzureInstanceProvider(object):
 
         return creation_result.result()
 
-    def create_nic(self, instance_name, run_id):
+    def __create_nic(self, instance_name, run_id):
 
         allowed_networks = utils.get_networks_config(self.zone)
         res_group_network = None
@@ -167,7 +217,7 @@ class AzureInstanceProvider(object):
 
         return creation_result.result()
 
-    def get_disk_type(self, instance_type):
+    def __get_disk_type(self, instance_type):
         disk_type = None
         for sku in self.compute_client.resource_skus.list():
             if sku.locations[0].lower() == self.zone.lower() and sku.resource_type.lower() == "virtualmachines" \
@@ -178,7 +228,7 @@ class AzureInstanceProvider(object):
                         break
         return disk_type
 
-    def create_vm(self, instance_name, run_id, instance_type, instance_image, disk, user_data_script,
+    def __create_vm(self, instance_name, run_id, instance_type, instance_image, disk, user_data_script,
                   ssh_pub_key, user, kms_encyr_key_id):
         nic = self.network_client.network_interfaces.get(
             self.resource_group_name,
@@ -225,7 +275,7 @@ class AzureInstanceProvider(object):
                         "lun": 63,
                         "createOption": "Empty",
                         "managedDisk": {
-                            "storageAccountType": self.get_disk_type(instance_type)
+                            "storageAccountType": self.__get_disk_type(instance_type)
                         }
                     }
                 ]
@@ -266,14 +316,12 @@ class AzureInstanceProvider(object):
         start_result = self.compute_client.virtual_machines.start(self.resource_group_name, instance_name)
         start_result.wait()
 
-        public_ip = self.network_client.public_ip_addresses.get(
-            self.resource_group_name,
-            instance_name + '-ip'
-        )
+        private_ip = self.network_client.network_interfaces \
+            .get(self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
 
-        return instance_name, public_ip.ip_address
+        return instance_name, private_ip
 
-    def resolve_azure_api(self, resource):
+    def __resolve_azure_api(self, resource):
         """ This method retrieves the latest non-preview api version for
         the given resource (unless the preview version is the only available
         api version) """
@@ -284,42 +332,14 @@ class AzureInstanceProvider(object):
             api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
             return api_version[0] if api_version else rt.__dict__['api_versions'][0]
 
-    def find_and_tag_instance(self, old_id, new_id):
-        ins_id = None
-        for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
-            resource_group = resource.id.split('/')[4]
-            resource_type = str(resource.type).split('/')[-1]
-            if resource_type == "virtualMachines":
-                ins_id = resource.name
-                resource = self.compute_client.virtual_machines.get(resource_group, resource.name)
-                resource.tags["Name"] = new_id
-                self.compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
-            elif resource_type == "networkInterfaces":
-                resource = self.network_client.network_interfaces.get(resource_group, resource.name)
-                resource.tags["Name"] = new_id
-                self.network_client.network_interfaces.create_or_update(resource_group, resource.name, resource)
-            elif resource_type == "publicIPAddresses":
-                resource = self.network_client.public_ip_addresses.get(resource_group, resource.name)
-                resource.tags["Name"] = new_id
-                self.network_client.public_ip_addresses.create_or_update(resource_group, resource.name, resource)
-            elif resource_type == "disks":
-                resource = self.compute_client.disks.get(resource_group, resource.name)
-                resource.tags["Name"] = new_id
-                self.compute_client.disks.create_or_update(resource_group, resource.name, resource)
-
-        if ins_id is not None:
-            return ins_id
-        else:
-            raise RuntimeError("Failed to find instance {}".format(old_id))
-
-    def delete_all_by_run_id(self, run_id):
+    def __delete_all_by_run_id(self, run_id):
         resources = []
         resources.extend(self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"))
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
         vm_name = resources[0].name
-        self.detach_disks_and_nic(vm_name)
+        self.__detach_disks_and_nic(vm_name)
         for resource in resources:
             self.resource_client.resources.delete(
                 resource_group_name=resource.id.split('/')[4],
@@ -327,11 +347,11 @@ class AzureInstanceProvider(object):
                 parent_resource_path='',
                 resource_type=str(resource.type).split('/')[-1],
                 resource_name=resource.name,
-                api_version=self.resolve_azure_api(resource),
+                api_version=self.__resolve_azure_api(resource),
                 parameters=resource
             ).wait()
 
-    def detach_disks_and_nic(self, vm_name):
+    def __detach_disks_and_nic(self, vm_name):
         self.compute_client.virtual_machines.delete(self.resource_group_name, vm_name).wait()
         nic = self.network_client.network_interfaces.get(self.resource_group_name, vm_name + '-nic')
         nic.ip_configurations[0].public_ip_address = None

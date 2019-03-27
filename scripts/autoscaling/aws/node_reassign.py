@@ -14,7 +14,7 @@
 
 import argparse
 
-from pipeline.autoscaling import awsprovider, kubeprovider, utils
+from pipeline.autoscaling import awsprovider, kubeprovider
 
 
 def main():

@@ -60,6 +60,7 @@ def main():
     utils.pipe_log_init(run_id)
 
     cloud_region = utils.get_cloud_region(region_id)
+    cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
     utils.pipe_log('Started initialization of new calculation node in AWS region {}:\n'
                    '- RunID: {}\n'
                    '- Type: {}\n'
@@ -75,22 +76,20 @@ def main():
                                               str(bid_price)))
 
     try:
-        cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
-
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = utils.get_allowed_instance_image(cloud_region, ins_type, ins_img)
         if allowed_instance and allowed_instance["instance_mask"]:
-            utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}'
-                           '\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
-                                                               ami=allowed_instance["instance_mask_ami"],
-                                                               instance_type=ins_type))
+            utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\n'
+                           'Image {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
+                                                             ami=allowed_instance["instance_mask_ami"],
+                                                             instance_type=ins_type))
             ins_img = allowed_instance["instance_mask_ami"]
 
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = cloud_provider.run_instance(ins_type, ins_hdd, ins_img, ins_key, run_id,
-                                                         kms_encyr_key_id, kube_ip, kubeadm_token)
+            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
+                                                         kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)

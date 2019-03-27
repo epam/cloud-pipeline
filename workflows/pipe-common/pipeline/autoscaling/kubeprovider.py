@@ -69,7 +69,7 @@ class KubeProvider(object):
         return nodes.response['items'][0]
 
     def delete_kubernetes_node_by_name(self, node_name):
-        if node_name is not None and get_node(node_name) is not None:
+        if node_name is not None and self.get_node(node_name) is not None:
             obj = {
                 "apiVersion": "v1",
                 "kind": "Node",

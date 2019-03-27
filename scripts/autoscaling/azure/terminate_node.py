@@ -16,11 +16,6 @@ import argparse
 from pipeline.autoscaling import azureprovider, kubeprovider
 
 
-def delete_kubernetes_node(kube_provider, node_name):
-    if node_name is not None and kube_provider.get_node(node_name) is not None:
-        kube_provider.delete_kubernetes_node_by_name(node_name)
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--internal_ip", "-ip", type=str, required=True)
@@ -31,10 +26,8 @@ def main():
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
     cloud_provider = azureprovider.AzureInstanceProvider(cloud_region)
 
-    run_id = kube_provider.get_run_id_by_node_name(args.node_name)
-
-    delete_kubernetes_node(kube_provider, args.node_name)
-    cloud_provider.delete_all_by_run_id(run_id)
+    kube_provider.delete_kubernetes_node_by_name(args.node_name)
+    cloud_provider.terminate_instance_by_ip(args.internal_ip)
 
 
 if __name__ == '__main__':

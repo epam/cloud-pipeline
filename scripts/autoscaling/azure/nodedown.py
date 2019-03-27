@@ -25,7 +25,8 @@ def main():
     run_id = args.run_id
 
     kube_provider = kubeprovider.KubeProvider()
-    cloud_provider = azureprovider.AzureInstanceProvider(kube_provider.get_cloud_region(run_id))
+    cloud_region = kube_provider.get_cloud_region(run_id)
+    cloud_provider = azureprovider.AzureInstanceProvider(cloud_region)
 
     try:
         ins_id = cloud_provider.find_instance(run_id)
@@ -42,7 +43,7 @@ def main():
             nodename = None
 
         kube_provider.delete_kube_node(nodename, run_id)
-        cloud_provider.delete_all_by_run_id(run_id)
+        cloud_provider.terminate_instance(ins_id)
 
 
 if __name__ == '__main__':

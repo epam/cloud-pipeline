@@ -14,36 +14,33 @@
 
 import argparse
 
-from pipeline.autoscaling import gcpprovider, kubeprovider, utils
+from pipeline.autoscaling import gcpprovider, kubeprovider
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", "-kid", type=str, required=True)
-    parser.add_argument("--ins_id", "-id", type=str, required=False)  # do we need?
     args = parser.parse_args()
     run_id = args.run_id
 
     kube_provider = kubeprovider.KubeProvider()
-
-    cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
-    kube_provider.delete_kubernetes_node_by_name(args.node_name)
-
+    cloud_region = kube_provider.get_cloud_region(run_id)
     cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
+
     try:
-        instance = cloud_provider.find_instance(run_id)
+        ins_id = cloud_provider.find_instance(run_id)
     except Exception:
-        instance = None
-    if instance is None:
+        ins_id = None
+    if ins_id is None:
         kube_provider.delete_kube_node(None, run_id)
     else:
         try:
-            nodename, nodename_full = cloud_provider.get_instance_names(instance['name'])
+            nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
         except Exception:
             nodename = None
 
         kube_provider.delete_kube_node(nodename, run_id)
-        cloud_provider.terminate_instance(instance['name'])
+        cloud_provider.terminate_instance(ins_id)
 
 
 if __name__ == '__main__':
