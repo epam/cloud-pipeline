@@ -14,18 +14,32 @@
 
 import argparse
 
-from pipeline.autoscaling import gcpprovider, kubeprovider
+from pipeline.autoscaling import *
+
+
+def create_cloud_provider(cloud, cloud_region):
+    if cloud == "aws":
+        return awsprovider.AWSInstanceProvider(cloud_region)
+    elif cloud == "az":
+        return azureprovider.AzureInstanceProvider(cloud_region)
+    elif cloud == "gcloud":
+        return gcpprovider.GCPInstanceProvider(cloud_region)
+    else:
+        raise RuntimeError("Cloud: {} is not supported".format(cloud))
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--internal_ip", "-ip", type=str, required=True)
     parser.add_argument("--node_name", "-n", type=str, required=True)
+    parser.add_argument("--cloud", "-c", type=str, required=True)
+
     args = parser.parse_args()
+    cloud = args.cloud
 
     kube_provider = kubeprovider.KubeProvider()
     cloud_region = kube_provider.get_cloud_region_by_node_name(args.node_name)
-    cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
+    cloud_provider = create_cloud_provider(cloud, cloud_region)
 
     kube_provider.delete_kubernetes_node_by_name(args.node_name)
     cloud_provider.terminate_instance_by_ip(args.internal_ip)

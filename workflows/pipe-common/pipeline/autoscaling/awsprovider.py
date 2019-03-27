@@ -25,7 +25,7 @@ from itertools import groupby
 from operator import itemgetter
 import sys
 
-from cloudprovider import *
+from cloudprovider import AbstractInstanceProvider
 from pipeline import TaskStatus
 from pipeline.autoscaling import utils
 

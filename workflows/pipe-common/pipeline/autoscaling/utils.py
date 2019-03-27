@@ -18,7 +18,6 @@ import logging
 import json
 from pipeline import Logger, TaskStatus, PipelineAPI
 
-
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 
@@ -290,4 +289,3 @@ def get_tags(run_id):
     if res_tags:
         tags.update(res_tags)
     return tags
-

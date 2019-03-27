@@ -22,7 +22,7 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
-from cloudprovider import *
+from cloudprovider import AbstractInstanceProvider
 
 import utils
 

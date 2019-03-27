@@ -2,7 +2,7 @@ import os
 import socket
 import time
 import uuid
-from cloudprovider import *
+from cloudprovider import AbstractInstanceProvider
 from random import randint
 from time import sleep
 
@@ -19,7 +19,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
     def __init__(self, cloud_region):
         self.cloud_region = cloud_region
-        self.project_id = os.environ["GCP_PROJECT_ID"]
+        self.project_id = os.environ["GOOGLE_PROJECT_ID"]
         self.client = discovery.build('compute', 'v1')
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,

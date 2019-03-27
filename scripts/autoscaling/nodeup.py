@@ -14,9 +14,20 @@
 
 import argparse
 
-from pipeline import TaskStatus
+from pipeline import Logger, TaskStatus, PipelineAPI
 
-from pipeline.autoscaling import gcpprovider, kubeprovider, utils
+from pipeline.autoscaling import *
+
+
+def create_cloud_provider(cloud, cloud_region):
+    if cloud == "aws":
+        return awsprovider.AWSInstanceProvider(cloud_region)
+    elif cloud == "az":
+        return azureprovider.AzureInstanceProvider(cloud_region)
+    elif cloud == "gcloud":
+        return gcpprovider.GCPInstanceProvider(cloud_region)
+    else:
+        raise RuntimeError("Cloud: {} is not supported".format(cloud))
 
 
 def main():
@@ -25,7 +36,7 @@ def main():
     parser.add_argument("--run_id", type=str, required=True)
     parser.add_argument("--cluster_name", type=str, required=False)
     parser.add_argument("--cluster_role", type=str, required=False)
-    parser.add_argument("--ins_type", type=str, default='n1-standart-2')
+    parser.add_argument("--ins_type", type=str, required=True)
     parser.add_argument("--ins_hdd", type=int, default=30)
     parser.add_argument("--ins_img", type=str, required=True)
     parser.add_argument("--num_rep", type=int, default=100)
@@ -36,6 +47,8 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--cloud", type=str, default=None)
+
 
     args = parser.parse_args()
     ins_key = args.ins_key
@@ -53,21 +66,21 @@ def main():
     kubeadm_token = args.kubeadm_token
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
+    cloud = args.cloud
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
 
     utils.pipe_log_init(run_id)
 
-    cloud_region = utils.get_cloud_region(region_id)
-    cloud_provider = gcpprovider.GCPInstanceProvider(cloud_region)
+    cloud_provider = create_cloud_provider(cloud, region_id)
     utils.pipe_log('Started initialization of new calculation node in AWS region {}:\n'
                    '- RunID: {}\n'
                    '- Type: {}\n'
                    '- Disk: {}\n'
                    '- Image: {}\n'
                    '- IsSpot: {}\n'
-                   '- BidPrice: {}\n-'.format(cloud_region,
+                   '- BidPrice: {}\n-'.format(region_id,
                                               run_id,
                                               ins_type,
                                               ins_hdd,
@@ -77,7 +90,7 @@ def main():
 
     try:
         # Redefine default instance image if cloud metadata has specific rules for instance type
-        allowed_instance = utils.get_allowed_instance_image(cloud_region, ins_type, ins_img)
+        allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_img)
         if allowed_instance and allowed_instance["instance_mask"]:
             utils.pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\n'
                            'Image {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
@@ -97,7 +110,7 @@ def main():
 
         kube_provider = kubeprovider.KubeProvider()
         nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full, num_rep, time_rep)
-        kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, cloud_region)
+        kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, region_id)
 
         utils.pipe_log('Node created:\n'
                        '- {}\n'
