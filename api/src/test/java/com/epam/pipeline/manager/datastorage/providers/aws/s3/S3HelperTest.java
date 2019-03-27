@@ -60,7 +60,7 @@ public class S3HelperTest {
 
     @Before
     public void setUp() {
-        when(helper.getDefaultS3Client()).thenReturn(amazonS3);
+        doReturn(amazonS3).when(helper).getDefaultS3Client();
     }
 
     @Test
