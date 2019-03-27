@@ -117,7 +117,7 @@ class DataStorageOperations(object):
             if version and hard_delete:
                 click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
                 sys.exit(1)
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version or hard_delete)
+            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
             if source_wrapper is None or not source_wrapper.exists():
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)

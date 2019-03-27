@@ -12,7 +12,7 @@ except ImportError:
 import click
 from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
-from google.cloud.storage import Client
+from google.cloud.storage import Client, Blob
 from google.oauth2.credentials import Credentials
 
 from src.api.data_storage import DataStorage
@@ -66,8 +66,9 @@ class GsListingManager(GsManager, AbstractListingManager):
                                            delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None,
                                            versions=self.show_versions)
         absolute_files = [self._to_storage_file(blob) for blob in blobs_iterator]
+        absolute_versions = absolute_files if not self.show_versions else self._compact_versions(absolute_files)
         absolute_folders = [self._to_storage_folder(name) for name in blobs_iterator.prefixes]
-        absolute_items = absolute_files + absolute_folders
+        absolute_items = absolute_versions + absolute_folders
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
     def _to_storage_file(self, blob):
@@ -79,10 +80,21 @@ class GsListingManager(GsManager, AbstractListingManager):
         item.size = blob.size
         item.labels = [DataStorageItemLabelModel('StorageClass', blob.storage_class)]
         item.version = blob.generation
+        item.deleted = self._to_local_timezone(blob.time_deleted) if blob.time_deleted else None
         return item
 
     def _to_local_timezone(self, utc_datetime):
         return utc_datetime.astimezone(Config.instance().timezone())
+
+    def _compact_versions(self, absolute_files):
+        names = set(file.name for file in absolute_files)
+        absolute_versions = []
+        for name in names:
+            files = [file for file in absolute_files if file.name == name]
+            latest_file = files[-1]
+            latest_file.versions = files[:-1]
+            absolute_versions.append(latest_file)
+        return absolute_versions
 
     def _to_local_item(self, absolute_item, prefix):
         relative_item = copy.deepcopy(absolute_item)
@@ -113,31 +125,67 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         self.listing_manager = GsListingManager(self.client, self.bucket)
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
-        if version or hard_delete:
-            raise RuntimeError('Versions deletion is not available yet for GCP cloud provider.')
-        # TODO 25.03.19: Handle version and hard delete.
+        if recursive and version:
+            raise RuntimeError('Recursive folder deletion with specified version is not available '
+                               'for GCP cloud provider.')
         prefix = StorageOperations.get_prefix(relative_path)
         check_file = True
         if prefix.endswith(self.delimiter):
             prefix = prefix[:-1]
             check_file = False
         bucket = self.client.get_bucket(self.bucket.path)
-        if not recursive:
-            self._delete_blob(bucket.blob(prefix), exclude, include)
+        if not recursive and not hard_delete:
+            blob = bucket.blob(prefix)
+            self._set_generation(blob, version)
+            self._delete_blob(blob, exclude, include)
         else:
-            blob_names_for_deletion = []
+            blobs_for_deletion = []
+            self.listing_manager.show_versions = version is not None or hard_delete
             for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
-                    blob_names_for_deletion = [item.name]
+                    if version:
+                        matching_item_versions = [item_version for item_version in item.versions
+                                                  if item_version.version == version]
+                        if matching_item_versions:
+                            blob = bucket.blob(item.name)
+                            self._set_generation(blob, matching_item_versions[0].version)
+                            blobs_for_deletion = [blob]
+                    else:
+                        item_blobs_for_deletion = self._prepare_item_deletion(bucket, item, prefix, exclude, include,
+                                                                              hard_delete)
+                        blobs_for_deletion.extend(item_blobs_for_deletion)
                     break
                 if self._file_under_folder(item.name, prefix):
-                    blob_names_for_deletion.append(item.name)
-            for blob_name in blob_names_for_deletion:
-                self._delete_blob(bucket.blob(blob_name), exclude, include, prefix)
+                    item_blobs_for_deletion = self._prepare_item_deletion(bucket, item, prefix, exclude, include,
+                                                                          hard_delete)
+                    blobs_for_deletion.extend(item_blobs_for_deletion)
+            for blob in blobs_for_deletion:
+                self._delete_blob(blob, exclude, include, prefix)
+
+    def _prepare_item_deletion(self, bucket, item, prefix, exclude, include, hard_delete):
+        blobs_for_deletion = []
+        if hard_delete:
+            blob = bucket.blob(item.name)
+            if not item.deleted:
+                self._delete_blob(blob, exclude, include, prefix)
+            self._set_generation(blob, item.version)
+            blobs_for_deletion.append(blob)
+            for item_version in item.versions:
+                blob = bucket.blob(item.name)
+                self._set_generation(blob, item_version.version)
+                blobs_for_deletion.append(blob)
+        else:
+            blob = bucket.blob(item.name)
+            blobs_for_deletion.append(blob)
+        return blobs_for_deletion
+
+    def _set_generation(self, blob, version):
+        if version:
+            blob._patch_property('generation', int(version))
 
     def _delete_blob(self, blob, exclude, include, prefix=None):
         if self._is_matching_delete_filters(blob.name, exclude, include, prefix):
-            blob.delete()
+            self.client._delete_blob_generation(blob)
 
     def _is_matching_delete_filters(self, blob_name, exclude, include, prefix=None):
         if prefix:
@@ -349,7 +397,38 @@ class _ProxySession(AuthorizedSession):
         return super(_ProxySession, self).request(method, url, data, headers, **kwargs)
 
 
-class _RefreshingClient(Client):
+class _DeleteBlobGenerationMixin:
+
+    def _delete_blob_generation(self, blob):
+        """
+        Deletes a specific blob generation.
+
+        If the given blob has generation then it will be deleted, otherwise the latest blob generation will.
+
+        The current method is a workaround for the absence of support for the operation in the official SDK.
+        The support for such an operation was requested in #5781 issue and implemented in #7444 pull request that is
+        already merged. Therefore, as long as google-cloud-storage==1.15.0 is released the usage of the current
+        method should be replaced with the usage of a corresponding SDK method.
+
+        See also:
+        https://github.com/googleapis/google-cloud-python/issues/5781
+        https://github.com/googleapis/google-cloud-python/pull/7444
+        """
+        storage_name, blob_name, generation = blob.bucket.name, blob.name, blob.generation
+        query_params = {'userProject': self.project}
+        if generation:
+            query_params['generation'] = generation
+        bucket_path = "/b/" + storage_name
+        blob_path = Blob.path_helper(bucket_path, blob_name)
+        self._connection.api_request(
+            method="DELETE",
+            path=blob_path,
+            query_params=query_params,
+            _target_object=None,
+        )
+
+
+class _RefreshingClient(Client, _DeleteBlobGenerationMixin):
     MAX_REFRESH_ATTEMPTS = 100
 
     def __init__(self, bucket, read, write, refresh_credentials):
