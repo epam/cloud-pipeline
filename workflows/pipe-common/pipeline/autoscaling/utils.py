@@ -265,27 +265,3 @@ def poll_instance(sock, timeout, ip, port):
         pass
     sock.settimeout(None)
     return result
-
-
-def resource_tags():
-    tags = {}
-    config_regions, config_tags = load_cloud_config()
-    if config_tags is None:
-        return tags
-    for key, value in config_tags.iteritems():
-        tags.update({key: value})
-    return tags
-
-
-def run_id_tag(run_id):
-    return {
-        'Name': run_id,
-    }
-
-
-def get_tags(run_id):
-    tags = run_id_tag(run_id)
-    res_tags = resource_tags()
-    if res_tags:
-        tags.update(res_tags)
-    return tags

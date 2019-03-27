@@ -143,7 +143,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             'dns_settings': {
                 'domain_name_label': instance_name
             },
-            'tags': utils.get_tags(run_id)
+            'tags': AzureInstanceProvider.get_tags(run_id)
         }
         creation_result = self.network_client.public_ip_addresses.create_or_update(
             self.resource_group_name,
@@ -207,7 +207,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             "networkSecurityGroup": {
                 'id': security_group_info.id
             },
-            'tags': utils.get_tags(run_id)
+            'tags': AzureInstanceProvider.get_tags(run_id)
         }
         creation_result = self.network_client.network_interfaces.create_or_update(
             self.resource_group_name,
@@ -285,7 +285,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                     'id': nic.id
                 }]
             },
-            'tags': utils.get_tags(run_id)
+            'tags': AzureInstanceProvider.get_tags(run_id)
         }
 
         if kms_encyr_key_id:
@@ -356,3 +356,27 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         nic = self.network_client.network_interfaces.get(self.resource_group_name, vm_name + '-nic')
         nic.ip_configurations[0].public_ip_address = None
         self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
+
+    @staticmethod
+    def resource_tags():
+        tags = {}
+        config_regions, config_tags = utils.load_cloud_config()
+        if config_tags is None:
+            return tags
+        for key, value in config_tags.iteritems():
+            tags.update({key: value})
+        return tags
+
+    @staticmethod
+    def run_id_tag(run_id):
+        return {
+            'Name': run_id,
+        }
+
+    @staticmethod
+    def get_tags(run_id):
+        tags = AzureInstanceProvider.run_id_tag(run_id)
+        res_tags = AzureInstanceProvider.resource_tags()
+        if res_tags:
+            tags.update(res_tags)
+        return tags

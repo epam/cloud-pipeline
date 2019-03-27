@@ -41,10 +41,6 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, ins_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
 
-        labels = {}
-        for key, value in utils.get_tags(run_id).iteritems():
-            labels[key.lower()] = value.lower()
-
         body = {
             'name': instance_name,
             'machineType': machine_type,
@@ -72,7 +68,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 }
             ],
 
-            'labels': labels,
+            'labels': GCPInstanceProvider.get_tags(run_id),
             "metadata": {
                 "items": [
                     {
@@ -239,3 +235,27 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 return result
 
             time.sleep(1)
+
+    @staticmethod
+    def resource_tags():
+        tags = {}
+        config_regions, config_tags = utils.load_cloud_config()
+        if config_tags is None:
+            return tags
+        for key, value in config_tags.iteritems():
+            tags.update({key: value})
+        return tags
+
+    @staticmethod
+    def run_id_tag(run_id):
+        return {
+            'name': run_id,
+        }
+
+    @staticmethod
+    def get_tags(run_id):
+        tags = GCPInstanceProvider.run_id_tag(run_id)
+        res_tags = GCPInstanceProvider.resource_tags()
+        for key in res_tags:
+            tags[key.lower()] = res_tags[key].lower()
+        return tags

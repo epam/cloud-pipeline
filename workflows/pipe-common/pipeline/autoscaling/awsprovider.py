@@ -161,6 +161,22 @@ class AWSInstanceProvider(AbstractInstanceProvider):
 
         return nodename, nodename_full
 
+    def find_instance(self, run_id):
+        response = self.ec2.describe_instances(
+                Filters=[
+                    self.run_id_filter(run_id),
+                    {
+                        'Name': 'instance-state-name',
+                        'Values': ['pending', 'running', 'rebooting']
+                    }
+                ]
+            )
+        if len(response['Reservations']) > 0:
+            ins_id = response['Reservations'][0]['Instances'][0]['InstanceId']
+        else:
+            ins_id = None
+        return ins_id
+
     def terminate_instance_by_ip(self, node_internal_ip):
         instance_id = self.__get_aws_instance_id(node_internal_ip)
         if instance_id is not None:
@@ -209,7 +225,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
-                    "Tags": utils.get_tags(run_id)
+                    "Tags": AWSInstanceProvider.get_tags(run_id)
                 }
             ],
             **additional_args
@@ -233,7 +249,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                            kill_instance_id_on_fail=ins_id)
         utils.pipe_log('Instance created. ID: {}, IP: {}\n-'.format(ins_id, ins_ip))
 
-        ebs_tags = utils.resource_tags()
+        ebs_tags = AWSInstanceProvider.resource_tags()
         if ebs_tags:
             instance_description = self.ec2.describe_instances(InstanceIds=[ins_id])['Reservations'][0]['Instances'][0]
             volumes = instance_description['BlockDeviceMappings']
@@ -440,10 +456,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 ins_ip = instance_reservation['PrivateIpAddress']
                 self.ec2.create_tags(
                     Resources=[ins_id],
-                    Tags=utils.get_tags(run_id),
+                    Tags=AWSInstanceProvider.get_tags(run_id),
                 )
 
-                ebs_tags = utils.resource_tags()
+                ebs_tags = AWSInstanceProvider.resource_tags()
                 if ebs_tags:
                     volumes = instance_reservation['BlockDeviceMappings']
                     for volume in volumes:
@@ -525,7 +541,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         if not AWSInstanceProvider.tag_name_is_present(instance):  # create tag name if not presents
             self.ec2.create_tags(
                 Resources=[ins_id],
-                Tags=utils.get_tags(run_id),
+                Tags=AWSInstanceProvider.get_tags(run_id),
             )
             utils.pipe_log('Tag ({}) created for instance ({})\n-'.format(run_id, ins_id))
         else:
@@ -542,3 +558,28 @@ class AWSInstanceProvider(AbstractInstanceProvider):
 
             raise RuntimeError(error_message)
         return rep
+
+    @staticmethod
+    def resource_tags():
+        tags = []
+        config_regions, config_tags = utils.load_cloud_config()
+        if config_tags is None:
+            return tags
+        for key, value in config_tags.iteritems():
+            tags.append({"Key": key, "Value": value})
+        return tags
+
+    @staticmethod
+    def run_id_tag(run_id):
+        return [{
+            'Value': run_id,
+            'Key': 'Name'
+        }]
+
+    @staticmethod
+    def get_tags(run_id):
+        tags = AWSInstanceProvider.run_id_tag(run_id)
+        res_tags = AWSInstanceProvider.resource_tags()
+        if res_tags:
+            tags.extend(res_tags)
+        return tags
