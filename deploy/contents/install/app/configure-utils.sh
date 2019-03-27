@@ -592,6 +592,11 @@ function api_register_region {
         cors_rules=""
     fi
 
+    if [ "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS" ]; then
+        local region_fs_targets=""
+        IFS=', ' read -r -a region_fs_targets <<< "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS"
+    fi
+
     if [ "$CP_CLOUD_PLATFORM" == "$CP_AWS" ]; then
         if [ -z "$CP_AWS_KMS_ARN" ]; then
             print_err "Default encryption key for AWS KMS service is not defined, refusing to proceed with the Cloud region configuration (it shall be specified via CP_AWS_KMS_ARN parameter)"
@@ -599,11 +604,6 @@ function api_register_region {
         fi
         local encryption_key_arn="$CP_AWS_KMS_ARN"
         local encryption_key_id=$(id_from_arn $encryption_key_arn)
-
-        if [ "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS" ]; then
-            local region_fs_targets=""
-            IFS=', ' read -r -a region_fs_targets <<< "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS"
-        fi
 
 read -r -d '' payload <<-EOF
 {
