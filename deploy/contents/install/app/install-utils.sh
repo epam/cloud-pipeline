@@ -131,11 +131,11 @@ function init_cloud_config {
         do
             # Check if current entry corresponds to the detected cloud provider/region
             if [ "$cloud_provider" == "$CP_CLOUD_PLATFORM" ] && [ "$cloud_region" ==  "$CP_CLOUD_REGION_ID" ]; then
-                # Check if it is GPU or Common image (we rely here on a convetion that _GPU or _Common suffix will be present in the image name)
-                if [[ "$cloud_image_name" == *"_Common" ]]; then
+                # Check if it is GPU or Common image (we rely here on a convention that GPU or Common suffix will be present in the image name)
+                if [[ "$cloud_image_name" == *"Common" ]] || ; then
                     export CP_PREF_CLUSTER_INSTANCE_IMAGE="$cloud_image_id"
                 fi
-                if [[ "$cloud_image_name" == *"_GPU" ]]; then
+                if [[ "$cloud_image_name" == *"GPU" ]]; then
                     export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU="$cloud_image_id"
                 fi
             fi
