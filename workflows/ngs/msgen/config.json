@@ -1,14 +1,11 @@
 [ {
   "name" : "default",
-  "description" : "Initial default configuration",
+  "description" : "Default configuration",
   "configuration" : {
-    "nonPause" : false,
     "main_file": "msgen.sh",
-    "cloudRegionId" : 1,
     "instance_size" : "Standard_D2s_v3",
     "instance_disk" : "20",
-    "docker_image" : "cp-docker-registry.default.svc.cluster.local:31443/microsoft/msgen:latest",
-    "timeout" : 0,
+    "docker_image" : "ngs/msgen:latest",
     "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
     "language" : "other",
     "parameters" : {
