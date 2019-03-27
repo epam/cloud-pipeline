@@ -45,6 +45,25 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
     }
 }
 
+task buildWin(type: Exec, dependsOn: ':pipe-cli:test') {
+    group = 'build'
+    doFirst {
+        setCLIVersion.execute()
+    }
+    environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
+    environment "PIPE_CLI_WIN_DIST_DIR": "$project.rootDir/pipe-cli/dist/win"
+
+    commandLine "bash", "$project.rootDir/pipe-cli/build_windows.sh"
+    doLast {
+        cleanCLIVersion.execute()
+        delete("$project.rootDir/api/src/main/resources/static/pipe.zip")
+        copy {
+            from("$project.rootDir/pipe-cli/dist/win/pipe.zip")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+    }
+}
+
 task test(type: Exec, dependsOn: ':pipe-cli:installPackages') {
     group = 'test'
     commandLine "pytest", "-s", "-vvv", "--cov=$project.rootDir/pipe-cli", "--cov-config=$project.rootDir/pipe-cli/tests/cov_config"
@@ -52,8 +71,7 @@ task test(type: Exec, dependsOn: ':pipe-cli:installPackages') {
 
 task installPackages(type: Exec) {
     group = 'other'
-    commandLine "pip", "install", "click", "PTable", "requests", "pytz", "tzlocal",
-            "mock", "requests_mock", "pytest", "pytest-cov", "PyJWT==1.6.1", "azure-storage-blob==1.5.0"
+    commandLine "pip", "install", "--user", "-r", "$project.rootDir/pipe-cli/requirements.txt"
 }
 
 task setCLIVersion() {
@@ -78,4 +96,3 @@ task cleanCLIVersion() {
         delete("$project.rootDir/pipe-cli/temp")
     }
 }
-

@@ -73,7 +73,7 @@ task buildDoc(type: Tar) {
 }
 
 task buildAll(dependsOn: [":core:build",  "client:buildUI", buildPipe, buildDoc,
-                          ":pipe-cli:build", ":pipe-cli:buildLinux", ":jwt-generator:shadowJar",
+                          ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
                           ":elasticsearch-agent:build", ":data-transfer-service:build"]) {
     group = 'build'
@@ -140,11 +140,11 @@ task installDist(dependsOn: buildAll) {
 
 task distZip(type: Zip, dependsOn: installDist) {
     version = project.version
-    group = 'distribution'
-    archiveName  "pipeline.${version}.zip"
+    group = "distribution"
+    archiveName "cloud-pipeline.${version}.zip"
     destinationDir(file("$project.buildDir/install/dist"))
     from("$project.buildDir/install/bin/") {
-        into "pipeline/"
+        into "bin/"
     }
     include "**/**"
 }
@@ -153,7 +153,7 @@ task distTar(type: Tar, dependsOn: installDist) {
     version = project.version
     group = "distribution"
     compression = Compression.GZIP
-    archiveName "pipeline.${version}.tgz"
+    archiveName "cloud-pipeline.${version}.tgz"
     destinationDir(file("$project.buildDir/install/dist"))
     from("$project.buildDir/install/bin/") {
         into "bin/"
@@ -170,4 +170,3 @@ task clean(type: Delete) {
     group = "build"
     delete(project.buildDir)
 }
-
