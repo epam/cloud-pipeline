@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 
 try:
     from urllib.parse import urlparse  # Python 3
+    from urllib.request import urlopen  # Python 3
 except ImportError:
     from urlparse import urlparse  # Python 2
+    from urllib2 import urlopen  # Python 2
 
 import click
 from google.auth import _helpers
@@ -20,7 +22,7 @@ from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsMod
 from src.utilities.patterns import PatternMatcher
 from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import AbstractRestoreManager, AbstractListingManager, StorageOperations, \
-    AbstractDeleteManager, AbstractTransferManager, UrlIO
+    AbstractDeleteManager, AbstractTransferManager
 
 
 class GsProgressPercentage(ProgressPercentage):
@@ -288,7 +290,8 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         bucket = self.client.get_bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        blob.upload_from_file(UrlIO(source_key))
+        # TODO 27.03.19: Replace with stream-like approach
+        blob.upload_from_string(urlopen(source_key).read())
         progress_callback(size)
 
 
