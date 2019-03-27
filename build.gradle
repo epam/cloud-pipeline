@@ -139,30 +139,26 @@ task installDist(dependsOn: buildAll) {
 }
 
 task distZip(type: Zip, dependsOn: installDist) {
+    version = project.version
     group = 'distribution'
-    from("$project.buildDir/install/bin/") {
-        into 'pipeline/'
-    }
-    include '**/**'
-    archiveName 'pipeline.zip'
+    archiveName  "pipeline.${version}.zip"
     destinationDir(file("$project.buildDir/install/dist"))
-    doLast {
-        mkdir("$project.buildDir/install/dist")
+    from("$project.buildDir/install/bin/") {
+        into "pipeline/"
     }
+    include "**/**"
 }
 
 task distTar(type: Tar, dependsOn: installDist) {
-    group = 'distribution'
+    version = project.version
+    group = "distribution"
     compression = Compression.GZIP
-    from("$project.buildDir/install/bin/") {
-        into 'bin/'
-    }
-    include '**/**'
-    archiveName 'pipeline.tgz'
+    archiveName "pipeline.${version}.tgz"
     destinationDir(file("$project.buildDir/install/dist"))
-    doLast {
-        mkdir("$project.buildDir/install/dist")
+    from("$project.buildDir/install/bin/") {
+        into "bin/"
     }
+    include "**/**"
 }
 
 task wrapper(type: Wrapper) {
