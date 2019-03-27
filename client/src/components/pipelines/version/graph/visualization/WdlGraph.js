@@ -358,6 +358,10 @@ export default class WdlGraph extends Graph {
 
   onFullScreenChanged = () => {
     if (this.wdlVisualizer) {
+      const parent = this.wdlVisualizer.paper.el.parentElement;
+      if (parent) {
+        this.wdlVisualizer.paper.setDimensions(parent.offsetWidth, parent.offsetHeight);
+      }
       this.wdlVisualizer.zoom.fitToPage(graphFitContentOpts);
     }
   };
@@ -1116,10 +1120,11 @@ export default class WdlGraph extends Graph {
       return <Alert type="warning" message={this._mainFileRequest.error} />;
     }
     if (this.state.error) {
+      const error = this.state.error.message || this.state.error;
       const errorContent = (
         <Row>
           <Row>Error parsing wdl script:</Row>
-          <Row>{this.state.error}</Row>
+          <Row>{error}</Row>
         </Row>
       );
       return (
@@ -1133,8 +1138,8 @@ export default class WdlGraph extends Graph {
         className={styles.wdlGraph}
         onDragEnter={e => e.preventDefault()}
         onDragOver={e => e.preventDefault()}>
-        {this.renderSidePanelsControlButtons()}
-        {this.renderPropertiesPanel()}
+        {this.props.canEdit && this.renderSidePanelsControlButtons()}
+        {this.props.canEdit && this.renderPropertiesPanel()}
         {this.renderAppearancePanel()}
         <div className={styles.wdlGraphContainer} >
           <div ref={this.initializeContainer} />
@@ -1207,6 +1212,7 @@ export default class WdlGraph extends Graph {
         callback();
       }
     });
+    this.props.onGraphReady && this.props.onGraphReady(this);
   }
 
   componentWillUnmount () {
