@@ -98,8 +98,8 @@ class GsListingManager(GsManager, AbstractListingManager):
     def get_file_tags(self, relative_path):
         bucket = self.client.get_bucket(self.bucket.path)
         blob = bucket.blob(relative_path)
-        blob.reload()  # TODO 26.03.19: Is this operation required?
-        return blob.metadata
+        blob.reload()
+        return blob.metadata or {}
 
 
 class GsDeleteManager(GsManager, AbstractDeleteManager):
@@ -194,7 +194,7 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         destination_blob = destination_bucket.blob(destination_path)
         destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
         destination_blob.patch()
-        progress_callback(size, size)
+        progress_callback(size)
         if clean:
             source_blob.delete()
 
