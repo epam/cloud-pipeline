@@ -341,9 +341,7 @@ function load_install_config {
 
 function parse_env_option {
     local key_value="$1"
-    IFS="=" read -ra key_value_arr <<< "$key_value"
-    local key=${key_value_arr[0]}
-    local value=${key_value_arr[1]}
+    IFS="=" read -r key value <<< "${key_value}"
     
     key=${key//[^a-zA-Z_0-9]/_}
     if [ -z $value ]; then
