@@ -1,11 +1,17 @@
 from __future__ import absolute_import
 
 import copy
+import io
 import time
 from threading import Lock
 from datetime import timedelta, datetime
 import os
 import click
+
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
 
 from azure.storage.blob import BlockBlobService, ContainerPermissions, Blob
 from azure.storage.common._auth import _StorageSASAuthentication
@@ -15,7 +21,7 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import StorageOperations, AbstractTransferManager, AbstractListingManager, \
-    AbstractDeleteManager, UrlIO
+    AbstractDeleteManager
 from src.utilities.progress_bar import ProgressPercentage
 from src.config import Config
 
@@ -251,6 +257,16 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             source_wrapper.delete_item(source_key)
 
 
+class _SourceUrlIO(io.BytesIO):
+
+    def __init__(self, url):
+        super(_SourceUrlIO, self).__init__()
+        self.io = urlopen(url)
+
+    def read(self, n=10):
+        return self.io.read(n)
+
+
 class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
@@ -275,7 +291,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
                 return
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet)
-        self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, UrlIO(source_key),
+        self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback)
 

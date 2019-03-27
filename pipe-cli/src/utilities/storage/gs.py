@@ -264,6 +264,21 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             source_wrapper.delete_item(source_key)
 
 
+class _SourceUrlIO:
+
+    def __init__(self, response):
+        self.response = response
+        self.read_bytes_number = 0
+
+    def tell(self):
+        return self.read_bytes_number
+
+    def read(self, *args, **kwargs):
+        new_bytes = self.response.read(*args, **kwargs)
+        self.read_bytes_number += len(new_bytes)
+        return new_bytes
+
+
 class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
@@ -290,9 +305,8 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         bucket = self.client.get_bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
-        # TODO 27.03.19: Replace with stream-like approach
-        blob.upload_from_string(urlopen(source_key).read())
-        progress_callback(size)
+        blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
+        progress_callback(blob.size)
 
 
 class GsTemporaryCredentials:

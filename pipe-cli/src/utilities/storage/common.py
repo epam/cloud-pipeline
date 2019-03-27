@@ -1,11 +1,5 @@
-import io
 import os
 import re
-
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
 
 from abc import abstractmethod, ABCMeta
 
@@ -305,13 +299,3 @@ class AbstractRestoreManager:
         :param version: Version to be restored.
         """
         pass
-
-
-class UrlIO(io.BytesIO):
-
-    def __init__(self, url):
-        super(UrlIO, self).__init__()
-        self.io = urlopen(url)
-
-    def read(self, n=10):
-        return self.io.read(n)
