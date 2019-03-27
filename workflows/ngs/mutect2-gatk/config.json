@@ -1,0 +1,93 @@
+[
+    {
+        "name": "default",
+        "description": "Initial default configuration",
+        "configuration": {
+            "main_file": "mutect2gatk.wdl",
+            "instance_size": "m5.2xlarge",
+            "instance_disk": "300",
+            "docker_image": "library/cromwell:latest",
+            "cmd_template": "cromwell $SCRIPTS_DIR/src/[main_file]",
+            "language": "wdl",
+            "parameters": {
+                "Mutect2_tumor_bam": {
+                    "value": "",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_tumor_bai": {
+                    "value": "",
+                    "type": "input",
+                    "required": false
+                },
+                "Result": {
+                    "value": "",
+                    "type": "output",
+                    "required": false
+                },
+                "Mutect2_scatter_count": {
+                    "value": "4",
+                    "type": "string",
+                    "required": false
+                },
+                "Mutect2_ref_fasta": {
+                    "value": "obj://cloud-pipeline-reference/hg19/fasta/Homo_sapiens_assembly19.fasta",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_ref_fai": {
+                    "value": "obj://cloud-pipeline-reference/hg19/fasta/Homo_sapiens_assembly19.fasta.fai",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_ref_dict": {
+                    "value": "obj://cloud-pipeline-reference/hg19/fasta/Homo_sapiens_assembly19.dict",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_onco_ds_tar_gz": {
+                    "value": "obj://cloud-pipeline-reference/hg19/oncotator/oncotator_v1_ds_April052016.tar.gz",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_run_oncotator": {
+                    "value": "true",
+                    "type": "boolean",
+                    "required": false
+                },
+                "Mutect2_default_config_file": {
+                    "value": "obj://cloud-pipeline-reference/hg19/oncotator/onco_config.txt",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_filter_oncotator_maf": {
+                    "value": "false",
+                    "type": "boolean",
+                    "required": false
+                },
+                "Mutect2_run_funcotator": {
+                    "value": "true",
+                    "type": "boolean",
+                    "required": false
+                },
+                "Mutect2_funco_data_sources_tar_gz": {
+                    "value": "obj://cloud-pipeline-reference/hg19/funcotator/funcotator_dataSources.v1.4.20180615.tar.gz",
+                    "type": "input",
+                    "required": false
+                },
+                "ANALYSIS_DIR": {
+                    "value": "/common/analysis",
+                    "type": "string",
+                    "required": false
+                },
+                "INPUT_DIR": {
+                    "value": "/common/input",
+                    "type": "string",
+                    "required": false
+                }
+            },
+            "is_spot": true
+        },
+        "default": true
+    }
+]
