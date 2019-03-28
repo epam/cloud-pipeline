@@ -72,10 +72,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 final KubernetesManager kubernetesManager,
                                 final CloudRegionManager regionManager,
                                 final ParallelExecutorService executorService,
-                                @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
-                                @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
-                                @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
-                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
+                                @Value("${cluster.nodeup.script:}") final String nodeUpScript,
+                                @Value("${cluster.nodedown.script:}") final String nodeDownScript,
+                                @Value("${cluster.reassign.script:}") final String nodeReassignScript,
+                                @Value("${cluster.node.terminate.script:}") final String nodeTerminateScript,
                                 @Value("${kube.master.ip}") final String kubeMasterIP,
                                 @Value("${kube.kubeadm.token}") final String kubeToken) {
         this.instanceService = instanceService;
@@ -116,7 +116,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void terminateNode(final AzureRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName, nodeTerminateScript);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName,
+                CloudProvider.AZURE.name(), nodeTerminateScript);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
@@ -166,7 +167,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, nodeReassignScript, buildScriptAzureEnvVars(region));
+                oldId, newId, CloudProvider.AZURE.name(), cmdExecutor,
+                nodeReassignScript, buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -214,6 +216,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .cloud(CloudProvider.AZURE.name())
                 .region(region.getRegionCode());
 
         return commandBuilder.build().getCommand();
@@ -224,6 +227,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
                 .runId(String.valueOf(runId))
+                .cloud(CloudProvider.AZURE.name())
                 .build()
                 .getCommand();
     }

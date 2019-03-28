@@ -29,6 +29,7 @@ public class RunIdArgCommand extends AbstractClusterCommand {
     private final String executable;
     private final String script;
     private final String runId;
+    private final String cloud;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -37,6 +38,8 @@ public class RunIdArgCommand extends AbstractClusterCommand {
         commands.add(script);
         commands.add(RUN_ID_PARAMETER);
         commands.add(runId);
+        commands.add(CLOUD_PARAMETER);
+        commands.add(cloud);
         return commands;
     }
 }

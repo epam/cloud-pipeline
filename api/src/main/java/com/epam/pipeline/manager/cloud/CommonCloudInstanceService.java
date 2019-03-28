@@ -72,10 +72,11 @@ public class CommonCloudInstanceService {
 
     public boolean runNodeReassignScript(final Long oldId,
                                          final Long newId,
+                                         final String cloud,
                                          final CmdExecutor cmdExecutor,
                                          final String reassignScript,
                                          final Map<String, String> envVars) {
-        final String command = buildNodeReassignCommand(reassignScript, oldId, newId);
+        final String command = buildNodeReassignCommand(reassignScript, oldId, newId, cloud);
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);
@@ -93,25 +94,28 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public String buildTerminateNodeCommand(final String internalIp, final String nodeName,
+    public String buildTerminateNodeCommand(final String internalIp, final String nodeName, final  String cloud,
                                             final String nodeTerminateScript) {
         return TerminateNodeCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeTerminateScript)
                 .internalIp(internalIp)
                 .nodeName(nodeName)
+                .cloud(cloud)
                 .build()
                 .getCommand();
     }
 
     private String buildNodeReassignCommand(final String reassignScript,
                                             final Long oldId,
-                                            final Long newId) {
+                                            final Long newId,
+                                            final String cloud) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(reassignScript)
                 .oldRunId(String.valueOf(oldId))
                 .newRunId(String.valueOf(newId))
+                .cloud(cloud)
                 .build()
                 .getCommand();
     }

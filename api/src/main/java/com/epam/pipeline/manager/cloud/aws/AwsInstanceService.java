@@ -111,7 +111,8 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName, nodeTerminateScript);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName,
+                CloudProvider.AWS.name(), nodeTerminateScript);
         instanceService.runTerminateNodeScript(command, cmdExecutor, Collections.emptyMap());
     }
 
@@ -158,7 +159,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, nodeReassignScript, Collections.emptyMap());
+                oldId, newId, CloudProvider.AWS.name(), cmdExecutor, nodeReassignScript, Collections.emptyMap());
     }
 
     @Override
@@ -188,6 +189,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
                 .runId(String.valueOf(runId))
+                .cloud(CloudProvider.AWS.name())
                 .build()
                 .getCommand();
     }
@@ -205,6 +207,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .cloud(CloudProvider.AWS.name())
                 .region(region.getRegionCode());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {

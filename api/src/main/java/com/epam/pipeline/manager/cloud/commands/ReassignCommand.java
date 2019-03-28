@@ -30,6 +30,7 @@ public class ReassignCommand extends AbstractClusterCommand {
     private final String script;
     private final String oldRunId;
     private final String newRunId;
+    private final String cloud;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -40,6 +41,8 @@ public class ReassignCommand extends AbstractClusterCommand {
         commands.add(oldRunId);
         commands.add("--new_id");
         commands.add(newRunId);
+        commands.add(CLOUD_PARAMETER);
+        commands.add(cloud);
         return commands;
     }
 }

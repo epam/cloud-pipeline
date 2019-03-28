@@ -26,6 +26,7 @@ public abstract class AbstractClusterCommand {
     protected static final String REGION_PARAMETER = "--region_id";
     protected static final String INTERNAL_IP_PARAMETER = "--internal_ip";
     protected static final String NODE_NAME_PARAMETER = "--node_name";
+    protected static final String CLOUD_PARAMETER = "--cloud";
     private static final String ARG_DELIMITER = " ";
 
     public String getCommand() {
