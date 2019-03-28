@@ -242,6 +242,7 @@ export default class WdlGraph extends Graph {
         this.clearWrongPorts(this.workflow);
         this.previousSuccessfulCode = code;
         this.wdlVisualizer.attachTo(this.workflow);
+        this.updateData();
         if (clearModifiedConfig) {
           this.setState({
             selectedElement: null,
@@ -270,6 +271,52 @@ export default class WdlGraph extends Graph {
       hide();
     }
   };
+
+  updateData () {
+    let selectedTaskName, selectedTaskParameters;
+    if (this.props.selectedTaskId) {
+      [selectedTaskName, selectedTaskParameters] = this.props.selectedTaskId.split('?');
+      if (selectedTaskParameters) {
+        [selectedTaskParameters] = selectedTaskParameters
+          .split('&')
+          .filter(p => p.startsWith('parameters='));
+        if (selectedTaskParameters) {
+          selectedTaskParameters = selectedTaskParameters
+            .substring('parameters='.length)
+            .split(/[,;]/);
+        }
+      }
+    }
+    this.wdlVisualizer && this.wdlVisualizer.paper.model.getElements().forEach(e => {
+      const view = this.wdlVisualizer.paper.findViewByModel(e);
+      if (selectedTaskName && e.step && e.step.name === selectedTaskName) {
+        this.wdlVisualizer.disableSelection();
+        this.wdlVisualizer.enableSelection();
+        this.wdlVisualizer.selection.push(e);
+        view && view.el && view.el.classList.toggle('selected', true);
+      }
+      if (view && view.el && e.step.type !== 'workflow') {
+        if (!view.el.classList.contains(styles.wdlTask)) {
+          view.el.classList.add(styles.wdlTask);
+        }
+        if (!view.el.dataset) {
+          view.el.dataset = {};
+        }
+        let status;
+        if (this.props.getNodeInfo) {
+          const info = this.props.getNodeInfo({task: {name: e.step.name || e.action.name}});
+          if (info) {
+            status = info.status;
+          }
+        }
+        if (status) {
+          view.el.dataset['taskstatus'] = status.toLowerCase();
+        } else {
+          delete view.el.dataset['taskstatus'];
+        }
+      }
+    });
+  }
 
   clearWrongPorts = (step) => {
     if (step.i) {

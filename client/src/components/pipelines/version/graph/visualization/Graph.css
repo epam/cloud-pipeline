@@ -192,3 +192,79 @@
 .graph-interface:hover {
   cursor: pointer;
 }
+
+.wdl-task[data-type=VisualStep] rect,
+.wdl-task[data-type=VisualGroup] rect,
+.wdl-task[data-type=VisualWorkflow] rect {
+  fill: white;
+}
+
+.wdl-task[data-taskstatus=running] rect {
+  fill: #9cc8ff;
+  stroke: #2282bf;
+  opacity: 1;
+  animation: blink-animation 1s infinite;
+  -webkit-animation: blink-animation 1s infinite;
+}
+
+.wdl-task[data-taskstatus=running] text {
+  fill: #2282bf;
+}
+
+.wdl-task[data-taskstatus=success] rect {
+  fill: #d5ffd5;
+  stroke: green;
+  opacity: 1;
+}
+
+.wdl-task[data-taskstatus=success] text {
+  fill: green;
+}
+
+.wdl-task[data-taskstatus=stopped] rect {
+  fill: #eee;
+  stroke: gray;
+  opacity: 1;
+}
+
+.wdl-task[data-taskstatus=stopped] text {
+  fill: gray;
+}
+
+.wdl-task[data-taskstatus=failure] rect {
+  fill: #ffc7d4;
+  stroke: #ae1726;
+  opacity: 1;
+}
+
+.wdl-task[data-taskstatus=failure] text {
+  fill: #ae1726;
+}
+
+@keyframes blink-animation {
+  from {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes blink-animation {
+  from {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
