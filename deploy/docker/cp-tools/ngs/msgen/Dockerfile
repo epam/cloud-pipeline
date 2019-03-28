@@ -15,4 +15,10 @@
 ARG BASE_IMAGE=library/ubuntu:18.04
 FROM ${BASE_IMAGE}
 
-RUN pip install msgen==0.9.0
+RUN apt-get update -y && \
+    apt-get install -y wget \
+                   curl \
+                   python \
+                   git
+RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+    pip install msgen==0.9.0
