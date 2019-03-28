@@ -156,26 +156,18 @@ class AzureInstanceProvider(AbstractInstanceProvider):
     def __create_nic(self, instance_name, run_id):
 
         allowed_networks = utils.get_networks_config(self.zone)
-        res_group_network = None
-        subnet_id = None
         security_groups = utils.get_security_groups(self.zone)
         if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
             az_name = allowed_networks.items()[az_num][0]
             subnet_id = allowed_networks.items()[az_num][1]
-            res_group_network = az_name.split("/")
+            resource_group, network = self.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks', run_id)
             utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
         else:
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
+            resource_group, network, subnet_id = None, None, None
 
-        if len(res_group_network) != 2:
-            raise AssertionError("Please specify network as: <network_resource_group>/<network_name>")
-
-        subnet_info = self.network_client.subnets.get(
-            res_group_network[0],
-            res_group_network[1],
-            subnet_id
-        )
+        subnet_info = self.network_client.subnets.get(resource_group, network, subnet_id)
 
         public_ip_address = self.network_client.public_ip_addresses.get(
             self.resource_group_name,
@@ -185,15 +177,8 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         if len(security_groups) != 1:
             raise AssertionError("Please specify only one security group as: <resource_group>/<security_group_name>")
 
-        res_group_and_security_group = security_groups[0].split("/")
-
-        if len(res_group_and_security_group) != 2:
-            raise AssertionError("Please specify security group as: <resource_group>/<security_group_name>")
-
-        security_group_info = self.network_client.network_security_groups.get(
-            res_group_and_security_group[0],
-            res_group_and_security_group[1]
-        )
+        resource_group, secur_grp = self.get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups', run_id)
+        security_group_info = self.network_client.network_security_groups.get(resource_group, secur_grp)
 
         nic_params = {
             'location': self.zone,
@@ -234,13 +219,11 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             self.resource_group_name,
             instance_name + '-nic'
         )
-        image_param = instance_image.split("/")
-        if len(image_param) != 2:
-            print("node_image parameter doesn't match to Azure image name convention: <resource_group>/<image_name>")
+        resource_group, image_name = self.get_res_grp_and_res_name_from_string(instance_image, 'images', run_id)
 
         image = self.compute_client.images.get(
-            image_param[0],
-            image_param[1]
+            resource_group,
+            image_name
         )
 
         vm_parameters = {
@@ -267,6 +250,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             'storage_profile': {
                 'image_reference': {
                     'id': image.id
+                },
+                "osDisk": {
+                    "caching": "ReadWrite",
+                    "managedDisk": {
+                        "storageAccountType": self.__get_disk_type(instance_type)
+                    },
+                    "name": instance_name + "-os_disk",
+                    "createOption": "FromImage"
                 },
                 "dataDisks": [
                     {
@@ -320,6 +311,20 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             .get(self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
 
         return instance_name, private_ip
+
+    def get_res_grp_and_res_name_from_string(self, resource_id, resource_type, run_id):
+        resource_params = resource_id.split("/")
+        if len(resource_params) == 2:
+            resource_group, resource = resource_params[0], resource_params[1]
+        # according to full ID form: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/images/<image>
+        elif len(resource_params) == 9 and resource_params[3] == 'resourceGroups' and resource_params[7] == resource_type:
+            resource_group, resource = resource_params[4], resource_params[8]
+        else:
+            raise RuntimeError(
+                "Resource parameter doesn't match to Azure resource name convention: <resource_group>/<resource_name>"
+                " or full resource id: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/<type>/<name>. "
+                "Node Up process will be stopped.")
+        return resource_group, resource
 
     def __resolve_azure_api(self, resource):
         """ This method retrieves the latest non-preview api version for

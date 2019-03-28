@@ -37,8 +37,12 @@ def main():
         kube_provider.delete_kube_node(None, run_id)
     else:
         try:
-            nodename, _ = cloud_provider.get_instance_names(ins_id)
-        except Exception:
+            nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
+            nodename = kube_provider.find_node(nodename, nodename_full)
+            if not nodename:
+                raise RuntimeError("Failed to find Node {}".format(ins_id))
+        except Exception as e:
+            print e
             nodename = None
 
         kube_provider.delete_kube_node(nodename, run_id)

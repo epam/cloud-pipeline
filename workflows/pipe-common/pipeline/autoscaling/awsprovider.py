@@ -562,7 +562,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
     @staticmethod
     def resource_tags():
         tags = []
-        config_regions, config_tags = utils.load_cloud_config()
+        _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
         for key, value in config_tags.iteritems():
