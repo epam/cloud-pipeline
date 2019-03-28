@@ -17,3 +17,14 @@ from .azureprovider import *
 from .gcpprovider import *
 from .awsprovider import *
 from .utils import *
+
+
+def create_cloud_provider(cloud, cloud_region):
+    if cloud.lower() == "aws":
+        return awsprovider.AWSInstanceProvider(cloud_region)
+    elif cloud.lower() == "azure":
+        return azureprovider.AzureInstanceProvider(cloud_region)
+    elif cloud.lower() == "gcp":
+        return gcpprovider.GCPInstanceProvider(cloud_region)
+    else:
+        raise RuntimeError("Cloud: {} is not supported".format(cloud))

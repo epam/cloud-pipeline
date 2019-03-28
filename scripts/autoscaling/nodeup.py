@@ -16,18 +16,8 @@ import argparse
 
 from pipeline import Logger, TaskStatus, PipelineAPI
 
+import pipeline.autoscaling as autoscaling
 from pipeline.autoscaling import *
-
-
-def create_cloud_provider(cloud, cloud_region):
-    if cloud == "aws":
-        return awsprovider.AWSInstanceProvider(cloud_region)
-    elif cloud == "az":
-        return azureprovider.AzureInstanceProvider(cloud_region)
-    elif cloud == "gcloud":
-        return gcpprovider.GCPInstanceProvider(cloud_region)
-    else:
-        raise RuntimeError("Cloud: {} is not supported".format(cloud))
 
 
 def main():
@@ -73,7 +63,7 @@ def main():
 
     utils.pipe_log_init(run_id)
 
-    cloud_provider = create_cloud_provider(cloud, region_id)
+    cloud_provider = autoscaling.create_cloud_provider(cloud, region_id)
     utils.pipe_log('Started initialization of new calculation node in AWS region {}:\n'
                    '- RunID: {}\n'
                    '- Type: {}\n'
