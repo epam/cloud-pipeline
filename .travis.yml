@@ -3,23 +3,22 @@ jdk: openjdk8
 os: linux
 dist: xenial
 addons:
-    postgresql: '9.6'
+  postgresql: '9.6'
 before_script:
-    - psql -c "CREATE DATABASE pipeline_test;" -U postgres
-    - psql -c "CREATE SCHEMA pipeline; ALTER ROLE postgres IN DATABASE pipeline_test SET
-                search_path TO pipeline;" -U postgres -d pipeline_test
-install: "pip install mkdocs --user"
+- psql -c "CREATE DATABASE pipeline_test;" -U postgres
+- psql -c "CREATE SCHEMA pipeline; ALTER ROLE postgres IN DATABASE pipeline_test SET search_path TO pipeline;" -U postgres -d pipeline_test
+install: pip install mkdocs --user
 script: "./gradlew clean distTar -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release"
 deploy:
-    skip_cleanup: true
-    provider: s3
-    access_key_id: AKIAJJVUVJOBU5WMHWIA
-    secret_access_key:
-        secure: NR1QP2E6Ssjwx8ZxrBBb4u/iw/pcZUK1WilQPZbTCmKStWgxx/JjAx79R1Q++C3XzFu/x7F4BLXShKbOh4ahW5ty7EQ/V3mlQDIbT39QVBwtjfM5O+khqDZ490knXYEUFNmfj2cYw4UA4X4YLS7qDlzGbDy5FK1/Kf9KR0Snfer9QII7ULIiuoytMUT4cxXQrL5AqInJAPUCUfnortsyV1uKZg1SgGKqiX1hL999rTBOUkvGtgFD/kUIcbDthvYq0RnNE7qy/z4VRhY+4O+4q7c/sRZIj2iBnTSuH1wJMPBKBxKox0wIs7TeuS3VSWlwmPNTdvxJmZ9CXZFiv5y/EBdYn/ctSJWTAsCHBKAVffhnowch+1qUKGQ+hyrSf8OikVr9xYaceYul0TWBes6Fze4d7pmzcIyb1aRxu5qhA1RnTiVo7XXaSYzVJA8d9QA8rmehZJeD+voFyIr2W5ayDiCpMGWU+nM+2W2AFWXCIfH2b9irAM2FOYsvSvoNCfbDmfdVhk1gxJTgnUJkmha8lBYy2MstLXnvk9hE0VNYvxKWWwDACKiqQhgfQN1ttFwNz6Z8I5E/t8+LApwEA/frPjEFmpRuN65JqIrckAjn7TicucWTc1QMBNjVNTU0JnfbQOLfctqvSCAnPjBPGrrtTw5DKdRBaTrZmB1PQH8yFgA=
-    bucket: cloud-pipeline-oss-builds
-    local-dir: build/install/dist/
-    upload-dir: builds/develop
-    acl: public_read
-    on:
-        repo: epam/cloud-pipeline
-        branch: develop
+  skip_cleanup: true
+  provider: s3
+  access_key_id: AKIAJJVUVJOBU5WMHWIA
+  secret_access_key:
+    secure: kTsUzjZ3xrW5GRS+kaVJ4XZ3EfR0V9MPViRMUPosPEozpGzsamFyfqsFthyaMuXOUipUoklmZF2nGxdUyGcfNLryFcgpXMqoBJv5kXpdFcUbApjR8lLorG+SYb3AIMal/D1GJytZTuyofLCluwe+uubAHv7129qb6VQaKNje4rNvzndWwdRG0Vz69bUxNLc4MhzNR840IWOVngM0YpQGy+tcPp0KEx82y/SoL1YfkbHsJqXtI5YKYxZNpoo3oFB8wjzBEU7I0OzubWAXhHYADKvfqT17rKZErrzFSJYpdFPs8/UJtlPA1fjhuwQWKGIVjXFBqhZaX7JyDvqYbpHLCVaYPJvUoxk56+ayEcwNDMhTPI33vnyeYYiNMeSkoDVe9ZY0dsFDgSXiaXk7LUDpbka8nZeNJT15kiwnKe0+8ZSxgKVOM4jn7669GgumV6g7n8sQVqe8y1X40RtyxxlgH6+1cg/waqa7IifzluESCdc+RRJoLUJScq6l5AAJlbxqTwaQq4/cBIZxLst8bxqQnUmbMr6LTDSqwIGuNBM0htZfktiaqO6MUZ9WtUjCPCdULAqrLkOsDrMpkzXEff5tWMkQ5wrlppzCCAjVnEsiLAPZUV0YNezriN95NYHlLTH4J97E5CW5O3/6SmUx0fA/SRMSVTXobexW+TpOjjbEVik=
+  bucket: cloud-pipeline-oss-builds
+  local-dir: build/install/dist/
+  upload-dir: builds/develop
+  acl: public_read
+  on:
+    repo: epam/cloud-pipeline
+    branch: develop
