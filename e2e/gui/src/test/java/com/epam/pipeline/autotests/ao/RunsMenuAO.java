@@ -146,6 +146,17 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return new ToolPageAO(endpointURL);
     }
 
+    public RunsMenuAO validateStatus(final String runId, final LogAO.Status status) {
+        $("tbody")
+                .find(withText(runId))
+                .closest(".ant-table-row")
+                .findAll("td")
+                .get(0)
+                .find("i")
+                .shouldHave(status.reached);
+        return this;
+    }
+
     public RunsMenuAO validateStoppedStatus(String runId) {
         $("tbody")
                 .find(withText(runId))

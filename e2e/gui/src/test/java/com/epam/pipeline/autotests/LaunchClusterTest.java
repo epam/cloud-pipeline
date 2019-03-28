@@ -15,14 +15,17 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -133,5 +136,55 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .resetClusterChildNodes()
                 .setDefaultChildNodes("asdf")
                 .messageShouldAppear("Enter positive number");
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-2628"})
+    public void autoScaledClusterWithDefaultChildNodesValidationTest() {
+        final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
+        library()
+                .createPipeline(Template.SHELL, getPipelineName())
+                .clickOnPipeline(getPipelineName())
+                .firstVersion()
+                .runPipeline()
+                .setDefaultLaunchOptions()
+                .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
+                .enableClusterLaunch()
+                .clusterSettingsForm("Auto-scaled cluster")
+                .setDefaultChildNodes("1")
+                .setWorkingNodesCount("2")
+                .click(button("OK"))
+                .launch(this)
+                .shouldContainRun(getPipelineName(), getRunId())
+                .openClusterRuns(getRunId())
+                .shouldContainRunsWithParentRun(1, getRunId())
+                .shouldContainRun(getPipelineName(), String.valueOf(Integer.parseInt(getRunId()) + 1))
+                .showLog(getRunId())
+                .waitForTask(gridEngineAutoscalingTask)
+                .ensure(taskWithName(gridEngineAutoscalingTask), visible)
+                .click(taskWithName(gridEngineAutoscalingTask))
+                .waitForLog(String.format("Additional worker with host=%s has been created.",
+                        String.format("pipeline-%s", Integer.parseInt(getRunId()) + 2))
+                );
+
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .openClusterRuns(getRunId())
+                .shouldContainRunsWithParentRun(2, getRunId())
+                .shouldContainRun("pipeline", String.valueOf(Integer.parseInt(getRunId()) + 2))
+                .showLog(getRunId())
+                .ensure(taskWithName(gridEngineAutoscalingTask), visible)
+                .click(taskWithName(gridEngineAutoscalingTask))
+                .waitForLog(String.format("Additional worker with host=%s has been stopped.",
+                        String.format("pipeline-%s", Integer.parseInt(getRunId()) + 2)));
+
+        navigationMenu()
+                .runs()
+                .activeRuns()
+                .openClusterRuns(getRunId())
+                .validateStatus(getRunId(), LogAO.Status.WORKING)
+                .validateStatus(String.valueOf(Integer.parseInt(getRunId()) + 1), LogAO.Status.WORKING)
+                .validateStatus(String.valueOf(Integer.parseInt(getRunId()) + 2), LogAO.Status.STOPPED);
     }
 }
