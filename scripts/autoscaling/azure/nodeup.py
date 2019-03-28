@@ -343,6 +343,14 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
             'image_reference': {
                'id': image.id
             },
+            "osDisk": {
+                "caching": "ReadWrite",
+                "managedDisk": {
+                    "storageAccountType": get_disk_type(instance_type)
+                },
+                "name": instance_name + "-os_disk",
+                "createOption": "FromImage"
+            },
             "dataDisks": [
                 {
                     "name": instance_name + "-data",
