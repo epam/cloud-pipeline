@@ -125,7 +125,7 @@ task installDist(dependsOn: buildAll) {
                 "$rootDir/docker-comp-scan/build/libs/docker-comp-scan.jar",
                 "$rootDir/dist/cloud-pipeline-docs.tar.gz",
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
-                "$rootDir/data-transfer-service/build/libs/data-transfer-sesrvice.jar"
+                "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar"
         )
 
         distFiles.each {
