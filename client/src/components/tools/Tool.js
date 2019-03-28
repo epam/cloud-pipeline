@@ -891,7 +891,7 @@ export default class Tool extends localization.LocalizedReactComponent {
                   loading={version.status === ScanStatuses.pending}
                   size="small"
                   onClick={(e) => this.toolScan(e, version.name)}>
-                  {version.status === ScanStatuses.pending ? 'SCANING' : 'SCAN'}
+                  {version.status === ScanStatuses.pending ? 'SCANNING' : 'SCAN'}
                 </Button>
               )
             }
