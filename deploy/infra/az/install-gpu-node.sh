@@ -114,43 +114,41 @@ yum install libnvidia-container1 -y
 
 # create a script that will parse and run user data every start up time
 CUSTOM_USER_ACTIONS_SCRIPT="/usr/local/user-data-execute"
-cat <<EOF >$CUSTOM_USER_ACTIONS_SCRIPT
+cat <<'EOF' >$CUSTOM_USER_ACTIONS_SCRIPT
 #!/bin/bash
-# chkconfig: 345 99 10
+
+exec > /var/log/user_data_rc.log 2>&1
 
 rdom () { local IFS=\> ; read -d \< E C ;}
 
-wait_file() {
-  local file="\$1"; shift
-  local wait_seconds="\${1:-10}"; shift # 10 seconds as default timeout
-
-  until test \$((wait_seconds--)) -eq 0 -o -f "\$file" ; do sleep 1; done
-
-  ((++wait_seconds))
-}
-
 custom_data_file=/var/lib/waagent/CustomData
-
-wait_file "\$custom_data_file" 300 || {
-  echo "Waagent file missing after waiting for \$? seconds: \$custom_data_file"
-}
-
-cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash
-
 waagent_file=/var/lib/waagent/ovf-env.xml
 
-wait_file "\$waagent_file" 300 || {
-  echo "Waagent file missing after waiting for \$? seconds: \$waagent_file"
-  exit 1
-}
+wait_attempts=120
+while [ "$wait_attempts" -ne 0 ]; do
+  if [ -f "$custom_data_file" ]; then
+    echo "Custom data file found at $custom_data_file"
+    cat /var/lib/waagent/CustomData | base64 --decode | /bin/bash
+    echo "$custom_data_file executed"
+    exit 0
+  fi
+  if [ -f "$waagent_file" ]; then
+    echo "Custom data file found at $waagent_file"
+    while rdom; do
+      if [[ $E = *CustomData* ]]; then
+          echo $C | base64 --decode | /bin/bash
+          echo "$waagent_file executed"
+          exit 0
+      fi
+    done < $waagent_file
 
-while rdom; do
-    if [[ \$E = *CustomData* ]]; then
-        echo \$C | base64 --decode | /bin/bash
-        exit 0
-    fi
-done < /var/lib/waagent/ovf-env.xml
+    echo "$waagent_file WAS NOT executed, as <CustomData> tag was not found. Will proceed with waiting"
+  fi
+  wait_attempts=$((wait_attempts-1))
+  sleep 1
+done
 
+echo "None of the Custom Data files was found: $custom_data_file , $waagent_file in the $wait_attempts seconds"
 EOF
 
 chmod +x $CUSTOM_USER_ACTIONS_SCRIPT
