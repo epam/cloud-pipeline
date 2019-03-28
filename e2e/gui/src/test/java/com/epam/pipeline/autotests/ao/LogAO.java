@@ -131,8 +131,13 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
-    public LogAO pause(final String pipelineName) {
+    public LogAO clickOnPauseButton() {
         get(PAUSE).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO pause(final String pipelineName) {
+        clickOnPauseButton();
         new ConfirmationPopupAO<>(this)
                 .ensureTitleIs(
                         String.format("Do you want to pause %s?", pipelineName))
@@ -142,7 +147,11 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO assertPausingFinishedSuccessfully() {
-        return messageShouldAppear("PAUSING").waitForResumeButton();
+        return assertPausingStatus().waitForResumeButton();
+    }
+
+    public LogAO assertPausingStatus() {
+        return messageShouldAppear("PAUSING");
     }
 
     public LogAO waitForResumeButton() {
@@ -161,6 +170,11 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO assertResumingFinishedSuccessfully() {
         return messageShouldAppear("RESUMING").waitForPauseButton();
+    }
+
+    public LogAO validateException(final String exception) {
+        $(".ant-alert-message").shouldHave(text(exception));
+        return this;
     }
 
     public LogAO instanceParameters(final Consumer<InstanceParameters> action) {

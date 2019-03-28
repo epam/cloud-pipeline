@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Tools;
@@ -29,14 +30,21 @@ import org.testng.annotations.Test;
 import java.util.function.Supplier;
 
 import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.NodePage.labelWithType;
 import static com.epam.pipeline.autotests.ao.NodePage.mainInfo;
+import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
+import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implements Tools {
 
@@ -46,6 +54,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String testFileName = "test.txt";
     private final String testFileContent = "test";
     private final String ipField = "IP";
+    private final String instanceType = C.DEFAULT_INSTANCE;
+    private final String priceType = "On-demand";
+    private final String pauseTask = "PausePipelineRun";
 
     private String endpoint;
 
@@ -64,7 +75,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase({"EPMCMBIBPC-2309"})
     public void pauseAndResumeValidation() {
-        final String priceType = "On-demand";
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
@@ -97,7 +107,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 )
                                 .instanceParameters(parameters -> {
                                     final String nodeIp = $(parameterWithName(ipField)).text().split(" \\(")[0];
-                                    final String expectedTitle = String.format("^Node: %s*", nodeIp);
+                                    final String expectedTitle = String.format("^Node: %s.*", nodeIp);
                                     final String ipHyperlink = getParameterValueLink(ipField);
                                     parameters.inAnotherTab(nodeTab ->
                                             checkNodePage(() ->
@@ -113,7 +123,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
-        final String priceType = "On-demand";
         endpoint = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
@@ -121,7 +130,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .show(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
-        open(C.ROOT_ADDRESS);
+        refresh();
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .waitForPauseButton()
@@ -138,6 +147,34 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .inAnotherTab(nodeTab ->
                                 checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
                         )
+                );
+    }
+
+
+    @Test
+    @TestCase({"EPMCMBIBPC-2627"})
+    public void forbiddenPauseValidation() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setLaunchOptions("15", instanceType, null)
+                .setPriceType(priceType)
+                .click(START_IDLE)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .log(getLastRunId(), log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell.execute("fallocate -l 25G test.big"))
+                                )
+                                .waitForPauseButton()
+                                .clickOnPauseButton()
+                                .validateException("This operation may fail due to 'Out of disk' error")
+                                .click(button(PAUSE.name()))
+                                .assertPausingStatus()
+                                .ensure(taskWithName(pauseTask), visible)
+                                .click(taskWithName(pauseTask))
+                                .ensure(log(), matchText("\\[WARN] Free disk space \\w+ is not enough for committing.*"))
+                                .waitForPauseButton()
+                                .shouldHaveStatus(LogAO.Status.WORKING)
                 );
     }
 
