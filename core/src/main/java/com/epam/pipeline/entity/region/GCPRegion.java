@@ -20,7 +20,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Google Cloud Platform region. Holds settings and authorization options
+ * Google Cloud Platform region. Represents a zone inside of one of GCP Regions.
+ * Holds settings and authorization options
  * related to GCP deployment.
  */
 @NoArgsConstructor

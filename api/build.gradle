@@ -83,9 +83,11 @@ dependencies {
     compile group: "org.springframework", name: "spring-context", version: "4.3.7.RELEASE"
     compile group: "org.springframework", name: "spring-context-support", version: "4.3.7.RELEASE"
 
-    //google auth
+    //GCP
     compile group: "com.google.auth", name: "google-auth-library-oauth2-http", version: "0.9.1"
     compile group: "com.google.api-client", name: "google-api-client", version: "1.23.0"
+    compile "com.google.apis:google-api-services-compute:v1-rev210-1.25.0"
+    compile "com.google.apis:google-api-services-cloudbilling:v1-rev30-1.25.0"
 
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
     testCompile group: "com.github.tomakehurst", name: "wiremock", version: "2.14.0"
