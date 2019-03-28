@@ -14,7 +14,7 @@
 
 import argparse
 
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import TaskStatus
 
 import pipeline.autoscaling as autoscaling
 from pipeline.autoscaling import *

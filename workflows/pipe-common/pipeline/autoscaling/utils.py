@@ -83,7 +83,7 @@ def load_cloud_config():
 
 
 def get_region_settings(cloud_region):
-    full_settings, tags = load_cloud_config()
+    full_settings, _ = load_cloud_config()
     for region_settings in full_settings:
         if 'name' in region_settings and region_settings['name'] == cloud_region:
             return region_settings
@@ -232,7 +232,7 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
 def get_cloud_region(region_id):
     if region_id is not None:
         return region_id
-    regions, tags = load_cloud_config()
+    regions, _ = load_cloud_config()
     for region in regions:
         if 'default' in region and region['default']:
             return region['name']
@@ -262,6 +262,6 @@ def poll_instance(sock, timeout, ip, port):
     try:
         result = sock.connect_ex((ip, port))
     except Exception as e:
-        pass
+        print e
     sock.settimeout(None)
     return result

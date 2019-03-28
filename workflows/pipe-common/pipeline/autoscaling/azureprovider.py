@@ -55,8 +55,8 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
                                   ins_key, "pipeline", kms_encyr_key_id)
         except Exception as e:
-            print e
             self.__delete_all_by_run_id(run_id)
+            raise RuntimeError(e)
 
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
@@ -338,7 +338,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:19]
         self.__detach_disks_and_nic(vm_name)
         for resource in resources:
             self.resource_client.resources.delete(
@@ -353,9 +353,12 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
     def __detach_disks_and_nic(self, vm_name):
         self.compute_client.virtual_machines.delete(self.resource_group_name, vm_name).wait()
-        nic = self.network_client.network_interfaces.get(self.resource_group_name, vm_name + '-nic')
-        nic.ip_configurations[0].public_ip_address = None
-        self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
+        try:
+            nic = self.network_client.network_interfaces.get(self.resource_group_name, vm_name + '-nic')
+            nic.ip_configurations[0].public_ip_address = None
+            self.network_client.network_interfaces.create_or_update(self.resource_group_name, vm_name + '-nic', nic).wait()
+        except Exception as e:
+            print e
 
     @staticmethod
     def resource_tags():

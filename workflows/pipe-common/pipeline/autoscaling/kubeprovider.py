@@ -25,21 +25,21 @@ class KubeProvider(object):
     def __init__(self):
         try:
             self.api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
-        except Exception as e:
+        except Exception:
             self.api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
         self.api.session.verify = False
 
-    def get_nodename(self, api, nodename):
-        node = pykube.Node.objects(api).filter(field_selector={'metadata.name': nodename})
+    def get_nodename(self, nodename):
+        node = pykube.Node.objects(self.api).filter(field_selector={'metadata.name': nodename})
         if len(node.response['items']) > 0:
             return nodename
         else:
             return ''
 
     def find_node(self, nodename, nodename_full):
-        ret_namenode = self.get_nodename(self.api, nodename)
+        ret_namenode = self.get_nodename(nodename)
         if not ret_namenode:
-            return self.get_nodename(self.api, nodename_full)
+            return self.get_nodename(nodename_full)
         else:
             return ret_namenode
 

@@ -271,7 +271,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         try:
             utils.pipe_log('- Getting image {} block device mapping details'.format(ins_img))
             img_details = self.ec2.describe_images(ImageIds=[ins_img])
-            utils.pipe_log('- Block device mapping details received. Proceeding with validation'.format(ins_img))
+            utils.pipe_log('- Block device mapping details received. Proceeding with validation')
 
             if len(img_details["Images"]) == 0:
                 raise RuntimeError("No images found for {}".format(ins_img))
@@ -357,7 +357,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         if len(spot_prices) == 0:
             utils.pipe_log('- Unable to get prices for a spot of type {}, cheapest zone can not be determined'.format(ins_type))
         else:
-            cheapest_zone, lowest_price = spot_prices[0]
+            cheapest_zone, _ = spot_prices[0]
             utils.pipe_log('- Prices for {} spots:\n'.format(ins_type) +
                            '\n'.join('{0}: {1:.5f}'.format(zone, price) for zone, price in spot_prices) + '\n' +
                            '{} zone will be used'.format(cheapest_zone))
@@ -491,7 +491,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
 
     def __check_spot_request_exists(self, num_rep, run_id, time_rep):
         utils.pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
-        for interation in range(0, 5):
+        for _ in range(0, 5):
             response = self.ec2.describe_spot_instance_requests(Filters=[self.run_id_filter(run_id)])
             if len(response['SpotInstanceRequests']) > 0:
                 request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']

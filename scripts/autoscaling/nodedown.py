@@ -37,7 +37,7 @@ def main():
         kube_provider.delete_kube_node(None, run_id)
     else:
         try:
-            nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
+            nodename, _ = cloud_provider.get_instance_names(ins_id)
         except Exception:
             nodename = None
 

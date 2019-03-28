@@ -24,6 +24,8 @@ from googleapiclient import discovery
 
 from pipeline.autoscaling import utils
 
+OS_DISK_SIZE = 10
+
 INSTANCE_USER_NAME = "pipeline"
 
 NO_BOOT_DEVICE_NAME = 'sdb1'
@@ -63,8 +65,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             },
             'canIpForward': True,
             'disks': [
-                #TODO
-                self.__get_boot_device(10, ins_img),
+                self.__get_boot_device(OS_DISK_SIZE, ins_img),
                 self.__get_device(ins_hdd)
             ],
             'networkInterfaces': [
@@ -253,7 +254,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     @staticmethod
     def resource_tags():
         tags = {}
-        config_regions, config_tags = utils.load_cloud_config()
+        _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
         for key, value in config_tags.iteritems():
