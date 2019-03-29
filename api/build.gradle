@@ -43,6 +43,18 @@ jar {
     }
 }
 
+// >>>>> Exclude tests through property defined in the build.gradle file
+test { 
+    if (project.hasProperty('excludeTests')) { 
+        exclude project.property('excludeTests')
+    }
+    afterSuite { desc, result ->
+        if (!desc.parent) { // will match the outermost suite
+            println "Results: ${result.resultType} (${result.testCount} total, ${result.successfulTestCount} success, ${result.failedTestCount} failure, ${result.skippedTestCount} skipped)"
+        }
+    }
+}
+
 sourceCompatibility = 1.8
 
 repositories {
@@ -61,7 +73,6 @@ ext {
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
 build.mustRunAfter ":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin"
-
 
 dependencies {
     // Spring Boot
@@ -184,12 +195,6 @@ dependencies {
 
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
-}
-
-test {
-    testLogging {
-        exceptionFormat = "full"
-    }
 }
 
 // >>>>> processes profiles
