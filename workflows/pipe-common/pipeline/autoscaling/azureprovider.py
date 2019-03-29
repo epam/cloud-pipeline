@@ -154,20 +154,23 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         return creation_result.result()
 
     def __create_nic(self, instance_name, run_id):
-
         allowed_networks = utils.get_networks_config(self.zone)
         security_groups = utils.get_security_groups(self.zone)
         if allowed_networks and len(allowed_networks) > 0:
             az_num = randint(0, len(allowed_networks) - 1)
             az_name = allowed_networks.items()[az_num][0]
-            subnet_id = allowed_networks.items()[az_num][1]
-            resource_group, network = self.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks', run_id)
-            utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
+            subnet = AzureInstanceProvider.get_subnet_name_from_id(allowed_networks.items()[az_num][1])
+            resource_group, network = AzureInstanceProvider.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
+            utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet, az_name))
         else:
-            utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-            resource_group, network, subnet_id = None, None, None
+            utils.pipe_log('- Networks list NOT found, trying to find network from region in the same resource group...')
+            resource_group, network, subnet = self.get_any_network_from_location(self.zone)
+            utils.pipe_log('- Network found, subnet {} in VNET {} will be used'.format(subnet, network))
 
-        subnet_info = self.network_client.subnets.get(resource_group, network, subnet_id)
+        if not resource_group or not network or not subnet:
+            raise RuntimeError("No networks with subnet found for location: {} in resourceGroup: {}".format(self.zone, self.resource_group_name))
+
+        subnet_info = self.network_client.subnets.get(resource_group, network, subnet)
 
         public_ip_address = self.network_client.public_ip_addresses.get(
             self.resource_group_name,
@@ -177,7 +180,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         if len(security_groups) != 1:
             raise AssertionError("Please specify only one security group as: <resource_group>/<security_group_name>")
 
-        resource_group, secur_grp = self.get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups', run_id)
+        resource_group, secur_grp = AzureInstanceProvider.get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups')
         security_group_info = self.network_client.network_security_groups.get(resource_group, secur_grp)
 
         nic_params = {
@@ -219,7 +222,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             self.resource_group_name,
             instance_name + '-nic'
         )
-        resource_group, image_name = self.get_res_grp_and_res_name_from_string(instance_image, 'images', run_id)
+        resource_group, image_name = AzureInstanceProvider.get_res_grp_and_res_name_from_string(instance_image, 'images')
 
         image = self.compute_client.images.get(
             resource_group,
@@ -312,20 +315,6 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
         return instance_name, private_ip
 
-    def get_res_grp_and_res_name_from_string(self, resource_id, resource_type, run_id):
-        resource_params = resource_id.split("/")
-        if len(resource_params) == 2:
-            resource_group, resource = resource_params[0], resource_params[1]
-        # according to full ID form: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/images/<image>
-        elif len(resource_params) == 9 and resource_params[3] == 'resourceGroups' and resource_params[7] == resource_type:
-            resource_group, resource = resource_params[4], resource_params[8]
-        else:
-            raise RuntimeError(
-                "Resource parameter doesn't match to Azure resource name convention: <resource_group>/<resource_name>"
-                " or full resource id: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/<type>/<name>. "
-                "Node Up process will be stopped.")
-        return resource_group, resource
-
     def __resolve_azure_api(self, resource):
         """ This method retrieves the latest non-preview api version for
         the given resource (unless the preview version is the only available
@@ -365,10 +354,54 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         except Exception as e:
             print e
 
+    def get_any_network_from_location(self, location):
+        resource_group, network, subnet = None, None, None
+
+        for vnet in self.resource_client.resources.list(filter="resourceType eq 'Microsoft.Network/virtualNetworks' "
+                                                          "and location eq '{}' "
+                                                          "and resourceGroup eq '{}'".format(location, self.resource_group_name)):
+            resource_group, network = AzureInstanceProvider.get_res_grp_and_res_name_from_string(vnet.id, 'virtualNetworks')
+            break
+
+        if not resource_group or not network:
+            return resource_group, network, subnet
+
+        for subnet_res in self.network_client.subnets.list(resource_group, network):
+            subnet = AzureInstanceProvider.get_subnet_name_from_id(subnet_res.id)
+            break
+        return resource_group, network, subnet
+
+    @staticmethod
+    def get_subnet_name_from_id(subnet_id):
+        if "/" not in subnet_id:
+            return subnet_id
+        subnet_params = subnet_id.split("/")
+        # according to /subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>
+        if len(subnet_params) == 11 and subnet_params[3] == "resourceGroups" and subnet_params[9] == "subnets":
+            return subnet_params[10]
+        else:
+            raise RuntimeError("Subnet dont match form of the Azure ID "
+                               "/subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>: {}".format(subnet_id))
+
+    @staticmethod
+    def get_res_grp_and_res_name_from_string(resource_id, resource_type):
+        resource_params = resource_id.split("/")
+        if len(resource_params) == 2:
+            resource_group, resource = resource_params[0], resource_params[1]
+        # according to full ID form: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/images/<image>
+        elif len(resource_params) == 9 and resource_params[3] == 'resourceGroups' and resource_params[7] == resource_type:
+            resource_group, resource = resource_params[4], resource_params[8]
+        else:
+            raise RuntimeError(
+                "Resource parameter doesn't match to Azure resource name convention: <resource_group>/<resource_name>"
+                " or full resource id: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/<type>/<name>. "
+                "Node Up process will be stopped.")
+        return resource_group, resource
+
     @staticmethod
     def resource_tags():
         tags = {}
-        config_regions, config_tags = utils.load_cloud_config()
+        _, config_tags = utils.load_cloud_config()
         if config_tags is None:
             return tags
         for key, value in config_tags.iteritems():

@@ -188,20 +188,20 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         self.__wait_for_operation(delete['name'])
 
     def terminate_instance_by_ip(self, internal_ip):
-        items = self.__list_instances("")
+        items = self.__filter_instances("")
         for instance in items:
             if instance['networkInterfaces'][0]['networkIP'] == internal_ip:
                 self.terminate_instance(instance['name'])
 
     def __find_instance(self, run_id):
-        items = self.__list_instances('labels.name="{}"'.format(run_id))
+        items = self.__filter_instances('labels.name="{}"'.format(run_id))
         if items:
             filtered = [ins for ins in items if 'labels' in ins and ins['labels']['name'] == run_id]
             if filtered and len(filtered) == 1:
                 return filtered[0]
         return None
 
-    def __list_instances(self, filter):
+    def __filter_instances(self, filter):
         result = self.client.instances().list(
             project=self.project_id,
             zone=self.cloud_region,

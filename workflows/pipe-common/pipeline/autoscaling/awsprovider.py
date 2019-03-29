@@ -185,11 +185,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
     @staticmethod
     def get_mean(values):
         n = 0
-        sum = 0.0
+        _sum = 0.0
         for v in values:
-            sum += v
+            _sum += v
             n += 1
-        return sum / n
+        return _sum / n
 
     @staticmethod
     def run_id_filter(run_id):
