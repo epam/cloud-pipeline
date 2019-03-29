@@ -34,6 +34,7 @@ import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.close;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
@@ -73,6 +74,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
 
     @AfterMethod(alwaysRun = true)
     public void refresh() {
+        close();
         open(C.ROOT_ADDRESS);
     }
 
@@ -212,6 +214,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 )
                                 .waitForPauseButton()
                                 .clickOnPauseButton()
+                                .sleep(2, SECONDS)
                                 .validateException("This operation may fail due to 'Out of disk' error")
                                 .click(button(PAUSE.name()))
                                 .assertPausingStatus()
