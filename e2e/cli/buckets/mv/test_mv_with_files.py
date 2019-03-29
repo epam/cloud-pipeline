@@ -251,7 +251,7 @@ class TestMoveWithFiles(object):
         self.upload_file_to_bucket(source)
         try:
             error = pipe_storage_mv(source, destination, force=True, expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az".')
+            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-679", e.message))
 

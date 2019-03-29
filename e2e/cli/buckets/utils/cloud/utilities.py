@@ -1,10 +1,12 @@
 from buckets.utils.cloud.aws_client import S3Client
 from buckets.utils.cloud.azure_client import AzureClient
+from buckets.utils.cloud.google_client import GsClient
 from common_utils.cmd_utils import *
 
 _clients = {
     S3Client.name: S3Client,
-    AzureClient.name: AzureClient
+    AzureClient.name: AzureClient,
+    GsClient.name: GsClient
 }
 
 

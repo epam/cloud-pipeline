@@ -21,7 +21,7 @@ from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from common_utils.pipe_cli import *
 
-ERROR_MESSAGE = "An error accrued in case "
+ERROR_MESSAGE = "An error occurred in case "
 
 
 @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Versioning is not supported for AZURE provider")
