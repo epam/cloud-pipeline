@@ -317,10 +317,7 @@ export class DataStorageEditDialog extends React.Component {
                   )}
                 </Form.Item>
                 {
-                  !this.isNfsMount && (
-                    (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
-                    (this.props.dataStorage && this.props.dataStorage.regionId > 0)
-                  ) &&
+                  !this.isNfsMount &&
                   <Form.Item
                     className={styles.dataStorageFormItem}
                     {...this.formItemLayout}
