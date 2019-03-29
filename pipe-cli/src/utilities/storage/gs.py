@@ -92,7 +92,7 @@ class GsListingManager(GsManager, AbstractListingManager):
         for name in names:
             files = [file for file in absolute_files if file.name == name]
             latest_file = files[-1]
-            latest_file.versions = files[:-1]
+            latest_file.versions = files
             absolute_versions.append(latest_file)
         return absolute_versions
 
@@ -156,10 +156,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
-            blobs_for_deletion = [self._blob(bucket, item.name, item.version)]
-            blobs_for_deletion.extend([self._blob(bucket, item.name, item_version.version)
-                                       for item_version in item.versions])
-            return blobs_for_deletion
+            return [self._blob(bucket, item.name, item_version.version) for item_version in item.versions]
         else:
             return [bucket.blob(item.name)]
 

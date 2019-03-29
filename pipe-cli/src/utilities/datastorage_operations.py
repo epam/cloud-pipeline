@@ -395,7 +395,7 @@ class DataStorageOperations(object):
                     size = item.size
                 if item.labels is not None and len(item.labels) > 0:
                     labels = ', '.join(map(lambda i: i.value, item.labels))
-                item_type = "-File" if item.delete_marker else item.type
+                item_type = "-File" if item.delete_marker or item.deleted else item.type
                 row = [item_type, labels, changed, size, name]
                 if show_versions:
                     row.append('')
