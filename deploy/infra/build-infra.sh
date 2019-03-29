@@ -256,27 +256,30 @@ function build_ami {
         echo "${cloud_provider},${region},${new_image_id},${base_ami_name},$(date '+%Y-%m-%d/%H:%M:%S')" >> $output_path
 
     elif [ "$cloud_provider" == "$CP_AZURE" ]; then
-        if [ "$base_ami" == "NA" ]; then
+        # Disable telemetry upload for az cli commands to improve performance a bit
+        export AZURE_CORE_COLLECT_TELEMETRY=false
+
+        if [ -z "$base_ami" ] || [ "$base_ami" == "NA" ]; then
             base_ami="OpenLogic:CentOS:7.6:latest"
             echo "CentOS Image will be used by default ($base_ami), as other value was not specified"
         fi
-        if [ "$base_ami_disk" == "NA" ]; then
+        if [ -z "$base_ami_disk" ] || [ "$base_ami_disk" == "NA" ]; then
             base_ami_disk="30"
             echo "Root device will be set to $base_ami_disk, as other value was not specified"
         fi
         if [ -z "$base_ami_size" ] || [ "$base_ami_size" == "NA" ]; then
-            base_ami_size="Standard_B2s"
+            base_ami_size="Standard_D2s_v3"
             echo "Image will be built using $base_ami_size, as other value was not specified"
         elif [ "$base_ami_size" == "gpu" ]; then
             base_ami_size="Standard_NC6"
             echo "Image will be built using $base_ami_size, as other value was not specified for GPU Image"
         elif [ "$base_ami_size" == "common" ]; then
-            base_ami_size="Standard_B2ms"
+            base_ami_size="Standard_D2s_v3"
             echo "Image will be built using $base_ami_size, as other value was not specified for Common Image"
         fi
 
         local _default_vnet=$(az network vnet list --resource-group $CP_AZURE_RESOURCE_GROUP --query "[?location=='$region']" | jq -r '.[].name' | head -n 1)
-        if [ "$subnet" == "NA" ]; then
+        if [ -z "$subnet" ] || [ "$subnet" == "NA" ]; then
             echo "Subnet is not defined, will try to determine a default one"
             if [ -z "$_default_vnet" ] || [ "$_default_vnet" == "null" ]; then
                 echo "ERROR: unable to get a default VNET name for $region region, exiting"
@@ -292,7 +295,7 @@ function build_ami {
         fi
         subnet="--subnet $subnet"
 
-        if [ "$security_groups" == "NA" ]; then
+        if [ -z "$security_groups" ] || [ "$security_groups" == "NA" ]; then
             echo "Security groups are not defined, will try to determine a default one from the default VNET $_default_vnet"
             security_groups=$(az network vnet subnet list --resource-group $CP_AZURE_RESOURCE_GROUP --vnet-name $_default_vnet | jq -r '.[].networkSecurityGroup.id')
             if [ -z "$security_groups" ] || [ "$security_groups" == "null" ]; then
@@ -313,17 +316,7 @@ function build_ami {
         fi
         echo
 
-        echo "Preparing user data installation script"
         NODE_ADMIN_USER=pipeline
-        user_data_script_creds="/tmp/install-node.sh"
-
-        cp $user_data_script $user_data_script_creds
-        AZURE_CREDS="$(cat $CP_AZURE_AUTH_LOCATION)"
-        sed -i "s|{{AZURE_CREDS}}|$(echo $AZURE_CREDS | sed 's|"|\\"|g')|g" $user_data_script_creds
-        sed -i "s|{{AZURE_RESOURCE_GROUP}}|$CP_AZURE_RESOURCE_GROUP|g" $user_data_script_creds
-        sed -i "s|{{instance_name}}|$base_ami_name|g" $user_data_script_creds
-        echo
-
         echo "Getting base image ($base_ami) details"
         base_image_details_json=$(az vm image show --location "$region" --urn "$base_ami")
         if [ $? -ne 0 ]; then
@@ -345,11 +338,10 @@ function build_ami {
                                                   $subnet \
                                                   $security_groups \
                                                   --tags Name=$base_ami_name \
-                                                  --custom-data $user_data_script_creds \
+                                                  --custom-data $user_data_script \
                                                   --generate-ssh-keys \
                                                   --admin-username $NODE_ADMIN_USER)
         run_instance_result=$?
-        rm -f $user_data_script_creds
 
         if [ $run_instance_result -ne 0 ]; then
             echo "ERROR: unable to start instance"
@@ -358,24 +350,20 @@ function build_ami {
         fi
         echo
 
-        echo "Wait for the initialization finish"
+        echo "Getting instance id"
         instance_id=$(echo $run_instance_json | jq -r '.id')
-        echo "Instance is started with id: $instance_id. Waiting for initialization..."
+        echo "Instance is started with id: $instance_id"
 
         echo "Run installation script..."
-        az vm run-command invoke --ids $instance_id --command-id RunShellScript --scripts 'cd / && sudo -E cat /var/lib/waagent/CustomData | base64 --decode | sudo -E /bin/bash --login &> ~/installation-script.log &'
+        az vm run-command invoke --ids $instance_id --command-id RunShellScript --scripts '/bin/cat /var/lib/waagent/CustomData | /bin/base64 --decode | /bin/bash --login &> /var/log/vm-image-install.log'
 
-        echo "Waiting for installation script to complete..."
-        user_data_state="none"
-        while [ "$user_data_state" != "done" ]; do
-            user_data_state=$(az vm get-instance-view --ids $instance_id | jq -r .tags.user_data)
-            sleep 5
-        done
-
+        echo "Installation script done, will wait for 30 seconds more"
+        sleep 30
+        # FIXME: change back to SSH instead of run-command
         echo "Deprovision the VM..."
         az vm run-command invoke --ids $instance_id \
                          --command-id RunShellScript \
-                         --scripts 'yum remove -y azure-cli &> /dev/null; rm -rf /root/.azure; rm -rf ~/.azure; waagent -deprovision+user -force' &> /dev/null &
+                         --scripts '/usr/bin/python -u /usr/sbin/waagent -deprovision+user -force' &> /dev/null &
         _run_cmd_pid=$!
         echo "Deprovision command sent, sleeping 60 seconds..."
         sleep 60
