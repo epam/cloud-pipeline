@@ -32,6 +32,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
 
+    private final String autoScaledSettingForm = "Auto-scaled cluster";
+
     @AfterMethod(alwaysRun = true)
     @Override
     public void removePipeline() {
@@ -82,7 +84,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .runPipeline()
                 .setDefaultLaunchOptions()
                 .enableClusterLaunch()
-                .clusterSettingsForm("Auto-scaled cluster")
+                .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("1")
                 .click(button("OK"))
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 1d && sleep infinity")
@@ -118,7 +120,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .messageShouldAppear("Value should be greater than 0")
                 .setWorkingNodesCount("asdf")
                 .messageShouldAppear("Enter positive number")
-                .clusterSettingsForm("Auto-scaled cluster")
+                .clusterSettingsForm(autoScaledSettingForm)
                 .setWorkingNodesCount("0")
                 .messageShouldAppear("Value should be greater than 0")
                 .setWorkingNodesCount("-1")
@@ -150,7 +152,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .setDefaultLaunchOptions()
                 .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:10 sleep 5m && sleep infinity")
                 .enableClusterLaunch()
-                .clusterSettingsForm("Auto-scaled cluster")
+                .clusterSettingsForm(autoScaledSettingForm)
                 .setDefaultChildNodes("1")
                 .setWorkingNodesCount("2")
                 .click(button("OK"))

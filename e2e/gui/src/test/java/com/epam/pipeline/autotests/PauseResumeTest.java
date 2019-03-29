@@ -44,6 +44,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implements Tools {
@@ -136,6 +137,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .waitForPauseButton()
                         .pause(getToolName())
                         .assertPausingFinishedSuccessfully()
+                        .sleep(1, MINUTES)
                         .inAnotherTab(nodeTab ->
                                 checkNodePage(() ->
                                         new ToolPageAO(endpoint)
