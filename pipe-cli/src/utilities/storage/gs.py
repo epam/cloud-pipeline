@@ -202,18 +202,18 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
         self.listing_manager = GsListingManager(self.client, self.wrapper.bucket, show_versions=True)
 
     def restore_version(self, version):
-        path = self.wrapper.bucket.path
-        source_bucket = self.client.get_bucket(path)
-        source_blob = source_bucket.blob(self.wrapper.path)
+        bucket = self.client.get_bucket(self.wrapper.bucket.path)
+        blob = bucket.blob(self.wrapper.path)
         if version:
-            source_bucket.copy_blob(source_blob, source_bucket, path, source_generation=int(version))
+            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
         else:
-            items = self.listing_manager.list_items(path, show_all=True)
-            if not items:
-                raise RuntimeError('Latest version was not found for the specified file.')
-            latest_item = items[-1]
+            all_items = self.listing_manager.list_items(blob.name, show_all=True)
+            file_items = [item for item in all_items if item.name == blob.name]
+            if not file_items:
+                raise RuntimeError('No versions of the specified file were found.')
+            latest_item = file_items[-1]
             latest_version = latest_item.version
-            source_bucket.copy_blob(source_blob, source_bucket, path, source_generation=int(latest_version))
+            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(latest_version))
 
 
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
