@@ -227,19 +227,22 @@ def create_public_ip_address(instance_name, run_id):
 
 
 def create_nic(instance_name, run_id):
-
     allowed_networks = get_networks_config(zone)
     security_groups = get_security_groups(zone)
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks) - 1)
         az_name = allowed_networks.items()[az_num][0]
         subnet_id = allowed_networks.items()[az_num][1]
-        subnet = get_subnet_name_from_id(subnet_id)
         resource_group, network = get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
-        pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
+        subnet = get_subnet_name_from_id(subnet_id)
+        pipe_log('- Networks list found, subnet {} in VNET {} will be used'.format(subnet_id, az_name))
     else:
-        pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-        resource_group, network, subnet = None, None, None
+        pipe_log('- Networks list NOT found, trying to find network from region in the same resource group...')
+        resource_group, network, subnet = get_any_network_from_location(zone)
+        pipe_log('- Network found, subnet {} in VNET {} will be used'.format(subnet, network))
+
+    if not resource_group or not network or not subnet:
+        raise RuntimeError("No networks with subnet found for location: {} in resourceGroup: {}".format(zone, resource_group_name))
 
     subnet_info = network_client.subnets.get(resource_group, network, subnet)
 
@@ -249,7 +252,7 @@ def create_nic(instance_name, run_id):
     )
 
     if len(security_groups) != 1:
-        raise AssertionError("Please specify only one security group as: <resource_group>/<security_group_name>")
+        raise AssertionError("Please specify only one security group!")
 
     resource_group, secur_grp = get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups')
     security_group_info = network_client.network_security_groups.get(resource_group, secur_grp)
@@ -275,6 +278,24 @@ def create_nic(instance_name, run_id):
     )
 
     return creation_result.result()
+
+
+def get_any_network_from_location(location):
+    resource_group, network, subnet = None, None, None
+
+    for vnet in resource_client.resources.list(filter="resourceType eq 'Microsoft.Network/virtualNetworks' "
+                                                      "and location eq '{}' "
+                                                      "and resourceGroup eq '{}'".format(location, resource_group_name)):
+        resource_group, network = get_res_grp_and_res_name_from_string(vnet.id, 'virtualNetworks')
+        break
+
+    if not resource_group or not network:
+        return resource_group, network, subnet
+
+    for subnet_res in network_client.subnets.list(resource_group, network):
+        subnet = get_subnet_name_from_id(subnet_res.id)
+        break
+    return resource_group, network, subnet
 
 
 def get_disk_type(instance_type):
