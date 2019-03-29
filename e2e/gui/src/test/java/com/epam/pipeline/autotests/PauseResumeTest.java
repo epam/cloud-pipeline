@@ -137,7 +137,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .waitForPauseButton()
                         .pause(getToolName())
                         .assertPausingFinishedSuccessfully()
-                        .sleep(1, MINUTES)
+                        .sleep(2, MINUTES)
                         .inAnotherTab(nodeTab ->
                                 checkNodePage(() ->
                                         new ToolPageAO(endpoint)

@@ -178,7 +178,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForLog(final String message) {
-        $(log()).shouldHave(matchText(message)).waitUntil(visible, COMPLETION_TIMEOUT);
+        $(log()).shouldHave(matchText(message)).waitUntil(visible, COMPLETION_TIMEOUT * 2);
         return this;
     }
 
