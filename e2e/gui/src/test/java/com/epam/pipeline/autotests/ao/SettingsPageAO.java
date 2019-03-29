@@ -19,6 +19,8 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
 
@@ -45,6 +48,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'CLI')]"))),
             entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'System events')]"))),
             entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'User management')]"))),
+            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'Preferences')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -71,6 +75,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public UserManagementAO switchToUserManagement() {
         click(USER_MANAGEMENT_TAB);
         return new UserManagementAO(parentAO);
+    }
+
+    public PreferencesAO switchToPreferences() {
+        click(PREFERENCES_TAB);
+        return new PreferencesAO(parentAO);
     }
 
     @Override
@@ -572,6 +581,69 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return parentAO;
                 }
             }
+        }
+    }
+
+    public class PreferencesAO extends SettingsPageAO {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                super.elements(),
+                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster")))
+        );
+
+        PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
+            super(pipelinesLibraryAO);
+        }
+
+        public ClusterTabAO switchToCluster() {
+            click(CLUSTER_TAB);
+            return new ClusterTabAO(parentAO);
+        }
+
+        public PreferencesAO save() {
+            $(byId("edit-preference-form-ok-button")).shouldBe(visible).click();
+            return this;
+        }
+
+        public class ClusterTabAO extends PreferencesAO {
+
+            ClusterTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            private By clusterHddExtraMulti() {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> text("cluster.instance.hdd_extra_multi").apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            public PreferencesAO setClusterHddExtraMulti(final String value) {
+                final By clusterHddExtraMultiValue = clusterHddExtraMulti();
+                click(clusterHddExtraMultiValue);
+                clear(clusterHddExtraMultiValue);
+                setValue(clusterHddExtraMultiValue, value);
+                return this;
+            }
+
+            public String getClusterHddExtraMulti() {
+                return $(clusterHddExtraMulti()).getValue();
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }

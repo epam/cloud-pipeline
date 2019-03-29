@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -40,6 +41,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.NodePage.labelWithType;
 import static com.epam.pipeline.autotests.ao.NodePage.mainInfo;
+import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
@@ -47,7 +49,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implements Tools {
+public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
 
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
@@ -60,6 +62,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     private final String pauseTask = "PausePipelineRun";
 
     private String endpoint;
+    private String defaultClusterHddExtraMulti;
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -71,6 +74,35 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @AfterMethod(alwaysRun = true)
     public void refresh() {
         open(C.ROOT_ADDRESS);
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void getDefaultPreferences() {
+        loginAsAdminAndPerform(() -> {
+            // EPMCMBIBPC-2627
+            defaultClusterHddExtraMulti =
+                    navigationMenu()
+                            .settings()
+                            .switchToPreferences()
+                            .switchToCluster()
+                            .getClusterHddExtraMulti();
+                    click(button("OK"));
+            }
+        );
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void fallBackPreferences() {
+        loginAsAdminAndPerform(() ->
+                // EPMCMBIBPC-2627
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .switchToCluster()
+                        .setClusterHddExtraMulti(defaultClusterHddExtraMulti)
+                        .save()
+                        .click(OK)
+        );
     }
 
     @Test
@@ -156,6 +188,15 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void forbiddenPauseValidation() {
+        loginAsAdminAndPerform(() ->
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .switchToCluster()
+                        .setClusterHddExtraMulti("1")
+                        .save()
+                        .click(OK));
+
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setLaunchOptions("15", instanceType, null)
@@ -176,7 +217,21 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .assertPausingStatus()
                                 .ensure(taskWithName(pauseTask), visible)
                                 .click(taskWithName(pauseTask))
-                                .ensure(log(), matchText("\\[WARN] Free disk space \\w+ is not enough for committing.*"))
+                                .ensure(log(), matchText("\\[WARN] Free disk space 0Kb is not enough for committing.*"))
+                                .waitForPauseButton()
+                                .shouldHaveStatus(LogAO.Status.WORKING)
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .execute("rm test.big && fallocate -l 10G test2.big")
+                                                .sleep(30, SECONDS))
+                                )
+                                .waitForPauseButton()
+                                .clickOnPauseButton()
+                                .click(button(PAUSE.name()))
+                                .assertPausingStatus()
+                                .ensure(taskWithName(pauseTask), visible)
+                                .click(taskWithName(pauseTask))
+                                .ensure(log(), matchText("\\[WARN] Free disk space [0-9\\.]+Kb is not enough for committing.*"))
                                 .waitForPauseButton()
                                 .shouldHaveStatus(LogAO.Status.WORKING)
                 );
