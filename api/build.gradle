@@ -88,7 +88,9 @@ dependencies {
     compile group: "com.google.api-client", name: "google-api-client", version: "1.23.0"
     compile "com.google.apis:google-api-services-compute:v1-rev210-1.25.0"
     compile "com.google.apis:google-api-services-cloudbilling:v1-rev30-1.25.0"
-
+    compile "com.google.apis:google-api-services-iamcredentials:v1-rev32-1.25.0"
+    compile "com.google.cloud:google-cloud-storage:1.64.0"
+    
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
     testCompile group: "com.github.tomakehurst", name: "wiremock", version: "2.14.0"
 
