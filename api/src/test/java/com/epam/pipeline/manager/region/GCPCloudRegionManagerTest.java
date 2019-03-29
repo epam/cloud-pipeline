@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.region;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -38,6 +38,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     private static final String GCP_PROJECT = "Project";
     private static final String GCP_PROJECT_CHANGED = "Bio";
     private static final String SSH_PUB_PATH = "/ssh.pub";
+    public static final String IMPERSONATED_ACCOUNT = "acc";
 
     @Before
     public void initGCPPreferences() {
@@ -55,24 +56,28 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
         region.setCreatedDate(new Date());
         region.setProject(GCP_PROJECT);
         region.setAuthFile(SSH_PUB_PATH);
+        region.setImpersonatedAccount(IMPERSONATED_ACCOUNT);
         return region;
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder createRegionBuilder() {
-        return updateRegionBuilder()
-                .regionCode(validRegionId())
-                .sshPublicKeyPath(SSH_PUB_PATH)
-                .project(GCP_PROJECT);
+    GCPRegionDTO createRegionDTO() {
+        final GCPRegionDTO gcpRegionDTO = updateRegionDTO();
+        gcpRegionDTO.setRegionCode(validRegionId());
+        gcpRegionDTO.setSshPublicKeyPath(SSH_PUB_PATH);
+        gcpRegionDTO.setProject(GCP_PROJECT);
+        return gcpRegionDTO;
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder updateRegionBuilder() {
-        return CloudRegionVO.builder()
-                .name(REGION_NAME)
-                .project(GCP_PROJECT_CHANGED)
-                .sshPublicKeyPath(SSH_PUB_PATH)
-                .provider(CloudProvider.GCP);
+    GCPRegionDTO updateRegionDTO() {
+        final GCPRegionDTO gcpRegionDTO = new GCPRegionDTO();
+        gcpRegionDTO.setName(REGION_NAME);
+        gcpRegionDTO.setProject(GCP_PROJECT_CHANGED);
+        gcpRegionDTO.setSshPublicKeyPath(SSH_PUB_PATH);
+        gcpRegionDTO.setProvider(CloudProvider.GCP);
+        gcpRegionDTO.setImpersonatedAccount(IMPERSONATED_ACCOUNT);
+        return gcpRegionDTO;
     }
 
     @Override

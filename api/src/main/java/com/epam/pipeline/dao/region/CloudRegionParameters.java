@@ -43,8 +43,10 @@ enum CloudRegionParameters {
     AZURE_API_URL,
     PRICE_OFFER_ID,
     PROJECT,
+    APPLICATION_NAME,
+    IMPERSONATED_ACCOUNT,
     MOUNT_ID,
     MOUNT_ROOT,
     MOUNT_OPTIONS,
-    MOUNT_TYPE;
+    MOUNT_TYPE
 }

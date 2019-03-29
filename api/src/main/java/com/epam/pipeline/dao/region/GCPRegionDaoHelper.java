@@ -39,6 +39,8 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         params.addValue(CloudRegionParameters.AUTH_FILE.name(), region.getAuthFile());
         params.addValue(CloudRegionParameters.SSH_PUBLIC_KEY.name(), region.getSshPublicKeyPath());
         params.addValue(CloudRegionParameters.PROJECT.name(), region.getProject());
+        params.addValue(CloudRegionParameters.APPLICATION_NAME.name(), region.getApplicationName());
+        params.addValue(CloudRegionParameters.IMPERSONATED_ACCOUNT.name(), region.getImpersonatedAccount());
         return params;
     }
 
@@ -50,6 +52,8 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         gcpRegion.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
         gcpRegion.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
         gcpRegion.setProject(rs.getString(CloudRegionParameters.PROJECT.name()));
+        gcpRegion.setApplicationName(rs.getString(CloudRegionParameters.APPLICATION_NAME.name()));
+        gcpRegion.setImpersonatedAccount(rs.getString(CloudRegionParameters.IMPERSONATED_ACCOUNT.name()));
         return gcpRegion;
     }
 

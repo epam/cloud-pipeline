@@ -37,8 +37,10 @@ import java.util.List;
 @Component
 public class GCPClient {
 
-    private final static List<String> COMPUTE_SCOPES = Collections.singletonList("https://www.googleapis.com/auth/compute");
-    private final static List<String> BILLING_SCOPES = Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
+    private static final List<String> COMPUTE_SCOPES =
+            Collections.singletonList("https://www.googleapis.com/auth/compute");
+    private static final List<String> BILLING_SCOPES =
+            Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
 
     private final HttpTransport httpTransport;
     private final JsonFactory jsonFactory;
@@ -59,7 +61,7 @@ public class GCPClient {
     public Cloudbilling buildBillingClient(final GCPRegion region) throws IOException {
         final GoogleCredential credentials = buildCredentials(region);
         return new Cloudbilling.Builder(httpTransport, jsonFactory, credentials.createScoped(BILLING_SCOPES))
-                .setApplicationName(region.getApplicationName())
+//                .setApplicationName(region.getApplicationName())
                 .build();
     }
 

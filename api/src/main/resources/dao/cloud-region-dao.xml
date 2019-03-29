@@ -47,7 +47,9 @@
                         meter_region_name,
                         azure_api_url,
                         price_offer_id,
-                        project)
+                        project,
+                        application_name,
+                        impersonated_account)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -73,7 +75,9 @@
                         :METER_REGION_NAME,
                         :AZURE_API_URL,
                         :PRICE_OFFER_ID,
-                        :PROJECT)
+                        :PROJECT,
+                        :APPLICATION_NAME,
+                        :IMPERSONATED_ACCOUNT)
                 ]]>
             </value>
         </constructor-arg>
@@ -107,6 +111,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -148,6 +154,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -189,6 +197,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -230,6 +240,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -271,6 +283,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -311,7 +325,9 @@
                         meter_region_name = :METER_REGION_NAME,
                         azure_api_url = :AZURE_API_URL,
                         price_offer_id = :PRICE_OFFER_ID,
-                        project = :PROJECT
+                        project = :PROJECT,
+                        application_name = :APPLICATION_NAME,
+                        impersonated_account = :IMPERSONATED_ACCOUNT
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -357,6 +373,8 @@
                         r.azure_api_url,
                         r.price_offer_id,
                         r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,

@@ -17,7 +17,7 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
-import com.epam.pipeline.mapper.CloudRegionMapper;
+import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;

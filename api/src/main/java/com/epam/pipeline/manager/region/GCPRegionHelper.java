@@ -45,6 +45,8 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_PROJECT_REQUIRED));
         Assert.state(StringUtils.isNotBlank(region.getSshPublicKeyPath()),
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_SSH_KEY_REQUIRED));
+        Assert.state(StringUtils.isNotBlank(region.getImpersonatedAccount()),
+                messageHelper.getMessage(MessageConstants.ERROR_GCP_IMP_ACC_REQUIRED));
     }
 
     @Override

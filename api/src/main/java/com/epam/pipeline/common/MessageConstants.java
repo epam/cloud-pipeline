@@ -418,6 +418,7 @@ public final class MessageConstants {
 
     //GCP
     public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
+    public static final String ERROR_GCP_IMP_ACC_REQUIRED = "error.gcp.impersonate.account";
     public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
 
     private MessageConstants() {
