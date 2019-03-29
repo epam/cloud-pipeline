@@ -17,6 +17,8 @@
 MSGEN_TASK_NAME="MicrosoftGenomics"
 
 # Required pipeline parameters:
+# CP_GENOMICS_REGION=
+# CP_GENOMICS_KEY=
 # SAMPLE="sample-1,sample-2"
 # FASTQ1="cp://msgen-sample-data/chr21_1.fq.gz,cp://msgen-sample-data/chr21_1.fq.gz"
 # FASTQ2="cp://msgen-sample-data/chr21_2.fq.gz,cp://msgen-sample-data/chr21_2.fq.gz"
@@ -43,6 +45,12 @@ function expand_vars() {
     echo $(${CP_PYTHON2_PATH} -c "import os; print(os.path.expandvars(\"$_STRING\"));")
 }
 
+function sample_description() {
+    local _SAMPLE="$1"
+
+    echo "sample=$_SAMPLE;run=$RUN_ID"
+}
+
 function submit_workflow() {
     local _SAMPLE="$1"
     local _FASTQ1="$2"
@@ -59,6 +67,7 @@ function submit_workflow() {
     local _BGZIP_ENABLED="${13}"
     local _IGNORE_AZURE_REGION="${14}"
 
+    DESCRIPTION=$(sample_description "$_SAMPLE")
     PROCESS_ARGS="R=$_REFERENCE"
     SYNCHRONOUS="false"
 
@@ -122,7 +131,7 @@ function submit_workflow() {
                                  --output-storage-account-container $OUTPUT_STORAGE_NAME \
                                  --output-filename-base $OUTPUT_STORAGE_PATH \
                                  --ignore-azure-region $_IGNORE_AZURE_REGION \
-                                 --description $RUN_ID"
+                                 --description $DESCRIPTION"
     if [[ ! -z "$_READ_GROUP" ]]
     then
         SUBMIT_COMMAND="$SUBMIT_COMMAND --read-group $_READ_GROUP"
@@ -137,36 +146,52 @@ function submit_workflow() {
     if [[ -z "$WORKFLOW_ID" ]]
     then
         pipe_log_fail "Microsoft Genomics workflow id for $_SAMPLE sample wasn't found in submit command output." "$MSGEN_TASK_NAME"
+        echo "$SUBMIT_OUTPUT"
         return 1
     else
         pipe_log_info "Microsoft Genomics workflow $WORKFLOW_ID has been submitted for $_SAMPLE sample." "$MSGEN_TASK_NAME"
     fi
 }
 
-function get_workflow_status() {
+function get_workflow_status_and_message() {
     local _GENOMICS_URL="$1"
     local _GENOMICS_KEY="$2"
-    local _WORKFLOW_ID="$3"
+    local _WORKFLOW_SAMPLE="$3"
+
+    DESCRIPTION=$(sample_description "$_WORKFLOW_SAMPLE")
 
     # Expected output:
     #
     # Microsoft Genomics command-line client v0.9.0
     # Copyright (c) 2019 Microsoft. All rights reserved.
-    # [03/18/2019 07:45:15 - Workflow ID: 10003]: Message: Completed successfully
-    #         Process: snapgatk-20190308_1
-    #         Description:
-    STATUS_OUTPUT=$(msgen status --api-url "$_GENOMICS_URL" \
-                                 --access-key "$_GENOMICS_KEY" \
-                                 --workflow-id "$_WORKFLOW_ID")
-    STATUS_MESSAGE=$(echo "$STATUS_OUTPUT" | grep -oP '(?<=Message: ).*')
-    echo "$STATUS_MESSAGE"
+    # Workflow List
+    # -------------
+    # Total Count  : 1
+    #
+    # Workflow ID     : 10068
+    # Status          : Completed successfully
+    # Message         :
+    # Process         : snapgatk-20190308_1
+    # Description     : sample=sample-1;run=29
+    # Created Date    : Thu, 28 Mar 2019 18:04:52 GMT
+    # End Date        : Thu, 28 Mar 2019 18:26:07 GMT
+    # Wall Clock Time : 0h 21m 15s
+    # Bases Processed : 1,348,613,600 (1 GBase)
+    LIST_OUTPUT=$(msgen list --api-url "$_GENOMICS_URL" \
+                             --access-key "$_GENOMICS_KEY" \
+                             --with-description "$DESCRIPTION")
+    WORKFLOW_STATUS=$(echo "$LIST_OUTPUT" | grep -oP '(?<=Status          : ).*')
+    WORKFLOW_MESSAGE=$(echo "$LIST_OUTPUT" | grep -oP '(?<=Message         : ).*')
+    echo "$WORKFLOW_STATUS"
+    echo "$WORKFLOW_MESSAGE"
 }
 
 function check_workflow_finished() {
     local _WORKFLOW_ID="$1"
     local _WORKFLOW_SAMPLE="$2"
-    local _OLD_WORKFLOW_STATUS="$3"
+    local _OLD_WORKFLOW_STATE="$3"
     local _WORKFLOW_STATUS="$4"
+    local _WORKFLOW_MESSAGE="$5"
 
     if [[ "$_WORKFLOW_STATUS" == "Completed successfully" ]]
     then
@@ -175,12 +200,18 @@ function check_workflow_finished() {
     fi
     if [[ "$_WORKFLOW_STATUS" =~ ^(Failed|Cancelled) ]]
     then
-        pipe_log_fail "Microsoft Genomics workflow $_WORKFLOW_ID has finished with an error." "$_WORKFLOW_SAMPLE"
+        if [[ -z "$_WORKFLOW_MESSAGE" ]]
+        then
+            pipe_log_fail "Microsoft Genomics workflow $_WORKFLOW_ID has finished with an error." "$_WORKFLOW_SAMPLE"
+        else
+            pipe_log_fail "Microsoft Genomics workflow $_WORKFLOW_ID has finished with an error: $_WORKFLOW_MESSAGE" "$_WORKFLOW_SAMPLE"
+        fi
         return 0
     fi
-    if [[ "$_WORKFLOW_STATUS" != "$_OLD_WORKFLOW_STATUS" ]]
+    WORKFLOW_STATE="${WORKFLOW_MESSAGE:-$WORKFLOW_STATUS}"
+    if [[ "$WORKFLOW_STATE" != "$_OLD_WORKFLOW_STATE" ]]
     then
-        pipe_log_info "Microsoft Genomics workflow $_WORKFLOW_ID status has changed: $_WORKFLOW_STATUS." "$_WORKFLOW_SAMPLE"
+        pipe_log_info "Microsoft Genomics workflow $_WORKFLOW_ID state has changed: $WORKFLOW_STATE." "$_WORKFLOW_SAMPLE"
     fi
     return 1
 }
@@ -275,7 +306,7 @@ IFS=',' read -r -a FASTQ2S <<< "$FASTQ2"
 
 WORKFLOW_IDS=()
 WORKFLOW_SAMPLES=()
-WORKFLOW_STATUSES=()
+WORKFLOW_STATES=()
 FAILED_SAMPLES=()
 for index in "${!SAMPLES[@]}"
 do
@@ -303,7 +334,7 @@ do
     fi
     WORKFLOW_IDS+=("$WORKFLOW_ID")
     WORKFLOW_SAMPLES+=("$CURRENT_SAMPLE")
-    WORKFLOW_STATUSES+=("")
+    WORKFLOW_STATES+=("")
 done
 
 POLLS_NUMBER=360
@@ -312,19 +343,21 @@ for POLL_NUMBER in $(seq 1 "$POLLS_NUMBER")
 do
     REMAINING_WORKFLOW_IDS=()
     REMAINING_WORKFLOW_SAMPLES=()
-    REMAINING_WORKFLOW_STATUSES=()
+    REMAINING_WORKFLOW_STATES=()
     for index in "${!WORKFLOW_IDS[@]}"
     do
         WORKFLOW_ID="${WORKFLOW_IDS[index]}"
         WORKFLOW_SAMPLE="${WORKFLOW_SAMPLES[index]}"
-        OLD_WORKFLOW_STATUS="${WORKFLOW_STATUSES[index]}"
-        WORKFLOW_STATUS=$(get_workflow_status "$GENOMICS_URL" "$GENOMICS_KEY" "$WORKFLOW_ID")
-        check_workflow_finished "$WORKFLOW_ID" "$WORKFLOW_SAMPLE" "$OLD_WORKFLOW_STATUS" "$WORKFLOW_STATUS"
+        OLD_WORKFLOW_STATUS="${WORKFLOW_STATES[index]}"
+        { IFS= read -r WORKFLOW_STATUS && IFS= read -r WORKFLOW_MESSAGE; } <<< $(get_workflow_status_and_message "$GENOMICS_URL" \
+                                                                                                                 "$GENOMICS_KEY" \
+                                                                                                                 "$WORKFLOW_SAMPLE")
+        check_workflow_finished "$WORKFLOW_ID" "$WORKFLOW_SAMPLE" "$OLD_WORKFLOW_STATUS" "$WORKFLOW_STATUS" "$WORKFLOW_MESSAGE"
         if [[ "$?" != "0" ]]
         then
             REMAINING_WORKFLOW_IDS+=("$WORKFLOW_ID")
             REMAINING_WORKFLOW_SAMPLES+=("$WORKFLOW_SAMPLE")
-            REMAINING_WORKFLOW_STATUSES+=("$WORKFLOW_STATUS")
+            REMAINING_WORKFLOW_STATES+=("${WORKFLOW_MESSAGE:-$WORKFLOW_STATUS}")
             continue
         fi
 
@@ -342,7 +375,7 @@ do
     done
     WORKFLOW_IDS=("${REMAINING_WORKFLOW_IDS[@]}")
     WORKFLOW_SAMPLES=("${REMAINING_WORKFLOW_SAMPLES[@]}")
-    WORKFLOW_STATUSES=("${REMAINING_WORKFLOW_STATUSES[@]}")
+    WORKFLOW_STATES=("${REMAINING_WORKFLOW_STATES[@]}")
     if [[ "${#WORKFLOW_IDS[@]}" == "0" ]]
     then
         break
