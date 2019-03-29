@@ -697,9 +697,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
       record.instance && record.instance.spot !== undefined && !record.instance.spot) {
       switch (record.status.toLowerCase()) {
         case 'pausing':
-          return <span>PAUSING</span>;
+          return <span id={`run-${record.id}-pausing`}>PAUSING</span>;
         case 'resuming':
-          return <span>RESUMING</span>;
+          return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
           if (record.podIP) {
             return <a
