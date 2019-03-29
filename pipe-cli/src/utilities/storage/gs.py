@@ -91,7 +91,9 @@ class GsListingManager(GsManager, AbstractListingManager):
         absolute_versions = []
         for name in names:
             files = [file for file in absolute_files if file.name == name]
-            latest_file = files[-1]
+            files.reverse()
+            latest_file = files[0]
+            latest_file.latest = True
             latest_file.versions = files
             absolute_versions.append(latest_file)
         return absolute_versions
