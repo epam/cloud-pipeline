@@ -503,6 +503,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
+    def get_file_tags(self, relative_path):
+        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, self.bucket), relative_path)
+
 
 class ObjectTaggingManager(StorageItemManager):
 
