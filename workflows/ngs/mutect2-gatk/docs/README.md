@@ -24,4 +24,5 @@ LICENSING : This script is released under the WDL source code license (BSD-3) (s
 
 # Reference
 
-The script is originated from the [gatk/mutect2-gatk FireCloud repository](https://portal.firecloud.org/#methods/gatk/mutect2-gatk4/13) and was slightly modified to remove GCP/FireCloud-specific options
+1. The script is originated from the [gatk/mutect2-gatk FireCloud repository](https://portal.firecloud.org/#methods/gatk/mutect2-gatk4/13) and was slightly modified to remove GCP/FireCloud-specific options
+2. `broadinstitute/oncotator:1.9.9.0` and `broadinstitute/gatk:4.0.6.0` docker images are used to run the tasks from the WDL script

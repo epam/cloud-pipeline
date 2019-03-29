@@ -48,8 +48,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
-	            -env CP_AZURE_OFFER_DURABLE_ID = \                  # 
-	            -env CP_AZURE_SUBSCRIPTION_ID = \                   # 
+                -env CP_AZURE_OFFER_DURABLE_ID = \                  # 
+                -env CP_AZURE_SUBSCRIPTION_ID = \                   # 
 
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
@@ -85,8 +85,6 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 ### AWS - install all services
 ```
 ~/.pipe/pipectl   install \
-            -env CP_DOCKER_DIST_USER={dockerhub_user} \
-            -env CP_DOCKER_DIST_PASS={dockerhub_pass} \
             -env CP_AWS_KMS_ARN="arn:aws:kms:{region}:{account_id}:key/{key_id}" \
             -env CP_AWS_ACCESS_KEY_ID=ABCDEFGHIJKLMNOPQRST \
             -env CP_AWS_SECRET_ACCESS_KEY=abcdefghijklmnopqstuvwxyz1234567890ABCDE \
@@ -111,16 +109,14 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 ### Azure - install all services
 ```
 ~/.pipe/pipectl   install \
-            -env CP_DOCKER_DIST_USER={dockerhub_user} \
-            -env CP_DOCKER_DIST_PASS={dockerhub_pass} \            
             -env CP_CLUSTER_SSH_KEY=/path/to/deploykey_name.pem \
             -env CP_CLUSTER_SSH_PUB=/path/to/deploypub_name.pem \
             -env CP_CLOUD_CREDENTIALS_FILE=/path/to/az/credentials \
             -env CP_AZURE_STORAGE_ACCOUNT={storage_account} \
             -env CP_AZURE_STORAGE_KEY=ABCDEFGHI \
             -env CP_AZURE_DEFAULT_RESOURCE_GROUP={resource_group_name} \
-	        -env CP_AZURE_OFFER_DURABLE_ID=MS-AAA-0000A \
-	        -env CP_AZURE_SUBSCRIPTION_ID=12345678-1234-1234-1234-12345678 \
+            -env CP_AZURE_OFFER_DURABLE_ID=MS-AAA-0000A \
+            -env CP_AZURE_SUBSCRIPTION_ID=12345678-1234-1234-1234-12345678 \
             -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="sg-123456789,sg-qwertyui" \
             -env CP_NOTIFIER_SMTP_SERVER_HOST="smtp.server.name" \
             -env CP_NOTIFIER_SMTP_SERVER_PORT={smpt_port} \
