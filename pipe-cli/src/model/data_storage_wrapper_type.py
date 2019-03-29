@@ -10,9 +10,9 @@ class WrapperType(object):
     __dynamic_cloud_scheme = 'cp'
     __s3_cloud_scheme = 's3'
     __azure_cloud_scheme = 'az'
-    __gc_cloud_scheme = 'gc'
-    __cloud_schemes = [__dynamic_cloud_scheme, __s3_cloud_scheme, __azure_cloud_scheme, __gc_cloud_scheme]
-    __cloud_schemes_map = {S3: __s3_cloud_scheme, AZURE: __azure_cloud_scheme, GS: __gc_cloud_scheme}
+    __gs_cloud_scheme = 'gs'
+    __cloud_schemes = [__dynamic_cloud_scheme, __s3_cloud_scheme, __azure_cloud_scheme, __gs_cloud_scheme]
+    __cloud_schemes_map = {S3: __s3_cloud_scheme, AZURE: __azure_cloud_scheme, GS: __gs_cloud_scheme}
 
     @classmethod
     def cloud_types(cls):
