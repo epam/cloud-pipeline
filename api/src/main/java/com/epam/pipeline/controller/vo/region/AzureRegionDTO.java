@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.region;
+package com.epam.pipeline.controller.vo.region;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
+import com.epam.pipeline.entity.region.AzurePolicy;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
-@EqualsAndHashCode
-public class AzurePolicy {
-    /**
-     * The minimum IP address of the range of IP addresses.
-     */
-    private String ipMin;
-    /**
-     * The maximum IP address of the range of IP addresses.
-     */
-    private String ipMax;
+@NoArgsConstructor
+public class AzureRegionDTO extends AbstractCloudRegionDTO {
+
+    private String storageAccount;
+    private String storageAccountKey;
+    private String resourceGroup;
+    private String corsRules;
+    private AzurePolicy azurePolicy;
+    private String subscription;
+    private String authFile;
+    private String sshPublicKeyPath;
+    private String meterRegionName;
+    private String azureApiUrl;
+    private String priceOfferId;
 }

@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
@@ -148,11 +148,12 @@ public class FolderManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUp() throws Exception {
-        cloudRegion = cloudRegionManager.create(CloudRegionVO.builder().name("US")
-                .regionCode("us-east-1")
-                .isDefault(true)
-                .provider(CloudProvider.AWS)
-                .build());
+        final AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
+        awsRegionDTO.setName("US");
+        awsRegionDTO.setRegionCode("us-east-1");
+        awsRegionDTO.setDefault(true);
+        awsRegionDTO.setProvider(CloudProvider.AWS);
+        cloudRegion = cloudRegionManager.create(awsRegionDTO);
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any());
 
         folder = new Folder();

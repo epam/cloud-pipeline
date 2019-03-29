@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,21 +14,31 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.controller.vo.region;
 
-import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class CloudRegionVO {
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        include = JsonTypeInfo.As.PROPERTY,
+        property = "provider")
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = AWSRegionDTO.class, name = "AWS"),
+        @JsonSubTypes.Type(value = AzureRegionDTO.class, name = "AZURE"),
+        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP")})
+@JsonIgnoreProperties(ignoreUnknown = true)
+public abstract class AbstractCloudRegionDTO {
+
     private Long id;
     @JsonProperty(value = "regionId")
     private String regionCode;
@@ -36,28 +46,4 @@ public class CloudRegionVO {
     @JsonProperty(value = "default")
     private boolean isDefault;
     private CloudProvider provider;
-
-    private String corsRules;
-
-    //AWS Fields
-    private String policy;
-    private String kmsKeyId;
-    private String kmsKeyArn;
-    private String profile;
-    private String sshKeyName;
-    private String tempCredentialsRole;
-    private Integer backupDuration;
-    private boolean versioningEnabled;
-
-    //Azure Fields
-    private String storageAccount;
-    private String storageAccountKey;
-    private String resourceGroup;
-    private AzurePolicy azurePolicy;
-    private String subscription;
-    private String authFile;
-    private String sshPublicKeyPath;
-    private String meterRegionName;
-    private String azureApiUrl;
-    private String priceOfferId;
 }

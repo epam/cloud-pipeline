@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.region;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -51,18 +51,28 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     @Test
     public void createShouldThrowIfAccountNameIsNotSpecified() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().storageAccount(null).build()));
+            () -> {
+                final AzureRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setStorageAccount(null);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void createShouldThrowIfAccountKeyIsNotSpecified() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().storageAccountKey(null).build()));
+            () -> {
+                final AzureRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setStorageAccountKey(null);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void updateShouldSaveResourceGroupFromTheOldValue() {
-        cloudRegionManager.update(ID, updateRegionBuilder().resourceGroup(ANOTHER_RESOURCE_GROUP).build());
+        final AzureRegionDTO azureRegionDTO = updateRegionDTO();
+        azureRegionDTO.setResourceGroup(ANOTHER_RESOURCE_GROUP);
+        cloudRegionManager.update(ID, azureRegionDTO);
 
         final ArgumentCaptor<AzureRegion> regionCaptor = ArgumentCaptor.forClass(AzureRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
@@ -72,7 +82,9 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
 
     @Test
     public void updateShouldSaveStorageAccountFromTheOldValue() {
-        cloudRegionManager.update(ID, updateRegionBuilder().storageAccount(ANOTHER_STORAGE_ACCOUNT).build());
+        final AzureRegionDTO regionDTO = updateRegionDTO();
+        regionDTO.setStorageAccount(ANOTHER_STORAGE_ACCOUNT);
+        cloudRegionManager.update(ID, regionDTO);
 
         final ArgumentCaptor<AzureRegion> regionCaptor = ArgumentCaptor.forClass(AzureRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
@@ -82,7 +94,9 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
 
     @Test
     public void updateShouldSaveSubscriptionFromTheOldValue() {
-        cloudRegionManager.update(ID, updateRegionBuilder().subscription(ANOTHER_SUBSCRIPTION).build());
+        final AzureRegionDTO regionDTO = updateRegionDTO();
+        regionDTO.setSubscription(ANOTHER_SUBSCRIPTION);
+        cloudRegionManager.update(ID, regionDTO);
 
         final ArgumentCaptor<AzureRegion> regionCaptor = ArgumentCaptor.forClass(AzureRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
@@ -93,12 +107,16 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     @Test
     public void updateShouldThrowIfAccountKeyIsNotSpecified() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.update(ID, updateRegionBuilder().storageAccountKey(null).build()));
+            () -> {
+                final AzureRegionDTO regionDTO = updateRegionDTO();
+                regionDTO.setStorageAccountKey(null);
+                cloudRegionManager.update(ID, regionDTO);
+            });
     }
 
     @Test
     public void loadCredentialsByIdShouldReturnAzureRegionCredentials() {
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         final AbstractCloudRegionCredentials credentials = cloudRegionManager.loadCredentials(ID);
         assertThat(credentials, instanceOf(AzureRegionCredentials.class));
@@ -107,7 +125,7 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
 
     @Test
     public void loadCredentialsByRegionShouldReturnAzureRegionCredentials() {
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(commonRegion());
         assertThat(credentials.getStorageAccountKey(), is(STORAGE_ACCOUNT_KEY));
@@ -129,19 +147,21 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder createRegionBuilder() {
-        return updateRegionBuilder()
-                .regionCode(validRegionId())
-                .resourceGroup(RESOURCE_GROUP)
-                .storageAccount(STORAGE_ACCOUNT);
+    AzureRegionDTO createRegionDTO() {
+        final AzureRegionDTO azureRegionDTO = updateRegionDTO();
+        azureRegionDTO.setRegionCode(validRegionId());
+        azureRegionDTO.setResourceGroup(RESOURCE_GROUP);
+        azureRegionDTO.setStorageAccount(STORAGE_ACCOUNT);
+        return azureRegionDTO;
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder updateRegionBuilder() {
-        return CloudRegionVO.builder()
-                .name(REGION_NAME)
-                .storageAccountKey(STORAGE_ACCOUNT_KEY)
-                .provider(CloudProvider.AZURE);
+    AzureRegionDTO updateRegionDTO() {
+        final AzureRegionDTO azureRegionDTO = new AzureRegionDTO();
+        azureRegionDTO.setName(REGION_NAME);
+        azureRegionDTO.setStorageAccountKey(STORAGE_ACCOUNT_KEY);
+        azureRegionDTO.setProvider(CloudProvider.AZURE);
+        return azureRegionDTO;
     }
 
     @Override
@@ -157,8 +177,8 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
     @Override
     void assertRegionEquals(final AbstractCloudRegion expectedRegion, final AbstractCloudRegion actualRegion) {
         assertThat(actualRegion, instanceOf(AzureRegion.class));
-        final AzureRegion expectedAzureRegion = (AzureRegion)expectedRegion;
-        final AzureRegion actualAzureRegion = (AzureRegion)actualRegion;
+        final AzureRegion expectedAzureRegion = (AzureRegion) expectedRegion;
+        final AzureRegion actualAzureRegion = (AzureRegion) actualRegion;
         assertThat(expectedAzureRegion.getRegionCode(), is(actualAzureRegion.getRegionCode()));
         assertThat(expectedAzureRegion.getName(), is(actualAzureRegion.getName()));
         assertThat(expectedAzureRegion.getCorsRules(), is(actualAzureRegion.getCorsRules()));

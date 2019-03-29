@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cluster.AwsPriceListReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.region;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
@@ -38,7 +38,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
-import com.epam.pipeline.mapper.CloudRegionMapper;
+import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -87,10 +87,9 @@ public class CloudRegionManager implements SecuredEntityManager {
     }
 
     @Transactional
-    public AbstractCloudRegion create(final CloudRegionVO regionVO) {
-        fillProviderIfMissing(regionVO);
-        final AbstractCloudRegion region = cloudRegionMapper.toEntity(regionVO);
-        final AbstractCloudRegionCredentials credentials = cloudRegionMapper.toCredentialsEntity(regionVO);
+    public AbstractCloudRegion create(final AbstractCloudRegionDTO regionDTO) {
+        final AbstractCloudRegion region = cloudRegionMapper.toEntity(regionDTO);
+        final AbstractCloudRegionCredentials credentials = cloudRegionMapper.toCredentialsEntity(regionDTO);
         validateRegion(region, credentials);
         region.setOwner(authManager.getAuthorizedUser());
         region.setCreatedDate(DateUtils.now());
@@ -98,39 +97,28 @@ public class CloudRegionManager implements SecuredEntityManager {
         return cloudRegionDao.create(region, credentials);
     }
 
-    private void fillProviderIfMissing(final CloudRegionVO regionVO) {
-        fillProviderIfMissing(regionVO, null);
-    }
-
-    private void fillProviderIfMissing(final CloudRegionVO regionVO, final AbstractCloudRegion oldRegion) {
-        if (regionVO.getProvider() == null) {
-            final CloudProvider provider = Optional.ofNullable(oldRegion)
-                    .map(AbstractCloudRegion::getProvider)
-                    .orElseGet(this::getDefaultProvider);
-            regionVO.setProvider(provider);
-        }
-    }
-
     @Transactional
-    public AbstractCloudRegion update(final Long id, final CloudRegionVO regionVO) {
-        final AbstractCloudRegion modifiedRegion = assembleModifiedRegion(id, regionVO);
+    public AbstractCloudRegion update(final Long id, final AbstractCloudRegionDTO regionDTO) {
+        final AbstractCloudRegion modifiedRegion = assembleModifiedRegion(id, regionDTO);
         final AbstractCloudRegionCredentials modifiedCredentials =
-                assembleModifiedCredentials(modifiedRegion, regionVO);
+                assembleModifiedCredentials(modifiedRegion, regionDTO);
         validateRegion(modifiedRegion, modifiedCredentials);
         switchDefaultRegion(modifiedRegion, modifiedCredentials);
         cloudRegionDao.update(modifiedRegion, modifiedCredentials);
         return modifiedRegion;
     }
 
-    private AbstractCloudRegion assembleModifiedRegion(final Long id, final CloudRegionVO regionVO) {
+    private AbstractCloudRegion assembleModifiedRegion(final Long id, final AbstractCloudRegionDTO regionDTO) {
         final AbstractCloudRegion oldRegion = load(id);
-        fillProviderIfMissing(regionVO, oldRegion);
-        final AbstractCloudRegion updatedRegion = cloudRegionMapper.toEntity(regionVO);
+        if (regionDTO.getProvider() == null) {
+            regionDTO.setProvider(oldRegion.getProvider());
+        }
+        final AbstractCloudRegion updatedRegion = cloudRegionMapper.toEntity(regionDTO);
         return mergeRegions(oldRegion, updatedRegion);
     }
 
     private AbstractCloudRegionCredentials assembleModifiedCredentials(final AbstractCloudRegion region,
-                                                                       final CloudRegionVO regionVO) {
+                                                                       final  AbstractCloudRegionDTO regionVO) {
         final AbstractCloudRegionCredentials oldCredentials = cloudRegionDao.loadCredentials(region.getId())
                 .orElse(null);
         final AbstractCloudRegionCredentials updatedCredentials = cloudRegionMapper.toCredentialsEntity(regionVO);
@@ -197,8 +185,8 @@ public class CloudRegionManager implements SecuredEntityManager {
     public AbstractCloudRegion changeOwner(final Long id, final String owner) {
         final AbstractCloudRegion region = load(id);
         region.setOwner(owner);
-        final CloudRegionVO cloudRegionVO = cloudRegionMapper.toCloudRegionVO(region);
-        return update(id, cloudRegionVO);
+        final  AbstractCloudRegionDTO regionVO = cloudRegionMapper.toCloudRegionDTO(region);
+        return update(id, regionVO);
     }
 
     @Override
