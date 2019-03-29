@@ -44,7 +44,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implements Tools {
 
@@ -163,7 +163,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell -> shell.execute("fallocate -l 25G test.big"))
+                                        .ssh(shell -> shell
+                                                .execute("fallocate -l 25G test.big")
+                                                .sleep(30, SECONDS))
                                 )
                                 .waitForPauseButton()
                                 .clickOnPauseButton()
