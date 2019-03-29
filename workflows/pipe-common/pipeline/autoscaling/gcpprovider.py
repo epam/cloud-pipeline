@@ -128,6 +128,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 instance=instance['name'],
                 body=labels_body).execute()
             self.__wait_for_operation(reassign['name'])
+            return instance['name']
         else:
             raise RuntimeError('Instance with id: {} not found!'.format(old_id))
 
@@ -162,11 +163,14 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         utils.pipe_log('Instance is booted. ID: {}, IP: {}\n-'.format(ins_id, ipaddr))
 
     def get_instance_names(self, ins_id):
-        for instance in self.__list_instances():
-            instance_name = instance['name']
-            if instance_name == ins_id:
-                # according to https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
-                return '{}.{}.c.{}.internal'.format(instance_name, self.cloud_region, self.project_id), instance_name
+        instance = self.client.instances().get(
+            project=self.project_id,
+            zone=self.cloud_region,
+            instance=ins_id).execute()
+
+        if instance:
+            # according to https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
+            return '{}.{}.c.{}.internal'.format(instance['name'], self.cloud_region, self.project_id), instance['name']
         return None, None
 
     def find_instance(self, run_id):
@@ -184,23 +188,24 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         self.__wait_for_operation(delete['name'])
 
     def terminate_instance_by_ip(self, internal_ip):
-        items = self.__list_instances()
+        items = self.__list_instances("")
         for instance in items:
             if instance['networkInterfaces'][0]['networkIP'] == internal_ip:
-                self.terminate_instance(instance.name)
+                self.terminate_instance(instance['name'])
 
     def __find_instance(self, run_id):
-        items = self.__list_instances()
+        items = self.__list_instances('labels.name="{}"'.format(run_id))
         if items:
             filtered = [ins for ins in items if 'labels' in ins and ins['labels']['name'] == run_id]
             if filtered and len(filtered) == 1:
                 return filtered[0]
         return None
 
-    def __list_instances(self):
+    def __list_instances(self, filter):
         result = self.client.instances().list(
             project=self.project_id,
-            zone=self.cloud_region
+            zone=self.cloud_region,
+            filter=filter
         ).execute()
         if 'items' in result:
             return result['items']
