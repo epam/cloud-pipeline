@@ -16,10 +16,13 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.google.api.services.compute.model.Instance;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -28,16 +31,15 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class GCPVMService {
 
     private static final String RUN_ID_LABEL_NAME = "name";
+    public static final String LABEL_FILTER = "labels.%s=\"%s\"";
 
 
     private final GCPClient gcpClient;
-
-    public GCPVMService(GCPClient gcpClient) {
-        this.gcpClient = gcpClient;
-    }
+    private final MessageHelper messageHelper;
 
     public void startInstance(final GCPRegion region, final String instanceId) {
         try {
@@ -67,8 +69,9 @@ public class GCPVMService {
             if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
                 return instance;
             } else {
-                throw new GCPException("VM with ID: " + runId +
-                        " not in a running state, current state: " + instance.getStatus());
+                throw new GCPException(
+                        messageHelper.getMessage(MessageConstants.ERROR_GCP_INSTANCE_NOT_RUNNING,
+                                runId, instanceStatus));
             }
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -101,8 +104,10 @@ public class GCPVMService {
 
     private Instance findInstanceByTag(GCPRegion region, String key, String value) throws IOException {
         return gcpClient.buildComputeClient(region).instances()
-                .list(region.getProject(), region.getRegionCode()).setFilter("labels." + key + "=\"" + value + "\"")
+                .list(region.getProject(), region.getRegionCode())
+                .setFilter(String.format(LABEL_FILTER, key, value))
                 .execute().getItems().stream().findFirst()
-                .orElseThrow(() -> new GCPException("Instance with label: '" + key + " : " + value + "' not found!"));
+                .orElseThrow(() -> new GCPException(messageHelper.getMessage(
+                                MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
     }
 }
