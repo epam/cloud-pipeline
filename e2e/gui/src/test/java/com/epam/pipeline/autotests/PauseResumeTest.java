@@ -24,7 +24,6 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -35,7 +34,6 @@ import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.close;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
@@ -75,16 +73,10 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         fallbackToToolDefaultState(registry, group, tool);
     }
 
-    @AfterMethod(alwaysRun = true)
-    public void refresh() {
-        close();
-        open(C.ROOT_ADDRESS);
-    }
-
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
-            // EPMCMBIBPC-2627
+            // EPMCMBIBPC-2627 && EPMCMBIBPC-2636
             defaultClusterHddExtraMulti =
                     navigationMenu()
                             .settings()
@@ -168,7 +160,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .show(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
-        refresh();
+        Utils.restartBrowser(C.ROOT_ADDRESS);
+        loginAs(user);
+
         runsMenu()
                 .log(getLastRunId(), log -> log
                         .waitForPauseButton()

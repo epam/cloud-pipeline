@@ -354,4 +354,9 @@ public class Utils {
     public static String resourceName(final String testCase) {
         return String.format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
     }
+
+    public static void restartBrowser(final String address) {
+        Selenide.close();
+        Selenide.open(address);
+    }
 }

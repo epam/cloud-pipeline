@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.Selenide;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.ToolDescription;
@@ -25,6 +24,8 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import java.util.function.Function;
+
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -124,7 +125,7 @@ public class RunToolsInSandBoxTest
         logout();
 
         // in order to avoid caching issue
-        restartBrowser(C.ROOT_ADDRESS);
+        Utils.restartBrowser(C.ROOT_ADDRESS);
 
         loginAs(user)
                 .runs()
@@ -190,10 +191,4 @@ public class RunToolsInSandBoxTest
     private Function<ToolDescription, PipelineRunFormAO> runTool() {
         return tool -> tool.settings().runWithCustomSettings();
     }
-
-    private void restartBrowser(String address) {
-        Selenide.close();
-        Selenide.open(address);
-    }
-
 }
