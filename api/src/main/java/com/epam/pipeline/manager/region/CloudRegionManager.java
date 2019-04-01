@@ -24,12 +24,14 @@ import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
+import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
@@ -244,6 +246,10 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public AzureRegion getAzureRegion(final AzureBlobStorage dataStorage) {
         return (AzureRegion) getCloudRegion(CloudProvider.AZURE, dataStorage.getRegionId());
+    }
+
+    public GCPRegion getGCPRegion(final GSBucketStorage dataStorage) {
+        return (GCPRegion) getCloudRegion(CloudProvider.GCP, dataStorage.getRegionId());
     }
 
     private AbstractCloudRegion getCloudRegion(final CloudProvider provider, final Long regionId) {

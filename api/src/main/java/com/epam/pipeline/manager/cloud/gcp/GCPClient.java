@@ -24,6 +24,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
+import com.google.api.services.iamcredentials.v1.IAMCredentials;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +42,7 @@ public class GCPClient {
             Collections.singletonList("https://www.googleapis.com/auth/compute");
     private static final List<String> BILLING_SCOPES =
             Collections.singletonList("https://www.googleapis.com/auth/cloud-platform");
+    private static final List<String> IAM_SCOPES = Collections.singletonList("https://www.googleapis.com/auth/iam");
 
     private final HttpTransport httpTransport;
     private final JsonFactory jsonFactory;
@@ -62,6 +64,13 @@ public class GCPClient {
         final GoogleCredential credentials = buildCredentials(region);
         return new Cloudbilling.Builder(httpTransport, jsonFactory, credentials.createScoped(BILLING_SCOPES))
 //                .setApplicationName(region.getApplicationName())
+                .build();
+    }
+
+    public IAMCredentials buildIAMCredentialsClient(final GCPRegion region) throws IOException {
+        final GoogleCredential credentials = buildCredentials(region).createScoped(IAM_SCOPES);
+        return new IAMCredentials.Builder(httpTransport, jsonFactory, credentials)
+                .setApplicationName(region.getApplicationName())
                 .build();
     }
 
