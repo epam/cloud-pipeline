@@ -100,7 +100,7 @@ mkdir -p "$BUILD_DIR"
 ##########################
 echo
 echo "[BUILDING CLOUD IMAGES]"
-if [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ]; then
+if [ "$CLOUD_IMAGES_MANIFEST_FILE" == "rebuild" ]; then   
     CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
     if [ "$BUILD_AMI_REGIONS" ]; then
         echo "[BUILDING AWS AMIs in ${BUILD_AMI_REGIONS}]"
@@ -129,6 +129,19 @@ if [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ]; then
                                                         -o "${CLOUD_IMAGES_MANIFEST_FILE}.az"
         cat ${CLOUD_IMAGES_MANIFEST_FILE}.az >> $CLOUD_IMAGES_MANIFEST_FILE
         rm -f ${CLOUD_IMAGES_MANIFEST_FILE}.az
+    fi
+elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
+    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
+    CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt"}
+    CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
+    if check_installed "wget"; then
+        wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
+    elif check_installed "curl"; then
+        DOWNLOAD_APP="curl"
+        curl "$CLOUD_IMAGES_MANIFEST_URI" -o $CLOUD_IMAGES_MANIFEST_FILE
+    else
+        echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
+        exit 1
     fi
 else
     echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE). Cloud image WILL NOT be rebuilt"

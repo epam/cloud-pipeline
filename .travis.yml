@@ -39,6 +39,7 @@ jobs:
       language: java
       script:
         - ./gradlew clean distTar -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release -x test --no-daemon
+        - cp build/install/dist/*.tgz build/install/dist/cloud-pipeline.latest.tgz
       after_success:
         - aws s3 mv build/install/dist/ s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ --recursive
         
@@ -46,6 +47,7 @@ jobs:
       name: "Deploy to S3"
       language: minimal
       script:
+        - aws s3 mv s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/cloud-pipeline.latest.tgz s3://cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
         - aws s3 mv s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/ --recursive
       if: branch IN (develop, master) AND type = push AND repo = epam/cloud-pipeline
 

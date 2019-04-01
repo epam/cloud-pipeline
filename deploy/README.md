@@ -1,18 +1,21 @@
 # Build AMI (AWS and Azure example)
 ```bash
+# AWS-specific parameters
 export AWS_ACCESS_KEY_ID=
 export AWS_SECRET_ACCESS_KEY=
 
+# Azure-specific parameters
 export CP_AZURE_AUTH_LOCATION=
 export CP_AZURE_RESOURCE_GROUP=
 
-export CP_DOCKER_DIST_USER=
-export CP_DOCKER_DIST_PASS=
-export CP_API_DIST_URL=
+# Docker-specific parameters
+export CP_DOCKER_DIST_USER=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
+export CP_DOCKER_DIST_PASS=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
+export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
 
 bash build.sh -aws eu-central-1,us-east-1 \                         # List of regions to build VM images in AWS
               -az westeurope,centralus \                            # List of regions to build VM images in Azure
-              -im ${PATH_TO_VM_IMAGES_MANIFEST} \                   # OR a path to a prebuilt VM images manifest
+              -im ${PATH_TO_VM_IMAGES_MANIFEST} \                   # OR a path to a prebuilt VM images manifest. If both are not set - default manifest will be used (https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt)
               -p ../workflows/pipe-templates/__SYSTEM/data_loader \ # Path to any packages that shall be included into the pipectl distr
               -p ../e2e/prerequisites \                             # E.g.: system data transfer pipeline or a list of users to regsiter by default
               -t \                                                  # Whether to include test docker images
