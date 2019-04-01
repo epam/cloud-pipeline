@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.vo.region;
 
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class GCPRegionDTO extends AbstractCloudRegionDTO {
 
+    private CloudProvider provider = CloudProvider.GCP;
     private String authFile;
     private String sshPublicKeyPath;
     private String project;

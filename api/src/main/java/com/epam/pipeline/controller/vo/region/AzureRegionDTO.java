@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.AzurePolicy;
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,6 +27,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AzureRegionDTO extends AbstractCloudRegionDTO {
 
+    private CloudProvider provider = CloudProvider.AZURE;
     private String storageAccount;
     private String storageAccountKey;
     private String resourceGroup;

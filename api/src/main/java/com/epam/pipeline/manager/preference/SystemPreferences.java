@@ -457,8 +457,7 @@ public class SystemPreferences {
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
-            "gcp.regions.list", Arrays.asList("us-east1", "us-central1"),
-            new TypeReference<List<String>>() {}, GCP_GROUP,
+            "gcp.regions.list", null, new TypeReference<List<String>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");

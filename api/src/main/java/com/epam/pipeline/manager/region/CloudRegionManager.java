@@ -112,9 +112,6 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     private AbstractCloudRegion assembleModifiedRegion(final Long id, final AbstractCloudRegionDTO regionDTO) {
         final AbstractCloudRegion oldRegion = load(id);
-        if (regionDTO.getProvider() == null) {
-            regionDTO.setProvider(oldRegion.getProvider());
-        }
         final AbstractCloudRegion updatedRegion = cloudRegionMapper.toEntity(regionDTO);
         return mergeRegions(oldRegion, updatedRegion);
     }

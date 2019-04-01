@@ -138,17 +138,6 @@ public abstract class AbstractCloudRegionManagerTest {
     }
 
     @Test
-    public void updateShouldSaveProviderFromTheOldValue() {
-        final AbstractCloudRegionDTO regionDTO = updateRegionDTO();
-        regionDTO.setProvider(null);
-        cloudRegionManager.update(ID, regionDTO);
-
-        final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
-        verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
-        assertThat(regionCaptor.getValue().getProvider(), is(defaultProvider()));
-    }
-
-    @Test
     public void updateShouldSaveCreatedDateFromTheOldValue() {
         final Date createdDate = new Date();
         final AbstractCloudRegion originalRegion = commonRegion();

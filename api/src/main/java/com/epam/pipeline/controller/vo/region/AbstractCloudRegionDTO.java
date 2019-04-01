@@ -45,5 +45,7 @@ public abstract class AbstractCloudRegionDTO {
     private String name;
     @JsonProperty(value = "default")
     private boolean isDefault;
-    private CloudProvider provider;
+
+    public abstract CloudProvider getProvider();
+    public abstract void setProvider(CloudProvider provider);
 }
