@@ -285,6 +285,34 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO waitUntilPauseButtonAppear(final String runId) {
+        $("#run-" + runId + "-pause-button").waitUntil(appear, APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO pause(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-pause-button").shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(String.format("Do you want to pause %s", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button("PAUSE"));
+        return this;
+    }
+
+    public RunsMenuAO waitUntilResumeButtonAppear(final String runId) {
+        $("#run-" + runId + "-resume-button").waitUntil(appear, APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO resume(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-resume-button").shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(String.format("Do you want to resume %s", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button("RESUME"));
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();

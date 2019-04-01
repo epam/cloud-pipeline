@@ -21,6 +21,7 @@ public enum Primitive {
     COMMIT,
     PAUSE,
     RESUME,
+    ENDPOINT,
     DELETE,
     REFRESH,
     RELOAD,

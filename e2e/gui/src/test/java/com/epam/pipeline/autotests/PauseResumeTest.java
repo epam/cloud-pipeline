@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 import java.util.function.Supplier;
 
 import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
@@ -42,8 +43,10 @@ import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.NodePage.labelWithType;
 import static com.epam.pipeline.autotests.ao.NodePage.mainInfo;
+import static com.epam.pipeline.autotests.ao.Primitive.ENDPOINT;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
+import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -78,7 +81,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         open(C.ROOT_ADDRESS);
     }
 
-    @AfterClass(alwaysRun = true)
+    @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
         loginAsAdminAndPerform(() -> {
             // EPMCMBIBPC-2627
@@ -237,6 +240,74 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .ensure(log(), matchText("\\[WARN] Free disk space [0-9\\.]+Kb is not enough for committing.*"))
                                 .waitForPauseButton()
                                 .shouldHaveStatus(LogAO.Status.WORKING)
+                );
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-2632"})
+    public void pauseAndResumeRunsPageValidation() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType(priceType)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .activeRuns()
+                .waitUntilPauseButtonAppear(getLastRunId())
+                .pause(getLastRunId(), getToolName())
+                .waitUntilResumeButtonAppear(getLastRunId())
+                .showLog(getLastRunId())
+                .ensure(ENDPOINT, hidden)
+                .ensure(SSH_LINK, hidden);
+        runsMenu()
+                .resume(getLastRunId(), getToolName())
+                .waitUntilPauseButtonAppear(getLastRunId())
+                .showLog(getLastRunId())
+                .ensure(ENDPOINT, visible)
+                .ensure(SSH_LINK, visible);
+    }
+
+    @Test
+    @TestCase({"EPMCMBIBPC-2636"})
+    public void hddExtraMultiValidation() {
+        loginAsAdminAndPerform(() ->
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .switchToCluster()
+                        .setClusterHddExtraMulti("50")
+                        .save()
+                        .click(OK));
+
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setLaunchOptions("15", instanceType, null)
+                .setPriceType(priceType)
+                .click(START_IDLE)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .log(getLastRunId(), log ->
+                        log.waitForSshLink()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .execute("fallocate -l 15G test.big")
+                                                .sleep(10, SECONDS))
+                                )
+                                .sleep(30, SECONDS)
+                                .waitForPauseButton()
+                                .pause(getToolName())
+                                .assertPausingFinishedSuccessfully()
+                                .ensure(taskWithName(pauseTask), visible)
+                                .click(taskWithName(pauseTask))
+                                .waitForLog("Docker service was successfully stopped")
+                                .ensure(log(), matchText("Temporary container was successfully committed"))
+                                .ensure(log(), matchText("Docker container logs were successfully retrieved."))
+                                .ensure(log(), matchText("Docker service was successfully stopped"))
+                                .resume(getToolName())
+                                .assertResumingFinishedSuccessfully()
+                                .inAnotherTab(logTab -> logTab
+                                        .ssh(shell -> shell
+                                                .execute("ls test.big")
+                                                .assertOutputContains("test.big")
+                                                .close())
+                                )
                 );
     }
 
