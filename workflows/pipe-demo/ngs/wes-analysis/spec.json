@@ -1,0 +1,8 @@
+{
+    "name": "WES-Analysis",
+    "description": "Whole Exome processing pipeline. Operates on the sample-level and performs BAM/VCF/Statistics files generation from the FASTQ files",
+    "version": "v1",
+    "grant_role_name": "ROLE_USER",
+    "grant_role_permissions": "21",
+    "parent_folder": "Pipelines"
+}

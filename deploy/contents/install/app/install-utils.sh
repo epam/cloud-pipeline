@@ -438,6 +438,10 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
+        -demo|--deploy-demo)
+        export CP_DEPLOY_DEMO=1
+        shift # past argument
+        ;;
         -s|--service)
         parse_env_option "$2"
         services_count=$((services_count+1))
