@@ -44,7 +44,10 @@ import static org.openqa.selenium.By.tagName;
 
 public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
-    public static final String GET_LOGS_ERROR = "get_logs_error";
+    private static final String GET_LOGS_ERROR = "get_logs_error";
+    private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
+    private static Condition completed = Condition.or("finished",
+            LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -285,5 +288,18 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    public RunsMenuAO waitForCompletion(final String runId) {
+        $("tbody")
+                .find(withText(runId))
+                .closest(".ant-table-row")
+                .findAll("td")
+                .get(0)
+                .find("i")
+                .waitUntil(completed, C.COMPLETION_TIMEOUT);
+        return this;
+
+
     }
 }

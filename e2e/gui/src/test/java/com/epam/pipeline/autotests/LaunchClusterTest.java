@@ -174,6 +174,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .openClusterRuns(getRunId())
                 .shouldContainRunsWithParentRun(2, getRunId())
                 .shouldContainRun("pipeline", String.valueOf(Integer.parseInt(getRunId()) + 2))
+                .waitForCompletion(String.valueOf(Integer.parseInt(getRunId()) + 2))
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
                 .click(taskWithName(gridEngineAutoscalingTask))
