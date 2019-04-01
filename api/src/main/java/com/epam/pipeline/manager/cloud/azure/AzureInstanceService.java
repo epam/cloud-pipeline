@@ -131,8 +131,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             final VirtualMachine vm = vmService.getRunningVMByRunId(region, nodeLabel);
             instance.setNodeId(vm.vmId());
             final NetworkInterface networkInterface = vmService.getVMNetworkInterface(region.getAuthFile(), vm);
-            instance.setNodeName(networkInterface.primaryIPConfiguration().privateIPAddress());
-            instance.setNodeIP(networkInterface.internalFqdn());
+            instance.setNodeName(networkInterface.internalFqdn());
+            instance.setNodeIP(networkInterface.primaryIPConfiguration().privateIPAddress());
             return instance;
         } catch (AzureException e) {
             log.error("An error while getting instance description {}", nodeLabel);

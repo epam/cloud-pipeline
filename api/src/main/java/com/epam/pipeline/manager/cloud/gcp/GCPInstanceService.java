@@ -125,7 +125,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         try {
             final Instance vm = vmService.getRunningInstanceByRunId(region, nodeLabel);
             instance.setNodeId(vm.getName());
-            // According to https://cloud.google.com/compute/docs/instances/custom-hostname-vm and https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
+            // According to https://cloud.google.com/compute/docs/instances/custom-hostname-vm and
+            // https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
             // gcloud create internal dns name with form: [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal
             instance.setNodeName(vm.getName());
             instance.setNodeIP(vm.getNetworkInterfaces().get(0).getNetworkIP());
