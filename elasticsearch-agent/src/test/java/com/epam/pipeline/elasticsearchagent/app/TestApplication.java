@@ -17,7 +17,6 @@ package com.epam.pipeline.elasticsearchagent.app;
 
 import com.epam.pipeline.elasticsearchagent.service.impl.NFSSynchronizer;
 import com.epam.pipeline.elasticsearchagent.service.impl.PipelineSynchronizer;
-import com.epam.pipeline.elasticsearchagent.service.impl.S3Synchronizer;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.SpringApplication;
@@ -44,8 +43,6 @@ public class TestApplication {
     private RestClient lowLevelClient;
     @MockBean
     private NFSSynchronizer nfsSynchronizer;
-    @MockBean
-    private S3Synchronizer s3Synchronizer;
     @MockBean
     private PipelineSynchronizer pipelineSynchronizer;
 

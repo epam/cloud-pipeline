@@ -79,6 +79,9 @@ dependencies {
     implementation group: "com.amazonaws", name: "aws-java-sdk-s3", version: awsSdkS3Version
     implementation group: "com.amazonaws", name: "aws-java-sdk-sts", version: awsSdkSTSVersion
 
+    // Azure
+    compile group: "com.microsoft.azure", name: "azure-storage-blob", version: azureSdkBlobVersion
+
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion

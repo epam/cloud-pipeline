@@ -18,6 +18,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer;
+import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -35,13 +36,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
 @Service
@@ -50,9 +52,6 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 public class NFSSynchronizer implements ElasticsearchSynchronizer {
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
-    private static final String DOC_MAPPING_TYPE = "_doc";
-    private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'";
-    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_PATTERN);
 
     private final String indexSettingsPath;
     private final String rootMountPoint;
@@ -150,7 +149,7 @@ public class NFSSynchronizer implements ElasticsearchSynchronizer {
 
     private String getLastModified(final Path path) {
         try {
-            return simpleDateFormat.format(Files.getLastModifiedTime(path).toMillis());
+            return ESConstants.FILE_DATE_FORMAT.format(Date.from(Files.getLastModifiedTime(path).toInstant()));
         } catch (IOException e) {
             log.error("Cannot get last modified time for file {}. Error: {}.", path.toAbsolutePath(), e.getMessage());
             return null;

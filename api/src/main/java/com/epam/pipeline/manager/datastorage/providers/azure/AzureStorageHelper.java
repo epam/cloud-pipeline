@@ -54,7 +54,6 @@ import com.microsoft.azure.storage.blob.models.ContainerListBlobHierarchySegment
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -88,7 +87,6 @@ import java.util.function.Function;
  * Util class providing methods to interact with Azure Storage API.
  */
 @Slf4j
-@RequiredArgsConstructor
 public class AzureStorageHelper {
 
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -100,6 +98,18 @@ public class AzureStorageHelper {
     private final AzureRegion azureRegion;
     private final AzureRegionCredentials azureRegionCredentials;
     private final MessageHelper messageHelper;
+    private final DateFormat dateFormat;
+
+    public AzureStorageHelper(final AzureRegion azureRegion,
+                              final AzureRegionCredentials azureRegionCredentials,
+                              final MessageHelper messageHelper) {
+        this.azureRegion = azureRegion;
+        this.azureRegionCredentials = azureRegionCredentials;
+        this.messageHelper = messageHelper;
+        final TimeZone tz = TimeZone.getTimeZone("UTC");
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        this.dateFormat.setTimeZone(tz);
+    }
 
     public String createBlobStorage(final AzureBlobStorage storage) {
         unwrap(getContainerURL(storage).create());
@@ -423,10 +433,8 @@ public class AzureStorageHelper {
         dataStorageFile.setLabels(labels);
         dataStorageFile.setTags(blob.metadata());
         dataStorageFile.setSize(blob.properties().contentLength());
-        final TimeZone tz = TimeZone.getTimeZone("UTC");
-        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        dataStorageFile.setChanged(df.format(Date.from(blob.properties().lastModified().toInstant())));
+
+        dataStorageFile.setChanged(dateFormat.format(Date.from(blob.properties().lastModified().toInstant())));
         return dataStorageFile;
     }
 

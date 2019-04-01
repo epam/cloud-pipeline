@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.search;
+package com.epam.pipeline.elasticsearchagent.utils;
 
-public enum SearchDocumentType {
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
-    PIPELINE_RUN,
-    S3_FILE,
-    AZ_BLOB_FILE,
-    NFS_FILE,
-    S3_STORAGE,
-    NFS_STORAGE,
-    TOOL,
-    DOCKER_REGISTRY,
-    TOOL_GROUP,
-    FOLDER,
-    CONFIGURATION,
-    PIPELINE,
-    ISSUE,
-    METADATA_ENTITY,
-    PIPELINE_CODE
+public final class ESConstants {
+
+    public static final String DOC_MAPPING_TYPE = "_doc";
+    public static final String HIDDEN_FILE_NAME = ".DS_Store";
+    public static final DateFormat FILE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+    private ESConstants() {
+        //
+    }
 }

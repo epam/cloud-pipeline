@@ -140,6 +140,9 @@ public interface CloudPipelineAPI {
     @GET("cloud/region")
     Call<Result<List<AbstractCloudRegion>>> loadAllRegions();
 
+    @GET("cloud/region/{regionId}")
+    Call<Result<AbstractCloudRegion>> loadRegion(@Path("regionId") Long regionId);
+
     @GET("tool/load")
     Call<Result<Tool>> loadTool(@Query(REGISTRY) String registry, @Query(TOOL_IDENTIFIER) String identifier);
 
