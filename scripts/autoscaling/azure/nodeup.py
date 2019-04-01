@@ -177,6 +177,17 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
 
 #############################
 
+SUBNET_ID_PARTS_NUMBER = 11
+SUBNET_NAME_INDEX = 10
+SUBNET_TYPE_INDEX = 9
+
+RESOURCE_ID_PARTS_NUMBER = 9
+RESOURCE_NAME_INDEX = 8
+RESOURCE_TYPE_INDEX = 7
+RESOURCE_GROUP_NAME_INDEX = 4
+RESOURCE_GROUP_KEY_INDEX = 3
+
+
 zone = None
 resource_client = get_client_from_auth_file(ResourceManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
@@ -227,28 +238,24 @@ def create_public_ip_address(instance_name, run_id):
 
 
 def create_nic(instance_name, run_id):
-
     allowed_networks = get_networks_config(zone)
-    res_group_network = None
-    subnet_id = None
     security_groups = get_security_groups(zone)
     if allowed_networks and len(allowed_networks) > 0:
         az_num = randint(0, len(allowed_networks) - 1)
         az_name = allowed_networks.items()[az_num][0]
         subnet_id = allowed_networks.items()[az_num][1]
-        res_group_network = az_name.split("/")
-        pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, az_name))
+        resource_group, network = get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
+        subnet = get_subnet_name_from_id(subnet_id)
+        pipe_log('- Networks list found, subnet {} in VNET {} will be used'.format(subnet_id, az_name))
     else:
-        pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
+        pipe_log('- Networks list NOT found, trying to find network from region in the same resource group...')
+        resource_group, network, subnet = get_any_network_from_location(zone)
+        pipe_log('- Network found, subnet {} in VNET {} will be used'.format(subnet, network))
 
-    if len(res_group_network) != 2:
-        raise AssertionError("Please specify network as: <network_resource_group>/<network_name>")
+    if not resource_group or not network or not subnet:
+        raise RuntimeError("No networks with subnet found for location: {} in resourceGroup: {}".format(zone, resource_group_name))
 
-    subnet_info = network_client.subnets.get(
-        res_group_network[0],
-        res_group_network[1],
-        subnet_id
-    )
+    subnet_info = network_client.subnets.get(resource_group, network, subnet)
 
     public_ip_address = network_client.public_ip_addresses.get(
         resource_group_name,
@@ -256,17 +263,10 @@ def create_nic(instance_name, run_id):
     )
 
     if len(security_groups) != 1:
-        raise AssertionError("Please specify only one security group as: <resource_group>/<security_group_name>")
+        raise AssertionError("Please specify only one security group!")
 
-    res_group_and_security_group = security_groups[0].split("/")
-
-    if len(res_group_and_security_group) != 2:
-        raise AssertionError("Please specify security group as: <resource_group>/<security_group_name>")
-
-    security_group_info = network_client.network_security_groups.get(
-        res_group_and_security_group[0],
-        res_group_and_security_group[1]
-    )
+    resource_group, secur_grp = get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups')
+    security_group_info = network_client.network_security_groups.get(resource_group, secur_grp)
 
     nic_params = {
         'location': zone,
@@ -291,6 +291,24 @@ def create_nic(instance_name, run_id):
     return creation_result.result()
 
 
+def get_any_network_from_location(location):
+    resource_group, network, subnet = None, None, None
+
+    for vnet in resource_client.resources.list(filter="resourceType eq 'Microsoft.Network/virtualNetworks' "
+                                                      "and location eq '{}' "
+                                                      "and resourceGroup eq '{}'".format(location, resource_group_name)):
+        resource_group, network = get_res_grp_and_res_name_from_string(vnet.id, 'virtualNetworks')
+        break
+
+    if not resource_group or not network:
+        return resource_group, network, subnet
+
+    for subnet_res in network_client.subnets.list(resource_group, network):
+        subnet = get_subnet_name_from_id(subnet_res.id)
+        break
+    return resource_group, network, subnet
+
+
 def get_disk_type(instance_type):
     disk_type = None
     for sku in compute_client.resource_skus.list():
@@ -309,14 +327,9 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
         resource_group_name,
         instance_name + '-nic'
     )
-    image_param = instance_image.split("/")
-    if len(image_param) != 2:
-        print("node_image parameter doesn't match to Azure image name convention: <resource_group>/<image_name>")
+    resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
 
-    image = compute_client.images.get(
-        image_param[0],
-        image_param[1]
-    )
+    image = compute_client.images.get(resource_group, image_name)
 
     vm_parameters = {
         'location': zone,
@@ -398,11 +411,6 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
     start_result = compute_client.virtual_machines.start(resource_group_name, instance_name)
     start_result.wait()
-
-    public_ip = network_client.public_ip_addresses.get(
-        resource_group_name,
-        instance_name + '-ip'
-    )
 
     private_ip = network_client.network_interfaces.get(
         resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
@@ -679,6 +687,38 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
             .replace('@KUBE_TOKEN@', kubeadm_token)
     else:
         raise RuntimeError('Unable to get init.sh path')
+
+
+def get_res_grp_and_res_name_from_string(resource_id, resource_type):
+    resource_params = resource_id.split("/")
+
+    if len(resource_params) == 2:
+        resource_group, resource = resource_params[0], resource_params[1]
+    # according to full ID form: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/images/<image>
+    elif len(resource_params) == RESOURCE_ID_PARTS_NUMBER \
+            and resource_params[RESOURCE_GROUP_KEY_INDEX] == 'resourceGroups' \
+            and resource_params[RESOURCE_TYPE_INDEX] == resource_type:
+        resource_group, resource = resource_params[RESOURCE_GROUP_NAME_INDEX], resource_params[RESOURCE_NAME_INDEX]
+    else:
+        raise RuntimeError(
+            "Resource parameter doesn't match to Azure resource name convention: <resource_group>/<resource_name>"
+            " or full resource id: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/<type>/<name>. "
+            "Node Up process will be stopped.")
+    return resource_group, resource
+
+
+def get_subnet_name_from_id(subnet_id):
+    if "/" not in subnet_id:
+        return subnet_id
+    subnet_params = subnet_id.split("/")
+    # according to /subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>
+    if len(subnet_params) == SUBNET_ID_PARTS_NUMBER \
+            and subnet_params[RESOURCE_GROUP_KEY_INDEX] == "resourceGroups" \
+            and subnet_params[SUBNET_TYPE_INDEX] == "subnets":
+        return subnet_params[SUBNET_NAME_INDEX]
+    else:
+        raise RuntimeError("Subnet dont match form of the Azure ID "
+                           "/subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>: {}".format(subnet_id))
 
 
 def main():
