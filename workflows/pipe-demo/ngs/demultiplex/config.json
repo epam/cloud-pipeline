@@ -4,9 +4,9 @@
   "configuration" : {
     "nonPause" : false,
     "main_file" : "demultiplex.sh",
-    "instance_size" : "Standard_D8s_v3",
+    "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
     "instance_disk" : "100",
-    "docker_image" : "ngs/bcl2fastq:2.20",
+    "docker_image" : "ngs/bcl2fastq2:latest",
     "timeout" : 0,
     "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
     "language" : "other",

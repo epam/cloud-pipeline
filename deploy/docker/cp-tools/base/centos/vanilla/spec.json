@@ -1,6 +1,6 @@
 {
     "short_description": "CentOS Linux is a community-supported distribution derived from sources freely provided to the public by Red Hat",
-    "instance_type": "m5.large",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "50",
     "default_command": "sleep infinity"
 }

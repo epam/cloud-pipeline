@@ -1,6 +1,6 @@
 {
     "short_description": "Ubuntu operating system with CUDA and cuDNN for GPU computation",
-    "instance_type": "p2.xlarge",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE_GPU}",
     "disk_size": "50",
     "default_command": "sleep infinity"
 }

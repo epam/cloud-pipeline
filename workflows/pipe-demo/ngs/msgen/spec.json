@@ -4,6 +4,6 @@
     "version": "v1",
     "grant_role_name": "ROLE_USER",
     "grant_role_permissions": "21",
-    "cloud_provider": "az",
-    "parent_folder": "Pipelines"
+    "parent_folder": "Pipelines",
+    "az": "Standard_D2s_v3"
 }

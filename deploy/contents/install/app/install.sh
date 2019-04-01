@@ -462,6 +462,32 @@ if is_service_requested cp-api-srv; then
         print_info "-> Registering custom users in IdP and API services"
         api_register_custom_users "$CP_CUSTOM_USERS_SPEC"
 
+        # Here we wait for the price list sync, this is required by the downstream services to manage the instance types configurations            
+        if [ -z "$CP_CLOUD_REGION_INTERNAL_ID" ]; then
+            print_warn "CP_CLOUD_REGION_INTERNAL_ID is not defined, assuming that a cloud region is not registered correctly previously. WILL NOT wait for price lists synchonization"
+        else
+            default_instance_type_poll_attempts=100
+            default_instance_type_poll_timeout=10
+            print_info "-> Verifying that all instance types are synced to the API DB (will poll $default_instance_type_poll_attempts times for the default instance type: ${CP_PREF_CLUSTER_INSTANCE_TYPE})"
+
+            default_instance_type_result=1
+            while [ $default_instance_type_result -ne 0 ] || [ ! "$default_instance_type_details" ]; do
+                if [ "$default_instance_type_poll_attempts" == 0 ]; then
+                    print_err "Unable to get information on the $CP_PREF_CLUSTER_INSTANCE_TYPE instance type after $default_instance_type_poll_attempts attempts"
+                    break
+                fi
+
+                default_instance_type_details="$(api_get_cluster_instance_details "$CP_PREF_CLUSTER_INSTANCE_TYPE" "$CP_CLOUD_REGION_INTERNAL_ID")"
+                default_instance_type_result=$?
+
+                sleep $default_instance_type_poll_timeout
+                default_instance_type_poll_attempts=$((default_instance_type_poll_attempts-1))
+            done
+            if [ "$default_instance_type_result" -eq 0 ]; then
+                print_ok "Price list is synchronized to the API DB"
+            fi
+        fi
+
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"
     fi
     echo

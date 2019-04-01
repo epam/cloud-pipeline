@@ -4,7 +4,7 @@
   "description" : "Initial default configuration",
   "configuration": {
     "main_file" : "@.py",
-    "instance_size" : "m5.large",
+    "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "20",
     "docker_image" : "library/centos:7",
     "cmd_template" : "python $SCRIPTS_DIR/src/[main_file]",

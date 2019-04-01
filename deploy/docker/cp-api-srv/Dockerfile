@@ -31,7 +31,8 @@ RUN yum install -y \
                 sudo \
                 samba \
                 samba-client \
-                cifs-utils
+                cifs-utils \
+                gettext
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I  requests \
@@ -52,14 +53,13 @@ RUN pip install -I  azure-common \
                     azure-mgmt-containerinstance \
                     azure-cli-core
 
-# FIXME 1. Instance type in the pipe-templates config.json shall be replaced according to the current cloud provider (azure/aws/gcp)
-# FIXME 2. Storage type in the folder-templates json shall be replaced according to the current cloud provider (azure/aws/gcp)
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
 RUN cd /tmp && \
     wget "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
+    rm -rf bin/pipe-templates/__SYSTEM && \
     mkdir -p $CP_API_HOME && \
     mv bin/* $CP_API_HOME/ && \
     rm -f cloud-pipeline.tgz && \
