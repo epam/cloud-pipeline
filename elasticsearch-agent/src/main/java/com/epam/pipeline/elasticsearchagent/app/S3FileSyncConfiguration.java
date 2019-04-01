@@ -46,18 +46,18 @@ public class S3FileSyncConfiguration {
     private Boolean enableTags;
 
     @Bean
-    @Qualifier("s3FileManager")
-    public ObjectStorageFileManager objectStorageFileManager() {
+    public ObjectStorageFileManager s3FileManager() {
         return new S3FileManager(enableTags);
     }
 
     @Bean
-    @Qualifier("s3FileSynchronizer")
-    public ObjectStorageIndex s3FileSynchronizer(final CloudPipelineAPIClient apiClient,
-                                                 final ElasticsearchServiceClient esClient,
-                                                 final ElasticIndexService indexService) {
+    public ObjectStorageIndex s3FileSynchronizer(
+            final CloudPipelineAPIClient apiClient,
+            final ElasticsearchServiceClient esClient,
+            final ElasticIndexService indexService,
+            final @Qualifier("s3FileManager") ObjectStorageFileManager s3FileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                objectStorageFileManager(), indexPrefix + indexName,
+                s3FileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, DataStorageType.S3);
     }
 

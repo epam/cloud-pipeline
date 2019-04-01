@@ -47,18 +47,18 @@ public class AzureFileSyncConfiguration {
     private String indexName;
 
     @Bean
-    @Qualifier("azFileManager")
-    public ObjectStorageFileManager objectStorageFileManager() {
+    public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
     }
 
     @Bean
-    @Qualifier("azFileSynchronizer")
-    public ObjectStorageIndex azFileSynchronizer(final CloudPipelineAPIClient apiClient,
-                                                 final ElasticsearchServiceClient esClient,
-                                                 final ElasticIndexService indexService) {
+    public ObjectStorageIndex azFileSynchronizer(
+            final CloudPipelineAPIClient apiClient,
+            final ElasticsearchServiceClient esClient,
+            final ElasticIndexService indexService,
+            final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                objectStorageFileManager(), indexPrefix + indexName,
+                azFileManager, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, DataStorageType.AZ);
     }
 }

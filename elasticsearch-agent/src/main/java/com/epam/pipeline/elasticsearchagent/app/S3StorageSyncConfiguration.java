@@ -44,27 +44,23 @@ public class S3StorageSyncConfiguration {
     private String commonIndexPrefix;
 
     @Bean
-    @Qualifier("s3StorageMapper")
     public DataStorageMapper s3StorageMapper() {
         return new DataStorageMapper(SearchDocumentType.S3_STORAGE);
     }
 
     @Bean
-    @Qualifier("s3StorageLoader")
     public DataStorageLoader s3StorageLoader(final CloudPipelineAPIClient apiClient) {
         return new DataStorageLoader(apiClient);
     }
 
     @Bean
-    @Qualifier("s3EventProcessor")
-    public DataStorageIndexCleaner dataStorageIndexCleaner(
+    public DataStorageIndexCleaner s3EventProcessor(
             final @Value("${sync.s3-file.index.name}") String s3FileIndexName,
             final ElasticsearchServiceClient serviceClient) {
         return new DataStorageIndexCleaner(commonIndexPrefix, s3FileIndexName, serviceClient);
     }
 
     @Bean
-    @Qualifier("s3EventConverter")
     public EventToRequestConverterImpl<DataStorageDoc> s3EventConverter(
             final @Qualifier("s3StorageMapper") DataStorageMapper s3StorageMapper,
             final @Qualifier("s3StorageLoader") DataStorageLoader s3StorageLoader,

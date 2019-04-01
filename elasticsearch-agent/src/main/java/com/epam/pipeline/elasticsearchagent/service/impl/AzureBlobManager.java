@@ -23,6 +23,7 @@ import com.epam.pipeline.elasticsearchagent.utils.ESConstants;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.microsoft.azure.storage.blob.AnonymousCredentials;
 import com.microsoft.azure.storage.blob.ContainerURL;
 import com.microsoft.azure.storage.blob.ListBlobsOptions;
@@ -65,7 +66,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                 .withMaxResults(LIST_PAGE_SIZE)
                 .withPrefix("");
         unwrap(containerURL.listBlobsFlatSegment(null, options)
-                .flatMap(response -> listBlobs(containerURL, response, indexContainer,
+                .flatMap(response -> listBlobs(options, containerURL, response, indexContainer,
                         storage, credentials.getRegion(), permissions, indexName)));
     }
 
@@ -79,6 +80,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
     }
 
     private Single<ContainerListBlobFlatSegmentResponse> listBlobs(
+            final ListBlobsOptions options,
             final ContainerURL containerURL,
             final ContainerListBlobFlatSegmentResponse response,
             final IndexRequestContainer indexContainer,
@@ -86,25 +88,32 @@ public class AzureBlobManager implements ObjectStorageFileManager {
             final String region,
             final PermissionsContainer permissions,
             final String indexName) {
+        if (response.body() == null || response.body().segment() == null) {
+            return Single.just(response);
+        }
         ListUtils.emptyIfNull(response.body().segment().blobItems())
-                .forEach(blob -> indexContainer.add(blobToIndexRequest(blob, storage, region, permissions, indexName)));
-        if (response.body().nextMarker() == null) {
+                .forEach(blob -> indexBlob(indexContainer, blob, storage, region, permissions, indexName));
+        if (StringUtils.isBlank(response.body().nextMarker())) {
             return Single.just(response);
         } else {
             final String nextMarker = response.body().nextMarker();
-            return containerURL.listBlobsFlatSegment(nextMarker, new ListBlobsOptions().withMaxResults(1), null)
+            return containerURL.listBlobsFlatSegment(nextMarker, options, null)
                     .flatMap(containersListBlobFlatSegmentResponse ->
-                            listBlobs(containerURL, containersListBlobFlatSegmentResponse,
+                            listBlobs(options, containerURL, containersListBlobFlatSegmentResponse,
                                     indexContainer, storage, region, permissions, indexName));
         }
     }
 
-    private IndexRequest blobToIndexRequest(final BlobItem blob,
-                                            final AbstractDataStorage storage,
-                                            final String region,
-                                            final PermissionsContainer permissions,
-                                            final String indexName) {
-        return createIndexRequest(convertToStorageFile(blob), storage, region, permissions, indexName);
+    private void indexBlob(final IndexRequestContainer indexContainer,
+                           final BlobItem blob,
+                           final AbstractDataStorage storage,
+                           final String region,
+                           final PermissionsContainer permissions,
+                           final String indexName) {
+        final DataStorageFile item = convertToStorageFile(blob);
+        if (item != null) {
+            indexContainer.add(createIndexRequest(item, storage, region, permissions, indexName));
+        }
     }
 
     private IndexRequest createIndexRequest(final DataStorageFile item,
@@ -113,7 +122,7 @@ public class AzureBlobManager implements ObjectStorageFileManager {
                                             final PermissionsContainer permissions,
                                             final String indexName) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                .source(fileMapper.fileToDocument(item, storage, region, permissions));
+                .source(fileMapper.fileToDocument(item, storage, region, permissions, SearchDocumentType.AZ_BLOB_FILE));
     }
 
     private DataStorageFile convertToStorageFile(final BlobItem blob) {

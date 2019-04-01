@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
@@ -158,6 +159,7 @@ public class S3FileManager implements ObjectStorageFileManager {
                                             final TemporaryCredentials credentials,
                                             final PermissionsContainer permissions) {
         return new IndexRequest(indexName, DOC_MAPPING_TYPE)
-                .source(fileMapper.fileToDocument(item, dataStorage, credentials.getRegion(), permissions));
+                .source(fileMapper.fileToDocument(item, dataStorage, credentials.getRegion(), permissions,
+                        SearchDocumentType.S3_FILE));
     }
 }

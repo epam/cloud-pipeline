@@ -33,7 +33,8 @@ public class StorageFileMapper {
     public XContentBuilder fileToDocument(final DataStorageFile dataStorageFile,
                                           final AbstractDataStorage dataStorage,
                                           final String region,
-                                          final PermissionsContainer permissions) {
+                                          final PermissionsContainer permissions,
+                                          final SearchDocumentType type) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder
                     .startObject()
@@ -44,7 +45,7 @@ public class StorageFileMapper {
                     .field("storage_id", dataStorage.getId())
                     .field("storage_name", dataStorage.getName())
                     .field("storage_region", region)
-                    .field(DOC_TYPE_FIELD, SearchDocumentType.AZ_BLOB_FILE.name());
+                    .field(DOC_TYPE_FIELD, type.name());
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
             jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
