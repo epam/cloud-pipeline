@@ -161,7 +161,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .clickEndpoint()
                 .getEndpoint();
         Utils.restartBrowser(C.ROOT_ADDRESS);
-        loginAs(user);
+        loginAs(admin);
 
         runsMenu()
                 .log(getLastRunId(), log -> log
@@ -211,7 +211,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 )
                                 .waitForPauseButton()
                                 .clickOnPauseButton()
-                                .sleep(2, SECONDS)
+                                .sleep(5, SECONDS)
                                 .validateException("This operation may fail due to 'Out of disk' error")
                                 .click(button(PAUSE.name()))
                                 .assertPausingStatus()
