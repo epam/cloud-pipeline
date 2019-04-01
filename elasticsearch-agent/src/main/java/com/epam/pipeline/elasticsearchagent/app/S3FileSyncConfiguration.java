@@ -23,6 +23,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
 import com.epam.pipeline.elasticsearchagent.service.impl.S3FileManager;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,7 +57,8 @@ public class S3FileSyncConfiguration {
                                                  final ElasticsearchServiceClient esClient,
                                                  final ElasticIndexService indexService) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                objectStorageFileManager(), indexPrefix + indexName, indexSettingsPath, bulkInsertSize);
+                objectStorageFileManager(), indexPrefix + indexName,
+                indexSettingsPath, bulkInsertSize, DataStorageType.S3);
     }
 
 }

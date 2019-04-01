@@ -46,19 +46,20 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
     private final String indexPrefix;
     private final String indexMappingFile;
     private final int bulkInsertSize;
+    private final DataStorageType storageType;
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started {} files synchronization", getStorageType());
         cloudPipelineAPIClient.loadAllDataStorages()
                 .stream()
-                .filter(dataStorage -> dataStorage.getType() == DataStorageType.AZ)
+                .filter(dataStorage -> dataStorage.getType() == getStorageType())
                 .forEach(this::indexStorage);
     }
 
     @Override
     public DataStorageType getStorageType() {
-        return DataStorageType.AZ;
+        return storageType;
     }
 
     @Override

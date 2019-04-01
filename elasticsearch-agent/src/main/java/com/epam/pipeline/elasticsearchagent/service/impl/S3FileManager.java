@@ -43,11 +43,12 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.elasticsearchagent.utils.ESConstants.DOC_MAPPING_TYPE;
+
 public class S3FileManager implements ObjectStorageFileManager {
 
     private static final String DELIMITER = "/";
     private static final int NOT_FOUND = 404;
-    private static final String DOC_MAPPING_TYPE = "_doc";
 
     private boolean enableTags;
     private StorageFileMapper fileMapper;
