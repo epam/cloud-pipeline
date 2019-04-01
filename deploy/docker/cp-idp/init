@@ -29,6 +29,7 @@ fi
 default_admin_name=${CP_DEFAULT_ADMIN_NAME:-pipe_admin}
 default_admin_pass=${CP_DEFAULT_ADMIN_PASS:-pipe_admin}
 default_admin_email=${CP_DEFAULT_ADMIN_EMAIL:-"pipe_admin@nowhere.com"}
+default_admin_group="ROLE_ADMIN"
 
 echo "Adding default admin user as:"
 echo "-> Name: $default_admin_name"
@@ -39,7 +40,9 @@ saml-idp add-user   "$default_admin_name" \
                     "$default_admin_pass" \
                     --firstName "$default_admin_name" \
                     --lastName "$default_admin_name" \
-                    --email "$default_admin_email"
+                    --email "$default_admin_email" \
+                    --groups "$default_admin_group"
+
 
 echo "Starting IdP:"
 saml-idp    --cert  "$CP_IDP_CERT_DIR/idp-public-cert.pem" \
@@ -48,5 +51,6 @@ saml-idp    --cert  "$CP_IDP_CERT_DIR/idp-public-cert.pem" \
             --check \
             --https \
             --httpsPrivateKey "$CP_IDP_CERT_DIR/ssl-private-key.pem" \
-            --httpsCert "$CP_IDP_CERT_DIR/ssl-public-cert.pem"
+            --httpsCert "$CP_IDP_CERT_DIR/ssl-public-cert.pem" \
+            --admins "$default_admin_group"
             

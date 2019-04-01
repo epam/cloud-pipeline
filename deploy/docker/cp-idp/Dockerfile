@@ -25,7 +25,7 @@ RUN yum install gcc-c++ \
 RUN cd /opt && \
     git clone https://github.com/rodichenko/saml-idp.git && \
     cd saml-idp && \
-    git checkout tags/v1.2.1 && \
+    git checkout tags/v1.2.3 && \
     npm install --global
 
 ADD config.js /opt/saml-idp/
