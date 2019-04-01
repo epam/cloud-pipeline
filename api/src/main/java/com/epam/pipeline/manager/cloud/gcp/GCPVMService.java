@@ -35,7 +35,7 @@ import java.util.Optional;
 public class GCPVMService {
 
     private static final String RUN_ID_LABEL_NAME = "name";
-    public static final String LABEL_FILTER = "labels.%s=\"%s\"";
+    private static final String LABEL_FILTER = "labels.%s=\"%s\"";
 
 
     private final GCPClient gcpClient;
@@ -61,7 +61,7 @@ public class GCPVMService {
         }
     }
 
-    Instance getRunningInstanceByRunId(GCPRegion region, String runId) {
+    public Instance getRunningInstanceByRunId(GCPRegion region, String runId) {
         try {
             Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
 
@@ -79,7 +79,7 @@ public class GCPVMService {
         }
     }
 
-    Optional<InstanceTerminationState> getTerminationState(GCPRegion region, String instanceId) {
+    public Optional<InstanceTerminationState> getTerminationState(GCPRegion region, String instanceId) {
         Instance instance = getInstanceById(region, instanceId);
         if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
             return Optional.of(
