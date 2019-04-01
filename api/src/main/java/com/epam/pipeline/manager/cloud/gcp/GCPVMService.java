@@ -59,7 +59,7 @@ public class GCPVMService {
         }
     }
 
-    public Instance getRunningInstanceByRunId(GCPRegion region, String runId) {
+    Instance getRunningInstanceByRunId(GCPRegion region, String runId) {
         try {
             Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
 
@@ -76,17 +76,7 @@ public class GCPVMService {
         }
     }
 
-    public Instance getInstanceById(GCPRegion region, String instanceId) {
-        try {
-            return gcpClient.buildComputeClient(region).instances()
-                    .get(region.getProject(), region.getRegionCode(), instanceId).execute();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new GCPException(e);
-        }
-    }
-
-    public Optional<InstanceTerminationState> getTerminationState(GCPRegion region, String instanceId) {
+    Optional<InstanceTerminationState> getTerminationState(GCPRegion region, String instanceId) {
         Instance instance = getInstanceById(region, instanceId);
         if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
             return Optional.of(
@@ -97,6 +87,16 @@ public class GCPVMService {
             );
         }
         return Optional.empty();
+    }
+
+    private Instance getInstanceById(GCPRegion region, String instanceId) {
+        try {
+            return gcpClient.buildComputeClient(region).instances()
+                    .get(region.getProject(), region.getRegionCode(), instanceId).execute();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new GCPException(e);
+        }
     }
 
     private Instance findInstanceByTag(GCPRegion region, String key, String value) throws IOException {

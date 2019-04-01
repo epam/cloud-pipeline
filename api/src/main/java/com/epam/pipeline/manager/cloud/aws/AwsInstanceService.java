@@ -27,16 +27,13 @@ import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
-import com.epam.pipeline.manager.cloud.commands.RunIdArgCommand;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -57,33 +54,15 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     private final InstanceOfferManager instanceOfferManager;
     private final CommonCloudInstanceService instanceService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
-    private final String nodeUpScript;
-    private final String nodeDownScript;
-    private final String nodeReassignScript;
-    private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
 
     public AwsInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
                               final InstanceOfferManager instanceOfferManager,
-                              final CommonCloudInstanceService instanceService,
-                              @Value("${cluster.nodeup.script}") final String nodeUpScript,
-                              @Value("${cluster.nodedown.script}") final String nodeDownScript,
-                              @Value("${cluster.reassign.script}") final String nodeReassignScript,
-                              @Value("${cluster.node.terminate.script}") final String nodeTerminateScript,
-                              @Value("${kube.master.ip}") final String kubeMasterIP,
-                              @Value("${kube.kubeadm.token}") final String kubeToken) {
+                              final CommonCloudInstanceService instanceService) {
         this.ec2Helper = ec2Helper;
         this.preferenceManager = preferenceManager;
         this.instanceOfferManager = instanceOfferManager;
         this.instanceService = instanceService;
-        this.nodeUpScript = nodeUpScript;
-        this.nodeDownScript = nodeDownScript;
-        this.nodeReassignScript = nodeReassignScript;
-        this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
     }
 
     @Override
@@ -96,7 +75,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void scaleDownNode(final AwsRegion region, final Long runId) {
-        final String command = buildNodeDownCommand(runId);
+        final String command = instanceService.buildNodeDownCommand(runId);
         instanceService.runNodeDownScript(cmdExecutor, command, Collections.emptyMap());
     }
 
@@ -111,7 +90,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName, nodeTerminateScript);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
         instanceService.runTerminateNodeScript(command, cmdExecutor, Collections.emptyMap());
     }
 
@@ -158,7 +137,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, nodeReassignScript, Collections.emptyMap());
+                oldId, newId, cmdExecutor, Collections.emptyMap());
     }
 
     @Override
@@ -183,29 +162,12 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                         .build());
     }
 
-    private String buildNodeDownCommand(final Long runId) {
-        return RunIdArgCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeDownScript)
-                .runId(String.valueOf(runId))
-                .build()
-                .getCommand();
-    }
-
     private String buildNodeUpCommand(final AwsRegion region,
                                       final Long runId,
                                       final RunInstance instance) {
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(String.valueOf(runId))
-                .sshKey(region.getSshKeyName())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+        NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                instanceService.buildNodeUpCommonCommand(region, runId, instance)
+                               .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
@@ -247,16 +209,9 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     private String buildNodeUpDefaultCommand(final AwsRegion region, final String nodeId) {
 
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeId)
-                .sshKey(region.getSshKeyName())
-                .instanceType(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TYPE))
-                .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+        NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                instanceService.buildNodeUpDefaultCommand(region, nodeId)
+                               .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());

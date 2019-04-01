@@ -24,9 +24,6 @@ import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
-import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
-import com.epam.pipeline.manager.cloud.commands.RunIdArgCommand;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.execution.SystemParams;
@@ -34,7 +31,6 @@ import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -52,50 +48,34 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
     private static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
+
     private final CommonCloudInstanceService instanceService;
     private final KubernetesManager kubernetesManager;
     private final GCPVMService vmService;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
-    private final String nodeUpScript;
-    private final String nodeDownScript;
-    private final String nodeReassignScript;
-    private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
 
     public GCPInstanceService(final CommonCloudInstanceService instanceService,
                                 final GCPVMService vmService,
                                 final KubernetesManager kubernetesManager,
-                                final ParallelExecutorService executorService,
-                                @Value("${cluster.nodeup.script:}") final String nodeUpScript,
-                                @Value("${cluster.nodedown.script:}") final String nodeDownScript,
-                                @Value("${cluster.reassign.script:}") final String nodeReassignScript,
-                                @Value("${cluster.node.terminate.script:}") final String nodeTerminateScript,
-                                @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken) {
+                                final ParallelExecutorService executorService) {
         this.instanceService = instanceService;
         this.vmService = vmService;
         this.kubernetesManager = kubernetesManager;
         this.executorService = executorService;
-        this.nodeUpScript = nodeUpScript;
-        this.nodeDownScript = nodeDownScript;
-        this.nodeReassignScript = nodeReassignScript;
-        this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
     }
 
     @Override
     public RunInstance scaleUpNode(GCPRegion region, Long runId, RunInstance instance) {
-        final String command = buildNodeUpCommand(region, runId, instance);
+        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance)
+                .sshKey(region.getSshPublicKeyPath()).build().getCommand();
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     @Override
     public void scaleDownNode(GCPRegion region, Long runId) {
-        final String command = buildNodeDownCommand(runId);
+        final String command = instanceService.buildNodeDownCommand(runId);
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -108,7 +88,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void terminateNode(GCPRegion region, String internalIp, String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName, nodeTerminateScript);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
@@ -159,7 +139,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public boolean reassignNode(GCPRegion region, Long oldId, Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, nodeReassignScript, Collections.emptyMap());
+                oldId, newId, cmdExecutor, Collections.emptyMap());
     }
 
     @Override
@@ -186,32 +166,5 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         envVars.put(GOOGLE_APPLICATION_CREDENTIALS, region.getAuthFile());
         envVars.put(GOOGLE_PROJECT_ID, region.getProject());
         return envVars;
-    }
-
-
-    private String buildNodeUpCommand(final GCPRegion region, final Long runId, final RunInstance instance) {
-
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(String.valueOf(runId))
-                .sshKey(region.getSshPublicKeyPath())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode());
-
-        return commandBuilder.build().getCommand();
-    }
-
-    private String buildNodeDownCommand(final Long runId) {
-        return RunIdArgCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeDownScript)
-                .runId(String.valueOf(runId))
-                .build()
-                .getCommand();
     }
 }
