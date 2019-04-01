@@ -13,11 +13,12 @@ export CP_DOCKER_DIST_USER=                                         # Optional, 
 export CP_DOCKER_DIST_PASS=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
 export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
 
-bash build.sh -aws eu-central-1,us-east-1 \                         # List of regions to build VM images in AWS
-              -az westeurope,centralus \                            # List of regions to build VM images in Azure
+bash build.sh -aws eu-central-1,us-east-1 \                         # List of regions to build VM images in AWS. -im shall be set to "rebuild" to build images from scratch
+              -az westeurope,centralus \                            # Same as -aws, but Azure environment
               -im ${PATH_TO_VM_IMAGES_MANIFEST} \                   # OR a path to a prebuilt VM images manifest. If both are not set - default manifest will be used (https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt)
               -p ../workflows/pipe-templates/__SYSTEM/data_loader \ # Path to any packages that shall be included into the pipectl distr
               -p ../e2e/prerequisites \                             # E.g.: system data transfer pipeline or a list of users to regsiter by default
+              -p ../workflow/pipe-demo \                            # Path to the demo pipelines directory. If it is specifed - pipelines will be registered, as defined in the corresponding spec.json
               -t \                                                  # Whether to include test docker images
               -v 0.15                                               # Cloud Pipeline distribution version (used to tag docker images)
 ```

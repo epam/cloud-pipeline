@@ -664,6 +664,11 @@ if is_service_requested cp-git; then
 
                 print_info "-> Registering DataTransfer pipeline"
                 api_register_data_transfer_pipeline
+
+                if [ "$CP_DEPLOY_DEMO" ]; then
+                    print_info "-> Registering Demo pipelines"
+                    api_register_demo_pipelines
+                fi
             else
                 print_err "Error occured while getting GitLab root's impersonation token (https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/). GitLab won't be registered, but this can be done manually from the Cloud Pipeline GUI/API"
             fi

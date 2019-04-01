@@ -137,7 +137,6 @@ elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" ==
     if check_installed "wget"; then
         wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
     elif check_installed "curl"; then
-        DOWNLOAD_APP="curl"
         curl "$CLOUD_IMAGES_MANIFEST_URI" -o $CLOUD_IMAGES_MANIFEST_FILE
     else
         echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
