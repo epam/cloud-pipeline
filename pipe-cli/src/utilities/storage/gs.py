@@ -62,14 +62,17 @@ class GsListingManager(GsManager, AbstractListingManager):
         prefix = StorageOperations.get_prefix(relative_path)
         bucket = self.client.get_bucket(self.bucket.path)
         blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None,
-                                           max_results=page_size if not show_all else None,
+                                           max_results=page_size if not show_all and not self.show_versions else None,
                                            delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None,
                                            versions=self.show_versions)
         absolute_files = [self._to_storage_file(blob) for blob in blobs_iterator]
-        absolute_versions = absolute_files if not self.show_versions else self._compact_versions(absolute_files)
         absolute_folders = [self._to_storage_folder(name) for name in blobs_iterator.prefixes]
-        absolute_items = absolute_versions + absolute_folders
-        return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
+        absolute_versions = absolute_files if not self.show_versions \
+            else self._group_files_to_versions(absolute_files, absolute_folders, page_size, show_all)
+        absolute_items = absolute_folders + absolute_versions
+        requested_items = absolute_items if recursive else [self._to_local_item(item, prefix)
+                                                            for item in absolute_items]
+        return requested_items if show_all or not page_size else requested_items[:page_size]
 
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
@@ -86,15 +89,35 @@ class GsListingManager(GsManager, AbstractListingManager):
     def _to_local_timezone(self, utc_datetime):
         return utc_datetime.astimezone(Config.instance().timezone())
 
-    def _compact_versions(self, absolute_files):
+    def _to_storage_folder(self, name):
+        item = DataStorageItemModel()
+        item.name = name
+        item.path = item.name
+        item.type = 'Folder'
+        return item
+
+    def _group_files_to_versions(self, absolute_files, absolute_folders, page_size, show_all):
+        page_size = page_size - len(absolute_folders) if page_size and not show_all else None
         names = set(file.name for file in absolute_files)
         absolute_versions = []
+        number_of_versions = 0
         for name in names:
             files = [file for file in absolute_files if file.name == name]
             files.reverse()
             latest_file = files[0]
-            latest_file.latest = True
+            latest_file.latest = not latest_file.deleted
             latest_file.versions = files
+            number_of_versions += len(latest_file.versions)
+            if latest_file.deleted:
+                # Because additional synthetic delete version will be shown to user it should be counted in the number
+                # of file versions.
+                number_of_versions += 1
+            if page_size and number_of_versions > page_size:
+                number_of_extra_versions = number_of_versions - page_size
+                latest_file.versions = latest_file.versions[:-number_of_extra_versions]
+                if latest_file.versions or latest_file.deleted:
+                    absolute_versions.append(latest_file)
+                break
             absolute_versions.append(latest_file)
         return absolute_versions
 
@@ -103,13 +126,6 @@ class GsListingManager(GsManager, AbstractListingManager):
         relative_item.name = StorageOperations.get_item_name(relative_item.name, prefix)
         relative_item.path = relative_item.name
         return relative_item
-
-    def _to_storage_folder(self, name):
-        item = DataStorageItemModel()
-        item.name = name
-        item.path = item.name
-        item.type = 'Folder'
-        return item
 
     def get_file_tags(self, relative_path):
         bucket = self.client.get_bucket(self.bucket.path)
@@ -202,17 +218,39 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
 
     def restore_version(self, version):
         bucket = self.client.get_bucket(self.wrapper.bucket.path)
-        blob = bucket.blob(self.wrapper.path)
         if version:
-            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
-        else:
+            blob = bucket.blob(self.wrapper.path)
             all_items = self.listing_manager.list_items(blob.name, show_all=True)
             file_items = [item for item in all_items if item.name == blob.name]
             if not file_items:
-                raise RuntimeError('No versions of the specified file were found.')
-            latest_item = file_items[-1]
-            latest_version = latest_item.version
-            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(latest_version))
+                raise RuntimeError('Version "%s" doesn\'t exist.' % version)
+            item = file_items[0]
+            try:
+                version = int(version)
+            except ValueError:
+                raise RuntimeError('Version "%s" doesn\'t exist.' % version)
+            if not any(item.version == version for item in item.versions):
+                raise RuntimeError('Version "%s" doesn\'t exist.' % version)
+            if item.version == version:
+                raise RuntimeError('Version "%s" is already the latest version.' % version)
+            bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
+        else:
+            all_items = self.listing_manager.list_items(self.wrapper.path, show_all=True, recursive=True)
+            file_items = [item for item in all_items if item.name == self.wrapper.path]
+            if file_items:
+                item = file_items[0]
+                if not item.deleted:
+                    raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
+                self._restore_latest_archived_version(bucket, item)
+            else:
+                for item in all_items:
+                    if item.deleted:
+                        self._restore_latest_archived_version(bucket, item)
+
+    def _restore_latest_archived_version(self, bucket, item):
+        blob = bucket.blob(item.name)
+        latest_version = item.version
+        bucket.copy_blob(blob, bucket, blob.name, source_generation=int(latest_version))
 
 
 class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):

@@ -384,16 +384,17 @@ class DataStorageOperations(object):
                 labels = ''
                 if item.type is not None and item.type in WrapperType.cloud_types():
                     name = item.path
-                if item.changed is not None:
+                item_updated = item.deleted or item.changed
+                if item_updated is not None:
                     if bucket_model is None:
                         # need to wrap into datetime since bucket listing returns str
-                        item_datetime = datetime.datetime.strptime(item.changed, '%Y-%m-%d %H:%M:%S')
+                        item_datetime = datetime.datetime.strptime(item_updated, '%Y-%m-%d %H:%M:%S')
                     else:
-                        item_datetime = item.changed
+                        item_datetime = item_updated
                     changed = item_datetime.strftime('%Y-%m-%d %H:%M:%S')
-                if item.size is not None:
+                if item.size is not None and not item.deleted:
                     size = item.size
-                if item.labels is not None and len(item.labels) > 0:
+                if item.labels is not None and len(item.labels) > 0 and not item.deleted:
                     labels = ', '.join(map(lambda i: i.value, item.labels))
                 item_type = "-File" if item.delete_marker or item.deleted else item.type
                 row = [item_type, labels, changed, size, name]
@@ -401,6 +402,10 @@ class DataStorageOperations(object):
                     row.append('')
                 items_table.add_row(row)
                 if show_versions and item.type == 'File':
+                    if item.deleted:
+                        # Additional synthetic delete version
+                        row = ['-File', '', item.deleted.strftime('%Y-%m-%d %H:%M:%S'), size, name, '- (latest)']
+                        items_table.add_row(row)
                     for version in item.versions:
                         version_type = "-File" if version.delete_marker else "+File"
                         version_label = "{} (latest)".format(version.version) if version.latest else version.version
