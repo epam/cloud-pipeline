@@ -110,8 +110,8 @@ public class AzureStorageHelper {
         unwrap(getContainerURL(storage).delete());
     }
 
-    public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Boolean showVersion,
-                                       final Integer pageSize, final String marker) {
+    public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Integer pageSize,
+                                       final String marker) {
         String requestPath = Optional.ofNullable(path).orElse("");
         if (StringUtils.isNotBlank(requestPath) && !requestPath.endsWith(ProviderUtils.DELIMITER)) {
             requestPath += ProviderUtils.DELIMITER;
@@ -194,16 +194,13 @@ public class AzureStorageHelper {
 
     public Map<String, String> updateObjectTags(final AzureBlobStorage dataStorage,
                                                 final String path,
-                                                final Map<String, String> tags,
-                                                final String version) {
+                                                final Map<String, String> tags) {
         validatePath(dataStorage, path, true);
         unwrap(getBlobUrl(dataStorage, path).setMetadata(new Metadata(tags)));
         return tags;
     }
 
-    public Map<String, String> listObjectTags(final AzureBlobStorage dataStorage,
-                                              final String path,
-                                              final String version) {
+    public Map<String, String> listObjectTags(final AzureBlobStorage dataStorage, final String path) {
         validatePath(dataStorage, path, true);
         return unwrap(getBlobUrl(dataStorage, path).getProperties()
                         .map(r -> r.headers().metadata()),
@@ -212,8 +209,7 @@ public class AzureStorageHelper {
 
     public Map<String, String> deleteObjectTags(final AzureBlobStorage dataStorage,
                                                 final String path,
-                                                final Set<String> tagsToDelete,
-                                                final String version) {
+                                                final Set<String> tagsToDelete) {
         validatePath(dataStorage, path, true);
         final BlockBlobURL blockBlobURL = getBlobUrl(dataStorage, path);
         return unwrap(blockBlobURL.getProperties()
@@ -234,9 +230,9 @@ public class AzureStorageHelper {
 
     public DataStorageItemContent getFile(final AzureBlobStorage dataStorage,
                                           final String path,
-                                          final String version,
                                           final Long maxDownloadSize) {
         validatePath(dataStorage, path, true);
+        final Long fileSize = getDataStorageFile(dataStorage, path).getSize();
         final BlobRange blobRange = new BlobRange().withCount(maxDownloadSize);
         return unwrap(getBlobUrl(dataStorage, path).download(blobRange, null, false, null)
                         .flatMap(response -> FlowableUtil.collectBytesInArray(response.body(null))
@@ -244,16 +240,14 @@ public class AzureStorageHelper {
                                     final DataStorageItemContent content = new DataStorageItemContent();
                                     content.setContent(bytes);
                                     content.setContentType(response.headers().contentType());
-                                    content.setTruncated(response.headers().contentLength() > maxDownloadSize);
+                                    content.setTruncated(fileSize > maxDownloadSize);
                                     content.setMayBeBinary(FileContentUtils.isBinaryContent(bytes));
                                     return content;
                                 })),
             code -> reviveIfPageRangeIsInvalid(code, new DataStorageItemContent()));
     }
 
-    public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage,
-                                                 final String path,
-                                                 final String version) {
+    public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path) {
         //TODO: can be reason of error
         validatePath(dataStorage, path, true);
         return unwrap(getBlobUrl(dataStorage, path).download()
@@ -465,7 +459,7 @@ public class AzureStorageHelper {
     }
 
     private void copyItem(final AzureBlobStorage dataStorage, final String newPath, final String oldPath) {
-        getItems(dataStorage, oldPath, false, MAX_PAGE_SIZE, null).getResults()
+        getItems(dataStorage, oldPath, MAX_PAGE_SIZE, null).getResults()
                 .stream()
                 .filter(item -> item.getType() == DataStorageItemType.Folder)
                 .forEach(item -> {
@@ -477,7 +471,7 @@ public class AzureStorageHelper {
     }
 
     private void copyFile(final AzureBlobStorage storage, final String newPath, final String oldPath) {
-        getItems(storage, oldPath, false, MAX_PAGE_SIZE, null).getResults()
+        getItems(storage, oldPath, MAX_PAGE_SIZE, null).getResults()
                 .stream()
                 .filter(item -> item.getType() == DataStorageItemType.File)
                 .forEach(item -> {
