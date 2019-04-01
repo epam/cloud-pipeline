@@ -76,7 +76,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
-        return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
+        return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
     }
 
     @Override
@@ -151,31 +151,31 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public Map<String, String> updateObjectTags(final AzureBlobStorage dataStorage, final String path,
                                                 final Map<String, String> tags, final String version) {
-        return getAzureStorageHelper(dataStorage).updateObjectTags(dataStorage, path, tags, version);
+        return getAzureStorageHelper(dataStorage).updateObjectTags(dataStorage, path, tags);
     }
 
     @Override
     public Map<String, String> listObjectTags(final AzureBlobStorage dataStorage, final String path,
                                               final String version) {
-        return getAzureStorageHelper(dataStorage).listObjectTags(dataStorage, path, version);
+        return getAzureStorageHelper(dataStorage).listObjectTags(dataStorage, path);
     }
 
     @Override
     public Map<String, String> deleteObjectTags(final AzureBlobStorage dataStorage, final String path,
                                                 final Set<String> tagsToDelete, final String version) {
-        return getAzureStorageHelper(dataStorage).deleteObjectTags(dataStorage, path, tagsToDelete, version);
+        return getAzureStorageHelper(dataStorage).deleteObjectTags(dataStorage, path, tagsToDelete);
     }
 
     @Override
     public DataStorageItemContent getFile(final AzureBlobStorage dataStorage, final String path, final String version,
                                           final Long maxDownloadSize) {
-        return getAzureStorageHelper(dataStorage).getFile(dataStorage, path, version, maxDownloadSize);
+        return getAzureStorageHelper(dataStorage).getFile(dataStorage, path, maxDownloadSize);
     }
 
     @Override
     public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path,
                                                  final String version) {
-        return getAzureStorageHelper(dataStorage).getStream(dataStorage, path, version);
+        return getAzureStorageHelper(dataStorage).getStream(dataStorage, path);
     }
 
     @Override
