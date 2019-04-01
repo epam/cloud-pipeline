@@ -82,6 +82,7 @@ function build_ami {
     local base_ami_name="$9"
     local user_data_script="${10}"
     local output_path="${11}"
+    local make_public="${12}"
 
     if [ -z "$output_path" ]; then
         echo "Output path is not set"
@@ -248,6 +249,15 @@ function build_ami {
         fi
         echo
 
+        if [ "$make_public" == "true" ]; then
+            echo "Public access will be granted to the image $new_image_id ($base_ami_name)"
+            aws ec2 modify-image-attribute --region $region --image-id $new_image_id --launch-permission "Add=[{Group=all}]"
+            if [ $? -ne 0 ]; then
+                echo "ERROR: unable to grant public access to the image $new_image_id"
+            fi
+            echo "Public access IS GRANTED to the image $new_image_id ($base_ami_name)"
+        fi
+
         echo "Image is created:"
         echo "-> Name: $base_ami_name"
         echo "-> ID: $new_image_id"
@@ -409,8 +419,11 @@ function build_ami {
         echo
 
         terminate_instance $instance_id
-
         echo
+
+        if [ "$make_public" == "true" ]; then
+            echo "WARN: Public access is requested, but is NOT SUPPORTED for the $CP_AZURE cloud provider"
+        fi
 
         echo "Image is created:"
         echo "-> Name: $base_ami_name"
@@ -443,6 +456,10 @@ case $key in
     export CP_CLOUD_REGION="$2"
     shift # past argument
     shift # past value
+    ;;
+    -pub|--make-public)
+    export CP_MAKE_IMAGES_PUBLIC="true"
+    shift # past argument
     ;;
     -bc|--base-common-image)
     export CP_BASE_COMMON_IMAGE_ID="$2"
@@ -643,7 +660,8 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_SUBNET:-NA}" \
                 "${CP_IMAGE_PREFIX}-Common" \
                 "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-common-node.sh" \
-                "$CP_OUTPUT"
+                "$CP_OUTPUT" \
+                "${CP_MAKE_IMAGES_PUBLIC:-true}"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: Common image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
@@ -662,7 +680,8 @@ for region_item in "${regions_arr[@]}"; do
                 "${CP_SUBNET:-NA}" \
                 "${CP_IMAGE_PREFIX}-GPU" \
                 "$INSTALL_SCRIPT_PATH/$CP_CLOUD_PROVIDER/install-gpu-node.sh" \
-                "$CP_OUTPUT"
+                "$CP_OUTPUT" \
+                "${CP_MAKE_IMAGES_PUBLIC:-true}"
 
     if [ $? -ne 0 ]; then
         echo "ERROR: GPU image build failed for a current provider ($CP_CLOUD_PROVIDER) and region ($region_item)"
