@@ -46,6 +46,6 @@ public class GSBucketStorage extends AbstractDataStorage {
 
     @Override
     public boolean isPolicySupported() {
-        return false;
+        return true;
     }
 }

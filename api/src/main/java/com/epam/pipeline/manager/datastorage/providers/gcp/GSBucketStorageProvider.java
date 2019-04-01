@@ -131,8 +131,8 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public boolean checkStorage(GSBucketStorage dataStorage) {
-        return true;
+    public boolean checkStorage(final GSBucketStorage dataStorage) {
+        return getHelper(dataStorage).checkStorageExists(dataStorage.getPath());
     }
 
     @Override

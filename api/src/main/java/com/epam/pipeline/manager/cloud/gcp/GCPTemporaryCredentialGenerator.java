@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
 import com.google.api.services.iamcredentials.v1.model.GenerateAccessTokenRequest;
 import com.google.api.services.iamcredentials.v1.model.GenerateAccessTokenResponse;
+import com.google.api.services.storage.StorageScopes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -43,10 +44,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGenerator<GSBucketStorage> {
     private static final String ACCOUNT_NAME_REQUEST_FORMAT = "projects/-/serviceAccounts/%s";
-    private static final List<String> READ_ONLY_STORAGE_SCOPE = Collections
-            .singletonList("https://www.googleapis.com/auth/devstorage.read_only");
-    private static final List<String> WRITE_STORAGE_SCOPE = Collections
-            .singletonList("https://www.googleapis.com/auth/devstorage.read_write");
 
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
@@ -107,7 +104,7 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
     private List<String> buildScope(final List<DataStorageAction> actions) {
         return actions.stream()
                 .filter(action -> action.isWrite() || action.isWriteVersion()).findAny()
-                .map(action -> WRITE_STORAGE_SCOPE)
-                .orElse(READ_ONLY_STORAGE_SCOPE);
+                .map(action -> Collections.singletonList(StorageScopes.DEVSTORAGE_READ_WRITE))
+                .orElse(Collections.singletonList(StorageScopes.DEVSTORAGE_READ_ONLY));
     }
 }

@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -31,16 +30,17 @@ import com.google.cloud.storage.StorageOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.Assert;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
 public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
+    private static final int REGION_ZONE_LENGTH = -2;
 
     private final MessageHelper messageHelper;
     private final GCPRegion region;
@@ -49,14 +49,13 @@ public class GSBucketStorageHelper {
         final Storage client = getClient();
         final Bucket bucket = client.create(BucketInfo.newBuilder(storage.getPath())
                 .setStorageClass(StorageClass.REGIONAL)
-                .setLocation(region.getRegionCode())
+                .setLocation(trimRegionZone(region.getRegionCode()))
                 .build());
         return bucket.getName();
     }
 
     public void deleteGoogleStorage(final String bucketName) {
         final Storage client = getClient();
-        checkBucketExists(bucketName);
         final Iterable<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(EMPTY_PREFIX)).iterateAll();
         blobs.forEach(blob -> blob.delete());
         final boolean deleted = client.delete(bucketName);
@@ -64,6 +63,11 @@ public class GSBucketStorageHelper {
         if (!deleted) {
             throw new IllegalArgumentException(String.format("Failed to delete google data storage %s", bucketName));
         }
+    }
+
+    public boolean checkStorageExists(final String bucketName) {
+        final Storage client = getClient();
+        return Objects.nonNull(client.get(bucketName));
     }
 
     private Storage getClient() {
@@ -83,9 +87,7 @@ public class GSBucketStorageHelper {
         }
     }
 
-    private void checkBucketExists(final String bucketName) {
-        final Storage client = getClient();
-        Assert.notNull(client.get(bucketName), messageHelper.getMessage(
-                MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME));
+    private String trimRegionZone(final String region) {
+        return StringUtils.substring(region, 0, REGION_ZONE_LENGTH);
     }
 }
