@@ -5,7 +5,7 @@
   "configuration": {
     "main_file" : "@.py",
     "main_class" : "DefaultPipeline",
-    "instance_size" : "m5.large",
+    "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "20",
     "language" : "luigi",
     "docker_image" : "library/luigi:latest",

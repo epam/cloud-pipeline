@@ -339,6 +339,21 @@ function load_install_config {
     set +o allexport
 }
 
+function append_install_config {
+    local file_to_append="$1"
+    local main_install_config="${2:-$CP_INSTALL_CONFIG_FILE}"
+    if [ -z "$file_to_append" ] || [ ! -f "$file_to_append" ]; then
+        print_error "File to append to the installation config is provided or does not exist. Provided value is \"$file_to_append\""
+        return 1
+    fi
+
+    while IFS="=" read -r append_key append_value; do
+        update_config_value "$main_install_config" \
+                            "$append_key" \
+                            "$append_value" 
+    done < "$file_to_append"
+}
+
 function parse_env_option {
     local key_value="$1"
     IFS="=" read -r key value <<< "${key_value}"
@@ -501,7 +516,9 @@ function parse_options {
         export CP_CLOUD_CONFIG_PATH="$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_CLOUD_PLATFORM"
         export CP_CLOUD_CONFIG_FILE="$CP_CLOUD_CONFIG_PATH/cloud-config"
     fi
-    load_install_config "$CP_CLOUD_CONFIG_FILE"
+    # Cloud-specific config file is loaded to the environment and also appended to the $CP_INSTALL_CONFIG_FILE to make it's content available in the pods
+    load_install_config "$CP_CLOUD_CONFIG_FILE" && \
+    append_install_config "$CP_CLOUD_CONFIG_FILE"
     if [ $? -ne 0 ]; then
         print_err "Unable to load config from $CP_CLOUD_CONFIG_FILE"
         return 1

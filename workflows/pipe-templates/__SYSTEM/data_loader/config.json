@@ -4,7 +4,7 @@
   "configuration" : {
     "awsRegionId" : 1,
     "main_file" : "sys-data-upload.py",
-    "instance_size" : "m5.large",
+    "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "50",
     "docker_image" : "library/ubuntu:latest",
     "timeout" : 0,

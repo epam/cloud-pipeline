@@ -1,6 +1,6 @@
 {
     "short_description": "Luigi is a Python package that helps you build complex pipelines of batch jobs",
-    "instance_type": "m5.large",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "50",
     "default_command": "sleep infinity"
 }

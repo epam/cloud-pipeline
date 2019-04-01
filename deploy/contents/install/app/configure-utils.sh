@@ -334,6 +334,20 @@ function api_get_docker_registry_id {
     fi
 }
 
+function api_get_cluster_instance_details {
+    local instance_type="$1"
+    local region_id="$2"
+
+    local get_cluster_instance_details_json=$(call_api "/cluster/instance/loadAll?regionId=$region_id" "$CP_API_JWT_ADMIN")
+    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r ".payload[] | select(.name == \"$instance_type\")")"
+    if [ "$get_cluster_instance_details_result" ] && [ "$get_cluster_instance_details_result" != "null" ]; then
+        echo "$get_cluster_instance_details_result"
+        return 0
+    else
+        return 1
+    fi
+}
+
 function api_get_role_id {
     local role_name="$1"
     local role_json=$(call_api "/role/loadAll" "$CP_API_JWT_ADMIN")
@@ -554,6 +568,13 @@ function api_register_docker_image {
     fi
 
     local image_name_no_version="$(echo $image_name | cut -d: -f1)"
+    local instance_type_json=""
+    if [ "$instance_type" ] && [ "$instance_type" != "NA" ]; then
+        instance_type_json=", \"instanceType\": \"$instance_type\""
+    else
+        print_warn "Instance type for $image_name is not set (actual value: \"$instance_type\"). Image will be registered without a default instance type"
+    fi
+
     local payload="{}"
 read -r -d '' payload <<-EOF
 {
@@ -564,11 +585,9 @@ read -r -d '' payload <<-EOF
     "description": "$full_description",
     "disk": $disk_size,
     "endpoints": $endpoints,
-    "defaultCommand": "$default_command"
+    "defaultCommand": "$default_command" $instance_type_json
 }
 EOF
-# Instance type shall be added to the payload once price lists are synced
-#    "instanceType": "$instance_type",
 
     call_api_register_image_response=$(call_api "/tool/update" "$CP_API_JWT_ADMIN" "$payload")
     call_api_register_image_result=$?
@@ -1069,7 +1088,6 @@ EOF
     return $call_api_register_system_storage_result
 }
 
-# FIXME 1. Instance type in the config.json shall be replaced according to the current cloud provider (azure/aws/gcp)
 function api_register_pipeline {
     local parent_folder_name="$1"
     local pipeline_name="$2"
@@ -1174,7 +1192,8 @@ function api_register_demo_pipelines {
         local demo_pipeline_dir=$(dirname $demo_pipeline_spec_file)
 
         # Validate pipeline structure. At least we need src/ directory and a config.json
-        if [ ! -f "$demo_pipeline_dir/config.json" ] || [ ! -d "$demo_pipeline_dir/src" ]; then
+        local demo_pipeline_config_json="$demo_pipeline_dir/config.json"
+        if [ ! -f "$demo_pipeline_config_json" ] || [ ! -d "$demo_pipeline_dir/src" ]; then
             print_warn "Demo pipeline directory at ${demo_pipeline_dir} is malformed: it shall container src/ directory and a config.json at least. This pipeline will be skipped"
             continue
         fi
@@ -1186,16 +1205,21 @@ function api_register_demo_pipelines {
         local demo_pipeline_version=$(jq -r '.version // "v1"' <<< "$demo_pipeline_spec_json")
         local demo_pipeline_grant_role_name=$(jq -r '.grant_role_name // "ROLE_USER"' <<< "$demo_pipeline_spec_json")
         local demo_pipeline_grant_role_permissions=$(jq -r '.grant_role_permissions // "21"' <<< "$demo_pipeline_spec_json")
-        local demo_pipeline_cloud_provider=$(jq -r '.cloud_provider // ""' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_cloud_provider_instance_type=$(jq -r ".${CP_CLOUD_PLATFORM} // \"NA\"" <<< "$demo_pipeline_spec_json")
 
         if [ -z "$demo_pipeline_description" ]; then
             print_warn "Demo pipeline at $demo_pipeline_dir does not contain a descripton in the spec.json. This pipeline will be skipped"
         fi
 
-        if [ "$demo_pipeline_cloud_provider" ] && [ "$demo_pipeline_cloud_provider" != "$CP_CLOUD_PLATFORM" ]; then
-            print_warn "Demo pipeline at $demo_pipeline_dir shall be deployed only to $demo_pipeline_cloud_provider cloud environment, while current environment is $CP_CLOUD_PLATFORM. This pipeline will be skipped"
+        if [ ! "$demo_pipeline_cloud_provider_instance_type" ] || [ "$demo_pipeline_cloud_provider_instance_type" == "NA" ]; then
+            print_warn "Demo pipeline at $demo_pipeline_dir is not support for the current cloud environment (${CP_CLOUD_PLATFORM}). This pipeline will be skipped"
             continue
         fi
+
+        # Update the pipeline's config.json with the environment variables (e.g. cloud-specific instance/vm type)
+        export CP_CONFIG_JSON_INSTANCE_TYPE="$demo_pipeline_cloud_provider_instance_type"
+        local demo_pipeline_config_json_contents="$(envsubst < "$demo_pipeline_config_json")"
+        cat <<< "$demo_pipeline_config_json_contents" > "$demo_pipeline_config_json"
 
         print_info "Creating parent folder $demo_pipeline_parent_folder_name for the pipeline $demo_pipeline_name"
         api_create_folder_path "$demo_pipeline_parent_folder_name"
@@ -1217,6 +1241,7 @@ function api_register_demo_pipelines {
             return 1
         fi
     done
+    unset CP_CONFIG_JSON_INSTANCE_TYPE
 }
 
 function api_register_data_transfer_pipeline {
@@ -1224,11 +1249,21 @@ function api_register_data_transfer_pipeline {
     local dt_role_permissions="26"
     local dt_pipeline_version=${CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION:-v1}
     
+    # 0. Verify and update config.json template
+    local dt_pipeline_dir="$OTHER_PACKAGES_PATH/data_loader"
+    local dt_pipeline_config_json="$dt_pipeline_dir/config.json"
+    if [ ! -f "$dt_pipeline_config_json" ]; then
+        print_err "config.json is not found for the data transfer pipeline at ${dt_pipeline_config_json}. Data transfer pipeline will not be registered"
+        return 1
+    fi
+    local dt_pipeline_config_json_content="$(envsubst < "$dt_pipeline_config_json")"
+    cat <<< "$dt_pipeline_config_json_content" > "$dt_pipeline_config_json"
+
     # 1. Register a data transfer pipeline in general
     api_register_pipeline   "$CP_API_SRV_SYSTEM_FOLDER_NAME" \
                             "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" \
                             "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_DESCRIPTION" \
-                            "$OTHER_PACKAGES_PATH/data_loader" \
+                            "$dt_pipeline_dir" \
                             "$dt_role_grant" \
                             "$dt_role_permissions" \
                             "$dt_pipeline_version"

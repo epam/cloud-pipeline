@@ -4,7 +4,7 @@
   "configuration" : {
     "nonPause" : false,
     "main_file" : "wes-analysis.sh",
-    "instance_size" : "Standard_D4_v3",
+    "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
     "instance_disk" : "100",
     "docker_image" : "cp-docker-registry.default.svc.cluster.local:31443/ngs/ngs-essential:latest",
     "timeout" : 0,
@@ -12,22 +12,22 @@
     "language" : "other",
     "parameters" : {
       "READ1" : {
-        "value" : "az://epm-cmbi-analysis/MiSeq/MiSeqv3-TruSightTumor-CEPH12plex/PipelineInputData/FASTQ/NA12877_A1_R1.fastq.gz",
+        "value" : "",
         "type" : "input",
         "required" : false
       },
       "READ2" : {
-        "value" : "az://epm-cmbi-analysis/MiSeq/MiSeqv3-TruSightTumor-CEPH12plex/PipelineInputData/FASTQ/NA12877_A1_R2.fastq.gz",
+        "value" : "",
         "type" : "input",
         "required" : false
       },
       "REFERENCE_FOLDER" : {
-        "value" : "az://epm-cmbi-reference/genomes/human/GRCh38",
+        "value" : "${CP_PREF_STORAGE_SCHEMA}://cloud-pipeline-reference/genomes/human/GRCh38",
         "type" : "common",
         "required" : false
       },
       "SAMPLE" : {
-        "value" : "NA12877_A1",
+        "value" : "",
         "type" : "string",
         "required" : false
       },
@@ -37,17 +37,17 @@
         "required" : false
       },
       "PANEL_NAME" : {
-        "value" : "Exome_panel.bed",
+        "value" : "",
         "type" : "string",
         "required" : false
       },
       "SNPEFF_DB_NAME" : {
-        "value" : "GRCh38.86",
+        "value" : "",
         "type" : "string",
         "required" : false
       },
       "OUTPUT_FOLDER" : {
-        "value" : "az://epm-cmbi-analysis/",
+        "value" : "",
         "type" : "output",
         "required" : false
       },
@@ -57,7 +57,7 @@
         "required" : false
       },
       "ADAPTER_FILE" : {
-        "value" : "TruSeq2-PE.fa",
+        "value" : "",
         "type" : "string",
         "required" : false
       }
