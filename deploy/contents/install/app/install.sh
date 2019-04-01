@@ -296,7 +296,9 @@ if is_service_requested cp-idp; then
 
         print_info "-> Waiting for IdP to initialize"
         wait_for_deployment "cp-idp"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-idp: https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-idp:"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nUsers auth:     https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nAdministrating: https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/admin"
     fi
     echo
 fi
