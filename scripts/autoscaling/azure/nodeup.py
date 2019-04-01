@@ -177,6 +177,17 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
 
 #############################
 
+SUBNET_ID_PARTS_NUMBER = 11
+SUBNET_NAME_INDEX = 10
+SUBNET_TYPE_INDEX = 9
+
+RESOURCE_ID_PARTS_NUMBER = 9
+RESOURCE_NAME_INDEX = 8
+RESOURCE_TYPE_INDEX = 7
+RESOURCE_GROUP_NAME_INDEX = 4
+RESOURCE_GROUP_KEY_INDEX = 3
+
+
 zone = None
 resource_client = get_client_from_auth_file(ResourceManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
@@ -672,11 +683,14 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
 
 def get_res_grp_and_res_name_from_string(resource_id, resource_type):
     resource_params = resource_id.split("/")
+
     if len(resource_params) == 2:
         resource_group, resource = resource_params[0], resource_params[1]
     # according to full ID form: /subscriptions/<sub-id>/resourceGroups/<res-grp>/providers/Microsoft.Compute/images/<image>
-    elif len(resource_params) == 9 and resource_params[3] == 'resourceGroups' and resource_params[7] == resource_type:
-        resource_group, resource = resource_params[4], resource_params[8]
+    elif len(resource_params) == RESOURCE_ID_PARTS_NUMBER \
+            and resource_params[RESOURCE_GROUP_KEY_INDEX] == 'resourceGroups' \
+            and resource_params[RESOURCE_TYPE_INDEX] == resource_type:
+        resource_group, resource = resource_params[RESOURCE_GROUP_NAME_INDEX], resource_params[RESOURCE_NAME_INDEX]
     else:
         raise RuntimeError(
             "Resource parameter doesn't match to Azure resource name convention: <resource_group>/<resource_name>"
@@ -690,8 +704,10 @@ def get_subnet_name_from_id(subnet_id):
         return subnet_id
     subnet_params = subnet_id.split("/")
     # according to /subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>
-    if len(subnet_params) == 11 and subnet_params[3] == "resourceGroups" and subnet_params[9] == "subnets":
-        return subnet_params[10]
+    if len(subnet_params) == SUBNET_ID_PARTS_NUMBER \
+            and subnet_params[RESOURCE_GROUP_KEY_INDEX] == "resourceGroups" \
+            and subnet_params[SUBNET_TYPE_INDEX] == "subnets":
+        return subnet_params[SUBNET_NAME_INDEX]
     else:
         raise RuntimeError("Subnet dont match form of the Azure ID "
                            "/subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>: {}".format(subnet_id))
