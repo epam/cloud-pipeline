@@ -100,6 +100,10 @@ public class CloudPipelineAPIClient {
         return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
     }
 
+    public AbstractCloudRegion loadRegion(final Long regionId) {
+        return QueryUtils.execute(cloudPipelineAPI.loadRegion(regionId));
+    }
+
     public Tool loadTool(final String toolId) {
         return QueryUtils.execute(cloudPipelineAPI.loadTool(null, toolId));
     }

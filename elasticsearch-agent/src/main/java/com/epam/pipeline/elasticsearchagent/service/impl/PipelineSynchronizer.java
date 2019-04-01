@@ -59,9 +59,6 @@ import static com.epam.pipeline.elasticsearchagent.service.EventToRequestConvert
 @ConditionalOnProperty(value = "sync.pipeline.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineSynchronizer implements ElasticsearchSynchronizer {
 
-
-    private static final String DOC_MAPPING_TYPE = "_doc";
-
     private final PipelineEventDao pipelineEventDao;
     private final PipelineLoader loader;
     private final PipelineMapper mapper;

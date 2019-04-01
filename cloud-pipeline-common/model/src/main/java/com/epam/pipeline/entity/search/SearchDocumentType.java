@@ -20,6 +20,7 @@ public enum SearchDocumentType {
 
     PIPELINE_RUN,
     S3_FILE,
+    AZ_BLOB_FILE,
     NFS_FILE,
     S3_STORAGE,
     NFS_STORAGE,

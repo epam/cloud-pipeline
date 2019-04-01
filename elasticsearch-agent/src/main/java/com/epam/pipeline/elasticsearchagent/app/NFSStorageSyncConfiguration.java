@@ -44,19 +44,16 @@ public class NFSStorageSyncConfiguration {
     private String commonIndexPrefix;
 
     @Bean
-    @Qualifier("nfsStorageMapper")
     public DataStorageMapper nfsStorageMapper() {
         return new DataStorageMapper(SearchDocumentType.NFS_STORAGE);
     }
 
     @Bean
-    @Qualifier("nfsStorageLoader")
     public DataStorageLoader nfsStorageLoader(final CloudPipelineAPIClient apiClient) {
         return new DataStorageLoader(apiClient);
     }
 
     @Bean
-    @Qualifier("nfsEventProcessor")
     public DataStorageIndexCleaner nfsStorageIndexCleaner(
             final @Value("${sync.nfs-file.index.name}") String nfsFileIndexName,
             final ElasticsearchServiceClient serviceClient) {
@@ -64,7 +61,6 @@ public class NFSStorageSyncConfiguration {
     }
 
     @Bean
-    @Qualifier("nfsEventConverter")
     public EventToRequestConverterImpl<DataStorageDoc> nfsEventConverter(
             final @Qualifier("nfsStorageMapper") DataStorageMapper nfsStorageMapper,
             final @Qualifier("nfsStorageLoader") DataStorageLoader nfsStorageLoader,

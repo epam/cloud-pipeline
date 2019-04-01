@@ -37,7 +37,8 @@ import org.springframework.util.StringUtils;
         property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
-        @JsonSubTypes.Type(value = NFSDataStorage.class, name = "NFS")})
+        @JsonSubTypes.Type(value = NFSDataStorage.class, name = "NFS"),
+        @JsonSubTypes.Type(value = AzureBlobStorage.class, name = "AZ")})
 public abstract class AbstractDataStorage extends AbstractSecuredEntity {
 
     private String description;
