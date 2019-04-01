@@ -22,13 +22,6 @@ class S3Client(CloudClient):
     def folder_exists(self, bucket_name, key):
         return len(self.list_s3_folder(bucket_name, key)) > 0
 
-    def get_listing(self, path, recursive=False, expected_status=0):
-        args = []
-        if recursive:
-            args.append("--recursive")
-        cmd_output = self.s3_ls(path, args, expected_status)
-        return self.parse_aws_listing(cmd_output)
-
     def list_object_tags(self, bucket, key, version=None, args=None):
         command = ['aws', 's3api', 'get-object-tagging', '--bucket', bucket, '--key', key]
         if version:
@@ -52,6 +45,10 @@ class S3Client(CloudClient):
         if not listing:
             raise RuntimeError('Storage path %s wasn\'t found.' % path)
         return listing[0].last_modified
+
+    def get_versions(self, path):
+        # TODO 01.04.19: Method is not implemented yet.
+        raise RuntimeError('Method is not implemented yet.')
 
     def wait_for_bucket_creation(self, bucket_name):
         waiter = boto3.client('s3').get_waiter('bucket_exists')

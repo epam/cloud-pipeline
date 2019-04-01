@@ -26,6 +26,10 @@ class CloudClient(object):
         pass
 
     @abstractmethod
+    def get_versions(self, path):
+        pass
+
+    @abstractmethod
     def wait_for_bucket_creation(self, bucket_name):
         pass
 

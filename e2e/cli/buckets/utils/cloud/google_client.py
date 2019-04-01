@@ -43,6 +43,10 @@ class GsClient(CloudClient):
         last_modified = blob.updated
         return last_modified.astimezone(get_localzone()).replace(tzinfo=None, microsecond=0)
 
+    def get_versions(self, path):
+        # TODO 01.04.19: Method is not implemented yet.
+        raise RuntimeError('Method is not implemented yet.')
+
     def wait_for_bucket_creation(self, bucket_name):
         if self._wait_unless(lambda: self._get_client().bucket(bucket_name).exists()):
             return

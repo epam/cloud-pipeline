@@ -298,7 +298,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             for item in page['DeleteMarkers']:
                 if 'IsLatest' in item and item['IsLatest']:
                     return item
-        raise RuntimeError('Latest version in the buckets is not a delete marker. Please specify "--version" parameter.')
+        raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):

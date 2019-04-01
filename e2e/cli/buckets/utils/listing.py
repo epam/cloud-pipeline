@@ -29,7 +29,7 @@ class FileModel(object):
     FOLDER_TYPE = 'Folder'
     DELIMITER = '/'
 
-    def __init__(self, name, size, last_modified, type, version_id=None, is_version_latest=None):
+    def __init__(self, name, size, last_modified, type, version_id=None, is_version_latest=False):
         self.name = name
         self.size = size
         self.last_modified = last_modified
@@ -117,7 +117,7 @@ class FileModel(object):
         return parse(localized_date_time.astimezone(get_localzone()).replace(tzinfo=None)
                      .strftime("%Y-%m-%d %H:%M:%S"))
 
-    def equals(self, other, check_last_modified=False):
+    def equals(self, other, check_last_modified=False, check_version=True):
         if self.type != other.type:
             return False
         if self.name != other.name:
@@ -127,8 +127,9 @@ class FileModel(object):
             return True
         if check_last_modified and self.last_modified != other.last_modified:
             return False
-        return self.size == other.size and self.is_version_latest == other.is_version_latest \
-            and self.version_id == other.version_id
+        if check_version and self.version_id != other.version_id:
+            return False
+        return self.size == other.size and self.is_version_latest == other.is_version_latest
 
     def __str__(self):
         if self.type == self.FOLDER_TYPE:
@@ -159,7 +160,8 @@ def get_pipe_listing(path, show_details=True, recursive=False, token=None, versi
     return parse_pipe_listing(cmd_output, show_details=show_details)
 
 
-def compare_listing(actual_listing, expected_listing, expected_length, show_details=True, check_last_modified=False):
+def compare_listing(actual_listing, expected_listing, expected_length, show_details=True, check_last_modified=False,
+                    check_version=False):
     assert len(actual_listing) == expected_length, \
         "Length of listing [{}] doesn't match expected value [{}]".format(len(actual_listing), expected_length)
     assert len(actual_listing) == len(expected_listing), \
@@ -169,7 +171,8 @@ def compare_listing(actual_listing, expected_listing, expected_length, show_deta
     expected_listing = sorted(expected_listing, key=lambda tup: (tup.type, tup.name, tup.size, tup.last_modified))
     for actual_item, expected_item in zip(actual_listing, expected_listing):
         if show_details:
-            assert actual_item.equals(expected_item, check_last_modified=check_last_modified), \
+            assert actual_item.equals(expected_item, check_last_modified=check_last_modified,
+                                      check_version=check_version), \
                 "Mismatch between files in listing:\n{}\n{}".format(str(actual_item), str(expected_item))
         else:
             assert actual_item.name == expected_item.name, "Mismatch between files in listing: {} vs {}" \
@@ -218,9 +221,14 @@ def filter_versioned_lines(lines):
     return result
 
 
-def f(name, size):
+def f(name, size=None, deleted=False, added=False, latest=False):
     """ Returns a storage file item with the specified parameters. """
-    return FileModel(name, size, None, FileModel.FILE_TYPE)
+    file_type = FileModel.FILE_TYPE
+    if added:
+        file_type = FileModel.ADDED_FILE_TYPE
+    if deleted:
+        file_type = FileModel.DELETED_FILE_TYPE
+    return FileModel(name, size, None, file_type, is_version_latest=latest)
 
 
 def d(name):

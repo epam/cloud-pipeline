@@ -47,6 +47,9 @@ class AzureClient(CloudClient):
         last_modified = bucket_entries[0].properties.last_modified
         return last_modified.astimezone(get_localzone()).replace(tzinfo=None)
 
+    def get_versions(self, path):
+        raise RuntimeError('Versioning is not supported by Azure cloud provider.')
+
     def _get_bucket_entries(self, bucket_name, key):
         return list(self._get_client().list_blobs(bucket_name, key))
 

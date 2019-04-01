@@ -26,10 +26,6 @@ def folder_exists(bucket_name, key):
     return get_client().folder_exists(bucket_name, key)
 
 
-def get_listing(path, recursive=False, expected_status=0):
-    return get_client().get_listing(path, recursive, expected_status)
-
-
 def list_object_tags(bucket, key, version=None, args=None):
     return get_client().list_object_tags(bucket, key, version, args)
 
