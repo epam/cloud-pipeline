@@ -61,6 +61,8 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         originalRegion.setSshPublicKeyPath(updatedRegion.getSshPublicKeyPath());
         originalRegion.setAuthFile(updatedRegion.getAuthFile());
         originalRegion.setProject(updatedRegion.getProject());
+        originalRegion.setApplicationName(updatedRegion.getApplicationName());
+        originalRegion.setImpersonatedAccount(updatedRegion.getImpersonatedAccount());
         return originalRegion;
     }
 
