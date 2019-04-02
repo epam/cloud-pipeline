@@ -36,7 +36,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -140,7 +139,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, Collections.emptyMap());
+                oldId, newId, cmdExecutor, buildScriptGCPEnvVars(region));
     }
 
     @Override
@@ -165,7 +164,9 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     private Map<String, String> buildScriptGCPEnvVars(final GCPRegion region) {
         final Map<String, String> envVars = new HashMap<>();
-        envVars.put(GOOGLE_APPLICATION_CREDENTIALS, region.getAuthFile());
+        if (!StringUtils.isEmpty(region.getAuthFile())) {
+            envVars.put(GOOGLE_APPLICATION_CREDENTIALS, region.getAuthFile());
+        }
         envVars.put(GOOGLE_PROJECT_ID, region.getProject());
         return envVars;
     }
