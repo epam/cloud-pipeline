@@ -23,6 +23,7 @@ public enum SearchDocumentType {
     AZ_BLOB_FILE,
     NFS_FILE,
     S3_STORAGE,
+    AZ_BLOB_STORAGE,
     NFS_STORAGE,
     TOOL,
     DOCKER_REGISTRY,
