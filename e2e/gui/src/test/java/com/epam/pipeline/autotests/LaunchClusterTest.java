@@ -46,7 +46,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
         super.removeNode();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-975"})
     public void launchPipelineWithLaunchFlag() {
         library()
@@ -74,7 +74,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .shouldContainRunsWithParentRun(2, getRunId());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2618"})
     public void launchAutoScaledClusterTest() {
         library()
@@ -103,7 +103,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .stopRunIfPresent(getRunId());
     }
 
-    @Test(priority = 1)
+    @Test(priority = 1, enabled = false)
     @TestCase({"EPMCMBIBPC-2620"})
     public void invalidValuesOnConfigureClusterPopUp() {
         library()
@@ -174,7 +174,6 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .openClusterRuns(getRunId())
                 .shouldContainRunsWithParentRun(2, getRunId())
                 .shouldContainRun("pipeline", String.valueOf(Integer.parseInt(getRunId()) + 2))
-                .waitForCompletion(String.valueOf(Integer.parseInt(getRunId()) + 2))
                 .showLog(getRunId())
                 .ensure(taskWithName(gridEngineAutoscalingTask), visible)
                 .click(taskWithName(gridEngineAutoscalingTask))
