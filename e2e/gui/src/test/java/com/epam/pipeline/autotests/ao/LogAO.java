@@ -412,6 +412,11 @@ public class LogAO implements AccessObject<LogAO> {
                                  .map(Enum::toString)
                                  .orElse("UNKNOWN");
                 }
+
+                @Override
+                public String toString() {
+                    return iconClass;
+                }
             };
         }
     }
