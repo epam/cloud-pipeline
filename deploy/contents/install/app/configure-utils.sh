@@ -931,8 +931,10 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
 {
     "PIPELINE_RUN": "cp-pipeline-run",
     "S3_FILE": "cp-s3-file*",
+    "AZ_BLOB_FILE": "cp-az-file*",
     "NFS_FILE": "cp-nfs-file*",
     "S3_STORAGE": "cp-s3-storage",
+    "AZ_BLOB_STORAGE": "cp-az-storage",
     "NFS_STORAGE": "cp-nfs-storage",
     "TOOL": "cp-tool",
     "TOOL_GROUP": "cp-tool-group",
