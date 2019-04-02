@@ -54,7 +54,6 @@ import java.util.Optional;
 public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
-    private static final String TEXT_CONTENT_TYPE = "text/plain";
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
 
     private final MessageHelper messageHelper;
@@ -87,7 +86,6 @@ public class GSBucketStorageHelper {
         }
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        checkBucketExists(bucketName, client);
 
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.currentDirectory(),
@@ -106,11 +104,9 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
-        checkBucketExists(bucketName, client);
-        checkBlobDoesNotExist(bucketName, path, client);
 
         final BlobId blobId = BlobId.of(bucketName, path);
-        final BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType(TEXT_CONTENT_TYPE).build();
+        final BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
         final Blob blob = client.create(blobInfo, contents);
         return createDataStorageFile(blob);
     }
@@ -137,7 +133,6 @@ public class GSBucketStorageHelper {
 
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = dataStorage.getPath();
-        checkBucketExists(bucketName, client);
         final Blob blob = checkBlobExists(bucketName, path, client);
         blob.delete();
     }
@@ -161,7 +156,6 @@ public class GSBucketStorageHelper {
 
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        checkBucketExists(bucketName, client);
         final Blob oldBlob = checkBlobExists(bucketName, oldPath, client);
         checkBlobDoesNotExist(bucketName, newPath, client);
 
@@ -180,7 +174,6 @@ public class GSBucketStorageHelper {
 
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        checkBucketExists(bucketName, client);
 
         final String oldFolderPath = normalizeFolderPath(oldPath);
         final String newFolderPath = normalizeFolderPath(newPath);
@@ -232,11 +225,6 @@ public class GSBucketStorageHelper {
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         return file;
-    }
-
-    private void checkBucketExists(final String bucketName, final Storage client) {
-        Assert.notNull(client.get(bucketName), messageHelper.getMessage(
-                MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, bucketName));
     }
 
     private Blob checkBlobExists(final String bucketName, final String blobPath, final Storage client) {

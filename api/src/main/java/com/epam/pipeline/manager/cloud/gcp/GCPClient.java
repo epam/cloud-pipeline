@@ -27,7 +27,6 @@ import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import org.apache.commons.lang3.StringUtils;
@@ -84,7 +83,7 @@ public class GCPClient {
             return StorageOptions.getDefaultInstance().getService();
         }
         try (InputStream stream = new FileInputStream(region.getAuthFile())) {
-            final GoogleCredentials sourceCredentials = ServiceAccountCredentials
+            final GoogleCredentials sourceCredentials = GoogleCredentials
                     .fromStream(stream);
             return StorageOptions.newBuilder()
                     .setProjectId(region.getProject())
