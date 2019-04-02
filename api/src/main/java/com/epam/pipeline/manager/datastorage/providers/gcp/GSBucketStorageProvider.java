@@ -62,7 +62,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public void applyStoragePolicy(GSBucketStorage dataStorage) {
-        throw new UnsupportedOperationException();
+        // no op
     }
 
     @Override
