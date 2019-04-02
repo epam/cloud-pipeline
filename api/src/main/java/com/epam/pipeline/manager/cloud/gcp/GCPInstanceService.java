@@ -66,7 +66,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public RunInstance scaleUpNode(GCPRegion region, Long runId, RunInstance instance) {
+    public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
         final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance)
                 .sshKey(region.getSshPublicKeyPath()).build().getCommand();
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
@@ -74,7 +74,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void scaleDownNode(GCPRegion region, Long runId) {
+    public void scaleDownNode(final GCPRegion region, final Long runId) {
         final String command = instanceService.buildNodeDownCommand(runId);
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
@@ -82,12 +82,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void scaleUpFreeNode(GCPRegion region, String nodeId) {
+    public void scaleUpFreeNode(final GCPRegion region, final String nodeId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void terminateNode(GCPRegion region, String internalIp, String nodeName) {
+    public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {
         final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
@@ -95,17 +95,17 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void startInstance(GCPRegion region, String instanceId) {
+    public void startInstance(final GCPRegion region, final String instanceId) {
         vmService.startInstance(region, instanceId);
     }
 
     @Override
-    public void stopInstance(GCPRegion region, String instanceId) {
+    public void stopInstance(final GCPRegion region, final String instanceId) {
         vmService.stopInstance(region, instanceId);
     }
 
     @Override
-    public LocalDateTime getNodeLaunchTime(GCPRegion region, Long runId) {
+    public LocalDateTime getNodeLaunchTime(final GCPRegion region, final Long runId) {
         return kubernetesManager.findNodeByRunId(String.valueOf(runId))
                 .map(node -> node.getMetadata().getCreationTimestamp())
                 .filter(StringUtils::isNotBlank)
@@ -121,7 +121,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public RunInstance describeInstance(GCPRegion region, String nodeLabel, RunInstance instance) {
+    public RunInstance describeInstance(final GCPRegion region, final String nodeLabel, final RunInstance instance) {
         try {
             final Instance vm = vmService.getRunningInstanceByRunId(region, nodeLabel);
             instance.setNodeId(vm.getName());
@@ -138,13 +138,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public boolean reassignNode(GCPRegion region, Long oldId, Long newId) {
+    public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
                 oldId, newId, cmdExecutor, Collections.emptyMap());
     }
 
     @Override
-    public Map<String, String> buildContainerCloudEnvVars(GCPRegion region) {
+    public Map<String, String> buildContainerCloudEnvVars(final GCPRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());
@@ -153,7 +153,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public Optional<InstanceTerminationState> getInstanceTerminationState(GCPRegion region, String instanceId) {
+    public Optional<InstanceTerminationState> getInstanceTerminationState(final GCPRegion region,
+                                                                          final String instanceId) {
         return vmService.getTerminationState(region, instanceId);
     }
 

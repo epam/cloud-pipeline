@@ -61,7 +61,7 @@ public class GCPVMService {
         }
     }
 
-    public Instance getRunningInstanceByRunId(GCPRegion region, String runId) {
+    public Instance getRunningInstanceByRunId(final GCPRegion region, final String runId) {
         try {
             Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
 
@@ -79,7 +79,8 @@ public class GCPVMService {
         }
     }
 
-    public Optional<InstanceTerminationState> getTerminationState(GCPRegion region, String instanceId) {
+    public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region,
+                                                                  final String instanceId) {
         Instance instance = getInstanceById(region, instanceId);
         if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
             return Optional.of(
@@ -102,7 +103,9 @@ public class GCPVMService {
         }
     }
 
-    private Instance findInstanceByTag(GCPRegion region, String key, String value) throws IOException {
+    private Instance findInstanceByTag(final GCPRegion region,
+                                       final String key,
+                                       final String value) throws IOException {
         return gcpClient.buildComputeClient(region).instances()
                 .list(region.getProject(), region.getRegionCode())
                 .setFilter(String.format(LABEL_FILTER, key, value))
