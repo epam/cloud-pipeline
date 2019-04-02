@@ -231,7 +231,7 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
                 raise RuntimeError('Version "%s" doesn\'t exist.' % version)
             if not any(item.version == version for item in item.versions):
                 raise RuntimeError('Version "%s" doesn\'t exist.' % version)
-            if item.version == version:
+            if not item.deleted and item.version == version:
                 raise RuntimeError('Version "%s" is already the latest version.' % version)
             bucket.copy_blob(blob, bucket, blob.name, source_generation=int(version))
         else:
