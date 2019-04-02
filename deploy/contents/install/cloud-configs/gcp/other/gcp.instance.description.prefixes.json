@@ -1,0 +1,21 @@
+{
+  "cpu_ondemand_standard": "N1 Predefined Instance Core",
+  "ram_ondemand_standard": "N1 Predefined Instance Ram",
+  "cpu_ondemand_highcpu": "N1 Predefined Instance Core",
+  "ram_ondemand_highcpu": "N1 Predefined Instance Ram",
+  "cpu_ondemand_highmem": "N1 Predefined Instance Core",
+  "ram_ondemand_highmem": "N1 Predefined Instance Ram",
+  "cpu_ondemand_megamem": "Memory-optimized Instance Core",
+  "ram_ondemand_megamem": "Memory-optimized Instance Ram",
+  "cpu_ondemand_ultramem": "Memory-optimized Instance Core",
+  "ram_ondemand_ultramem": "Memory-optimized Instance Ram",
+  "cpu_ondemand_micro": "Micro Instance",
+  "cpu_ondemand_small": "Small Instance",
+  "cpu_ondemand_custom": "Custom Instance Core",
+  "ram_ondemand_custom": "Custom Instance Ram",
+  "gpu_ondemand_t4": "Nvidia Tesla T4",
+  "gpu_ondemand_p4": "Nvidia Tesla P4",
+  "gpu_ondemand_v100": "Nvidia Tesla V100",
+  "gpu_ondemand_p100": "Nvidia Tesla P100",
+  "gpu_ondemand_k80": "Nvidia Tesla K80"
+}
