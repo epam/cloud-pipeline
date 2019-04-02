@@ -35,6 +35,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
@@ -179,7 +180,13 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForLog(final String message) {
-        $(log()).shouldHave(matchText(message)).waitUntil(visible, 1500000);
+        for (int i = 0; i < 20; i++) {
+            refresh();
+            if ($(log()).is(matchText(message))) {
+                break;
+            }
+            sleep(1, MINUTES);
+        }
         return this;
     }
 
@@ -385,7 +392,8 @@ public class LogAO implements AccessObject<LogAO> {
         FAILURE("status-icon__icon-red"),
         STOPPED("status-icon__icon-yellow"),
         WORKING("status-icon__icon-blue"),
-        LOADING("anticon-loading");
+        LOADING("anticon-loading"),
+        PAUSED("anticon-pause-circle-o");
 
         public final Condition reached;
 

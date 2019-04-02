@@ -102,7 +102,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
         );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2309"})
     public void pauseAndResumeValidation() {
         tools()
@@ -202,7 +202,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2632"})
     public void pauseAndResumeRunsPageValidation() {
         tools()
@@ -224,7 +224,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(SSH_LINK, visible);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2636"})
     public void hddExtraMultiValidation() {
         loginAsAdminAndPerform(() ->
@@ -270,7 +270,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(priority = 100, enabled = false)
+    @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
         endpoint = tools()
