@@ -180,12 +180,12 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO waitForLog(final String message) {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 50; i++) {
             refresh();
             if ($(log()).is(matchText(message))) {
                 break;
             }
-            sleep(1, MINUTES);
+            sleep(20, SECONDS);
         }
         return this;
     }
