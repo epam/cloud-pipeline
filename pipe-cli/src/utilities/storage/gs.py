@@ -492,5 +492,4 @@ class GsBucketOperations:
 
     @classmethod
     def get_client(cls, *args, **kwargs):
-        return _RefreshingClient(*args, refresh_credentials=GsTemporaryCredentials.from_environment,
-                                 **kwargs)
+        return _RefreshingClient(*args, refresh_credentials=GsTemporaryCredentials.from_cp_api, **kwargs)
