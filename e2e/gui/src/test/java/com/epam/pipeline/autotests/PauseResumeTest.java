@@ -151,40 +151,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     }
 
     @Test
-    @TestCase({"EPMCMBIBPC-2626"})
-    public void pauseAndResumeEndpointValidation() {
-        endpoint = tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType(priceType)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
-                .show(getLastRunId())
-                .clickEndpoint()
-                .getEndpoint();
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        loginAs(admin);
-
-        runsMenu()
-                .log(getLastRunId(), log -> log
-                        .waitForPauseButton()
-                        .pause(getToolName())
-                        .assertPausingFinishedSuccessfully()
-                        .sleep(2, MINUTES)
-                        .inAnotherTab(nodeTab ->
-                                checkNodePage(() ->
-                                        new ToolPageAO(endpoint)
-                                                .assertPageTitleIs("404 Not Found"),
-                                        endpoint)
-                        )
-                        .resume(getToolName())
-                        .assertResumingFinishedSuccessfully()
-                        .inAnotherTab(nodeTab ->
-                                checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
-                        )
-                );
-    }
-
-
-    @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void forbiddenPauseValidation() {
         loginAsAdminAndPerform(() ->
@@ -211,7 +177,6 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 )
                                 .waitForPauseButton()
                                 .clickOnPauseButton()
-                                .sleep(5, SECONDS)
                                 .validateException("This operation may fail due to 'Out of disk' error")
                                 .click(button(PAUSE.name()))
                                 .assertPausingStatus()
@@ -302,6 +267,39 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                 .assertOutputContains("test.big")
                                                 .close())
                                 )
+                );
+    }
+
+    @Test(priority = 100)
+    @TestCase({"EPMCMBIBPC-2626"})
+    public void pauseAndResumeEndpointValidation() {
+        endpoint = tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType(priceType)
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .show(getLastRunId())
+                .clickEndpoint()
+                .getEndpoint();
+        Utils.restartBrowser(C.ROOT_ADDRESS);
+        loginAs(admin);
+
+        runsMenu()
+                .log(getLastRunId(), log -> log
+                        .waitForPauseButton()
+                        .pause(getToolName())
+                        .assertPausingFinishedSuccessfully()
+                        .sleep(2, MINUTES)
+                        .inAnotherTab(nodeTab ->
+                                checkNodePage(() ->
+                                                new ToolPageAO(endpoint)
+                                                        .assertPageTitleIs("404 Not Found"),
+                                        endpoint)
+                        )
+                        .resume(getToolName())
+                        .assertResumingFinishedSuccessfully()
+                        .inAnotherTab(nodeTab ->
+                                checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
+                        )
                 );
     }
 
