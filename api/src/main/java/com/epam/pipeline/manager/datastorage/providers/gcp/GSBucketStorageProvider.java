@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
+    private final GCPClient gcpClient;
 
     @Override
     public DataStorageType getStorageType() {
@@ -176,6 +178,6 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
         final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
-        return new GSBucketStorageHelper(messageHelper, gcpRegion);
+        return new GSBucketStorageHelper(messageHelper, gcpRegion, gcpClient);
     }
 }

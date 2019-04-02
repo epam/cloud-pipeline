@@ -25,10 +25,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.google.api.gax.paging.Page;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -37,7 +36,6 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
-import com.google.cloud.storage.StorageOptions;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -45,8 +43,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +59,10 @@ public class GSBucketStorageHelper {
 
     private final MessageHelper messageHelper;
     private final GCPRegion region;
+    private final GCPClient gcpClient;
 
     public String createGoogleStorage(final GSBucketStorage storage) {
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final Bucket bucket = client.create(BucketInfo.newBuilder(storage.getPath())
                 .setStorageClass(StorageClass.REGIONAL)
                 .setLocation(trimRegionZone(region.getRegionCode()))
@@ -74,7 +71,7 @@ public class GSBucketStorageHelper {
     }
 
     public void deleteGoogleStorage(final String bucketName) {
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final Iterable<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(EMPTY_PREFIX)).iterateAll();
         blobs.forEach(blob -> blob.delete());
         deleteBucket(bucketName, client);
@@ -88,7 +85,7 @@ public class GSBucketStorageHelper {
         if (StringUtils.isNotBlank(requestPath)) {
             requestPath = normalizeFolderPath(requestPath);
         }
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
         checkBucketExists(bucketName, client);
 
@@ -106,7 +103,7 @@ public class GSBucketStorageHelper {
     }
 
     public DataStorageFile createFile(final GSBucketStorage storage, final String path, final byte[] contents) {
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
         checkBucketExists(bucketName, client);
@@ -138,7 +135,7 @@ public class GSBucketStorageHelper {
         Assert.isTrue(StringUtils.isNotBlank(path), messageHelper
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
 
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = dataStorage.getPath();
         checkBucketExists(bucketName, client);
         final Blob blob = checkBlobExists(bucketName, path, client);
@@ -151,7 +148,7 @@ public class GSBucketStorageHelper {
 
         final String folderPath = normalizeFolderPath(path);
 
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final Page<Blob> blobs = client.list(dataStorage.getPath(), Storage.BlobListOption.prefix(folderPath));
         blobs.iterateAll().forEach(Blob::delete);
     }
@@ -162,7 +159,7 @@ public class GSBucketStorageHelper {
         Assert.isTrue(StringUtils.isNotBlank(newPath), messageHelper
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
 
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
         checkBucketExists(bucketName, client);
         final Blob oldBlob = checkBlobExists(bucketName, oldPath, client);
@@ -181,7 +178,7 @@ public class GSBucketStorageHelper {
         Assert.isTrue(StringUtils.isNotBlank(newPath), messageHelper
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
 
-        final Storage client = getClient();
+        final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
         checkBucketExists(bucketName, client);
 
@@ -202,6 +199,11 @@ public class GSBucketStorageHelper {
         });
 
         return createDataStorageFolder(newFolderPath);
+    }
+
+    public boolean checkStorageExists(final String bucketName) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        return Objects.nonNull(client.get(bucketName));
     }
 
     private String normalizeFolderPath(final String path) {
@@ -230,28 +232,6 @@ public class GSBucketStorageHelper {
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
         return file;
-    }
-
-    public boolean checkStorageExists(final String bucketName) {
-        final Storage client = getClient();
-        return Objects.nonNull(client.get(bucketName));
-    }
-
-    private Storage getClient() {
-        if (StringUtils.isBlank(region.getAuthFile())) {
-            return StorageOptions.getDefaultInstance().getService();
-        }
-        try (InputStream stream = new FileInputStream(region.getAuthFile())) {
-            final GoogleCredentials sourceCredentials = ServiceAccountCredentials
-                    .fromStream(stream);
-            return StorageOptions.newBuilder()
-                    .setProjectId(region.getProject())
-                    .setCredentials(sourceCredentials)
-                    .build()
-                    .getService();
-        } catch (IOException e) {
-            throw new DataStorageException("Failed to retrieve google storage client");
-        }
     }
 
     private void checkBucketExists(final String bucketName, final Storage client) {

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -25,6 +26,10 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.iamcredentials.v1.IAMCredentials;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -72,6 +77,23 @@ public class GCPClient {
         return new IAMCredentials.Builder(httpTransport, jsonFactory, credentials)
                 .setApplicationName(region.getApplicationName())
                 .build();
+    }
+
+    public Storage buildStorageClient(final GCPRegion region) {
+        if (StringUtils.isBlank(region.getAuthFile())) {
+            return StorageOptions.getDefaultInstance().getService();
+        }
+        try (InputStream stream = new FileInputStream(region.getAuthFile())) {
+            final GoogleCredentials sourceCredentials = ServiceAccountCredentials
+                    .fromStream(stream);
+            return StorageOptions.newBuilder()
+                    .setProjectId(region.getProject())
+                    .setCredentials(sourceCredentials)
+                    .build()
+                    .getService();
+        } catch (IOException e) {
+            throw new DataStorageException("Failed to retrieve google storage client");
+        }
     }
 
     private GoogleCredential buildCredentials(final GCPRegion region) throws IOException {
