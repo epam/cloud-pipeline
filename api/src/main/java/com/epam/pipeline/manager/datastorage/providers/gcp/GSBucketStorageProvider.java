@@ -62,7 +62,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public void applyStoragePolicy(GSBucketStorage dataStorage) {
-        throw new UnsupportedOperationException();
+
     }
 
     @Override
@@ -72,15 +72,15 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public DataStorageListing getItems(GSBucketStorage dataStorage, String path, Boolean showVersion,
-                                       Integer pageSize, String marker) {
-        throw new UnsupportedOperationException();
+    public DataStorageListing getItems(final GSBucketStorage dataStorage, final String path, final Boolean showVersion,
+                                       final Integer pageSize, String marker) {
+        return getHelper(dataStorage).listItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
-    public DataStorageDownloadFileUrl generateDownloadURL(GSBucketStorage dataStorage, String path,
-                                                          String version) {
-        throw new UnsupportedOperationException();
+    public DataStorageDownloadFileUrl generateDownloadURL(final GSBucketStorage dataStorage, final String path,
+                                                          final String version) {
+        return null;
     }
 
     @Override
@@ -90,44 +90,45 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public DataStorageFile createFile(GSBucketStorage dataStorage, String path, byte[] contents)
+    public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path, final byte[] contents)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).createFile(dataStorage, path, contents);
     }
 
     @Override
-    public DataStorageFile createFile(GSBucketStorage dataStorage, String path, InputStream dataStream)
+    public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path,
+                                      final InputStream dataStream) throws DataStorageException {
+        return getHelper(dataStorage).createFile(dataStorage, path, dataStream);
+    }
+
+    @Override
+    public DataStorageFolder createFolder(final GSBucketStorage dataStorage, final String path)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).createFolder(dataStorage, path);
     }
 
     @Override
-    public DataStorageFolder createFolder(GSBucketStorage dataStorage, String path)
+    public void deleteFile(final GSBucketStorage dataStorage, final String path, final String version,
+                           final Boolean totally) throws DataStorageException {
+        getHelper(dataStorage).deleteFile(dataStorage, path, version, totally);
+    }
+
+    @Override
+    public void deleteFolder(final GSBucketStorage dataStorage, final String path, final Boolean totally)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        getHelper(dataStorage).deleteFolder(dataStorage, path, totally);
     }
 
     @Override
-    public void deleteFile(GSBucketStorage dataStorage, String path, String version,
-                           Boolean totally) throws DataStorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void deleteFolder(GSBucketStorage dataStorage, String path, Boolean totally) throws DataStorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public DataStorageFile moveFile(GSBucketStorage dataStorage, String oldPath, String newPath)
+    public DataStorageFile moveFile(final GSBucketStorage dataStorage, final String oldPath, final String newPath)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).moveFile(dataStorage, oldPath, newPath);
     }
 
     @Override
-    public DataStorageFolder moveFolder(GSBucketStorage dataStorage, String oldPath, String newPath)
+    public DataStorageFolder moveFolder(final GSBucketStorage dataStorage, final String oldPath, final String newPath)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        return getHelper(dataStorage).moveFolder(dataStorage, oldPath, newPath);
     }
 
     @Override
