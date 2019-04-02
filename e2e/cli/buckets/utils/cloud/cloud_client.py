@@ -26,7 +26,7 @@ class CloudClient(object):
         pass
 
     @abstractmethod
-    def get_versions(self, path):
+    def get_versions(self, bucket_name, key):
         pass
 
     @abstractmethod

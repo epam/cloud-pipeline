@@ -161,14 +161,15 @@ def get_pipe_listing(path, show_details=True, recursive=False, token=None, versi
 
 
 def compare_listing(actual_listing, expected_listing, expected_length, show_details=True, check_last_modified=False,
-                    check_version=False):
+                    check_version=False, sort=True):
     assert len(actual_listing) == expected_length, \
         "Length of listing [{}] doesn't match expected value [{}]".format(len(actual_listing), expected_length)
     assert len(actual_listing) == len(expected_listing), \
         "Length of listing results differ between pipe ls [{}] and cloud ls [{}]" \
                 .format(len(actual_listing), len(expected_listing))
-    actual_listing = sorted(actual_listing, key=lambda tup: (tup.type, tup.name, tup.size, tup.last_modified))
-    expected_listing = sorted(expected_listing, key=lambda tup: (tup.type, tup.name, tup.size, tup.last_modified))
+    if sort:
+        actual_listing = sorted(actual_listing, key=lambda tup: (tup.type, tup.name, tup.size, tup.last_modified))
+        expected_listing = sorted(expected_listing, key=lambda tup: (tup.type, tup.name, tup.size, tup.last_modified))
     for actual_item, expected_item in zip(actual_listing, expected_listing):
         if show_details:
             assert actual_item.equals(expected_item, check_last_modified=check_last_modified,

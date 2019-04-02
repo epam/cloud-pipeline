@@ -43,9 +43,17 @@ class GsClient(CloudClient):
         last_modified = blob.updated
         return last_modified.astimezone(get_localzone()).replace(tzinfo=None, microsecond=0)
 
-    def get_versions(self, path):
-        # TODO 01.04.19: Method is not implemented yet.
-        raise RuntimeError('Method is not implemented yet.')
+    def get_versions(self, bucket_name, key):
+        bucket_entries = self._get_bucket_entries(bucket_name, key, versions=True)
+        bucket_entries.reverse()
+        generations = []
+        if not bucket_entries:
+            return generations
+        if bucket_entries[0].time_deleted:
+            generations.append('-')
+        for entry in bucket_entries:
+            generations.append(str(entry.generation))
+        return generations
 
     def wait_for_bucket_creation(self, bucket_name):
         if self._wait_unless(lambda: self._get_client().bucket(bucket_name).exists()):
@@ -57,8 +65,8 @@ class GsClient(CloudClient):
             return
         raise RuntimeError('Google storage with name=%s wasn\'t deleted.' % bucket_name)
 
-    def _get_bucket_entries(self, bucket_name, key):
-        return list(self._get_client().get_bucket(bucket_name).list_blobs(prefix=key))
+    def _get_bucket_entries(self, bucket_name, key, versions=False):
+        return list(self._get_client().get_bucket(bucket_name).list_blobs(prefix=key, versions=versions))
 
     def _get_client(self):
         return Client()
