@@ -105,7 +105,7 @@ export default class FolderPreview extends React.Component {
         };
       }
 
-      if (item.type === SearchItemTypes.s3Bucket) {
+      if (item.type === SearchItemTypes.s3Bucket || item.type === SearchItemTypes.azStorage) {
         nameComponent = (
           <span>
             <span style={nameStyle}>{item.name}</span><AWSRegionTag regionId={item.regionId} />
@@ -142,11 +142,19 @@ export default class FolderPreview extends React.Component {
 
       return nameComponent;
     };
+    const mapStorageType = item => {
+      let type;
+      switch ((item.type || '').toLowerCase()) {
+        case 'az': type = SearchItemTypes.azStorage; break;
+        case 's3': type = SearchItemTypes.s3Bucket; break;
+        case 'nfs': type = SearchItemTypes.NFSBucket; break;
+        default: type = item.aclClass; break;
+      }
+      return type;
+    };
     const mapChild = (item) => ({
       type: item.aclClass.toLowerCase() === 'data_storage'
-        ? item.type.toLowerCase() === 's3'
-          ? SearchItemTypes.s3Bucket
-          : SearchItemTypes.NFSBucket
+        ? mapStorageType(item)
         : item.aclClass,
       name: item.name,
       description: item.description || undefined,

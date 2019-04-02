@@ -22,6 +22,8 @@ export const SearchItemTypes = {
   s3File: 'S3_FILE',
   NFSFile: 'NFS_FILE',
   NFSBucket: 'NFS_STORAGE',
+  azFile: 'AZ_BLOB_FILE',
+  azStorage: 'AZ_BLOB_STORAGE',
   pipeline: 'PIPELINE',
   tool: 'TOOL',
   toolGroup: 'TOOL_GROUP',
@@ -67,6 +69,7 @@ export class Search extends RemotePost {
 
 export function processItem (item) {
   switch (item.type) {
+    case SearchItemTypes.azFile:
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:
       return {

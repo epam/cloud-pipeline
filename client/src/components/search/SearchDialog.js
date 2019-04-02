@@ -122,6 +122,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     if (this.state.searchResults.length > itemIndex) {
       const item = this.state.searchResults[itemIndex];
       switch (item.type) {
+        case SearchItemTypes.azFile:
         case SearchItemTypes.s3File:
         case SearchItemTypes.NFSFile:
           if (item.parentId) {
@@ -135,7 +136,9 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             this.closeDialog();
           }
           break;
+        case SearchItemTypes.azStorage:
         case SearchItemTypes.s3Bucket:
+        case SearchItemTypes.NFSBucket:
           this.props.router.push(`/storage/${item.id}`);
           this.closeDialog();
           break;

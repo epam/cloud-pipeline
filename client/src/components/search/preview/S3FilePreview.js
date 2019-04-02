@@ -158,7 +158,7 @@ export default class S3FilePreview extends React.Component {
     if (this.props.dataStorageInfo.error) {
       return <span style={{color: '#ff556b'}}>{this.props.dataStorageInfo.error}</span>;
     }
-    const path = this.props.item.type === SearchItemTypes.s3File
+    const path = this.props.item.type !== SearchItemTypes.NFSFile
       ? [this.props.dataStorageInfo.value.pathMask, ...this.props.item.id.split('/')]
       : this.props.item.id.split('/').filter(p => !!p);
     return (

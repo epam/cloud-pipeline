@@ -33,8 +33,10 @@ import IssuePreview from './IssuePreview';
 export default function preview (props) {
   let Content = DefaultPreview;
   switch (props.item.type) {
+    case SearchItemTypes.azFile:
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile: Content = S3FilePreview; break;
+    case SearchItemTypes.azStorage:
     case SearchItemTypes.NFSBucket:
     case SearchItemTypes.s3Bucket: Content = S3BucketPreview; break;
     case SearchItemTypes.run: Content = PipelineRunPreview; break;
