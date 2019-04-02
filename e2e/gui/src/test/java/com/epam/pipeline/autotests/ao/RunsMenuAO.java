@@ -313,11 +313,6 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    @Override
-    public Map<Primitive, SelenideElement> elements() {
-        return Collections.emptyMap();
-    }
-
     public RunsMenuAO waitForCompletion(final String runId) {
         $("tbody")
                 .find(withText(runId))
@@ -327,7 +322,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .find("i")
                 .waitUntil(completed, C.COMPLETION_TIMEOUT);
         return this;
+    }
 
-
+    @Override
+    public Map<Primitive, SelenideElement> elements() {
+        return Collections.emptyMap();
     }
 }

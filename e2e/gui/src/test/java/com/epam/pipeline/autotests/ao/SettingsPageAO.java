@@ -587,7 +587,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class PreferencesAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster")))
+                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
+                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System")))
         );
 
         PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
@@ -597,6 +598,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public ClusterTabAO switchToCluster() {
             click(CLUSTER_TAB);
             return new ClusterTabAO(parentAO);
+        }
+
+        public SystemTabAO switchToSystem() {
+            click(SYSTEM_TAB);
+            return new SystemTabAO(parentAO);
         }
 
         public PreferencesAO save() {
@@ -633,6 +639,79 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public String getClusterHddExtraMulti() {
                 return $(clusterHddExtraMulti()).getValue();
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+        }
+
+        public class SystemTabAO extends PreferencesAO {
+
+            SystemTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            private final By maxIdleTimeout = getBySystemField("system.max.idle.timeout.minutes");
+            private final By idleActionTimeout = getBySystemField("system.idle.action.timeout.minutes");
+            private final By idleCpuThreshold = getBySystemField("system.idle.cpu.threshold");
+            private final By idleAction = getBySystemField("system.idle.action");
+
+            private By getBySystemField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> text(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            public SystemTabAO setMaxIdleTimeout(final String value) {
+                return setSystemValue(maxIdleTimeout, value);
+            }
+
+            public String getMaxIdleTimeout() {
+                return getSystemValue(maxIdleTimeout);
+            }
+
+            public SystemTabAO setIdleActionTimeout(final String value) {
+                return setSystemValue(idleActionTimeout, value);
+            }
+
+            public String getIdleActionTimeout() {
+                return getSystemValue(idleActionTimeout);
+            }
+
+            public SystemTabAO setIdleCpuThreshold(final String value) {
+                return setSystemValue(idleCpuThreshold, value);
+            }
+
+            public String getIdleCpuThreshold() {
+                return getSystemValue(idleCpuThreshold);
+            }
+
+            public SystemTabAO setIdleAction(final String value) {
+                return setSystemValue(idleAction, value);
+            }
+
+            public String getIdleAction() {
+                return getSystemValue(idleAction);
+            }
+
+            private SystemTabAO setSystemValue(final By systemVariable, final String value) {
+                click(systemVariable);
+                clear(systemVariable);
+                setValue(systemVariable, value);
+                return this;
+            }
+
+            private String getSystemValue(final By systemVariable) {
+                return $(systemVariable).getValue();
             }
 
             @Override
