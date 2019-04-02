@@ -2,6 +2,8 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -24,7 +26,6 @@ import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTO_PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.runWithId;
 
 @Listeners(value = ConditionalTestAnalyzer.class)
@@ -154,7 +155,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .settings()
                 .switchToPreferences()
                 .switchToSystem());
-        click(button("OK"));
+        new SettingsPageAO(new PipelinesLibraryAO()).click(OK);
         return value;
     }
 

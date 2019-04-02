@@ -664,7 +664,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public List<WebElement> findElements(final SearchContext context) {
                         return $$(byClassName("preference-group__preference-row"))
                                 .stream()
-                                .filter(element -> text(variable).apply(element))
+                                .filter(element -> exactText(variable).apply(element))
                                 .map(e -> e.find(".ant-input-sm"))
                                 .collect(toList());
                     }
