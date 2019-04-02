@@ -185,7 +185,7 @@ public class LogAO implements AccessObject<LogAO> {
             if ($(log()).is(matchText(message))) {
                 break;
             }
-            sleep(1, MINUTES);
+            sleep(20, SECONDS);
         }
         return this;
     }
