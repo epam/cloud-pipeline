@@ -3,5 +3,5 @@
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "50",
     "default_command": "/start.sh",
-    "endpoints": [ "{ \"name\": \"RStudio\", \"nginx\": {\"port\": \"8888\", \"additional\" : \"rewrite ^(.*)$ $1 break;proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;proxy_set_header X-Real-IP $remote_addr;proxy_set_header Host $http_host;proxy_http_version 1.1;proxy_redirect off;proxy_buffering off;proxy_set_header Upgrade $http_upgrade;proxy_set_header Connection \\\"upgrade\\\";proxy_read_timeout 86400;\" }, \"isDefault\": false }" ]
+    "endpoints": [ "{ \"name\": \"Jupyter-Notebook\", \"nginx\": {\"port\": \"8888\", \"additional\" : \"rewrite ^(.*)$ $1 break;proxy_set_header X-Forwarded-For ${CP_DOLLAR}proxy_add_x_forwarded_for;proxy_set_header X-Real-IP ${CP_DOLLAR}remote_addr;proxy_set_header Host ${CP_DOLLAR}http_host;proxy_http_version 1.1;proxy_redirect off;proxy_buffering off;proxy_set_header Upgrade ${CP_DOLLAR}http_upgrade;proxy_set_header Connection \\\"upgrade\\\";proxy_read_timeout 86400;\" }, \"isDefault\": false }" ]
 }
