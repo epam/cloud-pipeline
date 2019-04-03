@@ -60,7 +60,7 @@ class GsListingManager(GsManager, AbstractListingManager):
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
                    show_all=False):
         prefix = StorageOperations.get_prefix(relative_path)
-        bucket = self.client.get_bucket(self.bucket.path)
+        bucket = self.client.bucket(self.bucket.path)
         blobs_iterator = bucket.list_blobs(prefix=prefix if relative_path else None,
                                            max_results=page_size if not show_all and not self.show_versions else None,
                                            delimiter=StorageOperations.PATH_SEPARATOR if not recursive else None,
@@ -128,7 +128,7 @@ class GsListingManager(GsManager, AbstractListingManager):
         return relative_item
 
     def get_file_tags(self, relative_path):
-        bucket = self.client.get_bucket(self.bucket.path)
+        bucket = self.client.bucket(self.bucket.path)
         blob = bucket.blob(relative_path)
         blob.reload()
         return blob.metadata or {}
@@ -151,7 +151,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         if prefix.endswith(self.delimiter):
             prefix = prefix[:-1]
             check_file = False
-        bucket = self.client.get_bucket(self.bucket.path)
+        bucket = self.client.bucket(self.bucket.path)
         if not recursive and not hard_delete:
             self._delete_blob(self._blob(bucket, prefix, version), exclude, include)
         else:
@@ -217,7 +217,7 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
         self.listing_manager = GsListingManager(self.client, self.wrapper.bucket, show_versions=True)
 
     def restore_version(self, version):
-        bucket = self.client.get_bucket(self.wrapper.bucket.path)
+        bucket = self.client.bucket(self.wrapper.bucket.path)
         if version:
             blob = bucket.blob(self.wrapper.path)
             all_items = self.listing_manager.list_items(blob.name, show_all=True)
@@ -267,9 +267,9 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s'
                                % (full_path, destination_path))
                 return
-        source_bucket = self.client.get_bucket(source_wrapper.bucket.path)
+        source_bucket = self.client.bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
-        destination_bucket = self.client.get_bucket(destination_wrapper.bucket.path)
+        destination_bucket = self.client.bucket(destination_wrapper.bucket.path)
         progress_callback = GsProgressPercentage.callback(full_path, size, quiet)
         source_bucket.copy_blob(source_blob, destination_bucket, destination_path)
         destination_blob = destination_bucket.blob(destination_path)
@@ -308,7 +308,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         folder = os.path.dirname(destination_key)
         if folder and not os.path.exists(folder):
             os.makedirs(folder)
-        bucket = self.client.get_bucket(source_wrapper.bucket.path)
+        bucket = self.client.bucket(source_wrapper.bucket.path)
         blob = bucket.blob(source_key)
         progress_callback = GsProgressPercentage.callback(source_key, size, quiet)
         blob.download_to_filename(destination_key)
@@ -334,7 +334,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
-        bucket = self.client.get_bucket(destination_wrapper.bucket.path)
+        bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
@@ -381,7 +381,7 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
-        bucket = self.client.get_bucket(destination_wrapper.bucket.path)
+        bucket = self.client.bucket(destination_wrapper.bucket.path)
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
