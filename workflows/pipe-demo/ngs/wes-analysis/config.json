@@ -2,13 +2,11 @@
   "name" : "default",
   "description" : "Initial default configuration",
   "configuration" : {
-    "nonPause" : false,
     "main_file" : "wes-analysis.sh",
     "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
     "instance_disk" : "100",
-    "docker_image" : "cp-docker-registry.default.svc.cluster.local:31443/ngs/ngs-essential:latest",
-    "timeout" : 0,
-    "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+    "docker_image" : "ngs/ngs-essential:latest",
+    "cmd_template" : "chmod +x ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] && ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "language" : "other",
     "parameters" : {
       "READ1" : {

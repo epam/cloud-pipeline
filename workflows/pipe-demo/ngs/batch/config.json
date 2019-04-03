@@ -2,13 +2,11 @@
   "name" : "default",
   "description" : "Initial default configuration",
   "configuration" : {
-    "nonPause" : false,
     "main_file" : "batch.sh",
     "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
     "instance_disk" : "20",
-    "docker_image" : "cp-docker-registry.default.svc.cluster.local:31443/library/centos:7",
-    "timeout" : 0,
-    "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+    "docker_image" : "library/centos:7",
+    "cmd_template" : "chmod +x ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] && ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "language" : "other",
     "parameters" : {
       "SAMPLE_SHEET" : {

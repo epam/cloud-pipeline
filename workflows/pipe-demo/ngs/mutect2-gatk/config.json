@@ -7,7 +7,7 @@
             "instance_size": "${CP_CONFIG_JSON_INSTANCE_TYPE}",
             "instance_disk": "300",
             "docker_image": "library/cromwell:latest",
-            "cmd_template": "cromwell $SCRIPTS_DIR/src/[main_file]",
+            "cmd_template": "cromwell ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
             "language": "wdl",
             "parameters": {
                 "Mutect2_tumor_bam": {

@@ -6,7 +6,7 @@
     "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
     "instance_disk" : "20",
     "docker_image" : "ngs/msgen:latest",
-    "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+    "cmd_template" : "chmod +x ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] && ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "language" : "other",
     "parameters" : {
       "SAMPLE" : {

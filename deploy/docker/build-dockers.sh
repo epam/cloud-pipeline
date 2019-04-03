@@ -264,6 +264,8 @@ build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/ngs-essential "$CP_DIST_REPO
 export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
 build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
 
+# msgen
+build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/msgen "$CP_DIST_REPO_NAME:tools-ngs-msgen-${DOCKERS_VERSION}" "ngs/msgen:latest"
 
 ########################
 # MD tools dockers
