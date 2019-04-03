@@ -75,7 +75,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void scaleDownNode(final AwsRegion region, final Long runId) {
-        final String command = instanceService.buildNodeDownCommand(runId);
+        final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.AWS.name());
         instanceService.runNodeDownScript(cmdExecutor, command, Collections.emptyMap());
     }
 
@@ -90,7 +90,8 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName,
+                CloudProvider.AWS.name());
         instanceService.runTerminateNodeScript(command, cmdExecutor, Collections.emptyMap());
     }
 
@@ -137,7 +138,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, Collections.emptyMap());
+                oldId, newId, CloudProvider.AWS.name(), cmdExecutor, Collections.emptyMap());
     }
 
     @Override
@@ -166,7 +167,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                                       final Long runId,
                                       final RunInstance instance) {
         NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                instanceService.buildNodeUpCommonCommand(region, runId, instance)
+                instanceService.buildNodeUpCommonCommand(region, runId, instance, CloudProvider.AWS.name())
                                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
@@ -210,7 +211,7 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     private String buildNodeUpDefaultCommand(final AwsRegion region, final String nodeId) {
 
         NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                instanceService.buildNodeUpDefaultCommand(region, nodeId)
+                instanceService.buildNodeUpDefaultCommand(region, nodeId, CloudProvider.AWS.name())
                                .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {

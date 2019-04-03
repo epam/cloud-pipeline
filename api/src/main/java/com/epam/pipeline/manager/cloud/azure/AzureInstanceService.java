@@ -71,15 +71,15 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public RunInstance scaleUpNode(final AzureRegion region, final Long runId, final RunInstance instance) {
-        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance)
-                .sshKey(region.getSshPublicKeyPath()).build().getCommand();
+        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance,
+                CloudProvider.AZURE.name()).sshKey(region.getSshPublicKeyPath()).build().getCommand();
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
-        final String command = instanceService.buildNodeDownCommand(runId);
+        final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.AZURE.name());
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -93,7 +93,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void terminateNode(final AzureRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName,
+                CloudProvider.AZURE.name());
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
@@ -143,7 +144,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
         return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, buildScriptAzureEnvVars(region));
+                oldId, newId, CloudProvider.AZURE.name(), cmdExecutor, buildScriptAzureEnvVars(region));
     }
 
     @Override

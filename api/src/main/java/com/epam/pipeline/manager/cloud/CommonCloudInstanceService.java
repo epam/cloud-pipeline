@@ -98,9 +98,10 @@ public class CommonCloudInstanceService {
 
     public boolean runNodeReassignScript(final Long oldId,
                                          final Long newId,
+                                         final String cloud,
                                          final CmdExecutor cmdExecutor,
                                          final Map<String, String> envVars) {
-        final String command = buildNodeReassignCommand(oldId, newId);
+        final String command = buildNodeReassignCommand(oldId, newId, cloud);
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);
@@ -118,23 +119,26 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public String buildTerminateNodeCommand(final String internalIp, final String nodeName) {
+    public String buildTerminateNodeCommand(final String internalIp, final String nodeName, final  String cloud) {
         return TerminateNodeCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeTerminateScript)
                 .internalIp(internalIp)
                 .nodeName(nodeName)
+                .cloud(cloud)
                 .build()
                 .getCommand();
     }
 
     private String buildNodeReassignCommand(final Long oldId,
-                                            final Long newId) {
+                                            final Long newId,
+                                            final String cloud) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
                 .oldRunId(String.valueOf(oldId))
                 .newRunId(String.valueOf(newId))
+                .cloud(cloud)
                 .build()
                 .getCommand();
     }
@@ -172,18 +176,21 @@ public class CommonCloudInstanceService {
         }
     }
 
-    public String buildNodeDownCommand(final Long runId) {
+    public String buildNodeDownCommand(final Long runId,
+                                       final String cloud) {
         return RunIdArgCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeDownScript)
                 .runId(String.valueOf(runId))
+                .cloud(cloud)
                 .build()
                 .getCommand();
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommonCommand(final AbstractCloudRegion region,
-                                                                  final Long runId,
-                                                                  final RunInstance instance) {
+                                                                       final Long runId,
+                                                                       final RunInstance instance,
+                                                                       final String cloud) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
@@ -193,11 +200,13 @@ public class CommonCloudInstanceService {
                 .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .cloud(cloud)
                 .region(region.getRegionCode());
     }
 
     public NodeUpCommand.NodeUpCommandBuilder buildNodeUpDefaultCommand(final AbstractCloudRegion region,
-                                                                         final String nodeId) {
+                                                                        final String nodeId,
+                                                                        final String cloud) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
@@ -206,6 +215,7 @@ public class CommonCloudInstanceService {
                 .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
+                .cloud(cloud)
                 .region(region.getRegionCode());
     }
 }

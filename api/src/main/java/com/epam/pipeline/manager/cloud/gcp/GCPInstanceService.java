@@ -66,15 +66,15 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
-        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance)
-                .sshKey(region.getSshPublicKeyPath()).build().getCommand();
+        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance,
+                CloudProvider.GCP.name()).sshKey(region.getSshPublicKeyPath()).build().getCommand();
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     @Override
     public void scaleDownNode(final GCPRegion region, final Long runId) {
-        final String command = instanceService.buildNodeDownCommand(runId);
+        final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.GCP.name());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -87,7 +87,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName);
+        final String command = instanceService.buildTerminateNodeCommand(internalIp,
+                nodeName, CloudProvider.GCP.name());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
@@ -138,8 +139,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
-        return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, buildScriptGCPEnvVars(region));
+        return instanceService.runNodeReassignScript(oldId, newId,
+                CloudProvider.GCP.name(), cmdExecutor, buildScriptGCPEnvVars(region));
     }
 
     @Override
