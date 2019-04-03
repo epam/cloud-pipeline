@@ -420,6 +420,10 @@ public final class MessageConstants {
     public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
     public static final String ERROR_GCP_IMP_ACC_REQUIRED = "error.gcp.impersonate.account";
     public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
+
+    public static final String ERROR_GCP_STORAGE_PATH_NOT_FOUND = "error.gcp.storage.path.not.found";
+    public static final String ERROR_GCP_STORAGE_PATH_ALREADY_EXISTS = "error.gcp.storage.path.already.exists";
+
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
 

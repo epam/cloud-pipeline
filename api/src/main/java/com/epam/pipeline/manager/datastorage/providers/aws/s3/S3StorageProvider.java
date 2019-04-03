@@ -98,7 +98,6 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void deleteStorage(S3bucketDataStorage dataStorage) {
         getS3Helper(dataStorage).deleteS3Bucket(dataStorage.getPath());
-
     }
 
     @Override
