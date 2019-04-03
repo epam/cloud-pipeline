@@ -56,7 +56,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, ins_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
-
+        region_name = self.cloud_region[:self.cloud_region.rfind('-')]
         body = {
             'name': instance_name,
             'machineType': machine_type,
@@ -72,8 +72,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 {
                     'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
                                                                                      network=network_name),
-                    'subnetwork': 'projects/{project}/regions/{zone}/subnetworks/{subnet}'.format(
-                        project=self.project_id, subnet=subnet_id, zone=self.cloud_region)
+                    'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
+                        project=self.project_id, subnet=subnet_id, region=region_name)
                 }
             ],
 
