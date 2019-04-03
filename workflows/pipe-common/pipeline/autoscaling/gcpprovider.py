@@ -213,9 +213,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             return None
 
     def __get_boot_device(self, disk_size, image_family):
-        project_and_family = image_family.split(":")
+        project_and_family = image_family.split("/")
         if len(project_and_family) != 2:
-            print("node_image parameter doesn't match to Google image name convention: <project>:<imageFamily>")
+            print("node_image parameter doesn't match to Google image name convention: <project>/<imageFamily>")
         return {
             'boot': True,
             'autoDelete': True,
