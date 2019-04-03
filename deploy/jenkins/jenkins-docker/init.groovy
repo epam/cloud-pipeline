@@ -18,6 +18,7 @@ import jenkins.model.*
 import hudson.security.*
 import jenkins.security.s2m.AdminWhitelistRule
 
+// Configure admin account
 def instance = Jenkins.getInstance()
 
 def user = System.getenv('JENKINS_USER') 
@@ -32,3 +33,6 @@ instance.setAuthorizationStrategy(strategy)
 instance.save()
 
 Jenkins.instance.getInjector().getInstance(AdminWhitelistRule.class).setMasterKillSwitch(false)
+
+// Allow only one executor
+Jenkins.instance.setNumExecutors(1)
