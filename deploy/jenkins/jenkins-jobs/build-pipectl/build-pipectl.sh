@@ -16,8 +16,8 @@
 cd $WORKSPACE/cloud-pipeline/deploy
 export CP_DOCKER_DIST_USER="$DOCKER_USER"
 export CP_DOCKER_DIST_PASS="$DOCKER_PASS"
-export CP_VERSION_SHORT="${major}.${minor}"
-export CP_VERSION_FULL="${major}.${minor}.${patch}.${build}"
+export CP_VERSION_SHORT="${dist_major}.${dist_minor}"
+export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}"
 export CP_API_DIST_URL="$API_DIST_URL"
 export CP_PIPECTL_DIST="$WORKSPACE/build/pipectl-$CP_VERSION_FULL"
 

@@ -29,17 +29,17 @@ fi
 # Get version info from the s3 distribution URL
 # Format: cloud-pipeline.{major}.{minor}.{patch}.{build}.{commit}.tgz
 IFS="." read -ra version <<< "$URL"
-commit="${version[-2]}"
-build="${version[-3]}"
-patch="${version[-4]}"
-minor="${version[-5]}"
-major="${version[-6]}"
+export dist_commit="${version[-2]}"
+export dist_build="${version[-3]}"
+export dist_patch="${version[-4]}"
+export dist_minor="${version[-5]}"
+export dist_major="${version[-6]}"
 
-if [[ -z $major || -z $minor || -z $patch || -z $build || -z $commit ]]; then
+if [[ -z $dist_major || -z $dist_minor || -z $dist_patch || -z $dist_build || -z $dist_commit ]]; then
     echo 'One of the distribution version parts is not defined'
     exit 1
 fi
 
 git clone https://github.com/epam/cloud-pipeline.git
 cd cloud-pipeline
-git checkout $commit
+git checkout $dist_commit

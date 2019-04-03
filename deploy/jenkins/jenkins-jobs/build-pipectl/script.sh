@@ -13,5 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-checkout_url "$API_DIST_URL"
+source /usr/local/bin/checkout_url "$API_DIST_URL"
 bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/build-pipectl/build-pipectl.sh
