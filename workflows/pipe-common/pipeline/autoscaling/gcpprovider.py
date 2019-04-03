@@ -70,6 +70,12 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             ],
             'networkInterfaces': [
                 {
+                    'accessConfigs': [
+                        {
+                            'name': 'External NAT',
+                            'type': 'ONE_TO_ONE_NAT'
+                        }
+                    ],
                     'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
                                                                                      network=network_name),
                     'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
@@ -82,13 +88,12 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 "items": [
                     {
                         "key": "ssh-keys",
-                        "value": "{key} pipeline".format(key=ssh_pub_key)
+                        "value": "{key}".format(key=ssh_pub_key)
                     },
                     {
                         "key": "startup-script",
                         "value": user_data_script
                     }
-
                 ]
             }
 
