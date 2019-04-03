@@ -122,6 +122,8 @@ if [ -z "$CP_API_DIST_URL" ]; then
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
 CP_API_DIST_FILE_PATH=/tmp/cloud-pipeline.tgz
+echo "Downloading distribution bundle from $CP_API_DIST_URL to $CP_API_DIST_FILE_PATH"
+rm -f $CP_API_DIST_FILE_PATH
 wget -q "$CP_API_DIST_URL" -O "$CP_API_DIST_FILE_PATH"
 
 # API
