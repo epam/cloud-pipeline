@@ -88,7 +88,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 "items": [
                     {
                         "key": "ssh-keys",
-                        "value": "{key}".format(key=ssh_pub_key)
+                        "value": "pipeline:{key}".format(key=ssh_pub_key)
                     },
                     {
                         "key": "startup-script",
