@@ -23,7 +23,7 @@ function create_jenkins_job {
     # sed is used to "html-style" escape script, e.g. &quot; / &lt; / etc..
     export BUILD_COMMAND="$(cat script.sh | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g')"
 
-    JOB_CONFIG_XML="$(envsubst < config.xml)"
+    JOB_CONFIG_XML="$(envsubst '${BUILD_COMMAND} ${JENKINS_JOB_TOKEN}' < config.xml)"
     cat <<< "$JOB_CONFIG_XML" > config.xml
 
     curl -s -XPOST "http://${JENKINS_HOST}:${JENKINS_PORT}/createItem?name=cloud-pipeline-${job_dir}" \
