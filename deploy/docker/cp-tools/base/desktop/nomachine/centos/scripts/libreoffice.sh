@@ -18,6 +18,6 @@ fi
 
 cd /opt && \
 wget -q "$LIBREOFFICE_DISTR_URL" -O LibreOffice.tar.gz && \
-tar -zxvf LibreOffice.tar.gz && \
+tar -zxf LibreOffice.tar.gz && \
 yum localinstall -y LibreOffice*/RPMS/*.rpm && \
 rm -rf LibreOffice*

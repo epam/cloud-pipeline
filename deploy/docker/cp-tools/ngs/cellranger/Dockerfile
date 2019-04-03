@@ -34,7 +34,7 @@ ARG CELLRANGER_URL=""
 RUN     if [ -z "${CELLRANGER_URL}" ]; then echo "CELLRANGER_URL is not set. Specify it using \"--build-arg CELLRANGER_URL=http://\". Valid temporary distr URL can be obtained from https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest" exit 1; fi && \
         cd /tmp && \
         wget -q -O cellranger.tar.gz "${CELLRANGER_URL}" && \
-        tar -zxvf cellranger.tar.gz && \
+        tar -zxf cellranger.tar.gz && \
         rm -rf cellranger.tar.gz && \
         cp /tmp/sge.template cellranger-*/martian-cs/v*/jobmanagers/ && \
         mv cellranger-* $CELLRANGER_HOME ; \

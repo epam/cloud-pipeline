@@ -85,7 +85,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 RUN mkdir -p /etc/ssh-proxy/  && \
     cd /etc/ssh-proxy/ && \
     wget -q https://nodejs.org/dist/v6.11.3/node-v6.11.3-linux-x64.tar.xz && \
-    tar xvfJ node-v6.11.3-linux-x64.tar.xz && \
+    tar xfJ node-v6.11.3-linux-x64.tar.xz && \
     rm -f node-v6.11.3-linux-x64.tar.xz
 
 ## Install wetty

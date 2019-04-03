@@ -74,7 +74,7 @@ ENV STAR_BIN=$STAR_HOME/STAR-STAR_2.4.0h1/bin/Linux_x86_64/STAR
 RUN     mkdir -p $STAR_HOME && \
         cd $STAR_HOME && \
         wget -q "https://github.com/alexdobin/STAR/archive/STAR_2.4.0h1.tar.gz" && \
-        tar -xzvf STAR_2.4.0h1.tar.gz && \
+        tar -xzf STAR_2.4.0h1.tar.gz && \
         rm -f STAR_2.4.0h1.tar.gz && \
         cd $BFX_INSTALL_ROOT
 
@@ -105,7 +105,7 @@ ENV CUFFLINKS_BIN=$CUFFLINKS_HOME/cufflinks-2.2.1.Linux_x86_64/cufflinks
 RUN     mkdir -p $CUFFLINKS_HOME && \
         cd $CUFFLINKS_HOME && \
         wget -q "http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/cufflinks-2.2.1.Linux_x86_64.tar.gz" && \
-        tar -xzvf cufflinks-2.2.1.Linux_x86_64.tar.gz && \
+        tar -xzf cufflinks-2.2.1.Linux_x86_64.tar.gz && \
         rm -f cufflinks-2.2.1.Linux_x86_64.tar.gz && \
         cd $BFX_INSTALL_ROOT
 
@@ -115,7 +115,7 @@ ENV FEATURE_COUNT_BIN=$SUBREAD_HOME/subread-1.4.5-p1-Linux-x86_64/bin/featureCou
 RUN     mkdir -p $SUBREAD_HOME && \
         cd $SUBREAD_HOME && \
         wget -q "https://ayera.dl.sourceforge.net/project/subread/subread-1.4.5-p1/subread-1.4.5-p1-Linux-x86_64.tar.gz" && \
-        tar -xzvf subread-1.4.5-p1-Linux-x86_64.tar.gz && \
+        tar -xzf subread-1.4.5-p1-Linux-x86_64.tar.gz && \
         rm -f subread-1.4.5-p1-Linux-x86_64.tar.gz && \
         cd $BFX_INSTALL_ROOT
 
@@ -129,7 +129,7 @@ ENV SAMTOOLS_BIN=$SAMTOOLS_HOME/samtools-0.1.19/samtools
 RUN     mkdir -p $SAMTOOLS_HOME && \
         cd $SAMTOOLS_HOME && \
         wget -q "https://netix.dl.sourceforge.net/project/samtools/samtools/0.1.19/samtools-0.1.19.tar.bz2" && \
-        tar -xvf samtools-0.1.19.tar.bz2 && \
+        tar -xf samtools-0.1.19.tar.bz2 && \
         rm -f samtools-0.1.19.tar.bz2 && \
         cd samtools-0.1.19 && \
         make -j$(nproc) && \
@@ -157,7 +157,7 @@ ENV BEDTOOLS_BIN=$BEDTOOLS_HOME/bin/bedtools
 RUN     mkdir -p $BEDTOOLS_HOME && \
         cd $BEDTOOLS_HOME && \
         wget -q "https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz" && \
-        tar -zxvf bedtools-2.21.0.tar.gz && \
+        tar -zxf bedtools-2.21.0.tar.gz && \
         rm -rf bedtools-2.21.0.tar.gz && \
         cd bedtools2 && \
         make -j$(nproc) && \
@@ -172,7 +172,7 @@ ENV BWA_BIN=$BWA_HOME/bwa
 RUN     mkdir -p $BWA_HOME && \
         cd $BWA_HOME && \
         wget -q "https://datapacket.dl.sourceforge.net/project/bio-bwa/bwa-0.7.12.tar.bz2" && \
-        tar -xvf bwa-0.7.12.tar.bz2 && \
+        tar -xf bwa-0.7.12.tar.bz2 && \
         rm -rf bwa-0.7.12.tar.bz2 && \
         cd bwa-0.7.12 && \
         make -j$(nproc) && \
@@ -226,7 +226,7 @@ ENV SCALPEL_HOME=$BFX_INSTALL_ROOT/scalpel
 ENV SCALPEL_BIN=$SCALPEL_HOME
 RUN     cd /opt && \
         wget -q "https://netcologne.dl.sourceforge.net/project/scalpel/scalpel-0.5.3.tar.gz" -O scalpel.tar.gz && \
-        tar -zxvf scalpel.tar.gz && \
+        tar -zxf scalpel.tar.gz && \
         rm -f scalpel.tar.gz && \
         mv scalpel-* scalpel && \
         cd scalpel/bamtools-* && \
@@ -263,7 +263,7 @@ ENV     PERL_MM_USE_DEFAULT=1
 RUN     perl -MCPAN -e "install Capture::Tiny; install DB_File; install inc::latest; install URI::Escape; install Set::IntervalTree; install Carp::Assert; install JSON::XS; install PerlIO::gzip" && \
         cd $BFX_INSTALL_ROOT && \
         wget -q "https://github.com/STAR-Fusion/STAR-Fusion/releases/download/v1.0.0/STAR-Fusion-v1.0.0.FULL.tar.gz" -O STAR-Fusion.tgz && \
-        tar -zxvf STAR-Fusion.tgz && \
+        tar -zxf STAR-Fusion.tgz && \
         mv STAR-Fusion-* STAR-Fusion && \
         rm -f STAR-Fusion.tgz  && \
         cd $BFX_INSTALL_ROOT
@@ -328,7 +328,7 @@ ENV VCFTOOLS_BIN=vcftools
 RUN     mkdir -p $VCFTOOLS_HOME && \
         cd $VCFTOOLS_HOME && \
         wget -q "https://github.com/vcftools/vcftools/releases/download/v0.1.16/vcftools-0.1.16.tar.gz" && \
-        tar -xvf vcftools-0.1.16.tar.gz && \
+        tar -xf vcftools-0.1.16.tar.gz && \
         cd vcftools-0.1.16 && \
         ./configure && make && make install && \
         cd .. && rm vcftools-0.1.16.tar.gz && \
@@ -342,7 +342,7 @@ ENV BGZIP_BIN=bgzip
 RUN     mkdir -p $HTSLIB_HOME && \
         cd $HTSLIB_HOME && \
         wget -q "https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2" && \
-        tar -xvjf htslib-1.9.tar.bz2 && \
+        tar -xjf htslib-1.9.tar.bz2 && \
         cd htslib-1.9 && \
         ./configure && make && make install && \
         cd .. && rm htslib-1.9.tar.bz2 && \
