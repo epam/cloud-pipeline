@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# FIXME 1. Use own S3 distribution URL
 if [ -z "$LIBREOFFICE_DISTR_URL" ]; then
-    LIBREOFFICE_DISTR_URL="http://mirror.clarkson.edu/tdf/libreoffice/stable/6.1.5/rpm/x86_64/LibreOffice_6.1.5_Linux_x86-64_rpm.tar.gz"
+    LIBREOFFICE_DISTR_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/libreoffice/LibreOffice_6.1.5_Linux_x86-64_rpm.tar.gz"
 fi
 
 cd /opt && \

@@ -57,18 +57,14 @@ RUN yum --enablerepo=epel groupinstall "Server with GUI" -y && \
     rm -f /etc/xdg/autostart/xfce-polkit* && \
     /bin/dbus-uuidgen > /etc/machine-id
 
-# FIXME 1. Use own S3 distribution URL
-# Centos:
-# Free: https://download.nomachine.com/download/6.5/Linux/nomachine_6.5.6_9_x86_64.rpm
 RUN cd /opt && \
-    wget -q "https://download.nomachine.com/download/6.5/Linux/nomachine_6.5.6_9_x86_64.rpm" -O nomachine.rpm && \
+    wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_6.5.6_9_x86_64.rpm" -O nomachine.rpm && \
     yum install -y nomachine.rpm && \
     rm -f nomachine.rpm
 
 RUN sed -i '/DefaultDesktopCommand/c\DefaultDesktopCommand "/usr/bin/startxfce4"' /usr/NX/etc/node.cfg
 
-# FIXME 2. Use own S3 distribution URL
-RUN wget -q "http://download.nomachine.com/44bef5297fe9efb3430b9fd47ad18b01/downloads/temporary/AR01C00125/scramble_alg.cpp" -O /usr/local/bin/scramble.cpp && \
+RUN wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble_alg.cpp" -O /usr/local/bin/scramble.cpp && \
     g++ /usr/local/bin/scramble.cpp -o /usr/local/bin/scramble && \
     rm -f /usr/local/bin/scramble.cpp
 
