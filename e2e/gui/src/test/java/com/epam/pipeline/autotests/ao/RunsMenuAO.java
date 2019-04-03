@@ -34,6 +34,7 @@ import static com.codeborne.selenide.CollectionCondition.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -294,7 +295,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitUntilResumeButtonAppear(final String runId) {
-        $("#run-" + runId + "-resume-button").waitUntil(appear, APPEARING_TIMEOUT);
+        $("#run-" + runId + "-resume-button").waitUntil(appear, COMPLETION_TIMEOUT);
         return this;
     }
 
@@ -308,7 +309,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitForCompletion(final String runId) {
-        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(completed, C.COMPLETION_TIMEOUT);
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(completed, COMPLETION_TIMEOUT);
         return this;
     }
 

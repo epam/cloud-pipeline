@@ -37,16 +37,16 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
     @AfterMethod(alwaysRun = true)
     @Override
     public void removePipeline() {
-        super.removePipeline();
+//        super.removePipeline();
     }
 
     @AfterMethod(alwaysRun = true)
     @Override
     public void removeNode() {
-        super.removeNode();
+//        super.removeNode();
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-975"})
     public void launchPipelineWithLaunchFlag() {
         library()
@@ -74,7 +74,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .shouldContainRunsWithParentRun(2, getRunId());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2618"})
     public void launchAutoScaledClusterTest() {
         library()
@@ -103,7 +103,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .stopRunIfPresent(getRunId());
     }
 
-    @Test(priority = 1)
+    @Test(priority = 1, enabled = false)
     @TestCase({"EPMCMBIBPC-2620"})
     public void invalidValuesOnConfigureClusterPopUp() {
         library()
