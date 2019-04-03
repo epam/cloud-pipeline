@@ -45,6 +45,7 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
+            --hidden-import=requests \
             -y \
             --clean \
             --workpath /tmp \

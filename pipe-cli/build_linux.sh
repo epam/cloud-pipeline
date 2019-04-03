@@ -51,6 +51,7 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --hidden-import=functools \
                                 --hidden-import=re \
                                 --hidden-import=subprocess \
+                                --hidden-import=requests \
                                 -y \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
