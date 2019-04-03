@@ -27,7 +27,7 @@
 ## licensing information pertaining to the included programs.
 
 # WORKFLOW DEFINITION
-workflow PairedEndSingleSampleWorkflow {
+workflow PairedEndSingleSample {
 
   File contamination_sites_ud
   File contamination_sites_bed
@@ -41,8 +41,7 @@ workflow PairedEndSingleSampleWorkflow {
   String sample_name
   String base_file_name
   String final_gvcf_base_name
-  File flowcell_unmapped_bams_list
-  Array[File] flowcell_unmapped_bams = read_lines(flowcell_unmapped_bams_list)
+  Array[File] flowcell_unmapped_bams
   String unmapped_bam_suffix
 
   File wgs_calling_interval_list
@@ -83,14 +82,15 @@ workflow PairedEndSingleSampleWorkflow {
   # Align flowcell-level unmapped input bams in parallel
   scatter (unmapped_bam in flowcell_unmapped_bams) {
 
-    String sub_strip_path = "gs://.*/"
+    String sub_strip_path = "s3://.*/"
     String sub_strip_unmapped = unmapped_bam_suffix + "$"
     String sub_sub = sub(sub(unmapped_bam, sub_strip_path, ""), sub_strip_unmapped, "")
 
     # QC the unmapped BAM
     call CollectQualityYieldMetrics {
       input:
-        input_bam = unmapped_bam
+        input_bam = unmapped_bam,
+        metrics_filename = sub_sub + ".unmapped.quality_yield_metrics"
     }
 
     # Map reads to reference
@@ -857,7 +857,7 @@ task CreateSequenceGroupingTSV {
     CODE
   >>>
   runtime {
-    docker: "python:2.7"
+    docker: "library/ubuntu"
   }
   output {
     Array[Array[String]] sequence_grouping = read_tsv("sequence_grouping.txt")
@@ -1011,7 +1011,7 @@ task CheckPreValidation {
 
   >>>
   runtime {
-    docker: "python:2.7"
+    docker: "library/ubuntu"
   }
   output {
     Float duplication_rate = read_float("duplication_value.txt")
