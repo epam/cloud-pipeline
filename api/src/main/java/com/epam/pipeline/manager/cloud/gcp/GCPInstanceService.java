@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.exception.cloud.azure.AzureException;
+import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
@@ -131,7 +131,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
             instance.setNodeName(vm.getName());
             instance.setNodeIP(vm.getNetworkInterfaces().get(0).getNetworkIP());
             return instance;
-        } catch (AzureException e) {
+        } catch (GCPException e) {
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
@@ -165,7 +165,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     private Map<String, String> buildScriptGCPEnvVars(final GCPRegion region) {
         final Map<String, String> envVars = new HashMap<>();
-        if (!StringUtils.isEmpty(region.getAuthFile())) {
+        if (StringUtils.isNotBlank(region.getAuthFile())) {
             envVars.put(GOOGLE_APPLICATION_CREDENTIALS, region.getAuthFile());
         }
         envVars.put(GOOGLE_PROJECT_ID, region.getProject());

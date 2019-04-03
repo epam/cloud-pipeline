@@ -24,6 +24,7 @@ import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.google.api.services.compute.model.Instance;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -106,11 +107,14 @@ public class GCPVMService {
     private Instance findInstanceByTag(final GCPRegion region,
                                        final String key,
                                        final String value) throws IOException {
-        return gcpClient.buildComputeClient(region).instances()
-                .list(region.getProject(), region.getRegionCode())
-                .setFilter(String.format(LABEL_FILTER, key, value))
-                .execute().getItems().stream().findFirst()
+        return ListUtils.emptyIfNull(
+                gcpClient.buildComputeClient(region).instances()
+                        .list(region.getProject(), region.getRegionCode())
+                        .setFilter(String.format(LABEL_FILTER, key, value))
+                        .execute()
+                        .getItems())
+                .stream().findFirst()
                 .orElseThrow(() -> new GCPException(messageHelper.getMessage(
-                                MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
+                        MessageConstants.ERROR_GCP_INSTANCE_NOT_FOUND, key + ":" + value)));
     }
 }
