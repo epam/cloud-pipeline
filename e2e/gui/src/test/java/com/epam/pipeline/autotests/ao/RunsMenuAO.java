@@ -308,13 +308,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitForCompletion(final String runId) {
-        $("tbody")
-                .find(withText(runId))
-                .closest(".ant-table-row")
-                .findAll("td")
-                .get(0)
-                .find("i")
-                .waitUntil(completed, C.COMPLETION_TIMEOUT);
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(completed, C.COMPLETION_TIMEOUT);
         return this;
     }
 
