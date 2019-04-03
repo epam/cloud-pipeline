@@ -115,18 +115,23 @@ fi
 # Cloud Pipeline dockers
 ########################
 
-# API
-CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
-
+# Download API distribution once, to minimize API/Search/Docker comp/Notifier build time
 CP_API_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz"
 if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
+CP_API_DIST_FILE_PATH=/tmp/cloud-pipeline.tgz
+wget -q "$CP_API_DIST_URL_DEFAULT" -O "$CP_API_DIST_FILE_PATH"
+
+# API
+cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-api-srv/cloud-pipeline.tgz
+CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
 docker push "$CP_API_DIST_NAME"
+rm -f $DOCKERS_SOURCES_PATH/cp-api-srv/cloud-pipeline.tgz
 
 # Basic IdP
 CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
@@ -147,11 +152,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-edge \
 docker push "$CP_EDGE_DIST_NAME"
 
 # Docker comp
+cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-docker-comp/cloud-pipeline.tgz
 CP_DOCKER_COMP_DIST_NAME=${CP_DOCKER_COMP_DIST_NAME:-"$CP_DIST_REPO_NAME:docker-comp-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-docker-comp \
                 -t "$CP_DOCKER_COMP_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_DOCKER_COMP_DIST_NAME"
+rm -f $DOCKERS_SOURCES_PATH/cp-docker-comp/cloud-pipeline.tgz
 
 # Clair
 CP_CLAIR_DIST_NAME=${CP_CLAIR_DIST_NAME:-"$CP_DIST_REPO_NAME:clair-${DOCKERS_VERSION}"}
@@ -166,19 +173,24 @@ docker build    $DOCKERS_SOURCES_PATH/cp-git \
 docker push "$CP_GITLAB_DIST_NAME"
 
 # Notifier
+cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-notifier/cloud-pipeline.tgz
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-notifier \
                 -t "$CP_NOTIFIER_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_NOTIFIER_DIST_NAME"
+rm -f $DOCKERS_SOURCES_PATH/cp-notifier/cloud-pipeline.tgz
 
 # Search
+cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-search/cloud-pipeline.tgz
 CP_SEARCH_DIST_NAME=${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-search \
                 -t "$CP_SEARCH_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SEARCH_DIST_NAME"
+rm -f $DOCKERS_SOURCES_PATH/cp-search/cloud-pipeline.tgz
 
+rm -f $CP_API_DIST_FILE_PATH
 
 ########################
 # Base tools dockers

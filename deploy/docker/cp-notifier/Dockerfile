@@ -23,10 +23,12 @@ RUN yum install -y \
                 unzip
 
 # API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_NOTIFIER_HOME="/opt/notifier"
+
+# Rely on the cloud-pipeline.tgz file is present in the docker build context directory
+# While we can download tarball from the public repo - it takes time. This implementation allows to download once for all the dependant docker images
+ADD cloud-pipeline.tgz /tmp/cloud-pipeline.tgz
 RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     mkdir -p $CP_NOTIFIER_HOME && \
     mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \
