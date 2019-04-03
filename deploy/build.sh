@@ -165,6 +165,12 @@ if [ "$BUILD_INCLUDE_TESTS" ]; then
 fi
 bash $BUILD_SCRIPT_PATH/docker/build-dockers.sh -c "$DOCKERS_MANIFEST_DIR" -s "$BUILD_SCRIPT_PATH/docker" -v "$BUILD_VERSION" $DOCKERS_BUILD_OTHER_OPTIONS
 
+if [ $? -ne 0 ]; then
+    echo "ERROR occured while building/pushing docker images, FAILING build"
+    cleanup_build
+    exit 1
+fi
+
 ##########################################################################
 # Prepare pipectl package directory structure and build pipectl executable
 ##########################################################################
@@ -193,6 +199,13 @@ echo
 echo "[BUILDING PIPECTL]"
 export DEPLOY_BUILD_OUTPUT_PATH=$BUILD_OUTPUT_FILE
 bash $BUILD_SCRIPT_PATH/pipectl/build-pipectl.sh --base64 "$PIPECTL_CONTENTS_DIR/"
+
+if [ $? -ne 0 ]; then
+    echo "ERROR occured while building pipectl executable, FAILING build"
+    cleanup_build
+    rm -f "$BUILD_OUTPUT_FILE"
+    exit 1
+fi
 
 if [ "$KEEP_MANIFEST_FILES" ]; then
     BUILD_OUTPUT_DIR=$(dirname $BUILD_OUTPUT_FILE)
