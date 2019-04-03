@@ -594,8 +594,7 @@ export default class Logs extends localization.LocalizedReactComponent {
       if (!taskState) {
         // trying to get task state by name format 'cromwell_<some id>_<task name>:
         const regExp = new RegExp(`^cromwell_[\\da-zA-Z]+_${task.name}$`, 'i');
-        [taskState] = tasksState.filter(t =>
-          regExp.test(t.name) && parametersMatchFn(task.parameters, t.parameters));
+        [taskState] = tasksState.filter(t => regExp.test(t.name));
       }
       return taskState;
     }

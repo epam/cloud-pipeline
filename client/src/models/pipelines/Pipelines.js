@@ -17,6 +17,7 @@
 import Remote from '../basic/Remote';
 import Pipeline from './Pipeline';
 import Version from './Version';
+import VersionParameters from './VersionParameters';
 import Source from './Source';
 import PipelineLanguage from './PipelineLanguage';
 import PipelineConfigurations from './PipelineConfigurations';
@@ -75,6 +76,7 @@ class Pipelines extends Remote {
   invalidatePipeline (id) {
     this.constructor.invalidateCache(this._pipelinesCache, id);
     this.invalidateVersionsForPipeline(id);
+    this._versionParametersCache.clear();
   }
 
   _versionsCache = new Map();
@@ -105,6 +107,15 @@ class Pipelines extends Remote {
 
   invalidateLanguage (id, version) {
     this.constructor.invalidateIdVersionCache(this._languagesCache, id, version);
+  }
+
+  _versionParametersCache = new Map();
+  getVersionParameters (id, version) {
+    return this.constructor.getIdVersionCache(this._versionParametersCache, id, version, VersionParameters);
+  }
+
+  invalidateVersionParameters (id, version) {
+    this.constructor.invalidateIdVersionCache(this._versionParametersCache, id, version);
   }
 
   _configurationsCache = new Map();

@@ -17,11 +17,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, Row} from 'antd';
 import {LuigiGraph, WdlGraph} from './visualization';
+
+const GraphComponents = {
+  luigi: LuigiGraph,
+  wdl: WdlGraph
+};
 
 @localization.localizedComponent
 @inject(({pipelines, routing}, params) => ({
@@ -48,9 +53,6 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
     onGraphUpdated: PropTypes.func,
     configurations: PropTypes.object
   };
-
-  @observable _language;
-  @observable graphComponent;
 
   @computed
   get language () {
@@ -98,11 +100,12 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
     if (this.props.language.pending && !this.props.language.loaded) {
       return <LoadingView />;
     }
-    if (!this.graphComponent) {
+    const GraphComponent = GraphComponents[this.language];
+    if (!GraphComponent) {
       if (this.props.hideError) {
         return (
           <Row
-            ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}/>
+            ref={() => this.props.onGraphReady && this.props.onGraphReady(null)} />
         );
       } else {
         return (
@@ -116,36 +119,11 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
         );
       }
     }
-    const Component = this.graphComponent;
     return (
-      <Component
+      <GraphComponent
         {...this.props}
         language={this.language}
         onGraphReady={this.onGraphReady} />
     );
-  }
-
-  componentDidUpdate () {
-    this.buildComponent();
-  }
-
-  componentDidMount () {
-    this.buildComponent();
-  }
-
-  buildComponent = () => {
-    if (this._language !== this.language) {
-      this._language = this.language;
-      switch (this.language) {
-        case 'luigi':
-          this.graphComponent = LuigiGraph;
-          break;
-        case 'wdl':
-          this.graphComponent = WdlGraph;
-          break;
-        default:
-          break;
-      }
-    }
   }
 }

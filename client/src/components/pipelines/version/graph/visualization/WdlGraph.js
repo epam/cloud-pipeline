@@ -18,8 +18,6 @@ import React from 'react';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
-import Pipeline from '../../../../../models/pipelines/Pipeline';
-import VersionParameters from '../../../../../models/pipelines/VersionParameters';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import pipeline from 'pipeline-builder';
@@ -51,8 +49,8 @@ function reportWDLError (error) {
 @inject(({history, routing, pipelines}, params) => ({
   history,
   routing,
-  parameters: new VersionParameters(params.pipelineId, params.version),
-  pipeline: new Pipeline(params.pipelineId),
+  parameters: pipelines.getVersionParameters(params.pipelineId, params.version),
+  pipeline: pipelines.getPipeline(params.pipelineId),
   pipelineId: params.pipelineId,
   pipelineVersion: params.version,
   pipelines,
@@ -109,7 +107,7 @@ export default class WdlGraph extends Graph {
       }
       let pipelineVersion = parts.slice(2).join('_');
       const hide = message.loading('Fetching pipeline info...', 0);
-      const pipelineRequest = new Pipeline(pipelineId);
+      const pipelineRequest = this.props.pipelines.getPipeline(pipelineId);
       await pipelineRequest.fetch();
       if (pipelineRequest.error) {
         hide();
@@ -347,6 +345,10 @@ export default class WdlGraph extends Graph {
   };
 
   unsavedChangesConfirm = (onOk, onCancel) => {
+    if (!this.props.canEdit) {
+      onOk();
+      return null;
+    }
     return Modal.confirm({
       title: 'You have unsaved changes. Continue?',
       style: {
@@ -370,7 +372,10 @@ export default class WdlGraph extends Graph {
     if (this.wdlVisualizer && this.wdlVisualizer.selection &&
       this.wdlVisualizer.selection[0] && this.wdlVisualizer.selection[0].step) {
       this.setState({selectedElement: this.wdlVisualizer.selection[0].step},
-        this.prepareEditableTask);
+        () => {
+          this.prepareEditableTask();
+          this.props.onSelect && this.props.onSelect({task: {name: this.state.selectedElement.name}});
+        });
     } else {
       this.setState({selectedElement: null}, this.resetEditableTask);
     }
@@ -882,7 +887,7 @@ export default class WdlGraph extends Graph {
   };
 
   onFieldsChange = async (props, fields) => {
-    if (!this.state.selectedElement || !this.workflow) {
+    if (!this.state.selectedElement || !this.workflow || !this.props.canEdit) {
       return;
     }
     const values = Object.keys(fields || {})
@@ -1154,10 +1159,9 @@ export default class WdlGraph extends Graph {
   };
 
   renderGraph () {
-    if (this.props.parameters.pending ||
-        this.props.pipeline.pending ||
-        !this._mainFileRequest ||
-        this._mainFileRequest.pending) {
+    if ((this.props.parameters.pending && !this.props.parameters.loaded) ||
+      (this.props.pipeline.pending && !this.props.pipeline.loaded) ||
+      (!this._mainFileRequest || (this._mainFileRequest.pending && !this._mainFileRequest.loaded))) {
       return <LoadingView />;
     }
     if (this.props.parameters.error) {
@@ -1196,26 +1200,8 @@ export default class WdlGraph extends Graph {
   }
 
   componentDidUpdate () {
-    if (!this.props.parameters.pending && !this.props.pipeline.pending &&
-      !this.props.parameters.error &&
-      (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
-      const filePathParts = this.props.parameters.value.main_file.split('.');
-      if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `src/${this.props.parameters.value.main_file}`,
-          this.props.version
-        );
-        this._mainFileRequest.fetch();
-      } else {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `src/${this.props.pipeline.value.name}.wdl`,
-          this.props.version
-        );
-        this._mainFileRequest.fetch();
-      }
-    }
+    this.loadMainFile();
+    super.componentDidUpdate();
   }
 
   renderBottomGraphControlls = () => {
@@ -1236,6 +1222,7 @@ export default class WdlGraph extends Graph {
   _routeChangeConfirm = null;
 
   componentDidMount () {
+    this.loadMainFile();
     this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (this.state.modified && !this._routeChangeConfirm) {
@@ -1268,5 +1255,27 @@ export default class WdlGraph extends Graph {
       this._removeRouterListener();
     }
   }
+
+  loadMainFile = () => {
+    if (this.props.parameters.loaded && this.props.pipeline.loaded &&
+      (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
+      const filePathParts = this.props.parameters.value.main_file.split('.');
+      if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
+        this._mainFileRequest = new VersionFile(
+          this.props.pipelineId,
+          `src/${this.props.parameters.value.main_file}`,
+          this.props.version
+        );
+        this._mainFileRequest.fetch();
+      } else {
+        this._mainFileRequest = new VersionFile(
+          this.props.pipelineId,
+          `src/${this.props.pipeline.value.name}.wdl`,
+          this.props.version
+        );
+        this._mainFileRequest.fetch();
+      }
+    }
+  };
 
 }
