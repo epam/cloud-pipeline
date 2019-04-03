@@ -239,7 +239,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                         "publicKeys": [
                             {
                                 "path": "/home/" + user + "/.ssh/authorized_keys",
-                                "key_data": "{key}".format(key=ssh_pub_key)
+                                "key_data": "{key} {user}".format(key=ssh_pub_key, user=user)
                             }
                         ]
                     },

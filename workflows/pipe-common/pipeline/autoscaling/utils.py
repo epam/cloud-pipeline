@@ -252,7 +252,9 @@ def read_ssh_key(ssh_pub_key):
         content = f.readlines()
         if len(content) != 1 and not content[0].startswith("ssh-rsa"):
             raise RuntimeError("Wrong format of ssh pub key!")
-    ins_key = content[0]
+    key_parts = content[0].strip().split()
+    # <protocol> <key> - without user name if it is exists
+    ins_key = '{} {}'.format(key_parts[0], key_parts[1])
     return ins_key
 
 
