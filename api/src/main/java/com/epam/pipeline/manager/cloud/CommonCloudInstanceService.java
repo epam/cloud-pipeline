@@ -18,11 +18,10 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
-import com.epam.pipeline.manager.cloud.commands.ReassignCommand;
-import com.epam.pipeline.manager.cloud.commands.TerminateNodeCommand;
+import com.epam.pipeline.manager.cloud.commands.*;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -30,8 +29,8 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.utils.CommonUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -40,13 +39,40 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class CommonCloudInstanceService {
 
     private final PreferenceManager preferenceManager;
     private final UserManager userManager;
     private final AuthManager authManager;
     private final PipelineRunManager pipelineRunManager;
+    private final String nodeUpScript;
+    private final String nodeDownScript;
+    private final String nodeReassignScript;
+    private final String nodeTerminateScript;
+    private final String kubeMasterIP;
+    private final String kubeToken;
+
+    public CommonCloudInstanceService(PreferenceManager preferenceManager,
+                                      UserManager userManager,
+                                      AuthManager authManager,
+                                      PipelineRunManager pipelineRunManager,
+                                      @Value("${cluster.nodeup.script}") final String nodeUpScript,
+                                      @Value("${cluster.nodedown.script}") final String nodeDownScript,
+                                      @Value("${cluster.reassign.script}") final String nodeReassignScript,
+                                      @Value("${cluster.node.terminate.script}") final String nodeTerminateScript,
+                                      @Value("${kube.master.ip}") final String kubeMasterIP,
+                                      @Value("${kube.kubeadm.token}") final String kubeToken) {
+        this.preferenceManager = preferenceManager;
+        this.userManager = userManager;
+        this.authManager = authManager;
+        this.pipelineRunManager = pipelineRunManager;
+        this.nodeUpScript = nodeUpScript;
+        this.nodeDownScript = nodeDownScript;
+        this.nodeReassignScript = nodeReassignScript;
+        this.nodeTerminateScript = nodeTerminateScript;
+        this.kubeMasterIP = kubeMasterIP;
+        this.kubeToken = kubeToken;
+    }
 
     public RunInstance runNodeUpScript(final CmdExecutor cmdExecutor,
                                        final Long runId,
@@ -73,9 +99,8 @@ public class CommonCloudInstanceService {
     public boolean runNodeReassignScript(final Long oldId,
                                          final Long newId,
                                          final CmdExecutor cmdExecutor,
-                                         final String reassignScript,
                                          final Map<String, String> envVars) {
-        final String command = buildNodeReassignCommand(reassignScript, oldId, newId);
+        final String command = buildNodeReassignCommand(oldId, newId);
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);
@@ -93,8 +118,7 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public String buildTerminateNodeCommand(final String internalIp, final String nodeName,
-                                            final String nodeTerminateScript) {
+    public String buildTerminateNodeCommand(final String internalIp, final String nodeName) {
         return TerminateNodeCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeTerminateScript)
@@ -104,12 +128,11 @@ public class CommonCloudInstanceService {
                 .getCommand();
     }
 
-    private String buildNodeReassignCommand(final String reassignScript,
-                                            final Long oldId,
+    private String buildNodeReassignCommand(final Long oldId,
                                             final Long newId) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(reassignScript)
+                .script(nodeReassignScript)
                 .oldRunId(String.valueOf(oldId))
                 .newRunId(String.valueOf(newId))
                 .build()
@@ -147,5 +170,42 @@ public class CommonCloudInstanceService {
         } catch (CmdExecutionException e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    public String buildNodeDownCommand(final Long runId) {
+        return RunIdArgCommand.builder()
+                .executable(AbstractClusterCommand.EXECUTABLE)
+                .script(nodeDownScript)
+                .runId(String.valueOf(runId))
+                .build()
+                .getCommand();
+    }
+
+    public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommonCommand(final AbstractCloudRegion region,
+                                                                  final Long runId,
+                                                                  final RunInstance instance) {
+        return NodeUpCommand.builder()
+                .executable(AbstractClusterCommand.EXECUTABLE)
+                .script(nodeUpScript)
+                .runId(String.valueOf(runId))
+                .instanceImage(instance.getNodeImage())
+                .instanceType(instance.getNodeType())
+                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
+                .kubeIP(kubeMasterIP)
+                .kubeToken(kubeToken)
+                .region(region.getRegionCode());
+    }
+
+    public NodeUpCommand.NodeUpCommandBuilder buildNodeUpDefaultCommand(final AbstractCloudRegion region,
+                                                                         final String nodeId) {
+        return NodeUpCommand.builder()
+                .executable(AbstractClusterCommand.EXECUTABLE)
+                .script(nodeUpScript)
+                .runId(nodeId)
+                .instanceType(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TYPE))
+                .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
+                .kubeIP(kubeMasterIP)
+                .kubeToken(kubeToken)
+                .region(region.getRegionCode());
     }
 }
