@@ -45,7 +45,7 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
-            --hidden-import=requests \
+            --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
             -y \
             --clean \
             --workpath /tmp \
