@@ -445,13 +445,16 @@ class _DeleteBlobGenerationMixin:
         https://github.com/googleapis/google-cloud-python/issues/5781
         https://github.com/googleapis/google-cloud-python/pull/7444
         """
-        storage_name, blob_name, generation = blob.bucket.name, blob.name, blob.generation
-        query_params = {'userProject': self.project}
-        if generation:
-            query_params['generation'] = generation
-        bucket_path = "/b/" + storage_name
-        blob_path = Blob.path_helper(bucket_path, blob_name)
-        self._connection.api_request(
+        bucket = blob.bucket
+        query_params = {}
+
+        if bucket.user_project is not None:
+            query_params["userProject"] = bucket.user_project
+        if blob.generation:
+            query_params['generation'] = blob.generation
+
+        blob_path = Blob.path_helper(bucket.path, blob.name)
+        bucket.client._connection.api_request(
             method="DELETE",
             path=blob_path,
             query_params=query_params,
