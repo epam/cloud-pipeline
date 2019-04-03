@@ -26,6 +26,7 @@ import com.google.api.services.compute.model.MachineTypeList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.text.WordUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GCPInstancePriceService implements CloudInstancePriceService<GCPRegion> {
 
+    private static final String DELIMITER = "-";
     private final GCPClient gcpClient;
 
     @Override
@@ -77,7 +79,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .unit(HOURS_UNIT)
                 .volumeType("SSD")
                 .operatingSystem("Linux")
-                .instanceFamily("Common")
+                .instanceFamily(readFamily(machineType.getName()))
                 .vCPU(machineType.getGuestCpus())
                 .gpu(0)
                 .memory(memory)
@@ -98,5 +100,14 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    private String readFamily(final String name) {
+        // expected format n1-standard-1
+        if (!name.contains(DELIMITER)) {
+            return "General purpose";
+        }
+        final String[] chunks = name.split(DELIMITER);
+        return WordUtils.capitalizeFully(chunks[1]);
     }
 }
