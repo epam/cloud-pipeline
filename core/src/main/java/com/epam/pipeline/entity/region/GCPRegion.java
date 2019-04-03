@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.entity.region;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -39,5 +40,6 @@ public class GCPRegion extends AbstractCloudRegion {
     private String sshPublicKeyPath;
     private String project;
     private String applicationName;
+    @JsonProperty("tempCredentialsRole")
     private String impersonatedAccount;
 }
