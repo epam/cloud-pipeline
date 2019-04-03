@@ -79,7 +79,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
     }
 
     @CloudProviderOnly(Cloud.AWS)
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2634"})
     public void autopauseValidationPauseOrStop() {
         setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
@@ -100,7 +100,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .stopRun(getLastRunId());
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase({"EPMCMBIBPC-2635"})
     public void autopauseValidationPause() {
         setSystemPreferences("2", "2", "30", "PAUSE");
