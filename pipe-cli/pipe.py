@@ -665,9 +665,9 @@ def storage():
 @click.option('-c', '--on_cloud',
               prompt='Do you want to create this storage on a cloud?',
               help='Create bucket on a cloud', default=False, is_flag=True)
-@click.option('-p', '--path', required=False, default='', help='The name of the new bucket.',
+@click.option('-p', '--path', default='', help='The name of the new bucket.',
               prompt='The name of the new bucket.')
-@click.option('-r', '--region_id', required=False, type=int, help='Cloud region id where storage shall be created.',
+@click.option('-r', '--region_id', default='default', help='Cloud region id where storage shall be created. ',
               prompt='Cloud region id where storage shall be created.')
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
