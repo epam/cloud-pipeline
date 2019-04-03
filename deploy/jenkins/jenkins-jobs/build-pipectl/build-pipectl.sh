@@ -17,7 +17,7 @@ cd $WORKSPACE/cloud-pipeline/deploy
 export CP_DOCKER_DIST_USER="$DOCKER_USER"
 export CP_DOCKER_DIST_PASS="$DOCKER_PASS"
 export CP_VERSION_SHORT="${dist_major}.${dist_minor}"
-export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}"
+export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}.${dist_commit}"
 export CP_API_DIST_URL="$API_DIST_URL"
 export CP_PIPECTL_DIST="$WORKSPACE/build/pipectl-$CP_VERSION_FULL"
 
@@ -27,3 +27,9 @@ bash build.sh -o $CP_PIPECTL_DIST \
               -p $WORKSPACE/cloud-pipeline/workflows/pipe-demo \
               -v $CP_VERSION_SHORT \
               -t
+
+if [ $? -eq 0 ]; then
+    aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST}
+else 
+    echo "pipectl build artifacts skipped as build.sh returne non-zero exit code"
+fi

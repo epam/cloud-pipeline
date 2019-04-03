@@ -35,7 +35,11 @@ export dist_patch="${version[-4]}"
 export dist_minor="${version[-5]}"
 export dist_major="${version[-6]}"
 
-if [[ -z $dist_major || -z $dist_minor || -z $dist_patch || -z $dist_build || -z $dist_commit ]]; then
+IFS="/" read -ra url_parts <<< "$URL"
+export dist_filename="${url_parts[-1]}"
+export dist_branch="${url_parts[-2]}"
+
+if [[ -z $dist_major || -z $dist_minor || -z $dist_patch || -z $dist_build || -z $dist_commit || -z $dist_filename || -z $dist_branch ]]; then
     echo 'One of the distribution version parts is not defined'
     exit 1
 fi

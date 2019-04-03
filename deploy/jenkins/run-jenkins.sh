@@ -66,6 +66,9 @@ docker run  -d \
             -e JENKINS_PASS=$JENKINS_PASS \
             -e DOCKER_USER=$DOCKER_USER \
             -e DOCKER_PASS=$DOCKER_PASS \
+            -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+            -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+            -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
             --name cp-jenkins-docker \
             cp-jenkins-docker
 
