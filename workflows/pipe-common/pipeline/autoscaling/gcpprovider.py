@@ -78,8 +78,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                     ],
                     'network': 'projects/{project}/global/networks/{network}'.format(project=self.project_id,
                                                                                      network=network_name),
-                    'subnetwork': 'projects/{project}/regions/us-central1/subnetworks/{subnet}'.format(
-                        project=self.project_id, subnet=subnet_id)
+                    'subnetwork': 'projects/{project}/regions/{zone}/subnetworks/{subnet}'.format(
+                        project=self.project_id, subnet=subnet_id, zone=self.cloud_region)
                 }
             ],
 
