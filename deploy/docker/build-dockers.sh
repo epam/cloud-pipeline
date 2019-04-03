@@ -122,14 +122,13 @@ if [ -z "$CP_API_DIST_URL" ]; then
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
 CP_API_DIST_FILE_PATH=/tmp/cloud-pipeline.tgz
-wget -q "$CP_API_DIST_URL_DEFAULT" -O "$CP_API_DIST_FILE_PATH"
+wget -q "$CP_API_DIST_URL" -O "$CP_API_DIST_FILE_PATH"
 
 # API
 cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-api-srv/cloud-pipeline.tgz
 CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
-                -t "$CP_API_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
+                -t "$CP_API_DIST_NAME" && \
 docker push "$CP_API_DIST_NAME"
 rm -f $DOCKERS_SOURCES_PATH/cp-api-srv/cloud-pipeline.tgz
 
@@ -155,8 +154,7 @@ docker push "$CP_EDGE_DIST_NAME"
 cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-docker-comp/cloud-pipeline.tgz
 CP_DOCKER_COMP_DIST_NAME=${CP_DOCKER_COMP_DIST_NAME:-"$CP_DIST_REPO_NAME:docker-comp-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-docker-comp \
-                -t "$CP_DOCKER_COMP_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+                -t "$CP_DOCKER_COMP_DIST_NAME"
 docker push "$CP_DOCKER_COMP_DIST_NAME"
 rm -f $DOCKERS_SOURCES_PATH/cp-docker-comp/cloud-pipeline.tgz
 
@@ -176,8 +174,7 @@ docker push "$CP_GITLAB_DIST_NAME"
 cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-notifier/cloud-pipeline.tgz
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-notifier \
-                -t "$CP_NOTIFIER_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+                -t "$CP_NOTIFIER_DIST_NAME"
 docker push "$CP_NOTIFIER_DIST_NAME"
 rm -f $DOCKERS_SOURCES_PATH/cp-notifier/cloud-pipeline.tgz
 
@@ -185,8 +182,7 @@ rm -f $DOCKERS_SOURCES_PATH/cp-notifier/cloud-pipeline.tgz
 cp $CP_API_DIST_FILE_PATH $DOCKERS_SOURCES_PATH/cp-search/cloud-pipeline.tgz
 CP_SEARCH_DIST_NAME=${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-search \
-                -t "$CP_SEARCH_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+                -t "$CP_SEARCH_DIST_NAME"
 docker push "$CP_SEARCH_DIST_NAME"
 rm -f $DOCKERS_SOURCES_PATH/cp-search/cloud-pipeline.tgz
 
