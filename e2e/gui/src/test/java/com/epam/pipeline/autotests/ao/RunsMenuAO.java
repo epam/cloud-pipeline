@@ -48,7 +48,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     private static final String GET_LOGS_ERROR = "get_logs_error";
     private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
     private static Condition completed = Condition.or("finished",
-            LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached);
+            LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached, hidden);
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
