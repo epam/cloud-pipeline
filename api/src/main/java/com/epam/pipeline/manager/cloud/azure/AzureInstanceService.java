@@ -25,20 +25,15 @@ import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
-import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.network.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,20 +47,17 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private static final String AZURE_RESOURCE_GROUP = "AZURE_RESOURCE_GROUP";
     private final CommonCloudInstanceService instanceService;
     private final AzureVMService vmService;
-    private final KubernetesManager kubernetesManager;
     private final CloudRegionManager cloudRegionManager;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final AzureVMService vmService,
-                                final KubernetesManager kubernetesManager,
                                 final CloudRegionManager regionManager,
                                 final ParallelExecutorService executorService) {
         this.instanceService = instanceService;
         this.cloudRegionManager = regionManager;
         this.vmService = vmService;
-        this.kubernetesManager = kubernetesManager;
         this.executorService = executorService;
     }
 
@@ -112,18 +104,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public LocalDateTime getNodeLaunchTime(final AzureRegion region, final Long runId) {
-        return kubernetesManager.findNodeByRunId(String.valueOf(runId))
-                .map(node -> node.getMetadata().getCreationTimestamp())
-                .filter(StringUtils::isNotBlank)
-                .map(timestamp -> {
-                    try {
-                        return ZonedDateTime.parse(timestamp, KubernetesConstants.KUBE_DATE_FORMATTER)
-                                .toLocalDateTime();
-                    } catch (DateTimeParseException e) {
-                        log.error("Failed to parse date from Kubernetes API: {}", timestamp);
-                        return null;
-                    }
-                }).orElse(null);
+        return instanceService.getNodeLaunchTimeFromKube(runId);
     }
 
     @Override

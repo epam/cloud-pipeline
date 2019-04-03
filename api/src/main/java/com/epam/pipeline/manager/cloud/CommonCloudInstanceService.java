@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.commands.*;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -30,9 +32,13 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +51,7 @@ public class CommonCloudInstanceService {
     private final UserManager userManager;
     private final AuthManager authManager;
     private final PipelineRunManager pipelineRunManager;
+    private final KubernetesManager kubernetesManager;
     private final String nodeUpScript;
     private final String nodeDownScript;
     private final String nodeReassignScript;
@@ -56,6 +63,7 @@ public class CommonCloudInstanceService {
                                       UserManager userManager,
                                       AuthManager authManager,
                                       PipelineRunManager pipelineRunManager,
+                                      final KubernetesManager kubernetesManager,
                                       @Value("${cluster.nodeup.script}") final String nodeUpScript,
                                       @Value("${cluster.nodedown.script}") final String nodeDownScript,
                                       @Value("${cluster.reassign.script}") final String nodeReassignScript,
@@ -66,6 +74,7 @@ public class CommonCloudInstanceService {
         this.userManager = userManager;
         this.authManager = authManager;
         this.pipelineRunManager = pipelineRunManager;
+        this.kubernetesManager = kubernetesManager;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
@@ -128,6 +137,21 @@ public class CommonCloudInstanceService {
                 .cloud(cloud)
                 .build()
                 .getCommand();
+    }
+
+    public LocalDateTime getNodeLaunchTimeFromKube(final Long runId) {
+        return kubernetesManager.findNodeByRunId(String.valueOf(runId))
+                .map(node -> node.getMetadata().getCreationTimestamp())
+                .filter(StringUtils::isNotBlank)
+                .map(timestamp -> {
+                    try {
+                        return ZonedDateTime.parse(timestamp, KubernetesConstants.KUBE_DATE_FORMATTER)
+                                .toLocalDateTime();
+                    } catch (DateTimeParseException e) {
+                        log.error("Failed to parse date from Kubernetes API: {}", timestamp);
+                        return null;
+                    }
+                }).orElse(null);
     }
 
     private String buildNodeReassignCommand(final Long oldId,

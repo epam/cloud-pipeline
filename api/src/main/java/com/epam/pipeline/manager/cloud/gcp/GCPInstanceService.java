@@ -24,22 +24,16 @@ import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
-import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.execution.SystemParams;
-import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -49,19 +43,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
     private final CommonCloudInstanceService instanceService;
-    private final KubernetesManager kubernetesManager;
     private final GCPVMService vmService;
-    private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     public GCPInstanceService(final CommonCloudInstanceService instanceService,
-                                final GCPVMService vmService,
-                                final KubernetesManager kubernetesManager,
-                                final ParallelExecutorService executorService) {
+                                final GCPVMService vmService) {
         this.instanceService = instanceService;
         this.vmService = vmService;
-        this.kubernetesManager = kubernetesManager;
-        this.executorService = executorService;
     }
 
     @Override
@@ -76,8 +64,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     public void scaleDownNode(final GCPRegion region, final Long runId) {
         final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.GCP.name());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
-                executorService.getExecutorService());
+        instanceService.runNodeDownScript(cmdExecutor, command, envVars);
     }
 
     @Override
@@ -90,8 +77,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         final String command = instanceService.buildTerminateNodeCommand(internalIp,
                 nodeName, CloudProvider.GCP.name());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
-                executorService.getExecutorService());
+        instanceService.runTerminateNodeScript(command, cmdExecutor, envVars);
     }
 
     @Override
@@ -106,18 +92,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public LocalDateTime getNodeLaunchTime(final GCPRegion region, final Long runId) {
-        return kubernetesManager.findNodeByRunId(String.valueOf(runId))
-                .map(node -> node.getMetadata().getCreationTimestamp())
-                .filter(StringUtils::isNotBlank)
-                .map(timestamp -> {
-                    try {
-                        return ZonedDateTime.parse(timestamp, KubernetesConstants.KUBE_DATE_FORMATTER)
-                                .toLocalDateTime();
-                    } catch (DateTimeParseException e) {
-                        log.error("Failed to parse date from Kubernetes API: {}", timestamp);
-                        return null;
-                    }
-                }).orElse(null);
+        return instanceService.getNodeLaunchTimeFromKube(runId);
     }
 
     @Override
