@@ -19,7 +19,8 @@ export CP_DOCKER_DIST_PASS="$DOCKER_PASS"
 export CP_VERSION_SHORT="${dist_major}.${dist_minor}"
 export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}.${dist_commit}"
 export CP_API_DIST_URL="$API_DIST_URL"
-export CP_PIPECTL_DIST="$WORKSPACE/build/pipectl-$CP_VERSION_FULL"
+export CP_PIPECTL_DIST_FILE_NAME="pipectl-$CP_VERSION_FULL"
+export CP_PIPECTL_DIST="$WORKSPACE/build/$CP_PIPECTL_DIST_FILE_NAME"
 
 bash build.sh -o $CP_PIPECTL_DIST \
               -p $WORKSPACE/cloud-pipeline/workflows/pipe-templates/__SYSTEM/data_loader \
@@ -29,7 +30,7 @@ bash build.sh -o $CP_PIPECTL_DIST \
               -t
 
 if [ $? -eq 0 ]; then
-    aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST}
+    aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST_FILE_NAME}
 else 
     echo "pipectl build artifacts skipped as build.sh returne non-zero exit code"
 fi

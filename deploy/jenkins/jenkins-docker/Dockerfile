@@ -16,7 +16,11 @@ FROM jenkins/jenkins:lts
 
 USER root
 RUN apt-get update && \
-    apt-get install -y libltdl7
+    apt-get install -y  libltdl7 \
+                        python
+
+RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
+    pip install awscli
 
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/init.groovy
