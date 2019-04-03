@@ -23,7 +23,11 @@ import subprocess
 GENERATE_INPUTS_TASK = "GenerateInputsJson"
 CROMWELL_TASK = "RunWDL"
 VARIABLE_DELIMITER = ","
-OPTIONAL_PARAMETER = "?"
+OPTIONAL_PARAMETER = ["?",  "optional",  "Optional"]
+OPTIONS_JSON_TEMPLATE="/cromwell_bin/options.json"
+OPTIONS_JSON_INSTANCE="/cromwell_bin/options_instance.json"
+OPTIONS_OUTPUT_PATH_VAR="ANALYSIS_DIR"
+OPTIONS_OUTPUT_PATH_DEFAULT="/common/"
 
 def get_variable_value(variable_name):
     Logger.log_task_event(GENERATE_INPUTS_TASK, "Getting value of: {}".format(variable_name))
@@ -38,6 +42,25 @@ def get_variable_value(variable_name):
     Logger.log_task_event(GENERATE_INPUTS_TASK, "Value of {}:\n{}".format(variable_name, variable_value))
 
     return variable_value
+
+def generate_options_json():
+    if not os.path.isfile(OPTIONS_JSON_TEMPLATE):
+        Logger.log_task_event(GENERATE_INPUTS_TASK, "{} options file does not exist".format(OPTIONS_JSON_TEMPLATE))
+        return None
+    if os.path.isfile(OPTIONS_JSON_INSTANCE):
+        os.remove(OPTIONS_JSON_INSTANCE)
+
+    output_path=os.getenv(OPTIONS_OUTPUT_PATH_VAR, OPTIONS_OUTPUT_PATH_DEFAULT)
+    options_json_content=None
+    with open(OPTIONS_JSON_TEMPLATE, 'r') as options_json:
+        options_json_content = options_json.read()
+        options_json_content = options_json_content.format(outputs_dir=output_path)
+    with open(OPTIONS_JSON_INSTANCE, 'w') as options_inst_json:
+        options_inst_json.write(options_json_content)
+    
+    Logger.log_task_event(GENERATE_INPUTS_TASK, "Workflow options file will be used\n{}".format(options_json_content))
+
+    return OPTIONS_JSON_INSTANCE
 
 
 inputs_json_file = None
@@ -72,14 +95,14 @@ else:
         subprocess.check_output('java -jar /wdltool_bin/wdltool.jar inputs {} > inputs.json'.format(wdl_file), shell=True)
 
         template_data = None
-	empty_optional = []
+        empty_optional = []
         with open('inputs.json', 'r') as input_json:
             template_data = json.load(input_json)
             for key in template_data:
                 env_key = re.sub(r'\.', '_', key)
 		variable_value = get_variable_value(env_key)
 		if not variable_value:
-			if OPTIONAL_PARAMETER in template_data[key]:				
+			if any(param in template_data[key] for param in OPTIONAL_PARAMETER):
 				empty_optional.append(key)
 				continue
    			else:
@@ -97,9 +120,12 @@ else:
         Logger.log_task_event(GENERATE_INPUTS_TASK, str(e), status=TaskStatus.FAILURE)
         exit(1)
 
+extra_options = generate_options_json()
+if extra_options:
+    extra_options = '-o ' + extra_options
 
 try:
-    cromwell_cmd = 'java -Dconfig.file=/cromwell_bin/cromwell.conf -jar /cromwell_bin/cromwell.jar run {} -i wdl_inputs.json'.format(wdl_file)
+    cromwell_cmd = 'java -Dconfig.file=/cromwell_bin/cromwell.conf -jar /cromwell_bin/cromwell.jar run {} -i wdl_inputs.json {}'.format(wdl_file, extra_options)
 
     Logger.log_task_event(CROMWELL_TASK, "Starting Cromwell with a command:\n{}".format(cromwell_cmd))
 

@@ -22,7 +22,7 @@ import static com.codeborne.selenide.Selenide.$;
 
 public class AuthenticationPageAO {
     public AuthenticationPageAO login(String login) {
-        $(byId("userNameInput"))
+        $(byId("userName"))
                 .shouldBe(visible)
                 .setValue(login)
                 .shouldHave(value(login));
@@ -30,7 +30,7 @@ public class AuthenticationPageAO {
     }
 
     public AuthenticationPageAO password(String password) {
-        $(byId("passwordInput"))
+        $(byId("password"))
                 .shouldBe(visible)
                 .setValue(password)
                 .shouldHave(value(password));
@@ -38,7 +38,7 @@ public class AuthenticationPageAO {
     }
 
     public NavigationMenuAO signIn() {
-        $(byId("submitButton"))
+        $(byId("btn-sign-in"))
                 .shouldBe(visible)
                 .click();
 

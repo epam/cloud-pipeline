@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.entity.region.GCPRegion;
 import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,17 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
 
     private static final String STORAGE_ACCOUNT_KEY = "storageAccountKey";
     private static final AzureRegionCredentials AZURE_CREDENTIALS = new AzureRegionCredentials(STORAGE_ACCOUNT_KEY);
+    private static final String AUTH_FILE = "authFile";
+    private static final String CORS_RULES = "corsRules";
+    private static final String UPDATED_CORS_RULES = "updatedCorsRules";
+    private static final String UPDATED_AUTH_FILE = "updatedAuthFile";
+    private static final String POLICY = "policy";
+    private static final String KMS_KEY_ID = "kmsKeyId";
+    private static final String KMS_KEY_ARN = "kmsKeyArn";
+    private static final String UPDATED_POLICY = "updatedPolicy";
+    private static final String UPDATED_KMS_KEY_ID = "updatedKmsKeyId";
+    private static final String UPDATED_KMS_KEY_ARN = "updatedKmsKeyArn";
+    private static final String SSH_PUBLIC_KEY_PATH = "ssh";
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
@@ -82,7 +94,7 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertTrue(actualRegionWrapper.isPresent());
         final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
         assertThat(actualRegion.getId(), is(expectedRegion.getId()));
-        assertRegionEquals(expectedRegion, actualRegion);
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
     }
 
     @Test
@@ -104,35 +116,43 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertTrue(actualRegionWrapper.isPresent());
         final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
         assertThat(actualRegion.getName(), is(expectedRegion.getName()));
-        assertRegionEquals(expectedRegion, actualRegion);
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
     }
 
     @Test
     public void loadByRegionNameShouldReturnEntityWithTheGivenName() {
         final AbstractCloudRegion expectedRegion = cloudRegionDao.create(getAwsRegion());
-
         final Optional<AbstractCloudRegion> actualRegionWrapper = cloudRegionDao
                 .loadByRegionName(expectedRegion.getRegionCode());
-
         assertTrue(actualRegionWrapper.isPresent());
         final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
         assertThat(actualRegion.getRegionCode(), is(expectedRegion.getRegionCode()));
-        assertRegionEquals(expectedRegion, actualRegion);
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
     }
 
     @Test
     public void createShouldSaveEntityWithAllSpecifiedParameters() {
         final AwsRegion expectedRegion = getAwsRegion();
-        expectedRegion.setCorsRules("corsRules");
-        expectedRegion.setPolicy("policy");
-        expectedRegion.setKmsKeyId("kmsKeyId");
-        expectedRegion.setKmsKeyArn("kmsKeyArn");
-
+        expectedRegion.setCorsRules(CORS_RULES);
+        expectedRegion.setPolicy(POLICY);
+        expectedRegion.setKmsKeyId(KMS_KEY_ID);
+        expectedRegion.setKmsKeyArn(KMS_KEY_ARN);
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final AwsRegion actualRegion = loadAndCheckType(createdRegion.getId(), AwsRegion.class);
+        assertRegionEquals(expectedRegion, actualRegion);
+    }
 
-        final Optional<AbstractCloudRegion> retrievedRegionWrapper = cloudRegionDao.loadById(createdRegion.getId());
-        assertTrue(retrievedRegionWrapper.isPresent());
-        final AbstractCloudRegion actualRegion = retrievedRegionWrapper.get();
+
+    @Test
+    public void createShouldSaveGCPEntityWithAllSpecifiedParameters() {
+        final GCPRegion expectedRegion = getGCPRegion();
+        expectedRegion.setProject("project");
+        expectedRegion.setImpersonatedAccount("acc");
+        expectedRegion.setAuthFile(AUTH_FILE);
+        expectedRegion.setSshPublicKeyPath(SSH_PUBLIC_KEY_PATH);
+        expectedRegion.setApplicationName("App");
+        final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
+        final GCPRegion actualRegion = loadAndCheckType(createdRegion.getId(), GCPRegion.class);
         assertRegionEquals(expectedRegion, actualRegion);
     }
 
@@ -175,50 +195,42 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     @Test
     public void updateShouldReplaceAllAwsEntityFields() {
         final AwsRegion originRegion = getAwsRegion();
-        originRegion.setCorsRules("corsRules");
-        originRegion.setPolicy("policy");
-        originRegion.setKmsKeyId("kmsKeyId");
-        originRegion.setKmsKeyArn("kmsKeyArn");
+        originRegion.setCorsRules(CORS_RULES);
+        originRegion.setPolicy(POLICY);
+        originRegion.setKmsKeyId(KMS_KEY_ID);
+        originRegion.setKmsKeyArn(KMS_KEY_ARN);
         originRegion.setDefault(false);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion);
         final AwsRegion updatedRegion = getAwsRegion();
         updatedRegion.setId(savedRegion.getId());
-        updatedRegion.setCorsRules("updatedCorsRules");
-        updatedRegion.setPolicy("updatedPolicy");
-        updatedRegion.setKmsKeyId("updatedKmsKeyId");
-        updatedRegion.setKmsKeyArn("updatedKmsKeyArn");
+        updatedRegion.setCorsRules(UPDATED_CORS_RULES);
+        updatedRegion.setPolicy(UPDATED_POLICY);
+        updatedRegion.setKmsKeyId(UPDATED_KMS_KEY_ID);
+        updatedRegion.setKmsKeyArn(UPDATED_KMS_KEY_ARN);
         updatedRegion.setDefault(true);
 
         cloudRegionDao.update(updatedRegion, null);
-
-        final Optional<AbstractCloudRegion> actualRegionWrapper = cloudRegionDao.loadById(updatedRegion.getId());
-
-        assertTrue(actualRegionWrapper.isPresent());
-        final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
+        final AwsRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AwsRegion.class);
         assertRegionEquals(updatedRegion, actualRegion);
     }
 
     @Test
     public void updateShouldReplaceAllAzureEntityFields() {
         final AzureRegion originRegion = getAzureRegion();
-        originRegion.setCorsRules("corsRules");
-        originRegion.setAuthFile("authFile");
+        originRegion.setCorsRules(CORS_RULES);
+        originRegion.setAuthFile(AUTH_FILE);
         originRegion.setAzurePolicy(new AzurePolicy("ipMin", "ipMax"));
         originRegion.setDefault(false);
         final AbstractCloudRegion savedRegion = cloudRegionDao.create(originRegion, null);
         final AzureRegion updatedRegion = getAzureRegion();
         updatedRegion.setId(savedRegion.getId());
-        updatedRegion.setCorsRules("updatedCorsRules");
-        updatedRegion.setAuthFile("updatedAuthFile");
+        updatedRegion.setCorsRules(UPDATED_CORS_RULES);
+        updatedRegion.setAuthFile(UPDATED_AUTH_FILE);
         updatedRegion.setAzurePolicy(new AzurePolicy("updatedIpMin", "updatedIpMax"));
         updatedRegion.setDefault(true);
 
         cloudRegionDao.update(updatedRegion, null);
-
-        final Optional<AbstractCloudRegion> actualRegionWrapper = cloudRegionDao.loadById(updatedRegion.getId());
-
-        assertTrue(actualRegionWrapper.isPresent());
-        final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
+        final AzureRegion actualRegion = loadAndCheckType(updatedRegion.getId(), AzureRegion.class);
         assertRegionEquals(updatedRegion, actualRegion);
     }
 
@@ -253,6 +265,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         return withDefaults(new AzureRegion());
     }
 
+    private GCPRegion getGCPRegion() {
+        return withDefaults(new GCPRegion());
+    }
+
     private <REGION extends AbstractCloudRegion> REGION withDefaults(final REGION region) {
         region.setName("name-" + RandomUtils.nextInt());
         region.setRegionCode("regionId-" + RandomUtils.nextInt());
@@ -264,11 +280,56 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     /**
      * Ignores {@link AwsRegion#getId()} field.
      */
-    private void assertRegionEquals(final AbstractCloudRegion expectedRegion, final AbstractCloudRegion actualRegion) {
+    private void assertRegionEqualsCommon(final AbstractCloudRegion expectedRegion,
+                                          final AbstractCloudRegion actualRegion) {
         assertThat(expectedRegion.getRegionCode(), is(actualRegion.getRegionCode()));
         assertThat(expectedRegion.getName(), is(actualRegion.getName()));
         assertThat(expectedRegion.getOwner(), is(actualRegion.getOwner()));
         assertThat(expectedRegion.getCreatedDate(), is(actualRegion.getCreatedDate()));
+        assertThat(expectedRegion.getProvider(), is(actualRegion.getProvider()));
         assertThat(actualRegion, instanceOf(expectedRegion.getClass()));
+    }
+
+    private void assertRegionEquals(final AwsRegion expectedRegion, final AwsRegion actualRegion) {
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
+        assertThat(expectedRegion.getCorsRules(), is(actualRegion.getCorsRules()));
+        assertThat(expectedRegion.getPolicy(), is(actualRegion.getPolicy()));
+        assertThat(expectedRegion.getKmsKeyId(), is(actualRegion.getKmsKeyId()));
+        assertThat(expectedRegion.getProfile(), is(actualRegion.getProfile()));
+        assertThat(expectedRegion.getSshKeyName(), is(actualRegion.getSshKeyName()));
+        assertThat(expectedRegion.getTempCredentialsRole(), is(actualRegion.getTempCredentialsRole()));
+        assertThat(expectedRegion.getBackupDuration(), is(actualRegion.getBackupDuration()));
+        assertThat(expectedRegion.isVersioningEnabled(), is(actualRegion.isVersioningEnabled()));
+    }
+
+    private void assertRegionEquals(final AzureRegion expectedRegion, final AzureRegion actualRegion) {
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
+        assertThat(expectedRegion.getResourceGroup(), is(actualRegion.getResourceGroup()));
+        assertThat(expectedRegion.getStorageAccount(), is(actualRegion.getStorageAccount()));
+        assertThat(expectedRegion.getAzurePolicy(), is(actualRegion.getAzurePolicy()));
+        assertThat(expectedRegion.getCorsRules(), is(actualRegion.getCorsRules()));
+        assertThat(expectedRegion.getSubscription(), is(actualRegion.getSubscription()));
+        assertThat(expectedRegion.getAuthFile(), is(actualRegion.getAuthFile()));
+        assertThat(expectedRegion.getSshPublicKeyPath(), is(actualRegion.getSshPublicKeyPath()));
+        assertThat(expectedRegion.getMeterRegionName(), is(actualRegion.getMeterRegionName()));
+        assertThat(expectedRegion.getAzureApiUrl(), is(actualRegion.getAzureApiUrl()));
+        assertThat(expectedRegion.getPriceOfferId(), is(actualRegion.getPriceOfferId()));
+    }
+
+    private void assertRegionEquals(final GCPRegion expectedRegion, final GCPRegion actualRegion) {
+        assertRegionEqualsCommon(expectedRegion, actualRegion);
+        assertThat(expectedRegion.getAuthFile(), is(actualRegion.getAuthFile()));
+        assertThat(expectedRegion.getSshPublicKeyPath(), is(actualRegion.getSshPublicKeyPath()));
+        assertThat(expectedRegion.getProject(), is(actualRegion.getProject()));
+        assertThat(expectedRegion.getApplicationName(), is(actualRegion.getApplicationName()));
+        assertThat(expectedRegion.getImpersonatedAccount(), is(actualRegion.getImpersonatedAccount()));
+    }
+
+    private <T extends AbstractCloudRegion> T loadAndCheckType(final Long id, final Class<T> type) {
+        final Optional<AbstractCloudRegion> actualRegionWrapper = cloudRegionDao.loadById(id);
+        assertTrue(actualRegionWrapper.isPresent());
+        final AbstractCloudRegion actualRegion = actualRegionWrapper.get();
+        assertTrue(type.isAssignableFrom(actualRegion.getClass()));
+        return type.cast(actualRegion);
     }
 }

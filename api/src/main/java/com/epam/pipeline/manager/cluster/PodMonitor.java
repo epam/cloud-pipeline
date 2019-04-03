@@ -228,9 +228,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                     getPodLogs(run, client, pod);
                 }
             });
-            if (run.getNodeCount() != null && run.getNodeCount() > 0) {
-                clearWorkerNodes(run, client);
-            }
+            clearWorkerNodes(run, client);
             //save luigi log
             getPodLogs(run, client, parent);
             //delete all pods
@@ -477,9 +475,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                         .delete();
                 });
 
-                if (run.getNodeCount() != null && run.getNodeCount() > 0) {
-                    clearWorkerNodes(run, client);
-                }
+                clearWorkerNodes(run, client);
                 //Pipeline logs should be saved the last to prevent ambiguous statuses
                 saveLog(run, run.getPodId(), log, run.getStatus());
 

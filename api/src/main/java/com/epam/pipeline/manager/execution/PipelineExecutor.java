@@ -81,12 +81,13 @@ public class PipelineExecutor {
             Map<String, String> nodeSelector = new HashMap<>();
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
+                String runIdLabel = String.valueOf(run.getId());
                 nodeSelector.put("runid", nodeIdLabel);
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
-                if (run.getPodId().equals(pipelineId)) {
+                if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
                     labels.put("type", "pipeline");
                 }
-                labels.put("runid", nodeIdLabel);
+                labels.put("runid", runIdLabel);
             } else {
                 nodeSelector.put("skill", "luigi");
             }

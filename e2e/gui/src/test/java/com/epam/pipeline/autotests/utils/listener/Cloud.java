@@ -13,8 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.epam.pipeline.autotests.utils.listener;
 
-package com.epam.pipeline.entity.region;
+public enum Cloud {
+    AWS("aws"),
+    AZURE("azure");
 
-public class RegionLabels {
+    public final String cloudProvider;
+
+    Cloud(final String cloudProvider) {
+        this.cloudProvider = cloudProvider;
+    }
 }

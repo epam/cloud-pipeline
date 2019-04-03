@@ -37,6 +37,8 @@ export class SplitPanel extends React.Component {
 
   static propTypes = {
     onPanelClose: PropTypes.func,
+    onPanelResize: PropTypes.func,
+    onPanelResizeDelay: PropTypes.number,
     resizerSize: PropTypes.number,
     contentPadding: PropTypes.number,
     orientation: PropTypes.oneOf(['horizontal', 'vertical']),
@@ -58,6 +60,9 @@ export class SplitPanel extends React.Component {
         percentDefault: PropTypes.number
       })
     }))
+  };
+  static defaultProps = {
+    onPanelResizeDelay: 250
   };
   state = {
     sizes: {},
@@ -353,6 +358,19 @@ export class SplitPanel extends React.Component {
       sizes
     });
   };
+  panelResizeTimeout;
+  reportPanelResize = () => {
+    if (!this.props.onPanelResize) {
+      return;
+    }
+    if (this.panelResizeTimeout) {
+      clearTimeout(this.panelResizeTimeout);
+    }
+    this.panelResizeTimeout = setTimeout(() => {
+      this.props.onPanelResize && this.props.onPanelResize(this);
+      this.panelResizeTimeout = undefined;
+    }, this.props.onPanelResizeDelay);
+  };
   updateState = (e) => {
     if (this.state.activeResizer !== null && this.state.activeResizerInfo) {
       if (e.stopPropagation) {
@@ -361,8 +379,8 @@ export class SplitPanel extends React.Component {
       if (e.preventDefault) {
         e.preventDefault();
       }
-      e.cancelBubble=true;
-      e.returnValue=false;
+      e.cancelBubble = true;
+      e.returnValue = false;
       const coordinate = this.isVertical
         ? e.pageY - this.state.container.offsetTop
         : e.pageX - this.state.container.offsetLeft;
@@ -388,7 +406,7 @@ export class SplitPanel extends React.Component {
           activeResizerInfo: {
             coordinate: coordinate
           }
-        });
+        }, this.reportPanelResize);
       }
       return false;
     }

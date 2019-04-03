@@ -24,6 +24,9 @@ import highlightText from '../../../special/highlightText';
 import styles from './PreferenceGroup.css';
 
 const formatJson = (string, presentation = true, catchError = true) => {
+  if (!string) {
+    return string;
+  }
   try {
     return JSON.stringify(JSON.parse(string), null, presentation ? ' ' : undefined);
   } catch (e) {
@@ -96,6 +99,7 @@ export default class PreferenceGroup extends React.Component {
     const rules = [];
     switch (type) {
       case 'INTEGER':
+      case 'LONG':
         rules.push({
           validator: (rule, {value}, callback) => {
             if (isNaN(value)) {
@@ -190,7 +194,7 @@ class PreferenceInput extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string,
       value: PropTypes.oneOfType([PropTypes.string, PropTypes.number, PropTypes.bool]),
-      type: PropTypes.oneOf(['STRING', 'INTEGER', 'BOOLEAN', 'OBJECT', 'FLOAT']),
+      type: PropTypes.oneOf(['STRING', 'INTEGER', 'LONG', 'BOOLEAN', 'OBJECT', 'FLOAT']),
       visible: PropTypes.bool,
       preferenceGroup: PropTypes.string,
       createdDate: PropTypes.string
@@ -309,13 +313,15 @@ class PreferenceInput extends React.Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    if ('value' in nextProps) {
+    if ('value' in nextProps &&
+      (nextProps.value.value !== this.state.value || nextProps.value.visible !== this.state.visible)) {
       const value = nextProps.value;
       this.setState({
         value: value.value,
         visible: value.visible
+      }, () => {
+        this.editor && this.editor.setValue(this.state.value);
       });
-      this.editor && this.editor.reset();
     }
   }
 

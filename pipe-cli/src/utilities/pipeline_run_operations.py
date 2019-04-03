@@ -189,7 +189,7 @@ class PipelineRunOperations(object):
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
-            elif docker_image is None or instance_type is None or instance_disk is None:
+            elif docker_image is None or parent_node is None and (instance_type is None or instance_disk is None):
                 if not quiet:
                     click.echo('Docker image, instance type and instance disk are required parameters '
                                'if pipeline was not provided.')
@@ -214,7 +214,9 @@ class PipelineRunOperations(object):
                                                              run_params_dict,
                                                              timeout,
                                                              instance_count=instance_count,
-                                                             price_type=price_type)
+                                                             price_type=price_type,
+                                                             region_id=region_id,
+                                                             parent_node=parent_node)
                 pipeline_run_id = pipeline_run_model.identifier
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))

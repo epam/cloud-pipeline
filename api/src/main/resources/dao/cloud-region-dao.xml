@@ -46,7 +46,10 @@
                         ssh_public_key,
                         meter_region_name,
                         azure_api_url,
-                        price_offer_id)
+                        price_offer_id,
+                        project,
+                        application_name,
+                        impersonated_account)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -71,7 +74,10 @@
                         :SSH_PUBLIC_KEY,
                         :METER_REGION_NAME,
                         :AZURE_API_URL,
-                        :PRICE_OFFER_ID)
+                        :PRICE_OFFER_ID,
+                        :PROJECT,
+                        :APPLICATION_NAME,
+                        :IMPERSONATED_ACCOUNT)
                 ]]>
             </value>
         </constructor-arg>
@@ -104,6 +110,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -144,6 +153,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -184,6 +196,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -224,6 +239,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -264,6 +282,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -299,11 +320,14 @@
                         resource_group = :RESOURCE_GROUP,
                         profile = :PROFILE,
                         subscription = :SUBSCRIPTION,
-                        auth_FILE = :AUTH_FILE,
+                        auth_file = :AUTH_FILE,
                         ssh_public_key = :SSH_PUBLIC_KEY,
                         meter_region_name = :METER_REGION_NAME,
                         azure_api_url = :AZURE_API_URL,
-                        price_offer_id = :PRICE_OFFER_ID
+                        price_offer_id = :PRICE_OFFER_ID,
+                        project = :PROJECT,
+                        application_name = :APPLICATION_NAME,
+                        impersonated_account = :IMPERSONATED_ACCOUNT
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -348,6 +372,9 @@
                         r.meter_region_name,
                         r.azure_api_url,
                         r.price_offer_id,
+                        r.project,
+                        r.application_name,
+                        r.impersonated_account,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,

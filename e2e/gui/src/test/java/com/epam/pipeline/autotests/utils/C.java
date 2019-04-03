@@ -65,6 +65,8 @@ public class C {
         STORAGE_PREFIX = conf.getProperty("e2e.ui.storage.prefix");
         DEFAULT_INSTANCE = conf.getProperty("e2e.ui.default.instance.type");
         NFS_PREFIX = conf.getProperty("e2e.ui.nfs.prefix");
+        DEFAULT_INSTANCE_PRICE_TYPE = conf.getProperty("e2e.ui.default.instance.price.type");
+        CLOUD_PROVIDER = conf.getProperty("e2e.ui.cloud.provider");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -107,4 +109,6 @@ public class C {
     public static final String NFS_PREFIX;
 
     public static final String DEFAULT_INSTANCE;
+    public static final String DEFAULT_INSTANCE_PRICE_TYPE;
+    public static final String CLOUD_PROVIDER;
 }

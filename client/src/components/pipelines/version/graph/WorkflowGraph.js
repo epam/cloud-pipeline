@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, Row} from 'antd';
@@ -50,6 +50,15 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
   };
 
   @observable _language;
+  @observable graphComponent;
+
+  @computed
+  get language () {
+    if (this.props.language.loaded) {
+      return this.props.language.value.toLowerCase();
+    }
+    return 'other';
+  }
 
   base64Image () {
     if (this._graph) {
@@ -80,70 +89,63 @@ export default class WorkflowGraph extends localization.LocalizedReactComponent 
     }
   }
 
-  renderGraph = () => {
-    const language = this._language;
-    let graphComponent;
-    const graphProps = {
-      ...this.props
-    };
-    graphProps.onGraphReady = (graph) => {
-      this._graph = graph;
-      this.props.onGraphReady && this.props.onGraphReady(graph);
-    };
-    graphProps.language = language;
-    switch (language) {
-      case 'luigi':
-        graphComponent = (
-          <LuigiGraph {...graphProps} />
-        );
-        break;
-      case 'wdl':
-        graphComponent = (
-          <WdlGraph {...graphProps} />
-        );
-        break;
-      default:
-        if (this.props.hideError) {
-          graphComponent = (
-            <Row
-              ref={() => this.props.onGraphReady && this.props.onGraphReady(null)} />
-          );
-        } else {
-          graphComponent = (
-            <Row ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}>
-              <Alert type="warning" message={
-                <div>
-                  <span>Graph is not supported for current {this.localizedString('pipeline')}</span>
-                </div>
-              } />
-            </Row>
-          );
-        }
-        break;
-    }
-    return graphComponent;
+  onGraphReady = (graph) => {
+    this._graph = graph;
+    this.props.onGraphReady && this.props.onGraphReady(graph);
   };
 
   render () {
     if (this.props.language.pending && !this.props.language.loaded) {
       return <LoadingView />;
     }
-    return this.renderGraph();
+    if (!this.graphComponent) {
+      if (this.props.hideError) {
+        return (
+          <Row
+            ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}/>
+        );
+      } else {
+        return (
+          <Row ref={() => this.props.onGraphReady && this.props.onGraphReady(null)}>
+            <Alert type="warning" message={
+              <div>
+                <span>Graph is not supported for current {this.localizedString('pipeline')}</span>
+              </div>
+            } />
+          </Row>
+        );
+      }
+    }
+    const Component = this.graphComponent;
+    return (
+      <Component
+        {...this.props}
+        language={this.language}
+        onGraphReady={this.onGraphReady} />
+    );
   }
 
   componentDidUpdate () {
-    if (this.props.language.loaded) {
-      this._language = this.props.language.value.toLowerCase();
-    } else {
-      this._language = 'other';
-    }
+    this.buildComponent();
   }
 
   componentDidMount () {
-    if (this.props.language.loaded) {
-      this._language = this.props.language.value.toLowerCase();
-    } else {
-      this._language = 'other';
+    this.buildComponent();
+  }
+
+  buildComponent = () => {
+    if (this._language !== this.language) {
+      this._language = this.language;
+      switch (this.language) {
+        case 'luigi':
+          this.graphComponent = LuigiGraph;
+          break;
+        case 'wdl':
+          this.graphComponent = WdlGraph;
+          break;
+        default:
+          break;
+      }
     }
   }
 }

@@ -21,6 +21,7 @@ import {observable} from 'mobx';
 import Pipeline from '../../../../../models/pipelines/Pipeline';
 import VersionParameters from '../../../../../models/pipelines/VersionParameters';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
+import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import pipeline from 'pipeline-builder';
 import 'pipeline-builder/dist/pipeline.css';
 import styles from './Graph.css';
@@ -31,10 +32,20 @@ import {
 } from '../../../../special/resizablePanel';
 import {Alert, Row, Button, Icon, message, Modal, Form, Tooltip} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
-import {Primitives} from './forms/utilities';
+import {Primitives, testPrimitiveTypeFn, quotesFn} from './forms/utilities';
 import {ItemTypes} from '../../../model/treeStructureFunctions';
 
 const graphFitContentOpts = {padding: 24};
+
+const nameReplacementRegExp = /[-\s.,:;'"!@#$%^&*()\[\]{}\/\\~`±§]/g;
+
+function reportWDLError (error) {
+  const message = error.message || error;
+  if (message && typeof message === 'string') {
+    message.error(message, 5);
+  }
+  console.error('WDL ERROR:', error.message || error);
+}
 
 @inject('runDefaultParameters')
 @inject(({history, routing, pipelines}, params) => ({
@@ -44,13 +55,15 @@ const graphFitContentOpts = {padding: 24};
   pipeline: new Pipeline(params.pipelineId),
   pipelineId: params.pipelineId,
   pipelineVersion: params.version,
-  pipelines
+  pipelines,
+  allowedInstanceTypes: new AllowedInstanceTypes()
 }))
 @observer
 export default class WdlGraph extends Graph {
 
   wdlVisualizer;
   workflow;
+  @observable previousSuccessfulCode;
 
   initializeContainer = async (container) => {
     if (container) {
@@ -139,13 +152,13 @@ export default class WdlGraph extends Graph {
       Object.keys(defaultConfiguration.configuration.parameters || []).forEach(key => {
         if (!skipParameterFn(key) &&
           defaultConfiguration.configuration.parameters[key].type !== 'output') {
-          params.push(`\\\n\t\t\t--${key} $\{${key.replace(/-/g, '_')}}`);
+          params.push(`\\\n\t\t\t--${key} $\{${key.replace(nameReplacementRegExp, '_')}}`);
         }
       });
       return params.join(' ');
     };
     const task = {
-      name: pipelineInfo.name.replace(/-/g, '_'),
+      name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
       command: `pipe run \t--pipeline "${pipelineInfo.name}@${version}" -s -y ${listInputParametersStr()}`,
       inputs: [],
       outputs: []
@@ -169,8 +182,10 @@ export default class WdlGraph extends Graph {
       }
       const v = p.value || value;
       return {
-        name: name.replace(/-/g, '_'),
-        value: v,
+        name: name.replace(nameReplacementRegExp, '_'),
+        value: v && (testPrimitiveTypeFn(Primitives.string, type) || testPrimitiveTypeFn(Primitives.file, type))
+          ? `"${quotesFn.clear(v)}"`
+          : v,
         type
       };
     };
@@ -203,47 +218,105 @@ export default class WdlGraph extends Graph {
   };
 
   applyCode = async (code, clearModifiedConfig) => {
-    const parseResult = await pipeline.parse(code);
-    if (parseResult.status) {
-      this.workflow = parseResult.model[0];
-      this.clearWrongPorts(this.workflow);
-      this.wdlVisualizer.attachTo(this.workflow);
+    const hide = message.loading('Loading...');
+    const onError = (message) => {
       if (clearModifiedConfig) {
         this.setState({
           selectedElement: null,
           editableTask: null,
-          canZoomIn: true,
-          canZoomOut: true,
-          error: null,
-          modifiedConfig: null
-        });
-      } else {
-        this.setState({
-          selectedElement: null,
-          editableTask: null,
-          canZoomIn: true,
-          canZoomOut: true,
-          error: null
-        });
-      }
-      this.onFullScreenChanged();
-    } else {
-      if (clearModifiedConfig) {
-        this.setState({
-          selectedElement: null,
-          editableTask: null,
-          error: parseResult.message,
+          error: message,
           modifiedParameters: null
         });
       } else {
         this.setState({
           selectedElement: null,
           editableTask: null,
-          error: parseResult.message
+          error: message
         });
       }
+    };
+    try {
+      const parseResult = await pipeline.parse(code);
+      if (parseResult.status) {
+        this.workflow = parseResult.model[0];
+        this.clearWrongPorts(this.workflow);
+        this.previousSuccessfulCode = code;
+        this.wdlVisualizer.attachTo(this.workflow);
+        this.updateData();
+        if (clearModifiedConfig) {
+          this.setState({
+            selectedElement: null,
+            editableTask: null,
+            canZoomIn: true,
+            canZoomOut: true,
+            error: null,
+            modifiedConfig: null
+          });
+        } else {
+          this.setState({
+            selectedElement: null,
+            editableTask: null,
+            canZoomIn: true,
+            canZoomOut: true,
+            error: null
+          });
+        }
+        this.onFullScreenChanged();
+      } else {
+        onError(parseResult.message);
+      }
+    } catch (e) {
+      onError(e);
+    } finally {
+      hide();
     }
   };
+
+  updateData () {
+    let selectedTaskName, selectedTaskParameters;
+    if (this.props.selectedTaskId) {
+      [selectedTaskName, selectedTaskParameters] = this.props.selectedTaskId.split('?');
+      if (selectedTaskParameters) {
+        [selectedTaskParameters] = selectedTaskParameters
+          .split('&')
+          .filter(p => p.startsWith('parameters='));
+        if (selectedTaskParameters) {
+          selectedTaskParameters = selectedTaskParameters
+            .substring('parameters='.length)
+            .split(/[,;]/);
+        }
+      }
+    }
+    this.wdlVisualizer && this.wdlVisualizer.paper.model.getElements().forEach(e => {
+      const view = this.wdlVisualizer.paper.findViewByModel(e);
+      if (selectedTaskName && e.step && e.step.name === selectedTaskName) {
+        this.wdlVisualizer.disableSelection();
+        this.wdlVisualizer.enableSelection();
+        this.wdlVisualizer.selection.push(e);
+        view && view.el && view.el.classList.toggle('selected', true);
+      }
+      if (view && view.el && e.step.type !== 'workflow') {
+        if (!view.el.classList.contains(styles.wdlTask)) {
+          view.el.classList.add(styles.wdlTask);
+        }
+        if (!view.el.dataset) {
+          view.el.dataset = {};
+        }
+        let status;
+        if (this.props.getNodeInfo) {
+          const info = this.props.getNodeInfo({task: {name: e.step.name || e.action.name}});
+          if (info) {
+            status = info.status;
+          }
+        }
+        if (status) {
+          view.el.dataset['taskstatus'] = status.toLowerCase();
+        } else {
+          delete view.el.dataset['taskstatus'];
+        }
+      }
+    });
+  }
 
   clearWrongPorts = (step) => {
     if (step.i) {
@@ -308,7 +381,11 @@ export default class WdlGraph extends Graph {
   };
 
   getModifiedCode () {
-    return pipeline.generate(this.workflow);
+    try {
+      return pipeline.generate(this.workflow);
+    } catch (___) {
+      return this.previousSuccessfulCode;
+    }
   }
 
   getModifiedParameters () {
@@ -328,6 +405,10 @@ export default class WdlGraph extends Graph {
 
   onFullScreenChanged = () => {
     if (this.wdlVisualizer) {
+      const parent = this.wdlVisualizer.paper.el.parentElement;
+      if (parent) {
+        this.wdlVisualizer.paper.setDimensions(parent.offsetWidth, parent.offsetHeight);
+      }
       this.wdlVisualizer.zoom.fitToPage(graphFitContentOpts);
     }
   };
@@ -538,7 +619,6 @@ export default class WdlGraph extends Graph {
   };
 
   addTask = async (task, parent) => {
-    const code = pipeline.generate(this.workflow);
     const actionData = {
       i: task.inputs.reduce((result, v) => {
         result[v.name] = {
@@ -570,16 +650,11 @@ export default class WdlGraph extends Graph {
       this.clearWrongPorts(this.workflow);
       const parseResult = await pipeline.parse(pipeline.generate(this.workflow));
       if (!parseResult.status) {
-        await this.applyCode(code);
-        message.error(
-          parseResult.message,
-          5
-        );
+        reportWDLError(parseResult);
         return;
       }
     } catch (error) {
-      await this.applyCode(code);
-      message.error(error);
+      reportWDLError(error);
       return;
     }
     this.wdlVisualizer.attachTo(this.workflow);
@@ -590,7 +665,6 @@ export default class WdlGraph extends Graph {
   };
 
   addScatter = async (task) => {
-    const code = pipeline.generate(this.workflow);
     const actionData = {
       i: task.inputs.reduce((result, v) => {
         result[v.name] = {
@@ -609,16 +683,11 @@ export default class WdlGraph extends Graph {
     try {
       const parseResult = await pipeline.parse(pipeline.generate(this.workflow));
       if (!parseResult.status) {
-        await this.applyCode(code);
-        message.error(
-          parseResult.message,
-          5
-        );
+        reportWDLError(parseResult);
         return null;
       }
     } catch (error) {
-      await this.applyCode(code);
-      message.error(error);
+      reportWDLError(error);
       return null;
     }
     this.wdlVisualizer.attachTo(this.workflow);
@@ -850,10 +919,6 @@ export default class WdlGraph extends Graph {
     }
     if (!this.isScatter && this.state.selectedElement.action) {
       const {alias, command} = values;
-      let code;
-      try {
-        code = pipeline.generate(this.workflow);
-      } catch (___) {}
       let child = this.getSelectedElementWorkflow().children[this.state.selectedElement.name];
       if (child && alias && child.name !== alias) {
         modified = true;
@@ -864,13 +929,13 @@ export default class WdlGraph extends Graph {
         modified = true;
         action.data.command = command;
       }
-      let runtime;
+      let runtimeDocker;
       if (values.hasOwnProperty('runtime.docker')) {
-        runtime = {
+        runtimeDocker = {
           docker: values['runtime.docker']
         };
       }
-      if (action && runtime) {
+      if (action && runtimeDocker) {
         const runtimeAreEqual = (r1, r2) => {
           if (!!r1 !== !!r2) {
             return false;
@@ -880,11 +945,41 @@ export default class WdlGraph extends Graph {
           }
           return r1.docker === r2.docker;
         };
-        if (!runtimeAreEqual(action.data.runtime, runtime)) {
+        if (!runtimeAreEqual(action.data.runtime, runtimeDocker)) {
           modified = true;
-          action.data.runtime = runtime;
+          if (!action.data.runtime) {
+            action.data.runtime = {};
+          }
+          action.data.runtime.docker = runtimeDocker.docker;
           if (!action.data.runtime.docker) {
             delete action.data.runtime.docker;
+          }
+        }
+      }
+      let runtimeNode;
+      if (values.hasOwnProperty('runtime.node')) {
+        runtimeNode = {
+          node: values['runtime.node']
+        };
+      }
+      if (action && runtimeNode) {
+        const runtimeAreEqual = (r1, r2) => {
+          if (!!r1 !== !!r2) {
+            return false;
+          }
+          if (!r1 && !r2) {
+            return true;
+          }
+          return r1.node === r2.node;
+        };
+        if (!runtimeAreEqual(action.data.runtime, runtimeNode)) {
+          modified = true;
+          if (!action.data.runtime) {
+            action.data.runtime = {};
+          }
+          action.data.runtime.node = runtimeNode.node;
+          if (!action.data.runtime.node) {
+            delete action.data.runtime.node;
           }
         }
       }
@@ -893,17 +988,10 @@ export default class WdlGraph extends Graph {
           const generatedCode = pipeline.generate(this.workflow);
           const parseResult = await pipeline.parse(generatedCode);
           if (!parseResult.status) {
-            await this.applyCode(code);
-            message.error(
-              parseResult.message,
-              5
-            );
+            reportWDLError(parseResult);
           }
         } catch (error) {
-          if (code) {
-            await this.applyCode(code);
-          }
-          message.error(error);
+          reportWDLError(error);
         }
       }
     }
@@ -927,6 +1015,7 @@ export default class WdlGraph extends Graph {
     const EditWDLItemComponent = this.editWDLItemComponent;
     const itemDetails = this.state.editableTask && <EditWDLItemComponent
       onInitialize={this.initializeItemEditForm}
+      allowedInstanceTypes={this.props.allowedInstanceTypes}
       workflow={this.workflow}
       task={this.state.editableTask}
       type={this.state.editableTask ? this.state.editableTask.type : undefined}
@@ -1078,10 +1167,11 @@ export default class WdlGraph extends Graph {
       return <Alert type="warning" message={this._mainFileRequest.error} />;
     }
     if (this.state.error) {
+      const error = this.state.error.message || this.state.error;
       const errorContent = (
         <Row>
           <Row>Error parsing wdl script:</Row>
-          <Row>{this.state.error}</Row>
+          <Row>{error}</Row>
         </Row>
       );
       return (
@@ -1095,8 +1185,8 @@ export default class WdlGraph extends Graph {
         className={styles.wdlGraph}
         onDragEnter={e => e.preventDefault()}
         onDragOver={e => e.preventDefault()}>
-        {this.renderSidePanelsControlButtons()}
-        {this.renderPropertiesPanel()}
+        {this.props.canEdit && this.renderSidePanelsControlButtons()}
+        {this.props.canEdit && this.renderPropertiesPanel()}
         {this.renderAppearancePanel()}
         <div className={styles.wdlGraphContainer} >
           <div ref={this.initializeContainer} />
@@ -1169,6 +1259,7 @@ export default class WdlGraph extends Graph {
         callback();
       }
     });
+    this.props.onGraphReady && this.props.onGraphReady(this);
   }
 
   componentWillUnmount () {

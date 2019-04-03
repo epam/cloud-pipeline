@@ -533,7 +533,7 @@ export default class Logs extends localization.LocalizedReactComponent {
 
   onSelect = (node) => {
     if (node) {
-      const {task} = node;
+      const task = this.getTask(node);
       if (!task) {
         return;
       }
@@ -547,46 +547,63 @@ export default class Logs extends localization.LocalizedReactComponent {
     }
   };
 
-  getNodeAdditionalInfo = (task) => {
-    const tasksState = this.props.runTasks.pending ? [] : this.props.runTasks.value.map(r => r);
-    const parametersMatchFn = (parametersMask, parameters) => {
-      if (!parameters || !parametersMask) {
-        return false;
-      }
-      const _maskParts = (parametersMask || '').split(',');
-      const _parts = (parameters || '').split(',');
-      const maskParts = [];
-      const parts = [];
-
-      const getParameter = (str) => {
-        const p = str.split('=');
-        const key = p[0].trim();
-        let value = p[1];
-        for (let j = 2; j < p.length; j++) {
-          value += `=${p[j]}`;
-        }
-        return {key, value};
-      };
-
-      for (let i = 0; i < _maskParts.length; i++) {
-        maskParts.push(getParameter(_maskParts[i]));
-      }
-
-      for (let i = 0; i < _parts.length; i++) {
-        parts.push(getParameter(_parts[i]));
-      }
-
-      for (let i = 0; i < parts.length; i++) {
-        const [maskPart] = maskParts.filter(p => p.key.toLowerCase() === parts[i].key.toLowerCase());
-        if (maskPart && !maskPart.value.startsWith('&') &&
-          maskPart.value.toLowerCase() !== parts[i].value.toLowerCase()) {
+  // For WDL pipelines actual task name may be like 'cromwell_<some id>_<task name>,
+  // so we need to process this format as weel.
+  getTask = ({task}) => {
+    if (task && task.name) {
+      const parametersMatchFn = (parametersMask, parameters) => {
+        if (!parameters || !parametersMask) {
           return false;
         }
+        const _maskParts = (parametersMask || '').split(',');
+        const _parts = (parameters || '').split(',');
+        const maskParts = [];
+        const parts = [];
+
+        const getParameter = (str) => {
+          const p = str.split('=');
+          const key = p[0].trim();
+          let value = p[1];
+          for (let j = 2; j < p.length; j++) {
+            value += `=${p[j]}`;
+          }
+          return {key, value};
+        };
+
+        for (let i = 0; i < _maskParts.length; i++) {
+          maskParts.push(getParameter(_maskParts[i]));
+        }
+
+        for (let i = 0; i < _parts.length; i++) {
+          parts.push(getParameter(_parts[i]));
+        }
+
+        for (let i = 0; i < parts.length; i++) {
+          const [maskPart] = maskParts.filter(p => p.key.toLowerCase() === parts[i].key.toLowerCase());
+          if (maskPart && !maskPart.value.startsWith('&') &&
+            maskPart.value.toLowerCase() !== parts[i].value.toLowerCase()) {
+            return false;
+          }
+        }
+        return true;
+      };
+      const tasksState = this.props.runTasks.pending ? [] : this.props.runTasks.value.map(r => r);
+      // trying ot get task state by received task name:
+      let [taskState] = tasksState.filter(t =>
+        t.name === task.name && parametersMatchFn(task.parameters, t.parameters));
+      if (!taskState) {
+        // trying to get task state by name format 'cromwell_<some id>_<task name>:
+        const regExp = new RegExp(`^cromwell_[\\da-zA-Z]+_${task.name}$`, 'i');
+        [taskState] = tasksState.filter(t =>
+          regExp.test(t.name) && parametersMatchFn(task.parameters, t.parameters));
       }
-      return true;
-    };
-    const [taskState] = tasksState.filter(t =>
-    t.name === task.task.name && parametersMatchFn(task.task.parameters, t.parameters));
+      return taskState;
+    }
+    return null;
+  };
+
+  getNodeAdditionalInfo = (task) => {
+    const taskState = this.getTask(task);
     return {
       status: taskState ? taskState.status : undefined,
       internalId: taskState ? this.getTaskUrl(taskState) : undefined,
