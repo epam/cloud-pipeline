@@ -5,7 +5,7 @@ else
 fi
 
 cd /opt && \
-	wget "$NAMD_URL" -O namd.tar.gz && \
+	wget -q "$NAMD_URL" -O namd.tar.gz && \
 	tar -zxvf namd.tar.gz && \
     	mv NAMD* namd && \
 	rm -f namd.tar.gz && \

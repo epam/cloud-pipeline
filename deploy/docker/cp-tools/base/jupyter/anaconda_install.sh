@@ -22,6 +22,6 @@ _ANACONDA_VERSION=${2:-"2-latest"}
 
 setfacl -d -m g::rwx $_ANACONDA_HOME
 
-wget "https://repo.anaconda.com/miniconda/Miniconda${_ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+wget -q "https://repo.anaconda.com/miniconda/Miniconda${_ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
     bash /tmp/Anaconda_Install.sh -f -b -p $_ANACONDA_HOME && \
     rm -f /tmp/Anaconda_Install.sh

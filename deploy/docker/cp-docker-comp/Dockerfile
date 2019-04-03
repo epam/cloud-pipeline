@@ -26,7 +26,7 @@ RUN yum install -y \
 ARG CP_API_DIST_URL=""
 ENV CP_DOCKER_COMP_HOME="/opt/docker-comp"
 RUN cd /tmp && \
-    wget "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     mkdir -p $CP_DOCKER_COMP_HOME && \
     mv bin/docker-comp-scan.jar $CP_DOCKER_COMP_HOME/ && \

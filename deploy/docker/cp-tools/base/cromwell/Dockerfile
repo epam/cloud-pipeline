@@ -50,7 +50,7 @@ COPY cromwell cromwell.conf cromwell_wrapper.py options.json $CROMWELL_HOME/
 RUN chmod +x $CROMWELL_HOME/cromwell
 
 # Download cromwell and wdltool java executables
-RUN wget ${CROMWELL_LINK} -O $CROMWELL_HOME/cromwell.jar
+RUN wget -q ${CROMWELL_LINK} -O $CROMWELL_HOME/cromwell.jar
 
 RUN mkdir $WDLTOOL_HOME && \
-    wget ${WDLTOOL_LINK} -O $WDLTOOL_HOME/wdltool.jar
+    wget -q ${WDLTOOL_LINK} -O $WDLTOOL_HOME/wdltool.jar

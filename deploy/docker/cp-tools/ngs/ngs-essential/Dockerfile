@@ -73,7 +73,7 @@ ENV STAR_HOME=$BFX_INSTALL_ROOT/STAR
 ENV STAR_BIN=$STAR_HOME/STAR-STAR_2.4.0h1/bin/Linux_x86_64/STAR
 RUN     mkdir -p $STAR_HOME && \
         cd $STAR_HOME && \
-        wget "https://github.com/alexdobin/STAR/archive/STAR_2.4.0h1.tar.gz" && \
+        wget -q "https://github.com/alexdobin/STAR/archive/STAR_2.4.0h1.tar.gz" && \
         tar -xzvf STAR_2.4.0h1.tar.gz && \
         rm -f STAR_2.4.0h1.tar.gz && \
         cd $BFX_INSTALL_ROOT
@@ -104,7 +104,7 @@ ENV CUFFLINKS_HOME=$BFX_INSTALL_ROOT/cufflinks
 ENV CUFFLINKS_BIN=$CUFFLINKS_HOME/cufflinks-2.2.1.Linux_x86_64/cufflinks
 RUN     mkdir -p $CUFFLINKS_HOME && \
         cd $CUFFLINKS_HOME && \
-        wget "http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/cufflinks-2.2.1.Linux_x86_64.tar.gz" && \
+        wget -q "http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/cufflinks-2.2.1.Linux_x86_64.tar.gz" && \
         tar -xzvf cufflinks-2.2.1.Linux_x86_64.tar.gz && \
         rm -f cufflinks-2.2.1.Linux_x86_64.tar.gz && \
         cd $BFX_INSTALL_ROOT
@@ -114,7 +114,7 @@ ENV SUBREAD_HOME=$BFX_INSTALL_ROOT/subread
 ENV FEATURE_COUNT_BIN=$SUBREAD_HOME/subread-1.4.5-p1-Linux-x86_64/bin/featureCounts
 RUN     mkdir -p $SUBREAD_HOME && \
         cd $SUBREAD_HOME && \
-        wget "https://ayera.dl.sourceforge.net/project/subread/subread-1.4.5-p1/subread-1.4.5-p1-Linux-x86_64.tar.gz" && \
+        wget -q "https://ayera.dl.sourceforge.net/project/subread/subread-1.4.5-p1/subread-1.4.5-p1-Linux-x86_64.tar.gz" && \
         tar -xzvf subread-1.4.5-p1-Linux-x86_64.tar.gz && \
         rm -f subread-1.4.5-p1-Linux-x86_64.tar.gz && \
         cd $BFX_INSTALL_ROOT
@@ -128,7 +128,7 @@ ENV SAMTOOLS_HOME=$BFX_INSTALL_ROOT/samtools
 ENV SAMTOOLS_BIN=$SAMTOOLS_HOME/samtools-0.1.19/samtools
 RUN     mkdir -p $SAMTOOLS_HOME && \
         cd $SAMTOOLS_HOME && \
-        wget "https://netix.dl.sourceforge.net/project/samtools/samtools/0.1.19/samtools-0.1.19.tar.bz2" && \
+        wget -q "https://netix.dl.sourceforge.net/project/samtools/samtools/0.1.19/samtools-0.1.19.tar.bz2" && \
         tar -xvf samtools-0.1.19.tar.bz2 && \
         rm -f samtools-0.1.19.tar.bz2 && \
         cd samtools-0.1.19 && \
@@ -140,7 +140,7 @@ ENV PICARD_HOME=$BFX_INSTALL_ROOT/picard
 ENV PICARD_BIN=$PICARD_HOME/picard.jar
 RUN     mkdir -p $PICARD_HOME && \
         cd $PICARD_HOME && \
-        wget "https://github.com/broadinstitute/picard/releases/download/2.10.3/picard.jar" && \
+        wget -q "https://github.com/broadinstitute/picard/releases/download/2.10.3/picard.jar" && \
         cd $BFX_INSTALL_ROOT
 
 ## Install rnaseqc
@@ -148,7 +148,7 @@ ENV RNASEQC_HOME=$BFX_INSTALL_ROOT/rnaseqc
 ENV RNA_SEQC_BIN=$RNASEQC_HOME/RNA-SeQC_v1.1.8.jar
 RUN     mkdir -p $RNASEQC_HOME && \
         cd $RNASEQC_HOME && \
-        wget "http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/RNA-SeQC_v1.1.8.jar" && \
+        wget -q "http://www.broadinstitute.org/cancer/cga/tools/rnaseqc/RNA-SeQC_v1.1.8.jar" && \
         cd $BFX_INSTALL_ROOT
 
 ## Install bedtools
@@ -156,7 +156,7 @@ ENV BEDTOOLS_HOME=$BFX_INSTALL_ROOT/bedtools
 ENV BEDTOOLS_BIN=$BEDTOOLS_HOME/bin/bedtools
 RUN     mkdir -p $BEDTOOLS_HOME && \
         cd $BEDTOOLS_HOME && \
-        wget "https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz" && \
+        wget -q "https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz" && \
         tar -zxvf bedtools-2.21.0.tar.gz && \
         rm -rf bedtools-2.21.0.tar.gz && \
         cd bedtools2 && \
@@ -171,7 +171,7 @@ ENV BWA_HOME=$BFX_INSTALL_ROOT/bwa
 ENV BWA_BIN=$BWA_HOME/bwa
 RUN     mkdir -p $BWA_HOME && \
         cd $BWA_HOME && \
-        wget "https://datapacket.dl.sourceforge.net/project/bio-bwa/bwa-0.7.12.tar.bz2" && \
+        wget -q "https://datapacket.dl.sourceforge.net/project/bio-bwa/bwa-0.7.12.tar.bz2" && \
         tar -xvf bwa-0.7.12.tar.bz2 && \
         rm -rf bwa-0.7.12.tar.bz2 && \
         cd bwa-0.7.12 && \
@@ -187,7 +187,7 @@ ENV SNPEFF_BIN=$SNPEFF_HOME/snpEff/snpEff.jar \
     SNPSIFT_BIN=$SNPEFF_HOME/snpEff/snpSift.jar
 RUN     mkdir -p $SNPEFF_HOME && \
         cd $SNPEFF_HOME && \
-        wget "https://netcologne.dl.sourceforge.net/project/snpeff/snpEff_v4_3p_core.zip" && \
+        wget -q "https://netcologne.dl.sourceforge.net/project/snpeff/snpEff_v4_3p_core.zip" && \
         unzip snpEff_v4_3p_core.zip && \
         rm -rf snpEff_v4_3p_core.zip && \
         cd $BFX_INSTALL_ROOT
@@ -208,7 +208,7 @@ ENV ABRA2_HOME=$BFX_INSTALL_ROOT/abra2
 ENV ABRA2_BIN=$ABRA2_HOME/abra2-2.12.jar
 RUN     mkdir -p $ABRA2_HOME && \
         cd $ABRA2_HOME && \
-        wget "https://github.com/mozack/abra2/releases/download/v2.12/abra2-2.12.jar" && \
+        wget -q "https://github.com/mozack/abra2/releases/download/v2.12/abra2-2.12.jar" && \
         cd $BFX_INSTALL_ROOT
 
 ## Install mutect
@@ -216,7 +216,7 @@ ENV MUTECT_HOME=$BFX_INSTALL_ROOT/mutect
 ENV MUTECT_BIN=$MUTECT_HOME/mutect-1.1.7.jar
 RUN     mkdir -p $MUTECT_HOME && \
         cd $MUTECT_HOME && \
-        wget "https://software.broadinstitute.org/gatk/download/auth?package=M1" -O mutect.zip && \
+        wget -q "https://software.broadinstitute.org/gatk/download/auth?package=M1" -O mutect.zip && \
         unzip mutect.zip && \
         rm -f mutect.zip && \
         cd $BFX_INSTALL_ROOT
@@ -225,7 +225,7 @@ RUN     mkdir -p $MUTECT_HOME && \
 ENV SCALPEL_HOME=$BFX_INSTALL_ROOT/scalpel
 ENV SCALPEL_BIN=$SCALPEL_HOME
 RUN     cd /opt && \
-        wget "https://netcologne.dl.sourceforge.net/project/scalpel/scalpel-0.5.3.tar.gz" -O scalpel.tar.gz && \
+        wget -q "https://netcologne.dl.sourceforge.net/project/scalpel/scalpel-0.5.3.tar.gz" -O scalpel.tar.gz && \
         tar -zxvf scalpel.tar.gz && \
         rm -f scalpel.tar.gz && \
         mv scalpel-* scalpel && \
@@ -250,7 +250,7 @@ RUN     cd /opt && \
 ENV BOWTIE2_HOME=$BFX_INSTALL_ROOT/bowtie2
 ENV BOWTIE2_BIN=$BOWTIE2_HOME/bowtie2
 RUN     cd $BFX_INSTALL_ROOT && \
-        wget "https://datapacket.dl.sourceforge.net/project/bowtie-bio/bowtie2/2.2.9/bowtie2-2.2.9-linux-x86_64.zip" -O bowtie2.zip && \
+        wget -q "https://datapacket.dl.sourceforge.net/project/bowtie-bio/bowtie2/2.2.9/bowtie2-2.2.9-linux-x86_64.zip" -O bowtie2.zip && \
         unzip bowtie2.zip  && \
         mv bowtie2-* bowtie2 && \
         rm -f bowtie2.zip && \
@@ -262,7 +262,7 @@ ENV STAR_FUSION_BIN=$STAR_FUSION_HOME/STAR-Fusion
 ENV     PERL_MM_USE_DEFAULT=1
 RUN     perl -MCPAN -e "install Capture::Tiny; install DB_File; install inc::latest; install URI::Escape; install Set::IntervalTree; install Carp::Assert; install JSON::XS; install PerlIO::gzip" && \
         cd $BFX_INSTALL_ROOT && \
-        wget "https://github.com/STAR-Fusion/STAR-Fusion/releases/download/v1.0.0/STAR-Fusion-v1.0.0.FULL.tar.gz" -O STAR-Fusion.tgz && \
+        wget -q "https://github.com/STAR-Fusion/STAR-Fusion/releases/download/v1.0.0/STAR-Fusion-v1.0.0.FULL.tar.gz" -O STAR-Fusion.tgz && \
         tar -zxvf STAR-Fusion.tgz && \
         mv STAR-Fusion-* STAR-Fusion && \
         rm -f STAR-Fusion.tgz  && \
@@ -273,7 +273,7 @@ ENV ABRA_HOME=$BFX_INSTALL_ROOT/abra
 ENV ABRA_BIN=$ABRA_HOME/abra-0.97-SNAPSHOT-jar-with-dependencies.jar
 RUN     mkdir -p $ABRA_HOME && \
         cd $ABRA_HOME && \
-        wget "https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar" && \
+        wget -q "https://github.com/mozack/abra/releases/download/v0.97/abra-0.97-SNAPSHOT-jar-with-dependencies.jar" && \
         cd $BFX_INSTALL_ROOT
 
 ## Install bamtools
@@ -294,7 +294,7 @@ ENV FASTQC_HOME=$BFX_INSTALL_ROOT/fastqc
 ENV FASTQC_BIN=$FASTQC_HOME/fastqc
 RUN     mkdir -p $FASTQC_HOME && \
         cd $FASTQC_HOME && \
-        wget "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.8.zip" && \
+        wget -q "https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.8.zip" && \
         unzip fastqc_v0.11.8.zip && \
         mv FastQC/* $FASTQC_HOME && \
         chmod 755 $FASTQC_BIN && \
@@ -306,7 +306,7 @@ ENV TRIM_HOME=$BFX_INSTALL_ROOT/trimmomatic
 ENV TRIM_BIN=$TRIM_HOME/trimmomatic-0.38.jar
 RUN     mkdir -p $TRIM_HOME && \
         cd $TRIM_HOME && \
-        wget "http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.38.zip" && \
+        wget -q "http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.38.zip" && \
         unzip Trimmomatic-0.38.zip && \
         mv Trimmomatic-0.38/* $TRIM_HOME && \
         rm -rf Trimmomatic-0.38 Trimmomatic-0.38.zip && \
@@ -327,7 +327,7 @@ ENV VCFTOOLS_HOME=$BFX_INSTALL_ROOT/vcftools
 ENV VCFTOOLS_BIN=vcftools
 RUN     mkdir -p $VCFTOOLS_HOME && \
         cd $VCFTOOLS_HOME && \
-        wget "https://github.com/vcftools/vcftools/releases/download/v0.1.16/vcftools-0.1.16.tar.gz" && \
+        wget -q "https://github.com/vcftools/vcftools/releases/download/v0.1.16/vcftools-0.1.16.tar.gz" && \
         tar -xvf vcftools-0.1.16.tar.gz && \
         cd vcftools-0.1.16 && \
         ./configure && make && make install && \
@@ -341,7 +341,7 @@ ENV TABIX_BIN=tabix
 ENV BGZIP_BIN=bgzip
 RUN     mkdir -p $HTSLIB_HOME && \
         cd $HTSLIB_HOME && \
-        wget "https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2" && \
+        wget -q "https://github.com/samtools/htslib/releases/download/1.9/htslib-1.9.tar.bz2" && \
         tar -xvjf htslib-1.9.tar.bz2 && \
         cd htslib-1.9 && \
         ./configure && make && make install && \

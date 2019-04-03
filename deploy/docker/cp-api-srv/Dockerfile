@@ -57,7 +57,7 @@ RUN pip install -I  azure-common \
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
 RUN cd /tmp && \
-    wget "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     rm -rf bin/pipe-templates/__SYSTEM && \
     mkdir -p $CP_API_HOME && \
