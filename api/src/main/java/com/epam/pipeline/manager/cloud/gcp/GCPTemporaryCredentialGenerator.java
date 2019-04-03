@@ -30,6 +30,7 @@ import com.google.api.services.iamcredentials.v1.model.GenerateAccessTokenReques
 import com.google.api.services.iamcredentials.v1.model.GenerateAccessTokenResponse;
 import com.google.api.services.storage.StorageScopes;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -42,6 +43,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGenerator<GSBucketStorage> {
     private static final String ACCOUNT_NAME_REQUEST_FORMAT = "projects/-/serviceAccounts/%s";
 
@@ -84,6 +86,7 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
                     .accessKey(region.getProject())
                     .build();
         } catch (IOException e) {
+            log.error(e.getMessage(), e);
             throw new IllegalArgumentException(String.format("An error occurred during generating temporary " +
                     "credentials for %s storage %s", dataStorage.getType(), dataStorage.getPath()));
         }
