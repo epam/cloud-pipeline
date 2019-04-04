@@ -106,7 +106,6 @@ import java.util.stream.Collectors;
 public class S3Helper {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Helper.class);
 
-    private static final String OWNER_TAG_KEY = "CP_OWNER";
     private static final int NOT_FOUND = 404;
     private static final int INVALID_RANGE = 416;
     private static final long COPYING_FILE_SIZE_LIMIT = 5L * 1024L * 1024L * 1024L; // 5gb
@@ -363,7 +362,7 @@ public class S3Helper {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
-        List<Tag> tags = Collections.singletonList(new Tag(OWNER_TAG_KEY, owner));
+        List<Tag> tags = Collections.singletonList(new Tag(ProviderUtils.OWNER_TAG_KEY, owner));
         putObjectRequest.withTagging(new ObjectTagging(tags));
         client.putObject(putObjectRequest);
         return this.getFile(client, bucket, path);
@@ -784,7 +783,7 @@ public class S3Helper {
     }
 
     private String buildOwnerTag(String owner) {
-        return OWNER_TAG_KEY + "=" + owner;
+        return ProviderUtils.OWNER_TAG_KEY + "=" + owner;
     }
 
     private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
