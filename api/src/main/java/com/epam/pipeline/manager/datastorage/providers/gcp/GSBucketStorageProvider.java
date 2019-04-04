@@ -82,13 +82,13 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final GSBucketStorage dataStorage, final String path,
                                                           final String version) {
-        return null;
+        return getHelper(dataStorage).generateDownloadUrl(dataStorage, path, version);
     }
 
     @Override
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(GSBucketStorage dataStorage,
-                                                                       String path) {
-        throw new UnsupportedOperationException();
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final GSBucketStorage dataStorage,
+                                                                       final String path) {
+        return null;
     }
 
     @Override
@@ -145,8 +145,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Map<String, String> listObjectTags(GSBucketStorage dataStorage, String path, String version) {
-        throw new UnsupportedOperationException();
+    public Map<String, String> listObjectTags(final GSBucketStorage dataStorage, final String path,
+                                              final String version) {
+        return getHelper(dataStorage).listMetadata(dataStorage, path, version);
     }
 
     @Override
@@ -156,19 +157,20 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public DataStorageItemContent getFile(GSBucketStorage dataStorage, String path, String version,
-                                          Long maxDownloadSize) {
-        throw new UnsupportedOperationException();
+    public DataStorageItemContent getFile(final GSBucketStorage dataStorage, final String path, final String version,
+                                          final Long maxDownloadSize) {
+        return getHelper(dataStorage).getFileContent(dataStorage, path, version, maxDownloadSize);
     }
 
     @Override
-    public DataStorageStreamingContent getStream(GSBucketStorage dataStorage, String path, String version) {
-        throw new UnsupportedOperationException();
+    public DataStorageStreamingContent getStream(final GSBucketStorage dataStorage, final String path,
+                                                 final String version) {
+        return getHelper(dataStorage).getFileStream(dataStorage, path, version);
     }
 
     @Override
-    public String buildFullStoragePath(GSBucketStorage dataStorage, String name) {
-        throw new UnsupportedOperationException();
+    public String buildFullStoragePath(final GSBucketStorage dataStorage, final String name) {
+        return name.toLowerCase();
     }
 
     @Override
