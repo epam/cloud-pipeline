@@ -25,6 +25,15 @@
 ## authorized to run all programs before running this script. Please see the docker
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
+##
+##
+## To run this script you should push docker images to your repo:
+##
+## us.gcr.io/broad-gotc-prod/genomes-in-the-cloud:2.3.2-1510681135 -> ngs/genomes-in-the-cloud:2.3.2-1510681135
+## broadinstitute/gatk:4.0.11.0 -> ngs/gatk:4.0.11.0
+## us.gcr.io/broad-gotc-prod/verify-bam-id:c8a66425c312e5f8be46ab0c41f8d7a1942b6e16-1500298351 -> ngs/verify-bam-id:c8a66425c312e5f8be46ab0c41f8d7a1942b6e16-1500298351
+## ubuntu -> library/ubuntu
+##
 
 # WORKFLOW DEFINITION
 workflow PairedEndSingleSample {

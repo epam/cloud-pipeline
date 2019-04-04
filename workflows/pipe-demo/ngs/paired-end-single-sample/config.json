@@ -6,7 +6,7 @@
     "configuration": {
       "main_file": "pairedendsinglesample.wdl",
       "instance_size": "${CP_CONFIG_JSON_INSTANCE_TYPE}",
-      "instance_disk": "20",
+      "instance_disk": "300",
       "docker_image": "library/cromwell:latest",
       "language": "wdl",
       "cmd_template": "cromwell $SCRIPTS_DIR/src/[main_file]",
