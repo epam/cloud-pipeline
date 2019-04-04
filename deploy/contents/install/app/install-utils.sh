@@ -720,7 +720,7 @@ function delete_deployment_and_service {
     fi
 
     if kubectl get po $NAME &> /dev/null; then
-        kubectl delete po $NAME
+        kubectl delete po $NAME --grace-period=0 --force
     fi
 
     wait_for_deletion $NAME

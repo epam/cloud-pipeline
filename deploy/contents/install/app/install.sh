@@ -307,13 +307,13 @@ fi
 if is_service_requested cp-heapster; then
     print_ok "[Starting Heapster (CPU Utilization monitoring) service deployment]"
 
-    print_info "-> Deleting existing instance of Heapster service"
-    delete_deployment_and_service   "cp-heapster" \
-                                    "/opt/heapster"
-
     print_info "-> Deleting existing instance of Heapster ELK service"
     delete_deployment_and_service   "cp-heapster-elk" \
                                     "/opt/heapster-elk"    
+
+    print_info "-> Deleting existing instance of Heapster service"
+    delete_deployment_and_service   "cp-heapster" \
+                                    "/opt/heapster"
 
     if is_install_requested; then
         print_info "-> Deploying Heapster ELK service"
