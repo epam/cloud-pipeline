@@ -54,8 +54,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
+
         final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance,
-                CloudProvider.GCP.name()).sshKey(region.getSshPublicKeyPath()).build().getCommand();
+                CloudProvider.GCP.name()).sshKey(region.getSshPublicKeyPath())
+                .isSpot(Optional.ofNullable(instance.getSpot())
+                        .orElse(false))
+                .build()
+                .getCommand();
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
