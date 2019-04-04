@@ -142,13 +142,13 @@
           "required": true
         },
         "PairedEndSingleSample_break_bands_at_multiples_of": {
-          "value": 1000000,
-          "type": "input",
+          "value": "1000000",
+          "type": "string",
           "required": true
         },
         "PairedEndSingleSample_haplotype_scatter_count": {
-          "value": 50,
-          "type": "input",
+          "value": "",
+          "type": "string",
           "required": true
         },
         "PairedEndSingleSample_haplotype_database_file": {
