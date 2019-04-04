@@ -31,11 +31,11 @@ RUN yum install -y wget \
     yum clean all
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
-    pip install requests \
-                ipaddress \
-                pykube \
-                psycopg2 \
-                sqlalchemy \
-                luigi
+    pip install requests==2.21.0 \
+                ipaddress==1.0.22 \
+                pykube==0.15.0 \
+                psycopg2==2.7.7 \
+                sqlalchemy==1.3.2 \
+                luigi==2.8.3
 
 COPY ./luigi/* /etc/luigi/
