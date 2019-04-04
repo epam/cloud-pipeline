@@ -59,6 +59,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 CloudProvider.GCP.name()).sshKey(region.getSshPublicKeyPath())
                 .isSpot(Optional.ofNullable(instance.getSpot())
                         .orElse(false))
+                .bidPrice(StringUtils.EMPTY)
                 .build()
                 .getCommand();
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
