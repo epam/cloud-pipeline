@@ -35,7 +35,7 @@ import socket
 LOCALIZATION_TASK_NAME = 'InputData'
 VALUE_DELIMITERS = [',', ' ', ';']
 HTTP_FTP_SCHEMES = ['http://', 'ftp://', 'https://', 'ftps://']
-CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://']
+CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://']
 TRANSFER_ATTEMPTS = 3
 
 
