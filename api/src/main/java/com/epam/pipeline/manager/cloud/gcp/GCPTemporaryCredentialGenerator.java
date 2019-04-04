@@ -107,7 +107,7 @@ public class GCPTemporaryCredentialGenerator implements TemporaryCredentialsGene
     private List<String> buildScope(final List<DataStorageAction> actions) {
         return actions.stream()
                 .filter(action -> action.isWrite() || action.isWriteVersion()).findAny()
-                .map(action -> Collections.singletonList(StorageScopes.DEVSTORAGE_READ_WRITE))
+                .map(action -> Collections.singletonList(StorageScopes.DEVSTORAGE_FULL_CONTROL))
                 .orElse(Collections.singletonList(StorageScopes.DEVSTORAGE_READ_ONLY));
     }
 }
