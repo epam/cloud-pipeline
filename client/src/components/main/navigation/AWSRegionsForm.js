@@ -624,7 +624,8 @@ class AWSRegionForm extends React.Component {
       'sshPublicKeyPath',
       'project',
       'applicationName',
-      'tempCredentialsRole'
+      'tempCredentialsRole',
+      'fileShareMounts'
     ]
   };
 
@@ -1832,6 +1833,7 @@ const MountOptions = {
 
 const DefaultMountOptions = {
   AWS: MountOptions.NFS,
+  GCP: MountOptions.NFS,
   AZURE: MountOptions.SMB
 };
 
