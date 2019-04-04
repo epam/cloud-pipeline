@@ -19,15 +19,20 @@ package com.epam.pipeline.manager.datastorage.providers.gcp;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.utils.FileContentUtils;
 import com.google.api.gax.paging.Page;
+import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -43,18 +48,27 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
 public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
+
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
+    private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
 
     private final MessageHelper messageHelper;
     private final GCPRegion region;
@@ -92,11 +106,14 @@ public class GSBucketStorageHelper {
                 Storage.BlobListOption.prefix(requestPath),
                 Storage.BlobListOption.pageToken(Optional.ofNullable(marker).orElse(EMPTY_PREFIX)),
                 Storage.BlobListOption.pageSize(Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE)));
-        blobs.iterateAll().forEach(blob ->
+        for (Blob blob : blobs.iterateAll()) {
+            if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
+                continue;
+            }
             items.add(blob.isDirectory()
                     ? createDataStorageFolder(blob.getName())
-                    : createDataStorageFile(blob))
-        );
+                    : createDataStorageFile(blob));
+        }
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
@@ -197,6 +214,71 @@ public class GSBucketStorageHelper {
     public boolean checkStorageExists(final String bucketName) {
         final Storage client = gcpClient.buildStorageClient(region);
         return Objects.nonNull(client.get(bucketName));
+    }
+
+    public DataStorageItemContent getFileContent(final GSBucketStorage storage, final String path, final String version,
+                                                 final Long maxDownloadSize) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+
+        int bufferSize = Integer.MAX_VALUE;
+        if (maxDownloadSize < Integer.MAX_VALUE) {
+            bufferSize = Math.toIntExact(maxDownloadSize);
+        }
+
+        final Blob blob = checkBlobExists(bucketName, path, client);
+        final DataStorageItemContent content = new DataStorageItemContent();
+        content.setContentType(blob.getContentType());
+        content.setTruncated(blob.getSize() > bufferSize);
+
+        try (ReadChannel reader = blob.reader()) {
+            final ByteBuffer bytes = ByteBuffer.allocate(bufferSize);
+            reader.read(bytes);
+            final byte[] byteContent = bytes.array();
+            if (FileContentUtils.isBinaryContent(byteContent)) {
+                content.setMayBeBinary(true);
+            } else {
+                content.setContent(byteContent);
+            }
+            return content;
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
+    }
+
+    public DataStorageStreamingContent getFileStream(final GSBucketStorage storage, final String path,
+                                                     final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+
+        final Blob blob = checkBlobExists(bucketName, path, client);
+        try (ReadChannel reader = blob.reader()) {
+            return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
+        }
+    }
+
+    public DataStorageDownloadFileUrl generateDownloadUrl(final GSBucketStorage storage, final String path,
+                                                          final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
+        final String bucketName = storage.getPath();
+        checkBlobExists(bucketName, path, client);
+
+        final URL signedUrl = client.signUrl(BlobInfo.newBuilder(bucketName, path).build(), 1,
+                TimeUnit.DAYS);
+        final DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
+        dataStorageDownloadFileUrl.setUrl(signedUrl.toString());
+        dataStorageDownloadFileUrl.setExpires(new Date((new Date()).getTime() + URL_EXPIRATION));
+        return dataStorageDownloadFileUrl;
+    }
+
+    public Map<String, String> listMetadata(final GSBucketStorage storage, final String path,
+                                            final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
+        final String bucketName = storage.getPath();
+        final Blob blob = checkBlobExists(bucketName, path, client);
+        return blob.getMetadata();
     }
 
     private String normalizeFolderPath(final String path) {
