@@ -727,7 +727,7 @@ export default class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1}}>
+          <div style={{display: 'flex', flex: 1, height: '100%'}}>
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
