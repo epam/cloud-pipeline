@@ -32,5 +32,6 @@ bash build.sh -o $CP_PIPECTL_DIST \
 if [ $? -eq 0 ]; then
     aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST_FILE_NAME}
 else 
-    echo "pipectl build artifacts skipped as build.sh returne non-zero exit code"
+    echo "pipectl build artifacts skipped as build.sh returned non-zero exit code"
+    exit 1
 fi

@@ -59,16 +59,13 @@ docker run  -d \
             -v $JENKINS_HOME:/var/jenkins_home \
             -d -v /var/run/docker.sock:/var/run/docker.sock \
             -v $(which docker):/usr/bin/docker \
+            -v "$ENV_PATH":"$JENKINS_ENV" \
             -p 8080:8080 \
             -p 50000:50000 \
             -u root \
             -e JENKINS_USER=$JENKINS_USER \
             -e JENKINS_PASS=$JENKINS_PASS \
-            -e DOCKER_USER=$DOCKER_USER \
-            -e DOCKER_PASS=$DOCKER_PASS \
-            -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-            -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-            -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+            -e JENKINS_ENV=$JENKINS_ENV \
             --name cp-jenkins-docker \
             cp-jenkins-docker
 
@@ -79,7 +76,7 @@ sleep 30
 echo "Creating jenkins jobs"
 
 create_jenkins_job build-pipectl
-create_jenkins_job deploy-dev
+create_jenkins_job deploy-dev-aws
 
 echo "Building sqs trigger docker image from $SELF_PATH/jenkins-sqs-trigger"
 

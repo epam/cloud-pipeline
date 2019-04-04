@@ -12,3 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+source /usr/local/bin/checkout_url "$PIPECTL_DIST_URL"
+bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/prepare-assets.sh

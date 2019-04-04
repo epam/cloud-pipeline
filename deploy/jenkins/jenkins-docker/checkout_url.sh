@@ -20,6 +20,15 @@ if [ -z "$URL" ]; then
     exit 1
 fi
 
+if [ -z "$JENKINS_ENV" ]; then
+    echo "Environment variables are not is not"
+    exit 1
+else
+    set -o allexport
+    source "$JENKINS_ENV"
+    set +o allexport
+fi
+
 pwd=$(pwd)
 if [ "$pwd" != "/" ]; then
     echo "Cleaning current dir $pwd"
