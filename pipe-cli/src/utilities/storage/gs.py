@@ -275,7 +275,8 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         destination_blob = destination_bucket.blob(destination_path)
         destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
         destination_blob.patch()
-        progress_callback(size)
+        if progress_callback is not None:
+            progress_callback(size)
         if clean:
             source_blob.delete()
 
@@ -312,7 +313,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         blob = bucket.blob(source_key)
         progress_callback = GsProgressPercentage.callback(source_key, size, quiet)
         blob.download_to_filename(destination_key)
-        progress_callback(size)
+        if progress_callback is not None:
+            progress_callback(size)
         if clean:
             blob.delete()
 
@@ -338,7 +340,8 @@ class GsUploadManager(GsManager, AbstractTransferManager):
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
-        progress_callback(size)
+        if progress_callback is not None:
+            progress_callback(size)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -385,7 +388,8 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         blob = bucket.blob(destination_key)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
-        progress_callback(blob.size)
+        if progress_callback is not None:
+            progress_callback(blob.size)
 
 
 class GsTemporaryCredentials:
