@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -293,6 +294,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 AzureBlobStorage blob = ((AzureBlobStorage) dataStorage);
                 params.addValue(REGION_ID.name(), blob.getRegionId());
                 params.addValue(ALLOWED_CIDRS.name(), null);
+            } else if (dataStorage instanceof GSBucketStorage) {
+                params.addValue(REGION_ID.name(), ((GSBucketStorage)dataStorage).getRegionId());
             } else {
                 params.addValue(ALLOWED_CIDRS.name(), null);
                 params.addValue(REGION_ID.name(), null);
