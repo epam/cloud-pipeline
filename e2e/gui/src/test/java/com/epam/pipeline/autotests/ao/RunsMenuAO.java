@@ -47,8 +47,6 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     private static final String GET_LOGS_ERROR = "get_logs_error";
     private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
-    private static Condition completed = Condition.or("finished",
-            LogAO.Status.SUCCESS.reached, LogAO.Status.STOPPED.reached, LogAO.Status.FAILURE.reached, hidden);
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -309,7 +307,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO waitForCompletion(final String runId) {
-        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(completed, COMPLETION_TIMEOUT);
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(hidden, COMPLETION_TIMEOUT);
         return this;
     }
 
