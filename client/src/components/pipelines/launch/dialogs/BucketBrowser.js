@@ -48,6 +48,7 @@ const DTS_ROOT_ITEM_TYPE = 'DTS-ROOT';
 const S3_BUCKET_TYPE = 'S3';
 const NFS_BUCKET_TYPE = 'NFS';
 const AZ_BUCKET_TYPE = 'AZ';
+const GS_BUCKET_TYPE = 'GS';
 
 @connect({
   pipelinesLibrary
@@ -72,6 +73,7 @@ export default class BucketBrowser extends React.Component {
       PropTypes.oneOf([
         AZ_BUCKET_TYPE,
         S3_BUCKET_TYPE,
+        GS_BUCKET_TYPE,
         NFS_BUCKET_TYPE,
         DTS_ITEM_TYPE
       ])
@@ -217,6 +219,7 @@ export default class BucketBrowser extends React.Component {
         this.state.bucket.type === ItemTypes.storage ||
         this.state.bucket.type === S3_BUCKET_TYPE ||
         this.state.bucket.type === AZ_BUCKET_TYPE ||
+        this.state.bucket.type === GS_BUCKET_TYPE ||
         this.state.bucket.type === NFS_BUCKET_TYPE
       )) {
       const type = this.state.bucket.storageType || this.state.bucket.type;

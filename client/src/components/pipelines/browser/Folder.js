@@ -642,6 +642,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (path.toLowerCase().startsWith('az://')) {
       path = path.substring('az://'.length);
     }
+    if (path.toLowerCase().startsWith('gs://')) {
+      path = path.substring('gs://'.length);
+    }
     if (!name || !name.length) {
       name = path;
     }

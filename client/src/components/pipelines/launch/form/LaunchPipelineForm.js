@@ -3589,7 +3589,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           path={this.state.bucketPath}
           showOnlyFolder={this.state.showOnlyFolderInBucketBrowser}
           checkWritePermissions={this.state.showOnlyFolderInBucketBrowser}
-          bucketTypes={['AZ', 'S3', 'DTS', 'NFS']} />
+          bucketTypes={['AZ', 'S3', 'GS', 'DTS', 'NFS']} />
         <PipelineBrowser
           multiple={false}
           onCancel={this.closePipelineBrowser}

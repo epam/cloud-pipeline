@@ -33,6 +33,7 @@ export default class AWSRegionTag extends React.Component {
     size: PropTypes.oneOf(['small', 'normal', 'large']),
     displayName: PropTypes.bool,
     displayFlag: PropTypes.bool,
+    provider: PropTypes.string,
     flagBorder: PropTypes.oneOfType([
       PropTypes.bool,
       PropTypes.string,
@@ -77,7 +78,7 @@ export default class AWSRegionTag extends React.Component {
     if (this.region) {
       return this.region.provider;
     }
-    return null;
+    return this.props.provider;
   }
 
   @computed
@@ -137,6 +138,70 @@ export default class AWSRegionTag extends React.Component {
             const [r] = z.check.filter(c => zone.indexOf(c) >= 0);
             return !!r;
           });
+          if (result) {
+            return result.result;
+          }
+          return '';
+        };
+      } else if (this.provider === 'GCP') {
+        getGlobalFn = () => {
+          const checkZones = [
+            {
+              region: 'asia',
+              subRegion: 'east1',
+              result: 'taiwan'
+            },
+            {
+              region: 'asia',
+              subRegion: 'east2',
+              result: 'cn'
+            },
+            {
+              region: 'asia',
+              subRegion: 'northeast1',
+              result: 'ap ap-northeast-1'
+            },
+            {
+              region: 'asia',
+              subRegion: 'south1',
+              result: 'ap ap-south-1'
+            },
+            {
+              region: 'asia',
+              subRegion: 'southeast1',
+              result: 'ap ap-southeast-1'
+            },
+
+            {
+              region: 'australia',
+              result: 'ap ap-southeast-2'
+            },
+            {
+              region: 'europe',
+              result: 'eu'
+            },
+            {
+              region: 'northamerica',
+              result: 'ca'
+            },
+            {
+              region: 'southamerica',
+              result: 'sa'
+            },
+            {
+              region: 'us',
+              result: 'us'
+            }
+          ];
+          const zone = this.zone.toLowerCase();
+          const [region, subRegion] = zone.split('-');
+          let [result] = checkZones.filter(z => {
+            return z.region.toLowerCase() === region &&
+              (z.subRegion || '').toLowerCase() === (subRegion || '');
+          });
+          if (!result) {
+            [result] = checkZones.filter(z => z.region.toLowerCase() === region);
+          }
           if (result) {
             return result.result;
           }

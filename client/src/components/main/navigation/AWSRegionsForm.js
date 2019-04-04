@@ -615,6 +615,16 @@ class AWSRegionForm extends React.Component {
       'azureApiUrl',
       'priceOfferId',
       'fileShareMounts'
+    ],
+    GCP: [
+      'regionId',
+      'name',
+      'default',
+      'authFile',
+      'sshPublicKeyPath',
+      'project',
+      'applicationName',
+      'tempCredentialsRole'
     ]
   };
 
@@ -743,6 +753,8 @@ class AWSRegionForm extends React.Component {
       check('meterRegionName', checkStringValue) ||
       check('azureApiUrl', checkStringValue) ||
       check('priceOfferId', checkStringValue) ||
+      check('project', checkStringValue) ||
+      check('applicationName', checkStringValue) ||
       check('fileShareMounts', checkMounts);
   };
 
@@ -1263,6 +1275,7 @@ class AWSRegionForm extends React.Component {
                       return (
                         <Select.Option key={r} value={r}>
                           <AWSRegionTag
+                            provider={this.provider}
                             regionUID={r} style={{marginRight: 5}} />{r}
                         </Select.Option>
                       );
@@ -1441,6 +1454,40 @@ class AWSRegionForm extends React.Component {
               {getFieldDecorator('sshKeyName', {
                 initialValue: this.props.region.sshKeyName,
                 rules: [{required: this.providerSupportsField('sshKeyName'), message: 'SSH Key Name is required'}]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Project"
+              required={this.providerSupportsField('project')}
+              {...this.formItemLayout}
+              className={this.getFieldClassName('project', 'edit-region-project-container')}>
+              {getFieldDecorator('project', {
+                initialValue: this.props.region.project,
+                rules: [{
+                  required: this.providerSupportsField('project'),
+                  message: 'Project is required'
+                }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Application name"
+              required={this.providerSupportsField('applicationName')}
+              {...this.formItemLayout}
+              className={this.getFieldClassName('applicationName', 'edit-region-application-name-container')}>
+              {getFieldDecorator('applicationName', {
+                initialValue: this.props.region.applicationName,
+                rules: [{
+                  required: this.providerSupportsField('applicationName'),
+                  message: 'Application name is required'
+                }]
               })(
                 <Input
                   size="small"

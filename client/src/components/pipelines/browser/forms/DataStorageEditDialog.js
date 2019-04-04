@@ -146,7 +146,7 @@ export class DataStorageEditDialog extends React.Component {
 
   @computed
   get currentRegionSupportsPolicy () {
-    return this.currentRegion && this.currentRegion.provider === 'AWS';
+    return this.currentRegion && ['AWS', 'GSP'].indexOf(this.currentRegion.provider) >= 0;
   }
 
   @computed
