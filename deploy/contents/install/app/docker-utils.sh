@@ -130,7 +130,7 @@ function docker_push_manifest {
             continue
         fi
 
-        local push_timeout=5
+        local push_timeout=3
         print_info "Waiting $push_timeout seconds since last push operation before proceeding..."
         sleep $push_timeout
 
@@ -147,4 +147,3 @@ function docker_push_manifest {
 
     return $push_result
 }
-

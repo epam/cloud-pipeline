@@ -716,7 +716,7 @@ function delete_deployment_and_service {
     local DATA_DIRS="$2"
 
     if kubectl get deployments $NAME &> /dev/null; then
-        kubectl delete deployments $NAME
+        kubectl delete deployments $NAME --grace-period=0 --force
     fi
 
     if kubectl get po $NAME &> /dev/null; then
