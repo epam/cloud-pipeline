@@ -54,12 +54,10 @@ RUN pip install -I  azure-common \
                     azure-cli-core
 
 # API distribution
+ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"
-
-# Rely on the cloud-pipeline.tgz file is present in the docker build context directory
-# While we can download tarball from the public repo - it takes time. This implementation allows to download once for all the dependant docker images
-COPY cloud-pipeline.tgz /tmp/cloud-pipeline.tgz
 RUN cd /tmp && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     rm -rf bin/pipe-templates/__SYSTEM && \
     mkdir -p $CP_API_HOME && \
