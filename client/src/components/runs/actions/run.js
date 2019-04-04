@@ -489,7 +489,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         {
           this._estimatedPriceType &&
           this._estimatedPriceType.loaded &&
-          this._estimatedPriceType.value.pricePerHour &&
+          !!this._estimatedPriceType.value.pricePerHour &&
           <Alert
             type="success"
             style={{margin: 2}}

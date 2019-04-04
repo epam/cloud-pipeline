@@ -52,7 +52,14 @@ export const SearchGroupTypes = {
     title: titleFn('Tool')
   },
   storage: {
-    types: [SearchItemTypes.s3File, SearchItemTypes.s3Bucket, SearchItemTypes.NFSFile, SearchItemTypes.NFSBucket],
+    types: [
+      SearchItemTypes.s3File,
+      SearchItemTypes.s3Bucket,
+      SearchItemTypes.NFSFile,
+      SearchItemTypes.NFSBucket,
+      SearchItemTypes.gsFile,
+      SearchItemTypes.gsStorage
+    ],
     icon: 'file',
     title: titleFn('Data', '')
   },

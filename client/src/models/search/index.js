@@ -22,6 +22,8 @@ export const SearchItemTypes = {
   s3File: 'S3_FILE',
   NFSFile: 'NFS_FILE',
   NFSBucket: 'NFS_STORAGE',
+  gsFile: 'GS_FILE',
+  gsStorage: 'GS_STORAGE',
   pipeline: 'PIPELINE',
   tool: 'TOOL',
   toolGroup: 'TOOL_GROUP',
@@ -69,6 +71,7 @@ export function processItem (item) {
   switch (item.type) {
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:
+    case SearchItemTypes.gsFile:
       return {
         ...item,
         name: item.name.split('/')[item.name.split('/').length - 1]

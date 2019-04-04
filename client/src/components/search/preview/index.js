@@ -34,9 +34,11 @@ export default function preview (props) {
   let Content = DefaultPreview;
   switch (props.item.type) {
     case SearchItemTypes.s3File:
-    case SearchItemTypes.NFSFile: Content = S3FilePreview; break;
+    case SearchItemTypes.NFSFile:
+    case SearchItemTypes.gsFile: Content = S3FilePreview; break;
     case SearchItemTypes.NFSBucket:
-    case SearchItemTypes.s3Bucket: Content = S3BucketPreview; break;
+    case SearchItemTypes.s3Bucket:
+    case SearchItemTypes.gsStorage: Content = S3BucketPreview; break;
     case SearchItemTypes.run: Content = PipelineRunPreview; break;
     case SearchItemTypes.pipeline: Content = PipelinePreview; break;
     case SearchItemTypes.pipelineCode: Content = PipelineDocumentPreview; break;
