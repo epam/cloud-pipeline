@@ -28,5 +28,5 @@ class TemporaryCredentialsModel(object):
         instance.secret_key = json['accessKey']
         instance.session_token = json['token']
         instance.expiration = json['expiration']
-        instance.region = json['region']
+        instance.region = json['region'] if 'region' in json else None
         return instance

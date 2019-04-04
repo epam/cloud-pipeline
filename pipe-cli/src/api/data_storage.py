@@ -17,8 +17,6 @@ from future.standard_library import install_aliases
 install_aliases()
 
 from urllib.parse import urlparse, urlencode
-from urllib.request import urlopen, Request
-from urllib.error import HTTPError
 
 import json
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
