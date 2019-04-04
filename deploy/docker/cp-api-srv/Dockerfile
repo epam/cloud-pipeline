@@ -35,12 +35,12 @@ RUN yum install -y \
                 gettext
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
-    pip install -I  requests \
-                    ipaddress \
-                    pykube \
-                    psycopg2 \
-                    sqlalchemy \
-                    luigi
+    pip install -I  requests==2.21.0 \
+                    ipaddress==1.0.22 \
+                    pykube==0.15.0 \
+                    psycopg2==2.7.7 \
+                    sqlalchemy==1.3.2 \
+                    luigi==2.8.3
 
 # AWS - specific packages
 RUN pip install -I awscli \
