@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
     private final GCPClient gcpClient;
+    private final AuthManager authManager;
 
     @Override
     public DataStorageType getStorageType() {
@@ -94,13 +96,13 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path, final byte[] contents)
             throws DataStorageException {
-        return getHelper(dataStorage).createFile(dataStorage, path, contents);
+        return getHelper(dataStorage).createFile(dataStorage, path, contents, authManager.getAuthorizedUser());
     }
 
     @Override
     public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path,
                                       final InputStream dataStream) throws DataStorageException {
-        return getHelper(dataStorage).createFile(dataStorage, path, dataStream);
+        return getHelper(dataStorage).createFile(dataStorage, path, dataStream, authManager.getAuthorizedUser());
     }
 
     @Override
@@ -139,9 +141,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Map<String, String> updateObjectTags(GSBucketStorage dataStorage, String path, Map<String, String> tags,
-                                                String version) {
-        throw new UnsupportedOperationException();
+    public Map<String, String> updateObjectTags(final GSBucketStorage dataStorage, final String path,
+                                                final Map<String, String> tags, final String version) {
+        return getHelper(dataStorage).updateMetadata(dataStorage, path, tags, version);
     }
 
     @Override
@@ -151,9 +153,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public Map<String, String> deleteObjectTags(GSBucketStorage dataStorage, String path, Set<String> tagsToDelete,
-                                                String version) {
-        throw new UnsupportedOperationException();
+    public Map<String, String> deleteObjectTags(final GSBucketStorage dataStorage, final String path,
+                                                final Set<String> tagsToDelete, final String version) {
+        return getHelper(dataStorage).deleteMetadata(dataStorage, path, tagsToDelete, version);
     }
 
     @Override

@@ -44,6 +44,7 @@ import com.google.cloud.storage.StorageClass;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
@@ -54,11 +55,14 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -117,21 +121,26 @@ public class GSBucketStorageHelper {
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
-    public DataStorageFile createFile(final GSBucketStorage storage, final String path, final byte[] contents) {
+    public DataStorageFile createFile(final GSBucketStorage storage, final String path,
+                                      final byte[] contents, final String owner) {
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
 
         final BlobId blobId = BlobId.of(bucketName, path);
-        final BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+        final BlobInfo blobInfo = BlobInfo
+                .newBuilder(blobId)
+                .setMetadata(StringUtils.isBlank(owner) ? null
+                        : Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, owner))
+                .build();
         final Blob blob = client.create(blobInfo, contents);
         return createDataStorageFile(blob);
     }
 
     @SneakyThrows
     public DataStorageFile createFile(final GSBucketStorage storage, final String path,
-                                      final InputStream dataStream) {
-        return createFile(storage, path, IOUtils.toByteArray(dataStream));
+                                      final InputStream dataStream, final String owner) {
+        return createFile(storage, path, IOUtils.toByteArray(dataStream), owner);
     }
 
     public DataStorageFolder createFolder(final GSBucketStorage storage, final String path) {
@@ -139,7 +148,7 @@ public class GSBucketStorageHelper {
         folderPath = normalizeFolderPath(folderPath);
         final String tokenFilePath = folderPath + ProviderUtils.FOLDER_TOKEN_FILE;
 
-        createFile(storage, tokenFilePath, EMPTY_FILE_CONTENT);
+        createFile(storage, tokenFilePath, EMPTY_FILE_CONTENT, null);
         return createDataStorageFolder(folderPath);
     }
 
@@ -278,7 +287,37 @@ public class GSBucketStorageHelper {
 
         final String bucketName = storage.getPath();
         final Blob blob = checkBlobExists(bucketName, path, client);
-        return blob.getMetadata();
+        return new HashMap<>(MapUtils.emptyIfNull(blob.getMetadata()));
+    }
+
+    public Map<String, String> updateMetadata(final GSBucketStorage storage, final String path,
+                                              final Map<String, String> tags, final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
+        final String bucketName = storage.getPath();
+        final Blob blob = checkBlobExists(bucketName, path, client);
+        client.update(blob.toBuilder()
+                .setBlobId(blob.getBlobId())
+                .setMetadata(null)
+                .build());
+
+        client.update(blob.toBuilder()
+                .setBlobId(blob.getBlobId())
+                .setMetadata(tags)
+                .build());
+        return client.get(bucketName, path).getMetadata();
+
+    }
+
+    public Map<String, String> deleteMetadata(final GSBucketStorage storage, final String path,
+                                              final Set<String> tagsToDelete, final String version) {
+        final Map<String, String> existingTags = listMetadata(storage, path, version);
+        tagsToDelete.forEach(tag ->
+            Assert.isTrue(existingTags.containsKey(tag), String.format("Tag '%s' doesn't exist", tag))
+        );
+        existingTags.keySet().removeAll(tagsToDelete);
+        updateMetadata(storage, path, existingTags, version);
+        return existingTags;
     }
 
     private String normalizeFolderPath(final String path) {

@@ -20,6 +20,7 @@ public final class ProviderUtils {
 
     public static final String DELIMITER = "/";
     public static final String FOLDER_TOKEN_FILE = ".DS_Store";
+    public static final String OWNER_TAG_KEY = "CP_OWNER";
 
     private ProviderUtils() {
         //no op
