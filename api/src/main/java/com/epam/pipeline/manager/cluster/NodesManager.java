@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -36,6 +37,7 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
@@ -58,6 +60,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class NodesManager {
 
     private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
@@ -185,13 +188,24 @@ public class NodesManager {
 
         final AbstractCloudRegion cloudRegion = Optional.ofNullable(nodeInstance.getPipelineRun())
                 .map(run -> regionManager.load(run.getInstance().getCloudRegionId()))
-                .orElseGet(() -> regionManager.load(nodeInstance.getProvider(), nodeInstance.getRegion()));
+                .orElseGet(() -> loadRegionFromLabels(nodeInstance));
         final Optional<NodeInstanceAddress> internalIP = nodeInstance.getAddresses()
                 .stream()
                 .filter(a -> a.getType() != null && a.getType().equalsIgnoreCase("internalip"))
                 .findAny();
         internalIP.ifPresent(nodeInstanceAddress -> terminateNode(nodeInstance, nodeInstanceAddress, cloudRegion));
         return nodeInstance;
+    }
+
+    private AbstractCloudRegion loadRegionFromLabels(final NodeInstance nodeInstance) {
+        final CloudProvider provider = nodeInstance.getProvider();
+        final String region = nodeInstance.getRegion();
+        if (provider == null || org.apache.commons.lang3.StringUtils.isBlank(region)) {
+            //missing node labels, let's try default region
+            log.error("Node {} is missing cloud provider labels. Provider: {}, region: {}.", provider, region);
+            return regionManager.loadDefaultRegion();
+        }
+        return regionManager.load(provider, region);
     }
 
     private void terminateNode(final NodeInstance nodeInstance,
