@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-api-srv
           image: lifescience/cloud-pipeline:api-srv-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           securityContext:
             privileged: true
           command: ["/init-api"]

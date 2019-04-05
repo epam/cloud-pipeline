@@ -14,7 +14,7 @@ spec:
   containers:
     - name: cp-notifier
       image: lifescience/cloud-pipeline:notifier-$CP_VERSION
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       command: ["/init"]
       envFrom:
       - configMapRef:

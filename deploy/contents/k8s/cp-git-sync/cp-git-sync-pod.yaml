@@ -14,7 +14,7 @@ spec:
   containers:
     - name: cp-git-sync
       image: lifescience/cloud-pipeline:api-srv-$CP_VERSION
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       command: ["/init-git-sync", "https://$(CP_API_SRV_INTERNAL_HOST):$(CP_API_SRV_INTERNAL_PORT)/pipeline/restapi/", "$(CP_API_JWT_ADMIN)"]
       envFrom:
       - configMapRef:

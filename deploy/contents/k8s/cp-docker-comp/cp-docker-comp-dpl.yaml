@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-docker-comp
           image: lifescience/cloud-pipeline:docker-comp-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           command: ["/init"]
           ports:
             - containerPort: 8080
