@@ -16,15 +16,21 @@
 
 package com.epam.pipeline.dao.region;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Service;
 
 import java.sql.ResultSet;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, AbstractCloudRegionCredentials> {
@@ -41,6 +47,11 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         params.addValue(CloudRegionParameters.PROJECT.name(), region.getProject());
         params.addValue(CloudRegionParameters.APPLICATION_NAME.name(), region.getApplicationName());
         params.addValue(CloudRegionParameters.IMPERSONATED_ACCOUNT.name(), region.getImpersonatedAccount());
+        if (region.getCustomInstanceTypes() != null) {
+            final String customInstanceTypes = JsonMapper.convertDataToJsonStringForQuery(
+                    region.getCustomInstanceTypes());
+            params.addValue(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name(), customInstanceTypes);
+        }
         return params;
     }
 
@@ -54,6 +65,13 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         gcpRegion.setProject(rs.getString(CloudRegionParameters.PROJECT.name()));
         gcpRegion.setApplicationName(rs.getString(CloudRegionParameters.APPLICATION_NAME.name()));
         gcpRegion.setImpersonatedAccount(rs.getString(CloudRegionParameters.IMPERSONATED_ACCOUNT.name()));
+        final String customInstanceTypes = rs.getString(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name());
+        if (StringUtils.isNotBlank(customInstanceTypes)) {
+            gcpRegion.setCustomInstanceTypes(JsonMapper.parseData(customInstanceTypes,
+                    new TypeReference<List<GCPCustomInstanceType>>() {}));
+        } else {
+            gcpRegion.setCustomInstanceTypes(Collections.emptyList());
+        }
         return gcpRegion;
     }
 

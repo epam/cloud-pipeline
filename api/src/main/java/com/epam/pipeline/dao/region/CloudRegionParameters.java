@@ -48,5 +48,6 @@ enum CloudRegionParameters {
     MOUNT_ID,
     MOUNT_ROOT,
     MOUNT_OPTIONS,
-    MOUNT_TYPE
+    MOUNT_TYPE,
+    CUSTOM_INSTANCE_TYPES
 }

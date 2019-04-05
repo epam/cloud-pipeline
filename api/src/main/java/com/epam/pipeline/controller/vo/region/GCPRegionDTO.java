@@ -18,9 +18,12 @@ package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -34,4 +37,5 @@ public class GCPRegionDTO extends AbstractCloudRegionDTO {
     private String applicationName;
     @JsonProperty("tempCredentialsRole")
     private String impersonatedAccount;
+    private List<GCPCustomInstanceType> customInstanceTypes;
 }
