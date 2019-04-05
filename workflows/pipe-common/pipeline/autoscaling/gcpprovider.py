@@ -61,7 +61,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'name': instance_name,
             'machineType': machine_type,
             'scheduling': {
-                'preemptible': False
+                'preemptible': is_spot
             },
             'canIpForward': True,
             'disks': [
