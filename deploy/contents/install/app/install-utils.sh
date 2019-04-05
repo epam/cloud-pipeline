@@ -685,6 +685,15 @@ function execute_deployment_command {
     done
 }
 
+function delete_deployment_pods {
+    local DEPLOYMENT_NAME=$1
+
+    pods=$(kubectl get po | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+    for p in $pods; do
+        kubectl delete po $p --grace-period=0 --force
+    done
+}
+
 function create_user_and_db {
     local DEPLOYMENT_NAME=$1
     local USERNAME=$2
@@ -717,6 +726,7 @@ function delete_deployment_and_service {
 
     if kubectl get deployments $NAME &> /dev/null; then
         kubectl delete deployments $NAME --grace-period=0 --force
+        delete_deployment_pods "$NAME"
     fi
 
     if kubectl get po $NAME &> /dev/null; then
