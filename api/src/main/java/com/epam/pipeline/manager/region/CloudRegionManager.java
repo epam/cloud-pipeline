@@ -275,6 +275,12 @@ public class CloudRegionManager implements SecuredEntityManager {
     }
 
     public AbstractCloudRegion load(final CloudProvider provider, final String regionCode) {
+        if (provider == null || StringUtils.isBlank(regionCode)) {
+            //missing node labels, let's try default region
+            return cloudRegionDao.loadDefaultRegion()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            messageHelper.getMessage(MessageConstants.ERROR_REGION_NOT_FOUND, regionCode)));
+        }
         return cloudRegionDao.loadByProviderAndRegionCode(provider, regionCode)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_REGION_NOT_FOUND, regionCode)));
