@@ -19,7 +19,7 @@ export CP_DOCKER_DIST_PASS="$DOCKER_PASS"
 export CP_VERSION_SHORT="${dist_major}.${dist_minor}"
 export CP_VERSION_FULL="${dist_major}.${dist_minor}.${dist_patch}.${dist_build}.${dist_commit}"
 export CP_API_DIST_URL="$API_DIST_URL"
-export CP_PIPECTL_DIST_FILE_NAME="pipectl-$CP_VERSION_FULL"
+export CP_PIPECTL_DIST_FILE_NAME="pipectl.$CP_VERSION_FULL"
 export CP_PIPECTL_DIST="$WORKSPACE/build/$CP_PIPECTL_DIST_FILE_NAME"
 
 bash build.sh -o $CP_PIPECTL_DIST \

@@ -77,6 +77,7 @@ echo "Creating jenkins jobs"
 
 create_jenkins_job build-pipectl
 create_jenkins_job deploy-dev-aws
+create_jenkins_job deploy-dev-az
 
 echo "Building sqs trigger docker image from $SELF_PATH/jenkins-sqs-trigger"
 

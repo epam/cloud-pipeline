@@ -19,10 +19,26 @@ RUN apt-get update && \
     apt-get install -y  libltdl7 \
                         python \
                         gettext \
-                        rsync
+                        rsync \
+                        curl \
+                        apt-transport-https \
+                        lsb-release \
+                        gpg
+
+RUN wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+    chmod +x /usr/bin/jq
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \
     pip install awscli
+
+RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
+    gpg --dearmor | \
+    tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg > /dev/null && \
+    AZ_REPO=$(lsb_release -cs) && \
+    echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $AZ_REPO main" | \
+    tee /etc/apt/sources.list.d/azure-cli.list && \
+    apt-get update && \
+    apt-get install azure-cli
 
 ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 COPY init.groovy /usr/share/jenkins/ref/init.groovy.d/init.groovy

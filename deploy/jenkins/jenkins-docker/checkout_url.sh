@@ -47,9 +47,9 @@ elif [ "$dist_commit" == "gz" ]; then
 fi
 export dist_commit="${version[$path_index]}"
 export dist_build="${version[$((path_index-1))]}"
-export dist_patch="${version[$((path_index-1))]}"
-export dist_minor="${version[$((path_index-1))]}"
-export dist_major="${version[$((path_index-1))]}"
+export dist_patch="${version[$((path_index-2))]}"
+export dist_minor="${version[$((path_index-3))]}"
+export dist_major="${version[$((path_index-4))]}"
 
 IFS="/" read -ra url_parts <<< "$URL"
 export dist_filename="${url_parts[-1]}"
