@@ -121,7 +121,7 @@ public class PermissionTabAO implements ClosableAO {
         }
 
         public UserPermissionsTableAO showPermissions() {
-            getElementByNameInUpperCase(login).shouldBe(visible).click();
+            getElementByNameInUpperCase(login.toLowerCase()).shouldBe(visible).click();
             return new UserPermissionsTableAO(this);
         }
 
