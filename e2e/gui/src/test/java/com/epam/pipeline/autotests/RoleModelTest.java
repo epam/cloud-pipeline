@@ -494,7 +494,7 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, DOWNLOAD);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, DOWNLOAD, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -569,25 +569,6 @@ public class RoleModelTest
         loginAs(user)
                 .clusterNodes()
                 .assertNodesTableIsEmpty();
-    }
-
-    @Test(priority = 21)
-    @TestCase({"EPMCMBIBPC-568"})
-    public void checkClusterNodesByNonAdminUserWhenPipelineIsWorked() {
-        logoutIfNeeded();
-        loginAs(user);
-        navigationMenu()
-                .library()
-                .clickOnPipeline(pipelineName)
-                .firstVersion()
-                .runPipeline()
-                .launch(this);
-        navigationMenu()
-                .clusterNodes()
-                .waitForTheNode(pipelineName, getLastRunId());
-        navigationMenu()
-                .runs()
-                .stopRun(getLastRunId());
     }
 
     @Test(priority = 22, enabled = false)

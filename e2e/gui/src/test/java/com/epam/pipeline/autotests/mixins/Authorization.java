@@ -37,7 +37,7 @@ public interface Authorization extends Navigation {
     long LOGIN_DELAY = MILLISECONDS.convert(5, SECONDS);
 
     default void givePermissions(Account account, Permission... permissions) {
-        Arrays.stream(permissions).forEachOrdered(p -> p.set(getUserNameByAccountLogin(account.login)));
+        Arrays.stream(permissions).forEachOrdered(p -> p.set(account.login));
     }
 
     default void givePermissions(String groupName, Permission... permissions) {
