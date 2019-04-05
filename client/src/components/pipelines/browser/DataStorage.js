@@ -1478,6 +1478,7 @@ export default class DataStorage extends React.Component {
           visible={this.state.editDialogVisible}
           dataStorage={this.props.info.value}
           pending={this.props.info.pending}
+          policySupported={this.props.info.value.policySupported}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
