@@ -63,7 +63,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                     })
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("Failed to get instance types and prices from GCP: {}", e.getMessage());
+            log.error("Failed to get instance types and prices from GCP.", e);
             return Collections.emptyList();
         }
     }
@@ -83,10 +83,9 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .termType(ON_DEMAND_TERM_TYPE)
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)
-                .sku(machine.getSku())
                 .priceListPublishDate(new Date())
                 .currency(CURRENCY)
-                .instanceType(machine.getFamily() + "-" + machine.getCpu())
+                .instanceType(machine.getName())
                 .regionId(region.getId())
                 .unit(HOURS_UNIT)
                 .volumeType("SSD")

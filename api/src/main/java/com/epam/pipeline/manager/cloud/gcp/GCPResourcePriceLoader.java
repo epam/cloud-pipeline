@@ -59,7 +59,6 @@ public class GCPResourcePriceLoader {
         final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
         final Map<String, String> prefixes = loadPrefixes();
         final List<Sku> skus = getAllSkus(cloudbilling);
-        System.out.println(String.format("Number of skus: %s", skus.size()));
         final List<GCPResourceRequest> requests = machines.stream()
                 .map(machine -> {
                     final List<GCPResourceRequest> machineRequests = new ArrayList<>();

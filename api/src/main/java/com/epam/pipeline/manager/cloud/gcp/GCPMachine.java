@@ -21,10 +21,18 @@ import lombok.Value;
 @Value
 class GCPMachine {
     private final String name;
-    private final String sku;
     private final String family;
     private final int cpu;
     private final double ram;
     private final int gpu;
     private final String gpuType;
+
+    public static GCPMachine cpu(final String name, final String family, final int cpu, final double ram) {
+        return new GCPMachine(name, family, cpu, ram, 0, null);
+    }
+
+    public static GCPMachine gpu(final String name, final String family, final int cpu, final double ram,
+                                 final int gpu, final String gpuType) {
+        return new GCPMachine(name, family, cpu, ram, gpu, gpuType);
+    }
 }

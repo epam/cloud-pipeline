@@ -73,13 +73,10 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
         if (elements.length < 2) {
             return Optional.empty();
         }
-        final String sku = machineType.getName();
-        final String name = Arrays.stream(elements)
-                .skip(1)
-                .collect(Collectors.joining("-"));
+        final String name = machineType.getName();
         final String family = elements[1];
         if (elements.length == 2) {
-            return Optional.of(new GCPMachine(name, sku, family, 1, 0, 0, null));
+            return Optional.of(GCPMachine.cpu(name, family, 1, 0));
         }
         if (elements.length == 3) {
             try {
@@ -87,7 +84,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
                 final double memory = new BigDecimal((double) machineType.getMemoryMb() / 1024)
                         .setScale(2, RoundingMode.HALF_EVEN)
                         .doubleValue();
-                return Optional.of(new GCPMachine(name, sku, family, cpu, memory, 0, null));
+                return Optional.of(GCPMachine.cpu(name, family, cpu, memory));
             } catch (NumberFormatException e) {
                 log.warn(String.format("GCP Machine Type name '%s' parsing has failed.", machineType), e);
                 return Optional.empty();
