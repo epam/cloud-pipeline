@@ -18,6 +18,9 @@ if [ -z "$PIPECTL_DIST_URL_PATH" ] || [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
     exit 1
 fi
 
+set -o allexport
 source "$PIPECTL_DIST_URL_PATH"
+set +o allexport
+
 source /usr/local/bin/checkout_url "$PIPECTL_DIST_URL"
 bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/prepare-assets.sh
