@@ -7,7 +7,7 @@
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
-          <name>PIPECTL_DIST_URL</name>
+          <name>PIPECTL_DIST_URL_PATH</name>
           <description></description>
           <defaultValue></defaultValue>
           <trim>false</trim>

@@ -23,7 +23,7 @@ function create_jenkins_job {
     # sed is used to "html-style" escape script, e.g. &quot; / &lt; / etc..
     export BUILD_COMMAND="$(cat script.sh | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g')"
 
-    JOB_CONFIG_XML="$(envsubst '${BUILD_COMMAND} ${JENKINS_JOB_TOKEN}' < config.xml)"
+    JOB_CONFIG_XML="$(envsubst '${BUILD_COMMAND} ${JENKINS_JOB_TOKEN} ${JENKINS_AWS_DEPLOY_JOB_NAME} ${JENKINS_AZ_DEPLOY_JOB_NAME}' < config.xml)"
     cat <<< "$JOB_CONFIG_XML" > config.xml
 
     curl -s -XPOST "http://${JENKINS_HOST}:${JENKINS_PORT}/createItem?name=cloud-pipeline-${job_dir}" \
@@ -93,7 +93,7 @@ docker run  -d \
             -e JENKINS_API_TOKEN=$JENKINS_API_TOKEN \
             -e JENKINS_HOST=$JENKINS_HOST \
             -e JENKINS_PORT=$JENKINS_PORT \
-            -e JENKINS_JOB_NAME=$JENKINS_JOB_NAME \
+            -e JENKINS_JOB_NAME=$JENKINS_PIPECTL_BUILD_JOB_NAME \
             -e JENKINS_JOB_TOKEN=$JENKINS_JOB_TOKEN \
             -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
             -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \

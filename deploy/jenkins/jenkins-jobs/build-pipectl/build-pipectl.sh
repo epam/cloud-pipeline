@@ -30,7 +30,9 @@ bash build.sh -o $CP_PIPECTL_DIST \
               -t
 
 if [ $? -eq 0 ]; then
-    aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST_FILE_NAME}
+    aws s3 cp $CP_PIPECTL_DIST s3://cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST_FILE_NAME} && \
+        cat > "/tmp/${JOB_NAME}-${BUILD_NUMBER}.env" <<< "PIPECTL_DIST_URL=https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/${dist_branch}/${CP_PIPECTL_DIST_FILE_NAME}"
+
 else 
     echo "pipectl build artifacts skipped as build.sh returned non-zero exit code"
     exit 1

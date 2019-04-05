@@ -28,6 +28,23 @@
       <command>${BUILD_COMMAND}</command>
     </hudson.tasks.Shell>
   </builders>
-  <publishers/>
+  <publishers>
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+              <properties>PIPECTL_DIST_URL_PATH=/tmp/${JOB_NAME}-${BUILD_NUMBER}.env</properties>
+              <textParamValueOnNewLine>false</textParamValueOnNewLine>
+            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
+          </configs>
+          <projects>${JENKINS_AWS_DEPLOY_JOB_NAME}</projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <triggerFromChildProjects>false</triggerFromChildProjects>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
+  </publishers>
   <buildWrappers/>
 </project>
