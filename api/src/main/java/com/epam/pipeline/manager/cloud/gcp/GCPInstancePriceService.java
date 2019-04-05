@@ -31,9 +31,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,12 +58,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                     .collect(Collectors.toList());
             final Set<GCPResourcePrice> prices = priceLoader.load(region, machines);
             return machines.stream()
-                    .map(machine -> {
-                        final InstanceOffer instanceOffer = buildInstanceOffer(region, machine);
-                        final double price = getPrice(machine, prices);
-                        instanceOffer.setPricePerUnit(price);
-                        return instanceOffer;
-                    })
+                    .map(machine -> buildInstanceOffer(region, machine, prices))
+                    .filter(offer -> offer.getPricePerUnit() >= 0)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -69,24 +67,14 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         }
     }
 
-    private double getPrice(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
-        final long nanos = prices.stream()
-                .filter(price -> price.getFamily().equals(machine.getFamily())
-                        || StringUtils.isNotBlank(machine.getGpuType())
-                        && price.getType() == GCPResourceType.GPU
-                        && price.getFamily().equals(machine.getGpuType()))
-                .mapToLong(price -> price.in(machine))
-                .sum();
-        return new BigDecimal((double) nanos / 1_000_000_000.0)
-                .setScale(2, RoundingMode.HALF_EVEN)
-                .doubleValue();
-    }
-
-    private InstanceOffer buildInstanceOffer(final GCPRegion region, final GCPMachine machine) {
+    private InstanceOffer buildInstanceOffer(final GCPRegion region,
+                                             final GCPMachine machine,
+                                             final Set<GCPResourcePrice> prices) {
         return InstanceOffer.builder()
                 .termType(ON_DEMAND_TERM_TYPE)
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)
+                .pricePerUnit(getPricePerUnit(machine, prices))
                 .priceListPublishDate(new Date())
                 .currency(CURRENCY)
                 .instanceType(machine.getName())
@@ -99,6 +87,41 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .gpu(machine.getGpu())
                 .memory(machine.getRam())
                 .build();
+    }
+
+    private double getPricePerUnit(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
+        final List<Optional<GCPResourcePrice>> machinePrices = new ArrayList<>();
+        if (machine.getCpu() > 0) {
+            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.CPU, machine.getFamily());
+            machinePrices.add(price);
+        }
+        if (machine.getRam() > 0) {
+            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.RAM, machine.getFamily());
+            machinePrices.add(price);
+        }
+        if (machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType())) {
+            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.GPU, machine.getGpuType());
+            machinePrices.add(price);
+        }
+        if (!machinePrices.stream().allMatch(Optional::isPresent)) {
+            return -1;
+        }
+        final long nanos = machinePrices.stream()
+                .map(Optional::get)
+                .mapToLong(price -> price.in(machine))
+                .sum();
+        return new BigDecimal((double) nanos / 1_000_000_000.0)
+                .setScale(2, RoundingMode.HALF_EVEN)
+                .doubleValue();
+    }
+
+    private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
+                                                 final GCPResourceType type,
+                                                 final String family) {
+        return prices.stream()
+                .filter(price -> price.getType() == type)
+                .filter(price -> price.getFamily().equals(family))
+                .findFirst();
     }
 
     @Override
