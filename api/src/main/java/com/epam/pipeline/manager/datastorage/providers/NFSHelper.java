@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -29,17 +30,19 @@ import java.util.regex.Pattern;
 
 final class NFSHelper {
 
-    private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
+    private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:.*\\/)[^\\/]*");
     private static final Pattern NFS_AZURE_ROOT_PATTERN = Pattern.compile("([^\\/]+\\/[^\\/]+\\/)[^\\/]+");
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
 
     private static final String SMB_SCHEME = "//";
+    private static final String PATH_SEPARATOR = "/";
 
     private NFSHelper() {
 
     }
 
     static String getNfsRootPath(String path) {
+        path = path.endsWith(PATH_SEPARATOR) ? path.substring(0, path.length() - 1) : path;
         Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
         Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(path);
         Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(path);
@@ -68,7 +71,7 @@ final class NFSHelper {
                     : new String[]{"username=" + account, "password=" + accountKey};
             return accountKey != null && account != null ? String.join(",", options) : defaultOptions;
         }
-        return defaultOptions;
+        return StringUtils.isEmpty(defaultOptions) ? "" : "-o " + defaultOptions;
     }
 
     static String formatNfsPath(String path, String protocol){

@@ -70,10 +70,12 @@ public class NFSHelperTest {
         Assert.assertEquals(TEST_PATH + ":", nfsRootPath);
         nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "/directory");
         Assert.assertEquals(TEST_PATH + ":/", nfsRootPath);
-        nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "/mnt/directory");
+        nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "/mnt/");
         Assert.assertEquals(TEST_PATH + ":/", nfsRootPath);
-        nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "mnt/directory");
+        nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "mnt/");
         Assert.assertEquals(TEST_PATH + ":", nfsRootPath);
+        nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH + ":" + "/mnt/directory");
+        Assert.assertEquals(TEST_PATH + ":/mnt/", nfsRootPath);
         nfsRootPath = NFSHelper.getNfsRootPath(TEST_PATH  + "/mnt/directory");
         Assert.assertEquals(TEST_PATH + "/mnt/", nfsRootPath);
     }

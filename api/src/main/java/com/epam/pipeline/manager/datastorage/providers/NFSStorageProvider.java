@@ -84,7 +84,7 @@ import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.getNfsRo
 @Service
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s -o %s %s %s";
+    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
 
     /**
      * -l is for "lazy" unmounting: Detach the filesystem from the filesystem hierarchy now, and cleanup all references
@@ -362,16 +362,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private String getMountDirName(String nfsPath) {
-        String rootPath = getNfsRootPath(nfsPath);
-        int index = rootPath.indexOf(':');
-        if (index > 0) {
-            return rootPath.substring(0, index);
-        } else {
-            if (index == 0) {
-                throw new IllegalArgumentException("Invalid path");
-            }
-            return rootPath;
-        }
+       return getNfsRootPath(nfsPath).replace(":", "/");
     }
 
     @Override
