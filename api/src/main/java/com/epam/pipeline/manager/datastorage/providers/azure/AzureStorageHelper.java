@@ -51,6 +51,7 @@ import com.microsoft.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.blob.models.BlobPrefix;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobHierarchySegmentResponse;
+import com.microsoft.azure.storage.blob.models.StorageErrorException;
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -523,11 +524,13 @@ public class AzureStorageHelper {
     }
 
     private <T> T throwException(final Throwable e) {
+        log.debug("Exception occurred while calling Azure API.", e);
         if (e instanceof StorageException) {
-            throw new DataStorageException(((StorageException) e).message(), e.getCause());
+            throw new DataStorageException(((StorageException) e).message(), e);
+        } else if (e instanceof StorageErrorException) {
+            throw new DataStorageException(((StorageErrorException) e).body().message(), e);
         } else {
-            throw new DataStorageException(e.getMessage(), e.getCause());
+            throw new DataStorageException(e.getMessage(), e);
         }
     }
-
 }
