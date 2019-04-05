@@ -37,12 +37,19 @@ fi
 
 # Get version info from the s3 distribution URL
 # Format: cloud-pipeline.{major}.{minor}.{patch}.{build}.{commit}.tgz
+path_index="-1"
 IFS="." read -ra version <<< "$URL"
-export dist_commit="${version[-2]}"
-export dist_build="${version[-3]}"
-export dist_patch="${version[-4]}"
-export dist_minor="${version[-5]}"
-export dist_major="${version[-6]}"
+export dist_commit="${version[$path_index]}"
+if [ "$dist_commit" == "tgz" ] || [ "$dist_commit" == "tar" ]; then
+    path_index=$((path_index-1))
+elif [ "$dist_commit" == "gz" ]; then
+    path_index=$((path_index-2))
+fi
+export dist_commit="${version[$path_index]}"
+export dist_build="${version[$((path_index-1))]}"
+export dist_patch="${version[$((path_index-1))]}"
+export dist_minor="${version[$((path_index-1))]}"
+export dist_major="${version[$((path_index-1))]}"
 
 IFS="/" read -ra url_parts <<< "$URL"
 export dist_filename="${url_parts[-1]}"
