@@ -59,7 +59,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
             final Set<GCPResourcePrice> prices = priceLoader.load(region, machines);
             return machines.stream()
                     .map(machine -> buildInstanceOffer(region, machine, prices))
-                    .filter(offer -> offer.getPricePerUnit() >= 0)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -67,52 +68,52 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         }
     }
 
-    private InstanceOffer buildInstanceOffer(final GCPRegion region,
-                                             final GCPMachine machine,
-                                             final Set<GCPResourcePrice> prices) {
-        return InstanceOffer.builder()
-                .termType(ON_DEMAND_TERM_TYPE)
-                .tenancy(SHARED_TENANCY)
-                .productFamily(INSTANCE_PRODUCT_FAMILY)
-                .pricePerUnit(getPricePerUnit(machine, prices))
-                .priceListPublishDate(new Date())
-                .currency(CURRENCY)
-                .instanceType(machine.getName())
-                .regionId(region.getId())
-                .unit(HOURS_UNIT)
-                .volumeType("SSD")
-                .operatingSystem("Linux")
-                .instanceFamily(readFamily(machine.getFamily()))
-                .vCPU(machine.getCpu())
-                .gpu(machine.getGpu())
-                .memory(machine.getRam())
-                .build();
+    private Optional<InstanceOffer> buildInstanceOffer(final GCPRegion region,
+                                                       final GCPMachine machine,
+                                                       final Set<GCPResourcePrice> prices) {
+        return getPrice(machine, prices)
+                .map(price ->
+                        InstanceOffer.builder()
+                                .termType(ON_DEMAND_TERM_TYPE)
+                                .tenancy(SHARED_TENANCY)
+                                .productFamily(INSTANCE_PRODUCT_FAMILY)
+                                .pricePerUnit(price)
+                                .priceListPublishDate(new Date())
+                                .currency(CURRENCY)
+                                .instanceType(machine.getName())
+                                .regionId(region.getId())
+                                .unit(HOURS_UNIT)
+                                .volumeType("SSD")
+                                .operatingSystem("Linux")
+                                .instanceFamily(readFamily(machine.getFamily()))
+                                .vCPU(machine.getCpu())
+                                .gpu(machine.getGpu())
+                                .memory(machine.getRam())
+                                .build());
     }
 
-    private double getPricePerUnit(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
+    private Optional<Double> getPrice(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
         final List<Optional<GCPResourcePrice>> machinePrices = new ArrayList<>();
         if (machine.getCpu() > 0) {
-            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.CPU, machine.getFamily());
-            machinePrices.add(price);
+            machinePrices.add(findPrice(prices, GCPResourceType.CPU, machine.getFamily()));
         }
         if (machine.getRam() > 0) {
-            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.RAM, machine.getFamily());
-            machinePrices.add(price);
+            machinePrices.add(findPrice(prices, GCPResourceType.RAM, machine.getFamily()));
         }
         if (machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType())) {
-            final Optional<GCPResourcePrice> price = findPrice(prices, GCPResourceType.GPU, machine.getGpuType());
-            machinePrices.add(price);
+            machinePrices.add(findPrice(prices, GCPResourceType.GPU, machine.getGpuType()));
         }
         if (!machinePrices.stream().allMatch(Optional::isPresent)) {
-            return -1;
+            return Optional.empty();
         }
         final long nanos = machinePrices.stream()
                 .map(Optional::get)
                 .mapToLong(price -> price.in(machine))
                 .sum();
-        return new BigDecimal((double) nanos / 1_000_000_000.0)
+        final double price = new BigDecimal((double) nanos / 1_000_000_000.0)
                 .setScale(2, RoundingMode.HALF_EVEN)
                 .doubleValue();
+        return Optional.of(price);
     }
 
     private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
