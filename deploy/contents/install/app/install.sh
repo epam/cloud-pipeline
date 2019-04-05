@@ -806,7 +806,7 @@ if is_service_requested cp-notifier; then
                                           CP_NOTIFIER_SMTP_USER \
                                           CP_NOTIFIER_SMTP_PASS"
         if ! check_params_present "update_config" $CP_NOTIFIER_SMTP_PARAMETERS_LIST; then
-            print_err "not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
+            print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
             create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-pod.yaml

@@ -13,5 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ -z "$PIPECTL_DIST_URL_PATH" ] || [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
+    echo "PIPECTL_DIST_URL_PATH is not defined or file does not exist"
+    exit 1
+fi
+
+source "$PIPECTL_DIST_URL_PATH"
 source /usr/local/bin/checkout_url "$PIPECTL_DIST_URL"
 bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/prepare-assets.sh

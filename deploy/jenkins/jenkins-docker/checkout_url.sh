@@ -21,7 +21,7 @@ if [ -z "$URL" ]; then
 fi
 
 if [ -z "$JENKINS_ENV" ]; then
-    echo "Environment variables are not is not"
+    echo "Environment variables are not set"
     exit 1
 else
     set -o allexport

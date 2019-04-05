@@ -17,12 +17,6 @@
 ###########################
 # Prepare assets locally
 ###########################
-if [ -z "$PIPECTL_DIST_URL_PATH" ] || [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
-    echo "PIPECTL_DIST_URL_PATH is not defined or file does not exist"
-    exit 1
-fi
-
-source "$PIPECTL_DIST_URL_PATH"
 
 if [ -z "$PIPECTL_DIST_URL" ]; then
     echo "PIPECTL_DIST_URL is not defined and cannot be sourced from $PIPECTL_DIST_URL_PATH"
