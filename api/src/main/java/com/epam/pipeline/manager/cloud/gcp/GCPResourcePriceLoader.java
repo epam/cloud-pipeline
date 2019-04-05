@@ -76,7 +76,13 @@ public class GCPResourcePriceLoader {
                             machineRequests.add(new GCPResourceRequest(machine.getFamily(), GCPResourceType.RAM, billingPrefix));
                         }
                     }
-                    // TODO 02.04.19: Add GPU requests.
+                    if (machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType())) {
+                        final String billingKey = GCPResourceType.GPU.alias() + "_ondemand_" + machine.getGpuType().toLowerCase();
+                        final String billingPrefix = prefixes.get(billingKey);
+                        if (billingPrefix != null) {
+                            machineRequests.add(new GCPResourceRequest(machine.getGpuType(), GCPResourceType.GPU, billingPrefix));
+                        }
+                    }
                     return machineRequests;
                 })
                 .flatMap(Collection::stream)
@@ -148,11 +154,11 @@ public class GCPResourcePriceLoader {
         prefixes.put("cpu_ondemand_small", "Small Instance");
         prefixes.put("cpu_ondemand_custom", "Custom Instance Core");
         prefixes.put("ram_ondemand_custom", "Custom Instance Ram");
-        prefixes.put("gpu_ondemand_t4", "Nvidia Tesla T4");
-        prefixes.put("gpu_ondemand_p4", "Nvidia Tesla P4");
-        prefixes.put("gpu_ondemand_v100", "Nvidia Tesla V100");
-        prefixes.put("gpu_ondemand_p100", "Nvidia Tesla P100");
-        prefixes.put("gpu_ondemand_k80", "Nvidia Tesla K80");
+        prefixes.put("gpu_ondemand_t4", "Nvidia Tesla T4 GPU running");
+        prefixes.put("gpu_ondemand_p4", "Nvidia Tesla P4 GPU running");
+        prefixes.put("gpu_ondemand_v100", "Nvidia Tesla V100 GPU running");
+        prefixes.put("gpu_ondemand_p100", "Nvidia Tesla P100 GPU running");
+        prefixes.put("gpu_ondemand_k80", "Nvidia Tesla K80 GPU running");
         return prefixes;
     }
 }

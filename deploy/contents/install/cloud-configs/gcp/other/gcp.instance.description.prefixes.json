@@ -13,9 +13,9 @@
   "cpu_ondemand_small": "Small Instance",
   "cpu_ondemand_custom": "Custom Instance Core",
   "ram_ondemand_custom": "Custom Instance Ram",
-  "gpu_ondemand_t4": "Nvidia Tesla T4",
-  "gpu_ondemand_p4": "Nvidia Tesla P4",
-  "gpu_ondemand_v100": "Nvidia Tesla V100",
-  "gpu_ondemand_p100": "Nvidia Tesla P100",
-  "gpu_ondemand_k80": "Nvidia Tesla K80"
+  "gpu_ondemand_t4": "Nvidia Tesla T4 GPU running",
+  "gpu_ondemand_p4": "Nvidia Tesla P4 GPU running",
+  "gpu_ondemand_v100": "Nvidia Tesla V100 GPU running",
+  "gpu_ondemand_p100": "Nvidia Tesla P100 GPU running",
+  "gpu_ondemand_k80": "Nvidia Tesla K80 GPU running"
 }

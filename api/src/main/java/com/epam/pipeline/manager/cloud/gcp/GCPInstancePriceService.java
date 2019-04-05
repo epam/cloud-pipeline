@@ -26,6 +26,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -70,7 +71,10 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     private double getPrice(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
         final long nanos = prices.stream()
-                .filter(price -> price.getFamily().equals(machine.getFamily()))
+                .filter(price -> price.getFamily().equals(machine.getFamily())
+                        || StringUtils.isNotBlank(machine.getGpuType())
+                        && price.getType() == GCPResourceType.GPU
+                        && price.getFamily().equals(machine.getGpuType()))
                 .mapToLong(price -> price.in(machine))
                 .sum();
         return new BigDecimal((double) nanos / 1_000_000_000.0)
