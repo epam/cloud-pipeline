@@ -35,4 +35,4 @@ instance.save()
 Jenkins.instance.getInjector().getInstance(AdminWhitelistRule.class).setMasterKillSwitch(false)
 
 // Allow only one executor
-Jenkins.instance.setNumExecutors(1)
+Jenkins.instance.setNumExecutors(2)

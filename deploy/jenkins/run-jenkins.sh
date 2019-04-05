@@ -60,6 +60,7 @@ docker run  -d \
             -d -v /var/run/docker.sock:/var/run/docker.sock \
             -v $(which docker):/usr/bin/docker \
             -v "$ENV_PATH":"$JENKINS_ENV" \
+            -v "$AZURE_AUTH_LOCATION":"$AZURE_AUTH_LOCATION" \
             -p 8080:8080 \
             -p 50000:50000 \
             -u root \
