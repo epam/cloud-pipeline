@@ -663,6 +663,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       serviceType: storage.serviceType || ServiceTypes.objectStorage,
       mountPoint: storage.mountPoint,
       mountOptions: storage.mountOptions,
+      fileShareMountId: storage.fileShareMountId,
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
         : undefined
