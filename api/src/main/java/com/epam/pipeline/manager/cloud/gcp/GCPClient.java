@@ -67,7 +67,7 @@ public class GCPClient {
     public Cloudbilling buildBillingClient(final GCPRegion region) throws IOException {
         final GoogleCredential credentials = buildCredentials(region);
         return new Cloudbilling.Builder(httpTransport, jsonFactory, credentials.createScoped(BILLING_SCOPES))
-//                .setApplicationName(region.getApplicationName())
+                .setApplicationName(region.getApplicationName())
                 .build();
     }
 
