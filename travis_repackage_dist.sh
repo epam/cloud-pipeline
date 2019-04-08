@@ -60,3 +60,7 @@ zip -r -q pipeline.jar .
 cd ..
 mv pipeline-jar-repackage/pipeline.jar bin/
 tar -zcf $DIST_TGZ_NAME bin/
+
+# Publish repackaged distribution tgz to S3 into builds/ prefix
+aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
+aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/
