@@ -18,10 +18,8 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
-import com.epam.pipeline.manager.cloud.commands.*;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -33,7 +31,6 @@ import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -52,35 +49,17 @@ public class CommonCloudInstanceService {
     private final AuthManager authManager;
     private final PipelineRunManager pipelineRunManager;
     private final KubernetesManager kubernetesManager;
-    private final String nodeUpScript;
-    private final String nodeDownScript;
-    private final String nodeReassignScript;
-    private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
 
-    public CommonCloudInstanceService(PreferenceManager preferenceManager,
-                                      UserManager userManager,
-                                      AuthManager authManager,
-                                      PipelineRunManager pipelineRunManager,
-                                      final KubernetesManager kubernetesManager,
-                                      @Value("${cluster.nodeup.script}") final String nodeUpScript,
-                                      @Value("${cluster.nodedown.script}") final String nodeDownScript,
-                                      @Value("${cluster.reassign.script}") final String nodeReassignScript,
-                                      @Value("${cluster.node.terminate.script}") final String nodeTerminateScript,
-                                      @Value("${kube.master.ip}") final String kubeMasterIP,
-                                      @Value("${kube.kubeadm.token}") final String kubeToken) {
+    public CommonCloudInstanceService(final PreferenceManager preferenceManager,
+                                      final UserManager userManager,
+                                      final AuthManager authManager,
+                                      final PipelineRunManager pipelineRunManager,
+                                      final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
         this.userManager = userManager;
         this.authManager = authManager;
         this.pipelineRunManager = pipelineRunManager;
         this.kubernetesManager = kubernetesManager;
-        this.nodeUpScript = nodeUpScript;
-        this.nodeDownScript = nodeDownScript;
-        this.nodeReassignScript = nodeReassignScript;
-        this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
     }
 
     public RunInstance runNodeUpScript(final CmdExecutor cmdExecutor,
@@ -105,12 +84,11 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public boolean runNodeReassignScript(final Long oldId,
+    public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
+                                         final String command,
+                                         final Long oldId,
                                          final Long newId,
-                                         final String cloud,
-                                         final CmdExecutor cmdExecutor,
                                          final Map<String, String> envVars) {
-        final String command = buildNodeReassignCommand(oldId, newId, cloud);
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);
@@ -128,17 +106,6 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public String buildTerminateNodeCommand(final String internalIp, final String nodeName, final  String cloud) {
-        return TerminateNodeCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeTerminateScript)
-                .internalIp(internalIp)
-                .nodeName(nodeName)
-                .cloud(cloud)
-                .build()
-                .getCommand();
-    }
-
     public LocalDateTime getNodeLaunchTimeFromKube(final Long runId) {
         return kubernetesManager.findNodeByRunId(String.valueOf(runId))
                 .map(node -> node.getMetadata().getCreationTimestamp())
@@ -152,19 +119,6 @@ public class CommonCloudInstanceService {
                         return null;
                     }
                 }).orElse(null);
-    }
-
-    private String buildNodeReassignCommand(final Long oldId,
-                                            final Long newId,
-                                            final String cloud) {
-        return ReassignCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeReassignScript)
-                .oldRunId(String.valueOf(oldId))
-                .newRunId(String.valueOf(newId))
-                .cloud(cloud)
-                .build()
-                .getCommand();
     }
 
     private void readInstanceId(final RunInstance instance, final String output) {
@@ -198,48 +152,5 @@ public class CommonCloudInstanceService {
         } catch (CmdExecutionException e) {
             log.error(e.getMessage(), e);
         }
-    }
-
-    public String buildNodeDownCommand(final Long runId,
-                                       final String cloud) {
-        return RunIdArgCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeDownScript)
-                .runId(String.valueOf(runId))
-                .cloud(cloud)
-                .build()
-                .getCommand();
-    }
-
-    public NodeUpCommand.NodeUpCommandBuilder buildNodeUpCommonCommand(final AbstractCloudRegion region,
-                                                                       final Long runId,
-                                                                       final RunInstance instance,
-                                                                       final String cloud) {
-        return NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(String.valueOf(runId))
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .cloud(cloud)
-                .region(region.getRegionCode());
-    }
-
-    public NodeUpCommand.NodeUpCommandBuilder buildNodeUpDefaultCommand(final AbstractCloudRegion region,
-                                                                        final String nodeId,
-                                                                        final String cloud) {
-        return NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeId)
-                .instanceType(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TYPE))
-                .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .cloud(cloud)
-                .region(region.getRegionCode());
     }
 }

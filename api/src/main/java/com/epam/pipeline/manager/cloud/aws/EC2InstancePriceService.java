@@ -61,7 +61,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
                 }
                 skipLines--;
             }
-            return new AwsPriceListReader(region.getId()).readPriceCsv(reader);
+            return new AWSPriceListReader(region.getId()).readPriceCsv(reader);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();

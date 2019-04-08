@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
-public class AwsPriceListReader {
+public class AWSPriceListReader {
 
     private final Long regionId;
 

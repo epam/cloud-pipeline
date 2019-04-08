@@ -24,10 +24,12 @@ import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -42,21 +44,36 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
     private static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
+    private final ClusterCommandService commandService;
     private final CommonCloudInstanceService instanceService;
     private final GCPVMService vmService;
+    private final String nodeUpScript;
+    private final String nodeDownScript;
+    private final String nodeReassignScript;
+    private final String nodeTerminateScript;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
-    public GCPInstanceService(final CommonCloudInstanceService instanceService,
-                                final GCPVMService vmService) {
+    public GCPInstanceService(final ClusterCommandService commandService,
+                              final CommonCloudInstanceService instanceService,
+                              final GCPVMService vmService,
+                              @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
+                              @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
+                              @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
+                              @Value("${cluster.gcp.node.terminate.script}") final String nodeTerminateScript) {
+        this.commandService = commandService;
         this.instanceService = instanceService;
         this.vmService = vmService;
+        this.nodeUpScript = nodeUpScript;
+        this.nodeDownScript = nodeDownScript;
+        this.nodeReassignScript = nodeReassignScript;
+        this.nodeTerminateScript = nodeTerminateScript;
     }
 
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance) {
 
-        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance,
-                CloudProvider.GCP.name()).sshKey(region.getSshPublicKeyPath())
+        final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
+                getProviderName()).sshKey(region.getSshPublicKeyPath())
                 .isSpot(Optional.ofNullable(instance.getSpot())
                         .orElse(false))
                 .bidPrice(StringUtils.EMPTY)
@@ -68,7 +85,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public void scaleDownNode(final GCPRegion region, final Long runId) {
-        final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.GCP.name());
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         instanceService.runNodeDownScript(cmdExecutor, command, envVars);
     }
@@ -79,9 +96,18 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
+        final String command = commandService.buildNodeReassignCommand(
+                nodeReassignScript, oldId, newId, getProviderName());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
+                buildScriptGCPEnvVars(region));
+    }
+
+
+    @Override
     public void terminateNode(final GCPRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp,
-                nodeName, CloudProvider.GCP.name());
+        final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp,
+                nodeName, getProviderName());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
         instanceService.runTerminateNodeScript(command, cmdExecutor, envVars);
     }
@@ -116,12 +142,6 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
-    }
-
-    @Override
-    public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId) {
-        return instanceService.runNodeReassignScript(oldId, newId,
-                CloudProvider.GCP.name(), cmdExecutor, buildScriptGCPEnvVars(region));
     }
 
     @Override

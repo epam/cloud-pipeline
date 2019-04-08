@@ -25,12 +25,14 @@ import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.network.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -49,29 +51,45 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final AzureVMService vmService;
     private final CloudRegionManager cloudRegionManager;
     private final ParallelExecutorService executorService;
+    private final ClusterCommandService commandService;
+    private final String nodeUpScript;
+    private final String nodeDownScript;
+    private final String nodeReassignScript;
+    private final String nodeTerminateScript;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final AzureVMService vmService,
                                 final CloudRegionManager regionManager,
-                                final ParallelExecutorService executorService) {
+                                final ParallelExecutorService executorService,
+                                final ClusterCommandService commandService,
+                                @Value("${cluster.azure.nodeup.script}") final String nodeUpScript,
+                                @Value("${cluster.azure.nodedown.script}") final String nodeDownScript,
+                                @Value("${cluster.azure.reassign.script}") final String nodeReassignScript,
+                                @Value("${cluster.azure.node.terminate.script}") final String nodeTerminateScript) {
         this.instanceService = instanceService;
         this.cloudRegionManager = regionManager;
         this.vmService = vmService;
         this.executorService = executorService;
+        this.commandService = commandService;
+        this.nodeUpScript = nodeUpScript;
+        this.nodeDownScript = nodeDownScript;
+        this.nodeReassignScript = nodeReassignScript;
+        this.nodeTerminateScript = nodeTerminateScript;
     }
 
     @Override
     public RunInstance scaleUpNode(final AzureRegion region, final Long runId, final RunInstance instance) {
-        final String command = instanceService.buildNodeUpCommonCommand(region, runId, instance,
-                CloudProvider.AZURE.name()).sshKey(region.getSshPublicKeyPath()).build().getCommand();
+        final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
+                getProviderName())
+                .sshKey(region.getSshPublicKeyPath()).build().getCommand();
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
-        final String command = instanceService.buildNodeDownCommand(runId, CloudProvider.AZURE.name());
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -84,9 +102,17 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
+        final String command = commandService.buildNodeReassignCommand(nodeReassignScript, oldId,
+                newId, getProviderName());
+        return instanceService.runNodeReassignScript(cmdExecutor, command,
+                oldId, newId, buildScriptAzureEnvVars(region));
+    }
+
+    @Override
     public void terminateNode(final AzureRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName,
-                CloudProvider.AZURE.name());
+        final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp, nodeName,
+                getProviderName());
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
                 executorService.getExecutorService());
@@ -120,12 +146,6 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
-    }
-
-    @Override
-    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
-        return instanceService.runNodeReassignScript(
-                oldId, newId, CloudProvider.AZURE.name(), cmdExecutor, buildScriptAzureEnvVars(region));
     }
 
     @Override

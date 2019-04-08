@@ -362,7 +362,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private String getMountDirName(String nfsPath) {
-       return getNfsRootPath(nfsPath).replace(":", "/");
+        return getNfsRootPath(nfsPath).replace(":", "/");
     }
 
     @Override

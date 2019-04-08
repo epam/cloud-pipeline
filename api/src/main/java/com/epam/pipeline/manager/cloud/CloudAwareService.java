@@ -21,4 +21,8 @@ import com.epam.pipeline.entity.region.CloudProvider;
 public interface CloudAwareService {
 
     CloudProvider getProvider();
+
+    default String getProviderName() {
+        return getProvider().name();
+    }
 }
