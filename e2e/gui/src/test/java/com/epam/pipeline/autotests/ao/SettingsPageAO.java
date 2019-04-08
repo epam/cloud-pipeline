@@ -459,6 +459,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public final Map<Primitive, SelenideElement> elements = initialiseElements(
                             entry(SEARCH, element),
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
+                            entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form")))
                     );
 
@@ -486,6 +487,22 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public EditUserPopup searchRoleBySubstring(String substring) {
                         click(SEARCH);
                         setValue(SEARCH_INPUT, substring);
+                        return this;
+                    }
+
+                    public EditUserPopup addRoleOrGroup(final String value) {
+                        click(SEARCH);
+                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(text(value)).click();
+                        click(ADD_KEY);
+                        return this;
+                    }
+
+                    public EditUserPopup deleteRoleOrGroup(final String value) {
+                        $$(byClassName("role-name-column"))
+                                .findBy(text(value))
+                                .closest("tr")
+                                .find(By.id("delete-role-button"))
+                                .click();
                         return this;
                     }
                 }

@@ -93,6 +93,8 @@ public class RoleModelTest
                 .createPipeline(Template.SHELL, firstOfTheSeveralPipelines)
                 .createPipeline(Template.SHELL, secondOfTheSeveralPipelines);
 
+        createGroupPrerequisites();
+
         logout();
     }
 
@@ -466,7 +468,7 @@ public class RoleModelTest
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
                 .ensureNotVisible(CREATE_FOLDER, UPLOAD, EDIT_STORAGE)
-                .ensureVisible(SELECT_ALL, ADDRESS_BAR, DOWNLOAD, REFRESH, SHOW_METADATA);
+                .ensureVisible(SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -494,7 +496,7 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, DOWNLOAD, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -919,9 +921,29 @@ public class RoleModelTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
+                                .deleteGroup(userGroup)
+                                .closeAll()
+                );
+    }
+
+    private void createGroupPrerequisites() {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToGroups()
+                .pressCreateGroup()
+                .enterGroupName(userGroup)
+                .create()
+                .ok();
+        tools()
+                .performWithin(registry, group, tool, tool ->
+                        tool.permissions()
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );
+
+        addUserToGroup(user.login.toUpperCase());
+        addUserToGroup(userWithoutCompletedRuns.login.toUpperCase());
 
         givePermissions(userGroup,
                 ToolPermission.inherit(READ, tool, registry, group),
@@ -929,4 +951,15 @@ public class RoleModelTest
                 ToolPermission.inherit(EXECUTE, tool, registry, group));
     }
 
+    private void addUserToGroup(final String userLogin) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userLogin)
+                .edit()
+                .addRoleOrGroup(userGroup)
+                .ok()
+                .ok();
+    }
 }

@@ -104,6 +104,14 @@ public class PermissionTabAO implements ClosableAO {
                 .ok();
     }
 
+    public PermissionTabAO deleteGroup(String usersGroup) {
+        $$(byClassName("ant-table-tbody"))
+                .find(text(usersGroup))
+                .find(tagName("button"))
+                .click();
+        return this;
+    }
+
     @Override
     public void closeAll() {
         clickOnInfoTabIfItIsVisible();
@@ -121,7 +129,7 @@ public class PermissionTabAO implements ClosableAO {
         }
 
         public UserPermissionsTableAO showPermissions() {
-            getElementByNameInUpperCase(login.toLowerCase()).shouldBe(visible).click();
+            getElementByNameInUpperCase(login).shouldBe(visible).click();
             return new UserPermissionsTableAO(this);
         }
 
