@@ -22,11 +22,7 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.text.WordUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -48,8 +44,6 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     private static final long GIGABYTE = 1_000_000_000L;
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
-    private static final String DELIMITER = "-";
-    private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
 
     private final List<GCPMachineExtractor> extractors;
     private final GCPResourcePriceLoader priceLoader;
@@ -87,7 +81,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                         .unit(HOURS_UNIT)
                         .volumeType("SSD")
                         .operatingSystem("Linux")
-                        .instanceFamily(readFamily(machine.getFamily()))
+                        .instanceFamily(WordUtils.capitalizeFully(machine.getFamily()))
                         .vCPU(machine.getCpu())
                         .gpu(machine.getGpu())
                         .memory(machine.getRam())
@@ -105,7 +99,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         final Map<GCPResourceType, Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
                 .filter(type -> type.isRequired(machine))
                 .collect(Collectors.toMap(Function.identity(),
-                        type -> findPrice(prices, type, billing, type.family(machine))));
+                    type -> findPrice(prices, type, billing, type.family(machine))));
         final Optional<GCPResourceType> typeWithMissingPrice = requiredPrices.entrySet()
                 .stream()
                 .filter(entry -> !entry.getValue().isPresent())
@@ -154,12 +148,4 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         return CloudProvider.GCP;
     }
 
-    private String readFamily(final String name) {
-        // expected format n1-standard-1
-        if (!name.contains(DELIMITER)) {
-            return "General purpose";
-        }
-        final String[] chunks = name.split(DELIMITER);
-        return WordUtils.capitalizeFully(chunks[1]);
-    }
 }
