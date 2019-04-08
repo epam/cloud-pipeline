@@ -54,8 +54,11 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +66,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -96,8 +102,6 @@ public class GSBucketStorageHelper {
 
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
-        final List<AbstractDataStorageItem> items = new ArrayList<>();
-
         String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
         if (StringUtils.isNotBlank(requestPath)) {
             requestPath = normalizeFolderPath(requestPath);
@@ -106,18 +110,14 @@ public class GSBucketStorageHelper {
         final String bucketName = storage.getPath();
 
         final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(showVersion),
                 Storage.BlobListOption.currentDirectory(),
                 Storage.BlobListOption.prefix(requestPath),
                 Storage.BlobListOption.pageToken(Optional.ofNullable(marker).orElse(EMPTY_PREFIX)),
                 Storage.BlobListOption.pageSize(Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE)));
-        for (Blob blob : blobs.iterateAll()) {
-            if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
-                continue;
-            }
-            items.add(blob.isDirectory()
-                    ? createDataStorageFolder(blob.getName())
-                    : createDataStorageFile(blob));
-        }
+        final List<AbstractDataStorageItem> items = showVersion
+                ? listItemsWithVersions(blobs)
+                : listItemsWithoutVersions(blobs);
         return new DataStorageListing(blobs.getNextPageToken(), items);
     }
 
@@ -159,8 +159,14 @@ public class GSBucketStorageHelper {
 
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = dataStorage.getPath();
-        final Blob blob = checkBlobExists(bucketName, path, client);
-        blob.delete();
+
+        if (StringUtils.isBlank(version) && totally) {
+            deleteAllVersions(bucketName, path, client);
+            return;
+        }
+
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
+        deleteBlob(bucketName, path, blob);
     }
 
     public void deleteFolder(final GSBucketStorage dataStorage, final String path, final Boolean totally) {
@@ -170,8 +176,15 @@ public class GSBucketStorageHelper {
         final String folderPath = normalizeFolderPath(path);
 
         final Storage client = gcpClient.buildStorageClient(region);
-        final Page<Blob> blobs = client.list(dataStorage.getPath(), Storage.BlobListOption.prefix(folderPath));
-        blobs.iterateAll().forEach(Blob::delete);
+
+        final String bucketName = dataStorage.getPath();
+        if (totally) {
+            deleteAllVersions(bucketName, path, client);
+            return;
+        }
+
+        final Page<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(folderPath));
+        blobs.iterateAll().forEach(blob -> deleteBlob(bucketName, path, blob));
     }
 
     public DataStorageFile moveFile(final GSBucketStorage storage, final String oldPath, final String newPath) {
@@ -182,7 +195,7 @@ public class GSBucketStorageHelper {
 
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        final Blob oldBlob = checkBlobExists(bucketName, oldPath, client);
+        final Blob oldBlob = checkBlobExistsAndGet(bucketName, oldPath, client, null);
         checkBlobDoesNotExist(bucketName, newPath, client);
 
         final CopyWriter copyWriter = client.get(bucketName).get(oldPath).copyTo(bucketName, newPath);
@@ -204,7 +217,7 @@ public class GSBucketStorageHelper {
         final String oldFolderPath = normalizeFolderPath(oldPath);
         final String newFolderPath = normalizeFolderPath(newPath);
 
-        checkBlobExists(bucketName, oldFolderPath, client);
+        checkBlobExistsAndGet(bucketName, oldFolderPath, client, null);
         checkBlobDoesNotExist(bucketName, newFolderPath, client);
 
         final Page<Blob> blobs = client.list(storage.getPath(), Storage.BlobListOption.prefix(oldFolderPath));
@@ -235,7 +248,7 @@ public class GSBucketStorageHelper {
             bufferSize = Math.toIntExact(maxDownloadSize);
         }
 
-        final Blob blob = checkBlobExists(bucketName, path, client);
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         final DataStorageItemContent content = new DataStorageItemContent();
         content.setContentType(blob.getContentType());
         content.setTruncated(blob.getSize() > bufferSize);
@@ -260,7 +273,7 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
 
-        final Blob blob = checkBlobExists(bucketName, path, client);
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         try (ReadChannel reader = blob.reader()) {
             return new DataStorageStreamingContent(Channels.newInputStream(reader), path);
         }
@@ -271,10 +284,9 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
-        checkBlobExists(bucketName, path, client);
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
 
-        final URL signedUrl = client.signUrl(BlobInfo.newBuilder(bucketName, path).build(), 1,
-                TimeUnit.DAYS);
+        final URL signedUrl = client.signUrl(BlobInfo.newBuilder(blob.getBlobId()).build(), 1, TimeUnit.DAYS);
         final DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
         dataStorageDownloadFileUrl.setUrl(signedUrl.toString());
         dataStorageDownloadFileUrl.setExpires(new Date((new Date()).getTime() + URL_EXPIRATION));
@@ -286,7 +298,7 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
-        final Blob blob = checkBlobExists(bucketName, path, client);
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         return new HashMap<>(MapUtils.emptyIfNull(blob.getMetadata()));
     }
 
@@ -295,7 +307,7 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
-        final Blob blob = checkBlobExists(bucketName, path, client);
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         client.update(blob.toBuilder()
                 .setBlobId(blob.getBlobId())
                 .setMetadata(null)
@@ -320,6 +332,87 @@ public class GSBucketStorageHelper {
         return existingTags;
     }
 
+    public void restoreFileVersion(final GSBucketStorage storage, final String path, final String version) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
+
+        final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                .setSource(blob.getBlobId())
+                .setSourceOptions(Storage.BlobSourceOption.generationMatch())
+                .setTarget(BlobId.of(bucketName, path))
+                .build();
+        client.copy(request).getResult();
+        deleteBlob(bucketName, path, blob);
+    }
+
+    private List<AbstractDataStorageItem> listItemsWithoutVersions(final Page<Blob> blobs) {
+        final List<AbstractDataStorageItem> items = new ArrayList<>();
+
+        for (Blob blob : blobs.iterateAll()) {
+            if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
+                continue;
+            }
+            items.add(blob.isDirectory()
+                    ? createDataStorageFolder(blob.getName())
+                    : createDataStorageFile(blob));
+        }
+        return items;
+    }
+
+    private List<AbstractDataStorageItem> listItemsWithVersions(final Page<Blob> blobs) {
+        final List<AbstractDataStorageItem> items = new ArrayList<>();
+        final Map<String, List<Blob>> files = new HashMap<>();
+
+        for (Blob blob : blobs.iterateAll()) {
+            if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
+                continue;
+            }
+            if (blob.isDirectory()) {
+                items.add(createDataStorageFolder(blob.getName()));
+                continue;
+            }
+            files.putIfAbsent(blob.getName(), new ArrayList<>());
+            final List<Blob> versionsByPath = files.get(blob.getName());
+            versionsByPath.add(blob);
+        }
+
+        files.forEach((path, fileVersions) -> {
+            fileVersions.sort(Comparator.comparingLong(BlobInfo::getUpdateTime).reversed());
+            final Blob latestVersionBlob = fileVersions.remove(0);
+            final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob);
+            final Map<String, AbstractDataStorageItem> collect = fileVersions
+                    .stream()
+                    .map(this::createDataStorageFileWithVersion)
+                    .collect(Collectors.toMap(DataStorageFile::getVersion, Function.identity()));
+            latestVersionFile.setVersions(collect);
+            items.add(latestVersionFile);
+        });
+        return items;
+    }
+
+    private DataStorageFile createDataStorageFileWithVersion(final Blob blob) {
+        final DataStorageFile dataStorageFile = createDataStorageFile(blob);
+        dataStorageFile.setDeleteMarker(Objects.nonNull(blob.getDeleteTime()));
+        dataStorageFile.setVersion(String.valueOf(blob.getGeneration()));
+        return dataStorageFile;
+    }
+
+    private void deleteAllVersions(final String bucketName, final String path, final Storage client) {
+        final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(true),
+                Storage.BlobListOption.prefix(path));
+        blobs.iterateAll().forEach(blob -> deleteBlob(bucketName, path, blob));
+    }
+
+    private void deleteBlob(final String bucketName, final String path, final Blob blob) {
+        final boolean deleted = blob.delete(Blob.BlobSourceOption.generationMatch());
+        if (!deleted) {
+            throw new DataStorageException(String.format("Failed to delete google storage file %s/%s",
+                    bucketName, path));
+        }
+    }
+
     private String normalizeFolderPath(final String path) {
         String normalizedFolderPath = ProviderUtils.withTrailingDelimiter(path);
         if (normalizedFolderPath.startsWith(ProviderUtils.DELIMITER)) {
@@ -339,17 +432,25 @@ public class GSBucketStorageHelper {
     }
 
     private DataStorageFile createDataStorageFile(final Blob blob) {
+        final TimeZone tz = TimeZone.getTimeZone("UTC");
+        final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
+
         final String[] parts = blob.getName().split(ProviderUtils.DELIMITER);
         final String fileName = parts[parts.length - 1];
         final DataStorageFile file = new DataStorageFile();
         file.setName(fileName);
         file.setPath(blob.getName());
         file.setSize(blob.getSize());
+        file.setChanged(df.format(new Date(blob.getUpdateTime())));
         return file;
     }
 
-    private Blob checkBlobExists(final String bucketName, final String blobPath, final Storage client) {
-        final Blob blob = client.get(bucketName, blobPath);
+    private Blob checkBlobExistsAndGet(final String bucketName, final String blobPath, final Storage client,
+                                       final String version) {
+        final BlobId blobId = BlobId.of(bucketName, blobPath,
+                StringUtils.isNotBlank(version) ? Long.valueOf(version) : null);
+        final Blob blob = client.get(blobId);
         Assert.notNull(blob, messageHelper.getMessage(MessageConstants.ERROR_GCP_STORAGE_PATH_NOT_FOUND, blobPath,
                 bucketName));
         return blob;
