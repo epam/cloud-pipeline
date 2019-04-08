@@ -42,8 +42,8 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     private static final String SSH_PUB_PATH = "/ssh.pub";
     private static final String IMPERSONATED_ACCOUNT = "acc";
     private static final List<GCPCustomInstanceType> CUSTOM_INSTANCE_TYPES = Arrays.asList(
-            GCPCustomInstanceType.cpu(1, 3.75),
-            GCPCustomInstanceType.gpu(1, 3.75, 1, "K80")
+            GCPCustomInstanceType.withCpu(1, 3.75),
+            GCPCustomInstanceType.withGpu(1, 3.75, 1, "K80")
     );
 
     @Before

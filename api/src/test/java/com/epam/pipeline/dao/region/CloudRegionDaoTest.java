@@ -157,8 +157,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         expectedRegion.setSshPublicKeyPath(SSH_PUBLIC_KEY_PATH);
         expectedRegion.setApplicationName("App");
         expectedRegion.setCustomInstanceTypes(Arrays.asList(
-            GCPCustomInstanceType.cpu(CPU, RAM),
-            GCPCustomInstanceType.gpu(CPU, RAM, GPU, GPU_TYPE)
+            GCPCustomInstanceType.withCpu(CPU, RAM),
+            GCPCustomInstanceType.withGpu(CPU, RAM, GPU, GPU_TYPE)
         ));
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
         final GCPRegion actualRegion = loadAndCheckType(createdRegion.getId(), GCPRegion.class);

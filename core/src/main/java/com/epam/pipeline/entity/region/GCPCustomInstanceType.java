@@ -31,15 +31,15 @@ public class GCPCustomInstanceType {
     private int gpu;
     private String gpuType;
 
-    public static GCPCustomInstanceType cpu(final int cpu,
-                                            final double ram) {
+    public static GCPCustomInstanceType withCpu(final int cpu,
+                                                final double ram) {
         return new GCPCustomInstanceType(cpu, ram, 0, null);
     }
 
-    public static GCPCustomInstanceType gpu(final int cpu,
-                                            final double ram,
-                                            final int gpu,
-                                            final String gpuType) {
+    public static GCPCustomInstanceType withGpu(final int cpu,
+                                                final double ram,
+                                                final int gpu,
+                                                final String gpuType) {
         return new GCPCustomInstanceType(cpu, ram, gpu, gpuType);
     }
 }

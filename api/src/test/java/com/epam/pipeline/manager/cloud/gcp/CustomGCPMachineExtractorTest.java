@@ -33,7 +33,7 @@ public class CustomGCPMachineExtractorTest {
     @Test
     public void testCustomCpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.cpu(1, 2)));
+        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(1, 2)));
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 GCPMachine.withCpu("custom-1-2048", "custom", 1, 2));
 
@@ -46,7 +46,7 @@ public class CustomGCPMachineExtractorTest {
     @Test
     public void testCustomGpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.gpu(1, 2, 3, "K80")));
+        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(1, 2, 3, "K80")));
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 GCPMachine.withGpu("gpu-custom-1-2048-k80-3", "custom", 1, 2, 3, "K80"));
 
