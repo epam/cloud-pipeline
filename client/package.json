@@ -21,7 +21,7 @@
     "mobx-react-router": "^3.1.2",
     "moment": "^2.18.1",
     "papaparse": "^4.3.6",
-    "pipeline-builder": "0.3.10-dev.304",
+    "pipeline-builder": "0.3.10-dev.308",
     "prop-types": "^15.5.8",
     "react": "^15.4.2",
     "react-day-picker": "^5.5.3",
