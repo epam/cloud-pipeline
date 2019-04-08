@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -59,9 +58,9 @@ public class GCPInstancePriceServiceTest {
     private final GCPRegion region = defaultRegion();
     private final GCPMachine cpuMachine = GCPMachine.withCpu("n1-standard-1", STANDARD_FAMILY, 1, 4);
     private final GCPMachine gpuMachine = GCPMachine.withGpu("gpu-custom-1-3840-k80-1", CUSTOM_FAMILY, 2, 8, 3, "K80");
-    private final GCPMachine nonExistingMachine =
-            GCPMachine.withCpu("n1-nonexistingfamily-1", "nonexistingfamily", 1, 4);
-    private final List<GCPMachine> extractor1Machines = Arrays.asList(cpuMachine, nonExistingMachine);
+    private final GCPMachine machineWithoutAssociatedPrices =
+            GCPMachine.withCpu("n1-familywithoutprices-1", "familywithoutprices", 10, 20);
+    private final List<GCPMachine> extractor1Machines = Arrays.asList(cpuMachine, machineWithoutAssociatedPrices);
     private final List<GCPMachine> extractor2Machines = Collections.singletonList(gpuMachine);
 
     private final GCPMachineExtractor extractor1 = mock(GCPMachineExtractor.class);
@@ -98,14 +97,19 @@ public class GCPInstancePriceServiceTest {
     }
 
     @Test
-    public void refreshShouldIgnoreMachinesWithoutAssociatedPrices() {
+    public void refreshShouldSetEmptyPriceForMachinesWithoutAssociatedPrices() {
         final List<InstanceOffer> offers = service.refreshPriceListForRegion(region);
 
         final Optional<InstanceOffer> optionalOffer = offers.stream()
-                .filter(it -> it.getInstanceType().equals(nonExistingMachine.getName()))
+                .filter(it -> it.getInstanceType().equals(machineWithoutAssociatedPrices.getName()))
                 .findFirst();
 
-        assertFalse(optionalOffer.isPresent());
+        assertTrue(optionalOffer.isPresent());
+        final InstanceOffer offer = optionalOffer.get();
+        assertThat(offer.getVCPU(), is(machineWithoutAssociatedPrices.getCpu()));
+        assertThat(offer.getMemory(), is(machineWithoutAssociatedPrices.getRam()));
+        assertThat(offer.getGpu(), is(machineWithoutAssociatedPrices.getGpu()));
+        assertEquals(0.0, offer.getPricePerUnit(), 0.0);
     }
 
     @Test

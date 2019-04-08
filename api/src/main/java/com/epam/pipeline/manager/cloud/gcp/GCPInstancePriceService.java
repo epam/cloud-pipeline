@@ -35,8 +35,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -72,54 +74,56 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                                                final GCPMachine machine,
                                                final Set<GCPResourcePrice> prices) {
         return Arrays.stream(GCPBilling.values())
-                .map(billing -> getPrice(machine, billing, prices)
-                        .map(price ->
-                        InstanceOffer.builder()
-                                .termType(termType(billing))
-                                .tenancy(SHARED_TENANCY)
-                                .productFamily(INSTANCE_PRODUCT_FAMILY)
-                                .pricePerUnit(price)
-                                .priceListPublishDate(new Date())
-                                .currency(CURRENCY)
-                                .instanceType(machine.getName())
-                                .regionId(region.getId())
-                                .unit(HOURS_UNIT)
-                                .volumeType("SSD")
-                                .operatingSystem("Linux")
-                                .instanceFamily(readFamily(machine.getFamily()))
-                                .vCPU(machine.getCpu())
-                                .gpu(machine.getGpu())
-                                .memory(machine.getRam())
-                                .build()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
+                .map(billing -> InstanceOffer.builder()
+                        .termType(termType(billing))
+                        .tenancy(SHARED_TENANCY)
+                        .productFamily(INSTANCE_PRODUCT_FAMILY)
+                        .pricePerUnit(getPrice(machine, billing, prices))
+                        .priceListPublishDate(new Date())
+                        .currency(CURRENCY)
+                        .instanceType(machine.getName())
+                        .regionId(region.getId())
+                        .unit(HOURS_UNIT)
+                        .volumeType("SSD")
+                        .operatingSystem("Linux")
+                        .instanceFamily(readFamily(machine.getFamily()))
+                        .vCPU(machine.getCpu())
+                        .gpu(machine.getGpu())
+                        .memory(machine.getRam())
+                        .build())
                 .collect(Collectors.toList());
     }
 
     private String termType(final GCPBilling billing) {
-        return billing == GCPBilling.ON_DEMAND
-                ? ON_DEMAND_TERM_TYPE
-                : PREEMPTIBLE_TERM_TYPE;
+        return billing == GCPBilling.ON_DEMAND ? ON_DEMAND_TERM_TYPE : PREEMPTIBLE_TERM_TYPE;
     }
 
-    private Optional<Double> getPrice(final GCPMachine machine,
-                                      final GCPBilling billing,
-                                      final Set<GCPResourcePrice> prices) {
-        final List<Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
+    private Double getPrice(final GCPMachine machine,
+                            final GCPBilling billing,
+                            final Set<GCPResourcePrice> prices) {
+        final Map<GCPResourceType, Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
                 .filter(type -> type.isRequired(machine))
-                .map(type -> findPrice(prices, type, billing, type.family(machine)))
-                .collect(Collectors.toList());
-        if (!requiredPrices.stream().allMatch(Optional::isPresent)) {
-            return Optional.empty();
+                .collect(Collectors.toMap(Function.identity(),
+                        type -> findPrice(prices, type, billing, type.family(machine))));
+        final Optional<GCPResourceType> typeWithMissingPrice = requiredPrices.entrySet()
+                .stream()
+                .filter(entry -> !entry.getValue().isPresent())
+                .map(Map.Entry::getKey)
+                .findFirst();
+        if (typeWithMissingPrice.isPresent()) {
+            log.error(String.format("Price for %s for GCP machine %s wasn't found.", typeWithMissingPrice.get(),
+                    machine.getName()));
+            return 0.0;
         }
-        final long nanos = requiredPrices.stream()
+        final long nanos = requiredPrices.values()
+                .stream()
+                .filter(Optional::isPresent)
                 .map(Optional::get)
                 .mapToLong(price -> price.in(machine))
                 .sum();
-        final double price = new BigDecimal(((double) nanos) / GIGABYTE)
+        return new BigDecimal(((double) nanos) / GIGABYTE)
                 .setScale(2, RoundingMode.HALF_EVEN)
                 .doubleValue();
-        return Optional.of(price);
     }
 
     private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
