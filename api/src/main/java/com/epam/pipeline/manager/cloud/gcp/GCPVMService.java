@@ -64,9 +64,9 @@ public class GCPVMService {
 
     public Instance getRunningInstanceByRunId(final GCPRegion region, final String runId) {
         try {
-            Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
+            final Instance instance = findInstanceByTag(region, RUN_ID_LABEL_NAME, runId);
 
-            GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
+            final GCPInstanceStatus instanceStatus = GCPInstanceStatus.valueOf(instance.getStatus());
             if (GCPInstanceStatus.getWorkingStatuses().contains(instanceStatus)) {
                 return instance;
             } else {
@@ -82,26 +82,26 @@ public class GCPVMService {
 
     public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region,
                                                                   final String instanceId) {
-        Instance instance = getInstanceById(region, instanceId);
-        if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
-            return Optional.of(
-                    InstanceTerminationState.builder()
-                            .instanceId(instanceId)
-                            .stateCode(GCPInstanceStatus.TERMINATED.name())
-                            .stateMessage(instance.getStatusMessage()).build()
-            );
-        }
-        return Optional.empty();
-    }
-
-    private Instance getInstanceById(GCPRegion region, String instanceId) {
         try {
-            return gcpClient.buildComputeClient(region).instances()
-                    .get(region.getProject(), region.getRegionCode(), instanceId).execute();
+            final Instance instance = getInstanceById(region, instanceId);
+            if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
+                return Optional.of(
+                        InstanceTerminationState.builder()
+                                .instanceId(instanceId)
+                                .stateCode(GCPInstanceStatus.TERMINATED.name())
+                                .stateMessage(instance.getStatusMessage()).build()
+                );
+            }
+            return Optional.empty();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            throw new GCPException(e);
+            return Optional.empty();
         }
+    }
+
+    private Instance getInstanceById(GCPRegion region, String instanceId) throws IOException {
+        return gcpClient.buildComputeClient(region).instances()
+                .get(region.getProject(), region.getRegionCode(), instanceId).execute();
     }
 
     private Instance findInstanceByTag(final GCPRegion region,
