@@ -22,5 +22,6 @@ import lombok.Value;
 class GCPResourceRequest {
     private final String family;
     private final GCPResourceType type;
+    private final GCPBilling billing;
     private final String prefix;
 }

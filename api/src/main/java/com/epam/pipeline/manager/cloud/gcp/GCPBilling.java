@@ -16,16 +16,16 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import lombok.Value;
+import lombok.RequiredArgsConstructor;
 
-@Value
-class GCPResourcePrice {
-    private final String family;
-    private final GCPResourceType type;
-    private final GCPBilling billing;
-    private final long nanos;
+@RequiredArgsConstructor
+enum GCPBilling {
+    ON_DEMAND("ondemand"),
+    PREEMPTIBLE("preemptible");
 
-    public long in(final GCPMachine machine) {
-        return type.priceFor(machine, this);
+    private final String alias;
+
+    public String alias() {
+        return alias;
     }
 }

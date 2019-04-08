@@ -16,10 +16,69 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import org.apache.commons.lang3.StringUtils;
+
 enum GCPResourceType {
     CPU, RAM, GPU;
 
-    public String alias() {
+    String alias() {
         return name().toLowerCase();
+    }
+
+    boolean isRequiredFor(final GCPMachine machine) {
+        switch (this) {
+            case CPU:
+                return machine.getCpu() > 0;
+            case RAM:
+                return machine.getRam() > 0;
+            case GPU:
+                return machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType());
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
+    }
+
+    GCPResourceRequest requestFor(final GCPBilling billing, final GCPMachine machine, final String prefix) {
+        switch (this) {
+            case CPU:
+            case RAM:
+                return new GCPResourceRequest(machine.getFamily(), this, billing, prefix);
+            case GPU:
+                return new GCPResourceRequest(machine.getGpuType(), this, billing, prefix);
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
+    }
+
+    String billingKeyFor(final GCPBilling billing, final GCPMachine machine) {
+        switch (this) {
+            case CPU:
+            case RAM:
+                return String.format("%s_%s_%s", alias(), billing.alias(), machine.getFamily());
+            case GPU:
+                return String.format("%s_%s_%s", alias(), billing.alias(), machine.getGpuType().toLowerCase());
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
+    }
+
+    String familyFor(final GCPMachine machine) {
+        switch (this) {
+            case CPU:
+            case RAM:
+                return machine.getFamily();
+            case GPU:
+                return machine.getGpuType();
+        }
+        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
+    }
+
+    public long priceFor(final GCPMachine machine, final GCPResourcePrice price) {
+        switch (this) {
+            case CPU:
+                return machine.getCpu() * price.getNanos();
+            case RAM:
+                return Math.round(machine.getRam() * price.getNanos());
+            case GPU:
+                return machine.getGpu() * price.getNanos();
+        }
+        return 0;
     }
 }

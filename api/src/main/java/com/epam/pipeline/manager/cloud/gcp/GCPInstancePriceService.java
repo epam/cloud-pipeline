@@ -31,7 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GCPInstancePriceService implements CloudInstancePriceService<GCPRegion> {
 
+    static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
     private static final String DELIMITER = "-";
     private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
 
@@ -58,9 +59,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                     .collect(Collectors.toList());
             final Set<GCPResourcePrice> prices = priceLoader.load(region, machines);
             return machines.stream()
-                    .map(machine -> buildInstanceOffer(region, machine, prices))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
+                    .flatMap(machine -> instanceOffers(region, machine, prices).stream())
                     .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -68,13 +67,14 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         }
     }
 
-    private Optional<InstanceOffer> buildInstanceOffer(final GCPRegion region,
-                                                       final GCPMachine machine,
-                                                       final Set<GCPResourcePrice> prices) {
-        return getPrice(machine, prices)
-                .map(price ->
+    private List<InstanceOffer> instanceOffers(final GCPRegion region,
+                                               final GCPMachine machine,
+                                               final Set<GCPResourcePrice> prices) {
+        return Arrays.stream(GCPBilling.values())
+                .map(billing -> getPrice(machine, billing, prices)
+                        .map(price ->
                         InstanceOffer.builder()
-                                .termType(ON_DEMAND_TERM_TYPE)
+                                .termType(termType(billing))
                                 .tenancy(SHARED_TENANCY)
                                 .productFamily(INSTANCE_PRODUCT_FAMILY)
                                 .pricePerUnit(price)
@@ -89,20 +89,25 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                                 .vCPU(machine.getCpu())
                                 .gpu(machine.getGpu())
                                 .memory(machine.getRam())
-                                .build());
+                                .build()))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
     }
 
-    private Optional<Double> getPrice(final GCPMachine machine, final Set<GCPResourcePrice> prices) {
-        final List<Optional<GCPResourcePrice>> machinePrices = new ArrayList<>();
-        if (machine.getCpu() > 0) {
-            machinePrices.add(findPrice(prices, GCPResourceType.CPU, machine.getFamily()));
-        }
-        if (machine.getRam() > 0) {
-            machinePrices.add(findPrice(prices, GCPResourceType.RAM, machine.getFamily()));
-        }
-        if (machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType())) {
-            machinePrices.add(findPrice(prices, GCPResourceType.GPU, machine.getGpuType()));
-        }
+    private String termType(final GCPBilling billing) {
+        return billing == GCPBilling.ON_DEMAND
+                ? ON_DEMAND_TERM_TYPE
+                : PREEMPTIBLE_TERM_TYPE;
+    }
+
+    private Optional<Double> getPrice(final GCPMachine machine,
+                                      final GCPBilling billing,
+                                      final Set<GCPResourcePrice> prices) {
+        final List<Optional<GCPResourcePrice>> machinePrices = Arrays.stream(GCPResourceType.values())
+                .filter(type -> type.isRequiredFor(machine))
+                .map(type -> findPrice(prices, type, billing, type.familyFor(machine)))
+                .collect(Collectors.toList());
         if (!machinePrices.stream().allMatch(Optional::isPresent)) {
             return Optional.empty();
         }
@@ -118,8 +123,10 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
                                                  final GCPResourceType type,
+                                                 final GCPBilling billing,
                                                  final String family) {
         return prices.stream()
+                .filter(price -> price.getBilling() == billing)
                 .filter(price -> price.getType() == type)
                 .filter(price -> price.getFamily().equals(family))
                 .findFirst();

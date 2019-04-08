@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,6 +47,8 @@ public class GCPInstancePriceServiceTest {
     private static final long CUSTOM_RAM_COST = 50_000_000L;
     private static final long STANDARD_CPU_COST = 1_000_000_000L;
     private static final long STANDARD_RAM_COST = 100_000_000L;
+    private static final long STANDARD_CPU_PREEMTIBLE_COST = 100_000L;
+    private static final long STANDARD_RAM_PREEMTIBLE_COST = 1_000L;
     private static final long K80_GPU_COST = 50_000_000L;
 
     private final GCPRegion region = region();
@@ -68,11 +71,15 @@ public class GCPInstancePriceServiceTest {
         when(extractor2.extract(any())).thenReturn(extractor2Machines);
 
         when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
-                new GCPResourcePrice("standard", GCPResourceType.CPU, STANDARD_CPU_COST),
-                new GCPResourcePrice("standard", GCPResourceType.RAM, STANDARD_RAM_COST),
-                new GCPResourcePrice("custom", GCPResourceType.CPU, CUSTOM_CPU_COST),
-                new GCPResourcePrice("custom", GCPResourceType.RAM, CUSTOM_RAM_COST),
-                new GCPResourcePrice("K80", GCPResourceType.GPU, K80_GPU_COST)
+                new GCPResourcePrice("standard", GCPResourceType.CPU, GCPBilling.ON_DEMAND, STANDARD_CPU_COST),
+                new GCPResourcePrice("standard", GCPResourceType.RAM, GCPBilling.ON_DEMAND, STANDARD_RAM_COST),
+                new GCPResourcePrice("standard", GCPResourceType.CPU, GCPBilling.PREEMPTIBLE,
+                        STANDARD_CPU_PREEMTIBLE_COST),
+                new GCPResourcePrice("standard", GCPResourceType.RAM, GCPBilling.PREEMPTIBLE,
+                        STANDARD_RAM_PREEMTIBLE_COST),
+                new GCPResourcePrice("custom", GCPResourceType.CPU, GCPBilling.ON_DEMAND, CUSTOM_CPU_COST),
+                new GCPResourcePrice("custom", GCPResourceType.RAM, GCPBilling.ON_DEMAND, CUSTOM_RAM_COST),
+                new GCPResourcePrice("K80", GCPResourceType.GPU, GCPBilling.ON_DEMAND, K80_GPU_COST)
         )));
     }
 
@@ -102,6 +109,7 @@ public class GCPInstancePriceServiceTest {
 
         final Optional<InstanceOffer> optionalOffer = offers.stream()
                 .filter(it -> it.getInstanceType().equals(cpuMachine.getName()))
+                .filter(it -> it.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE))
                 .findFirst();
 
         assertTrue(optionalOffer.isPresent());
@@ -131,6 +139,26 @@ public class GCPInstancePriceServiceTest {
         final double expectedNanos = CUSTOM_CPU_COST * gpuMachine.getCpu()
                 + CUSTOM_RAM_COST * gpuMachine.getRam()
                 + K80_GPU_COST * gpuMachine.getGpu();
+        final double expectedPrice = expectedNanos / 1_000_000_000.0;
+        assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
+    }
+
+    @Test
+    public void refreshShouldReturnPreemtibleMachineInstanceOffers() {
+        final List<InstanceOffer> offers = service.refreshPriceListForRegion(region);
+
+        final Optional<InstanceOffer> optionalOffer = offers.stream()
+                .filter(it -> it.getInstanceType().equals(cpuMachine.getName()))
+                .filter(it -> it.getTermType().equals(GCPInstancePriceService.PREEMPTIBLE_TERM_TYPE))
+                .findFirst();
+
+        assertTrue(optionalOffer.isPresent());
+        final InstanceOffer offer = optionalOffer.get();
+        assertThat(offer.getVCPU(), is(cpuMachine.getCpu()));
+        assertThat(offer.getMemory(), is(cpuMachine.getRam()));
+        assertThat(offer.getGpu(), is(cpuMachine.getGpu()));
+        final double expectedNanos = STANDARD_CPU_PREEMTIBLE_COST * cpuMachine.getCpu()
+                + STANDARD_RAM_PREEMTIBLE_COST * cpuMachine.getRam();
         final double expectedPrice = expectedNanos / 1_000_000_000.0;
         assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
     }

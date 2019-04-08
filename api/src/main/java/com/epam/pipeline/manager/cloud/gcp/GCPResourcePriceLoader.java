@@ -31,7 +31,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -57,35 +57,19 @@ public class GCPResourcePriceLoader {
     @SneakyThrows
     public Set<GCPResourcePrice> load(final GCPRegion region, final List<GCPMachine> machines) {
         final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
-        final Map<String, String> prefixes = loadPrefixes();
+        final Map<String, String> prefixes = loadBillingPrefixes();
         final List<Sku> skus = getAllSkus(cloudbilling);
         final List<GCPResourceRequest> requests = machines.stream()
-                .map(machine -> {
-                    final List<GCPResourceRequest> machineRequests = new ArrayList<>();
-                    if (machine.getCpu() > 0) {
-                        final String billingKey = GCPResourceType.CPU.alias() + "_ondemand_" + machine.getFamily();
-                        final String billingPrefix = prefixes.get(billingKey);
-                        if (billingPrefix != null) {
-                            machineRequests.add(new GCPResourceRequest(machine.getFamily(), GCPResourceType.CPU, billingPrefix));
-                        }
-                    }
-                    if (machine.getRam() > 0) {
-                        final String billingKey = GCPResourceType.RAM.alias() + "_ondemand_" + machine.getFamily();
-                        final String billingPrefix = prefixes.get(billingKey);
-                        if (billingPrefix != null) {
-                            machineRequests.add(new GCPResourceRequest(machine.getFamily(), GCPResourceType.RAM, billingPrefix));
-                        }
-                    }
-                    if (machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType())) {
-                        final String billingKey = GCPResourceType.GPU.alias() + "_ondemand_" + machine.getGpuType().toLowerCase();
-                        final String billingPrefix = prefixes.get(billingKey);
-                        if (billingPrefix != null) {
-                            machineRequests.add(new GCPResourceRequest(machine.getGpuType(), GCPResourceType.GPU, billingPrefix));
-                        }
-                    }
-                    return machineRequests;
-                })
-                .flatMap(Collection::stream)
+                .flatMap(machine -> Arrays.stream(GCPResourceType.values())
+                        .filter(type -> type.isRequiredFor(machine))
+                        .flatMap(type ->
+                                Arrays.stream(GCPBilling.values())
+                                        .map(billing -> Optional.of(type.billingKeyFor(billing, machine))
+                                                .map(prefixes::get)
+                                                .map(prefix -> type.requestFor(billing, machine, prefix)))
+                                        .filter(Optional::isPresent)
+                                        .map(Optional::get)
+                        ))
                 .collect(Collectors.toList());
         final List<Sku> requestedSkus = skus.stream()
                 .filter(sku -> requests.stream()
@@ -107,7 +91,7 @@ public class GCPResourcePriceLoader {
                                 .map(TierRate::getUnitPrice)
                                 .filter(money -> money.getUnits() != null && money.getNanos() != null)
                                 .map(money -> money.getUnits() * 1_000_000_000 + money.getNanos())
-                                .map(it -> new GCPResourcePrice(request.getFamily(), request.getType(), it)))
+                                .map(it -> new GCPResourcePrice(request.getFamily(), request.getType(), request.getBilling(), it)))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                 )
@@ -137,7 +121,7 @@ public class GCPResourcePriceLoader {
         return list.get(list.size() - 1);
     }
 
-    private Map<String, String> loadPrefixes() {
+    private Map<String, String> loadBillingPrefixes() {
         // TODO 02.04.19: Replace with the map from system preferences.
         final Map<String, String> prefixes = new HashMap<>();
         prefixes.put("cpu_ondemand_standard", "N1 Predefined Instance Core");
@@ -159,6 +143,25 @@ public class GCPResourcePriceLoader {
         prefixes.put("gpu_ondemand_v100", "Nvidia Tesla V100 GPU running");
         prefixes.put("gpu_ondemand_p100", "Nvidia Tesla P100 GPU running");
         prefixes.put("gpu_ondemand_k80", "Nvidia Tesla K80 GPU running");
+        prefixes.put("cpu_preemptible_standard", "Preemptible N1 Predefined Instance Core");
+        prefixes.put("ram_preemptible_standard", "Preemptible N1 Predefined Instance Ram");
+        prefixes.put("cpu_preemptible_highcpu", "Preemptible N1 Predefined Instance Core");
+        prefixes.put("ram_preemptible_highcpu", "Preemptible N1 Predefined Instance Ram");
+        prefixes.put("cpu_preemptible_highmem", "Preemptible N1 Predefined Instance Core");
+        prefixes.put("ram_preemptible_highmem", "Preemptible N1 Predefined Instance Ram");
+        prefixes.put("cpu_preemptible_megamem", "Preemptible Memory-optimized Instance Core");
+        prefixes.put("ram_preemptible_megamem", "Preemptible Memory-optimized Instance Ram");
+        prefixes.put("cpu_preemptible_ultramem", "Preemptible Memory-optimized Instance Core");
+        prefixes.put("ram_preemptible_ultramem", "Preemptible Memory-optimized Instance Ram");
+        prefixes.put("cpu_preemptible_micro", "Preemptible Micro Instance");
+        prefixes.put("cpu_preemptible_small", "Preemptible Small Instance");
+        prefixes.put("cpu_preemptible_custom", "Preemptible Custom Instance Core");
+        prefixes.put("ram_preemptible_custom", "Preemptible Custom Instance Ram");
+        prefixes.put("gpu_preemptible_t4", "Nvidia Tesla T4 GPU attached to preemptible");
+        prefixes.put("gpu_preemptible_p4", "Nvidia Tesla P4 GPU attached to preemptible");
+        prefixes.put("gpu_preemptible_v100", "Nvidia Tesla V100 GPU attached to preemptible");
+        prefixes.put("gpu_preemptible_p100", "Nvidia Tesla P100 GPU attached to preemptible");
+        prefixes.put("gpu_preemptible_k80", "Nvidia Tesla K80 GPU attached to preemptible");
         return prefixes;
     }
 }
