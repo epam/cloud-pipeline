@@ -246,6 +246,14 @@ class AzureMounter(StorageMounter):
         if StorageMounter.create_directory(fuse_tmp, task_name):
             AzureMounter.fuse_tmp = fuse_tmp
 
+    def mount(self, mount_root, task_name):
+        super(AzureMounter, self).mount(mount_root, task_name)
+        # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
+        params = self.build_mount_params(mount_root)
+        command = "grep {account_name} /etc/hosts || getent hosts {account_name}.blob.core.windows.net ".format(**params) \
+                  + "| awk '{ printf \"%s\t%s\\n\", $1, $3 }' >> /etc/hosts"
+        common.execute_cmd_command(command, silent=True)
+
     def build_mount_params(self, mount_point):
         account_id, account_key, _ = self._get_credentials(self.storage)
         return {
