@@ -78,6 +78,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                         .termType(termType(billing))
                         .tenancy(SHARED_TENANCY)
                         .productFamily(INSTANCE_PRODUCT_FAMILY)
+                        .sku(machine.getName())
                         .pricePerUnit(getPrice(machine, billing, prices))
                         .priceListPublishDate(new Date())
                         .currency(CURRENCY)
