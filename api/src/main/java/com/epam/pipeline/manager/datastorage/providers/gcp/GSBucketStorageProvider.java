@@ -70,9 +70,9 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public void restoreFileVersion(GSBucketStorage dataStorage, String path, String version)
+    public void restoreFileVersion(final GSBucketStorage dataStorage, final String path, final String version)
             throws DataStorageException {
-        throw new UnsupportedOperationException();
+        getHelper(dataStorage).restoreFileVersion(dataStorage, path, version);
     }
 
     @Override
