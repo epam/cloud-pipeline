@@ -54,7 +54,7 @@ mv pipe-cli/dist/win/pipe.zip pipeline-jar-repackage/BOOT-INF/classes/static/
 
 # Zip pipeline.jar back
 cd pipeline-jar-repackage/
-zip -r -q pipeline.jar .
+zip -r -q -0 pipeline.jar .
 
 # Create distribution tgz with the original name
 cd ..
