@@ -107,23 +107,11 @@ fi
 ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
 if [ -f "$ca_cert_path" ]; then
     echo "Importing CA cert into global java keystore"
-    keytool  -import \
-            -trustcacerts \
-            -keystore /usr/lib/jvm/jre/lib/security/cacerts \
-            -storepass changeit \
-            -noprompt \
-            -alias cp-ca \
-            -file $ca_cert_path
+    /update-trust $ca_cert_path "cp-ca"
 fi
 
 echo "Importing API SSL cert into global java keystore"
-keytool  -import \
-         -trustcacerts \
-         -keystore /usr/lib/jvm/jre/lib/security/cacerts \
-         -storepass changeit \
-         -noprompt \
-         -alias cp-api-srv \
-         -file $CP_API_SRV_CERT_DIR/ssl-public-cert.pem
+/update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
 echo "Importing IdP signing cert into API keystore"
 keytool  -import \
