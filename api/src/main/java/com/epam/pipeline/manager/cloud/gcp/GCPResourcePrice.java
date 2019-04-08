@@ -26,6 +26,6 @@ class GCPResourcePrice {
     private final long nanos;
 
     public long in(final GCPMachine machine) {
-        return type.priceFor(machine, this);
+        return type.price(machine, this);
     }
 }

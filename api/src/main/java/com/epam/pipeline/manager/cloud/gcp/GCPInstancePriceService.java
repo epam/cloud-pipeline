@@ -104,14 +104,14 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     private Optional<Double> getPrice(final GCPMachine machine,
                                       final GCPBilling billing,
                                       final Set<GCPResourcePrice> prices) {
-        final List<Optional<GCPResourcePrice>> machinePrices = Arrays.stream(GCPResourceType.values())
-                .filter(type -> type.isRequiredFor(machine))
-                .map(type -> findPrice(prices, type, billing, type.familyFor(machine)))
+        final List<Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
+                .filter(type -> type.isRequired(machine))
+                .map(type -> findPrice(prices, type, billing, type.family(machine)))
                 .collect(Collectors.toList());
-        if (!machinePrices.stream().allMatch(Optional::isPresent)) {
+        if (!requiredPrices.stream().allMatch(Optional::isPresent)) {
             return Optional.empty();
         }
-        final long nanos = machinePrices.stream()
+        final long nanos = requiredPrices.stream()
                 .map(Optional::get)
                 .mapToLong(price -> price.in(machine))
                 .sum();

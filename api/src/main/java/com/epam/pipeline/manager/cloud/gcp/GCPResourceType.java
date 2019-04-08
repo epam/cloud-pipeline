@@ -19,66 +19,84 @@ package com.epam.pipeline.manager.cloud.gcp;
 import org.apache.commons.lang3.StringUtils;
 
 enum GCPResourceType {
-    CPU, RAM, GPU;
+    CPU {
+        @Override
+        boolean isRequired(final GCPMachine machine) {
+            return machine.getCpu() > 0;
+        }
+
+        @Override
+        String billingKey(final GCPBilling billing, final GCPMachine machine) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getFamily());
+        }
+
+        @Override
+        String family(final GCPMachine machine) {
+            return machine.getFamily();
+        }
+
+        @Override
+        long price(final GCPMachine machine, final GCPResourcePrice price) {
+            return machine.getCpu() * price.getNanos();
+        }
+    },
+
+    RAM {
+        @Override
+        boolean isRequired(final GCPMachine machine) {
+            return machine.getRam() > 0;
+        }
+
+        @Override
+        String billingKey(final GCPBilling billing, final GCPMachine machine) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getFamily());
+        }
+
+        @Override
+        String family(final GCPMachine machine) {
+            return machine.getFamily();
+        }
+
+        @Override
+        long price(final GCPMachine machine, final GCPResourcePrice price) {
+            return Math.round(machine.getRam() * price.getNanos());
+        }
+    },
+
+    GPU {
+        @Override
+        boolean isRequired(final GCPMachine machine) {
+            return machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType());
+        }
+
+        @Override
+        String billingKey(final GCPBilling billing, final GCPMachine machine) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getGpuType().toLowerCase());
+        }
+
+        @Override
+        String family(final GCPMachine machine) {
+            return machine.getGpuType();
+        }
+
+        @Override
+        long price(final GCPMachine machine, final GCPResourcePrice price) {
+            return machine.getGpu() * price.getNanos();
+        }
+    };
+
+    private static final String BILLING_KEY_PATTERN = "%s_%s_%s";
 
     String alias() {
         return name().toLowerCase();
     }
 
-    boolean isRequiredFor(final GCPMachine machine) {
-        switch (this) {
-            case CPU:
-                return machine.getCpu() > 0;
-            case RAM:
-                return machine.getRam() > 0;
-            case GPU:
-                return machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType());
-        }
-        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
-    }
+    abstract boolean isRequired(final GCPMachine machine);
 
-    GCPResourceRequest requestFor(final GCPBilling billing, final GCPMachine machine, final String prefix) {
-        switch (this) {
-            case CPU:
-            case RAM:
-                return new GCPResourceRequest(machine.getFamily(), this, billing, prefix);
-            case GPU:
-                return new GCPResourceRequest(machine.getGpuType(), this, billing, prefix);
-        }
-        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
-    }
+    abstract String billingKey(final GCPBilling billing, final GCPMachine machine);
 
-    String billingKeyFor(final GCPBilling billing, final GCPMachine machine) {
-        switch (this) {
-            case CPU:
-            case RAM:
-                return String.format("%s_%s_%s", alias(), billing.alias(), machine.getFamily());
-            case GPU:
-                return String.format("%s_%s_%s", alias(), billing.alias(), machine.getGpuType().toLowerCase());
-        }
-        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
-    }
+    abstract String family(final GCPMachine machine);
 
-    String familyFor(final GCPMachine machine) {
-        switch (this) {
-            case CPU:
-            case RAM:
-                return machine.getFamily();
-            case GPU:
-                return machine.getGpuType();
-        }
-        throw new UnsupportedOperationException(String.format("Unsupported GCP resource type: %s.", this));
-    }
+    abstract long price(final GCPMachine machine, final GCPResourcePrice price);
 
-    public long priceFor(final GCPMachine machine, final GCPResourcePrice price) {
-        switch (this) {
-            case CPU:
-                return machine.getCpu() * price.getNanos();
-            case RAM:
-                return Math.round(machine.getRam() * price.getNanos());
-            case GPU:
-                return machine.getGpu() * price.getNanos();
-        }
-        return 0;
-    }
 }
