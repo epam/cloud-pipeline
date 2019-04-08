@@ -34,6 +34,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
+import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.tagName;
 
 public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO> {
@@ -46,11 +47,12 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             entry(FIT, context().find(byId("wdl-graph-fit-button"))),
             entry(SHOW_LINKS, context().find(byId("wdl-graph-show-links-button"))),
             entry(ADD_SCATTER, context().find(byId("wdl-graph-workflow-add-scatter-button"))),
+            entry(PROPERTIES, context().find(byClassName("graph__properties-button"))),
             entry(ADD_TASK, context().find(byId("wdl-graph-workflow-add-task-button"))),
             entry(EDIT_TASK, context().find(byId("wdl-graph-task-edit-button"))),
             entry(EDIT_WORKFLOW, context().find(byId("wdl-graph-workflow-edit-button"))),
             entry(CANVAS, context().find(tagName("canvas"))),
-            entry(MINIMIZE, $(byClassName("graph__graph-interface-button-icon")))
+            entry(MINIMIZE, $(id("wdl-graph-zoom-out-button")))
     );
 
     public PipelineGraphTabAO(String pipelineName) {
@@ -64,11 +66,13 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public TaskAdditionPopupAO openAddTaskDialog() {
+        click(PROPERTIES);
         click(ADD_TASK);
         return new TaskAdditionPopupAO(this);
     }
 
     public ScatterAdditionPopupAO openAddScatterDialog() {
+        click(PROPERTIES);
         click(ADD_SCATTER);
         return new ScatterAdditionPopupAO(this);
     }

@@ -57,6 +57,7 @@ public enum Primitive {
     FIT,
     SHOW_LINKS,
     ADD_SCATTER,
+    PROPERTIES,
     STATUS,
     SSH_LINK,
     CREATE,
