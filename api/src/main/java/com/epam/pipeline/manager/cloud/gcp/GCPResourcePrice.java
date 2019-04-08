@@ -19,12 +19,13 @@ package com.epam.pipeline.manager.cloud.gcp;
 import lombok.Value;
 
 @Value
-class GCPResourcePrice {
+public class GCPResourcePrice {
     private final String family;
     private final GCPResourceType type;
     private final GCPBilling billing;
     private final long nanos;
 
+    @SuppressWarnings("PMD.ShortMethodName")
     public long in(final GCPMachine machine) {
         return type.price(machine, this);
     }

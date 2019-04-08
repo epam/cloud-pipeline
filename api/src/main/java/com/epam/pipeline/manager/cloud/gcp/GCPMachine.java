@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 import lombok.Value;
 
 @Value
-class GCPMachine {
+public class GCPMachine {
     private final String name;
     private final String family;
     private final int cpu;
@@ -27,12 +27,12 @@ class GCPMachine {
     private final int gpu;
     private final String gpuType;
 
-    public static GCPMachine cpu(final String name, final String family, final int cpu, final double ram) {
+    static GCPMachine withCpu(final String name, final String family, final int cpu, final double ram) {
         return new GCPMachine(name, family, cpu, ram, 0, null);
     }
 
-    public static GCPMachine gpu(final String name, final String family, final int cpu, final double ram,
-                                 final int gpu, final String gpuType) {
+    static GCPMachine withGpu(final String name, final String family, final int cpu, final double ram,
+                              final int gpu, final String gpuType) {
         return new GCPMachine(name, family, cpu, ram, gpu, gpuType);
     }
 }

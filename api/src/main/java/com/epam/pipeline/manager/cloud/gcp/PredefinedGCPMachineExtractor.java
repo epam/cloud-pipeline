@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +75,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
         final String name = machineType.getName();
         final String family = elements[1];
         if (elements.length == 2) {
-            return Optional.of(GCPMachine.cpu(name, family, 1, 0));
+            return Optional.of(GCPMachine.withCpu(name, family, 1, 0));
         }
         if (elements.length == 3) {
             try {
@@ -84,7 +83,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
                 final double memory = new BigDecimal((double) machineType.getMemoryMb() / 1024)
                         .setScale(2, RoundingMode.HALF_EVEN)
                         .doubleValue();
-                return Optional.of(GCPMachine.cpu(name, family, cpu, memory));
+                return Optional.of(GCPMachine.withCpu(name, family, cpu, memory));
             } catch (NumberFormatException e) {
                 log.warn(String.format("GCP Machine Type name '%s' parsing has failed.", machineType), e);
                 return Optional.empty();

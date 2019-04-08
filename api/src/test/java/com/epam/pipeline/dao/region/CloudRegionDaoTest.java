@@ -63,6 +63,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     private static final String UPDATED_KMS_KEY_ID = "updatedKmsKeyId";
     private static final String UPDATED_KMS_KEY_ARN = "updatedKmsKeyArn";
     private static final String SSH_PUBLIC_KEY_PATH = "ssh";
+    private static final double RAM = 3.75;
+    private static final int CPU = 2;
+    private static final int GPU = 1;
+    private static final String GPU_TYPE = "K80";
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
@@ -153,8 +157,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         expectedRegion.setSshPublicKeyPath(SSH_PUBLIC_KEY_PATH);
         expectedRegion.setApplicationName("App");
         expectedRegion.setCustomInstanceTypes(Arrays.asList(
-            GCPCustomInstanceType.cpu(2, 3.75),
-            GCPCustomInstanceType.gpu(2, 3.75, 1, "K80")
+            GCPCustomInstanceType.cpu(CPU, RAM),
+            GCPCustomInstanceType.gpu(CPU, RAM, GPU, GPU_TYPE)
         ));
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
         final GCPRegion actualRegion = loadAndCheckType(createdRegion.getId(), GCPRegion.class);

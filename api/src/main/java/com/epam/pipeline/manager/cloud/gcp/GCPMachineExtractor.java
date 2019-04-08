@@ -30,5 +30,5 @@ public interface GCPMachineExtractor {
     /**
      * Extracts Google Cloud Provider machines from the given region.
      */
-    List<GCPMachine> extract(final GCPRegion region);
+    List<GCPMachine> extract(GCPRegion region);
 }

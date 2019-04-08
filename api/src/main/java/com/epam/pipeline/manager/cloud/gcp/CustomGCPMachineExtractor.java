@@ -38,10 +38,11 @@ public class CustomGCPMachineExtractor implements GCPMachineExtractor {
                 .map(type -> {
                     if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
                         final String name = gpuCustomGpuMachineName(type);
-                        return GCPMachine.gpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), type.getGpu(), type.getGpuType());
+                        return GCPMachine.withGpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), type.getGpu(),
+                                type.getGpuType());
                     } else {
                         final String name = gpuCustomCpuMachineName(type);
-                        return GCPMachine.cpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam());
+                        return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam());
                     }
                 })
                 .collect(Collectors.toList());

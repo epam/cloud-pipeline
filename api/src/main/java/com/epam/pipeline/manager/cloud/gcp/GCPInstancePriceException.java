@@ -16,12 +16,10 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import lombok.Value;
+import java.io.IOException;
 
-@Value
-public class GCPResourceRequest {
-    private final String family;
-    private final GCPResourceType type;
-    private final GCPBilling billing;
-    private final String prefix;
+public class GCPInstancePriceException extends RuntimeException {
+    GCPInstancePriceException(final String message, final IOException cause) {
+        super(message, cause);
+    }
 }

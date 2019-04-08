@@ -40,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class GCPInstancePriceServiceTest {
 
     private static final double DELTA = 0.01;
@@ -50,12 +51,16 @@ public class GCPInstancePriceServiceTest {
     private static final long STANDARD_CPU_PREEMTIBLE_COST = 100_000L;
     private static final long STANDARD_RAM_PREEMTIBLE_COST = 1_000L;
     private static final long K80_GPU_COST = 50_000_000L;
+    private static final long GIGABYTE = 1_000_000_000;
+    private static final String STANDARD_FAMILY = "standard";
+    private static final String CUSTOM_FAMILY = "custom";
+    private static final String K_80_GPU = "K80";
 
-    private final GCPRegion region = region();
-    private final GCPMachine cpuMachine = GCPMachine.cpu("n1-standard-1", "standard", 1, 4);
-    private final GCPMachine gpuMachine = GCPMachine.gpu("gpu-custom-1-3840-k80-1", "custom", 2, 8, 3, "K80");
+    private final GCPRegion region = defaultRegion();
+    private final GCPMachine cpuMachine = GCPMachine.withCpu("n1-standard-1", STANDARD_FAMILY, 1, 4);
+    private final GCPMachine gpuMachine = GCPMachine.withGpu("gpu-custom-1-3840-k80-1", CUSTOM_FAMILY, 2, 8, 3, "K80");
     private final GCPMachine nonExistingMachine =
-            GCPMachine.cpu("n1-nonexistingfamily-1", "nonexistingfamily", 1, 4);
+            GCPMachine.withCpu("n1-nonexistingfamily-1", "nonexistingfamily", 1, 4);
     private final List<GCPMachine> extractor1Machines = Arrays.asList(cpuMachine, nonExistingMachine);
     private final List<GCPMachine> extractor2Machines = Collections.singletonList(gpuMachine);
 
@@ -71,15 +76,15 @@ public class GCPInstancePriceServiceTest {
         when(extractor2.extract(any())).thenReturn(extractor2Machines);
 
         when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
-                new GCPResourcePrice("standard", GCPResourceType.CPU, GCPBilling.ON_DEMAND, STANDARD_CPU_COST),
-                new GCPResourcePrice("standard", GCPResourceType.RAM, GCPBilling.ON_DEMAND, STANDARD_RAM_COST),
-                new GCPResourcePrice("standard", GCPResourceType.CPU, GCPBilling.PREEMPTIBLE,
+                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.CPU, GCPBilling.ON_DEMAND, STANDARD_CPU_COST),
+                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.RAM, GCPBilling.ON_DEMAND, STANDARD_RAM_COST),
+                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.CPU, GCPBilling.PREEMPTIBLE,
                         STANDARD_CPU_PREEMTIBLE_COST),
-                new GCPResourcePrice("standard", GCPResourceType.RAM, GCPBilling.PREEMPTIBLE,
+                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.RAM, GCPBilling.PREEMPTIBLE,
                         STANDARD_RAM_PREEMTIBLE_COST),
-                new GCPResourcePrice("custom", GCPResourceType.CPU, GCPBilling.ON_DEMAND, CUSTOM_CPU_COST),
-                new GCPResourcePrice("custom", GCPResourceType.RAM, GCPBilling.ON_DEMAND, CUSTOM_RAM_COST),
-                new GCPResourcePrice("K80", GCPResourceType.GPU, GCPBilling.ON_DEMAND, K80_GPU_COST)
+                new GCPResourcePrice(CUSTOM_FAMILY, GCPResourceType.CPU, GCPBilling.ON_DEMAND, CUSTOM_CPU_COST),
+                new GCPResourcePrice(CUSTOM_FAMILY, GCPResourceType.RAM, GCPBilling.ON_DEMAND, CUSTOM_RAM_COST),
+                new GCPResourcePrice(K_80_GPU, GCPResourceType.GPU, GCPBilling.ON_DEMAND, K80_GPU_COST)
         )));
     }
 
@@ -119,7 +124,7 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getGpu(), is(cpuMachine.getGpu()));
         final double expectedNanos = STANDARD_CPU_COST * cpuMachine.getCpu()
                 + STANDARD_RAM_COST * cpuMachine.getRam();
-        final double expectedPrice = expectedNanos / 1_000_000_000.0;
+        final double expectedPrice = expectedNanos / GIGABYTE;
         assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
     }
 
@@ -139,7 +144,7 @@ public class GCPInstancePriceServiceTest {
         final double expectedNanos = CUSTOM_CPU_COST * gpuMachine.getCpu()
                 + CUSTOM_RAM_COST * gpuMachine.getRam()
                 + K80_GPU_COST * gpuMachine.getGpu();
-        final double expectedPrice = expectedNanos / 1_000_000_000.0;
+        final double expectedPrice = expectedNanos / GIGABYTE;
         assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
     }
 
@@ -159,7 +164,7 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getGpu(), is(cpuMachine.getGpu()));
         final double expectedNanos = STANDARD_CPU_PREEMTIBLE_COST * cpuMachine.getCpu()
                 + STANDARD_RAM_PREEMTIBLE_COST * cpuMachine.getRam();
-        final double expectedPrice = expectedNanos / 1_000_000_000.0;
+        final double expectedPrice = expectedNanos / GIGABYTE;
         assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
     }
 
@@ -169,7 +174,7 @@ public class GCPInstancePriceServiceTest {
         return mergedLists;
     }
 
-    private static GCPRegion region() {
+    private static GCPRegion defaultRegion() {
         final GCPRegion region = new GCPRegion();
         region.setId(1L);
         region.setProject("project");

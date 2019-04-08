@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import org.apache.commons.lang3.StringUtils;
 
-enum GCPResourceType {
+public enum GCPResourceType {
     CPU {
         @Override
         boolean isRequired(final GCPMachine machine) {
@@ -91,12 +91,12 @@ enum GCPResourceType {
         return name().toLowerCase();
     }
 
-    abstract boolean isRequired(final GCPMachine machine);
+    abstract boolean isRequired(GCPMachine machine);
 
-    abstract String billingKey(final GCPBilling billing, final GCPMachine machine);
+    abstract String billingKey(GCPBilling billing, GCPMachine machine);
 
-    abstract String family(final GCPMachine machine);
+    abstract String family(GCPMachine machine);
 
-    abstract long price(final GCPMachine machine, final GCPResourcePrice price);
+    abstract long price(GCPMachine machine, GCPResourcePrice price);
 
 }

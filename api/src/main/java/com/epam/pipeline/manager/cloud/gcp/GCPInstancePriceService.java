@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GCPInstancePriceService implements CloudInstancePriceService<GCPRegion> {
 
+    private static final long GIGABYTE = 1_000_000_000L;
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
     private static final String DELIMITER = "-";
     private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
@@ -61,7 +62,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
             return machines.stream()
                     .flatMap(machine -> instanceOffers(region, machine, prices).stream())
                     .collect(Collectors.toList());
-        } catch (Exception e) {
+        } catch (GCPInstancePriceException e) {
             log.error("Failed to get instance types and prices from GCP.", e);
             return Collections.emptyList();
         }
@@ -115,7 +116,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .map(Optional::get)
                 .mapToLong(price -> price.in(machine))
                 .sum();
-        final double price = new BigDecimal((double) nanos / 1_000_000_000.0)
+        final double price = new BigDecimal(((double) nanos) / GIGABYTE)
                 .setScale(2, RoundingMode.HALF_EVEN)
                 .doubleValue();
         return Optional.of(price);

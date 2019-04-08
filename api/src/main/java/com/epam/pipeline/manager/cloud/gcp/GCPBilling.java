@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-enum GCPBilling {
+public enum GCPBilling {
     ON_DEMAND("ondemand"),
     PREEMPTIBLE("preemptible");
 

@@ -26,7 +26,6 @@ import com.google.api.services.cloudbilling.model.PricingInfo;
 import com.google.api.services.cloudbilling.model.Sku;
 import com.google.api.services.cloudbilling.model.TierRate;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -51,6 +50,7 @@ import java.util.stream.Stream;
 public class GCPResourcePriceLoader {
 
     private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
+    private static final long GIGABYTE = 1_000_000_000L;
 
     private final PreferenceManager preferenceManager;
     private final GCPClient gcpClient;
@@ -58,14 +58,17 @@ public class GCPResourcePriceLoader {
     /**
      * Loads prices for all the given Google Cloud Provider machines in the specified region.
      */
-    @SneakyThrows
     public Set<GCPResourcePrice> load(final GCPRegion region, final List<GCPMachine> machines) {
-        final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
-        final Map<String, String> prefixes = loadBillingPrefixes();
-        final List<GCPResourceRequest> requests = requests(machines, prefixes);
-        final List<Sku> skus = loadRequestedSkus(cloudbilling, requests);
-        final String regionName = regionName(region);
-        return prices(requests, skus, regionName);
+        try {
+            final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
+            final Map<String, String> prefixes = loadBillingPrefixes();
+            final List<GCPResourceRequest> requests = requests(machines, prefixes);
+            final List<Sku> skus = loadRequestedSkus(cloudbilling, requests);
+            final String regionName = regionName(region);
+            return prices(requests, skus, regionName);
+        } catch (IOException e) {
+            throw new GCPInstancePriceException("GCP machine prices loading has failed.", e);
+        }
     }
 
     private Map<String, String> loadBillingPrefixes() {
@@ -91,8 +94,8 @@ public class GCPResourcePriceLoader {
                 .map(Optional::get);
     }
 
-    @SneakyThrows
-    private List<Sku> loadRequestedSkus(final Cloudbilling cloudbilling, final List<GCPResourceRequest> requests) {
+    private List<Sku> loadRequestedSkus(final Cloudbilling cloudbilling,
+                                        final List<GCPResourceRequest> requests) throws IOException {
         return getAllSkus(cloudbilling)
                 .stream()
                 .filter(sku -> requests.stream()
@@ -147,7 +150,7 @@ public class GCPResourcePriceLoader {
                 .map(this::firstElement)
                 .map(TierRate::getUnitPrice)
                 .filter(money -> money.getUnits() != null && money.getNanos() != null)
-                .map(money -> money.getUnits() * 1_000_000_000 + money.getNanos())
+                .map(money -> money.getUnits() * GIGABYTE + money.getNanos())
                 .map(nanos -> price(request, nanos));
     }
 
