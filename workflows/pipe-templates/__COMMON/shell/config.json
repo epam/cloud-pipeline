@@ -7,7 +7,7 @@
     "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "20",
     "docker_image" : "library/centos:7",
-    "cmd_template" : "chmod +x $SCRIPTS_DIR/src/[main_file] && $SCRIPTS_DIR/src/[main_file]",
+    "cmd_template" : "chmod +x ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] && ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "parameters": {}
   }
 }]

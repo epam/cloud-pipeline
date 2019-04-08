@@ -8,7 +8,7 @@
     "instance_disk" : "50",
     "docker_image" : "library/ubuntu:latest",
     "timeout" : 0,
-    "cmd_template" : "python $SCRIPTS_DIR/src/[main_file]",
+    "cmd_template" : "python ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
     "language" : "other",
     "parameters" : {
       "DESTINATION_DIRECTORY" : {
