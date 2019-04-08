@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.cloudbilling.model.ListSkusResponse;
 import com.google.api.services.cloudbilling.model.PricingExpression;
@@ -26,6 +28,7 @@ import com.google.api.services.cloudbilling.model.TierRate;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -33,7 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,6 +52,7 @@ public class GCPResourcePriceLoader {
 
     private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
 
+    private final PreferenceManager preferenceManager;
     private final GCPClient gcpClient;
 
     /**
@@ -66,47 +69,7 @@ public class GCPResourcePriceLoader {
     }
 
     private Map<String, String> loadBillingPrefixes() {
-        // TODO 02.04.19: Replace with the map from system preferences.
-        final Map<String, String> prefixes = new HashMap<>();
-        prefixes.put("cpu_ondemand_standard", "N1 Predefined Instance Core");
-        prefixes.put("ram_ondemand_standard", "N1 Predefined Instance Ram");
-        prefixes.put("cpu_ondemand_highcpu", "N1 Predefined Instance Core");
-        prefixes.put("ram_ondemand_highcpu", "N1 Predefined Instance Ram");
-        prefixes.put("cpu_ondemand_highmem", "N1 Predefined Instance Core");
-        prefixes.put("ram_ondemand_highmem", "N1 Predefined Instance Ram");
-        prefixes.put("cpu_ondemand_megamem", "Memory-optimized Instance Core");
-        prefixes.put("ram_ondemand_megamem", "Memory-optimized Instance Ram");
-        prefixes.put("cpu_ondemand_ultramem", "Memory-optimized Instance Core");
-        prefixes.put("ram_ondemand_ultramem", "Memory-optimized Instance Ram");
-        prefixes.put("cpu_ondemand_micro", "Micro Instance");
-        prefixes.put("cpu_ondemand_small", "Small Instance");
-        prefixes.put("cpu_ondemand_custom", "Custom Instance Core");
-        prefixes.put("ram_ondemand_custom", "Custom Instance Ram");
-        prefixes.put("gpu_ondemand_t4", "Nvidia Tesla T4 GPU running");
-        prefixes.put("gpu_ondemand_p4", "Nvidia Tesla P4 GPU running");
-        prefixes.put("gpu_ondemand_v100", "Nvidia Tesla V100 GPU running");
-        prefixes.put("gpu_ondemand_p100", "Nvidia Tesla P100 GPU running");
-        prefixes.put("gpu_ondemand_k80", "Nvidia Tesla K80 GPU running");
-        prefixes.put("cpu_preemptible_standard", "Preemptible N1 Predefined Instance Core");
-        prefixes.put("ram_preemptible_standard", "Preemptible N1 Predefined Instance Ram");
-        prefixes.put("cpu_preemptible_highcpu", "Preemptible N1 Predefined Instance Core");
-        prefixes.put("ram_preemptible_highcpu", "Preemptible N1 Predefined Instance Ram");
-        prefixes.put("cpu_preemptible_highmem", "Preemptible N1 Predefined Instance Core");
-        prefixes.put("ram_preemptible_highmem", "Preemptible N1 Predefined Instance Ram");
-        prefixes.put("cpu_preemptible_megamem", "Preemptible Memory-optimized Instance Core");
-        prefixes.put("ram_preemptible_megamem", "Preemptible Memory-optimized Instance Ram");
-        prefixes.put("cpu_preemptible_ultramem", "Preemptible Memory-optimized Instance Core");
-        prefixes.put("ram_preemptible_ultramem", "Preemptible Memory-optimized Instance Ram");
-        prefixes.put("cpu_preemptible_micro", "Preemptible Micro Instance");
-        prefixes.put("cpu_preemptible_small", "Preemptible Small Instance");
-        prefixes.put("cpu_preemptible_custom", "Preemptible Custom Instance Core");
-        prefixes.put("ram_preemptible_custom", "Preemptible Custom Instance Ram");
-        prefixes.put("gpu_preemptible_t4", "Nvidia Tesla T4 GPU attached to preemptible");
-        prefixes.put("gpu_preemptible_p4", "Nvidia Tesla P4 GPU attached to preemptible");
-        prefixes.put("gpu_preemptible_v100", "Nvidia Tesla V100 GPU attached to preemptible");
-        prefixes.put("gpu_preemptible_p100", "Nvidia Tesla P100 GPU attached to preemptible");
-        prefixes.put("gpu_preemptible_k80", "Nvidia Tesla K80 GPU attached to preemptible");
-        return prefixes;
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_BILLING_PREFIXES));
     }
 
     private List<GCPResourceRequest> requests(final List<GCPMachine> machines, final Map<String, String> prefixes) {

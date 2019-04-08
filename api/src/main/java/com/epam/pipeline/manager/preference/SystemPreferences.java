@@ -459,6 +459,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
             "gcp.regions.list", null, new TypeReference<List<String>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<Map<String, String>> GCP_BILLING_PREFIXES = new ObjectPreference<>(
+            "gcp.billing.prefixes",null, new TypeReference<Map<String, String>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
