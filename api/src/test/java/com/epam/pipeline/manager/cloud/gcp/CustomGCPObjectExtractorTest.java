@@ -18,9 +18,10 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.manager.cloud.gcp.extractor.CustomGCPMachineExtractor;
-import com.epam.pipeline.manager.cloud.gcp.extractor.GCPMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPCustomMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -29,9 +30,9 @@ import java.util.List;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class CustomGCPMachineExtractorTest {
+public class CustomGCPObjectExtractorTest {
 
-    private GCPMachineExtractor extractor = new CustomGCPMachineExtractor();
+    private GCPObjectExtractor extractor = new GCPCustomMachineExtractor();
 
     @Test
     public void testCustomCpuMachineExtraction() {
@@ -40,7 +41,7 @@ public class CustomGCPMachineExtractorTest {
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 new GCPMachine("custom-1-2048", "custom", 1, 2, 0, null));
 
-        final List<GCPMachine> actualMachines = extractor.extract(region);
+        final List<GCPObject> actualMachines = extractor.extract(region);
 
         assertThat(actualMachines.size(), is(1));
         assertThat(actualMachines, is(expectedMachines));
@@ -53,7 +54,7 @@ public class CustomGCPMachineExtractorTest {
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 new GCPMachine("gpu-custom-1-2048-k80-3", "custom", 1, 2, 3, "K80"));
 
-        final List<GCPMachine> actualMachines = extractor.extract(region);
+        final List<GCPObject> actualMachines = extractor.extract(region);
 
         assertThat(actualMachines.size(), is(1));
         assertThat(actualMachines, is(expectedMachines));

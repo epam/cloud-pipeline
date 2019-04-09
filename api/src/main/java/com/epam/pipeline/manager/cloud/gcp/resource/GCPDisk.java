@@ -19,11 +19,15 @@ package com.epam.pipeline.manager.cloud.gcp.resource;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourcePrice;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceType;
 import org.apache.commons.lang3.text.WordUtils;
 
 import java.util.Date;
+import java.util.List;
 
 public class GCPDisk extends GCPObject {
+
     public GCPDisk(final String name, final String family) {
         super(name, family);
     }
@@ -45,5 +49,22 @@ public class GCPDisk extends GCPObject {
                 .operatingSystem("Linux")
                 .instanceFamily(WordUtils.capitalizeFully(getFamily()))
                 .build();
+    }
+
+    @Override
+    public boolean isRequired(final GCPResourceType type) {
+        return type == GCPResourceType.DISK;
+    }
+
+    @Override
+    public long totalPrice(final List<GCPResourcePrice> prices) {
+        return prices.stream()
+                .mapToLong(GCPResourcePrice::getNanos)
+                .sum();
+    }
+
+    @Override
+    public String billingKey(final GCPBilling billing, final GCPResourceType type) {
+        return String.format(SHORT_BILLING_KEY_PATTERN, type.alias(), billing.alias());
     }
 }

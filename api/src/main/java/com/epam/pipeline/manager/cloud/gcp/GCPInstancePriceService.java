@@ -20,8 +20,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cloud.gcp.extractor.GCPMachineExtractor;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -53,7 +52,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
 
     private final PreferenceManager preferenceManager;
-    private final List<GCPMachineExtractor> extractors;
+    private final List<GCPObjectExtractor> extractors;
     private final GCPResourcePriceLoader priceLoader;
 
     @Override
@@ -75,13 +74,9 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     }
 
     private List<GCPObject> availableObjects(final GCPRegion region) {
-        final List<GCPObject> machines = extractors.stream()
+        return extractors.stream()
                 .flatMap(it -> it.extract(region).stream())
                 .collect(Collectors.toList());
-        final List<GCPObject> objects = new ArrayList<>();
-        objects.addAll(machines);
-        objects.add(new GCPDisk("SSD", "SSD"));
-        return objects;
     }
 
     private Map<String, String> loadBillingPrefixes() {
@@ -91,9 +86,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     private List<GCPResourceRequest> requests(final List<GCPObject> objects, final Map<String, String> prefixes) {
         return objects.stream()
                 .flatMap(machine -> Arrays.stream(GCPResourceType.values())
-                        .filter(type -> type.isRequired(machine))
+                        .filter(machine::isRequired)
                         .flatMap(type -> requests(machine, type, prefixes)))
-                .distinct()
                 .collect(Collectors.toList());
     }
 
@@ -101,7 +95,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                                                 final GCPResourceType type,
                                                 final Map<String, String> prefixes) {
         return Arrays.stream(GCPBilling.values())
-                .map(billing -> Optional.of(type.billingKey(billing, object))
+                .map(billing -> Optional.of(object.billingKey(billing, type))
                         .map(prefixes::get)
                         .map(prefix -> new GCPResourceRequest(type, billing, prefix, object)))
                 .filter(Optional::isPresent)
@@ -111,40 +105,27 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     private Double getPrice(final GCPObject object,
                             final GCPBilling billing,
                             final Set<GCPResourcePrice> prices) {
-        final Map<GCPResourceType, Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
-                .filter(type -> type.isRequired(object))
-                .collect(Collectors.toMap(Function.identity(),
-                    type -> findPrice(prices, type, billing, type.family(object))));
-        final Optional<GCPResourceType> typeWithMissingPrice = requiredPrices.entrySet()
-                .stream()
-                .filter(entry -> !entry.getValue().isPresent())
-                .map(Map.Entry::getKey)
+        final List<GCPResourceType> requiredTypes = Arrays.stream(GCPResourceType.values())
+                .filter(object::isRequired)
+                .collect(Collectors.toList());
+        final Map<GCPResourceType, GCPResourcePrice> objectPrices = prices.stream()
+                .filter(price -> price.getRequest().getObject().equals(object))
+                .filter(price -> price.getRequest().getBilling().equals(billing))
+                .collect(Collectors.toMap(price -> price.getRequest().getType(), Function.identity()));
+        final Optional<GCPResourceType> typeWithMissingPrice = requiredTypes.stream()
+                .filter(type -> !objectPrices.keySet().contains(type))
                 .findFirst();
         if (typeWithMissingPrice.isPresent()) {
-            log.error(String.format("Price for %s for GCP object %s wasn't found.", typeWithMissingPrice.get(),
+            log.error(String.format("Price for %s with %s billing for GCP object %s wasn't found.",
+                    typeWithMissingPrice.get(),
+                    billing.alias(),
                     object.getName()));
             return 0.0;
         }
-        final long nanos = requiredPrices.values()
-                .stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .mapToLong(price -> price.getRequest().getType().price(object, price))
-                .sum();
+        final long nanos = object.totalPrice(new ArrayList<>(objectPrices.values()));
         return new BigDecimal(((double) nanos) / BILLION)
                 .setScale(PRICES_PRECISION, RoundingMode.HALF_EVEN)
                 .doubleValue();
-    }
-
-    private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
-                                                 final GCPResourceType type,
-                                                 final GCPBilling billing,
-                                                 final String family) {
-        return prices.stream()
-                .filter(price -> price.getRequest().getType() == type)
-                .filter(price -> price.getRequest().getBilling() == billing)
-                .filter(price -> type.family(price.getRequest().getObject()).equals(family))
-                .findFirst();
     }
 
     @Override

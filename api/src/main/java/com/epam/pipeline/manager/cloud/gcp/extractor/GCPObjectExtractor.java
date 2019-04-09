@@ -18,18 +18,19 @@ package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 
 import java.util.List;
 
 /**
- * Google Cloud Provider machine extractor.
+ * Google Cloud Provider billable object extractor.
  *
- * It generates compute machine descriptions based on the given region.
+ * It generates compute machine and disk descriptions for a specific region.
  */
-public interface GCPMachineExtractor {
+public interface GCPObjectExtractor {
 
     /**
-     * Extracts Google Cloud Provider machines from the given region.
+     * Extracts Google Cloud Provider billable object from the given region.
      */
-    List<GCPMachine> extract(GCPRegion region);
+    List<GCPObject> extract(GCPRegion region);
 }

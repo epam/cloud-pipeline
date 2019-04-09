@@ -19,10 +19,14 @@ package com.epam.pipeline.manager.cloud.gcp.resource;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourcePrice;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceType;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 
 import java.util.Date;
+import java.util.List;
 
 @Getter
 public class GCPMachine extends GCPObject {
@@ -60,5 +64,45 @@ public class GCPMachine extends GCPObject {
                 .gpu(getGpu())
                 .memory(getRam())
                 .build();
+    }
+
+    @Override
+    public boolean isRequired(final GCPResourceType type) {
+        switch (type) {
+            case CPU:
+                return cpu > 0;
+            case RAM:
+                return ram > 0;
+            case GPU:
+                return gpu > 0 && StringUtils.isNotBlank(gpuType);
+            default:
+                return false;
+        }
+    }
+
+    @Override
+    public long totalPrice(final List<GCPResourcePrice> prices) {
+        return prices.stream()
+                .mapToLong(price -> {
+                    switch (price.getRequest().getType()) {
+                        case CPU:
+                            return cpu * price.getNanos();
+                        case RAM:
+                            return Math.round(ram * price.getNanos());
+                        case GPU:
+                            return gpu * price.getNanos();
+                        default:
+                            return 0;
+                    }
+                })
+                .sum();
+    }
+
+    @Override
+    public String billingKey(final GCPBilling billing, final GCPResourceType type) {
+        if (type == GCPResourceType.GPU) {
+            return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getGpuType().toLowerCase());
+        }
+        return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getFamily());
     }
 }

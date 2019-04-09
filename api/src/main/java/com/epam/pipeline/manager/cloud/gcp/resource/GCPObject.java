@@ -18,9 +18,13 @@ package com.epam.pipeline.manager.cloud.gcp.resource;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourcePrice;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceType;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 /**
  * Google Cloud Provider billable object.
@@ -29,10 +33,18 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @EqualsAndHashCode
 public abstract class GCPObject {
+    protected static final String BILLING_KEY_PATTERN = "%s_%s_%s";
+    protected static final String SHORT_BILLING_KEY_PATTERN = "%s_%s";
+
     private final String name;
     private final String family;
 
-    public abstract InstanceOffer toInstanceOffer(final GCPBilling billing,
-                                                  final double pricePerUnit,
-                                                  final Long regionId);
+    public abstract InstanceOffer toInstanceOffer(GCPBilling billing, double pricePerUnit, Long regionId);
+
+    public abstract boolean isRequired(GCPResourceType type);
+
+    public abstract String billingKey(GCPBilling billing, GCPResourceType type);
+
+    public abstract long totalPrice(List<GCPResourcePrice> prices);
+
 }

@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
-public enum GCPResourceType {
-    CPU,
-    RAM,
-    GPU,
-    DISK {
-        @Override
-        public long normalize(final long nanos) {
-            return nanos / HOURS_IN_MONTH;
-        }
-    };
+import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import org.springframework.stereotype.Component;
 
-    private static final long HOURS_IN_MONTH = 24 * 30;
+import java.util.Collections;
+import java.util.List;
 
-    public String alias() {
-        return name().toLowerCase();
-    }
-
-    public long normalize(final long nanos) {
-        return nanos;
+/**
+ * Google Cloud Provider local disks extractor.
+ */
+@Component
+public class GCPDiskExtractor implements GCPObjectExtractor {
+    @Override
+    public List<GCPObject> extract(final GCPRegion region) {
+        return Collections.singletonList(new GCPDisk("SSD", "SSD"));
     }
 }

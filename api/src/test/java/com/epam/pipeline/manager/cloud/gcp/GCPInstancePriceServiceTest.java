@@ -19,9 +19,10 @@ package com.epam.pipeline.manager.cloud.gcp;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cloud.gcp.extractor.GCPMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
@@ -69,13 +70,16 @@ public class GCPInstancePriceServiceTest {
     private final GCPMachine gpuMachine = new GCPMachine("gpu-custom-2-8192-k80-1", CUSTOM_FAMILY, 2, 8, 3, K_80_GPU);
     private final GCPMachine machineWithoutAssociatedPrices =
             new GCPMachine("n1-familywithoutprices-1", "familywithoutprices", 10, 20, 0, null);
-    private final List<GCPMachine> extractor1Machines = Arrays.asList(cpuMachine, machineWithoutAssociatedPrices);
-    private final List<GCPMachine> extractor2Machines = Collections.singletonList(gpuMachine);
     private final GCPDisk disk = new GCPDisk("SSD", "SSD");
+    private final List<GCPObject> predefinedMachines = Arrays.asList(cpuMachine, machineWithoutAssociatedPrices);
+    private final List<GCPObject> customMachines = Collections.singletonList(gpuMachine);
+    private final List<GCPObject> disks = Collections.singletonList(disk);
 
-    private final GCPMachineExtractor extractor1 = mock(GCPMachineExtractor.class);
-    private final GCPMachineExtractor extractor2 = mock(GCPMachineExtractor.class);
-    private final List<GCPMachineExtractor> extractors = Arrays.asList(extractor1, extractor2);
+    private final GCPObjectExtractor predefinedMachinesExtractor = mock(GCPObjectExtractor.class);
+    private final GCPObjectExtractor customMachinesExtractor = mock(GCPObjectExtractor.class);
+    private final GCPObjectExtractor diskExtractor = mock(GCPObjectExtractor.class);
+    private final List<GCPObjectExtractor> extractors = Arrays.asList(predefinedMachinesExtractor,
+            customMachinesExtractor, diskExtractor);
     private final GCPResourcePriceLoader priceLoader = mock(GCPResourcePriceLoader.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager, extractors,
@@ -104,8 +108,9 @@ public class GCPInstancePriceServiceTest {
 
     @Before
     public void setUp() {
-        when(extractor1.extract(any())).thenReturn(extractor1Machines);
-        when(extractor2.extract(any())).thenReturn(extractor2Machines);
+        when(predefinedMachinesExtractor.extract(any())).thenReturn(predefinedMachines);
+        when(customMachinesExtractor.extract(any())).thenReturn(customMachines);
+        when(diskExtractor.extract(any())).thenReturn(disks);
         final HashMap<String, String> prefixes = new HashMap<>();
         prefixes.put("cpu_ondemand_standard", "prefix");
         prefixes.put("ram_ondemand_standard", "prefix");
@@ -131,8 +136,9 @@ public class GCPInstancePriceServiceTest {
     public void refreshShouldUseMachinesFromAllExtractorsForPriceLoading() {
         service.refreshPriceListForRegion(region);
 
-        verify(extractor1).extract(eq(region));
-        verify(extractor2).extract(eq(region));
+        verify(predefinedMachinesExtractor).extract(eq(region));
+        verify(customMachinesExtractor).extract(eq(region));
+        verify(diskExtractor).extract(eq(region));
         verify(priceLoader).load(eq(region), eq(mergeLists(extractor1Requests, extractor2Requests, diskRequests)));
     }
 

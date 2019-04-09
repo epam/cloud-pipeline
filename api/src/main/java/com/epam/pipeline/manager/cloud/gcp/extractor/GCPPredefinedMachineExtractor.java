@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp.extractor;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.MachineType;
 import com.google.api.services.compute.model.MachineTypeList;
@@ -35,21 +36,23 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
+ * Google Cloud Provider predefined compute machines extractor.
+ *
  * Extracts all available Google Cloud Provider predefined machines in a specific region.
  *
- * Google Cloud Provider machine type names are parsed according to one of the supported patterns:
+ * Retrieves machine family from a corresponding machine type name using one of the following patterns:
  * {prefix}-{instance_family}-{postfix}
  * {prefix}-{instance_family}
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
+public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
 
     private final GCPClient gcpClient;
 
     @Override
-    public List<GCPMachine> extract(final GCPRegion region) {
+    public List<GCPObject> extract(final GCPRegion region) {
         try {
             final Compute client = gcpClient.buildComputeClient(region);
             final String zone = region.getRegionCode();
