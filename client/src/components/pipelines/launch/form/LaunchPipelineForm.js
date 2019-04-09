@@ -1007,18 +1007,22 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     this.setState(state);
   };
 
-  evaluateEstimatedPrice = ({disk, type, isSpot, cloudRegionId}) => {
+  evaluateEstimatedPrice = async ({disk, type, isSpot, cloudRegionId}) => {
     if (!disk) {
-      disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk');
+      disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
+        this.getDefaultValue('instance_disk');
     }
     if (!type) {
-      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      this.props.allowedInstanceTypes && await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
+      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+        this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
     if (!isSpot) {
-      isSpot = this.getSectionFieldValue(ADVANCED)('is_spot');
+      isSpot = this.getSectionFieldValue(ADVANCED)('is_spot') || this.getDefaultValue('is_spot');
     }
     if (!cloudRegionId) {
-      cloudRegionId = this.getSectionFieldValue(EXEC_ENVIRONMENT)('cloudRegionId') || this.defaultCloudRegionId;
+      cloudRegionId = this.getSectionFieldValue(EXEC_ENVIRONMENT)('cloudRegionId') ||
+        this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
     if (!isNaN(disk) && type) {
