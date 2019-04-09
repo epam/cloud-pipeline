@@ -86,7 +86,6 @@ public abstract class AbstractDataStorageFactory {
                 case GS:
                     final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, policy,
                             mountPoint);
-                    gsBucketStorage.setStoragePolicy(null);
                     gsBucketStorage.setRegionId(regionId);
                     return gsBucketStorage;
                 default:

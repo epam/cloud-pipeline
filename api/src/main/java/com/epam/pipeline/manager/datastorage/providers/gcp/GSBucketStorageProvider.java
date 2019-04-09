@@ -65,8 +65,8 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public void applyStoragePolicy(GSBucketStorage dataStorage) {
-        // no op
+    public void applyStoragePolicy(final GSBucketStorage dataStorage) {
+        getHelper(dataStorage).applyStoragePolicy(dataStorage);
     }
 
     @Override

@@ -26,12 +26,16 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.paging.Page;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -44,10 +48,16 @@ import com.google.cloud.storage.StorageClass;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,6 +79,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -76,6 +87,10 @@ import java.util.stream.Collectors;
 public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
+    private static final String EMPTY_LIFECYCLE_CONTENT = "{}";
+    private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
+    private static final String LIFECYCLE_FIELD = "lifecycle";
+    private static final String GOOGLE_STORAGE_API_URL = "https://www.googleapis.com/storage/";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -83,6 +98,7 @@ public class GSBucketStorageHelper {
     private final MessageHelper messageHelper;
     private final GCPRegion region;
     private final GCPClient gcpClient;
+    private GoogleStorageRestApiClient storageRestApiClient;
 
     public String createGoogleStorage(final GSBucketStorage storage) {
         final Storage client = gcpClient.buildStorageClient(region);
@@ -355,6 +371,61 @@ public class GSBucketStorageHelper {
                 .iterateAll().iterator().hasNext();
     }
 
+    public void applyStoragePolicy(final GSBucketStorage storage) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final StoragePolicy policy = storage.getStoragePolicy();
+        final String bucketName = storage.getPath();
+        final Bucket bucket = client.get(bucketName);
+
+        disableLifecycleRulesIfNeeded(client, bucketName, policy);
+
+        final BucketInfo.Builder bucketInfoBuilder = BucketInfo.newBuilder(bucketName);
+        if (policy.getVersioningEnabled() != bucket.versioningEnabled()) {
+            bucketInfoBuilder.setVersioningEnabled(policy.getVersioningEnabled());
+        }
+
+        final List<BucketInfo.LifecycleRule> rules = new ArrayList<>();
+        if (Objects.nonNull(policy.getBackupDuration())) {
+            rules.add(buildDeleteRule(policy.getBackupDuration(), false));
+        }
+        if (Objects.nonNull(policy.getLongTermStorageDuration())) {
+            rules.add(buildDeleteRule(policy.getLongTermStorageDuration(), true));
+        }
+        if (Objects.nonNull(policy.getShortTermStorageDuration())) {
+            rules.add(buildStorageClassRelocationRule(policy));
+        }
+
+        if (CollectionUtils.isNotEmpty(rules)) {
+            bucketInfoBuilder.setLifecycleRules(rules);
+        }
+
+        client.update(bucketInfoBuilder.build());
+    }
+
+    private BucketInfo.LifecycleRule buildStorageClassRelocationRule(final StoragePolicy policy) {
+        final BucketInfo.LifecycleRule.SetStorageClassLifecycleAction coldlineLifecycleAction =
+                BucketInfo.LifecycleRule.SetStorageClassLifecycleAction
+                        .newSetStorageClassAction(StorageClass.COLDLINE);
+        final BucketInfo.LifecycleRule.LifecycleCondition stsCondition =
+                BucketInfo.LifecycleRule.LifecycleCondition
+                .newBuilder()
+                .setAge(policy.getShortTermStorageDuration())
+                .setMatchesStorageClass(Collections.singletonList(StorageClass.REGIONAL))
+                .build();
+        return new BucketInfo.LifecycleRule(coldlineLifecycleAction, stsCondition);
+    }
+
+    private BucketInfo.LifecycleRule buildDeleteRule(final Integer duration, final boolean isLive) {
+        final BucketInfo.LifecycleRule.DeleteLifecycleAction deleteLifecycleAction =
+                BucketInfo.LifecycleRule.DeleteLifecycleAction.newDeleteAction();
+        final BucketInfo.LifecycleRule.LifecycleCondition condition = BucketInfo.LifecycleRule.LifecycleCondition
+                .newBuilder()
+                .setAge(duration)
+                .setIsLive(isLive)
+                .build();
+        return new BucketInfo.LifecycleRule(deleteLifecycleAction, condition);
+    }
+
     private List<AbstractDataStorageItem> listItemsWithoutVersions(final Page<Blob> blobs) {
         final List<AbstractDataStorageItem> items = new ArrayList<>();
 
@@ -481,5 +552,54 @@ public class GSBucketStorageHelper {
 
     private String trimRegionZone(final String region) {
         return StringUtils.substring(region, 0, REGION_ZONE_LENGTH);
+    }
+
+    private void disableLifecycleRulesIfNeeded(final Storage client, final String bucketName,
+                                               final StoragePolicy policy) {
+        if (Objects.nonNull(policy.getLongTermStorageDuration())
+                || Objects.nonNull(policy.getShortTermStorageDuration())
+                || Objects.nonNull(policy.getBackupDuration())) {
+            return;
+        }
+        try {
+            storageRestApiClient = buildGoogleStorageRestApiClient();
+            final GoogleCredentials credentials = (GoogleCredentials) client.getOptions().getScopedCredentials();
+            final String token = credentials.refreshAccessToken().getTokenValue();
+            executeRequest(() ->
+                    storageRestApiClient.disableLifecycleRules(buildToken(token), LIFECYCLE_CONTENT_TYPE,
+                            bucketName, LIFECYCLE_FIELD, EMPTY_LIFECYCLE_CONTENT));
+        } catch (IOException e) {
+            throw new DataStorageException(String
+                    .format("Failed to disable lifecycle rules for bucket %s", bucketName), e);
+        }
+    }
+
+    private <T> T executeRequest(Supplier<Call<T>> request) {
+        try {
+            final Response<T> response = request.get().execute();
+            if (response.isSuccessful()) {
+                return Objects.requireNonNull(response.body());
+            } else {
+                throw new DataStorageException(response.errorBody() == null ? "" : response.errorBody().string());
+            }
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
+    }
+
+    private String buildToken(final String refreshToken) {
+        return "Bearer " + refreshToken;
+    }
+
+    private GoogleStorageRestApiClient buildGoogleStorageRestApiClient() {
+        final OkHttpClient client = new OkHttpClient.Builder().build();
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(GOOGLE_STORAGE_API_URL)
+                .addConverterFactory(JacksonConverterFactory.create(mapper))
+                .client(client)
+                .build();
+        return retrofit.create(GoogleStorageRestApiClient.class);
     }
 }
