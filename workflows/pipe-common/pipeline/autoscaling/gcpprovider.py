@@ -25,10 +25,15 @@ from googleapiclient import discovery
 from pipeline.autoscaling import utils
 
 OS_DISK_SIZE = 10
-
 INSTANCE_USER_NAME = "pipeline"
-
 NO_BOOT_DEVICE_NAME = 'sdb1'
+
+# custom instance format
+GPU_CUSTOM_INSTANCE_PARTS = 5
+GPU_CUSTOM_INSTANCE_TYPE_INDEX = 3
+GPU_CUSTOM_INSTANCE_COUNT_INDEX = 4
+GPU_NVIDIA_PREFIX = 'nvidia-tesla-'
+GPU_TYPE_PREFIX = 'gpu-'
 
 
 class GCPInstanceProvider(AbstractInstanceProvider):
@@ -53,8 +58,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('- Networks list found, subnet {} in Network {} will be used'.format(subnet_id, network_name))
         else:
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
-
-        machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, ins_type)
+        instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
+        machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
         body = {
@@ -99,6 +104,18 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         }
 
+        if gpu_type is not None and gpu_count > 0:
+            gpu = {"guestAccelerators": [ 
+                {
+                        "acceleratorCount": [gpu_count],
+                        "acceleratorType": "https://www.googleapis.com/compute/v1/projects/{project}/zones/{zone}/acceleratorTypes/{gpu_type}"
+                            .format(project=self.project_id,
+                                    zone=self.cloud_region,
+                                    gpu_type=gpu_type)
+                    }
+                ]}
+            body.update(gpu)
+
         response = self.client.instances().insert(
             project=self.project_id,
             zone=self.cloud_region,
@@ -114,6 +131,19 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         private_ip = ip_response['networkInterfaces'][0]['networkIP']
         return instance_name, private_ip
+    
+    def parse_instance_type(self, ins_type):
+        # Custom type with GPU: gpu-custom-4-16000-k80-1
+        # Custom type with CPU only: custom-4-16000
+        # Predefined type: n1-standard-1
+        if not ins_type.startswith(GPU_TYPE_PREFIX):
+            return ins_type, None, 0
+        parts = ins_type[len(GPU_TYPE_PREFIX):].split('-')
+        if len(parts) != GPU_CUSTOM_INSTANCE_PARTS:
+            raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
+        gpu_type = parts[GPU_CUSTOM_INSTANCE_TYPE_INDEX]
+        gpu_count = parts[GPU_CUSTOM_INSTANCE_COUNT_INDEX]
+        return ''.join(parts[0:GPU_CUSTOM_INSTANCE_TYPE_INDEX]), GPU_NVIDIA_PREFIX + gpu_type, gpu_count
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.__find_instance(old_id)
