@@ -1007,7 +1007,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     this.setState(state);
   };
 
-  evaluateEstimatedPrice = ({disk, type, isSpot}) => {
+  evaluateEstimatedPrice = ({disk, type, isSpot, cloudRegionId}) => {
     if (!disk) {
       disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk');
     }
@@ -1016,6 +1016,9 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     if (!isSpot) {
       isSpot = this.getSectionFieldValue(ADVANCED)('is_spot');
+    }
+    if (!cloudRegionId) {
+      cloudRegionId = this.getSectionFieldValue(EXEC_ENVIRONMENT)('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
     if (!isNaN(disk) && type) {
@@ -1032,7 +1035,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         await request.send({
           'instanceType': type,
           'instanceDisk': disk,
-          'spot': isSpot
+          'spot': isSpot,
+          'regionId': cloudRegionId
         });
         estimatedPriceState.pending = false;
         if (!request.error) {
@@ -2474,6 +2478,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
             allowClear={false}
             placeholder="Cloud Region"
             optionFilterProp="children"
+            onSelect={(cloudRegionId) => this.evaluateEstimatedPrice({cloudRegionId})}
             filterOption={
               (input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>

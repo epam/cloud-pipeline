@@ -50,7 +50,7 @@ const findGroupByName = (groups, name) => {
 };
 
 @roleModel.authenticationInfo
-@inject('dockerRegistries', 'preferences', 'authenticatedUserInfo')
+@inject('awsRegions', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
 @runPipelineActions
 @observer
 export default class PersonalToolsPanel extends React.Component {
@@ -109,6 +109,23 @@ export default class PersonalToolsPanel extends React.Component {
     }
     return (tool.image || '').toLowerCase().indexOf(search.toLowerCase()) >= 0;
   };
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
+
+  @computed
+  get defaultCloudRegionId () {
+    const [defaultRegion] = this.awsRegions.filter(r => r.default);
+    if (defaultRegion) {
+      return `${defaultRegion.id}`;
+    }
+    return null;
+  }
 
   @computed
   get tools () {
@@ -361,7 +378,8 @@ export default class PersonalToolsPanel extends React.Component {
             : this.props.preferences.useSpot,
           nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
             ? +versionSettingValue('node_count')
-            : undefined
+            : undefined,
+          cloudRegionId: this.defaultCloudRegionId
         }, allowedInstanceTypesRequest);
         const parts = (tool.image || '').toLowerCase().split('/');
         const [image] = parts[parts.length - 1].split(':');
@@ -380,7 +398,8 @@ export default class PersonalToolsPanel extends React.Component {
         await estimatedPriceRequest.send({
           instanceType: defaultPayload.instanceType,
           instanceDisk: defaultPayload.hddSize,
-          spot: defaultPayload.isSpot
+          spot: defaultPayload.isSpot,
+          regionId: defaultPayload.cloudRegionId
         });
         if (allowedToExecute) {
           this.setState({
@@ -508,7 +527,8 @@ export default class PersonalToolsPanel extends React.Component {
           ? runToolInfo.instanceType
           : runToolInfo.payload.instanceType,
         instanceDisk: runToolInfo.payload.hddSize,
-        spot: isSpot
+        spot: isSpot,
+        regionId: runToolInfo.payload.cloudRegionId
       });
       runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
@@ -527,7 +547,8 @@ export default class PersonalToolsPanel extends React.Component {
         instanceDisk: runToolInfo.payload.hddSize,
         spot: runToolInfo.isSpot !== undefined
           ? runToolInfo.isSpot
-          : runToolInfo.payload.isSpot
+          : runToolInfo.payload.isSpot,
+        regionId: runToolInfo.payload.cloudRegionId
       });
       runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
       this.setState({
