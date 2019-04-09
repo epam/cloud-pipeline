@@ -42,6 +42,13 @@ ENV CROMWELL_HOME=/cromwell_bin
 ENV WDLTOOL_HOME=/wdltool_bin
 ENV PATH="$PATH:$CROMWELL_HOME"
 
+# Bake-in the autoscaling option, so that all runs with "node" parameter will be able to share a single FS
+ENV CP_CAP_AUTOSCALE="true"
+ENV cluster_role="master"
+# Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
+ENV ANALYSIS_DIR="/common/analysis"
+ENV INPUT_DIR="/common/input"
+
 # Copy cromwell files to the image
 # It also creates cromwell home directory
 COPY cromwell cromwell.conf cromwell_wrapper.py options.json $CROMWELL_HOME/
