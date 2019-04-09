@@ -65,15 +65,15 @@ do
         BWA_OUTPUT=$SAMPLE_NAME_CURRENT/2_bwa
         mkdir -p $BWA_OUTPUT
         pipe_log_info "Started alignment using BWA" "$SAMPLE_NAME_CURRENT"
-        $BWA_BIN mem -t 8 -v 1 $REFERENCE_GENOME_FASTA_PATH $FASTQ_R1_CURRENT $FASTQ_R2_CURRENT | \
-            $SAMTOOLS_BIN view --threads $(nproc) -b > $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam
+        $BWA_BIN mem -t $(nproc) -v 1 $REFERENCE_GENOME_FASTA_PATH $FASTQ_R1_CURRENT $FASTQ_R2_CURRENT | \
+            $SAMTOOLS_BIN view -b -S - > $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam
         finish_task $SAMPLE_NAME_CURRENT $?
 
         # SAMTOOLS SORT AND INDEX
         SORTED_OUTPUT=$SAMPLE_NAME_CURRENT/3_sort
         mkdir -p $SORTED_OUTPUT
         pipe_log_info "Started BAM sort and index" "$SAMPLE_NAME_CURRENT"
-        $SAMTOOLS_BIN sort -o $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted.bam --threads $(nproc) $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam
+        $SAMTOOLS_BIN sort -f $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted.bam
         $SAMTOOLS_BIN index $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted.bam
         finish_task $SAMPLE_NAME_CURRENT $?
 
