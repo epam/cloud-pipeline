@@ -106,8 +106,9 @@ public class Utils {
     }
 
     public static void clearTextField(final SelenideElement field) {
+        sleep(500, MILLISECONDS);
         final Actions action = actions().moveToElement(field).click();
-        for (int i = 0; i < 500; i++) {
+        for (int i = 0; i < 1000; i++) {
             action.sendKeys("\b").sendKeys(Keys.DELETE);
         }
         action.perform();
