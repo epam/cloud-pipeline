@@ -223,7 +223,7 @@ public class InstanceOfferManager {
                         instanceType));
         double pricePerHourForInstance =
                 getPricePerHourForInstance(instanceType, isSpotRequest(spot), regionId);
-        double pricePerDisk = getPriceForDisk(instanceDisk, regionId, instanceType);
+        double pricePerDisk = getPriceForDisk(instanceDisk, regionId, instanceType, spot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
         return new InstancePrice(instanceType, instanceDisk, pricePerHour);
     }
@@ -231,9 +231,9 @@ public class InstanceOfferManager {
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         RunInstance runInstance = pipelineRun.getInstance();
-        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(),
-                isSpotRequest(runInstance.getSpot()), regionId);
-        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), regionId, runInstance.getNodeType());
+        boolean spot = isSpotRequest(runInstance.getSpot());
+        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot, regionId);
+        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), regionId, runInstance.getNodeType(), spot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
 
         PipelineRunPrice price = new PipelineRunPrice();
@@ -453,13 +453,13 @@ public class InstanceOfferManager {
         return updatedInstanceTypesSubject;
     }
 
-    private double getPriceForDisk(int instanceDisk, Long regionId, String instanceType) {
+    private double getPriceForDisk(int instanceDisk, Long regionId, String instanceType, boolean spot) {
         InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setProductFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY);
         requestVO.setVolumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE);
         requestVO.setRegionId(regionId);
         List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
-        return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType);
+        return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType, spot);
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType) {

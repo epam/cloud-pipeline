@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -82,8 +83,9 @@ public class GCPInstancePriceServiceTest {
             customMachinesExtractor, diskExtractor);
     private final GCPResourcePriceLoader priceLoader = mock(GCPResourcePriceLoader.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-    private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager, extractors,
-            priceLoader);
+    private final InstanceOfferDao instanceOfferDao = mock(InstanceOfferDao.class);
+    private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager,
+            instanceOfferDao, extractors, priceLoader);
     private final GCPResourceRequest cpuOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.CPU,
             GCPBilling.ON_DEMAND, "prefix", cpuMachine);
     private GCPResourceRequest ramOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,

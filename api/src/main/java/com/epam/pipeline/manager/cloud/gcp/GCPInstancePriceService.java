@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -26,6 +28,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 
@@ -52,6 +55,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
 
     private final PreferenceManager preferenceManager;
+    private final InstanceOfferDao instanceOfferDao;
     private final List<GCPObjectExtractor> extractors;
     private final GCPResourcePriceLoader priceLoader;
 
@@ -130,20 +134,35 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     @Override
     public double getSpotPrice(final String instanceType, final GCPRegion region) {
-        return 0;
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(PREEMPTIBLE_TERM_TYPE);
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(region.getId());
+        final List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
+        if (CollectionUtils.isEmpty(offers)) {
+            return 0.0;
+        }
+        return offers.get(0).getPricePerUnit();
     }
 
     @Override
     public double getPriceForDisk(final List<InstanceOffer> offers,
                                   final int instanceDisk,
                                   final String instanceType,
+                                  final boolean spot,
                                   final GCPRegion region) {
         return offers.stream()
-                .filter(offer -> offer.getInstanceType().equals(instanceType))
-                .map(offer -> offer.getPricePerUnit() * instanceDisk)
+                .filter(offer -> spot
+                        ? offer.getTermType().equals(PREEMPTIBLE_TERM_TYPE)
+                        : offer.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE)
+                )
                 .findFirst()
-                .orElseThrow(() -> new GCPInstancePriceException(String.format("Requested storage instance type %s " +
-                        "wasn't found in region %s offers.", instanceType, region.getId())));
+                .map(offer -> offer.getPricePerUnit() * instanceDisk)
+                .orElse(0.0);
     }
 
     @Override
