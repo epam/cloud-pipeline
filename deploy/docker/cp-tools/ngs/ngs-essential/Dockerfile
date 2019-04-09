@@ -23,9 +23,6 @@ ENV     JAVA8_BIN=$JAVA_8_HOME/bin/java \
         PYTHON_BIN=/usr/bin/python \
         RSCRIPT_BIN=/usr/bin/Rscript
 
-# Always use SGE
-ENV CP_CAP_SGE=true
-
 # Install common dependencies
 RUN     apt-get update && \
         apt-get install -y      wget \
