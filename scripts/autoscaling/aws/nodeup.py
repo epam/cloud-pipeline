@@ -499,7 +499,9 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
         if ret_namenode:
             break
         rep = increment_or_fail(num_rep, rep,
-                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename))
+                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename),
+                                ec2_client=ec2,
+                                kill_instance_id_on_fail=ins_id)
         sleep(time_rep)
 
     if ret_namenode:  # useless?
@@ -512,7 +514,9 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
-                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode))
+                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode),
+                                    ec2_client=ec2,
+                                    kill_instance_id_on_fail=ins_id)
             sleep(time_rep)
 
         rep = 0
@@ -526,7 +530,9 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
                 break
             pipe_log('- {} of {} agents initialized. Still waiting...'.format(ready_pods, count_pods))
             rep = increment_or_fail(num_rep, rep,
-                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode))
+                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode),
+                                    ec2_client=ec2,
+                                    kill_instance_id_on_fail=ins_id)
             sleep(time_rep)
         pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
     return ret_namenode

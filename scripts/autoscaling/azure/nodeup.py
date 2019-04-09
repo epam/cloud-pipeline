@@ -40,6 +40,8 @@ from pipeline import Logger, TaskStatus, PipelineAPI
 ###     - api.host
 ###     - server.api.token
 ### 3. Latest "pipeline" package shall be installed using "pip install"
+VM_NAME_PREFIX = "az-"
+UUID_LENGHT = 16
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
@@ -200,7 +202,7 @@ def run_instance(instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_
     try:
         ins_key = read_ssh_key(ssh_pub_key)
         user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
-        instance_name = "az-" + uuid.uuid4().hex[0:16]
+        instance_name = VM_NAME_PREFIX + uuid.uuid4().hex[0:UUID_LENGHT]
         create_public_ip_address(instance_name, run_id)
         create_nic(instance_name, run_id)
         return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
@@ -429,9 +431,13 @@ def get_cloud_region(region_id):
     raise RuntimeError('Failed to determine region for Azure instance')
 
 
-def increment_or_fail(num_rep, rep, error_message):
+def increment_or_fail(num_rep, rep, error_message, kill_instance_id_on_fail=None):
     rep = rep + 1
     if rep > num_rep:
+        if kill_instance_id_on_fail:
+            pipe_log('[ERROR] Operation timed out and an instance {} will be terminated'.format(kill_instance_id_on_fail))
+
+            terminate_instance(kill_instance_id_on_fail)
         raise RuntimeError(error_message)
     return rep
 
@@ -514,7 +520,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
         if ret_namenode:
             break
         rep = increment_or_fail(num_rep, rep,
-                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename))
+                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename), ins_id)
         sleep(time_rep)
 
     if ret_namenode:  # useless?
@@ -527,7 +533,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
                 pipe_log('- Node ({}) status is READY'.format(ret_namenode))
                 break
             rep = increment_or_fail(num_rep, rep,
-                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode))
+                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube node READY check'.format(num_rep, ins_id, ret_namenode), ins_id)
             sleep(time_rep)
 
         rep = 0
@@ -541,7 +547,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
                 break
             pipe_log('- {} of {} agents initialized. Still waiting...'.format(ready_pods, count_pods))
             rep = increment_or_fail(num_rep, rep,
-                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode))
+                                    'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode), ins_id)
             sleep(time_rep)
         pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
     return ret_namenode
@@ -632,12 +638,22 @@ def azure_resource_type_cmp(r1, r2):
     return 0
 
 
-def delete_all_by_run_id(run_id):
+def terminate_instance(ins_id):
+    instance = compute_client.virtual_machines.get(resource_group_name, ins_id)
+    if 'Name' in instance.tags:
+        __delete_all_by_run_id(instance.tags['Name'])
+    else:
+        compute_client.virtual_machines.delete(resource_group_name, ins_id).wait()
+
+
+def __delete_all_by_run_id(run_id):
     resources = []
-    for resource in resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-        resources.append(resource)
-        # we need to sort resources to be sure that vm and nic will be deleted first, because it has attached resorces(disks and ip)
-        resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+    resources.extend(resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"))
+    # we need to sort resources to be sure that vm and nic will be deleted first,
+    # because it has attached resorces(disks and ip)
+    resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+    vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+    __detach_disks_and_nic(vm_name)
     for resource in resources:
         resource_client.resources.delete(
             resource_group_name=resource.id.split('/')[4],
@@ -648,6 +664,16 @@ def delete_all_by_run_id(run_id):
             api_version=resolve_azure_api(resource),
             parameters=resource
         ).wait()
+
+
+def __detach_disks_and_nic(vm_name):
+    compute_client.virtual_machines.delete(resource_group_name, vm_name).wait()
+    try:
+        nic = network_client.network_interfaces.get(resource_group_name, vm_name + '-nic')
+        nic.ip_configurations[0].public_ip_address = None
+        network_client.network_interfaces.create_or_update(resource_group_name, vm_name + '-nic', nic).wait()
+    except Exception as e:
+        print e
 
 
 def replace_proxies(cloud_region, init_script):
