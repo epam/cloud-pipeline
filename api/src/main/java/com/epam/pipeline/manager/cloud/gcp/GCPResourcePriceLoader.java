@@ -32,9 +32,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,7 +50,8 @@ import java.util.stream.Stream;
 public class GCPResourcePriceLoader {
 
     private static final String COMPUTE_ENGINE_SERVICE_NAME = "services/6F81-5844-456A";
-    private static final long GIGABYTE = 1_000_000_000L;
+    private static final int SKUS_PAGE_SIZE = 2000;
+    private static final long BILLION = 1_000_000_000L;
 
     private final PreferenceManager preferenceManager;
     private final GCPClient gcpClient;
@@ -63,9 +64,8 @@ public class GCPResourcePriceLoader {
             final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
             final Map<String, String> prefixes = loadBillingPrefixes();
             final List<GCPResourceRequest> requests = requests(machines, prefixes);
-            final List<Sku> skus = loadRequestedSkus(cloudbilling, requests);
             final String regionName = regionName(region);
-            return prices(requests, skus, regionName);
+            return loadPrices(requests, cloudbilling, regionName);
         } catch (IOException e) {
             throw new GCPInstancePriceException("GCP machine prices loading has failed.", e);
         }
@@ -80,6 +80,7 @@ public class GCPResourcePriceLoader {
                 .flatMap(machine -> Arrays.stream(GCPResourceType.values())
                         .filter(type -> type.isRequired(machine))
                         .flatMap(type -> requests(machine, type, prefixes)))
+                .distinct()
                 .collect(Collectors.toList());
     }
 
@@ -94,50 +95,41 @@ public class GCPResourcePriceLoader {
                 .map(Optional::get);
     }
 
-    private List<Sku> loadRequestedSkus(final Cloudbilling cloudbilling,
-                                        final List<GCPResourceRequest> requests) throws IOException {
-        return getAllSkus(cloudbilling)
-                .stream()
-                .filter(sku -> requests.stream()
-                        .anyMatch(request -> sku.getDescription() != null
-                                && sku.getDescription().startsWith(request.getPrefix())))
-                .collect(Collectors.toList());
-    }
-
-    private List<Sku> getAllSkus(final Cloudbilling cloudbilling) throws IOException {
-        final List<Sku> allSkus = new ArrayList<>();
-        String nextPageToken = null;
-        while (true) {
-            final ListSkusResponse response = cloudbilling.services().skus()
-                    .list(COMPUTE_ENGINE_SERVICE_NAME)
-                    .setPageToken(nextPageToken)
-                    .execute();
-            final List<Sku> currentSkus = Optional.of(response)
-                    .map(ListSkusResponse::getSkus)
-                    .orElseGet(Collections::emptyList);
-            allSkus.addAll(currentSkus);
-            nextPageToken = response.getNextPageToken();
-            if (StringUtils.isBlank(nextPageToken)) {
-                return allSkus;
-            }
-        }
-    }
-
     private String regionName(final GCPRegion region) {
         return region.getRegionCode().replaceFirst("-\\w$", "");
     }
 
-    private Set<GCPResourcePrice> prices(final List<GCPResourceRequest> requests,
-                                         final List<Sku> skus,
-                                         final String regionName) {
-        return requests.stream()
-                .flatMap(request -> skus.stream()
-                        .filter(sku -> sku.getDescription().startsWith(request.getPrefix()))
-                        .filter(sku -> CollectionUtils.emptyIfNull(sku.getServiceRegions()).contains(regionName))
-                        .map(sku -> price(request, sku))
-                        .filter(Optional::isPresent)
-                        .map(Optional::get))
-                .collect(Collectors.toSet());
+    private Set<GCPResourcePrice> loadPrices(final List<GCPResourceRequest> requests,
+                                             final Cloudbilling cloudbilling,
+                                             final String regionName) throws IOException {
+        String nextPageToken = null;
+        final Set<GCPResourcePrice> prices = new HashSet<>();
+        while (true) {
+            final ListSkusResponse response = cloudbilling.services().skus()
+                    .list(COMPUTE_ENGINE_SERVICE_NAME)
+                    .setPageToken(nextPageToken)
+                    .setPageSize(SKUS_PAGE_SIZE)
+                    .execute();
+            final List<Sku> currentSkus = Optional.of(response)
+                    .map(ListSkusResponse::getSkus)
+                    .orElseGet(Collections::emptyList);
+            final List<GCPResourcePrice> currentPrices = currentSkus.stream()
+                    .filter(sku -> sku.getDescription() != null)
+                    .flatMap(sku -> requests.stream()
+                            .filter(request -> sku.getDescription().startsWith(request.getPrefix()))
+                            .filter(request -> CollectionUtils.emptyIfNull(sku.getServiceRegions())
+                                    .contains(regionName))
+                            .map(request -> price(request, sku)))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toList());
+            prices.addAll(currentPrices);
+            nextPageToken = response.getNextPageToken();
+            if (StringUtils.isBlank(nextPageToken)) {
+                break;
+            }
+        }
+        return prices;
     }
 
     private Optional<GCPResourcePrice> price(final GCPResourceRequest request, final Sku sku) {
@@ -150,7 +142,7 @@ public class GCPResourcePriceLoader {
                 .map(this::firstElement)
                 .map(TierRate::getUnitPrice)
                 .filter(money -> money.getUnits() != null && money.getNanos() != null)
-                .map(money -> money.getUnits() * GIGABYTE + money.getNanos())
+                .map(money -> money.getUnits() * BILLION + money.getNanos())
                 .map(nanos -> price(request, nanos));
     }
 

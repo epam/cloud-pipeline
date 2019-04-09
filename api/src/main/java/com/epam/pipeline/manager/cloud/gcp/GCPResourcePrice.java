@@ -16,14 +16,20 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 @Value
+@EqualsAndHashCode(exclude = {"nanos"})
 public class GCPResourcePrice {
     private final String family;
     private final GCPResourceType type;
     private final GCPBilling billing;
     private final long nanos;
+
+    public static GCPResourcePrice empty(final String family, final GCPResourceType type, final GCPBilling billing) {
+        return new GCPResourcePrice(family, type, billing, 0);
+    }
 
     @SuppressWarnings("PMD.ShortMethodName")
     public long in(final GCPMachine machine) {

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GCPInstancePriceService implements CloudInstancePriceService<GCPRegion> {
 
-    private static final long GIGABYTE = 1_000_000_000L;
+    private static final long BILLION = 1_000_000_000L;
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
 
     private final List<GCPMachineExtractor> extractors;
@@ -116,7 +116,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .map(Optional::get)
                 .mapToLong(price -> price.in(machine))
                 .sum();
-        return new BigDecimal(((double) nanos) / GIGABYTE)
+        return new BigDecimal(((double) nanos) / BILLION)
                 .setScale(2, RoundingMode.HALF_EVEN)
                 .doubleValue();
     }
@@ -126,9 +126,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                                                  final GCPBilling billing,
                                                  final String family) {
         return prices.stream()
-                .filter(price -> price.getBilling() == billing)
-                .filter(price -> price.getType() == type)
-                .filter(price -> price.getFamily().equals(family))
+                .filter(price -> price.equals(GCPResourcePrice.empty(family, type, billing)))
                 .findFirst();
     }
 
