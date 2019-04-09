@@ -249,8 +249,8 @@ class AzureMounter(StorageMounter):
     def mount(self, mount_root, task_name):
         super(AzureMounter, self).mount(mount_root, task_name)
         # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
-        params = self.build_mount_params(mount_root)
-        command = "grep {account_name} /etc/hosts || getent hosts {account_name}.blob.core.windows.net ".format(**params) \
+        account_name, _, _ = self._get_credentials(self.storage)
+        command = "grep {account_name} /etc/hosts || getent hosts {account_name}.blob.core.windows.net ".format(account_name=account_name) \
                   + "| awk '{ printf \"%s\t%s\\n\", $1, $3 }' >> /etc/hosts"
         common.execute_cmd_command(command, silent=True)
 
