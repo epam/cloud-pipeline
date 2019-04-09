@@ -20,6 +20,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 /**
  * Google Cloud Platform region. Represents a zone inside of one of GCP Regions.
  * Holds settings and authorization options
@@ -42,4 +44,5 @@ public class GCPRegion extends AbstractCloudRegion {
     private String applicationName;
     @JsonProperty("tempCredentialsRole")
     private String impersonatedAccount;
+    private List<GCPCustomInstanceType> customInstanceTypes;
 }

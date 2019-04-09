@@ -63,6 +63,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
         originalRegion.setProject(updatedRegion.getProject());
         originalRegion.setApplicationName(updatedRegion.getApplicationName());
         originalRegion.setImpersonatedAccount(updatedRegion.getImpersonatedAccount());
+        originalRegion.setCustomInstanceTypes(updatedRegion.getCustomInstanceTypes());
         return originalRegion;
     }
 

@@ -49,7 +49,8 @@
                         price_offer_id,
                         project,
                         application_name,
-                        impersonated_account)
+                        impersonated_account,
+                        custom_instance_types)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -77,7 +78,8 @@
                         :PRICE_OFFER_ID,
                         :PROJECT,
                         :APPLICATION_NAME,
-                        :IMPERSONATED_ACCOUNT)
+                        :IMPERSONATED_ACCOUNT,
+                        :CUSTOM_INSTANCE_TYPES)
                 ]]>
             </value>
         </constructor-arg>
@@ -113,6 +115,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -156,6 +159,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -199,6 +203,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -242,6 +247,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -285,6 +291,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -327,7 +334,8 @@
                         price_offer_id = :PRICE_OFFER_ID,
                         project = :PROJECT,
                         application_name = :APPLICATION_NAME,
-                        impersonated_account = :IMPERSONATED_ACCOUNT
+                        impersonated_account = :IMPERSONATED_ACCOUNT,
+                        custom_instance_types = :CUSTOM_INSTANCE_TYPES
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -375,6 +383,7 @@
                         r.project,
                         r.application_name,
                         r.impersonated_account,
+                        r.custom_instance_types,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,

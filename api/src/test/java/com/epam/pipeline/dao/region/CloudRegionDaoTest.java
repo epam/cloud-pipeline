@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import org.apache.commons.lang.math.RandomUtils;
 import org.junit.Test;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -61,6 +63,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
     private static final String UPDATED_KMS_KEY_ID = "updatedKmsKeyId";
     private static final String UPDATED_KMS_KEY_ARN = "updatedKmsKeyArn";
     private static final String SSH_PUBLIC_KEY_PATH = "ssh";
+    private static final double RAM = 3.75;
+    private static final int CPU = 2;
+    private static final int GPU = 1;
+    private static final String GPU_TYPE = "K80";
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
@@ -142,7 +148,6 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertRegionEquals(expectedRegion, actualRegion);
     }
 
-
     @Test
     public void createShouldSaveGCPEntityWithAllSpecifiedParameters() {
         final GCPRegion expectedRegion = getGCPRegion();
@@ -151,6 +156,10 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         expectedRegion.setAuthFile(AUTH_FILE);
         expectedRegion.setSshPublicKeyPath(SSH_PUBLIC_KEY_PATH);
         expectedRegion.setApplicationName("App");
+        expectedRegion.setCustomInstanceTypes(Arrays.asList(
+            GCPCustomInstanceType.withCpu(CPU, RAM),
+            GCPCustomInstanceType.withGpu(CPU, RAM, GPU, GPU_TYPE)
+        ));
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
         final GCPRegion actualRegion = loadAndCheckType(createdRegion.getId(), GCPRegion.class);
         assertRegionEquals(expectedRegion, actualRegion);
@@ -323,6 +332,7 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         assertThat(expectedRegion.getProject(), is(actualRegion.getProject()));
         assertThat(expectedRegion.getApplicationName(), is(actualRegion.getApplicationName()));
         assertThat(expectedRegion.getImpersonatedAccount(), is(actualRegion.getImpersonatedAccount()));
+        assertThat(expectedRegion.getCustomInstanceTypes(), is(actualRegion.getCustomInstanceTypes()));
     }
 
     private <T extends AbstractCloudRegion> T loadAndCheckType(final Long id, final Class<T> type) {

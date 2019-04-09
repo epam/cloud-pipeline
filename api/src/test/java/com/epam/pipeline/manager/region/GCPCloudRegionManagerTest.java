@@ -20,10 +20,12 @@ import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +40,11 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     private static final String GCP_PROJECT = "Project";
     private static final String GCP_PROJECT_CHANGED = "Bio";
     private static final String SSH_PUB_PATH = "/ssh.pub";
-    public static final String IMPERSONATED_ACCOUNT = "acc";
+    private static final String IMPERSONATED_ACCOUNT = "acc";
+    private static final List<GCPCustomInstanceType> CUSTOM_INSTANCE_TYPES = Arrays.asList(
+            GCPCustomInstanceType.withCpu(1, 3.75),
+            GCPCustomInstanceType.withGpu(1, 3.75, 1, "K80")
+    );
 
     @Before
     public void initGCPPreferences() {
@@ -57,6 +63,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
         region.setProject(GCP_PROJECT);
         region.setAuthFile(SSH_PUB_PATH);
         region.setImpersonatedAccount(IMPERSONATED_ACCOUNT);
+        region.setCustomInstanceTypes(CUSTOM_INSTANCE_TYPES);
         return region;
     }
 
@@ -66,6 +73,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
         gcpRegionDTO.setRegionCode(validRegionId());
         gcpRegionDTO.setSshPublicKeyPath(SSH_PUB_PATH);
         gcpRegionDTO.setProject(GCP_PROJECT);
+        gcpRegionDTO.setCustomInstanceTypes(CUSTOM_INSTANCE_TYPES);
         return gcpRegionDTO;
     }
 
@@ -77,6 +85,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
         gcpRegionDTO.setSshPublicKeyPath(SSH_PUB_PATH);
         gcpRegionDTO.setProvider(CloudProvider.GCP);
         gcpRegionDTO.setImpersonatedAccount(IMPERSONATED_ACCOUNT);
+        gcpRegionDTO.setCustomInstanceTypes(CUSTOM_INSTANCE_TYPES);
         return gcpRegionDTO;
     }
 
@@ -100,6 +109,7 @@ public class GCPCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
         assertThat(expectedGcpRegion.getAuthFile(), is(actualGcpRegion.getAuthFile()));
         assertThat(expectedGcpRegion.getProject(), is(actualGcpRegion.getProject()));
         assertThat(expectedGcpRegion.getSshPublicKeyPath(), is(actualGcpRegion.getSshPublicKeyPath()));
+        assertThat(expectedGcpRegion.getCustomInstanceTypes(), is(actualGcpRegion.getCustomInstanceTypes()));
     }
 
     @Override
