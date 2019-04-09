@@ -21,9 +21,8 @@ function get_os_distribution_parameter {
 
 function install_glibc_from_package_repository {
     /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
-    _IS_RPM_BASED=$?
 
-    if [ $_IS_RPM_BASED -eq 0 ]; then
+    if [ $? -eq 0 ]; then
        yum install -y glibc
     else
        apt-get install -y libc-bin
@@ -66,8 +65,8 @@ _FUSE_BIN=/usr/bin/blobfuse
 
 command -v getent > /dev/null 2>&1
 if [ $? -ne 0 ]; then
-    install_glibc_from_package_repository
-    if [ $? -ne 0 ]; then
+
+    if ! install_glibc_from_package_repository; then
         echo "glibc is not installed. So resolved ip for Azure blob service will not be added to /etc/hosts. Some connection problem may appear during a work with Azure blob mounts"
     fi
 fi
