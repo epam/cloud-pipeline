@@ -42,7 +42,7 @@ public abstract class AbstractSeveralPipelineRunningTest
         return runId;
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
     void removeNodes() {
         open(C.ROOT_ADDRESS);
         runIds.forEach(runId ->
