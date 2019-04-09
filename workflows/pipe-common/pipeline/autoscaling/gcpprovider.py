@@ -143,7 +143,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
         gpu_type = parts[GPU_CUSTOM_INSTANCE_TYPE_INDEX]
         gpu_count = parts[GPU_CUSTOM_INSTANCE_COUNT_INDEX]
-        return ''.join(parts[0:GPU_CUSTOM_INSTANCE_TYPE_INDEX]), GPU_NVIDIA_PREFIX + gpu_type, gpu_count
+        return '-'.join(parts[0:GPU_CUSTOM_INSTANCE_TYPE_INDEX]), GPU_NVIDIA_PREFIX + gpu_type, gpu_count
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.__find_instance(old_id)
