@@ -41,8 +41,8 @@ import {
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
-  CP_CAP_SGE_AUTOSCALE,
-  CP_CAP_SGE_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState
@@ -162,12 +162,12 @@ export default class EditToolForm extends React.Component {
               value: true
             });
             params.push({
-              name: CP_CAP_SGE_AUTOSCALE,
+              name: CP_CAP_AUTOSCALE,
               type: 'boolean',
               value: true
             });
             params.push({
-              name: CP_CAP_SGE_AUTOSCALE_WORKERS,
+              name: CP_CAP_AUTOSCALE_WORKERS,
               type: 'int',
               value: +this.state.maxNodesCount
             });
@@ -227,8 +227,8 @@ export default class EditToolForm extends React.Component {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
-          props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-            ? +props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+          props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
+            ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
             : 0;
         state.nodesCount = props.configuration.node_count;
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
@@ -438,8 +438,8 @@ export default class EditToolForm extends React.Component {
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
     const nodesCount = this.props.configuration ? this.props.configuration.node_count : 0;
     const maxNodesCount = this.props.configuration && this.props.configuration.parameters &&
-      this.props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-        ? +this.props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+      this.props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +this.props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
         : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);

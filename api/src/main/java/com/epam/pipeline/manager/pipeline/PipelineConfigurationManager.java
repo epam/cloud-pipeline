@@ -58,7 +58,7 @@ public class PipelineConfigurationManager {
     public static final String NFS_CLUSTER_ROLE = "CP_CAP_NFS";
     public static final String ERASE_RUN_ENDPOINTS = "CP_DISABLE_RUN_ENDPOINTS";
     public static final String ERASE_WORKER_ENDPOINTS = "CP_DISABLE_WORKER_ENDPOINTS";
-    public static final String GE_AUTOSCALING = "CP_CAP_SGE_AUTOSCALE";
+    public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
     public static final String WORKER_CLUSTER_ROLE = "worker";
     public static final String WORKER_CMD_TEMPLATE = "sleep infinity";
 

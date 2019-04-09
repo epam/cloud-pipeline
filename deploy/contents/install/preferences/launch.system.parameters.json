@@ -102,15 +102,15 @@
         "defaultValue": "project.DataStorage"
     },
     {
-        "name": "CP_CAP_SGE_AUTOSCALE",
+        "name": "CP_CAP_AUTOSCALE",
         "type": "boolean",
-        "description": "Enables SGE Autoscaling",
+        "description": "Enables cluster autoscaling",
         "defaultValue": "false"
     },
     {
-        "name": "CP_CAP_SGE_AUTOSCALE_WORKERS",
+        "name": "CP_CAP_AUTOSCALE_WORKERS",
         "type": "int",
-        "description": "Maximum number of additional SGE workers",
+        "description": "Maximum number of additional cluster autoscaled workers",
         "defaultValue": "3"
     }
 ]

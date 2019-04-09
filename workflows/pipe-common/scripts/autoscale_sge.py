@@ -875,10 +875,10 @@ if __name__ == '__main__':
     instance_disk = os.environ['instance_disk']
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
-    max_additional_hosts = int(os.environ['CP_CAP_SGE_AUTOSCALE_WORKERS']) \
-        if 'CP_CAP_SGE_AUTOSCALE_WORKERS' in os.environ else 3
-    log_verbose = os.environ['CP_CAP_SGE_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
-        if 'CP_CAP_SGE_AUTOSCALE_VERBOSE' in os.environ else False
+    max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
+        if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
+    log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
+        if 'CP_CAP_AUTOSCALE_VERBOSE' in os.environ else False
 
     Logger.init(cmd=args.debug, log_file='/common/workdir/.autoscaler.log', task='GridEngineAutoscaling',
                 verbose=log_verbose)

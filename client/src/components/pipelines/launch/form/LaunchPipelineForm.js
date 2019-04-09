@@ -65,8 +65,8 @@ import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
-  CP_CAP_SGE_AUTOSCALE,
-  CP_CAP_SGE_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState
@@ -584,8 +584,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -626,8 +626,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -734,11 +734,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_SGE_AUTOSCALE] = {
+        payload[PARAMETERS][CP_CAP_AUTOSCALE] = {
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_SGE_AUTOSCALE_WORKERS] = {
+        payload[PARAMETERS][CP_CAP_AUTOSCALE_WORKERS] = {
           type: 'int',
           value: +this.state.maxNodesCount
         };
@@ -841,11 +841,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         type: 'boolean',
         value: true
       };
-      payload.params[CP_CAP_SGE_AUTOSCALE] = {
+      payload.params[CP_CAP_AUTOSCALE] = {
         type: 'boolean',
         value: true
       };
-      payload.params[CP_CAP_SGE_AUTOSCALE_WORKERS] = {
+      payload.params[CP_CAP_AUTOSCALE_WORKERS] = {
         type: 'int',
         value: +this.state.maxNodesCount
       };
@@ -979,8 +979,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledClusterEnabled: autoScaledCluster,
       nodesCount: +this.props.parameters.node_count,
-      maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-        ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+      maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
         : 0,
       pipeline: this.props.pipeline,
       version: this.props.version,

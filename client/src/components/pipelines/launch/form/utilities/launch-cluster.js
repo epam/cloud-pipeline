@@ -21,8 +21,8 @@ import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
-export const CP_CAP_SGE_AUTOSCALE = 'CP_CAP_SGE_AUTOSCALE';
-export const CP_CAP_SGE_AUTOSCALE_WORKERS = 'CP_CAP_SGE_AUTOSCALE_WORKERS';
+export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
+export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
 
 const NODE_COUNT_FORM_FIELD = 'node_count';
 const MAX_NODE_COUNT_FORM_FIELD = 'max_node_count';
@@ -37,7 +37,7 @@ export function autoScaledClusterEnabled (parameters) {
     return !!parameters && parameters[parameter] && `${parameters[parameter].value}` === `${value}`;
   };
   return booleanParameterIsSetToValue(CP_CAP_SGE) &&
-    booleanParameterIsSetToValue(CP_CAP_SGE_AUTOSCALE);
+    booleanParameterIsSetToValue(CP_CAP_AUTOSCALE);
 }
 
 export const CLUSTER_TYPE = {
@@ -48,9 +48,9 @@ export const CLUSTER_TYPE = {
 
 export function getSkippedSystemParametersList (controller) {
   if (controller && controller.state && controller.state.launchCluster && controller.state.autoScaledCluster) {
-    return [CP_CAP_SGE, CP_CAP_SGE_AUTOSCALE, CP_CAP_SGE_AUTOSCALE_WORKERS];
+    return [CP_CAP_SGE, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
   }
-  return [CP_CAP_SGE_AUTOSCALE, CP_CAP_SGE_AUTOSCALE_WORKERS];
+  return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
 
 export function getSystemParameterDisabledState (controller, parameterName) {

@@ -21,7 +21,7 @@ WORKER_SETUP_TASK="InitializeWorkers"
 ######################################################
 # Check input parameters
 ######################################################
-if [ ! -z "$NODE_COUNT" ] && (( "$NODE_COUNT" <= 0)) && [ "$CP_CAP_SGE_AUTOSCALE" != "true" ]
+if [ ! -z "$NODE_COUNT" ] && (( "$NODE_COUNT" <= 0)) && [ "$CP_CAP_AUTOSCALE" != "true" ]
 then
     pipe_log_fail "Node count must be greater than zero" "$WORKER_SETUP_TASK"
     exit 1
