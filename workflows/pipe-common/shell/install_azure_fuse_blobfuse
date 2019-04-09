@@ -65,8 +65,7 @@ _FUSE_TYPE=blobfuse
 _FUSE_BIN=/usr/bin/blobfuse
 
 command -v getent > /dev/null 2>&1
-_IS_GCLIB_INSTALLED=$?
-if [ $_IS_GCLIB_INSTALLED -ne 0 ]; then
+if [ $? -ne 0 ]; then
     install_glibc_from_package_repository
     if [ $? -ne 0 ]; then
         echo "glibc is not installed. So resolved ip for Azure blob service will not be added to /etc/hosts. Some connection problem may appear during a work with Azure blob mounts"
