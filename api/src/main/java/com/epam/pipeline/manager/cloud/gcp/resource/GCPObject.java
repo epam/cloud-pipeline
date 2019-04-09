@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.resource;
 
-import lombok.Value;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@Value
-public class GCPMachine {
+/**
+ * Google Cloud Provider billable object.
+ */
+@RequiredArgsConstructor
+@Getter
+@EqualsAndHashCode
+public abstract class GCPObject {
     private final String name;
     private final String family;
-    private final int cpu;
-    private final double ram;
-    private final int gpu;
-    private final String gpuType;
 
-    static GCPMachine withCpu(final String name, final String family, final int cpu, final double ram) {
-        return new GCPMachine(name, family, cpu, ram, 0, null);
-    }
-
-    static GCPMachine withGpu(final String name, final String family, final int cpu, final double ram,
-                              final int gpu, final String gpuType) {
-        return new GCPMachine(name, family, cpu, ram, gpu, gpuType);
-    }
+    public abstract InstanceOffer toInstanceOffer(final GCPBilling billing,
+                                                  final double pricePerUnit,
+                                                  final Long regionId);
 }

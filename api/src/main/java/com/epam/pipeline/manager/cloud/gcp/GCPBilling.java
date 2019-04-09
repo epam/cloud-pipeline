@@ -16,16 +16,22 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public enum GCPBilling {
-    ON_DEMAND("ondemand"),
-    PREEMPTIBLE("preemptible");
+    ON_DEMAND("ondemand", CloudInstancePriceService.ON_DEMAND_TERM_TYPE),
+    PREEMPTIBLE("preemptible", GCPInstancePriceService.PREEMPTIBLE_TERM_TYPE);
 
     private final String alias;
+    private final String termType;
 
     public String alias() {
         return alias;
+    }
+
+    public String termType() {
+        return termType;
     }
 }

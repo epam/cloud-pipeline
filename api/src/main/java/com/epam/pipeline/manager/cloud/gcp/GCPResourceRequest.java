@@ -16,12 +16,13 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import lombok.Value;
 
 @Value
 public class GCPResourceRequest {
-    private final String family;
     private final GCPResourceType type;
     private final GCPBilling billing;
     private final String prefix;
+    private final GCPObject object;
 }

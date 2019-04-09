@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -37,23 +38,23 @@ public class CustomGCPMachineExtractor implements GCPMachineExtractor {
                 .filter(type -> type.getCpu() > 0 && type.getRam() >= 0)
                 .map(type -> {
                     if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
-                        final String name = gpuCustomGpuMachineName(type);
-                        return GCPMachine.withGpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), type.getGpu(),
+                        final String name = gpuCustomGpuMachine(type);
+                        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), type.getGpu(),
                                 type.getGpuType());
                     } else {
-                        final String name = gpuCustomCpuMachineName(type);
-                        return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), type.getRam());
+                        final String name = customCpuMachine(type);
+                        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), 0, null);
                     }
                 })
                 .collect(Collectors.toList());
     }
 
-    private String gpuCustomGpuMachineName(final GCPCustomInstanceType type) {
-        final String cpuMachineName = gpuCustomCpuMachineName(type);
+    private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {
+        final String cpuMachineName = customCpuMachine(type);
         return String.format("gpu-%s-%s-%s", cpuMachineName, type.getGpuType().toLowerCase(), type.getGpu());
     }
 
-    private String gpuCustomCpuMachineName(final GCPCustomInstanceType type) {
+    private String customCpuMachine(final GCPCustomInstanceType type) {
         return String.format("%s-%s-%s", CUSTOM_FAMILY, type.getCpu(), (int) (type.getRam() * 1024));
     }
 }

@@ -19,6 +19,10 @@ package com.epam.pipeline.manager.cloud.gcp;
 import java.io.IOException;
 
 public class GCPInstancePriceException extends RuntimeException {
+    GCPInstancePriceException(final String message) {
+        super(message);
+    }
+
     GCPInstancePriceException(final String message, final IOException cause) {
         super(message, cause);
     }

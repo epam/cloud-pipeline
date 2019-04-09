@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.extractor.CustomGCPMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -35,7 +38,7 @@ public class CustomGCPMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(1, 2)));
         final List<GCPMachine> expectedMachines = Collections.singletonList(
-                GCPMachine.withCpu("custom-1-2048", "custom", 1, 2));
+                new GCPMachine("custom-1-2048", "custom", 1, 2, 0, null));
 
         final List<GCPMachine> actualMachines = extractor.extract(region);
 
@@ -48,7 +51,7 @@ public class CustomGCPMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(1, 2, 3, "K80")));
         final List<GCPMachine> expectedMachines = Collections.singletonList(
-                GCPMachine.withGpu("gpu-custom-1-2048-k80-3", "custom", 1, 2, 3, "K80"));
+                new GCPMachine("gpu-custom-1-2048-k80-3", "custom", 1, 2, 3, "K80"));
 
         final List<GCPMachine> actualMachines = extractor.extract(region);
 

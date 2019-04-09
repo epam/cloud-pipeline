@@ -19,12 +19,18 @@ package com.epam.pipeline.manager.cloud.gcp;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPMachineExtractor;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -50,41 +56,75 @@ public class GCPInstancePriceServiceTest {
     private static final long STANDARD_CPU_PREEMTIBLE_COST = 100_000L;
     private static final long STANDARD_RAM_PREEMTIBLE_COST = 1_000L;
     private static final long K80_GPU_COST = 50_000_000L;
+    private static final long DISK_COST = 1_000L;
     private static final long GIGABYTE = 1_000_000_000;
     private static final String STANDARD_FAMILY = "standard";
     private static final String CUSTOM_FAMILY = "custom";
     private static final String K_80_GPU = "K80";
+    private static final String INSTANCE_PRODUCT_FAMILY = "instance";
+    private static final String STORAGE_PRODUCT_FAMILY = "storage";
 
     private final GCPRegion region = defaultRegion();
-    private final GCPMachine cpuMachine = GCPMachine.withCpu("n1-standard-1", STANDARD_FAMILY, 1, 4);
-    private final GCPMachine gpuMachine = GCPMachine.withGpu("gpu-custom-1-3840-k80-1", CUSTOM_FAMILY, 2, 8, 3, "K80");
+    private final GCPMachine cpuMachine = new GCPMachine("n1-standard-1", STANDARD_FAMILY, 1, 4, 0, null);
+    private final GCPMachine gpuMachine = new GCPMachine("gpu-custom-2-8192-k80-1", CUSTOM_FAMILY, 2, 8, 3, K_80_GPU);
     private final GCPMachine machineWithoutAssociatedPrices =
-            GCPMachine.withCpu("n1-familywithoutprices-1", "familywithoutprices", 10, 20);
+            new GCPMachine("n1-familywithoutprices-1", "familywithoutprices", 10, 20, 0, null);
     private final List<GCPMachine> extractor1Machines = Arrays.asList(cpuMachine, machineWithoutAssociatedPrices);
     private final List<GCPMachine> extractor2Machines = Collections.singletonList(gpuMachine);
+    private final GCPDisk disk = new GCPDisk("SSD", "SSD");
 
     private final GCPMachineExtractor extractor1 = mock(GCPMachineExtractor.class);
     private final GCPMachineExtractor extractor2 = mock(GCPMachineExtractor.class);
     private final List<GCPMachineExtractor> extractors = Arrays.asList(extractor1, extractor2);
     private final GCPResourcePriceLoader priceLoader = mock(GCPResourcePriceLoader.class);
-    private final GCPInstancePriceService service = new GCPInstancePriceService(extractors, priceLoader);
+    private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
+    private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager, extractors,
+            priceLoader);
+    private final GCPResourceRequest cpuOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.CPU,
+            GCPBilling.ON_DEMAND, "prefix", cpuMachine);
+    private GCPResourceRequest ramOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
+            GCPBilling.ON_DEMAND, "prefix", cpuMachine);
+    private GCPResourceRequest cpuPreemtibleStandard = new GCPResourceRequest(GCPResourceType.CPU,
+            GCPBilling.PREEMPTIBLE, "prefix", cpuMachine);
+    private GCPResourceRequest ramPreemtibleStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
+            GCPBilling.PREEMPTIBLE, "prefix", cpuMachine);
+    private GCPResourceRequest cpuOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.CPU,
+            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+    private GCPResourceRequest ramOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.RAM,
+            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+    private GCPResourceRequest ramOndemandK80Request = new GCPResourceRequest(GCPResourceType.GPU,
+            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+    private GCPResourceRequest diskOndemandRequest = new GCPResourceRequest(GCPResourceType.DISK,
+            GCPBilling.ON_DEMAND, "prefix", disk);
+    private final List<GCPResourceRequest> extractor1Requests = Arrays.asList(cpuOndemandStandardRequest,
+            ramOndemandStandardRequest);
+    private final List<GCPResourceRequest> extractor2Requests = Arrays.asList(cpuOndemandCustomRequest,
+            ramOndemandCustomRequest, ramOndemandK80Request);
+    private final List<GCPResourceRequest> diskRequests = Collections.singletonList(diskOndemandRequest);
 
     @Before
     public void setUp() {
         when(extractor1.extract(any())).thenReturn(extractor1Machines);
         when(extractor2.extract(any())).thenReturn(extractor2Machines);
-
+        final HashMap<String, String> prefixes = new HashMap<>();
+        prefixes.put("cpu_ondemand_standard", "prefix");
+        prefixes.put("ram_ondemand_standard", "prefix");
+        prefixes.put("cpu_preemtible_standard", "prefix");
+        prefixes.put("ram_preemtible_standard", "prefix");
+        prefixes.put("cpu_ondemand_custom", "prefix");
+        prefixes.put("ram_ondemand_custom", "prefix");
+        prefixes.put("gpu_ondemand_k80", "prefix");
+        prefixes.put("disk_ondemand", "prefix");
+        when(preferenceManager.getPreference(eq(SystemPreferences.GCP_BILLING_PREFIXES))).thenReturn(prefixes);
         when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
-                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.CPU, GCPBilling.ON_DEMAND, STANDARD_CPU_COST),
-                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.RAM, GCPBilling.ON_DEMAND, STANDARD_RAM_COST),
-                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.CPU, GCPBilling.PREEMPTIBLE,
-                        STANDARD_CPU_PREEMTIBLE_COST),
-                new GCPResourcePrice(STANDARD_FAMILY, GCPResourceType.RAM, GCPBilling.PREEMPTIBLE,
-                        STANDARD_RAM_PREEMTIBLE_COST),
-                new GCPResourcePrice(CUSTOM_FAMILY, GCPResourceType.CPU, GCPBilling.ON_DEMAND, CUSTOM_CPU_COST),
-                new GCPResourcePrice(CUSTOM_FAMILY, GCPResourceType.RAM, GCPBilling.ON_DEMAND, CUSTOM_RAM_COST),
-                new GCPResourcePrice(K_80_GPU, GCPResourceType.GPU, GCPBilling.ON_DEMAND, K80_GPU_COST)
-        )));
+                new GCPResourcePrice(cpuOndemandStandardRequest, STANDARD_CPU_COST),
+                new GCPResourcePrice(ramOndemandStandardRequest, STANDARD_RAM_COST),
+                new GCPResourcePrice(cpuPreemtibleStandard, STANDARD_CPU_PREEMTIBLE_COST),
+                new GCPResourcePrice(ramPreemtibleStandardRequest, STANDARD_RAM_PREEMTIBLE_COST),
+                new GCPResourcePrice(cpuOndemandCustomRequest, CUSTOM_CPU_COST),
+                new GCPResourcePrice(ramOndemandCustomRequest, CUSTOM_RAM_COST),
+                new GCPResourcePrice(ramOndemandK80Request, K80_GPU_COST),
+                new GCPResourcePrice(diskOndemandRequest, DISK_COST))));
     }
 
     @Test
@@ -93,7 +133,7 @@ public class GCPInstancePriceServiceTest {
 
         verify(extractor1).extract(eq(region));
         verify(extractor2).extract(eq(region));
-        verify(priceLoader).load(eq(region), eq(mergeLists(extractor1Machines, extractor2Machines)));
+        verify(priceLoader).load(eq(region), eq(mergeLists(extractor1Requests, extractor2Requests, diskRequests)));
     }
 
     @Test
@@ -109,6 +149,7 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getVCPU(), is(machineWithoutAssociatedPrices.getCpu()));
         assertThat(offer.getMemory(), is(machineWithoutAssociatedPrices.getRam()));
         assertThat(offer.getGpu(), is(machineWithoutAssociatedPrices.getGpu()));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
         assertEquals(0.0, offer.getPricePerUnit(), 0.0);
     }
 
@@ -126,6 +167,7 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getVCPU(), is(cpuMachine.getCpu()));
         assertThat(offer.getMemory(), is(cpuMachine.getRam()));
         assertThat(offer.getGpu(), is(cpuMachine.getGpu()));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
         final double expectedNanos = STANDARD_CPU_COST * cpuMachine.getCpu()
                 + STANDARD_RAM_COST * cpuMachine.getRam();
         final double expectedPrice = expectedNanos / GIGABYTE;
@@ -145,6 +187,7 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getVCPU(), is(gpuMachine.getCpu()));
         assertThat(offer.getMemory(), is(gpuMachine.getRam()));
         assertThat(offer.getGpu(), is(gpuMachine.getGpu()));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
         final double expectedNanos = CUSTOM_CPU_COST * gpuMachine.getCpu()
                 + CUSTOM_RAM_COST * gpuMachine.getRam()
                 + K80_GPU_COST * gpuMachine.getGpu();
@@ -166,15 +209,40 @@ public class GCPInstancePriceServiceTest {
         assertThat(offer.getVCPU(), is(cpuMachine.getCpu()));
         assertThat(offer.getMemory(), is(cpuMachine.getRam()));
         assertThat(offer.getGpu(), is(cpuMachine.getGpu()));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
         final double expectedNanos = STANDARD_CPU_PREEMTIBLE_COST * cpuMachine.getCpu()
                 + STANDARD_RAM_PREEMTIBLE_COST * cpuMachine.getRam();
         final double expectedPrice = expectedNanos / GIGABYTE;
         assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
     }
 
+    @Test
+    public void refreshShouldReturnDiskInstanceOffers() {
+        final List<InstanceOffer> offers = service.refreshPriceListForRegion(region);
+
+        final Optional<InstanceOffer> optionalOffer = offers.stream()
+                .filter(it -> it.getInstanceType().equals(disk.getName()))
+                .findFirst();
+
+        assertTrue(optionalOffer.isPresent());
+        final InstanceOffer offer = optionalOffer.get();
+        assertThat(offer.getVCPU(), is(0));
+        assertThat(offer.getMemory(), is(0.0));
+        assertThat(offer.getGpu(), is(0));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(STORAGE_PRODUCT_FAMILY));
+        final double expectedPrice = (double) DISK_COST / GIGABYTE;
+        assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
+    }
+
     private <T> ArrayList<T> mergeLists(final List<T> list1, final List<T> list2) {
         final ArrayList<T> mergedLists = new ArrayList<>(list1);
         mergedLists.addAll(list2);
+        return mergedLists;
+    }
+
+    private <T> ArrayList<T> mergeLists(final List<T> list1, final List<T> list2, final List<T> list3) {
+        final ArrayList<T> mergedLists = mergeLists(list1, list2);
+        mergedLists.addAll(list3);
         return mergedLists;
     }
 

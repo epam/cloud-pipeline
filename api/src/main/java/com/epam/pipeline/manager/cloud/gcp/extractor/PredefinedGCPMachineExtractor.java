@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.MachineType;
 import com.google.api.services.compute.model.MachineTypeList;
@@ -75,7 +77,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
         final String name = machineType.getName();
         final String family = elements[1];
         if (elements.length == 2) {
-            return Optional.of(GCPMachine.withCpu(name, family, 1, 0));
+            return Optional.of(new GCPMachine(name, family, 1, 0, 0, null));
         }
         if (elements.length == 3) {
             try {
@@ -83,7 +85,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
                 final double memory = new BigDecimal((double) machineType.getMemoryMb() / 1024)
                         .setScale(2, RoundingMode.HALF_EVEN)
                         .doubleValue();
-                return Optional.of(GCPMachine.withCpu(name, family, cpu, memory));
+                return Optional.of(new GCPMachine(name, family, cpu, memory, 0, null));
             } catch (NumberFormatException e) {
                 log.warn(String.format("GCP Machine Type name '%s' parsing has failed.", machineType), e);
                 return Optional.empty();

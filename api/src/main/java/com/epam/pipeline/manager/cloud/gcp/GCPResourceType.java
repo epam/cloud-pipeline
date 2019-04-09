@@ -16,87 +16,125 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import org.apache.commons.lang3.StringUtils;
 
 public enum GCPResourceType {
     CPU {
         @Override
-        public boolean isRequired(final GCPMachine machine) {
-            return machine.getCpu() > 0;
+        public boolean isRequired(final GCPObject object) {
+            return object instanceof GCPMachine && ((GCPMachine) object).getCpu() > 0;
         }
 
         @Override
-        public String billingKey(final GCPBilling billing, final GCPMachine machine) {
-            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getFamily());
+        public String billingKey(final GCPBilling billing, final GCPObject object) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), object.getFamily());
         }
 
         @Override
-        public String family(final GCPMachine machine) {
-            return machine.getFamily();
+        public String family(final GCPObject object) {
+            return object.getFamily();
         }
 
         @Override
-        public long price(final GCPMachine machine, final GCPResourcePrice price) {
-            return machine.getCpu() * price.getNanos();
+        public long price(final GCPObject object, final GCPResourcePrice price) {
+            return ((GCPMachine) object).getCpu() * price.getNanos();
         }
     },
 
     RAM {
         @Override
-        public boolean isRequired(final GCPMachine machine) {
-            return machine.getRam() > 0;
+        public boolean isRequired(final GCPObject object) {
+            return object instanceof GCPMachine && ((GCPMachine) object).getRam() > 0;
         }
 
         @Override
-        public String billingKey(final GCPBilling billing, final GCPMachine machine) {
-            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getFamily());
+        public String billingKey(final GCPBilling billing, final GCPObject object) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), object.getFamily());
         }
 
         @Override
-        public String family(final GCPMachine machine) {
-            return machine.getFamily();
+        public String family(final GCPObject object) {
+            return object.getFamily();
         }
 
         @Override
-        public long price(final GCPMachine machine, final GCPResourcePrice price) {
-            return Math.round(machine.getRam() * price.getNanos());
+        public long price(final GCPObject object, final GCPResourcePrice price) {
+            return Math.round(((GCPMachine) object).getRam() * price.getNanos());
         }
     },
 
     GPU {
         @Override
-        public boolean isRequired(final GCPMachine machine) {
-            return machine.getGpu() > 0 && StringUtils.isNotBlank(machine.getGpuType());
+        public boolean isRequired(final GCPObject object) {
+            return object instanceof GCPMachine
+                    && ((GCPMachine) object).getGpu() > 0
+                    && StringUtils.isNotBlank(((GCPMachine) object).getGpuType());
         }
 
         @Override
-        public String billingKey(final GCPBilling billing, final GCPMachine machine) {
-            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), machine.getGpuType().toLowerCase());
+        public String billingKey(final GCPBilling billing, final GCPObject object) {
+            return String.format(BILLING_KEY_PATTERN, alias(), billing.alias(), ((GCPMachine) object).getGpuType().toLowerCase());
         }
 
         @Override
-        public String family(final GCPMachine machine) {
-            return machine.getGpuType();
+        public String family(final GCPObject object) {
+            return ((GCPMachine) object).getGpuType();
         }
 
         @Override
-        public long price(final GCPMachine machine, final GCPResourcePrice price) {
-            return machine.getGpu() * price.getNanos();
+        public long price(final GCPObject object, final GCPResourcePrice price) {
+            return ((GCPMachine) object).getGpu() * price.getNanos();
+        }
+    },
+
+    DISK {
+        @Override
+        public boolean isRequired(final GCPObject object) {
+            return object instanceof GCPDisk;
+        }
+
+        @Override
+        public String billingKey(final GCPBilling billing, final GCPObject object) {
+            return String.format(SHORT_BILLING_KEY_PATTERN, alias(), billing.alias());
+        }
+
+        @Override
+        public String family(final GCPObject object) {
+            return CloudInstancePriceService.STORAGE_PRODUCT_FAMILY;
+        }
+
+        @Override
+        public long price(final GCPObject object, final GCPResourcePrice price) {
+            return price.getNanos();
+        }
+
+        @Override
+        public long normalize(final long nanos) {
+            return nanos / HOURS_IN_MONTH;
         }
     };
 
     private static final String BILLING_KEY_PATTERN = "%s_%s_%s";
+    private static final String SHORT_BILLING_KEY_PATTERN = "%s_%s";
+    private static final long HOURS_IN_MONTH = 24 * 30;
 
     public String alias() {
         return name().toLowerCase();
     }
 
-    public abstract boolean isRequired(GCPMachine machine);
+    public abstract boolean isRequired(GCPObject machine);
 
-    public abstract String billingKey(GCPBilling billing, GCPMachine machine);
+    public abstract String billingKey(GCPBilling billing, GCPObject machine);
 
-    public abstract String family(GCPMachine machine);
+    public abstract String family(GCPObject machine);
 
-    public abstract long price(GCPMachine machine, GCPResourcePrice price);
+    public abstract long price(GCPObject machine, GCPResourcePrice price);
 
+    public long normalize(final long nanos) {
+        return nanos;
+    }
 }
