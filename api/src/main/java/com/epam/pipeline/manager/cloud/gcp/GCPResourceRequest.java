@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import lombok.Value;
 
 @Value
@@ -24,5 +24,5 @@ public class GCPResourceRequest {
     private final GCPResourceType type;
     private final GCPBilling billing;
     private final String prefix;
-    private final GCPObject object;
+    private final AbstractGCPObject object;
 }

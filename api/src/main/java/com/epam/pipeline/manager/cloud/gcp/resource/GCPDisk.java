@@ -26,7 +26,7 @@ import org.apache.commons.lang3.text.WordUtils;
 import java.util.Date;
 import java.util.List;
 
-public class GCPDisk extends GCPObject {
+public class GCPDisk extends AbstractGCPObject {
 
     public GCPDisk(final String name, final String family) {
         super(name, family);

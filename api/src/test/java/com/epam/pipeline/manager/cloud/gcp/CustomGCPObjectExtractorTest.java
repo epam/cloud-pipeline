@@ -21,7 +21,7 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPCustomMachineExtractor;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -41,7 +41,7 @@ public class CustomGCPObjectExtractorTest {
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 new GCPMachine("custom-1-2048", "custom", 1, 2, 0, null));
 
-        final List<GCPObject> actualMachines = extractor.extract(region);
+        final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
         assertThat(actualMachines.size(), is(1));
         assertThat(actualMachines, is(expectedMachines));
@@ -54,7 +54,7 @@ public class CustomGCPObjectExtractorTest {
         final List<GCPMachine> expectedMachines = Collections.singletonList(
                 new GCPMachine("gpu-custom-1-2048-k80-3", "custom", 1, 2, 3, "K80"));
 
-        final List<GCPObject> actualMachines = extractor.extract(region);
+        final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
         assertThat(actualMachines.size(), is(1));
         assertThat(actualMachines, is(expectedMachines));

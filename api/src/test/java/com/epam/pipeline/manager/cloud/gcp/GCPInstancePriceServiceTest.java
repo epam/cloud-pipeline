@@ -21,9 +21,9 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
@@ -65,6 +65,7 @@ public class GCPInstancePriceServiceTest {
     private static final String K_80_GPU = "K80";
     private static final String INSTANCE_PRODUCT_FAMILY = "instance";
     private static final String STORAGE_PRODUCT_FAMILY = "storage";
+    private static final String PREFIX = "prefix";
 
     private final GCPRegion region = defaultRegion();
     private final GCPMachine cpuMachine = new GCPMachine("n1-standard-1", STANDARD_FAMILY, 1, 4, 0, null);
@@ -72,9 +73,10 @@ public class GCPInstancePriceServiceTest {
     private final GCPMachine machineWithoutAssociatedPrices =
             new GCPMachine("n1-familywithoutprices-1", "familywithoutprices", 10, 20, 0, null);
     private final GCPDisk disk = new GCPDisk("SSD", "SSD");
-    private final List<GCPObject> predefinedMachines = Arrays.asList(cpuMachine, machineWithoutAssociatedPrices);
-    private final List<GCPObject> customMachines = Collections.singletonList(gpuMachine);
-    private final List<GCPObject> disks = Collections.singletonList(disk);
+    private final List<AbstractGCPObject> predefinedMachines = Arrays.asList(cpuMachine,
+            machineWithoutAssociatedPrices);
+    private final List<AbstractGCPObject> customMachines = Collections.singletonList(gpuMachine);
+    private final List<AbstractGCPObject> disks = Collections.singletonList(disk);
 
     private final GCPObjectExtractor predefinedMachinesExtractor = mock(GCPObjectExtractor.class);
     private final GCPObjectExtractor customMachinesExtractor = mock(GCPObjectExtractor.class);
@@ -87,21 +89,21 @@ public class GCPInstancePriceServiceTest {
     private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager,
             instanceOfferDao, extractors, priceLoader);
     private final GCPResourceRequest cpuOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.ON_DEMAND, "prefix", cpuMachine);
+            GCPBilling.ON_DEMAND, PREFIX, cpuMachine);
     private GCPResourceRequest ramOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.ON_DEMAND, "prefix", cpuMachine);
+            GCPBilling.ON_DEMAND, PREFIX, cpuMachine);
     private GCPResourceRequest cpuPreemtibleStandard = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.PREEMPTIBLE, "prefix", cpuMachine);
+            GCPBilling.PREEMPTIBLE, PREFIX, cpuMachine);
     private GCPResourceRequest ramPreemtibleStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.PREEMPTIBLE, "prefix", cpuMachine);
+            GCPBilling.PREEMPTIBLE, PREFIX, cpuMachine);
     private GCPResourceRequest cpuOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
     private GCPResourceRequest ramOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
     private GCPResourceRequest ramOndemandK80Request = new GCPResourceRequest(GCPResourceType.GPU,
-            GCPBilling.ON_DEMAND, "prefix", gpuMachine);
+            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
     private GCPResourceRequest diskOndemandRequest = new GCPResourceRequest(GCPResourceType.DISK,
-            GCPBilling.ON_DEMAND, "prefix", disk);
+            GCPBilling.ON_DEMAND, PREFIX, disk);
     private final List<GCPResourceRequest> extractor1Requests = Arrays.asList(cpuOndemandStandardRequest,
             ramOndemandStandardRequest);
     private final List<GCPResourceRequest> extractor2Requests = Arrays.asList(cpuOndemandCustomRequest,
@@ -114,14 +116,14 @@ public class GCPInstancePriceServiceTest {
         when(customMachinesExtractor.extract(any())).thenReturn(customMachines);
         when(diskExtractor.extract(any())).thenReturn(disks);
         final HashMap<String, String> prefixes = new HashMap<>();
-        prefixes.put("cpu_ondemand_standard", "prefix");
-        prefixes.put("ram_ondemand_standard", "prefix");
-        prefixes.put("cpu_preemtible_standard", "prefix");
-        prefixes.put("ram_preemtible_standard", "prefix");
-        prefixes.put("cpu_ondemand_custom", "prefix");
-        prefixes.put("ram_ondemand_custom", "prefix");
-        prefixes.put("gpu_ondemand_k80", "prefix");
-        prefixes.put("disk_ondemand", "prefix");
+        prefixes.put("cpu_ondemand_standard", PREFIX);
+        prefixes.put("ram_ondemand_standard", PREFIX);
+        prefixes.put("cpu_preemtible_standard", PREFIX);
+        prefixes.put("ram_preemtible_standard", PREFIX);
+        prefixes.put("cpu_ondemand_custom", PREFIX);
+        prefixes.put("ram_ondemand_custom", PREFIX);
+        prefixes.put("gpu_ondemand_k80", PREFIX);
+        prefixes.put("disk_ondemand", PREFIX);
         when(preferenceManager.getPreference(eq(SystemPreferences.GCP_BILLING_PREFIXES))).thenReturn(prefixes);
         when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
                 new GCPResourcePrice(cpuOndemandStandardRequest, STANDARD_CPU_COST),

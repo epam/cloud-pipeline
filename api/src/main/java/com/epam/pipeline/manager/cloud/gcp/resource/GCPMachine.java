@@ -29,7 +29,7 @@ import java.util.Date;
 import java.util.List;
 
 @Getter
-public class GCPMachine extends GCPObject {
+public class GCPMachine extends AbstractGCPObject {
     private final int cpu;
     private final double ram;
     private final int gpu;

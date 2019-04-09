@@ -17,8 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 
 import java.util.List;
 
@@ -32,5 +31,5 @@ public interface GCPObjectExtractor {
     /**
      * Extracts Google Cloud Provider billable object from the given region.
      */
-    List<GCPObject> extract(GCPRegion region);
+    List<AbstractGCPObject> extract(GCPRegion region);
 }

@@ -19,7 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp.extractor;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.MachineType;
 import com.google.api.services.compute.model.MachineTypeList;
@@ -52,7 +52,7 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
     private final GCPClient gcpClient;
 
     @Override
-    public List<GCPObject> extract(final GCPRegion region) {
+    public List<AbstractGCPObject> extract(final GCPRegion region) {
         try {
             final Compute client = gcpClient.buildComputeClient(region);
             final String zone = region.getRegionCode();

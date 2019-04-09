@@ -18,8 +18,8 @@ package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -38,7 +38,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
     private static final String CUSTOM_FAMILY = "custom";
 
     @Override
-    public List<GCPObject> extract(final GCPRegion region) {
+    public List<AbstractGCPObject> extract(final GCPRegion region) {
         return CollectionUtils.emptyIfNull(region.getCustomInstanceTypes())
                 .stream()
                 .filter(type -> type.getCpu() > 0 && type.getRam() >= 0)

@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -30,7 +30,7 @@ import java.util.List;
 @Component
 public class GCPDiskExtractor implements GCPObjectExtractor {
     @Override
-    public List<GCPObject> extract(final GCPRegion region) {
+    public List<AbstractGCPObject> extract(final GCPRegion region) {
         return Collections.singletonList(new GCPDisk("SSD", "SSD"));
     }
 }

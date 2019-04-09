@@ -32,7 +32,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Getter
 @EqualsAndHashCode
-public abstract class GCPObject {
+public abstract class AbstractGCPObject {
     protected static final String BILLING_KEY_PATTERN = "%s_%s_%s";
     protected static final String SHORT_BILLING_KEY_PATTERN = "%s_%s";
 

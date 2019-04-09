@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
-import com.epam.pipeline.manager.cloud.gcp.resource.GCPObject;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +62,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     @Override
     public List<InstanceOffer> refreshPriceListForRegion(final GCPRegion region) {
         try {
-            final List<GCPObject> objects = availableObjects(region);
+            final List<AbstractGCPObject> objects = availableObjects(region);
             final Map<String, String> prefixes = loadBillingPrefixes();
             final List<GCPResourceRequest> requests = requests(objects, prefixes);
             final Set<GCPResourcePrice> prices = priceLoader.load(region, requests);
@@ -77,7 +77,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         }
     }
 
-    private List<GCPObject> availableObjects(final GCPRegion region) {
+    private List<AbstractGCPObject> availableObjects(final GCPRegion region) {
         return extractors.stream()
                 .flatMap(it -> it.extract(region).stream())
                 .collect(Collectors.toList());
@@ -87,7 +87,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_BILLING_PREFIXES));
     }
 
-    private List<GCPResourceRequest> requests(final List<GCPObject> objects, final Map<String, String> prefixes) {
+    private List<GCPResourceRequest> requests(final List<AbstractGCPObject> objects,
+                                              final Map<String, String> prefixes) {
         return objects.stream()
                 .flatMap(machine -> Arrays.stream(GCPResourceType.values())
                         .filter(machine::isRequired)
@@ -95,7 +96,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .collect(Collectors.toList());
     }
 
-    private Stream<GCPResourceRequest> requests(final GCPObject object,
+    private Stream<GCPResourceRequest> requests(final AbstractGCPObject object,
                                                 final GCPResourceType type,
                                                 final Map<String, String> prefixes) {
         return Arrays.stream(GCPBilling.values())
@@ -106,7 +107,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .map(Optional::get);
     }
 
-    private Double getPrice(final GCPObject object,
+    private Double getPrice(final AbstractGCPObject object,
                             final GCPBilling billing,
                             final Set<GCPResourcePrice> prices) {
         final List<GCPResourceType> requiredTypes = Arrays.stream(GCPResourceType.values())
