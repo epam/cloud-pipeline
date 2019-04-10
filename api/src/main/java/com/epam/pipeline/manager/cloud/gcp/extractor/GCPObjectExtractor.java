@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
-import java.io.IOException;
+import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 
-public class GCPInstancePriceException extends RuntimeException {
-    GCPInstancePriceException(final String message) {
-        super(message);
-    }
+import java.util.List;
 
-    GCPInstancePriceException(final String message, final IOException cause) {
-        super(message, cause);
-    }
+/**
+ * Google Cloud Provider billable object extractor.
+ *
+ * It generates compute machine and disk descriptions for a specific region.
+ */
+public interface GCPObjectExtractor {
+
+    /**
+     * Extracts Google Cloud Provider billable object from the given region.
+     */
+    List<AbstractGCPObject> extract(GCPRegion region);
 }

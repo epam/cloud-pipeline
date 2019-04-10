@@ -162,9 +162,9 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public double getPriceForDisk(final Long regionId, final List<InstanceOffer> diskOffers, final int instanceDisk,
-                                 final String instanceType) {
+                                  final String instanceType, final boolean spot) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstancePriceService(region).getPriceForDisk(diskOffers, instanceDisk, instanceType, region);
+        return getInstancePriceService(region).getPriceForDisk(diskOffers, instanceDisk, instanceType, spot, region);
     }
 
     @Override

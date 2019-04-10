@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.GCPClient;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.google.api.services.compute.Compute;
 import com.google.api.services.compute.model.MachineType;
 import com.google.api.services.compute.model.MachineTypeList;
@@ -33,21 +36,23 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
+ * Google Cloud Provider predefined compute machines extractor.
+ *
  * Extracts all available Google Cloud Provider predefined machines in a specific region.
  *
- * Google Cloud Provider machine type names are parsed according to one of the supported patterns:
+ * Retrieves machine family from a corresponding machine type name using one of the following patterns:
  * {prefix}-{instance_family}-{postfix}
  * {prefix}-{instance_family}
  */
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
+public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
 
     private final GCPClient gcpClient;
 
     @Override
-    public List<GCPMachine> extract(final GCPRegion region) {
+    public List<AbstractGCPObject> extract(final GCPRegion region) {
         try {
             final Compute client = gcpClient.buildComputeClient(region);
             final String zone = region.getRegionCode();
@@ -75,7 +80,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
         final String name = machineType.getName();
         final String family = elements[1];
         if (elements.length == 2) {
-            return Optional.of(GCPMachine.withCpu(name, family, 1, 0));
+            return Optional.of(new GCPMachine(name, family, 1, 0, 0, null));
         }
         if (elements.length == 3) {
             try {
@@ -83,7 +88,7 @@ public class PredefinedGCPMachineExtractor implements GCPMachineExtractor {
                 final double memory = new BigDecimal((double) machineType.getMemoryMb() / 1024)
                         .setScale(2, RoundingMode.HALF_EVEN)
                         .doubleValue();
-                return Optional.of(GCPMachine.withCpu(name, family, cpu, memory));
+                return Optional.of(new GCPMachine(name, family, cpu, memory, 0, null));
             } catch (NumberFormatException e) {
                 log.warn(String.format("GCP Machine Type name '%s' parsing has failed.", machineType), e);
                 return Optional.empty();

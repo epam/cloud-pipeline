@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.gcp;
+package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.region.GCPRegion;
+import com.epam.pipeline.manager.cloud.gcp.resource.GCPDisk;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
+import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Google Cloud Provider machine extractor.
- *
- * It generates compute machine descriptions based on the given region.
+ * Google Cloud Provider local disks extractor.
  */
-public interface GCPMachineExtractor {
-
-    /**
-     * Extracts Google Cloud Provider machines from the given region.
-     */
-    List<GCPMachine> extract(GCPRegion region);
+@Component
+public class GCPDiskExtractor implements GCPObjectExtractor {
+    @Override
+    public List<AbstractGCPObject> extract(final GCPRegion region) {
+        return Collections.singletonList(new GCPDisk("SSD", "SSD"));
+    }
 }

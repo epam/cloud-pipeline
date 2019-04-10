@@ -75,7 +75,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
 
     @Override
     public double getPriceForDisk(final List<InstanceOffer> offers, final int instanceDisk,
-                                 final String instanceType, final AwsRegion region) {
+                                 final String instanceType, final boolean spot, final AwsRegion region) {
         if (offers.size() == 1) {
             return offers.get(0).getPricePerUnit() / (DAYS_IN_MONTH * HOURS_IN_DAY) * instanceDisk;
         }

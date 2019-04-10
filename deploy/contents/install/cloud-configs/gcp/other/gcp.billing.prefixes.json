@@ -36,5 +36,7 @@
   "gpu_preemptible_p4": "Nvidia Tesla P4 GPU attached to preemptible",
   "gpu_preemptible_v100": "Nvidia Tesla V100 GPU attached to preemptible",
   "gpu_preemptible_p100": "Nvidia Tesla P100 GPU attached to preemptible",
-  "gpu_preemptible_k80": "Nvidia Tesla K80 GPU attached to preemptible"
+  "gpu_preemptible_k80": "Nvidia Tesla K80 GPU attached to preemptible",
+  "disk_ondemand": "SSD backed Local Storage in",
+  "disk_preemptible": "SSD backed Local Storage attached to Preemptible VMs in"
 }

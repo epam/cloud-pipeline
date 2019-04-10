@@ -17,8 +17,6 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.region.GCPRegion;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.google.api.services.cloudbilling.Cloudbilling;
 import com.google.api.services.cloudbilling.model.ListSkusResponse;
 import com.google.api.services.cloudbilling.model.PricingExpression;
@@ -27,20 +25,16 @@ import com.google.api.services.cloudbilling.model.Sku;
 import com.google.api.services.cloudbilling.model.TierRate;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Google Cloud Provider resource price loader.
@@ -53,46 +47,16 @@ public class GCPResourcePriceLoader {
     private static final int SKUS_PAGE_SIZE = 2000;
     private static final long BILLION = 1_000_000_000L;
 
-    private final PreferenceManager preferenceManager;
     private final GCPClient gcpClient;
 
-    /**
-     * Loads prices for all the given Google Cloud Provider machines in the specified region.
-     */
-    public Set<GCPResourcePrice> load(final GCPRegion region, final List<GCPMachine> machines) {
+    public Set<GCPResourcePrice> load(final GCPRegion region, final List<GCPResourceRequest> requests) {
         try {
             final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
-            final Map<String, String> prefixes = loadBillingPrefixes();
-            final List<GCPResourceRequest> requests = requests(machines, prefixes);
             final String regionName = regionName(region);
             return loadPrices(requests, cloudbilling, regionName);
         } catch (IOException e) {
             throw new GCPInstancePriceException("GCP machine prices loading has failed.", e);
         }
-    }
-
-    private Map<String, String> loadBillingPrefixes() {
-        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_BILLING_PREFIXES));
-    }
-
-    private List<GCPResourceRequest> requests(final List<GCPMachine> machines, final Map<String, String> prefixes) {
-        return machines.stream()
-                .flatMap(machine -> Arrays.stream(GCPResourceType.values())
-                        .filter(type -> type.isRequired(machine))
-                        .flatMap(type -> requests(machine, type, prefixes)))
-                .distinct()
-                .collect(Collectors.toList());
-    }
-
-    private Stream<GCPResourceRequest> requests(final GCPMachine machine,
-                                                final GCPResourceType type,
-                                                final Map<String, String> prefixes) {
-        return Arrays.stream(GCPBilling.values())
-                .map(billing -> Optional.of(type.billingKey(billing, machine))
-                        .map(prefixes::get)
-                        .map(prefix -> new GCPResourceRequest(type.family(machine), type, billing, prefix)))
-                .filter(Optional::isPresent)
-                .map(Optional::get);
     }
 
     private String regionName(final GCPRegion region) {
@@ -142,7 +106,7 @@ public class GCPResourcePriceLoader {
                 .map(this::firstElement)
                 .map(TierRate::getUnitPrice)
                 .filter(money -> money.getUnits() != null && money.getNanos() != null)
-                .map(money -> money.getUnits() * BILLION + money.getNanos())
+                .map(money -> request.getType().normalize(money.getUnits() * BILLION + money.getNanos()))
                 .map(nanos -> price(request, nanos));
     }
 
@@ -155,6 +119,6 @@ public class GCPResourcePriceLoader {
     }
 
     private GCPResourcePrice price(final GCPResourceRequest request, final Long nanos) {
-        return new GCPResourcePrice(request.getFamily(), request.getType(), request.getBilling(), nanos);
+        return new GCPResourcePrice(request, nanos);
     }
 }

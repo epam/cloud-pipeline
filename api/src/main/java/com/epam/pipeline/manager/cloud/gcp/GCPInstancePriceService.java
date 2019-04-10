@@ -16,26 +16,34 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
+import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -43,20 +51,25 @@ import java.util.stream.Collectors;
 public class GCPInstancePriceService implements CloudInstancePriceService<GCPRegion> {
 
     private static final long BILLION = 1_000_000_000L;
+    private static final int PRICES_PRECISION = 5;
     static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
 
-    private final List<GCPMachineExtractor> extractors;
+    private final PreferenceManager preferenceManager;
+    private final InstanceOfferDao instanceOfferDao;
+    private final List<GCPObjectExtractor> extractors;
     private final GCPResourcePriceLoader priceLoader;
 
     @Override
     public List<InstanceOffer> refreshPriceListForRegion(final GCPRegion region) {
         try {
-            final List<GCPMachine> machines = extractors.stream()
-                    .flatMap(it -> it.extract(region).stream())
-                    .collect(Collectors.toList());
-            final Set<GCPResourcePrice> prices = priceLoader.load(region, machines);
-            return machines.stream()
-                    .flatMap(machine -> instanceOffers(region, machine, prices).stream())
+            final List<AbstractGCPObject> objects = availableObjects(region);
+            final Map<String, String> prefixes = loadBillingPrefixes();
+            final List<GCPResourceRequest> requests = requests(objects, prefixes);
+            final Set<GCPResourcePrice> prices = priceLoader.load(region, requests);
+            return objects.stream()
+                    .flatMap(object -> Arrays.stream(GCPBilling.values())
+                            .map(billing -> object.toInstanceOffer(billing,
+                                    getPrice(object, billing, prices), region.getId())))
                     .collect(Collectors.toList());
         } catch (GCPInstancePriceException e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -64,81 +77,91 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         }
     }
 
-    private List<InstanceOffer> instanceOffers(final GCPRegion region,
-                                               final GCPMachine machine,
-                                               final Set<GCPResourcePrice> prices) {
-        return Arrays.stream(GCPBilling.values())
-                .map(billing -> InstanceOffer.builder()
-                        .termType(termType(billing))
-                        .tenancy(SHARED_TENANCY)
-                        .productFamily(INSTANCE_PRODUCT_FAMILY)
-                        .sku(machine.getName())
-                        .pricePerUnit(getPrice(machine, billing, prices))
-                        .priceListPublishDate(new Date())
-                        .currency(CURRENCY)
-                        .instanceType(machine.getName())
-                        .regionId(region.getId())
-                        .unit(HOURS_UNIT)
-                        .volumeType("SSD")
-                        .operatingSystem("Linux")
-                        .instanceFamily(WordUtils.capitalizeFully(machine.getFamily()))
-                        .vCPU(machine.getCpu())
-                        .gpu(machine.getGpu())
-                        .memory(machine.getRam())
-                        .build())
+    private List<AbstractGCPObject> availableObjects(final GCPRegion region) {
+        return extractors.stream()
+                .flatMap(it -> it.extract(region).stream())
                 .collect(Collectors.toList());
     }
 
-    private String termType(final GCPBilling billing) {
-        return billing == GCPBilling.ON_DEMAND ? ON_DEMAND_TERM_TYPE : PREEMPTIBLE_TERM_TYPE;
+    private Map<String, String> loadBillingPrefixes() {
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_BILLING_PREFIXES));
     }
 
-    private Double getPrice(final GCPMachine machine,
+    private List<GCPResourceRequest> requests(final List<AbstractGCPObject> objects,
+                                              final Map<String, String> prefixes) {
+        return objects.stream()
+                .flatMap(machine -> Arrays.stream(GCPResourceType.values())
+                        .filter(machine::isRequired)
+                        .flatMap(type -> requests(machine, type, prefixes)))
+                .collect(Collectors.toList());
+    }
+
+    private Stream<GCPResourceRequest> requests(final AbstractGCPObject object,
+                                                final GCPResourceType type,
+                                                final Map<String, String> prefixes) {
+        return Arrays.stream(GCPBilling.values())
+                .map(billing -> Optional.of(object.billingKey(billing, type))
+                        .map(prefixes::get)
+                        .map(prefix -> new GCPResourceRequest(type, billing, prefix, object)))
+                .filter(Optional::isPresent)
+                .map(Optional::get);
+    }
+
+    private Double getPrice(final AbstractGCPObject object,
                             final GCPBilling billing,
                             final Set<GCPResourcePrice> prices) {
-        final Map<GCPResourceType, Optional<GCPResourcePrice>> requiredPrices = Arrays.stream(GCPResourceType.values())
-                .filter(type -> type.isRequired(machine))
-                .collect(Collectors.toMap(Function.identity(),
-                    type -> findPrice(prices, type, billing, type.family(machine))));
-        final Optional<GCPResourceType> typeWithMissingPrice = requiredPrices.entrySet()
-                .stream()
-                .filter(entry -> !entry.getValue().isPresent())
-                .map(Map.Entry::getKey)
+        final List<GCPResourceType> requiredTypes = Arrays.stream(GCPResourceType.values())
+                .filter(object::isRequired)
+                .collect(Collectors.toList());
+        final Map<GCPResourceType, GCPResourcePrice> objectPrices = prices.stream()
+                .filter(price -> price.getRequest().getObject().equals(object))
+                .filter(price -> price.getRequest().getBilling().equals(billing))
+                .collect(Collectors.toMap(price -> price.getRequest().getType(), Function.identity()));
+        final Optional<GCPResourceType> typeWithMissingPrice = requiredTypes.stream()
+                .filter(type -> !objectPrices.keySet().contains(type))
                 .findFirst();
         if (typeWithMissingPrice.isPresent()) {
-            log.error(String.format("Price for %s for GCP machine %s wasn't found.", typeWithMissingPrice.get(),
-                    machine.getName()));
+            log.error("Price for {} with {} billing for GCP object {} wasn't found.", typeWithMissingPrice.get(),
+                    billing.alias(), object.getName());
             return 0.0;
         }
-        final long nanos = requiredPrices.values()
-                .stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .mapToLong(price -> price.in(machine))
-                .sum();
+        final long nanos = object.totalPrice(new ArrayList<>(objectPrices.values()));
         return new BigDecimal(((double) nanos) / BILLION)
-                .setScale(2, RoundingMode.HALF_EVEN)
+                .setScale(PRICES_PRECISION, RoundingMode.HALF_EVEN)
                 .doubleValue();
-    }
-
-    private Optional<GCPResourcePrice> findPrice(final Set<GCPResourcePrice> prices,
-                                                 final GCPResourceType type,
-                                                 final GCPBilling billing,
-                                                 final String family) {
-        return prices.stream()
-                .filter(price -> price.equals(GCPResourcePrice.empty(family, type, billing)))
-                .findFirst();
     }
 
     @Override
     public double getSpotPrice(final String instanceType, final GCPRegion region) {
-        return 0;
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(PREEMPTIBLE_TERM_TYPE);
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(region.getId());
+        final List<InstanceOffer> offers = ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO));
+        return offers.stream()
+                .findFirst()
+                .map(InstanceOffer::getPricePerUnit)
+                .orElse(0.0);
     }
 
     @Override
-    public double getPriceForDisk(final List<InstanceOffer> offers, final int instanceDisk,
-                                  final String instanceType, final GCPRegion region) {
-        return 0;
+    public double getPriceForDisk(final List<InstanceOffer> offers,
+                                  final int instanceDisk,
+                                  final String instanceType,
+                                  final boolean spot,
+                                  final GCPRegion region) {
+        return offers.stream()
+                .filter(offer -> spot
+                        ? offer.getTermType().equals(PREEMPTIBLE_TERM_TYPE)
+                        : offer.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE)
+                )
+                .findFirst()
+                .map(offer -> offer.getPricePerUnit() * instanceDisk)
+                .orElse(0.0);
     }
 
     @Override
