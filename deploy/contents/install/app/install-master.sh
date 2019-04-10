@@ -44,15 +44,35 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 #6.1 - Docker
-yum install -y yum-utils \
-  device-mapper-persistent-data \
-  lvm2 && \
-yum-config-manager \
-    --add-repo \
-    https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
-                containerd.io
+# Try yum default repository
+# Using this specific version to overcome centos 7.4+ etcd health issue https://github.com/etcd-io/etcd/issues/10310 which leads to kube controller/scheduler/dns failures)
+yum install -y 2:docker-1.13.1-75.git8633870.el7.centos.x86_64 || docker_install_failed=1
+if [[ "$docker_install_failed" == "1" ]]; then
+  echo "Unable to install 2:docker-1.13.1-75.git8633870.el7.centos.x86_64 trying docker-ce"
+  yum install -y yum-utils \
+    device-mapper-persistent-data \
+    lvm2 && \
+  yum-config-manager \
+      --add-repo \
+      https://download.docker.com/linux/centos/docker-ce.repo && \
+  yum install -y  docker-ce-18.09.1 \
+                  docker-ce-cli-18.09.1 \
+                  containerd.io
+fi
+
+# Configure docker to use systemd as a cgroup driver
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json <<EOF
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOF
+mkdir -p /etc/systemd/system/docker.service.d
+
+sed -i '/native.cgroupdriver/d' /usr/lib/systemd/system/docker.service
 
 #6.2 - Kube
 yum install -y \
@@ -63,10 +83,12 @@ yum install -y \
 
 #7
 sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 
 #8
 systemctl daemon-reload
+systemctl enable docker
+systemctl enable kubelet
 systemctl start docker
 systemctl start kubelet
 
@@ -75,7 +97,13 @@ sleep 10
 
 #9
 FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
-kubeadm init --pod-network-cidr="$FLANNEL_CIDR" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
+kubeadm_init_cmd="kubeadm init --pod-network-cidr=$FLANNEL_CIDR --kubernetes-version v1.7.5 --skip-preflight-checks &> $HOME/kubeadm_init.log || kubeadm_failed=1"
+eval "$kubeadm_init_cmd"
+if [[ "$kubeadm_failed" == "1" ]]; then
+  echo "kubeadm returned non-zero exit code, will try once more"
+  kubeadm reset
+  eval "$kubeadm_init_cmd"
+fi
 
 sleep 30
 
@@ -99,3 +127,35 @@ kubectl create clusterrolebinding owner-cluster-admin-binding \
     --user system:serviceaccount:default:default 
 
 sleep 10
+
+# 14
+# Wait for all pods from the kube-system namespace to be ready (mainly kube-dns and flannel)
+not_ready_pods_timeout=10
+not_ready_pods_retry_count=60
+while : ; do
+  sleep $not_ready_pods_timeout
+  not_ready_pods_retry_count=$((not_ready_pods_retry_count-1))
+
+  if [ $not_ready_pods_retry_count -eq 0 ]; then
+    echo "System pods were not able to start"
+    exit 1
+  fi
+
+  not_ready_pods=$(kubectl get po --namespace kube-system -o json | \
+                    jq -r '.items[].status.containerStatuses[] | select(.ready == false) | .name') || \
+                    not_ready_pods_failed=1
+  if [ "$not_ready_pods_failed" == "1" ]; then
+    echo "Unable to get system pods information, waiting next $not_ready_pods_timeout seconds"
+    unset not_ready_pods_failed
+    continue
+  fi
+  if [ -z "$not_ready_pods" ]; then
+    echo "All system pods are ready"
+    break
+  fi
+  
+
+  echo "The following system pods are not ready yet, waiting next $not_ready_pods_timeout seconds"
+  echo $not_ready_pods
+  echo
+done
