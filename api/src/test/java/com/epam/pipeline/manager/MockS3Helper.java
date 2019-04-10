@@ -26,6 +26,10 @@ import java.util.Map;
 
 public class MockS3Helper extends S3Helper {
 
+    public MockS3Helper() {
+        super(null);
+    }
+
     @Override public String createS3Bucket(String name,
                                            String policy,
                                            List<CORSRule> corsRulesFile,

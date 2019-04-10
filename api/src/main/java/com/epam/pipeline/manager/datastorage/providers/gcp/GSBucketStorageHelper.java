@@ -324,8 +324,8 @@ public class GSBucketStorageHelper {
     public Map<String, String> deleteMetadata(final GSBucketStorage storage, final String path,
                                               final Set<String> tagsToDelete, final String version) {
         final Map<String, String> existingTags = listMetadata(storage, path, version);
-        tagsToDelete.forEach(tag ->
-            Assert.isTrue(existingTags.containsKey(tag), String.format("Tag '%s' doesn't exist", tag))
+        tagsToDelete.forEach(tag -> Assert.isTrue(existingTags.containsKey(tag), messageHelper.getMessage(
+                MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag))
         );
         existingTags.keySet().removeAll(tagsToDelete);
         updateMetadata(storage, path, existingTags, version);
@@ -451,14 +451,14 @@ public class GSBucketStorageHelper {
         final BlobId blobId = BlobId.of(bucketName, blobPath,
                 StringUtils.isNotBlank(version) ? Long.valueOf(version) : null);
         final Blob blob = client.get(blobId);
-        Assert.notNull(blob, messageHelper.getMessage(MessageConstants.ERROR_GCP_STORAGE_PATH_NOT_FOUND, blobPath,
+        Assert.notNull(blob, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, blobPath,
                 bucketName));
         return blob;
     }
 
     private void checkBlobDoesNotExist(final String bucketName, final String blobPath, final Storage client) {
         final Blob blob = client.get(bucketName, blobPath);
-        Assert.isNull(blob, messageHelper.getMessage(MessageConstants.ERROR_GCP_STORAGE_PATH_ALREADY_EXISTS, blobPath,
+        Assert.isNull(blob, messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, blobPath,
                 bucketName));
     }
 
