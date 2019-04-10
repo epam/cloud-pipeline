@@ -336,7 +336,8 @@ class TestRun(object):
                   text=mock_price(instance_disk, instance_type))
         mock.post(mocked_url('run'), text=mock_run(pipeline_id, docker_image=docker_image, identifier=run_id))
         expected_stdout = \
-            "Docker image, instance type and instance disk are required parameters if pipeline was not provided.\n"
+            "Docker image, instance type, instance disk and cmd template are required parameters " \
+            "if pipeline was not provided.\n"
         actual_stdout = get_stdout_string(
             lambda: PipelineRunOperations.run(None, None, self.parameters, self.yes, self.run_params,
                                               None, None, None, self.cmd_template, self.timeout,
