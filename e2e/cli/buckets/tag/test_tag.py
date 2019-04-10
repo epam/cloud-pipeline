@@ -144,7 +144,7 @@ class TestTagging(object):
      """
     test_case_for_non_existing = [
         ('cp://non_existing/{}'.format(test_file), 'data storage with id: \'non_existing\' was not found'),
-        ('cp://{}/non_existing'.format(bucket), 'Path \'non_existing\' doesn\'t exist')
+        ('cp://{}/non_existing'.format(bucket), 'path \'non_existing\' for bucket \'{}\' does not exist'.format(bucket))
     ]
 
     @pytest.mark.parametrize("path,message", test_case_for_non_existing)
