@@ -220,6 +220,9 @@ public class PipelineLauncher {
             putIfStringValuePresent(systemParamsWithValue,
                     SystemParams.GIT_TOKEN, gitCredentials.getToken());
         }
+        if (run.getParentRunId() != null) {
+            systemParamsWithValue.put(SystemParams.PARENT_ID, String.valueOf(run.getParentRunId()));
+        }
         return systemParamsWithValue;
     }
 
