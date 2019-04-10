@@ -614,7 +614,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                     this.renderActions()
                   }
                   {
-                    roleModel.writeAllowed(this.props.pipeline.value) && !this.props.readOnly &&
+                    !this.props.readOnly &&
                     <Button
                       id="edit-pipeline-button"
                       onClick={this.openEditPipelineDialog}
