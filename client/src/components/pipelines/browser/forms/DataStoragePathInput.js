@@ -231,7 +231,7 @@ export default class DataStoragePathInput extends React.Component {
                   this.currentFileShareMount
                     ? this.displayFileShareHostName(this.currentFileShareMount)
                     : (this.state.path && this.state.path.split(':')[0]) ||
-                    'Unknown FS Mount target'
+                    'None'
                 }
               </Button>
               : <Dropdown
@@ -269,7 +269,7 @@ export default class DataStoragePathInput extends React.Component {
                     this.currentFileShareMount
                       ? this.displayFileShareHostName(this.currentFileShareMount)
                       : (this.state.path && this.state.path.split(':')[0]) ||
-                      'Unknown FS Mount target'
+                      'None'
                   }
                 </Button>
               </Dropdown>
@@ -333,7 +333,7 @@ export default class DataStoragePathInput extends React.Component {
       };
     } else {
       return {
-        fileShareMountId: undefined,
+        fileShareMountId: this.fileShareMountsList.length > 0 ? this.fileShareMountsList[0].id : undefined,
         regionId: undefined,
         storagePath: undefined,
         path: undefined
