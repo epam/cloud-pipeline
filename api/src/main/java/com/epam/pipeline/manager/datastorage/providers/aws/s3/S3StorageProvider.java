@@ -219,7 +219,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
         AwsRegion region = getAwsRegion(dataStorage);
-        return new RegionAwareS3Helper(region);
+        return new RegionAwareS3Helper(region, messageHelper);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {

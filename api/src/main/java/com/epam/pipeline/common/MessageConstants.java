@@ -182,6 +182,8 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
+    public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -414,10 +416,6 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_DELETE_FAILED =
-            "error.datastorage.azure.item.delete.failed";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_ALREADY_EXISTS =
-            "error.datastorage.azure.item.already.exists";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
 
     private MessageConstants() {

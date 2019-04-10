@@ -465,11 +465,11 @@ public class AzureStorageHelper {
     private void validateBlob(final AzureBlobStorage storage, final String path, final boolean exist) {
         validatePath(path);
         if (exist) {
-            Assert.state(blobExists(storage, path),
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_AZURE_ITEM_DELETE_FAILED, path));
+            Assert.state(blobExists(storage, path), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, storage.getPath()));
         } else {
-            Assert.state(!blobExists(storage, path),
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_AZURE_ITEM_ALREADY_EXISTS, path));
+            Assert.state(!blobExists(storage, path), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, path, storage.getPath()));
         }
     }
 

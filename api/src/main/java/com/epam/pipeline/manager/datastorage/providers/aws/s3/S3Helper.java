@@ -59,6 +59,8 @@ import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
 import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -73,6 +75,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
@@ -103,6 +106,7 @@ import java.util.stream.Collectors;
  * Util class providing methods to interact with AWS S3 API.
  * Uses Default Credential Provider Chain for AWS authorization.
  */
+@RequiredArgsConstructor
 public class S3Helper {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Helper.class);
 
@@ -115,6 +119,8 @@ public class S3Helper {
     private static final String LTS_RULE_ID = "Long term storage rule";
     private static final String PATH_SHOULD_NOT_BE_EMPTY_MESSAGE = "Path should not be empty";
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
+
+    private final MessageHelper messageHelper;
 
     public AmazonS3 getDefaultS3Client() {
         return AmazonS3ClientBuilder.defaultClient();
@@ -462,7 +468,8 @@ public class S3Helper {
         }
         AmazonS3 client = getDefaultS3Client();
         if (!StringUtils.hasValue(version) && !totally && !itemExists(client, bucket, path, false)) {
-            throw new DataStorageException("File does not exist");
+            throw new DataStorageException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
         try {
             if (!StringUtils.hasValue(version) && totally) {
@@ -524,10 +531,12 @@ public class S3Helper {
         }
         AmazonS3 client = getDefaultS3Client();
         if (!itemExists(client, bucket, oldPath, false)) {
-            throw new DataStorageException(String.format("File '%s' does not exist", oldPath));
+            throw new DataStorageException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, oldPath, bucket));
         }
         if (itemExists(client, bucket, newPath, false)) {
-            throw new DataStorageException(String.format("File '%s' already exists", newPath));
+            throw new DataStorageException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, newPath, bucket));
         }
         if (fileSizeExceedsLimit(client, bucket, oldPath)) {
             throw new DataStorageException(String.format("File '%s' moving was aborted because " +
@@ -835,7 +844,8 @@ public class S3Helper {
             return convertAwsTagsToMap(client.getObjectTagging(getTaggingRequest).getTagSet());
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
-                throw new DataStorageException(String.format("Path '%s' doesn't exist", path));
+                throw new DataStorageException(messageHelper
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
             } else {
                 throw new DataStorageException(e.getMessage(), e);
             }
@@ -845,9 +855,8 @@ public class S3Helper {
     public Map<String, String> deleteObjectTags(AbstractDataStorage dataStorage, String path, Set<String> tagKeys,
                                                 String version) {
         Map<String, String> existingTags = listObjectTags(dataStorage, path, version);
-        tagKeys.forEach(tag -> {
-            Assert.isTrue(existingTags.containsKey(tag), String.format("Tag '%s' doesn't exist", tag));
-        });
+        tagKeys.forEach(tag -> Assert.isTrue(existingTags.containsKey(tag), messageHelper.getMessage(
+                MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag)));
         existingTags.keySet().removeAll(tagKeys);
         updateObjectTags(dataStorage, path, existingTags, version);
         return existingTags;
@@ -863,7 +872,8 @@ public class S3Helper {
             return downloadContent(maxDownloadSize, objectPortion);
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
-                throw new DataStorageException(String.format("File '%s' doesn't exist", path));
+                throw new DataStorageException(messageHelper
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
             } else if (e.getStatusCode() == INVALID_RANGE) {
                 // is thrown in case of en empty file
                 LOGGER.debug(e.getMessage(), e);
@@ -885,7 +895,8 @@ public class S3Helper {
             return new DataStorageStreamingContent(object.getObjectContent(), object.getKey());
         } catch (AmazonS3Exception e) {
             if (e.getStatusCode() == NOT_FOUND) {
-                throw new DataStorageException(String.format("File '%s' doesn't exist", path));
+                throw new DataStorageException(messageHelper
+                        .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getPath()));
             } else {
                 throw new DataStorageException(e.getMessage(), e);
             }
@@ -946,7 +957,8 @@ public class S3Helper {
         } else if (!listing.getObjectSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(String.format("Path '%s' does not exist", path));
+            throw new IllegalArgumentException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
 
@@ -962,7 +974,8 @@ public class S3Helper {
         } else if (!listing.getVersionSummaries().isEmpty()) {
             return DataStorageItemType.File;
         } else {
-            throw new IllegalArgumentException(String.format("Path '%s' does not exist", path));
+            throw new IllegalArgumentException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, bucket));
         }
     }
 
