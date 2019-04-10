@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.BlobSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
 
     @Override
     public DataStorageType getStorageType() {
@@ -102,14 +104,16 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents) {
-        return getAzureStorageHelper(dataStorage).createFile(dataStorage, path, contents);
+        return getAzureStorageHelper(dataStorage)
+                .createFile(dataStorage, path, contents, authManager.getAuthorizedUser());
     }
 
     @Override
     public DataStorageFile createFile(final AzureBlobStorage dataStorage,
                                       final String path,
                                       final InputStream dataStream) {
-        return getAzureStorageHelper(dataStorage).createFile(dataStorage, path, dataStream);
+        return getAzureStorageHelper(dataStorage)
+                .createFile(dataStorage, path, dataStream, authManager.getAuthorizedUser());
     }
 
     @Override
