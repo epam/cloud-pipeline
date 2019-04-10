@@ -28,7 +28,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 
@@ -121,10 +121,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .filter(type -> !objectPrices.keySet().contains(type))
                 .findFirst();
         if (typeWithMissingPrice.isPresent()) {
-            log.error(String.format("Price for %s with %s billing for GCP object %s wasn't found.",
-                    typeWithMissingPrice.get(),
-                    billing.alias(),
-                    object.getName()));
+            log.error("Price for {} with {} billing for GCP object {} wasn't found.", typeWithMissingPrice.get(),
+                    billing.alias(), object.getName());
             return 0.0;
         }
         final long nanos = object.totalPrice(new ArrayList<>(objectPrices.values()));
@@ -143,11 +141,11 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
         requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
         requestVO.setRegionId(region.getId());
-        final List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
-        if (CollectionUtils.isEmpty(offers)) {
-            return 0.0;
-        }
-        return offers.get(0).getPricePerUnit();
+        final List<InstanceOffer> offers = ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO));
+        return offers.stream()
+                .findFirst()
+                .map(InstanceOffer::getPricePerUnit)
+                .orElse(0.0);
     }
 
     @Override
