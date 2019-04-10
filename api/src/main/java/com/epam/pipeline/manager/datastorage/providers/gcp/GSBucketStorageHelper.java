@@ -449,7 +449,7 @@ public class GSBucketStorageHelper {
 
         files.forEach((path, fileVersions) -> {
             fileVersions.sort(Comparator.comparingLong(BlobInfo::getUpdateTime).reversed());
-            final Blob latestVersionBlob = fileVersions.remove(0);
+            final Blob latestVersionBlob = fileVersions.get(0);
             final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob);
             final Map<String, AbstractDataStorageItem> collect = fileVersions
                     .stream()
