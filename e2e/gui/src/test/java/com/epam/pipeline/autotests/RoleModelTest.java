@@ -937,6 +937,7 @@ public class RoleModelTest
                         .create()
                         .ok()
         );
+        refresh();
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
