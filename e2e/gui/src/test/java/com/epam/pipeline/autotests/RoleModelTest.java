@@ -927,14 +927,16 @@ public class RoleModelTest
     }
 
     private void createGroupPrerequisites() {
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToGroups()
-                .pressCreateGroup()
-                .enterGroupName(userGroup)
-                .create()
-                .ok();
+        loginAsAdminAndPerform(() ->
+                navigationMenu()
+                        .settings()
+                        .switchToUserManagement()
+                        .switchToGroups()
+                        .pressCreateGroup()
+                        .enterGroupName(userGroup)
+                        .create()
+                        .ok()
+        );
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
