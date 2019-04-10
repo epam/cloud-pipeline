@@ -218,22 +218,24 @@ public class InstanceOfferManager {
 
     public InstancePrice getInstanceEstimatedPrice(
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
-        Assert.isTrue(isInstanceAllowed(instanceType, regionId),
+        final Long actualRegionId = defaultRegionIfNull(regionId);
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
-                getPricePerHourForInstance(instanceType, isSpotRequest(spot), regionId);
-        double pricePerDisk = getPriceForDisk(instanceDisk, regionId, instanceType);
+                getPricePerHourForInstance(instanceType, isSpotRequest(spot), actualRegionId);
+        double pricePerDisk = getPriceForDisk(instanceDisk, actualRegionId, instanceType);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
         return new InstancePrice(instanceType, instanceDisk, pricePerHour);
     }
 
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
+        final Long actualRegionId = defaultRegionIfNull(regionId);
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         RunInstance runInstance = pipelineRun.getInstance();
         double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(),
-                isSpotRequest(runInstance.getSpot()), regionId);
-        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), regionId, runInstance.getNodeType());
+                isSpotRequest(runInstance.getSpot()), actualRegionId);
+        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId, runInstance.getNodeType());
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
 
         PipelineRunPrice price = new PipelineRunPrice();
