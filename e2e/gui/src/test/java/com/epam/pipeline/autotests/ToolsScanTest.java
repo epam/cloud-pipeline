@@ -139,7 +139,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                 );
     }
 
-    @Test
+    @Test(dependsOnMethods = {"toolScanningValidation"})
     @TestCase({"EPMCMBIBPC-1996"})
     public void toolScanResultsValidation() {
         tools()
@@ -227,8 +227,8 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         toolDescription
                                 .messageShouldAppear("The latest version shall be scanned for vulnerabilities.")
                                 .ensure(RUN, enabled)
-                                .runUnscannedTool("The version shall be scanned for security vulnerabilities, " +
-                                        "but you can launch it during the grace period (till .*). Run anyway?"));
+                                .runUnscannedTool(".*The version shall be scanned for security vulnerabilities, " +
+                                        "but you can launch it during the grace period (till .*). Run anyway?.*"));
     }
 
     @Test
