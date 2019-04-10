@@ -28,7 +28,11 @@ spec:
               name: cp-config-global
           volumeMounts:
             - mountPath: /opt/docker-comp/wd
-              name: docker-comp-wd
+                  name: docker-comp-wd
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f docker-comp-scan.jar); sleep 1"]
       volumes:
         - name: docker-comp-wd
           hostPath:
