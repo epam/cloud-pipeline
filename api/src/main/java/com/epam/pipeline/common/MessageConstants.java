@@ -178,6 +178,8 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
+    public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -410,19 +412,12 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_DELETE_FAILED =
-            "error.datastorage.azure.item.delete.failed";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_ALREADY_EXISTS =
-            "error.datastorage.azure.item.already.exists";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
 
     //GCP
     public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
     public static final String ERROR_GCP_IMP_ACC_REQUIRED = "error.gcp.impersonate.account";
     public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
-
-    public static final String ERROR_GCP_STORAGE_PATH_NOT_FOUND = "error.gcp.storage.path.not.found";
-    public static final String ERROR_GCP_STORAGE_PATH_ALREADY_EXISTS = "error.gcp.storage.path.already.exists";
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
