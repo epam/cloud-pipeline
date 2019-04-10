@@ -38,7 +38,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navigation {
 
-    private String nfsPrefix = C.NFS_PREFIX;
+    private final String nfsPrefix = C.NFS_PREFIX;
     private String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
 
     private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
@@ -52,6 +52,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     private final String tempAlias = "epmcmbi-nfs-test-temp-alias-" + Utils.randomSuffix();
     private final String NfsMountNameSpaces = "nfs mount name with spaces";
     private final String folderNameWithSpaces = "epmcmbi test folder with spaces" + Utils.randomSuffix();
+    private final String fullNfsPrefix = nfsPrefix + ":/";
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -138,7 +139,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .createFolder(folder)
-                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
+                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", fullNfsPrefix + storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -194,7 +195,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .createNfsMount("/" + storage, storage, nfsPrefix)
                 .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' already exists.",
-                        storage, nfsPrefix + storage));
+                        storage, fullNfsPrefix + storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -297,8 +298,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .setMountPoint(value)
                         .clickSaveButton()
                         .messageShouldAppear(String.format(
-                                "Could not create nfs datastorage '%s', mount point '%s' is in black list!", nfsPrefix +
-                                        mountPointStorage, value))
+                                "Could not create nfs datastorage '%s', mount point '%s' is in black list!",
+                                fullNfsPrefix + mountPointStorage, value))
                         .also(this::clickCanceButtonlIfItIsDisplayed)
         );
 }
