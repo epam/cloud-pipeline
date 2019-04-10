@@ -101,8 +101,7 @@ public class GSBucketStorageHelper {
 
     public void deleteGoogleStorage(final String bucketName) {
         final Storage client = gcpClient.buildStorageClient(region);
-        final Iterable<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(EMPTY_PREFIX)).iterateAll();
-        blobs.forEach(blob -> blob.delete());
+        deleteAllVersions(bucketName, EMPTY_PREFIX, client);
         deleteBucket(bucketName, client);
     }
 
@@ -478,8 +477,8 @@ public class GSBucketStorageHelper {
     private void deleteBlob(final String bucketName, final String path, final Blob blob) {
         final boolean deleted = blob.delete(Blob.BlobSourceOption.generationMatch());
         if (!deleted) {
-            throw new DataStorageException(String.format("Failed to delete google storage file %s/%s",
-                    bucketName, path));
+            throw new DataStorageException(
+                    String.format("Failed to delete google storage file '%s' from bucket '%s'", path, bucketName));
         }
     }
 
