@@ -187,18 +187,19 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         return new CreateStoragePopupAO();
     }
 
-    public PipelinesLibraryAO createNfsMount(String nfsMountPath, String nfsMountName) {
+    public PipelinesLibraryAO createNfsMount(String nfsMountPath, String nfsMountName, String nfsPrefix) {
         return clickOnCreateNfsMountButton()
-                .setNfsMountPath(nfsMountPath)
+                .setNfsMountPath(nfsMountPath, nfsPrefix)
                 .setNfsMountAlias(nfsMountName)
                 .ok();
     }
 
     public PipelinesLibraryAO createNfsMountWithDescription(String nfsMountPath,
                                                             String nfsMountName,
-                                                            String nfsMountDescription) {
+                                                            String nfsMountDescription,
+                                                            String nfsPrefix) {
         return clickOnCreateNfsMountButton()
-                .setNfsMountPath(nfsMountPath)
+                .setNfsMountPath(nfsMountPath, nfsPrefix)
                 .setNfsMountAlias(nfsMountName)
                 .setNfsMountDescription(nfsMountDescription)
                 .ok();

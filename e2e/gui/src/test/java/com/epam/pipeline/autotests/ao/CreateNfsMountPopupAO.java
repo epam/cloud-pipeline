@@ -22,9 +22,11 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 
 public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStoragePopUpAO<CreateStoragePopupAO, PipelinesLibraryAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -50,7 +52,9 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
 
 
 
-    public CreateNfsMountPopupAO setNfsMountPath(String nfsMountPath) {
+    public CreateNfsMountPopupAO setNfsMountPath(final String nfsMountPath, final String nfsPrefix) {
+        hover(button("Unknown FS Mount target"));
+        $(".data-storage-path-input__navigation-dropdown-container").find(withText(nfsPrefix)).click();
         $(byId("edit-storage-storage-path-input")).shouldBe(visible).setValue(nfsMountPath);
         return this;
     }
