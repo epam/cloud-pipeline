@@ -641,32 +641,33 @@ def azure_resource_type_cmp(r1, r2):
 def terminate_instance(ins_id):
     instance = compute_client.virtual_machines.get(resource_group_name, ins_id)
     if 'Name' in instance.tags:
-        __delete_all_by_run_id(instance.tags['Name'])
+        delete_all_by_run_id(instance.tags['Name'])
     else:
         compute_client.virtual_machines.delete(resource_group_name, ins_id).wait()
 
 
-def __delete_all_by_run_id(run_id):
+def delete_all_by_run_id(run_id):
     resources = []
     resources.extend(resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"))
-    # we need to sort resources to be sure that vm and nic will be deleted first,
-    # because it has attached resorces(disks and ip)
-    resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-    vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-    __detach_disks_and_nic(vm_name)
-    for resource in resources:
-        resource_client.resources.delete(
-            resource_group_name=resource.id.split('/')[4],
-            resource_provider_namespace=resource.id.split('/')[6],
-            parent_resource_path='',
-            resource_type=str(resource.type).split('/')[-1],
-            resource_name=resource.name,
-            api_version=resolve_azure_api(resource),
-            parameters=resource
-        ).wait()
+    if len(resources) > 0:
+        # we need to sort resources to be sure that vm and nic will be deleted first,
+        # because it has attached resorces(disks and ip)
+        resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        detach_disks_and_nic(vm_name)
+        for resource in resources:
+            resource_client.resources.delete(
+                resource_group_name=resource.id.split('/')[4],
+                resource_provider_namespace=resource.id.split('/')[6],
+                parent_resource_path='',
+                resource_type=str(resource.type).split('/')[-1],
+                resource_name=resource.name,
+                api_version=resolve_azure_api(resource),
+                parameters=resource
+            ).wait()
 
 
-def __detach_disks_and_nic(vm_name):
+def detach_disks_and_nic(vm_name):
     compute_client.virtual_machines.delete(resource_group_name, vm_name).wait()
     try:
         nic = network_client.network_interfaces.get(resource_group_name, vm_name + '-nic')
@@ -833,6 +834,7 @@ def main():
 
         pipe_log('{} task finished'.format(NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
+        delete_all_by_run_id(run_id)
         pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 
