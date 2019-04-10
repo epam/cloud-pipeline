@@ -111,6 +111,8 @@ def main():
 
         utils.pipe_log('{} task finished'.format(utils.NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
+        ins_id = cloud_provider.find_instance(run_id)
+        cloud_provider.terminate_instance(ins_id)
         utils.pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 
