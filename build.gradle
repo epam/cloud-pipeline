@@ -72,15 +72,29 @@ task buildDoc(type: Tar) {
     compression = Compression.GZIP
 }
 
-task buildAll(dependsOn: [":core:build",  "client:buildUI", buildPipe, buildDoc,
+task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
+                          ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
+                          ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
+                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar"]) {
+    group = 'build'
+}
+
+task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
                           ":elasticsearch-agent:build", ":data-transfer-service:build"]) {
     group = 'build'
 }
 
-task installDist(dependsOn: buildAll) {
+
+task installDist() {
     group = 'distribution'
+
+    if (project.hasProperty('fast')) {
+        dependsOn buildAllFast
+    } else {
+        dependsOn buildAll
+    }
 
     doLast {
         def distFolder = "$project.buildDir/install/bin"

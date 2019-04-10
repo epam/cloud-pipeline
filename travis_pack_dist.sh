@@ -14,7 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e 
+set -e
+
+API_STATIC_PATH=$(pwd)/api/src/main/resources/static/
+mkdir -p $API_STATIC_PATH
 
 # Grab the temporary artifacts into assemble/ dir
 # - cloud-pipeline.${VERSION}.tgz
@@ -25,42 +28,37 @@ mkdir assemble
 cd assemble
 aws s3 cp s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ ./ --recursive
 
-# Determine exact name of the cloud-pipeline.${VERSION}.tgz
-DIST_TGZ_NAME=$(echo cloud-pipeline*.tgz)
-
-# Untar cloud-pipeline.${VERSION}.tgz and unzip pipeline.jar
-# TGZ contents will be located in assemble/bin/
-# JAE contents will be located in assemble/pipeline-jar-repackage/
-tar -zxf $DIST_TGZ_NAME
-mkdir pipeline-jar-repackage
-mv bin/pipeline.jar pipeline-jar-repackage/
-cd pipeline-jar-repackage
-unzip -q pipeline.jar
-rm -f pipeline.jar
-cd ..
-
 # Untar Web GUI and move it to the pipeline.jar static assets
 tar -zxf client.tgz
-mv client/build/* pipeline-jar-repackage/BOOT-INF/classes/static/
+mv client/build/* $API_STATIC_PATH/
 
 # Untar pipe-cli linux binary and tar.gz. Move them to the pipeline.jar static assets
 tar -zxf cli-linux.tgz
-mv pipe-cli/dist/PipelineCLI-* pipeline-jar-repackage/BOOT-INF/classes/static/PipelineCLI.tar.gz
-mv pipe-cli/dist/pipe pipeline-jar-repackage/BOOT-INF/classes/static/
+mv pipe-cli/dist/PipelineCLI-* $API_STATIC_PATH/PipelineCLI.tar.gz
+mv pipe-cli/dist/pipe $API_STATIC_PATH/
 
 # Untar pipe-cli windoes binary and move it to the pipeline.jar static assets
 tar -zxf cli-win.tgz
-mv pipe-cli/dist/win/pipe.zip pipeline-jar-repackage/BOOT-INF/classes/static/
+mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
 
-# Zip pipeline.jar back
-cd pipeline-jar-repackage/
-zip -r -q -0 pipeline.jar .
-
-# Create distribution tgz with the original name
+# Create distribution tgz
 cd ..
-mv pipeline-jar-repackage/pipeline.jar bin/
-tar -zcf $DIST_TGZ_NAME bin/
+./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
+                    -Pprofile=release \
+                    -x test \
+                    -x client:buildUI \
+                    -x pipe-cli:build \
+                    -x pipe-cli:buildLinux \
+                    -x pipe-cli:buildWin \
+                    -Pfast \
+                    --no-daemon
 
 # Publish repackaged distribution tgz to S3 into builds/ prefix
-aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
-aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/
+# Only if it is one of the allowed branches and it is a push (not pr) and from the valid repository
+if ([ "$TRAVIS_BRANCH" == "develop" ] || [ "$TRAVIS_BRANCH" == "master" ]) && \
+   [ "$TRAVIS_EVENT_TYPE" == "push" ] && \
+   [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
+        DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
+        aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
+        aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/
+fi
