@@ -16,12 +16,23 @@
 
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.OkHttpClient;
 import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * A Retrofit2-based client to interact with Google Storage REST API
@@ -30,6 +41,7 @@ public interface GoogleStorageRestApiClient {
 
     String AUTH_HEADER = "Authorization";
     String CONTENT_TYPE_HEADER = "Content-Type";
+    String GOOGLE_STORAGE_API_URL = "https://www.googleapis.com/storage/";
 
     @PUT("v1/b/{bucketName}")
     Call<Object> disableLifecycleRules(@Header(AUTH_HEADER) String bearer,
@@ -37,4 +49,29 @@ public interface GoogleStorageRestApiClient {
                                        @Path("bucketName") String bucketName,
                                        @Query("fields") String lifecycle,
                                        @Body String data);
+
+    static GoogleStorageRestApiClient buildClient() {
+        final OkHttpClient client = new OkHttpClient.Builder().build();
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        final Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(GOOGLE_STORAGE_API_URL)
+                .addConverterFactory(JacksonConverterFactory.create(mapper))
+                .client(client)
+                .build();
+        return retrofit.create(GoogleStorageRestApiClient.class);
+    }
+
+    static <T> T executeRequest(final Supplier<Call<T>> request) {
+        try {
+            final Response<T> response = request.get().execute();
+            if (response.isSuccessful()) {
+                return Objects.requireNonNull(response.body());
+            } else {
+                throw new DataStorageException(response.errorBody() == null ? "" : response.errorBody().string());
+            }
+        } catch (IOException e) {
+            throw new DataStorageException(e);
+        }
+    }
 }

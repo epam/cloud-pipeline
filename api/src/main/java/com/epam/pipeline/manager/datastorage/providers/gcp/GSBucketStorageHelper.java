@@ -32,8 +32,6 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.paging.Page;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
@@ -48,16 +46,11 @@ import com.google.cloud.storage.StorageClass;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
-import retrofit2.Call;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -79,7 +72,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -90,7 +82,6 @@ public class GSBucketStorageHelper {
     private static final String EMPTY_LIFECYCLE_CONTENT = "{}";
     private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
     private static final String LIFECYCLE_FIELD = "lifecycle";
-    private static final String GOOGLE_STORAGE_API_URL = "https://www.googleapis.com/storage/";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -98,7 +89,6 @@ public class GSBucketStorageHelper {
     private final MessageHelper messageHelper;
     private final GCPRegion region;
     private final GCPClient gcpClient;
-    private GoogleStorageRestApiClient storageRestApiClient;
 
     public String createGoogleStorage(final GSBucketStorage storage) {
         final Storage client = gcpClient.buildStorageClient(region);
@@ -562,10 +552,10 @@ public class GSBucketStorageHelper {
             return;
         }
         try {
-            storageRestApiClient = buildGoogleStorageRestApiClient();
+            final GoogleStorageRestApiClient storageRestApiClient = GoogleStorageRestApiClient.buildClient();
             final GoogleCredentials credentials = (GoogleCredentials) client.getOptions().getScopedCredentials();
             final String token = credentials.refreshAccessToken().getTokenValue();
-            executeRequest(() ->
+            GoogleStorageRestApiClient.executeRequest(() ->
                     storageRestApiClient.disableLifecycleRules(buildToken(token), LIFECYCLE_CONTENT_TYPE,
                             bucketName, LIFECYCLE_FIELD, EMPTY_LIFECYCLE_CONTENT));
         } catch (IOException e) {
@@ -574,32 +564,7 @@ public class GSBucketStorageHelper {
         }
     }
 
-    private <T> T executeRequest(Supplier<Call<T>> request) {
-        try {
-            final Response<T> response = request.get().execute();
-            if (response.isSuccessful()) {
-                return Objects.requireNonNull(response.body());
-            } else {
-                throw new DataStorageException(response.errorBody() == null ? "" : response.errorBody().string());
-            }
-        } catch (IOException e) {
-            throw new DataStorageException(e);
-        }
-    }
-
     private String buildToken(final String refreshToken) {
         return "Bearer " + refreshToken;
-    }
-
-    private GoogleStorageRestApiClient buildGoogleStorageRestApiClient() {
-        final OkHttpClient client = new OkHttpClient.Builder().build();
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        final Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(GOOGLE_STORAGE_API_URL)
-                .addConverterFactory(JacksonConverterFactory.create(mapper))
-                .client(client)
-                .build();
-        return retrofit.create(GoogleStorageRestApiClient.class);
     }
 }
