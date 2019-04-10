@@ -170,7 +170,7 @@ class TestTagging(object):
             set_storage_tags(path, [self.tag1])
 
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Tag \'{}\' doesn\'t exist'.format(self.tag2[1]))
+            assert_error_message_is_present(stderr, 'Tag \'{}\' does not exist'.format(self.tag2[1]))
 
             assert_tags_listing(self.bucket, path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())

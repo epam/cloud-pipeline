@@ -25,10 +25,19 @@ class GsClient(CloudClient):
         return result
 
     def list_object_tags(self, bucket, key, version=None, args=None):
-        # TODO 29.03.19: Use version to retrieve required metadata
         blob = self._get_client().bucket(bucket).blob(key)
-        blob.reload()
+        self._reload_blob_generation(blob, version)
         return blob.metadata
+
+    def _reload_blob_generation(self, blob, version=None):
+        client = blob.bucket._client
+        query_params = { "projection": "noAcl" }
+        if version:
+            query_params["generation"] = int(version)
+        api_response = client._connection.api_request(
+            method="GET", path=blob.path, query_params=query_params, _target_object=blob
+        )
+        blob._set_properties(api_response)
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
         # TODO 29.03.19: Method is not implemented yet.

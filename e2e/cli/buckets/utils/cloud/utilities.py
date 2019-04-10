@@ -22,6 +22,10 @@ def object_exists(bucket_name, key):
     return get_client().object_exists(bucket_name, key)
 
 
+def get_versions(bucket_name, key):
+    return get_client().get_versions(bucket_name, key)
+
+
 def folder_exists(bucket_name, key):
     return get_client().folder_exists(bucket_name, key)
 
