@@ -349,9 +349,7 @@ public class GrantPermissionManager {
 
     public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
             boolean includeInherited, List<Sid> sids) {
-        LOGGER.debug("Checking permissions for {} {}", entity.getAclClass(), entity.getId());
         if (isAdmin(sids)) {
-            LOGGER.debug("User is authenticated as admin. Granting full permissions");
             return merge ?
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
@@ -916,8 +914,6 @@ public class GrantPermissionManager {
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
         if (child == null && permissionsHelper.isOwner(entity)) {
-            LOGGER.debug("User {} is owner of entity {} {}. Granting full permissions,",
-                    entity.getOwner(), entity.getAclClass(), entity.getId());
             return merge ?
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
@@ -929,15 +925,12 @@ public class GrantPermissionManager {
         //get parent
         Acl acl = child == null ? aclService.getAcl(entity.getParent()) : child;
         if (sids.stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
-            LOGGER.debug("User {} is owner of entity {}. Granting full permissions,",
-                    acl.getOwner(), acl.getObjectIdentity());
             return merge ?
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
         }
         List<AclPermission> basicPermissions = permissionsService.getBasicPermissions();
         int extendedMask = collectPermissions(0, acl, sids, basicPermissions, includeInherited);
-        LOGGER.debug("Collected permission mask {} for entity {}", extendedMask, acl.getObjectIdentity());
         return merge ? permissionsService.mergeMask(extendedMask, basicPermissions) : extendedMask;
     }
 
