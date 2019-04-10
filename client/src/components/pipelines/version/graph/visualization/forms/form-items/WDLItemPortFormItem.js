@@ -210,8 +210,11 @@ export class WDLItemPortFormItem extends React.Component {
 
   getClasses = (field, defaultClass) => {
     const classes = [];
-    if (defaultClass) {
+    if (defaultClass && typeof defaultClass === 'string') {
       classes.push(defaultClass);
+    }
+    if (defaultClass && typeof defaultClass === 'object' && Array.isArray(defaultClass)) {
+      classes.push(...defaultClass);
     }
     if (this.state.validation[field]) {
       classes.push(styles.notValid);
@@ -225,19 +228,19 @@ export class WDLItemPortFormItem extends React.Component {
     return (
       <Row type="flex" align="middle">
         <Input
-          className={this.getClasses('name', styles.portsColumn)}
+          className={this.getClasses('name', [styles.portsColumn, 'variable-name'])}
           disabled={this.props.disabled || this.props.isRequired}
           value={this.state.name}
           onChange={this.onChangeName} />
         <AutoComplete
           dataSource={this.state.typesDataSource}
-          className={this.getClasses('type', styles.portsColumn)}
+          className={this.getClasses('type', [styles.portsColumn, 'variable-type'])}
           disabled={this.props.disabled || this.props.isRequired}
           value={this.state.type}
           onSearch={this.handleTypesSearch}
           onSelect={this.onChangeType} />
         <Input
-          className={this.getClasses('default', styles.portsColumn)}
+          className={this.getClasses('default', [styles.portsColumn, 'variable-value'])}
           disabled={this.props.disabled}
           value={this.state.default}
           onChange={this.onChangeValue} />
@@ -245,6 +248,7 @@ export class WDLItemPortFormItem extends React.Component {
           {
             this.props.removable && !this.props.isRequired &&
             <Button
+              id="remove-variable-button"
               size="small"
               disabled={this.props.disabled}
               style={{lineHeight: 'initial'}}

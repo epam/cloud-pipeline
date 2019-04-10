@@ -130,9 +130,10 @@ export class WDLRuntimeDockerFormItem extends React.Component {
 
   render () {
     return (
-      <div>
+      <div id="docker-image-container">
         <Row>
           <Checkbox
+            id="use-another-docker-image"
             disabled={this.props.disabled}
             checked={this.state.useAnotherDockerImage}
             onChange={this.onUseAnotherDockerChanged}>

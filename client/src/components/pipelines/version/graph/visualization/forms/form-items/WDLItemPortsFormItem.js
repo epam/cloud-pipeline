@@ -228,6 +228,7 @@ export class WDLItemPortsFormItem extends React.Component {
           type="flex"
           align="middle">
           <a
+            id={this.state.collapsed ? 'expand-panel-button' : 'collapse-panel-button'}
             className={styles.portCollapsibleHeader}
             style={{flex: 1}}
             onClick={this.toggleCollapse}>
@@ -248,6 +249,7 @@ export class WDLItemPortsFormItem extends React.Component {
             </Row>
           </a>
           <Button
+            id="add-variable-button"
             disabled={this.props.disabled || this.props.isRequired}
             size="small"
             style={{lineHeight: 'initial'}}

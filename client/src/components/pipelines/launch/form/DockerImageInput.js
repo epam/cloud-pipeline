@@ -84,6 +84,7 @@ export default class DockerImageInput extends React.Component {
       <div
         className={this.props.className}>
         <Input
+          id="docker-image-input"
           style={{width: '100%'}}
           addonBefore={
             <div
