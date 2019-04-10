@@ -201,7 +201,10 @@ export default class WdlGraph extends Graph {
     });
     const task = {
       name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
-      command: generatePipelineCommand(pipelineInfo.name, version, inputs.filter(p => !!p).map(p => p.name)),
+      command: generatePipelineCommand(
+        pipelineInfo.name, version,
+        [...inputs, ...outputs].filter(p => !!p).map(p => p.name)
+      ),
       inputs: inputs.filter(p => !!p),
       outputs: outputs.filter(p => !!p),
       runtime: {
