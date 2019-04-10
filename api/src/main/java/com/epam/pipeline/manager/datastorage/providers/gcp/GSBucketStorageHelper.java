@@ -146,6 +146,7 @@ public class GSBucketStorageHelper {
     public DataStorageFolder createFolder(final GSBucketStorage storage, final String path) {
         String folderPath = path.trim();
         folderPath = normalizeFolderPath(folderPath);
+        Assert.state(!isFolderExists(storage, folderPath), "Folder already exists");
         final String tokenFilePath = folderPath + ProviderUtils.FOLDER_TOKEN_FILE;
 
         createFile(storage, tokenFilePath, EMPTY_FILE_CONTENT, null);
@@ -344,6 +345,14 @@ public class GSBucketStorageHelper {
                 .build();
         client.copy(request).getResult();
         deleteBlob(bucketName, path, blob);
+    }
+
+    private boolean isFolderExists(final GSBucketStorage storage, final String folderPath) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        return client.list(storage.getPath(),
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(folderPath))
+                .iterateAll().iterator().hasNext();
     }
 
     private List<AbstractDataStorageItem> listItemsWithoutVersions(final Page<Blob> blobs) {
