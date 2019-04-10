@@ -133,6 +133,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_PRETTY_URL_IN_USE = "error.pipeline.run.pretty.url.in.use";
     public static final String ERROR_EXCEED_MAX_RESTART_RUN_COUNT = "error.exceed.max.restart.run.count";
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
+    public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";

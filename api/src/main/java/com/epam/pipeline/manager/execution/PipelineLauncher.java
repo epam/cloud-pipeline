@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.execution;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -40,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -90,6 +93,9 @@ public class PipelineLauncher {
     @Autowired
     private CloudFacade cloudFacade;
 
+    @Autowired
+    private MessageHelper messageHelper;
+
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
@@ -112,6 +118,8 @@ public class PipelineLauncher {
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
                 buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId()));
 
+        Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
+                MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
         String pipelineCommand = commandBuilder.build(configuration, systemParams);
         String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());

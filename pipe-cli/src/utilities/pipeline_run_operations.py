@@ -189,10 +189,11 @@ class PipelineRunOperations(object):
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
-            elif docker_image is None or parent_node is None and (instance_type is None or instance_disk is None):
+            elif docker_image is None or parent_node is None \
+                    and (instance_type is None or instance_disk is None or cmd_template is None):
                 if not quiet:
-                    click.echo('Docker image, instance type and instance disk are required parameters '
-                               'if pipeline was not provided.')
+                    click.echo('Docker image, instance type, instance disk and cmd template '
+                               'are required parameters if pipeline was not provided.')
                 else:
                     required_parameters = []
                     if docker_image is None:
@@ -201,6 +202,8 @@ class PipelineRunOperations(object):
                         required_parameters.append('instance_type')
                     if instance_disk is None:
                         required_parameters.append('instance_disk')
+                    if cmd_template is None:
+                        required_parameters.append('cmd_template')
                     click.echo(', '.join(required_parameters))
                     sys.exit(1)
             else:
