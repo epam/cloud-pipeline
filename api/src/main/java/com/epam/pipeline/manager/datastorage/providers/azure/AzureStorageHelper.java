@@ -138,16 +138,22 @@ public class AzureStorageHelper {
         return new DataStorageListing(nextPageMarker, items);
     }
 
-    public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents) {
+    public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
+                                      final String owner) {
         validatePath(path);
-        unwrap(getBlobUrl(dataStorage, path).upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length));
+        unwrap(getBlobUrl(dataStorage, path)
+                .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
+                        StringUtils.isBlank(owner) ? null
+                                : new Metadata(Collections.singletonMap("CP_OWNER", owner)),
+                        null, null));
         return getDataStorageFile(dataStorage, path);
     }
 
     public DataStorageFile createFile(final AzureBlobStorage dataStorage,
                                       final String path,
-                                      final InputStream dataStream) {
-        return createFile(dataStorage, path, toByteArray(dataStream));
+                                      final InputStream dataStream,
+                                      final String owner) {
+        return createFile(dataStorage, path, toByteArray(dataStream), owner);
     }
 
     @SneakyThrows
@@ -177,7 +183,7 @@ public class AzureStorageHelper {
         validatePath(dataStorage, newPath, false);
         final String blobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s", azureRegion.getStorageAccount(),
                 dataStorage.getPath(), oldPath);
-        createFile(dataStorage, newPath, new byte[0]);
+        createFile(dataStorage, newPath, new byte[0], null);
         unwrap(getBlobUrl(dataStorage, newPath).toPageBlobURL().startCopyFromURL(url(blobUrl)));
         deleteItem(dataStorage, oldPath);
         return getDataStorageFile(dataStorage, newPath);
