@@ -91,7 +91,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
         });
     }
 
-    @Test
+    @Test(priority = 0)
     @TestCase({"EPMCMBIBPC-1994"})
     public void runUnscannedToolValidation() {
         tools().perform(registry, group, group ->
@@ -164,7 +164,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                 );
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-2004"})
     public void denyNotScannedToolOptionValidation() {
         loginAsAdminAndPerform(() ->
@@ -201,7 +201,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
         );
     }
 
-    @Test
+    @Test(priority = 2)
     @TestCase({"EPMCMBIBPC-2629"})
     public void gracePeriodOptionValidation() {
         loginAsAdminAndPerform(() ->
@@ -231,7 +231,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                                         "but you can launch it during the grace period .* Run anyway?"));
     }
 
-    @Test
+    @Test(priority = 3)
     @TestCase({"EPMCMBIBPC-2630"})
     public void uncheckedDenyNotScannedToolOptionValidation() {
         loginAsAdminAndPerform(() ->
@@ -267,7 +267,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
         );
     }
 
-    @Test
+    @Test(priority = 4)
     @TestCase({"EPMCMBIBPC-2631"})
     public void whiteListFlagValidation() {
         loginAsAdminAndPerform(() ->
