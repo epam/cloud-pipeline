@@ -68,6 +68,7 @@ export function prepareTask (task) {
       ...task,
       command,
       runtime: {
+        ...task.runtime,
         docker,
         node
       }
@@ -191,6 +192,10 @@ export class WDLItemProperties extends React.Component {
     return !this.props.type || this.props.type === 'task';
   }
 
+  get isPipelineTask () {
+    return this.isTask && !!this.props.task && !!this.props.task.runtime && !!this.props.task.runtime.pipeline;
+  }
+
   revertForm = () => {
     this.props.form.resetFields();
   };
@@ -295,6 +300,7 @@ export class WDLItemProperties extends React.Component {
                 onInitialize={this.initializeInputPortsComponent}
                 onUnMount={this.unInitializeInputPortsComponent}
                 disabled={this.props.readOnly}
+                isRequired={this.isPipelineTask}
                 portType={PortTypes.input} />
             )}
           </Form.Item>
@@ -317,6 +323,7 @@ export class WDLItemProperties extends React.Component {
                 onInitialize={this.initializeOutputPortsComponent}
                 onUnMount={this.unInitializeOutputPortsComponent}
                 disabled={this.props.readOnly}
+                isRequired={this.isPipelineTask}
                 portType={PortTypes.output} />
             )}
           </Form.Item>
@@ -324,7 +331,7 @@ export class WDLItemProperties extends React.Component {
             key="edit-wdl-form-docker-container"
             style={{marginBottom: 5}}
             className={
-              this.isTask
+              this.isTask && !this.isPipelineTask
                 ? 'edit-wdl-form-docker-container'
                 : `edit-wdl-form-docker-container ${styles.hiddenItem}`
             }>
@@ -377,6 +384,7 @@ export class WDLItemProperties extends React.Component {
               })(
               <CodeEditorFormItem
                 ref={this.initializeEditor}
+                readOnly={this.props.readOnly || this.isPipelineTask}
                 editorClassName={`${styles.codeEditor} edit-wdl-form-code-container`}
                 editorLanguage="shell"
                 editorLineWrapping

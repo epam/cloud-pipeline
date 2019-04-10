@@ -30,7 +30,12 @@ import {
 } from '../../../../special/resizablePanel';
 import {Alert, Row, Button, Icon, message, Modal, Form, Tooltip} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
-import {Primitives, testPrimitiveTypeFn, quotesFn} from './forms/utilities';
+import {
+  generatePipelineCommand,
+  Primitives,
+  testPrimitiveTypeFn,
+  quotesFn
+} from './forms/utilities';
 import {ItemTypes} from '../../../model/treeStructureFunctions';
 
 const graphFitContentOpts = {padding: 24};
@@ -155,12 +160,6 @@ export default class WdlGraph extends Graph {
       });
       return params.join(' ');
     };
-    const task = {
-      name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
-      command: `pipe run \t--pipeline "${pipelineInfo.name}@${version}" -s -y ${listInputParametersStr()}`,
-      inputs: [],
-      outputs: []
-    };
     const mapParameter = (name, p, value) => {
       if (skipParameterFn(name)) {
         return null;
@@ -200,8 +199,15 @@ export default class WdlGraph extends Graph {
         );
       }
     });
-    task.inputs = inputs.filter(p => !!p);
-    task.outputs = outputs.filter(p => !!p);
+    const task = {
+      name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
+      command: generatePipelineCommand(pipelineInfo.name, version, inputs.filter(p => !!p).map(p => p.name)),
+      inputs: inputs.filter(p => !!p),
+      outputs: outputs.filter(p => !!p),
+      runtime: {
+        pipeline: `"${pipelineInfo.name}@${version}"`
+      }
+    };
     if (defaultConfiguration) {
       Modal.confirm({
         title: `Add pipeline '${pipelineInfo.name}' as a task to ${target.type}?`,
@@ -302,9 +308,15 @@ export default class WdlGraph extends Graph {
         }
         let status;
         if (this.props.getNodeInfo) {
-          const info = this.props.getNodeInfo({task: {name: e.step.name || e.action.name}});
+          const info = this.props.getNodeInfo({task: {name: e.step.name || (e.step.action || {}).name}});
           if (info) {
             status = info.status;
+          }
+        }
+        if (e.step.action && e.step.action.data &&
+          e.step.action.data.runtime && !!e.step.action.data.runtime.pipeline) {
+          if (!view.el.classList.contains(styles.wdlPipelineTask)) {
+            view.el.classList.add(styles.wdlPipelineTask);
           }
         }
         if (status) {

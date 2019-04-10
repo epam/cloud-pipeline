@@ -109,7 +109,10 @@ export class WDLItemPortFormItem extends React.Component {
     onInitialize: PropTypes.func,
     onUnMount: PropTypes.func,
     disabled: PropTypes.bool,
-    removable: PropTypes.bool
+    removable: PropTypes.bool,
+
+    // if `isRequired = true` user cannot change Name & Type fields as well as remove variable
+    isRequired: PropTypes.bool
   };
 
   static defaultProps = {
@@ -223,13 +226,13 @@ export class WDLItemPortFormItem extends React.Component {
       <Row type="flex" align="middle">
         <Input
           className={this.getClasses('name', styles.portsColumn)}
-          disabled={this.props.disabled}
+          disabled={this.props.disabled || this.props.isRequired}
           value={this.state.name}
           onChange={this.onChangeName} />
         <AutoComplete
           dataSource={this.state.typesDataSource}
           className={this.getClasses('type', styles.portsColumn)}
-          disabled={this.props.disabled}
+          disabled={this.props.disabled || this.props.isRequired}
           value={this.state.type}
           onSearch={this.handleTypesSearch}
           onSelect={this.onChangeType} />
@@ -240,7 +243,7 @@ export class WDLItemPortFormItem extends React.Component {
           onChange={this.onChangeValue} />
         <div className={styles.portsActionColumn}>
           {
-            this.props.removable &&
+            this.props.removable && !this.props.isRequired &&
             <Button
               size="small"
               disabled={this.props.disabled}
@@ -250,7 +253,7 @@ export class WDLItemPortFormItem extends React.Component {
             </Button>
           }
           {
-            !this.props.removable && '\u00A0'
+            (!this.props.removable || this.props.isRequired) && '\u00A0'
           }
         </div>
       </Row>

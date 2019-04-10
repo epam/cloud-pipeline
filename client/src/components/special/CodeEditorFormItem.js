@@ -24,6 +24,7 @@ export default class CodeEditorFormItem extends React.Component {
 
   static propTypes = {
     value: PropTypes.string,
+    readOnly: PropTypes.bool,
     onChange: PropTypes.func,
     disabled: PropTypes.bool,
     editorClassName: PropTypes.string,
@@ -32,7 +33,8 @@ export default class CodeEditorFormItem extends React.Component {
   };
 
   static defaultProps = {
-    editorLineWrapping: true
+    editorLineWrapping: true,
+    readOnly: false
   };
 
   state = {
@@ -59,6 +61,7 @@ export default class CodeEditorFormItem extends React.Component {
   render () {
     return (
       <CodeEditor
+        readOnly={this.props.readOnly}
         ref={this.initializeEditor}
         className={this.props.editorClassName}
         language={this.props.editorLanguage || 'shell'}

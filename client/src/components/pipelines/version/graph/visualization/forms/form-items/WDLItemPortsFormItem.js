@@ -76,7 +76,10 @@ export class WDLItemPortsFormItem extends React.Component {
     onChange: PropTypes.func,
     onInitialize: PropTypes.func,
     onUnMount: PropTypes.func,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+
+    // if `isRequired = true` user cannot change names and types as well as remove or add variables
+    isRequired: PropTypes.bool
   };
 
   state = {
@@ -245,7 +248,7 @@ export class WDLItemPortsFormItem extends React.Component {
             </Row>
           </a>
           <Button
-            disabled={this.props.disabled}
+            disabled={this.props.disabled || this.props.isRequired}
             size="small"
             style={{lineHeight: 'initial'}}
             onClick={this.onAddClicked}>
@@ -275,6 +278,7 @@ export class WDLItemPortsFormItem extends React.Component {
               key={index}
               value={port}
               disabled={this.props.disabled}
+              isRequired={this.props.isRequired}
               onChange={this.onPortChanged(index)}
               onInitialize={this.portFormItemInitialized(index)}
               onUnMount={this.portFormItemUnMounted(index)}
