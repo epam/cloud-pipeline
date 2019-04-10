@@ -189,6 +189,7 @@ public enum Primitive {
     GROUPS_TAB,
     CLUSTER_TAB,
     SYSTEM_TAB,
+    DOCKER_SECURITY_TAB,
     TABLE,
     EDIT_GROUP,
     DELETE_GROUP,
@@ -228,4 +229,5 @@ public enum Primitive {
     ESTIMATED_PRICE,
     INFORMATION_ICON,
     PRICE_TABLE,
+    ARROW
 }

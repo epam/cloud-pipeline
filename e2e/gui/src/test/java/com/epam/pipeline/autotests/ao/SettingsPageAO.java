@@ -605,7 +605,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
                 entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
-                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System")))
+                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
+                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security")))
         );
 
         PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
@@ -620,6 +621,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public SystemTabAO switchToSystem() {
             click(SYSTEM_TAB);
             return new SystemTabAO(parentAO);
+        }
+
+        public DockerSecurityAO switchToDockerSecurity() {
+            click(DOCKER_SECURITY_TAB);
+            return new DockerSecurityAO(parentAO);
         }
 
         public PreferencesAO save() {
@@ -734,6 +740,87 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             @Override
             public Map<Primitive, SelenideElement> elements() {
                 return elements;
+            }
+        }
+
+        public class DockerSecurityAO extends PreferencesAO {
+
+            DockerSecurityAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
+            private final By graceHours = getByDockerSecurityField("security.tools.grace.hours");
+
+            public DockerSecurityAO enablePolicyDenyNotScanned() {
+                if ($(policyDenyNotScanned).has(text("Disabled"))) {
+                    clickPolicyDenyNotScanned();
+                }
+                return this;
+            }
+
+            public DockerSecurityAO disablePolicyDenyNotScanned() {
+                if ($(policyDenyNotScanned).has(text("Enable"))) {
+                    clickPolicyDenyNotScanned();
+                }
+                return this;
+            }
+
+            public DockerSecurityAO clickPolicyDenyNotScanned() {
+                click(policyDenyNotScanned);
+                return this;
+            }
+
+            public String getGraceHours() {
+                return getDockerSecurityValue(graceHours);
+            }
+
+            public boolean getPolicyDenyNotScanned() {
+                if (getDockerSecurityCheckbox(policyDenyNotScanned).equals("Enable")) {
+                    return true;
+                }
+                return false;
+            }
+
+            public DockerSecurityAO setGraceHours(final String value) {
+                click(graceHours);
+                clear(graceHours);
+                setValue(graceHours, value);
+                return this;
+            }
+
+            private String getDockerSecurityValue(final By dockerSecurityVar) {
+                return $(dockerSecurityVar).getValue();
+            }
+
+            private String getDockerSecurityCheckbox(final By dockerSecurityVar) {
+                return $(dockerSecurityVar).getText();
+            }
+
+            private By getByDockerSecurityCheckbox(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> text(variable).apply(element))
+                                .map(e -> e.find(".ant-checkbox-wrapper"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            private By getByDockerSecurityField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
             }
         }
 
