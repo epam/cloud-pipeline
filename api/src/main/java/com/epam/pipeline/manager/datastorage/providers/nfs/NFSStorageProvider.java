@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage.providers;
+package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -74,8 +75,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.formatNfsPath;
-import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.getNfsRootPath;
+import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
+import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getNfsRootPath;
 
 /**
  * A {@link StorageProvider}, that integrates with NFS file systems. For browsing the filesystem, mounts it to the host
