@@ -935,8 +935,10 @@ public class RoleModelTest
                         .pressCreateGroup()
                         .enterGroupName(userGroup)
                         .create()
+                        .sleep(1, SECONDS)
                         .ok()
         );
+        refresh();
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
