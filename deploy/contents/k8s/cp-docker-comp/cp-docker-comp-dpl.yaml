@@ -28,7 +28,7 @@ spec:
               name: cp-config-global
           volumeMounts:
             - mountPath: /opt/docker-comp/wd
-                  name: docker-comp-wd
+              name: docker-comp-wd
           lifecycle:
             preStop:
               exec:
