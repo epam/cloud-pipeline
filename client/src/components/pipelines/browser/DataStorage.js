@@ -1379,15 +1379,12 @@ export default class DataStorage extends React.Component {
                   Share
                 </Button>
               }
-              {
-                roleModel.writeAllowed(this.props.info.value) &&
-                <Button
-                  id="edit-storage-button"
-                  size="small"
-                  onClick={() => this.openEditDialog()}>
-                  <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-                </Button>
-              }
+              <Button
+                id="edit-storage-button"
+                size="small"
+                onClick={() => this.openEditDialog()}>
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              </Button>
               <Button
                 id="refresh-storage-button"
                 size="small"

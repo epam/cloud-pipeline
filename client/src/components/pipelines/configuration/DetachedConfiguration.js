@@ -947,12 +947,9 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
             />
           </Col>
           <Col className={styles.actionButtons}>
-            {
-              this.canModifySources &&
-              <Button onClick={this.openEditConfigurationForm} size="small">
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              </Button>
-            }
+            <Button onClick={this.openEditConfigurationForm} size="small">
+              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            </Button>
           </Col>
         </Row>
         <Row style={{position: 'relative', display: 'flex', flexDirection: 'column', flex: 1}}>
