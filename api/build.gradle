@@ -48,6 +48,9 @@ test {
     if (project.hasProperty('excludeTests')) { 
         exclude project.property('excludeTests')
     }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
     afterSuite { desc, result ->
         if (!desc.parent) { // will match the outermost suite
             println "Results: ${result.resultType} (${result.testCount} total, ${result.successfulTestCount} success, ${result.failedTestCount} failure, ${result.skippedTestCount} skipped)"
