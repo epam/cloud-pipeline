@@ -83,10 +83,7 @@ export class WDLItemPortsFormItem extends React.Component {
     isRequired: PropTypes.bool,
     addVariableSupported: PropTypes.bool,
     removeVariableSupported: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
-    lockVariables: PropTypes.oneOfType(
-      PropTypes.func,
-      PropTypes.number
-    )
+    lockVariables: PropTypes.oneOfType([PropTypes.func, PropTypes.number])
   };
 
   static defaultProps = {

@@ -111,10 +111,7 @@ export class WDLItemPortFormItem extends React.Component {
   static propTypes = {
     value: PropTypes.object,
     portType: PropTypes.oneOf([PortTypes.input, PortTypes.output]),
-    lock: PropTypes.oneOfType(
-      PropTypes.func,
-      PropTypes.number
-    ),
+    lock: PropTypes.oneOfType([PropTypes.func, PropTypes.number]),
     onChange: PropTypes.func,
     onRemove: PropTypes.func,
     onInitialize: PropTypes.func,
