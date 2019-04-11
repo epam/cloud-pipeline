@@ -438,7 +438,7 @@ public class ToolsTest
                 .expandTabs(EXEC_ENVIRONMENT, ADVANCED_PANEL, PARAMETERS_PANEL)
                 .ensure(DOCKER_IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)
-                .ensure(INSTANCE_TYPE, text("Instance type"))
+                .ensure(INSTANCE_TYPE, text("Node type"))
                 .ensure(DISK, empty)
                 .setDefaultLaunchOptions()
                 .setPriceType(priceType)
