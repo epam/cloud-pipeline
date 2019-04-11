@@ -200,6 +200,7 @@ export class WDLItemPortsFormItem extends React.Component {
       multi: false
     });
     this.setState({
+      collapsed: false,
       ports
     }, this.validate);
   };
