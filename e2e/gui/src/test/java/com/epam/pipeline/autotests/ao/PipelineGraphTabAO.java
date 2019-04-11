@@ -145,7 +145,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         final int zIndexGraph = Integer.parseInt(
                 $(byClassName("graph__graph-container-full-screen")).getCssValue("z-index"));
         final String zIndexPipelineLibrary = $(byId("pipelines-library-content")).getCssValue("z-index");
-        if (zIndexPipelineLibrary.equals("auto")) {
+        if ("auto".equals(zIndexPipelineLibrary)) {
             assertTrue(zIndexGraph > 1);
         } else {
             assertTrue(zIndexGraph > Integer.parseInt(zIndexPipelineLibrary));

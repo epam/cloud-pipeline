@@ -677,14 +677,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class SystemTabAO extends PreferencesAO {
 
-            SystemTabAO(final PipelinesLibraryAO parentAO) {
-                super(parentAO);
-            }
-
             private final By maxIdleTimeout = getBySystemField("system.max.idle.timeout.minutes");
             private final By idleActionTimeout = getBySystemField("system.idle.action.timeout.minutes");
             private final By idleCpuThreshold = getBySystemField("system.idle.cpu.threshold");
             private final By idleAction = getBySystemField("system.idle.action");
+
+            SystemTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
 
             private By getBySystemField(final String variable) {
                 return new By() {
@@ -750,12 +750,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class DockerSecurityAO extends PreferencesAO {
 
+            private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
+            private final By graceHours = getByDockerSecurityField("security.tools.grace.hours");
+
             DockerSecurityAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
-
-            private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
-            private final By graceHours = getByDockerSecurityField("security.tools.grace.hours");
 
             public DockerSecurityAO enablePolicyDenyNotScanned() {
                 if ($(policyDenyNotScanned).has(text("Disabled"))) {
@@ -781,10 +781,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public boolean getPolicyDenyNotScanned() {
-                if (getDockerSecurityCheckbox(policyDenyNotScanned).equals("Enable")) {
-                    return true;
-                }
-                return false;
+                return getDockerSecurityCheckbox(policyDenyNotScanned).equals("Enable");
             }
 
             public DockerSecurityAO setGraceHours(final String value) {
