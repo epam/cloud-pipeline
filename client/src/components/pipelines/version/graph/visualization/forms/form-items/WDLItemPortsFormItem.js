@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Button, Icon, Row} from 'antd';
 import {
+  LockOptions,
   WDLItemPortFormItem,
   validateSinglePort,
   valuesAreEqual as portsAreEqual
@@ -79,7 +80,19 @@ export class WDLItemPortsFormItem extends React.Component {
     disabled: PropTypes.bool,
 
     // if `isRequired = true` user cannot change names and types as well as remove or add variables
-    isRequired: PropTypes.bool
+    isRequired: PropTypes.bool,
+    addVariableSupported: PropTypes.bool,
+    removeVariableSupported: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
+    lockVariables: PropTypes.oneOfType(
+      PropTypes.func,
+      PropTypes.number
+    )
+  };
+
+  static defaultProps = {
+    addVariableSupported: true,
+    removeVariableSupported: true,
+    lockVariables: LockOptions.none
   };
 
   state = {
@@ -249,14 +262,17 @@ export class WDLItemPortsFormItem extends React.Component {
               </span>
             </Row>
           </a>
-          <Button
-            id="add-variable-button"
-            disabled={this.props.disabled || this.props.isRequired}
-            size="small"
-            style={{lineHeight: 'initial'}}
-            onClick={this.onAddClicked}>
-            ADD
-          </Button>
+          {
+            this.props.addVariableSupported &&
+            <Button
+              id="add-variable-button"
+              disabled={this.props.disabled || this.props.isRequired}
+              size="small"
+              style={{lineHeight: 'initial'}}
+              onClick={this.onAddClicked}>
+              ADD
+            </Button>
+          }
         </Row>
         {
           !this.state.collapsed &&
@@ -280,6 +296,8 @@ export class WDLItemPortsFormItem extends React.Component {
             <WDLItemPortFormItem
               key={index}
               value={port}
+              removable={this.props.removeVariableSupported}
+              lock={this.props.lockVariables}
               disabled={this.props.disabled}
               isRequired={this.props.isRequired}
               onChange={this.onPortChanged(index)}

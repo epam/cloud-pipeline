@@ -23,8 +23,8 @@ import {
   Input
 } from 'antd';
 import CodeEditorFormItem from '../../../../../special/CodeEditorFormItem';
+import {LockOptions} from './form-items/WDLItemPortFormItem';
 import {WDLItemPortsFormItem, validatePorts} from './form-items/WDLItemPortsFormItem';
-import {PortTypes} from './utilities';
 import {
   parseRawDockerImageValue,
   WDLRuntimeDockerFormItem
@@ -32,7 +32,7 @@ import {
 import {
   WDLInstanceTypeFormItem
 } from './form-items/WDLInstanceTypeFormItem';
-import {reservedRegExp} from './utilities/reserved';
+import {reservedRegExp, PortTypes, Primitives} from './utilities';
 import styles from './WDLItemProperties.css';
 
 export function prepareTask (task) {
@@ -297,6 +297,12 @@ export class WDLItemProperties extends React.Component {
                 }]
               })(
               <WDLItemPortsFormItem
+                addVariableSupported={!this.isScatter}
+                lockVariables={({type}) => this.isScatter && type === Primitives.scatterItem
+                  ? LockOptions.type | LockOptions.value
+                  : LockOptions.none
+                }
+                removeVariableSupported={({type}) => type !== Primitives.scatterItem}
                 onInitialize={this.initializeInputPortsComponent}
                 onUnMount={this.unInitializeInputPortsComponent}
                 disabled={this.props.readOnly}
