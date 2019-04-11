@@ -652,7 +652,7 @@ function api_register_region {
 
     local cors_rules="$(get_file_based_preference storage.cors.policy other $CP_CLOUD_PLATFORM escape)"
     if [ $? -ne 0 ] || [ -z "$cors_rules" ]; then
-        print_err "CORS rules cannot be retrieved for $CP_AWS cloud provider, you will have to specify them manually via GUI/API"
+        print_err "CORS rules cannot be retrieved for $CP_CLOUD_PLATFORM cloud provider, you will have to specify them manually via GUI/API"
         cors_rules=""
     fi
 
