@@ -74,14 +74,16 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Pipectl options
                 -m \                                                # Install kuberneters master
                 --docker \                                          # Limit images to be pushed during deployment
-                -id \                                                # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
-                -s                                                  # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
+                -id \                                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
+                -s \                                                # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
 
                 # Misc
                 -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME= \         # Name of the object storage, that is used to store system-level data (e.g. issues attachments)
                 -env CP_CLOUD_REGION_FILE_STORAGE_HOSTS= \
                 -env CP_CUSTOM_USERS_SPEC= \                        # Specify json file with the users to be registered during installation (if pipectl was built using -p /e2e/prerequisites/users.json - test users will be created)
                 -env CP_COMMON_SSL_SELF_SIGNED= \                   # Use self-signed or CA signed certificates for SSL (true or false, default: false)
+                -env CP_KUBE_MASTER_DOCKER_PATH= \                  # Allows to override a location of the folder where docker stores it's data. This is useful when docker generates too much I/O to the OS Disk and shall be pointed to another device mounted to a more custom location. If not defined - docker defaults are used.
+                -env CP_KUBE_MASTER_ETCD_HOST_PATH= \               # Allows to override a location of the folder where etcd stores wal/data dirs. This is useful when etcd runs into I/O latency issues and shall be pointed to another device mounted to a more custom location, which leads to the kube control plane failures. If not defined - /var/lib/etcd path will be used
 ```
 
 # Examples
@@ -133,5 +135,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
             -env CP_DOCKER_STORAGE_TYPE="obj" \
             -env CP_DOCKER_STORAGE_CONTAINER="{blob_contaner_name}" \
             -env CP_DEPLOYMENT_ID="my_cloud_pipeline" \
+            -env CP_KUBE_MASTER_DOCKER_PATH="/docker/drive/" \
+            -env CP_KUBE_MASTER_ETCD_HOST_PATH="/etcd/drive/" \
             -m
 ```

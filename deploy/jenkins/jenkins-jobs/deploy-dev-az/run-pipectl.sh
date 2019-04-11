@@ -57,6 +57,9 @@ fi
 chmod +x "${DEPLOY_DIR}/pipectl"
 
 # Do install
+# Note that for Azure we require two separate disks (in addition to osDisk) to be present on the VM (Premium SSD is better), mounted to 
+# $CP_AZURE_KUBE_MASTER_DOCKER_PATH and $CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH
+# This allows to overcome disk I/O issues with a single drive
 ${DEPLOY_DIR}/pipectl install \
                       -env CP_CLUSTER_SSH_KEY="${DOLLAR}{AZURE_SSH_KEY_S3_LOCAL}" \
                       -env CP_CLUSTER_SSH_PUB="${DOLLAR}{AZURE_SSH_PUB_S3_LOCAL}" \
@@ -77,5 +80,7 @@ ${DEPLOY_DIR}/pipectl install \
                       -env CP_DOCKER_STORAGE_TYPE="${CP_AZURE_DOCKER_STORAGE_TYPE}" \
                       -env CP_DOCKER_STORAGE_CONTAINER="${CP_AZURE_DOCKER_STORAGE_CONTAINER}" \
                       -env CP_DEPLOYMENT_ID="${CP_AZURE_DEPLOYMENT_ID}" \
+                      -env CP_KUBE_MASTER_DOCKER_PATH="${CP_AZURE_KUBE_MASTER_DOCKER_PATH}" \
+                      -env CP_KUBE_MASTER_ETCD_HOST_PATH="${CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH}" \
                       -m \
                       -demo  ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA
