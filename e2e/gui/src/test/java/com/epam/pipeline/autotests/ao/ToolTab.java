@@ -89,7 +89,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         clickRun();
         if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
             new ConfirmationPopupAO<>(new PipelineRunFormAO())
-                .ensureTitleContains("The version has a critical number of vulnerabilities.* Run anyway?")
+                .ensureTitleContains("The version has a critical number of vulnerabilities. Run anyway?")
                 .ok();
         }
         return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));

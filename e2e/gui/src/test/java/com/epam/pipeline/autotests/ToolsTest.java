@@ -73,7 +73,8 @@ public class ToolsTest
         loginAsAdminAndPerform(() ->
                 tools().performWithin(defaultRegistry, personalGroup, group ->
                     group.sleep(1, SECONDS)
-                            .performIf(CREATE_PERSONAL_GROUP, not(visible), deleteGroup(personalGroupActualName(C.LOGIN)))
+                            .performIf(CREATE_PERSONAL_GROUP, not(visible),
+                                    deleteGroup(personalGroupActualName(C.LOGIN)))
                 )
         );
     }
@@ -426,7 +427,8 @@ public class ToolsTest
                                 .ensure(DISK, empty)
                                 .ensure(INSTANCE_TYPE, text("Instance type"))
                                 .ensure(DEFAULT_COMMAND, empty)
-                                .runWithCustomSettings()
+                                .runUnscannedTool("The version shall be scanned for security vulnerabilities. " +
+                                        "Run anyway?")
                 )
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
