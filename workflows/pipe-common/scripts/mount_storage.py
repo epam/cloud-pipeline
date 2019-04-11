@@ -30,10 +30,12 @@ EXEC_ENVIRONMENT = 'EXEC_ENVIRONMENT'
 NFS_TYPE = 'NFS'
 S3_TYPE = 'S3'
 AZ_TYPE = 'AZ'
+GCP_TYPE = 'GCP'
 MOUNT_DATA_STORAGES = 'MountDataStorages'
 S3_SCHEME = 's3://'
 AZ_SCHEME = 'az://'
 NFS_SCHEME = 'nfs://'
+GCP_SCHEME = 'gcp://'
 FUSE_GOOFYS_ID = 'goofys'
 FUSE_S3FS_ID = 's3fs'
 FUSE_NA_ID = None
@@ -352,6 +354,51 @@ class S3Mounter(StorageMounter):
                     '-o endpoint="{region_name}" -o url="https://s3.{region_name}.amazonaws.com"'.format(**params)
         else:
             return 'exit 1'
+
+
+class GCPMounter(StorageMounter):
+    available = False
+    fuse_tmp = '/tmp'
+
+    @staticmethod
+    def scheme():
+        return GCP_SCHEME
+
+    @staticmethod
+    def type():
+        return GCP_TYPE
+
+    @staticmethod
+    def check_or_install(task_name):
+        AzureMounter.available = StorageMounter.execute_and_check_command('install_gcfuse')
+        GCPMounter.available = True
+
+    @staticmethod
+    def is_available():
+        return GCPMounter.available
+
+    @staticmethod
+    def init_tmp_dir(tmp_dir, task_name):
+        fuse_tmp = os.path.join(tmp_dir, "gcfuse")
+        if StorageMounter.create_directory(fuse_tmp, task_name):
+            GCPMounter.fuse_tmp = fuse_tmp
+
+    def build_mount_params(self, mount_point):
+        mask = '0774'
+        permissions = 'rw'
+        if not PermissionHelper.is_storage_writable(self.storage):
+            mask = '0554'
+            permissions = 'ro'
+        return {'mount': mount_point,
+                'storage_id': str(self.storage.id),
+                'path': self.get_path(),
+                'mask': mask,
+                'permissions': permissions,
+                'tmp_dir': self.fuse_tmp
+                }
+
+    def build_mount_command(self, params):
+        return 'gcfuse {path} {mount} '.format(**params)
 
 
 class NFSMounter(StorageMounter):
