@@ -59,7 +59,6 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
     private final String version = "latest";
     private final String fullToolName = String.format("%s/%s", group, tool);
 
-
     private String graceHours;
     private boolean policyDenyNotScanned;
 
