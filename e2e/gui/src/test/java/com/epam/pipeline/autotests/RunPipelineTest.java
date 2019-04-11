@@ -200,7 +200,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-311")
     public void shouldNavigateToTheNode() {
         final String nodeIp = $(parameterWithName("IP")).text().split(" \\(")[0];
-        final String expectedTitle = String.format("^Node: %s.*", nodeIp.replace('.', '-'));
+        final String expectedTitle = String.format("^Node: %s.*", nodeIp);
         onRunPage()
             .click(parameterWithName("IP"), NodePage::new)
             .ensure(mainInfo(), have(textMatches(expectedTitle)))
