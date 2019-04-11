@@ -218,8 +218,13 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
-    default ELEMENT_TYPE ensureNotVisible(Primitive... elements) {
+    default ELEMENT_TYPE ensureNotVisible(final Primitive... elements) {
         Arrays.stream(elements).forEach(el -> ensure(el, not(visible)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE ensureAll(final Condition condition, final Primitive... elements) {
+        Arrays.stream(elements).forEach(el -> ensure(el, condition));
         return (ELEMENT_TYPE) this;
     }
 

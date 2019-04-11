@@ -25,20 +25,14 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TypeCombobox.shouldContainTypes;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD;
-import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
-import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
-import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
-import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
-import static com.epam.pipeline.autotests.ao.Primitive.INPUT_ADD;
-import static com.epam.pipeline.autotests.ao.Primitive.NAME;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
-import static com.epam.pipeline.autotests.ao.Primitive.VALUE;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 
 public class WDLScatterEditorTest
         extends AbstractBfxPipelineTest
@@ -68,7 +62,9 @@ public class WDLScatterEditorTest
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddScatterDialog()
-                .ensureVisible(INPUT_ADD, ADD, CANCEL)
+                .parent()
+                .clickScatter("scatter")
+                .ensureVisible(ADD_TASK, DELETE)
                 .cancel();
     }
 
@@ -78,19 +74,17 @@ public class WDLScatterEditorTest
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddScatterDialog()
+                .parent()
+                .clickScatter("scatter")
                 .clickInputSectionAddButton()
-                .ensureVisible(NAME, TYPE, VALUE, DELETE_ICON)
-                .close()
-                .cancel();
+                .ensureVisible(NAME, TYPE, VALUE)
+                .ensureAll(not(empty), NAME, TYPE);
     }
 
     @Test(dependsOnMethods = "checkAddButtonForScatterMenu")
     @TestCase({"EPMCMBIBPC-627"})
     public void checkDatatypesInDropdownListForScatterMenu() {
-        getFirstVersion(pipelineName)
-                .graphTab()
-                .openAddScatterDialog()
-                .clickInputSectionAddButton()
+        sectionRowInScatterAdditionPopup()
                 .openTypeCombobox()
                 .also(shouldContainTypes("String", "File", "Int", "Boolean", "Float", "Object", "ScatterItem"))
                 .close();
