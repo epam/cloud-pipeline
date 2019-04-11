@@ -43,7 +43,7 @@ public abstract class AbstractSeveralPipelineRunningTest
     }
 
     @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
-    void removeNodes() {
+    public void removeNodes() {
         open(C.ROOT_ADDRESS);
         runIds.forEach(runId ->
             navigationMenu()
@@ -53,7 +53,7 @@ public abstract class AbstractSeveralPipelineRunningTest
     }
 
     @AfterClass(alwaysRun = true)
-    void stopRuns() {
+    public void stopRuns() {
         open(C.ROOT_ADDRESS);
         System.out.printf("Stop runs with ids %s%n", Arrays.toString(runIds.toArray()));
         runIds.forEach(id -> {
