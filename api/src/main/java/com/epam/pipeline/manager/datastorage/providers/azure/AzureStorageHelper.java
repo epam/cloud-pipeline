@@ -200,7 +200,7 @@ public class AzureStorageHelper {
     }
 
     public boolean checkStorage(final AzureBlobStorage storage) {
-        return unwrap(getContainerURL(storage).getAccountInfo().map(r -> true));
+        return unwrap(getContainerURL(storage).getProperties().map(r -> true), this::falseIfNotFound);
     }
 
     public Map<String, String> updateObjectTags(final AzureBlobStorage dataStorage,
@@ -237,6 +237,10 @@ public class AzureStorageHelper {
 
     private Map<String, String> emptyIfNotFound(final Integer code) {
         return code.equals(NOT_FOUND_STATUS_CODE) ? Collections.emptyMap() : null;
+    }
+
+    private Boolean falseIfNotFound(final Integer code) {
+        return code.equals(NOT_FOUND_STATUS_CODE) ? false : null;
     }
 
     public DataStorageItemContent getFile(final AzureBlobStorage dataStorage,
