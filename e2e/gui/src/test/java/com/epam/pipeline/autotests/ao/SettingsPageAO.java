@@ -88,6 +88,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return parentAO;
     }
 
+    public PipelinesLibraryAO ok() {
+        click(OK);
+        return parentAO;
+    }
+
     private class CliAO{
     }
 
