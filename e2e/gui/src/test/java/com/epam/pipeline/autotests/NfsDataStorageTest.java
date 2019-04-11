@@ -36,9 +36,10 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+
 public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navigation {
 
-    private final String nfsPrefix = C.NFS_PREFIX;
+    private String nfsPrefix = C.NFS_PREFIX;
     private String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
 
     private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
@@ -52,7 +53,6 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     private final String tempAlias = "epmcmbi-nfs-test-temp-alias-" + Utils.randomSuffix();
     private final String NfsMountNameSpaces = "nfs mount name with spaces";
     private final String folderNameWithSpaces = "epmcmbi test folder with spaces" + Utils.randomSuffix();
-    private final String fullNfsPrefix = nfsPrefix + ":/";
 
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
@@ -65,7 +65,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     public void createNfsMountAndValidate() {
         file = Utils.createTempFile();
         navigateToLibrary()
-                .createNfsMountWithDescription("/" + storage, storage, nfsMountDescription, nfsPrefix)
+                .createNfsMountWithDescription("/" + storage, storage, nfsMountDescription)
                 .validateStoragePictogram(storage)
                 .selectStorage(storage)
                 .uploadFile(file)
@@ -139,7 +139,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .createFolder(folder)
-                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", fullNfsPrefix + storage));
+                .messageShouldAppear(String.format("Could not create a folder in nfs: %s", nfsPrefix + storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -193,9 +193,9 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @TestCase(value = {"EPMCMBIBPC-2275"})
     public void createDataStorageWithNameThatAlreadyExists() {
         navigateToLibrary()
-                .createNfsMount("/" + storage, storage, nfsPrefix)
+                .createNfsMount("/" + storage, storage)
                 .messageShouldAppear(String.format("Error: data storage with name: '%s' or path: '%s' already exists.",
-                        storage, fullNfsPrefix + storage));
+                        storage, nfsPrefix + storage));
         clickCanceButtonlIfItIsDisplayed();
         refresh();
     }
@@ -267,7 +267,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         file = Utils.createTempFile();
         navigateToLibrary()
                 .createNfsMountWithDescription("/" + deletableStorage, deletableStorage,
-                        nfsMountDescription, nfsPrefix)
+                        nfsMountDescription)
                 .selectStorage(deletableStorage)
                 .createFolder(folder)
                 .uploadFile(file)
@@ -275,7 +275,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .clickDeleteStorageButton()
                 .clickUnregister()
                 .validateStorageIsNotPresent(deletableStorage)
-                .createNfsMount("/" + deletableStorage, deletableStorage, nfsPrefix)
+                .createNfsMount("/" + deletableStorage, deletableStorage)
                 .validateStorage(deletableStorage)
                 .selectStorage(deletableStorage)
                 .validateElementIsPresent(folder)
@@ -288,7 +288,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @TestCase(value = {"EPMCMBIBPC-2300"})
     public void validateProhibitedMountPoint() {
         navigateToLibrary()
-                .createNfsMount("/" + mountPointStorage, mountPointStorage, nfsPrefix);
+                .createNfsMount("/" + mountPointStorage, mountPointStorage);
         Stream<String> mountPoints = Stream.of("/", "/etc", "/runs", "/common", "/bin", "/opt", "/var", "/home",
                 "/root", "/sbin", "/sys", "/usr", "/boot", "/dev", "/lib", "/proc", "/tmp");
         mountPoints.forEach((value) ->
@@ -298,8 +298,8 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .setMountPoint(value)
                         .clickSaveButton()
                         .messageShouldAppear(String.format(
-                                "Could not create nfs datastorage '%s', mount point '%s' is in black list!",
-                                fullNfsPrefix + mountPointStorage, value))
+                                "Could not create nfs datastorage '%s', mount point '%s' is in black list!", nfsPrefix +
+                                        mountPointStorage, value))
                         .also(this::clickCanceButtonlIfItIsDisplayed)
         );
 }
@@ -308,7 +308,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     @TestCase(value = {"EPMCMBIBPC-2304"})
     public void validateProhibitedNfsMountPath() {
         navigateToLibrary()
-                .createNfsMount("/", nfsPrefix, nfsPrefix)
+                .createNfsMount("/", nfsPrefix)
                 .messageShouldAppear("Invalid path")
                 .also(this::clickCanceButtonlIfItIsDisplayed);
 
@@ -319,7 +319,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
     public void createNfsMountWithSpacesAndValidate() {
         navigateToLibrary()
                 .createNfsMountWithDescription("/" + NfsMountNameSpaces, NfsMountNameSpaces,
-                        nfsMountDescription, nfsPrefix)
+                        nfsMountDescription)
                 .selectStorage(NfsMountNameSpaces)
                 .validateHeader(NfsMountNameSpaces)
                 .createFolder(folder)
