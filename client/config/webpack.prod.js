@@ -131,10 +131,9 @@ module.exports = Object.assign({}, webpackConfig, {
         minifyURLs: true
       }
     }),
-    new webpack.optimize.DedupePlugin(),
     new webpack.optimize.CommonsChunkPlugin({
       children: true,
-      async: true,
+      async: true
     }),
     new webpack.optimize.OccurrenceOrderPlugin(),
     new webpack.optimize.UglifyJsPlugin({
