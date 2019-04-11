@@ -131,22 +131,33 @@ module.exports = Object.assign({}, webpackConfig, {
         minifyURLs: true
       }
     }),
+    new webpack.optimize.DedupePlugin(),
+    new webpack.optimize.CommonsChunkPlugin({
+      children: true,
+      async: true,
+    }),
     new webpack.optimize.OccurrenceOrderPlugin(),
-    // TEMPORARY DISABLED
-
-    // new webpack.optimize.UglifyJsPlugin({
-    //   compress: {
-    //     screw_ie8: true, // React doesn't support IE8
-    //     warnings: false
-    //   },
-    //   mangle: {
-    //     screw_ie8: true
-    //   },
-    //   output: {
-    //     comments: false,
-    //     screw_ie8: true
-    //   }
-    // }),
+    new webpack.optimize.UglifyJsPlugin({
+      beautify: false,
+      comments: false,
+      compress: {
+        sequences: true,
+        booleans: true,
+        loops: true,
+        unused: true,
+        drop_console: true,
+        unsafe: true,
+        screw_ie8: true, // React doesn't support IE8
+        warnings: false
+      },
+      mangle: {
+        screw_ie8: true
+      },
+      output: {
+        comments: false,
+        screw_ie8: true
+      }
+    }),
     new ExtractTextPlugin(cssFilename),
     new ManifestPlugin({
       fileName: 'asset-manifest.json'
