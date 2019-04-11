@@ -477,7 +477,7 @@ export default class WdlGraph extends Graph {
     }
   };
 
-  prepareEditableTask = () => {
+  prepareEditableTask = (callback) => {
     let task;
     if (this.state.selectedElement) {
       task = {
@@ -497,7 +497,7 @@ export default class WdlGraph extends Graph {
         task.outputs = action.o;
       }
     }
-    this.setState({editableTask: prepareTask(task)});
+    this.setState({editableTask: prepareTask(task)}, callback);
   };
 
   resetEditableTask = () => {
@@ -845,7 +845,13 @@ export default class WdlGraph extends Graph {
 
   togglePropertiesSidePanelState = () => {
     const propertiesPanelVisible = !this.state.propertiesPanelVisible;
-    this.setState({propertiesPanelVisible});
+    if (propertiesPanelVisible) {
+      this.prepareEditableTask(() => {
+        this.setState({propertiesPanelVisible});
+      });
+    } else {
+      this.setState({propertiesPanelVisible});
+    }
   };
 
   closePropertiesSidePanel = () => {
