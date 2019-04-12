@@ -26,12 +26,13 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.hasValue;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
-import static com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TypeCombobox.shouldContainTypes;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 
 public class WDLScatterEditorTest
@@ -64,7 +65,7 @@ public class WDLScatterEditorTest
                 .openAddScatterDialog()
                 .parent()
                 .clickScatter("scatter")
-                .ensureVisible(ADD_TASK, DELETE)
+                .ensureVisible(ADD_TASK, DELETE, INPUT_PANEL)
                 .cancel();
     }
 
@@ -77,34 +78,38 @@ public class WDLScatterEditorTest
                 .parent()
                 .clickScatter("scatter")
                 .clickInputSectionAddButton()
-                .ensureVisible(NAME, TYPE, VALUE)
-                .ensureAll(not(empty), NAME, TYPE);
+                .ensure(NAME, visible, enabled)
+                .ensure(TYPE, visible, disabled)
+                .ensure(VALUE, visible, disabled)
+                .ensureAll(not(empty), NAME, TYPE)
+                .ensure(TYPE, hasValue("ScatterItem"))
+                .close()
+                .cancel();
     }
 
     @Test(dependsOnMethods = "checkAddButtonForScatterMenu", priority = 1)
     @TestCase({"EPMCMBIBPC-628"})
     public void validationOfAddingParameterInScatter() {
         final String inputParameterName = "test_in";
-        final String type = "ScatterItem";
-        final String varValue = "0";
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddScatterDialog()
+                .parent()
+                .clickScatter("scatter")
                 .clickInputSectionAddButton()
                 .setName(inputParameterName)
-                .setType(type)
-                .setValue(varValue)
                 .close()
-                .ok()
+                .parent()
                 .searchScatter(inputParameterName)
-                .ensure(SAVE, visible, enabled);
+                .ensure(SAVE, visible, enabled)
+                .ensure(REVERT, visible, enabled);
     }
 
     @Test(dependsOnMethods = "validationOfAddingParameterInScatter", priority = 1)
     @TestCase({"EPMCMBIBPC-636"})
     public void checkIfDiagramChangesScatterCode() {
         final String inputParameterName = "test_in";
-        final String scatterCodeLine = String.format("scatter (%s in 0) {", inputParameterName);
+        final String scatterCodeLine = String.format("scatter (%s in ) {", inputParameterName);
         graphTab(pipelineName)
                 .saveAndCommitWithMessage("commit by EPMCMBIBPC-636 test case")
                 .codeTab()

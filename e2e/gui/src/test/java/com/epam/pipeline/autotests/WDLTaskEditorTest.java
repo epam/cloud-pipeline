@@ -34,6 +34,8 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TypeCombobox.shouldContainTypes;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 
 public class WDLTaskEditorTest
@@ -71,8 +73,7 @@ public class WDLTaskEditorTest
         getFirstVersion(pipelineName)
                 .graphTab()
                 .ensureVisible(SAVE, REVERT, LAYOUT, FIT, SHOW_LINKS, ZOOM_IN, ZOOM_OUT, FULLSCREEN, PROPERTIES)
-                .ensure(SAVE, disabled)
-                .ensure(REVERT, disabled);
+                .ensureAll(disabled, SAVE, REVERT);
     }
 
     @Test(dependsOnMethods = {"validateWDLEditButtons"})
@@ -94,7 +95,9 @@ public class WDLTaskEditorTest
                 .openDockerImagesCombobox()
                 .ensureVisible(REGISTRY, GROUP, SEARCH, OK, CANCEL)
                 .click(CANCEL, taskAdditionPopupOf(pipelineName))
-                .disableAnotherDockerImage();
+                .disableAnotherDockerImage()
+                .enableAnotherComputeNode()
+                .selectValue(combobox("Instance type"), menuitem(C.DEFAULT_INSTANCE));
     }
 
     @Test(dependsOnMethods = {"validateAnotherDockerImageCausesDockerImagesListAppearing"})

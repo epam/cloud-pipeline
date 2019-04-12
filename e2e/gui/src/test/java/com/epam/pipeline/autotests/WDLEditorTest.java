@@ -35,6 +35,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ANOTHER_DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.INPUT_ADD;
+import static com.epam.pipeline.autotests.ao.Primitive.INPUT_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.OUTPUT_ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
@@ -81,7 +82,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .ensure(REVERT, visible, disabled);
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-621"})
     public void checkDiagramChange() {
         getFirstVersion(pipelineName)
@@ -95,7 +96,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .searchLabel("MyTask");
     }
 
-    @Test
+    @Test(priority = 0)
     @TestCase({"EPMCMBIBPC-637"})
     public void validateAddTaskInScatter() {
         getFirstVersion(pipelineName)
@@ -106,10 +107,11 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .click(ADD_TASK)
                 .parent()
                 .searchLabel("scatterTask")
-                .searchScatter("scatter");
+                .searchScatter("scatter")
+                .revert();
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-638"})
     public void checkDiagramChangeForScatter() {
         getFirstVersion(pipelineName)
@@ -123,7 +125,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .searchScatter("scattername");
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-640"})
     public void checkDiagramChangeForScatterWithTask() {
         getFirstVersion(pipelineName)
@@ -145,16 +147,17 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .graphTab()
                 .clickLabel("HelloWorld_print")
                 .edit()
-                .ensureVisible(ALIAS, INPUT_ADD, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, COMMAND, DELETE)
-                .cancel();
+                .ensureVisible(ALIAS, INPUT_ADD, INPUT_PANEL, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, COMMAND, DELETE)
+                .parent()
+                .revert();
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-650"})
     public void checkJsonAfterChangingParameters() {
-        String varName = "somevariable";
-        String varType = "Int";
-        String varValue = "111";
+        final String varName = "somevariable";
+        final String varType = "Int";
+        final String varValue = "111";
         getFirstVersion(pipelineName)
                 .graphTab()
                 .clickLabel("workflow")

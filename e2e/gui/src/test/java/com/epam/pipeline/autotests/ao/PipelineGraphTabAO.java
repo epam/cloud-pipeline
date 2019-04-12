@@ -221,6 +221,10 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             return this;
         }
 
+        public TaskAdditionPopupAO enableAnotherComputeNode() {
+            return click(ANOTHER_COMPUTE_NODE);
+        }
+
         public TaskAdditionPopupAO enableAnotherDockerImage() {
             return click(ANOTHER_DOCKER_IMAGE);
         }
