@@ -65,7 +65,7 @@ public class GCPInstancePriceServiceTest {
     private static final String K_80_GPU = "K80";
     private static final String INSTANCE_PRODUCT_FAMILY = "instance";
     private static final String STORAGE_PRODUCT_FAMILY = "storage";
-    private static final String PREFIX = "prefix";
+    private static final List<String> SKUS = Arrays.asList("sku-id-1", "sku-id-2");
 
     private final GCPRegion region = defaultRegion();
     private final GCPMachine cpuMachine = new GCPMachine("n1-standard-1", STANDARD_FAMILY, 1, 4, 0, null);
@@ -89,21 +89,21 @@ public class GCPInstancePriceServiceTest {
     private final GCPInstancePriceService service = new GCPInstancePriceService(preferenceManager,
             instanceOfferDao, extractors, priceLoader);
     private final GCPResourceRequest cpuOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.ON_DEMAND, PREFIX, cpuMachine);
+            GCPBilling.ON_DEMAND, cpuMachine, SKUS);
     private GCPResourceRequest ramOndemandStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.ON_DEMAND, PREFIX, cpuMachine);
+            GCPBilling.ON_DEMAND, cpuMachine, SKUS);
     private GCPResourceRequest cpuPreemtibleStandard = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.PREEMPTIBLE, PREFIX, cpuMachine);
+            GCPBilling.PREEMPTIBLE, cpuMachine, SKUS);
     private GCPResourceRequest ramPreemtibleStandardRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.PREEMPTIBLE, PREFIX, cpuMachine);
+            GCPBilling.PREEMPTIBLE, cpuMachine, SKUS);
     private GCPResourceRequest cpuOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.CPU,
-            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
+            GCPBilling.ON_DEMAND, gpuMachine, SKUS);
     private GCPResourceRequest ramOndemandCustomRequest = new GCPResourceRequest(GCPResourceType.RAM,
-            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
+            GCPBilling.ON_DEMAND, gpuMachine, SKUS);
     private GCPResourceRequest ramOndemandK80Request = new GCPResourceRequest(GCPResourceType.GPU,
-            GCPBilling.ON_DEMAND, PREFIX, gpuMachine);
+            GCPBilling.ON_DEMAND, gpuMachine, SKUS);
     private GCPResourceRequest diskOndemandRequest = new GCPResourceRequest(GCPResourceType.DISK,
-            GCPBilling.ON_DEMAND, PREFIX, disk);
+            GCPBilling.ON_DEMAND, disk, SKUS);
     private final List<GCPResourceRequest> extractor1Requests = Arrays.asList(cpuOndemandStandardRequest,
             ramOndemandStandardRequest);
     private final List<GCPResourceRequest> extractor2Requests = Arrays.asList(cpuOndemandCustomRequest,
@@ -115,16 +115,16 @@ public class GCPInstancePriceServiceTest {
         when(predefinedMachinesExtractor.extract(any())).thenReturn(predefinedMachines);
         when(customMachinesExtractor.extract(any())).thenReturn(customMachines);
         when(diskExtractor.extract(any())).thenReturn(disks);
-        final HashMap<String, String> prefixes = new HashMap<>();
-        prefixes.put("cpu_ondemand_standard", PREFIX);
-        prefixes.put("ram_ondemand_standard", PREFIX);
-        prefixes.put("cpu_preemtible_standard", PREFIX);
-        prefixes.put("ram_preemtible_standard", PREFIX);
-        prefixes.put("cpu_ondemand_custom", PREFIX);
-        prefixes.put("ram_ondemand_custom", PREFIX);
-        prefixes.put("gpu_ondemand_k80", PREFIX);
-        prefixes.put("disk_ondemand", PREFIX);
-        when(preferenceManager.getPreference(eq(SystemPreferences.GCP_BILLING_PREFIXES))).thenReturn(prefixes);
+        final HashMap<String, List<String>> prefixes = new HashMap<>();
+        prefixes.put("cpu_ondemand_standard", SKUS);
+        prefixes.put("ram_ondemand_standard", SKUS);
+        prefixes.put("cpu_preemtible_standard", SKUS);
+        prefixes.put("ram_preemtible_standard", SKUS);
+        prefixes.put("cpu_ondemand_custom", SKUS);
+        prefixes.put("ram_ondemand_custom", SKUS);
+        prefixes.put("gpu_ondemand_k80", SKUS);
+        prefixes.put("disk_ondemand", SKUS);
+        when(preferenceManager.getPreference(eq(SystemPreferences.GCP_SKU_MAPPING))).thenReturn(prefixes);
         when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
                 new GCPResourcePrice(cpuOndemandStandardRequest, STANDARD_CPU_COST),
                 new GCPResourcePrice(ramOndemandStandardRequest, STANDARD_RAM_COST),
