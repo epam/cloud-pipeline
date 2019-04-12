@@ -877,7 +877,9 @@ public class RoleModelTest
 
     private void launchToolWithDefaultSettings() {
         tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .perform(registry, group, tool, toolDescription ->
+                        toolDescription.runUnscannedTool("The version has a critical number of vulnerabilities, "
+                                + "but you can launch it during the grace period .* Run anyway?"))
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
                 .launchTool(this, Utils.nameWithoutGroup(tool));
