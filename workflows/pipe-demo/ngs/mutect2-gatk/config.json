@@ -84,11 +84,6 @@
                     "value": "/common/input",
                     "type": "string",
                     "required": false
-                },
-                "CP_CAP_NFS" : {
-                    "value" : "true",
-                    "type" : "boolean",
-                    "required" : false
                 }
             },
             "is_spot": true

@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Write any output of this script to CP_WDL_TASK_DOCKER (Defaults to /var/log/cromwell_runs.log)
-CP_WDL_TASK_DOCKER=${CP_WDL_TASK_DOCKER:-"/var/log/cromwell_runs.log"}
-exec > $CP_WDL_TASK_DOCKER 2>&1
+# Write any output of this script to CP_WDL_TASK_LOGS (Defaults to /var/log/cromwell_runs.log)
+CP_WDL_TASK_LOGS=${CP_WDL_TASK_LOGS:-"/var/log/cromwell_runs.log"}
+exec > $CP_WDL_TASK_LOGS 2>&1
 
 # Parse args
 POSITIONAL=()
@@ -131,7 +131,7 @@ if [ "$CP_WDL_TASK_PIPELINE" ]; then
     fi
     # Remove extra whitespaces via echoing back
     CP_WDL_TASK_CMD="$(echo $CP_WDL_TASK_CMD)"
-    sed -i "s/# PIPE_RUN_COMMAND/$CP_WDL_TASK_CMD/g" "$CP_WDL_TASK_SCRIPT"
+    sed -i "s|# PIPE_RUN_COMMAND|$CP_WDL_TASK_CMD|g" "$CP_WDL_TASK_SCRIPT"
     /bin/bash "$CP_WDL_TASK_SCRIPT"
 else
     # If not a pipeline run - execute `pipe run` directly

@@ -32,7 +32,7 @@ RUN yum install -y wget \
     yum clean all && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
 
-# Cromwell download link should be provided throught --build-arg
+# Cromwell download link should be provided through --build-arg
 ARG CROMWELL_LINK="https://github.com/broadinstitute/cromwell/releases/download/37/cromwell-37.jar"
 ARG WDLTOOL_LINK="https://github.com/broadinstitute/cromwell/releases/download/37/womtool-37.jar"
 
@@ -44,6 +44,7 @@ ENV PATH="$PATH:$CROMWELL_HOME"
 
 # Bake-in the autoscaling option, so that all runs with "node" parameter will be able to share a single FS
 ENV CP_CAP_AUTOSCALE="true"
+ENV CP_CAP_NFS="true"
 ENV cluster_role="master"
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
@@ -51,7 +52,7 @@ ENV INPUT_DIR="/common/input"
 
 # Copy cromwell files to the image
 # It also creates cromwell home directory
-COPY cromwell cromwell.conf cromwell_wrapper.py options.json $CROMWELL_HOME/
+COPY cromwell cromwell.conf cromwell_wrapper.py options.json cromwell_submit_task.sh $CROMWELL_HOME/
 
 # Make cromwell starter script executable
 RUN chmod +x $CROMWELL_HOME/cromwell
