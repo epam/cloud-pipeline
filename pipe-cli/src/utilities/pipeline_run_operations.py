@@ -27,7 +27,7 @@ from src.utilities.cluster_manager import ClusterManager
 from src.api.pipeline import Pipeline
 from src.config import ConfigNotFoundError
 
-DELAY = 60
+DELAY = 30
 
 
 class PipelineRunOperations(object):
@@ -180,12 +180,18 @@ class PipelineRunOperations(object):
                             click.echo('"{}@{}" pipeline run scheduled with RunId: {}'
                                        .format(pipeline_model.name, pipeline_run_parameters.version, pipeline_run_id))
                             if sync:
+                                pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
                                 click.echo('Pipeline run {} completed with status {}'
-                                           .format(pipeline_run_id, cls.get_pipeline_processed_status(pipeline_run_id)))
+                                           .format(pipeline_run_id, pipeline_processed_status))
+                                if pipeline_processed_status != 'SUCCESS':
+                                    sys.exit(1)
                         else:
                             click.echo(pipeline_run_id)
                             if sync:
-                                click.echo(cls.get_pipeline_processed_status(pipeline_run_id))
+                                pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
+                                click.echo(pipeline_processed_status)
+                                if pipeline_processed_status != 'SUCCESS':
+                                    sys.exit(1)
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
@@ -224,12 +230,18 @@ class PipelineRunOperations(object):
                 if not quiet:
                     click.echo('Pipeline run scheduled with RunId: {}'.format(pipeline_run_id))
                     if sync:
+                        pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
                         click.echo('Pipeline run {} completed with status {}'
-                                   .format(pipeline_run_id, cls.get_pipeline_processed_status(pipeline_run_id)))
+                                   .format(pipeline_run_id, pipeline_processed_status))
+                        if pipeline_processed_status != 'SUCCESS':
+                            sys.exit(1)
                 else:
                     click.echo(pipeline_run_id)
                     if sync:
-                        click.echo(cls.get_pipeline_processed_status(pipeline_run_id))
+                        pipeline_processed_status = cls.get_pipeline_processed_status(pipeline_run_id)
+                        click.echo(pipeline_processed_status)
+                        if pipeline_processed_status != 'SUCCESS':
+                            sys.exit(1)
 
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
