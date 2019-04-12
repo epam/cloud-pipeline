@@ -81,18 +81,6 @@ public class WDLScatterEditorTest
                 .ensureAll(not(empty), NAME, TYPE);
     }
 
-    @Test(dependsOnMethods = "checkAddButtonForScatterMenu")
-    @TestCase({"EPMCMBIBPC-627"})
-    public void checkDatatypesInDropdownListForScatterMenu() {
-        sectionRowInScatterAdditionPopup()
-                .openTypeCombobox()
-                .also(shouldContainTypes("String", "File", "Int", "Boolean", "Float", "Object", "ScatterItem"))
-                .close();
-        sectionRowInScatterAdditionPopup()
-                .close()
-                .cancel();
-    }
-
     @Test(dependsOnMethods = "checkAddButtonForScatterMenu", priority = 1)
     @TestCase({"EPMCMBIBPC-628"})
     public void validationOfAddingParameterInScatter() {

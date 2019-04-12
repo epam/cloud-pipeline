@@ -444,6 +444,7 @@ public class RoleModelTest
         loginAs(admin)
                 .library()
                 .selectStorage(bucket)
+                .createFile(tempFileName)
                 .clickEditStorageButton()
                 .clickOnPermissionsTab()
                 .addNewUser(user.login)
@@ -465,8 +466,8 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
-                .ensureNotVisible(CREATE_FOLDER, UPLOAD, EDIT_STORAGE)
-                .ensureVisible(SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureNotVisible(CREATE_FOLDER, UPLOAD)
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 17)
