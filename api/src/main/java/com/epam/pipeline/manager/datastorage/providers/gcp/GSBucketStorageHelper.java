@@ -449,10 +449,11 @@ public class GSBucketStorageHelper {
         files.forEach((path, fileVersions) -> {
             fileVersions.sort(Comparator.comparingLong(BlobInfo::getUpdateTime).reversed());
             final Blob latestVersionBlob = fileVersions.get(0);
-            final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob);
+            final boolean isDeleted = Objects.nonNull(latestVersionBlob.getDeleteTime());
+            final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob, isDeleted);
             final Map<String, AbstractDataStorageItem> collect = fileVersions
                     .stream()
-                    .map(this::createDataStorageFileWithVersion)
+                    .map(blob -> createDataStorageFileWithVersion(blob, isDeleted))
                     .collect(Collectors.toMap(DataStorageFile::getVersion, Function.identity()));
             latestVersionFile.setVersions(collect);
             items.add(latestVersionFile);
@@ -460,9 +461,9 @@ public class GSBucketStorageHelper {
         return items;
     }
 
-    private DataStorageFile createDataStorageFileWithVersion(final Blob blob) {
+    private DataStorageFile createDataStorageFileWithVersion(final Blob blob, final boolean isDeleted) {
         final DataStorageFile dataStorageFile = createDataStorageFile(blob);
-        dataStorageFile.setDeleteMarker(Objects.nonNull(blob.getDeleteTime()));
+        dataStorageFile.setDeleteMarker(isDeleted);
         dataStorageFile.setVersion(String.valueOf(blob.getGeneration()));
         return dataStorageFile;
     }
