@@ -150,17 +150,7 @@ export default class WdlGraph extends Graph {
       ? (this.props.runDefaultParameters.value || []).map(p => p.name)
       : [];
     const skipParameterFn = (name) => systemParameters.indexOf(name) >= 0;
-    const listInputParametersStr = () => {
-      const params = [];
-      Object.keys(defaultConfiguration.configuration.parameters || []).forEach(key => {
-        if (!skipParameterFn(key) &&
-          defaultConfiguration.configuration.parameters[key].type !== 'output') {
-          params.push(`\\\n\t\t\t--${key} $\{${key.replace(nameReplacementRegExp, '_')}}`);
-        }
-      });
-      return params.join(' ');
-    };
-    const mapParameter = (name, p, value) => {
+    const mapParameter = (name, p, value, forceValue) => {
       if (skipParameterFn(name)) {
         return null;
       }
@@ -177,7 +167,7 @@ export default class WdlGraph extends Graph {
           type = 'Boolean';
           break;
       }
-      const v = p.value || value;
+      const v = forceValue || p.value || value;
       return {
         name: name.replace(nameReplacementRegExp, '_'),
         value: v && (testPrimitiveTypeFn(Primitives.string, type) || testPrimitiveTypeFn(Primitives.file, type))
@@ -188,22 +178,31 @@ export default class WdlGraph extends Graph {
     };
     const inputs = [];
     const outputs = [];
+    const pipelineName = pipelineInfo.name.replace(nameReplacementRegExp, '_');
     Object.keys(defaultConfiguration.configuration.parameters || []).forEach(key => {
       if (defaultConfiguration.configuration.parameters[key].type !== 'output') {
         inputs.push(
           mapParameter(key, defaultConfiguration.configuration.parameters[key])
         );
       } else {
+        inputs.push(
+          mapParameter(key, defaultConfiguration.configuration.parameters[key], ' ', ' ')
+        );
         outputs.push(
-          mapParameter(key, defaultConfiguration.configuration.parameters[key], ' ')
+          mapParameter(
+            `${pipelineName}_${key}`,
+            defaultConfiguration.configuration.parameters[key],
+            ' ',
+            `\${${key}}`
+          )
         );
       }
     });
     const task = {
-      name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
+      name: pipelineName,
       command: generatePipelineCommand(
         pipelineInfo.name, version,
-        [...inputs, ...outputs].filter(p => !!p).map(p => p.name)
+        inputs.filter(p => !!p).map(p => p.name)
       ),
       inputs: inputs.filter(p => !!p),
       outputs: outputs.filter(p => !!p),
