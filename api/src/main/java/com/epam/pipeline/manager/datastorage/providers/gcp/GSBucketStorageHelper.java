@@ -172,7 +172,7 @@ public class GSBucketStorageHelper {
         }
 
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
-        deleteBlob(bucketName, path, blob);
+        deleteBlob(blob, client, StringUtils.isNotBlank(version));
     }
 
     public void deleteFolder(final GSBucketStorage dataStorage, final String path, final Boolean totally) {
@@ -190,7 +190,7 @@ public class GSBucketStorageHelper {
         }
 
         final Page<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(folderPath));
-        blobs.iterateAll().forEach(blob -> deleteBlob(bucketName, path, blob));
+        blobs.iterateAll().forEach(blob -> deleteBlob(blob, client, false));
     }
 
     public DataStorageFile moveFile(final GSBucketStorage storage, final String oldPath, final String newPath) {
@@ -206,7 +206,7 @@ public class GSBucketStorageHelper {
 
         final CopyWriter copyWriter = client.get(bucketName).get(oldPath).copyTo(bucketName, newPath);
         final Blob newBlob = copyWriter.getResult();
-        oldBlob.delete();
+        deleteBlob(oldBlob, client, false);
 
         return createDataStorageFile(newBlob);
     }
@@ -233,7 +233,7 @@ public class GSBucketStorageHelper {
             final CopyWriter copyWriter = oldBlob.copyTo(BlobId.of(bucketName, newBlobName));
             final Blob newBlob = copyWriter.getResult();
             Assert.notNull(newBlob, "Created blob should not be empty");
-            oldBlob.delete();
+            deleteBlob(oldBlob, client, false);
         });
 
         return createDataStorageFolder(newFolderPath);
@@ -349,7 +349,7 @@ public class GSBucketStorageHelper {
                 .setTarget(BlobId.of(bucketName, path))
                 .build();
         client.copy(request).getResult();
-        deleteBlob(bucketName, path, blob);
+        deleteBlob(blob, client, true);
     }
 
     private boolean isFolderExists(final GSBucketStorage storage, final String folderPath) {
@@ -448,14 +448,15 @@ public class GSBucketStorageHelper {
 
         files.forEach((path, fileVersions) -> {
             fileVersions.sort(Comparator.comparingLong(BlobInfo::getUpdateTime).reversed());
-            final Blob latestVersionBlob = fileVersions.get(0);
-            final boolean isDeleted = Objects.nonNull(latestVersionBlob.getDeleteTime());
-            final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob, isDeleted);
-            final Map<String, AbstractDataStorageItem> collect = fileVersions
+            final Blob latestVersionBlob = fileVersions.remove(0);
+            final DataStorageFile latestVersionFile = createDataStorageFileWithVersion(latestVersionBlob,
+                    Objects.nonNull(latestVersionBlob.getDeleteTime()));
+            final Map<String, AbstractDataStorageItem> filesByVersion = fileVersions
                     .stream()
-                    .map(blob -> createDataStorageFileWithVersion(blob, isDeleted))
+                    .map(blob -> createDataStorageFileWithVersion(blob, false))
                     .collect(Collectors.toMap(DataStorageFile::getVersion, Function.identity()));
-            latestVersionFile.setVersions(collect);
+            filesByVersion.put(latestVersionFile.getVersion(), latestVersionFile.copy(latestVersionFile));
+            latestVersionFile.setVersions(filesByVersion);
             items.add(latestVersionFile);
         });
         return items;
@@ -472,11 +473,14 @@ public class GSBucketStorageHelper {
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.prefix(path));
-        blobs.iterateAll().forEach(blob -> deleteBlob(bucketName, path, blob));
+        blobs.iterateAll().forEach(blob -> deleteBlob(blob, gcpClient.buildStorageClient(region), true));
     }
 
-    private void deleteBlob(final String bucketName, final String path, final Blob blob) {
-        final boolean deleted = blob.delete(Blob.BlobSourceOption.generationMatch());
+    private void deleteBlob(final Blob blob, final Storage client, final boolean withVersion) {
+        final String bucketName = blob.getBucket();
+        final String path = blob.getName();
+        final BlobId blobId = BlobId.of(bucketName, path, withVersion ? blob.getGeneration() : null);
+        final boolean deleted = client.delete(blobId);
         if (!deleted) {
             throw new DataStorageException(
                     String.format("Failed to delete google storage file '%s' from bucket '%s'", path, bucketName));
