@@ -105,4 +105,9 @@ public class GCPMachine extends AbstractGCPObject {
         }
         return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getFamily());
     }
+
+    @Override
+    public String resourceFamily() {
+        return "Compute";
+    }
 }

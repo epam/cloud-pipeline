@@ -63,7 +63,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     public List<InstanceOffer> refreshPriceListForRegion(final GCPRegion region) {
         try {
             final List<AbstractGCPObject> objects = availableObjects(region);
-            final Map<String, List<String>> mappings = loadSkuMappings();
+            final Map<String, GCPResourceMapping> mappings = loadResourceMappings();
             final List<GCPResourceRequest> requests = requests(objects, mappings);
             final Set<GCPResourcePrice> prices = priceLoader.load(region, requests);
             return objects.stream()
@@ -83,12 +83,12 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .collect(Collectors.toList());
     }
 
-    private Map<String, List<String>> loadSkuMappings() {
+    private Map<String, GCPResourceMapping> loadResourceMappings() {
         return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_SKU_MAPPING));
     }
 
     private List<GCPResourceRequest> requests(final List<AbstractGCPObject> objects,
-                                              final Map<String, List<String>> mappings) {
+                                              final Map<String, GCPResourceMapping> mappings) {
         return objects.stream()
                 .flatMap(machine -> Arrays.stream(GCPResourceType.values())
                         .filter(machine::isRequired)
@@ -98,7 +98,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     private Stream<GCPResourceRequest> requests(final AbstractGCPObject object,
                                                 final GCPResourceType type,
-                                                final Map<String, List<String>> mappings) {
+                                                final Map<String, GCPResourceMapping> mappings) {
         return Arrays.stream(GCPBilling.values())
                 .map(billing -> Optional.of(object.billingKey(billing, type))
                         .map(mappings::get)

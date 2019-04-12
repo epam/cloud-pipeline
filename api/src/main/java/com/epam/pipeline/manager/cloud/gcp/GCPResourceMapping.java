@@ -16,16 +16,20 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import lombok.Value;
 
 /**
- * Google Cloud Provider resource price request.
+ * Google Cloud Provider group of SKUs mapping.
  */
 @Value
-public class GCPResourceRequest {
-    private final GCPResourceType type;
-    private final GCPBilling billing;
-    private final AbstractGCPObject object;
-    private final GCPResourceMapping mapping;
+public class GCPResourceMapping {
+    /**
+     * SKUs description prefix.
+     */
+    private final String prefix;
+
+    /**
+     * SKUs resource group.
+     */
+    private final String group;
 }

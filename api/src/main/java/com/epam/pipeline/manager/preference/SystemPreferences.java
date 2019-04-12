@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -459,9 +460,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
             "gcp.regions.list", null, new TypeReference<List<String>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
-    public static final ObjectPreference<Map<String, List<String>>> GCP_SKU_MAPPING = new ObjectPreference<>(
-            "gcp.sku.mapping", null, new TypeReference<Map<String, List<String>>>() {}, GCP_GROUP,
-            isNullOrValidJson(new TypeReference<Map<String, List<String>>>() {}));
+    public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
+            "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
