@@ -1,3 +1,5 @@
+from time import sleep
+
 from google.cloud.storage import Client
 from tzlocal import get_localzone
 
@@ -40,8 +42,23 @@ class GsClient(CloudClient):
         blob._set_properties(api_response)
 
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
-        # TODO 29.03.19: Method is not implemented yet.
-        raise RuntimeError('Method is not implemented yet.')
+        sleep(5)
+        bucket = self._get_client().bucket(bucket_name)
+        bucket.reload()
+        for rule in bucket.lifecycle_rules:
+            assert 'action' in rule and 'condition' in rule
+            condition = rule['condition']
+            rule_type = rule['action']['type']
+            duration = condition['age']
+            if rule_type == 'Delete' and condition['isLive']:
+                assert int(duration) == int(lts), \
+                    "LTS assertion failed: expected %s but actual %s" % (lts, duration)
+            if rule_type == 'SetStorageClass':
+                assert int(duration) == int(sts), \
+                    "STS assertion failed: expected %s but actual %s" % (sts, duration)
+            if rule_type == 'Delete' and not condition['isLive']:
+                assert int(duration) == int(backup_duration), \
+                    "Backup Duration assertion failed: expected %s but actual %s" % (backup_duration, duration)
 
     def get_modification_date(self, path):
         path_elements = path.replace('cp://', '').split('/')

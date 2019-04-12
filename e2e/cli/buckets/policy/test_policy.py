@@ -16,7 +16,6 @@ import pytest
 import os
 
 from buckets.utils.cloud.azure_client import AzureClient
-from buckets.utils.cloud.google_client import GsClient
 from buckets.utils.cloud.utilities import assert_policy
 from buckets.utils.utilities_for_test import delete_buckets, create_buckets, create_bucket
 from common_utils.cmd_utils import get_test_prefix
@@ -26,7 +25,6 @@ ERROR_MESSAGE = "An error occurred in case "
 
 
 @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Storage policy is not supported for AZURE provider")
-@pytest.mark.skipif(os.environ['CP_PROVIDER'] == GsClient.name, reason="Storage policy is not available for GOOGLE provider yet")
 class TestPolicy(object):
     bucket_name = "epmcmbibpc-it-policy{}".format(get_test_prefix())
 
