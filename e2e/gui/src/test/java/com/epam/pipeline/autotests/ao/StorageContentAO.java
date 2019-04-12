@@ -392,12 +392,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO validateElementsAreNotEditable() {
-        getElementsAOs().forEach(element -> element.ensureNotVisible(DELETE, EDIT));
+        getElementsAOs().forEach(element -> element.ensureNotVisible(DELETE, EDIT).ensureVisible(DOWNLOAD));
         return this;
     }
 
     public StorageContentAO validateElementsAreEditable() {
-        getElementsAOs().forEach(element -> element.ensureVisible(DELETE, EDIT));
+        getElementsAOs().forEach(element -> element.ensureVisible(DELETE, EDIT, DOWNLOAD));
         return this;
     }
 

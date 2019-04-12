@@ -53,6 +53,7 @@ public class NavigationMenuAO {
 
     public SettingsPageAO settings() {
         $(byId("navigation-button-settings")).shouldBe(visible).click();
+        sleep(1, SECONDS);
         $(byClassName("ant-modal-content")).waitUntil(visible, 5000);
         return new SettingsPageAO(new PipelinesLibraryAO());
     }

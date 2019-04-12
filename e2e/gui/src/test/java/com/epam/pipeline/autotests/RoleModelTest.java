@@ -444,6 +444,7 @@ public class RoleModelTest
         loginAs(admin)
                 .library()
                 .selectStorage(bucket)
+                .createFile(tempFileName)
                 .clickEditStorageButton()
                 .clickOnPermissionsTab()
                 .addNewUser(user.login)
@@ -465,8 +466,8 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
-                .ensureNotVisible(CREATE_FOLDER, UPLOAD, EDIT_STORAGE)
-                .ensureVisible(SELECT_ALL, ADDRESS_BAR, DOWNLOAD, REFRESH, SHOW_METADATA);
+                .ensureNotVisible(CREATE_FOLDER, UPLOAD)
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -494,7 +495,7 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, DOWNLOAD);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -569,25 +570,6 @@ public class RoleModelTest
         loginAs(user)
                 .clusterNodes()
                 .assertNodesTableIsEmpty();
-    }
-
-    @Test(priority = 21)
-    @TestCase({"EPMCMBIBPC-568"})
-    public void checkClusterNodesByNonAdminUserWhenPipelineIsWorked() {
-        logoutIfNeeded();
-        loginAs(user);
-        navigationMenu()
-                .library()
-                .clickOnPipeline(pipelineName)
-                .firstVersion()
-                .runPipeline()
-                .launch(this);
-        navigationMenu()
-                .clusterNodes()
-                .waitForTheNode(pipelineName, getLastRunId());
-        navigationMenu()
-                .runs()
-                .stopRun(getLastRunId());
     }
 
     @Test(priority = 22, enabled = false)

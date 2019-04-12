@@ -20,8 +20,13 @@ import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.io.File;
+
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
@@ -35,6 +40,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class VersionControlTest extends AbstractBfxPipelineTest implements Authorization {
 
     private File file;
@@ -52,6 +58,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     private final String backgroundColorOfDeletedFile = "#fff2ef";
     private final String backgroundColorOfRestoredFile = "#000000";
 
+    @CloudProviderOnly(Cloud.AWS)
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
         logoutIfNeededAndPerform(() -> {
@@ -66,6 +73,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
         });
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @BeforeClass(alwaysRun = true)
     public void createStorageAndUser() {
         navigationMenu()
@@ -81,6 +89,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .closeAll();
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase({"EPMCMBIBPC-813"})
     public void validateShowFilesVersions() {
@@ -96,6 +105,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .assertFilesHaveVersions();
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"validateShowFilesVersions"})
     @TestCase({"EPMCMBIBPC-815"})
     public void deleteFileByNonAdminUser() {
@@ -129,6 +139,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"deleteFileByNonAdminUser"})
     @TestCase({"EPMCMBIBPC-816"})
     public void validateRestoreFile() {
@@ -148,6 +159,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName());
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"validateRestoreFile"})
     @TestCase({"EPMCMBIBPC-820"})
     public void checkFilesVersionsAfterUpdate() {
@@ -178,6 +190,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensure(EDIT, visible);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"checkFilesVersionsAfterUpdate"})
     @TestCase({"EPMCMBIBPC-888"})
     public void validateRestoreSpecifiedFileVersion() {
@@ -194,6 +207,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateHasSize(0);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"validateRestoreSpecifiedFileVersion"})
     @TestCase({"EPMCMBIBPC-841"})
     public void deleteFileThatHasDeleteMarker() {
@@ -221,6 +235,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(file.getName());
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"deleteFileThatHasDeleteMarker"})
     @TestCase({"EPMCMBIBPC-842"})
     public void validateDeleteEmptyFolder() {
@@ -242,6 +257,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(anotherFolderName);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"validateDeleteEmptyFolder"})
     @TestCase({"EPMCMBIBPC-844"})
     public void markToDeleteNotEmptyFolder() {
@@ -261,6 +277,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName());
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"markToDeleteNotEmptyFolder"})
     @TestCase({"EPMCMBIBPC-845"})
     public void validateDeleteNotEmptyFolder() {
@@ -277,6 +294,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(deletionFolderName);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"validateDeleteNotEmptyFolder"})
     @TestCase({"EPMCMBIBPC-854"})
     public void readPermissionTestForBucketWithVersions() {
@@ -303,6 +321,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateStorageIsNotPresent(readPermitsStorageName);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"readPermissionTestForBucketWithVersions"})
     @TestCase({"EPMCMBIBPC-855"})
     public void editPermissionTestForBucketWithVersions() {
@@ -336,6 +355,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensureNotVisible(EDIT, DELETE);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1502"})
     public void deletingBucketAfterDisablingOfVersioning() {
@@ -363,6 +383,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateStorageIsNotPresent(storage1502);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1540"})
     public void deleteOneOfSiblingsFiles() {

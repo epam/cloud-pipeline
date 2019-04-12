@@ -86,16 +86,28 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
     }
 
     public PipelineRunFormAO runWithCustomSettings() {
+        clickRun();
+        if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
+            new ConfirmationPopupAO<>(new PipelineRunFormAO())
+                .ensureTitleContains("The version has a critical number of vulnerabilities. Run anyway?")
+                .ok();
+        }
+        return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
+    }
+
+    public PipelineRunFormAO runUnscannedTool(final String message) {
+        clickRun();
+        new ConfirmationPopupAO<>(new PipelineRunFormAO())
+                .ensureTitleContains(message)
+                .ok();
+        return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
+    }
+
+    private void clickRun() {
         resetMouse();
         hover(RUN_DROPDOWN);
         click(CUSTOM_SETTINGS);
         sleep(2, SECONDS);
-        if ($$(className("ant-confirm-body")).findBy(visible).isDisplayed()) {
-            new ConfirmationPopupAO<>(new PipelineRunFormAO())
-                .ensureTitleContains("The version shall be scanned for security vulnerabilities. Run anyway?")
-                .ok();
-        }
-        return new PipelineRunFormAO(Utils.nameWithoutGroup(toolName));
     }
 
     @SuppressWarnings("unchecked")

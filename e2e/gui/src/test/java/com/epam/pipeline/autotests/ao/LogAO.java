@@ -35,6 +35,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
 public class LogAO implements AccessObject<LogAO> {
@@ -51,6 +52,9 @@ public class LogAO implements AccessObject<LogAO> {
             entry(TITLE, $(byClassName("log__run-title")).find(byClassName("log__pipeline-link"))),
             entry(SSH_LINK, $$(tagName("a")).findBy(exactText("SSH"))),
             entry(COMMIT, $$(tagName("a")).findBy(exactText("COMMIT"))),
+            entry(PAUSE, $$(tagName("a")).findBy(exactText("PAUSE"))),
+            entry(RESUME, $$(tagName("a")).findBy(exactText("RESUME"))),
+            entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]")))
     );
@@ -108,10 +112,6 @@ public class LogAO implements AccessObject<LogAO> {
         return get(SSH_LINK).shouldBe(visible).attr("href");
     }
 
-    public SelenideElement endpoint() {
-        return $(withText("Endpoint")).closest("tr").find("a");
-    }
-
     public LogAO commit(final Consumer<CommitPopup> commit) {
         commit.accept(openCommitDialog());
         return this;
@@ -125,6 +125,73 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO assertCommittingFinishedSuccessfully() {
         return messageShouldAppear("COMMITTING")
                 .messageShouldAppear("COMMIT SUCCEEDED", COMMITTING_TIMEOUT);
+    }
+
+    public LogAO waitForPauseButton() {
+        get(PAUSE).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO clickOnPauseButton() {
+        get(PAUSE).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO pause(final String pipelineName) {
+        clickOnPauseButton();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleIs(
+                        String.format("Do you want to pause %s?", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button(PAUSE.name()));
+        return this;
+    }
+
+    public LogAO assertPausingFinishedSuccessfully() {
+        return assertPausingStatus().waitForResumeButton();
+    }
+
+    public LogAO assertPausingStatus() {
+        return messageShouldAppear("PAUSING");
+    }
+
+    public LogAO waitForResumeButton() {
+        get(RESUME).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO resume(final String pipelineName) {
+        get(RESUME).shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(String.format("Do you want to resume %s?", pipelineName))
+                .sleep(2, SECONDS)
+                .click(button(RESUME.name()));
+        return this;
+    }
+
+    public LogAO assertResumingFinishedSuccessfully() {
+        return messageShouldAppear("RESUMING").waitForPauseButton();
+    }
+
+    public LogAO validateException(final String exception) {
+        $(byClassName("ant-alert-error")).has(text(exception));
+        return this;
+    }
+
+    public LogAO waitForLog(final String message) {
+        for (int i = 0; i < 50; i++) {
+            refresh();
+            if ($(log()).is(matchText(message))) {
+                break;
+            }
+            sleep(20, SECONDS);
+        }
+        return this;
+    }
+
+    public LogAO waitForTask(final String task) {
+        $(taskWithName(task)).waitUntil(visible, COMPLETION_TIMEOUT);
+        return this;
     }
 
     public LogAO instanceParameters(final Consumer<InstanceParameters> action) {
@@ -290,7 +357,8 @@ public class LogAO implements AccessObject<LogAO> {
                 entry(IMAGE, context().find(parameterWithName("Docker image"))),
                 entry(DEFAULT_COMMAND, context().find(parameterWithName("Cmd template"))),
                 entry(TIMEOUT, context().find(parameterWithName("Timeout"))),
-                entry(PRICE_TYPE, context().find(parameterWithName("Price type")))
+                entry(PRICE_TYPE, context().find(parameterWithName("Price type"))),
+                entry(IP, context().find(parameterWithName("IP")))
         );
 
         public static By parameterWithName(final String name) {
@@ -300,6 +368,11 @@ public class LogAO implements AccessObject<LogAO> {
                 ".//*[contains(@class, '%s') and text() = '%s']/following-sibling::*[contains(@class, '%s')]",
                 parameterName, name, parameterValue
             ));
+        }
+
+        public static String getParameterValueLink(final String name) {
+            final String parameterValue = $(parameterWithName(name)).text();
+            return $$(byCssSelector("a")).find(text(parameterValue)).attr("href");
         }
 
         @Override
@@ -318,7 +391,8 @@ public class LogAO implements AccessObject<LogAO> {
         FAILURE("status-icon__icon-red"),
         STOPPED("status-icon__icon-yellow"),
         WORKING("status-icon__icon-blue"),
-        LOADING("anticon-loading");
+        LOADING("anticon-loading"),
+        PAUSED("anticon-pause-circle-o");
 
         public final Condition reached;
 
@@ -336,6 +410,11 @@ public class LogAO implements AccessObject<LogAO> {
                                  .findFirst()
                                  .map(Enum::toString)
                                  .orElse("UNKNOWN");
+                }
+
+                @Override
+                public String toString() {
+                    return iconClass;
                 }
             };
         }

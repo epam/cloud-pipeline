@@ -10,14 +10,14 @@ rm ~/chromedriver_linux64.zip
 rm /usr/local/bin/chromedriver
 
 # Install Chrome.
-wget -N https://s3.eu-central-1.amazonaws.com/cmbi-cloud-pipeline-tools/chrome/google-chrome-63.0.3239.132-1.deb -P ~/
+wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/google-chrome-63.0.3239.132-1.deb -P ~/
 dpkg -i --force-depends ~/google-chrome-63.0.3239.132-1.deb
 apt-get -f install -y
 dpkg -i --force-depends ~/google-chrome-63.0.3239.132-1.deb
 
 # Install ChromeDriver. Version: 2.36
 # ChromeDriver is taken from here: https://chromedriver.storage.googleapis.com/2.36/chromedriver_linux64.zip
-wget -N https://s3.eu-central-1.amazonaws.com/cmbi-cloud-pipeline-tools/chrome-driver/chromedriver -P ~/
+wget -N https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/e2e/chromedriver -P ~/
 mv -f ~/chromedriver /usr/local/bin/chromedriver
 chown root:root /usr/local/bin/chromedriver
 chmod 0755 /usr/local/bin/chromedriver

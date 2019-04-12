@@ -30,7 +30,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ToolPageAO implements AccessObject<ToolPageAO> {
 
-    public ToolPageAO assertPageTitleIs(String expectedTitle) {
+    protected String endpoint;
+
+    public ToolPageAO(final String endpoint) {
+        super();
+        this.endpoint = endpoint;
+    }
+
+    public ToolPageAO assertPageTitleIs(final String expectedTitle) {
         sleep(3, SECONDS);
         if (!title().contains(expectedTitle)) {
             screenshot("page-title");
@@ -47,5 +54,9 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return Collections.emptyMap();
+    }
+
+    public String getEndpoint() {
+        return endpoint;
     }
 }

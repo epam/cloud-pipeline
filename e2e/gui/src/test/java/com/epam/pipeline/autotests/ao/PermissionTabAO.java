@@ -104,6 +104,14 @@ public class PermissionTabAO implements ClosableAO {
                 .ok();
     }
 
+    public PermissionTabAO deleteGroup(String usersGroup) {
+        $$(byClassName("ant-table-tbody"))
+                .find(text(usersGroup))
+                .find(tagName("button"))
+                .click();
+        return this;
+    }
+
     @Override
     public void closeAll() {
         clickOnInfoTabIfItIsVisible();

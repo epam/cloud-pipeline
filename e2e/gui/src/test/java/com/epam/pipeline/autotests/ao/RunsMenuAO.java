@@ -34,6 +34,7 @@ import static com.codeborne.selenide.CollectionCondition.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
+import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -44,7 +45,8 @@ import static org.openqa.selenium.By.tagName;
 
 public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
-    public static final String GET_LOGS_ERROR = "get_logs_error";
+    private static final String GET_LOGS_ERROR = "get_logs_error";
+    private static final long APPEARING_TIMEOUT = C.SSH_APPEARING_TIMEOUT;
 
     private final Condition tableIsEmpty = new Condition("table is empty") {
         @Override
@@ -143,7 +145,12 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         sleep(3, MINUTES);
         open(endpointURL);
 
-        return new ToolPageAO();
+        return new ToolPageAO(endpointURL);
+    }
+
+    public RunsMenuAO validateStatus(final String runId, final LogAO.Status status) {
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).shouldHave(cssClass(status.reached.toString()));
+        return this;
     }
 
     public RunsMenuAO validateStoppedStatus(String runId) {
@@ -268,6 +275,39 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO viewAvailableActiveRuns() {
         $(elementWithText(tagName("a"), "View other available active runs")).shouldBe(visible).click();
         sleep(2, SECONDS);
+        return this;
+    }
+
+    public RunsMenuAO waitUntilPauseButtonAppear(final String runId) {
+        $("#run-" + runId + "-pause-button").waitUntil(appear, APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO pause(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-pause-button").shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(String.format("Do you want to pause %s", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button("PAUSE"));
+        return this;
+    }
+
+    public RunsMenuAO waitUntilResumeButtonAppear(final String runId) {
+        $("#run-" + runId + "-resume-button").waitUntil(appear, COMPLETION_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO resume(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-resume-button").shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(String.format("Do you want to resume %s", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button("RESUME"));
+        return this;
+    }
+
+    public RunsMenuAO waitForCompletion(final String runId) {
+        $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(hidden, COMPLETION_TIMEOUT);
         return this;
     }
 

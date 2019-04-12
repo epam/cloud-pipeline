@@ -256,7 +256,7 @@ public class DetachedConfigurationsTest
             configuration.expandTabs(execEnvironmentTab, advancedTab)
                 .ensure(PIPELINE, empty)
                 .ensure(IMAGE, empty)
-                .ensure(INSTANCE_TYPE, Condition.or("Empty or placeholder", empty, text("Instance type")))
+                .ensure(INSTANCE_TYPE, Condition.or("Empty or placeholder", empty, text("Node type")))
                 .ensure(PRICE_TYPE, text(defaultPriceType))
                 .ensure(DISK, empty)
         );

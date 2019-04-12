@@ -24,8 +24,6 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Map;
 import java.util.Optional;
 import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.interactions.Actions;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -33,6 +31,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static org.openqa.selenium.By.className;
+import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.fail;
 
@@ -59,6 +58,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PARAMETERS_PANEL, context().find(byId("launch-pipeline-parameters-panel"))),
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row").find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row").find(by("role", "combobox"))),
+            entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
             entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button")))
@@ -119,16 +119,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setCommand(String command) {
-        SelenideElement commandField = $$(byAttribute("role", "presentation"))
-                .findBy(attribute("style", "padding-right: 0.1px;"));
-
-        Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
-        for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
-        }
-        action.perform();
-
-        Utils.clickAndSendKeysWithSlashes(commandField, command);
+        SelenideElement defaultCommand = get(DEFAULT_COMMAND);
+        Utils.clearTextField(defaultCommand);
+        Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
         return this;
     }
 
