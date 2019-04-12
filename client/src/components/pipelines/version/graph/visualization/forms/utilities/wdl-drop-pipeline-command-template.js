@@ -7,10 +7,11 @@ const templateCommand =
   '# Pipeline: {PIPELINE_NAME}\n' +
   '# Version: {PIPELINE_VERSION}\n' +
   '##################################\n' +
-  '{PARAMS}\n';
+  '{PARAMS}\n' + 
+  '# PIPE_RUN_COMMAND\n';
 
 export default function (pipelineName, version, inputs) {
-  const inputsString = (inputs || []).map(i => `# PARAM ${i}`).join('\n');
+  const inputsString = (inputs || []).map(i => `# PARAM ${i} \${${i}}`).join('\n');
   return templateCommand
     .replace(/\{PIPELINE_NAME\}/ig, pipelineName || '')
     .replace(/\{PIPELINE_VERSION\}/ig, version)

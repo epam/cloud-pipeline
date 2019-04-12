@@ -42,7 +42,7 @@ IS_RPM_BASED=$?
 ######################################################
 # Wait for LFS master node
 ######################################################
-MASTER_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_node.py --run-id ${_MASTER_RUN_ID} --parameter CP_CAP_NFS=true --task-name InitializeSharedFS")
+MASTER_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_node.py --run-id ${_MASTER_RUN_ID} --task-name InitializeSharedFS")
 
 if [ $? -ne 0 ]
 then
