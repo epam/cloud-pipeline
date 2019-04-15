@@ -45,10 +45,10 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     private final String emptyKeyErrorMessage = "Enter key";
     private final String emptyValueErrorMessage = "Enter value";
 
-    private final String key1 = "1";
-    private final String value1 = "2";
-    private final String key2 = "2";
-    private final String value2 = "3";
+    private final String key1 = "key1";
+    private final String value1 = "value1";
+    private final String key2 = "key2";
+    private final String value2 = "value2";
     private final String key3 = "qwerty";
     private final String value3 = "asdfg";
     private final String key4 = "very very very long key with spaces";
