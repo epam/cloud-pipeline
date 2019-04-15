@@ -9,7 +9,7 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.npm/
-    - node_modules
+    - client/node_modules
 
 env:
   global:
