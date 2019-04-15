@@ -23,7 +23,18 @@ if [ -z "$PIPECTL_DIST_URL" ]; then
     exit 1
 fi
 
-echo "Deploying using $PIPECTL_DIST_URL"
+if [ "$AZURE_VM_NAME_FORCE" ]; then
+    echo "Azure VM name was forced to $AZURE_VM_NAME_FORCE instead of a default $AZURE_VM_NAME"
+    export AZURE_VM_NAME=$AZURE_VM_NAME_FORCE
+fi
+
+if [ "$AZURE_VM_RG_FORCE" ]; then
+    echo "Azure VM resource group was forced to $AZURE_VM_RG_FORCE instead of a default $AZURE_VM_RG"
+    export AZURE_VM_RG=$AZURE_VM_RG_FORCE
+fi
+
+
+echo "Deploying using $PIPECTL_DIST_URL to a VM $AZURE_VM_NAME in $AZURE_VM_RG resource group"
 
 export DEPLOY_DIR="$WORKSPACE/assets"
 rm -rf "$DEPLOY_DIR"

@@ -23,7 +23,12 @@ if [ -z "$PIPECTL_DIST_URL" ]; then
     exit 1
 fi
 
-echo "Deploying using $PIPECTL_DIST_URL"
+if [ "$AWS_HOST_FORCE" ]; then
+    echo "AWS host address was forced to $AWS_HOST_FORCE instead of a default $AWS_HOST"
+    export AWS_HOST=$AWS_HOST_FORCE
+fi
+
+echo "Deploying using $PIPECTL_DIST_URL to $AWS_HOST"
 
 export DEPLOY_DIR="$WORKSPACE/assets"
 rm -rf "$DEPLOY_DIR"
