@@ -54,6 +54,8 @@ cd ..
                     --no-daemon
 
 if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
+    DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
+
     # Always publish repackaged distribution tgz to S3 to temp directory, even if this is not a "good" branch or it is a PR
     aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
 
@@ -61,7 +63,6 @@ if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
     # Only if it is one of the allowed branches and it is a push (not PR)
     if ([ "$TRAVIS_BRANCH" == "develop" ] || [ "$TRAVIS_BRANCH" == "master" ]) && \
         [ "$TRAVIS_EVENT_TYPE" == "push" ]; then
-            DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/
     fi
