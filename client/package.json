@@ -1,5 +1,5 @@
 {
-  "name": "bfx-pipeline",
+  "name": "cloud-pipeline",
   "version": "0.15.0",
   "private": true,
   "dependencies": {

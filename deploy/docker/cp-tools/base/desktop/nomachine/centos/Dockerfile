@@ -49,6 +49,7 @@ RUN chmod +x /opt/install_git.sh && \
     /opt/install_git.sh && \
     rm -f /opt/install_git.sh
 
+# Install desktop environment and Xfce4
 RUN yum --enablerepo=epel groupinstall "Server with GUI" -y && \
     yum --enablerepo=epel -y -x gnome-keyring --skip-broken groups install "Xfce" && \
     yum -y groups install "Fonts" && \
@@ -56,6 +57,9 @@ RUN yum --enablerepo=epel groupinstall "Server with GUI" -y && \
     yum clean all && \
     rm -f /etc/xdg/autostart/xfce-polkit* && \
     /bin/dbus-uuidgen > /etc/machine-id
+
+# Install keyboard layout switcher (xkb)
+RUN yum install -y xfce4-xkb-plugin
 
 RUN cd /opt && \
     wget -q "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/nomachine_6.5.6_9_x86_64.rpm" -O nomachine.rpm && \

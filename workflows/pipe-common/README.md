@@ -19,7 +19,7 @@ as default on your system.
 To run python tests you should add `workflows/pipe-common` to your `PYTHOPATH`.
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:/path/to/bfx-pipeline/workflows/pipe-common
-cd /path/to/bfx-pipeline/workflows/pipe-common
+export PYTHONPATH=$PYTHONPATH:/path/to/cloud-pipeline/workflows/pipe-common
+cd /path/to/cloud-pipeline/workflows/pipe-common
 pytest
 ```
