@@ -430,7 +430,7 @@ export class ConfigureClusterDialog extends React.Component {
     let nodesCount = null;
     let maxNodesCount = null;
     if (this.state.launchCluster) {
-      if (this.state.setDefaultNodesCount && isNaN(this.state.nodesCount)) {
+      if ((!this.state.autoScaledCluster || this.state.setDefaultNodesCount) && isNaN(this.state.nodesCount)) {
         nodesCount = 'Enter positive number';
       } else if ((!this.state.autoScaledCluster || this.state.setDefaultNodesCount) && +this.state.nodesCount <= 0) {
         nodesCount = 'Value should be greater than 0';
