@@ -26,7 +26,7 @@ RUN apt-get update
 # This causes apt install to fail. E.g. bioconductor: https://github.com/Bioconductor/bioc_docker/blob/5357c40c7273b5eb120e2af012fbb4c7fdc8b61b/out/release_base/Dockerfile#L14
 # Running dselect update will restore the missing files
 RUN if [ ! -f /var/lib/dpkg/available ]; then \
-        apt-get install dselect && \
+        apt-get install -y dselect && \
         dselect update; \
     fi
 
