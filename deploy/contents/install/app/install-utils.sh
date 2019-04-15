@@ -739,14 +739,15 @@ function delete_deployment_and_service {
         kubectl delete svc $NAME
     fi
 
-    local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
-    for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
-        kubectl delete secrets "$kube_secret"
-    done
-
-    if [ ! -z "$DATA_DIRS" ] && [ "$CP_FORCE_DATA_ERASE" ]; then
-        rm -rf $DATA_DIRS
-        print_info "Directory(ies) removed: $DATA_DIRS"
+    if [ "$CP_FORCE_DATA_ERASE" ]; then
+        local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
+        for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
+            kubectl delete secrets "$kube_secret"
+        done
+        if [ "$DATA_DIRS" ]; then
+            rm -rf $DATA_DIRS
+            print_info "Directory(ies) removed: $DATA_DIRS"
+        fi
     fi
 }
 

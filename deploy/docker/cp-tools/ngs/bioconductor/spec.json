@@ -3,5 +3,5 @@
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "100",
     "default_command": "sleep infinity",
-    "endpoints": [ "{ \"name\": \"RStudio\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
+    "endpoints": [ "{ \"name\": \"Bioconductor\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
 }
