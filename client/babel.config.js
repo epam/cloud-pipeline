@@ -39,14 +39,6 @@ const plugins = [
     'antd'
   ],
   [
-    'import',
-    {
-      libraryName: 'ui-portal-boilerplate',
-      libraryDirectory: 'components'
-    },
-    'ui-portal-boilerplate'
-  ],
-  [
     '@babel/plugin-proposal-decorators',
     {
       legacy: true
