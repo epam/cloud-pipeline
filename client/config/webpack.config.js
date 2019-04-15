@@ -28,10 +28,9 @@ const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const safePostCssParser = require('postcss-safe-parser');
 const ManifestPlugin = require('webpack-manifest-plugin');
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
-const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
 const WatchMissingNodeModulesPlugin = require('react-dev-utils/WatchMissingNodeModulesPlugin');
 const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin');
-const getCSSModuleLocalIdent = require('react-dev-utils/getCSSModuleLocalIdent');
+const getLocalIdent = require('./getLocalIdent');
 const paths = require('./paths');
 const getClientEnvironment = require('./env');
 const ModuleNotFoundPlugin = require('react-dev-utils/ModuleNotFoundPlugin');
@@ -180,20 +179,7 @@ module.exports = function (webpackEnv) {
               // https://github.com/facebook/create-react-app/pull/4234
               ecma: 8
             },
-            compress: {
-              ecma: 5,
-              warnings: false,
-              // Disabled because of an issue with Uglify breaking seemingly valid code:
-              // https://github.com/facebook/create-react-app/issues/2376
-              // Pending further investigation:
-              // https://github.com/mishoo/UglifyJS2/issues/2011
-              comparisons: false,
-              // Disabled because of an issue with Terser breaking valid code:
-              // https://github.com/facebook/create-react-app/issues/5250
-              // Pending further investigation:
-              // https://github.com/terser-js/terser/issues/120
-              inline: 2
-            },
+            compress: false,
             mangle: {
               safari10: true
             },
@@ -349,8 +335,8 @@ module.exports = function (webpackEnv) {
                 // This is a feature of `babel-loader` for webpack (not Babel itself).
                 // It enables caching results in ./node_modules/.cache/babel-loader/
                 // directory for faster rebuilds.
-                cacheDirectory: isEnvDevelopment,
-                cacheCompression: isEnvProduction,
+                cacheDirectory: true,
+                cacheCompression: false,
                 compact: isEnvProduction
               }
             },
@@ -362,8 +348,8 @@ module.exports = function (webpackEnv) {
                 // This is a feature of `babel-loader` for webpack (not Babel itself).
                 // It enables caching results in ./node_modules/.cache/babel-loader/
                 // directory for faster rebuilds.
-                cacheDirectory: isEnvDevelopment,
-                cacheCompression: isEnvProduction,
+                cacheDirectory: true,
+                cacheCompression: false,
                 compact: isEnvProduction
               }
             },
@@ -419,7 +405,7 @@ module.exports = function (webpackEnv) {
                 modules: true,
                 camelCase: true,
                 localIdentName: '[name]__[local]',
-                getLocalIdent: getCSSModuleLocalIdent
+                getLocalIdent: getLocalIdent
               }),
               exclude: /(node_modules|src\/staticStyles)/,
               // Don't consider CSS imports dead code even if the
@@ -556,23 +542,7 @@ module.exports = function (webpackEnv) {
       // solution that requires the user to opt into importing specific locales.
       // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
       // You can remove this if you don't use Moment.js:
-      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
-      // Generate a service worker script that will precache, and keep up to date,
-      // the HTML & assets that are part of the Webpack build.
-      isEnvProduction &&
-      new WorkboxWebpackPlugin.GenerateSW({
-        clientsClaim: true,
-        exclude: [/\.map$/, /asset-manifest\.json$/],
-        importWorkboxFrom: 'cdn',
-        navigateFallback: publicUrl + '/index.html',
-        navigateFallbackBlacklist: [
-          // Exclude URLs starting with /_, as they're likely an API call
-          new RegExp('^/_'),
-          // Exclude URLs containing a dot, as they're likely a resource in
-          // public/ and not a SPA route
-          new RegExp('/[^/]+\\.[^/]+$')
-        ]
-      })
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
     ].filter(Boolean),
 
     // Some libraries import Node modules but don't use them in the browser.
