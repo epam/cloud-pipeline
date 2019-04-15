@@ -1,6 +1,7 @@
 {
-    "short_description": "FIXME This is a stub",
+    "short_description": "Provides tools for the analysis and comprehension of high-throughput genomic data",
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-    "disk_size": "20",
-    "default_command": "sleep infinity"
+    "disk_size": "100",
+    "default_command": "sleep infinity",
+    "endpoints": [ "{ \"name\": \"RStudio\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
 }
