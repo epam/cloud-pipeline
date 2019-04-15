@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -27,8 +28,6 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -92,7 +91,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
                 .shouldContainRun(getPipelineName(), getRunId());
         $(byClassName("run-" + getRunId()))
                 .find(byClassName("ant-table-row-expand-icon"))
-                .waitUntil(appears, MILLISECONDS.convert(600, SECONDS));
+                .waitUntil(appears, C.COMPLETION_TIMEOUT);
         navigationMenu()
                 .runs()
                 .activeRuns()
