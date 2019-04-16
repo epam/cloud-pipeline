@@ -473,7 +473,7 @@ public class GSBucketStorageHelper {
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.prefix(path));
-        blobs.iterateAll().forEach(blob -> deleteBlob(blob, gcpClient.buildStorageClient(region), true));
+        blobs.iterateAll().forEach(blob -> deleteBlob(blob, client, true));
     }
 
     private void deleteBlob(final Blob blob, final Storage client, final boolean withVersion) {
