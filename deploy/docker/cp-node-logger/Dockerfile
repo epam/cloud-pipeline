@@ -12,24 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
-
-RUN curl -sL https://rpm.nodesource.com/setup_10.x | bash -
-RUN yum install gcc-c++ \
-                make \
-                nodejs \
-                git \
-                openssl -y
-
-RUN cd /opt && \
-    git clone https://github.com/rodichenko/saml-idp.git && \
-    cd saml-idp && \
-    git checkout tags/v1.2.3 && \
-    npm install --global
-
-ADD config.js /opt/saml-idp/
-ADD logo.png /opt/saml-idp/public/
+FROM library/centos:7
 
 ADD init /init
 RUN chmod +x /init
-CMD ["/init"]
+
+ENTRYPOINT [ "/init" ]
