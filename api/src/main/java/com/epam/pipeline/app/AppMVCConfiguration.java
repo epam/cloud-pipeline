@@ -55,7 +55,10 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         registry
                 .addResourceHandler(CACHED_RESOURCES_PATH)
                 .addResourceLocations(CACHED_RESOURCES_LOCATION)
-                .setCacheControl(CacheControl.maxAge(1, TimeUnit.DAYS));
+                .setCacheControl(CacheControl.maxAge(1, TimeUnit.DAYS)
+                        .cachePublic()
+                        .mustRevalidate())
+                .resourceChain(true);
     }
 
     @Override
