@@ -199,8 +199,16 @@ class DataStorage(API):
         return DataStorage._get_temporary_credentials(data)
 
     @classmethod
-    def get_single_temporary_credentials(cls, bucket, read=False, write=False):
-        credentials = DataStorage._get_temporary_credentials([{'id': bucket, 'read': read, 'write': write}])
+    def get_single_temporary_credentials(cls, bucket, read=False, write=False, versioning=False):
+        operation = {
+            'id': bucket,
+            'read': read,
+            'write': write
+        }
+        if versioning:
+            operation['readVersion'] = read
+            operation['writeVersion'] = write
+        credentials = DataStorage._get_temporary_credentials([operation])
         credentials.expiration = parse(credentials.expiration).replace(tzinfo=None)
         return credentials
 
