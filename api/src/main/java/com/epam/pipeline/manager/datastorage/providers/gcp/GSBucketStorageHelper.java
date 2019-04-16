@@ -249,12 +249,16 @@ public class GSBucketStorageHelper {
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
 
+        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
+
         int bufferSize = Integer.MAX_VALUE;
         if (maxDownloadSize < Integer.MAX_VALUE) {
             bufferSize = Math.toIntExact(maxDownloadSize);
         }
+        if (bufferSize > blob.getSize()) {
+            bufferSize = Math.toIntExact(blob.getSize());
+        }
 
-        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         final DataStorageItemContent content = new DataStorageItemContent();
         content.setContentType(blob.getContentType());
         content.setTruncated(blob.getSize() > bufferSize);
