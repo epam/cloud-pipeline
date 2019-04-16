@@ -210,7 +210,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
     def _get_listing_manager(self, show_versions):
         client = self.client
         if show_versions:
-            client = GsBucketOperations.get_client(self.bucket.path, read=True, write=True, versioning=True)
+            client = GsBucketOperations.get_client(self.bucket, read=True, write=True, versioning=True)
         return GsListingManager(client, self.bucket, show_versions=show_versions)
 
 
