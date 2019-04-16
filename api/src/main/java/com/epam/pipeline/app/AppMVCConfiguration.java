@@ -36,8 +36,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @Configuration
 public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
 
-    private static final String CACHED_RESOURCES_PATH = "/iconfont/**";
-    private static final String CACHED_RESOURCES_LOCATION = "classpath:static/iconfont/";
+    private static final String[] CACHED_RESOURCES_PATH =
+            {"/iconfont/**", "/static/css/*.css", "/static/js/*.js"};
+    private static final String[] CACHED_RESOURCES_LOCATION =
+            {"classpath:static/iconfont/", "classpath:static/static/"};
 
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
