@@ -20,6 +20,7 @@ import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
@@ -132,9 +133,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
     private void launchTool(final String priceType, final Condition autoPause) {
         tools()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool("The version has a critical number of vulnerabilities, "
-                                + "but you can launch it during the grace period .* Run anyway?"))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
                 .ensure(AUTO_PAUSE, autoPause)

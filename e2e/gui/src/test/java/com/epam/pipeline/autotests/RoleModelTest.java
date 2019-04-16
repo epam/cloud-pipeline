@@ -19,6 +19,7 @@ import com.epam.pipeline.autotests.ao.PermissionTabAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolGroup;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.*;
@@ -551,8 +552,7 @@ public class RoleModelTest
                 ToolPermission.allow(EXECUTE, tool, registry, group));
                 logout();
         loginAs(user);
-        launchToolWithDefaultSettings("The version has a critical number of vulnerabilities, "
-                + "but you can launch it during the grace period .* Run anyway?");
+        launchToolWithDefaultSettings();
         navigationMenu()
                 .clusterNodes()
                 .waitForTheNode(Utils.nameWithoutGroup(tool), getLastRunId());
@@ -560,7 +560,7 @@ public class RoleModelTest
                 .stopRun(getLastRunId());
         logout();
         loginAs(admin);
-        launchToolWithDefaultSettings("The version has a critical number of vulnerabilities. Run anyway?");
+        launchToolWithDefaultSettings();
         clusterMenu()
                 .waitForTheNode(Utils.nameWithoutGroup(tool), getLastRunId());
         runsMenu()
@@ -630,9 +630,7 @@ public class RoleModelTest
         loginAs(userWithoutCompletedRuns);
         List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
         tools().ensureOnlyOneRegistryIsAvailable()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool("The version has a critical number of vulnerabilities, "
-                                + "but you can launch it during the grace period .* Run anyway?"))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                                 .setCommand(defaultCommand)
                                 .setDefaultLaunchOptions()
                                 .ensureLaunchButtonIsVisible();
@@ -877,10 +875,9 @@ public class RoleModelTest
         return bucketTests;
     }
 
-    private void launchToolWithDefaultSettings(final String message) {
+    private void launchToolWithDefaultSettings() {
         tools()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool(message))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
                 .launchTool(this, Utils.nameWithoutGroup(tool));
