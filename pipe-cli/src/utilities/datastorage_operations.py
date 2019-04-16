@@ -13,26 +13,20 @@
 # limitations under the License.
 
 import click
-import re
 import os
 from future.utils import iteritems
 import datetime
-import requests
 import sys
 import prettytable
-from botocore.exceptions import BotoCoreError
-from boto3.exceptions import Boto3Error
-from azure.common import AzureException
 
 from src.model.data_storage_wrapper import DataStorageWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
-from src.config import ConfigNotFoundError
 from src.utilities.patterns import PatternMatcher
 
-ALL_ERRORS = ConfigNotFoundError, requests.exceptions.RequestException, RuntimeError, ValueError, AzureException, \
-             Boto3Error, BotoCoreError
+ALL_ERRORS = Exception
+
 
 class DataStorageOperations(object):
     @classmethod
