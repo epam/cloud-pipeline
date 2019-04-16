@@ -30,10 +30,9 @@ import java.util.regex.Pattern;
 final class NFSHelper {
 
     /**
-     * NFS path pattern for matching aws and google paths.
+     * NFS path pattern for matching aws and paths.
      * This pattern will match the following paths:
      * AWS: {efs-host-name}:/{bucket-name} (f.i. fs-12345678:/bucket1)
-     * Google: {gcp-host-name}:/{root-path}/{bucket-name} (f.i. gcfs-12345678:/vol1/bucket1)
      * */
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
 
