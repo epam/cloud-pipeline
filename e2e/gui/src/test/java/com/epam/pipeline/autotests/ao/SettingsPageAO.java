@@ -522,8 +522,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .find(byClassName("ant-table-content"))),
                     entry(SEARCH, context().find(byId("search-groups-input"))),
                     entry(CREATE_GROUP, context().$$(byAttribute("type", "button"))
-                            .findBy(text("Create group"))),
-                    entry(OK, $(byClassName("ant-confirm-body-wrapper")).find(byClassName("ant-btn-primary")))
+                            .findBy(text("Create group")))
             );
 
             public GroupsTabAO(final PipelinesLibraryAO parentAO) {

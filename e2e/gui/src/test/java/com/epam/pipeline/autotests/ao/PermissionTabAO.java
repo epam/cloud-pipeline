@@ -26,11 +26,10 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
-public class PermissionTabAO implements ClosableAO {
+public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO> {
     private final ClosableAO parentAO;
 
     public PermissionTabAO(ClosableAO parentAO) {
@@ -104,7 +103,13 @@ public class PermissionTabAO implements ClosableAO {
                 .ok();
     }
 
-    public PermissionTabAO deleteGroup(String usersGroup) {
+    public PermissionTabAO deleteIfPresent(String userOrGroup) {
+        sleep(1, SECONDS);
+        return performIf(getElementByNameInUpperCase(userOrGroup).is(visible),
+                tab -> tab.delete(userOrGroup));
+    }
+
+    public PermissionTabAO delete(String usersGroup) {
         $$(byClassName("ant-table-tbody"))
                 .find(text(usersGroup))
                 .find(tagName("button"))
