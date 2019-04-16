@@ -29,8 +29,26 @@ import java.util.regex.Pattern;
 
 final class NFSHelper {
 
+    /**
+     * NFS path pattern for matching aws and google paths.
+     * This pattern will match the following paths:
+     * AWS: {efs-host-name}:/{bucket-name} (f.i. fs-12345678:/bucket1)
+     * Google: {gcp-host-name}:/{root-path}/{bucket-name} (f.i. gcfs-12345678:/vol1/bucket1)
+     * */
     private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
+
+    /**
+     * NFS path pattern for matching azure paths.
+     * This pattern will match the following paths:
+     * Azure: {efs-host-name}/{root-path}/{bucket-name} (f.i. azfs-12345678/vol1/bucket1)
+     * */
     private static final Pattern NFS_AZURE_ROOT_PATTERN = Pattern.compile("([^\\/]+\\/[^\\/]+\\/)[^\\/]+");
+
+    /**
+     * NFS path pattern for matching aws paths.
+     * This pattern will match the following paths:
+     * AWS: {efs-host-name}:{bucket-name} (f.i. fs-12345678:bucket1)
+     * */
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
 
     private static final String SMB_SCHEME = "//";
