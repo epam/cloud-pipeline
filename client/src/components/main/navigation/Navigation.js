@@ -93,7 +93,7 @@ export default class Navigation extends React.Component {
       isDefault: false
     },
     {
-      title: 'Search results',
+      title: 'Search',
       icon: 'search',
       path: '/search',
       key: 'search',
@@ -194,32 +194,34 @@ export default class Navigation extends React.Component {
       }
       if (navigationItem.key === 'search') {
         return (
-          <Button
-            id={`navigation-button-${navigationItem.key}`}
-            key={navigationItem.key}
-            className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-            onClick={() => this.navigate({key: navigationItem.key})}
-          >
-            <Icon type={navigationItem.icon} />
-          </Button>
-        );
-      } else if (navigationItem.key === 'runs') {
-        return (
           <Tooltip
             key={navigationItem.key}
             placement="right"
             text={navigationItem.title}
             mouseEnterDelay={0.5}
-            overlay={navigationItem.title}>
-            <RunsCounterMenuItem
+            overlay={navigationItem.title} >
+            <Button
+              id={`navigation-button-${navigationItem.key}`}
+              key={navigationItem.key}
               className={this.menuItemClassSelector(navigationItem, activeTabPath)}
-              highlightedClassName={this.highlightedMenuItemClassSelector(
-                navigationItem,
-                activeTabPath
-              )}
               onClick={() => this.navigate({key: navigationItem.key})}
-              icon={navigationItem.icon} />
+            >
+              <Icon type={navigationItem.icon} />
+            </Button>
           </Tooltip>
+        );
+      } else if (navigationItem.key === 'runs') {
+        return (
+          <RunsCounterMenuItem
+            key={navigationItem.key}
+            tooltip={navigationItem.title}
+            className={this.menuItemClassSelector(navigationItem, activeTabPath)}
+            highlightedClassName={this.highlightedMenuItemClassSelector(
+              navigationItem,
+              activeTabPath
+            )}
+            onClick={() => this.navigate({key: navigationItem.key})}
+            icon={navigationItem.icon} />
         );
       } else if (navigationItem.isLink) {
         return (

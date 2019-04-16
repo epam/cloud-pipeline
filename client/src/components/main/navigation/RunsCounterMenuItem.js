@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon, Row, Button} from 'antd';
+import {Icon, Row, Button, Tooltip} from 'antd';
 import styles from './Navigation.css';
 import PropTypes from 'prop-types';
 
@@ -27,39 +27,42 @@ export default class RunsCounterMenuItem extends React.Component {
     onClick: PropTypes.func,
     icon: PropTypes.string,
     className: PropTypes.string,
-    highlightedClassName: PropTypes.string
+    highlightedClassName: PropTypes.string,
+    tooltip: PropTypes.string
   };
   render () {
     return (
-      <Button
-        id="navigation-button-runs"
-        style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
-        className={
-          this.props.counter &&
-          this.props.counter.value > 0
-            ? this.props.highlightedClassName : this.props.className
-        }
-        onClick={this.props.onClick}
-      >
-        <Row
-          type="flex"
-          justify="center"
-          align="middle"
-          style={{height: '100%'}}>
-          <Icon
-            type={this.props.icon}
-            className={
-              this.props.counter &&
-              this.props.counter.value > 0
-              ? styles.highlightedIcon : styles.icon
-            } />
-          {
+      <Tooltip overlay={this.props.tooltip} placement="right" mouseEnterDelay={0.5}>
+        <Button
+          id="navigation-button-runs"
+          style={{display: 'block', margin: '0 2px', textDecoration: 'none'}}
+          className={
             this.props.counter &&
-            this.props.counter.value > 0 &&
-            <span className={styles.counterBadge}>{this.props.counter.value}</span>
+            this.props.counter.value > 0
+              ? this.props.highlightedClassName : this.props.className
           }
-        </Row>
-      </Button>
+          onClick={this.props.onClick}
+        >
+          <Row
+            type="flex"
+            justify="center"
+            align="middle"
+            style={{height: '100%'}}>
+            <Icon
+              type={this.props.icon}
+              className={
+                this.props.counter &&
+                this.props.counter.value > 0
+                ? styles.highlightedIcon : styles.icon
+              } />
+            {
+              this.props.counter &&
+              this.props.counter.value > 0 &&
+              <span className={styles.counterBadge}>{this.props.counter.value}</span>
+            }
+          </Row>
+        </Button>
+      </Tooltip>
     );
   }
 }
