@@ -19,6 +19,7 @@ import com.epam.pipeline.autotests.ao.PermissionTabAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolGroup;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.*;
@@ -26,7 +27,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,6 +47,7 @@ public class RoleModelTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
+    private final String userRoleGroup = "ROLE_USER";
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
@@ -551,8 +552,7 @@ public class RoleModelTest
                 ToolPermission.allow(EXECUTE, tool, registry, group));
                 logout();
         loginAs(user);
-        launchToolWithDefaultSettings("The version has a critical number of vulnerabilities, "
-                + "but you can launch it during the grace period .* Run anyway?");
+        launchToolWithDefaultSettings();
         navigationMenu()
                 .clusterNodes()
                 .waitForTheNode(Utils.nameWithoutGroup(tool), getLastRunId());
@@ -560,7 +560,7 @@ public class RoleModelTest
                 .stopRun(getLastRunId());
         logout();
         loginAs(admin);
-        launchToolWithDefaultSettings("The version has a critical number of vulnerabilities. Run anyway?");
+        launchToolWithDefaultSettings();
         clusterMenu()
                 .waitForTheNode(Utils.nameWithoutGroup(tool), getLastRunId());
         runsMenu()
@@ -599,28 +599,43 @@ public class RoleModelTest
     @Test(priority = 24)
     @TestCase({"EPMCMBIBPC-572"})
     public void checkToolsPageByReadOnlyUser() {
-        logoutIfNeeded();
-        loginAs(admin);
-        List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
-        givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
-        logout();
-        loginAs(userWithoutCompletedRuns);
-        List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        tools().ensureOnlyOneRegistryIsAvailable()
-                .registryWithin(registry, registry ->
-                        registry.ensureGroupAreAvailable(Arrays.asList(group, "personal"))
-                                .resetMouse()
-                                .group(group, ToolGroup::canCreatePersonalGroup)
-                );
-        assertToolsListsAreEqual(adminTools, userTools);
+        try {
+            logoutIfNeeded();
+            loginAs(admin);
+            List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            tools().editRegistry(registry, edition ->
+                    edition.permissions()
+                            .deleteIfPresent(userWithoutCompletedRuns.login)
+                            .deleteIfPresent(userRoleGroup)
+                            .closeAll());
+            addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
+            givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
+            logout();
+            loginAs(userWithoutCompletedRuns);
+            List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            tools().registry(registry, registry ->
+                    registry.ensureGroupAreAvailable(Collections.singletonList(group))
+                            .resetMouse()
+                            .group(group, ToolGroup::canCreatePersonalGroup));
+            assertToolsListsAreEqual(adminTools, userTools);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            tools().editRegistry(registry, edition ->
+                    edition.permissions()
+                            .addNewGroup(userRoleGroup)
+                            .selectByName(userRoleGroup)
+                            .showPermissions()
+                            .set(READ, ALLOW)
+                            .set(WRITE, DENY)
+                            .set(EXECUTE, ALLOW)
+                            .closeAll());
+        }
     }
 
     @Test(priority = 25)
     @TestCase({"EPMCMBIBPC-573"})
     public void checkToolsPageByExecutePermissionUser() {
-        logoutIfNeeded();
-        loginAs(admin);
         List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
         givePermissions(userWithoutCompletedRuns,
                 GroupPermission.allow(READ, registry, group),
@@ -630,9 +645,7 @@ public class RoleModelTest
         loginAs(userWithoutCompletedRuns);
         List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
         tools().ensureOnlyOneRegistryIsAvailable()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool("The version has a critical number of vulnerabilities, "
-                                + "but you can launch it during the grace period .* Run anyway?"))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                                 .setCommand(defaultCommand)
                                 .setDefaultLaunchOptions()
                                 .ensureLaunchButtonIsVisible();
@@ -877,10 +890,9 @@ public class RoleModelTest
         return bucketTests;
     }
 
-    private void launchToolWithDefaultSettings(final String message) {
+    private void launchToolWithDefaultSettings() {
         tools()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool(message))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
                 .setCommand(defaultCommand)
                 .launchTool(this, Utils.nameWithoutGroup(tool));

@@ -427,8 +427,7 @@ public class ToolsTest
                                 .ensure(DISK, empty)
                                 .ensure(INSTANCE_TYPE, text("Instance type"))
                                 .ensure(DEFAULT_COMMAND, empty)
-                                .runUnscannedTool("The version shall be scanned for security vulnerabilities. " +
-                                        "Run anyway?")
+                                .runWithCustomSettings()
                 )
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))

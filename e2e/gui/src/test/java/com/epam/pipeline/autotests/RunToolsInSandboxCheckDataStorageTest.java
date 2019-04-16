@@ -95,8 +95,7 @@ public class RunToolsInSandboxCheckDataStorageTest
                                         .addEndpoint(endpoint)
                                         .setDefaultCommand(defaultCommand)
                                         .save()
-                                        .runUnscannedTool("The version has a critical number of vulnerabilities, "
-                                                + "but you can launch it during the grace period .* Run anyway?")
+                                        .runWithCustomSettings()
                         )
                         .setLaunchOptions(disk, type, null)
                         .launchTool(this, Utils.nameWithoutGroup(tool))
