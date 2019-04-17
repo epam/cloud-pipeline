@@ -30,12 +30,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -65,7 +67,6 @@ import io.reactivex.Observable;
  */
 @Service
 @ConditionalOnProperty("monitoring.elasticsearch.url")
-@RequiredArgsConstructor
 @Slf4j
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private static final int MILLIS = 1000;
@@ -77,6 +78,23 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private final InstanceOfferManager instanceOfferManager;
     private final MonitoringESDao monitoringDao;
     private final MessageHelper messageHelper;
+
+    @Autowired
+    public ResourceMonitoringManager(PipelineRunManager pipelineRunManager,
+                                     PreferenceManager preferenceManager,
+                                     NotificationManager notificationManager,
+                                     InstanceOfferManager instanceOfferManager,
+                                     MonitoringESDao monitoringDao,
+                                     TaskScheduler scheduler,
+                                     MessageHelper messageHelper) {
+        this.pipelineRunManager = pipelineRunManager;
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.notificationManager = notificationManager;
+        this.instanceOfferManager = instanceOfferManager;
+        this.monitoringDao = monitoringDao;
+        this.scheduler = scheduler;
+    }
 
     private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
 

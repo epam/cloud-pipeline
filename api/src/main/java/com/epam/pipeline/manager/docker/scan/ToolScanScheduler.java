@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -60,13 +61,26 @@ import java.util.concurrent.Future;
 public class ToolScanScheduler extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolScanScheduler.class);
 
-    private final DockerRegistryDao dockerRegistryDao;
-    private final ToolScanManager toolScanManager;
-    private final ToolManager toolManager;
-    private final MessageHelper messageHelper;
-    private final ToolVersionManager toolVersionManager;
-    private final DockerClientFactory dockerClientFactory;
-    private final DockerRegistryManager dockerRegistryManager;
+    @Autowired
+    private DockerRegistryDao dockerRegistryDao;
+
+    @Autowired
+    private ToolScanManager toolScanManager;
+
+    @Autowired
+    private ToolManager toolManager;
+
+    @Autowired
+    private MessageHelper messageHelper;
+
+    @Autowired
+    private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private DockerClientFactory dockerClientFactory;
+
+    @Autowired
+    private DockerRegistryManager dockerRegistryManager;
 
     /**
      * A single thread executor to run force scans
