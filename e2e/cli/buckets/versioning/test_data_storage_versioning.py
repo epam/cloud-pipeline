@@ -333,7 +333,7 @@ class TestDataStorageVersioning(object):
             pipe_storage_cp(self.test_file_2, destination, force=True, token=self.token, expected_status=0)
             actual_output = get_pipe_listing(self.path_to_bucket, token=self.token)
             expected_output = [
-                f(self.test_file_1, 10)
+                f(self.test_file_1, 14)
             ]
             compare_listing(actual_output, expected_output, 1)
             actual_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
