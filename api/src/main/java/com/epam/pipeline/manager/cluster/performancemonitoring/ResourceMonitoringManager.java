@@ -30,11 +30,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.TaskScheduler;
@@ -52,7 +52,6 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.reactivex.Observable;
@@ -68,20 +67,17 @@ import io.reactivex.Observable;
  */
 @Service
 @ConditionalOnProperty("monitoring.elasticsearch.url")
+@Slf4j
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ResourceMonitoringManager.class);
-
     private static final int MILLIS = 1000;
     private static final double PERCENT = 100.0;
     private static final double ONE_THOUSANDTH = 0.001;
 
-    private PipelineRunManager pipelineRunManager;
-    private NotificationManager notificationManager;
-    private InstanceOfferManager instanceOfferManager;
-    private MonitoringESDao monitoringDao;
-    private MessageHelper messageHelper;
-
-    private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
+    private final PipelineRunManager pipelineRunManager;
+    private final NotificationManager notificationManager;
+    private final InstanceOfferManager instanceOfferManager;
+    private final MonitoringESDao monitoringDao;
+    private final MessageHelper messageHelper;
 
     @Autowired
     public ResourceMonitoringManager(PipelineRunManager pipelineRunManager,
@@ -89,7 +85,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                      NotificationManager notificationManager,
                                      InstanceOfferManager instanceOfferManager,
                                      MonitoringESDao monitoringDao,
-                                     TaskScheduler scheduler, MessageHelper messageHelper) {
+                                     TaskScheduler scheduler,
+                                     MessageHelper messageHelper) {
         this.pipelineRunManager = pipelineRunManager;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
@@ -99,6 +96,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         this.scheduler = scheduler;
     }
 
+    private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
+
     @PostConstruct
     public void init() {
         Observable<List<InstanceType>> instanceTypesObservable = instanceOfferManager.getAllInstanceTypesObservable();
@@ -106,8 +105,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         instanceTypesObservable.subscribe(instanceTypes -> instanceTypeMap = instanceTypes.stream()
                 .collect(Collectors.toMap(InstanceType::getName, t -> t, (t1, t2) -> t1)));
 
-        scheduleFixedDelay(this::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
-                           "Resource Usage Monitoring");
+        scheduleFixedDelaySecured(this::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
+                "Resource Usage Monitoring");
     }
 
     @Scheduled(cron = "0 0 0 ? * *")
@@ -122,7 +121,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             .filter(r -> DateUtils.nowUTC().isAfter(r.getProlongedAtTime().plus(idleTimeout, ChronoUnit.MINUTES)))
             .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
 
-        LOGGER.debug("Checking cpu stats for pipelines: " + running.keySet().stream()
+        log.debug("Checking cpu stats for pipelines: " + running.keySet().stream()
             .collect(Collectors.joining(", ")));
 
         LocalDateTime now = DateUtils.nowUTC();
@@ -131,7 +130,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             now.minusMinutes(idleTimeout),
             now);
 
-        LOGGER.debug("CPU Metrics received: " + cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+        log.debug("CPU Metrics received: " + cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
             .collect(Collectors.joining(", ")));
 
         double idleCpuLevel = preferenceManager.getPreference(SYSTEM_IDLE_CPU_THRESHOLD_PERCENT) / PERCENT;
@@ -178,7 +177,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             run.setLastIdleNotificationTime(DateUtils.nowUTC());
             runsToUpdate.add(run);
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
         } else { // run was already notified - we need to take some action
             performActionOnIdleRun(run, action, cpuUsageRate, actionTimeout, pipelinesToNotify, runsToUpdate);
         }
@@ -188,7 +187,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                         List<Pair<PipelineRun, Double>> pipelinesToNotify,
                                         List<PipelineRun> runsToUpdate) {
         if (run.getLastIdleNotificationTime().isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout))) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(), cpuUsageRate,
                                                  action));
             switch (action) {
                 case PAUSE:

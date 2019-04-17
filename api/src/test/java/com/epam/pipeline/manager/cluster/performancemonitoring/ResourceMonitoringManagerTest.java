@@ -29,6 +29,9 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,11 +44,16 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -91,6 +99,8 @@ public class ResourceMonitoringManagerTest {
     private TaskScheduler taskScheduler;
     @Mock
     private MessageHelper messageHelper;
+    @Mock
+    private AuthManager authManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -112,6 +122,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager = new ResourceMonitoringManager(pipelineRunManager, preferenceManager,
                                                                   notificationManager, instanceOfferManager,
                                                                   monitoringESDao, taskScheduler, messageHelper);
+        Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
 
         when(preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(Observable.empty());
@@ -122,6 +133,12 @@ public class ResourceMonitoringManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES)).thenReturn(1);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES))
             .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        UserContext userContext = new UserContext(1L, "admin");
+        Collection<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList("ROLE_ADMIN");
+        context.setAuthentication(new JwtAuthenticationToken(userContext, authorities));
+        when(authManager.createSchedulerSecurityContext()).thenReturn(context);
 
         testType = new InstanceType();
         testType.setVCPU(2);
