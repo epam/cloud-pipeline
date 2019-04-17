@@ -359,16 +359,16 @@ class GsBucketWrapper(CloudDataStorageWrapper):
         return WrapperType.GS
 
     def get_restore_manager(self):
-        return GsRestoreManager(self._storage_client(write=True), self)
+        return GsRestoreManager(self._storage_client(write=True, versioning=True), self)
 
     def get_list_manager(self, show_versions=False):
-        return GsListingManager(self._storage_client(), self.bucket, show_versions)
+        return GsListingManager(self._storage_client(versioning=show_versions), self.bucket, show_versions)
 
     def get_delete_manager(self, versioning):
-        return GsDeleteManager(self._storage_client(write=True), self.bucket)
+        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), self.bucket)
 
-    def _storage_client(self, read=True, write=False):
-        return GsBucketOperations.get_client(self.bucket, read=read, write=write)
+    def _storage_client(self, read=True, write=False, versioning=False):
+        return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
 
 
 class LocalFileSystemWrapper(DataStorageWrapper):

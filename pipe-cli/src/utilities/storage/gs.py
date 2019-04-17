@@ -140,7 +140,6 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
         super(GsDeleteManager, self).__init__(client)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
-        self.listing_manager = GsListingManager(self.client, self.bucket)
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
         if recursive and version:
@@ -156,8 +155,8 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
             self._delete_blob(self._blob(bucket, prefix, version), exclude, include)
         else:
             blobs_for_deletion = []
-            self.listing_manager.show_versions = version is not None or hard_delete
-            for item in self.listing_manager.list_items(prefix, recursive=True, show_all=True):
+            listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
+            for item in listing_manager.list_items(prefix, recursive=True, show_all=True):
                 if item.name == prefix and check_file:
                     if version:
                         matching_item_versions = [item_version for item_version in item.versions
@@ -207,6 +206,12 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
 
     def _file_under_folder(self, file_path, folder_path):
         return StorageOperations.without_prefix(file_path, folder_path).startswith(self.delimiter)
+
+    def _get_listing_manager(self, show_versions):
+        client = self.client
+        if show_versions:
+            client = GsBucketOperations.get_client(self.bucket, read=True, write=True, versioning=True)
+        return GsListingManager(client, self.bucket, show_versions=show_versions)
 
 
 class GsRestoreManager(GsManager, AbstractRestoreManager):
@@ -267,11 +272,12 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
                     click.echo('Skipping file %s since it exists in the destination %s'
                                % (full_path, destination_path))
                 return
-        source_bucket = self.client.bucket(source_wrapper.bucket.path)
+        source_client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=clean)
+        source_bucket = source_client.bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
         destination_bucket = self.client.bucket(destination_wrapper.bucket.path)
         progress_callback = GsProgressPercentage.callback(full_path, size, quiet)
-        source_bucket.copy_blob(source_blob, destination_bucket, destination_path)
+        source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
         destination_blob = destination_bucket.blob(destination_path)
         destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
         destination_blob.patch()
@@ -397,7 +403,7 @@ class GsTemporaryCredentials:
     GS_STS_PROJECT = 'GS_STS_TOKEN'
 
     @classmethod
-    def from_environment(cls, bucket, read, write):
+    def from_environment(cls, bucket, read, write, versioning):
         credentials = TemporaryCredentialsModel()
         credentials.secret_key = os.getenv(GsTemporaryCredentials.GS_PROJECT)
         credentials.session_token = os.getenv(GsTemporaryCredentials.GS_STS_PROJECT)
@@ -405,8 +411,9 @@ class GsTemporaryCredentials:
         return credentials
 
     @classmethod
-    def from_cp_api(cls, bucket, read, write):
-        return DataStorage.get_single_temporary_credentials(bucket=bucket.identifier, read=read, write=write)
+    def from_cp_api(cls, bucket, read, write, versioning):
+        return DataStorage.get_single_temporary_credentials(bucket=bucket.identifier, read=read, write=write,
+                                                            versioning=versioning)
 
 
 class _RefreshingCredentials(Credentials):
@@ -469,8 +476,8 @@ class _DeleteBlobGenerationMixin:
 class _RefreshingClient(Client, _DeleteBlobGenerationMixin):
     MAX_REFRESH_ATTEMPTS = 100
 
-    def __init__(self, bucket, read, write, refresh_credentials):
-        credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write))
+    def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
+        credentials = _RefreshingCredentials(refresh=lambda: refresh_credentials(bucket, read, write, versioning))
         session = _ProxySession(credentials, max_refresh_attempts=self.MAX_REFRESH_ATTEMPTS)
         super(_RefreshingClient, self).__init__(project=credentials.temporary_credentials.secret_key, _http=session)
 
