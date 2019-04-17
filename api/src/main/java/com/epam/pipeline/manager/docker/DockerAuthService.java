@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
@@ -52,13 +53,14 @@ public class DockerAuthService {
     private final JwtTokenVerifier jwtTokenVerifier;
     private final JwtTokenGenerator jwtTokenGenerator;
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     public JwtRawToken issueDockerToken(UserContext user, String service, List<DockerRegistryClaim> claims) {
         Long jwtExpirationSeconds = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_JWT_TOKEN_EXPIRATION);
         long expitationTime = jwtExpirationSeconds != null && jwtExpirationSeconds > 0
                 ? jwtExpirationSeconds : TOKEN_EXPIRATION;
-        Assert.notNull(user, MessageConstants.ERROR_DOCKER_REGISTRY_AUTHENTICATION_REQUIRED);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_DOCKER_REGISTRY_AUTHENTICATION_REQUIRED));
         return new JwtRawToken(jwtTokenGenerator.issueDockerToken(user.toClaims(), expitationTime, service, claims));
     }
 
