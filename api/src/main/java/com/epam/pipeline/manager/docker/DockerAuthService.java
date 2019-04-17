@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.docker;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
@@ -29,66 +30,61 @@ import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 /**
  * {@code DockerAuthService} provides methods to provide authentication for
  * docker registry
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class DockerAuthService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DockerAuthService.class);
     private static final Long TOKEN_EXPIRATION = 30L;
 
-    @Autowired
-    private UserManager userManager;
-
-    @Autowired
-    private JwtTokenVerifier jwtTokenVerifier;
-
-    @Autowired
-    private JwtTokenGenerator jwtTokenGenerator;
-
-    @Autowired
-    private PreferenceManager preferenceManager;
+    private final UserManager userManager;
+    private final JwtTokenVerifier jwtTokenVerifier;
+    private final JwtTokenGenerator jwtTokenGenerator;
+    private final PreferenceManager preferenceManager;
 
     public JwtRawToken issueDockerToken(UserContext user, String service, List<DockerRegistryClaim> claims) {
         Long jwtExpirationSeconds = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_JWT_TOKEN_EXPIRATION);
         long expitationTime = jwtExpirationSeconds != null && jwtExpirationSeconds > 0
                 ? jwtExpirationSeconds : TOKEN_EXPIRATION;
+        Assert.notNull(user, MessageConstants.ERROR_DOCKER_REGISTRY_AUTHENTICATION_REQUIRED);
         return new JwtRawToken(jwtTokenGenerator.issueDockerToken(user.toClaims(), expitationTime, service, claims));
     }
 
     public UserContext verifyTokenForDocker(String userName, String token, String dockerRegistryHost) {
         UserContext user = userManager.loadUserContext(userName);
         if (user == null) {
-            LOGGER.debug("Failed to find user by name {}.", userName);
+            log.debug("Failed to find user by name {}.", userName);
             throw new DockerAuthorizationException(dockerRegistryHost);
         }
         try {
             JwtTokenClaims tokenClaims = jwtTokenVerifier.readClaims(token);
             if (!tokenClaims.getUserName().equalsIgnoreCase(userName)) {
-                LOGGER.debug("Provided user and token do not match.");
+                log.debug("Provided user and token do not match.");
                 throw new DockerAuthorizationException(dockerRegistryHost);
             }
             if (!NumberUtils.isDigits(tokenClaims.getUserId()) ||
                     !user.getUserId().equals(Long.parseLong(tokenClaims.getUserId()))) {
-                LOGGER.debug("Provided user and token do not match.");
+                log.debug("Provided user and token do not match.");
                 throw new DockerAuthorizationException(dockerRegistryHost);
             }
             if (tokenClaims.getExpiresAt().isBefore(LocalDateTime.now())) {
-                LOGGER.debug("Provided token expired ");
+                log.debug("Provided token expired ");
                 throw new DockerAuthorizationException(dockerRegistryHost);
             }
         } catch (TokenVerificationException e) {
-            LOGGER.debug(e.getMessage(), e);
+            log.debug(e.getMessage(), e);
             throw new DockerAuthorizationException(dockerRegistryHost);
         }
         return user;
