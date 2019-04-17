@@ -272,6 +272,7 @@ public class ToolsTest
     public void toolVersionsTab() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.versions()
+                        .viewUnscannedVersions()
                         .sleep(2, SECONDS)
                         .ensureAll(tags(), sizeGreaterThanOrEqual(1))
                         .also(tagsHave(RUN, DELETE))
