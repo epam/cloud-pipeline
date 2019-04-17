@@ -1,10 +1,12 @@
 from buckets.utils.cloud.aws_client import S3Client
 from buckets.utils.cloud.azure_client import AzureClient
+from buckets.utils.cloud.google_client import GsClient
 from common_utils.cmd_utils import *
 
 _clients = {
     S3Client.name: S3Client,
-    AzureClient.name: AzureClient
+    AzureClient.name: AzureClient,
+    GsClient.name: GsClient
 }
 
 
@@ -20,12 +22,12 @@ def object_exists(bucket_name, key):
     return get_client().object_exists(bucket_name, key)
 
 
+def get_versions(bucket_name, key):
+    return get_client().get_versions(bucket_name, key)
+
+
 def folder_exists(bucket_name, key):
     return get_client().folder_exists(bucket_name, key)
-
-
-def get_listing(path, recursive=False, expected_status=0):
-    return get_client().get_listing(path, recursive, expected_status)
 
 
 def list_object_tags(bucket, key, version=None, args=None):

@@ -14,14 +14,13 @@
 
 import pytest
 
-from buckets.utils.cloud.aws_client import get_aws_object_version_listing
 from buckets.utils.cloud.azure_client import AzureClient
-from buckets.utils.cloud.utilities import object_exists, get_listing
+from buckets.utils.cloud.utilities import object_exists, get_versions
 from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from common_utils.pipe_cli import *
 
-ERROR_MESSAGE = "An error accrued in case "
+ERROR_MESSAGE = "An error occurred in case "
 
 
 @pytest.mark.skipif(os.environ['CP_PROVIDER'] == AzureClient.name, reason="Versioning is not supported for AZURE provider")
@@ -68,12 +67,15 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(self.test_file_1, destination)
             pipe_storage_rm(destination)
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            assert len(pipe_output) == 0
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            assert len(actual_output) == 0
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 2)
+            expected_output = [
+                f(self.test_file_1, deleted=True, latest=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-877:" + "\n" + e.message)
 
@@ -84,14 +86,19 @@ class TestDataStorageVersioning(object):
             pipe_storage_rm(destination)
             output = pipe_storage_ls(self.path_to_bucket, show_details=False)[0]
             assert len(output) == 0
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 2)
+            expected_output = [
+                f(self.test_file_1, deleted=True, latest=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 2)
             pipe_storage_restore(destination)
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            aws_output = get_listing(self.bucket)
-            compare_listing(pipe_output, aws_output, 1)
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            expected_output = [
+                f(self.test_file_1, 10)
+            ]
+            compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-881:" + "\n" + e.message)
 
@@ -100,13 +107,18 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(self.test_file_1, destination)
             pipe_storage_cp(self.test_file_2, destination, force=True)  # another file with same name
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            aws_output = get_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 1)
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            expected_output = [
+                f(self.test_file_1, 14)
+            ]
+            compare_listing(actual_output, expected_output, 1)
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 2)
+            expected_output = [
+                f(self.test_file_1, 14, added=True, latest=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 2)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-882:" + "\n" + e.message)
 
@@ -116,16 +128,22 @@ class TestDataStorageVersioning(object):
             pipe_storage_cp(self.test_file_1, destination)
             pipe_storage_cp(self.test_file_2, destination, force=True)
             pipe_storage_rm(destination)
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 3)
-            version = get_non_latest_version(pipe_output)
+            expected_output = [
+                f(self.test_file_1, deleted=True, latest=True),
+                f(self.test_file_1, 14, added=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 3, sort=False)
+            version = get_non_latest_version(actual_output)
             assert version, "No version available to restore."
-            pipe_storage_restore(destination, version=version)
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            aws_output = get_listing(self.bucket)
-            compare_listing(pipe_output, aws_output, 1)
+            pipe_storage_restore(destination, version=version, expected_status=0)
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            expected_output = [
+                f(self.test_file_1, 14)
+            ]
+            compare_listing(actual_output, expected_output, 1)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-883:" + "\n" + e.message)
 
@@ -134,10 +152,10 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
             pipe_storage_rm(destination, args=['--hard-delete'])
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True), result_not_empty=False)
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 0)
+            expected_output = []
+            compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-884:" + "\n" + e.message)
 
@@ -146,15 +164,18 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
             pipe_storage_rm(destination)
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 2)
+            expected_output = [
+                f(self.test_file_1, deleted=True, latest=True),
+                f(self.test_file_1, 10, added=True),
+            ]
+            compare_listing(actual_output, expected_output, 2)
             pipe_storage_rm(destination, args=['--hard-delete'], recursive=True)
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(self.path_to_bucket, versioning=True), result_not_empty=False)
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 0)
+            expected_output = []
+            compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-993:" + "\n" + e.message)
 
@@ -163,21 +184,27 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_1)
             pipe_storage_rm(destination_1, recursive=True)
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            assert len(pipe_output) == 0
-            pipe_output = get_pipe_listing(self.path_to_bucket, versioning=True)
-            assert len(pipe_output) == 1 and self.test_folder_1 in pipe_output[0].name
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            assert len(actual_output) == 0
+            actual_output = get_pipe_listing(self.path_to_bucket, versioning=True)
+            assert len(actual_output) == 1 and self.test_folder_1 in actual_output[0].name
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1), versioning=True, recursive=True))
-            aws_output = get_aws_object_version_listing(self.bucket, "/".join([self.test_folder_1, self.test_file_1]))
-            compare_listing(pipe_output, aws_output, 2)
-            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1))
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            assert len(pipe_output) == 1 and self.test_folder_1 in pipe_output[0].name
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            expected_output = [
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), deleted=True, latest=True),
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 2)
+            pipe_storage_restore('cp://{}/{}'.format(self.bucket, self.test_folder_1), expected_status=0)
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            assert len(actual_output) == 1 and self.test_folder_1 in actual_output[0].name
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1), versioning=True, recursive=True))
-            aws_output = get_aws_object_version_listing(self.bucket, "/".join([self.test_folder_1, self.test_file_1]))
-            compare_listing(pipe_output, aws_output, 1)
+            expected_output = [
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True, latest=True),
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 2, sort=False)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-885-886:" + "\n" + e.message)
 
@@ -189,13 +216,13 @@ class TestDataStorageVersioning(object):
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_2)
             pipe_storage_rm('cp://{}/{}'.format(self.bucket, self.test_folder_1), args=['--hard-delete'],
                             recursive=True)
-            pipe_output = get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1))
-            assert len(pipe_output) == 0
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1))
+            assert len(actual_output) == 0
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1), versioning=True),
                 result_not_empty=False)
-            aws_output = get_aws_object_version_listing(self.bucket, "/".join([self.test_folder_1, self.test_file_1]))
-            compare_listing(pipe_output, aws_output, 0)
+            expected_output = []
+            compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-887:" + "\n" + e.message)
 
@@ -206,24 +233,30 @@ class TestDataStorageVersioning(object):
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_1)
             pipe_storage_cp(os.path.abspath(self.test_file_1), destination_2)
             pipe_storage_rm('cp://{}/{}'.format(self.bucket, self.test_folder_1), recursive=True)
-            pipe_output = get_pipe_listing(self.path_to_bucket)
-            assert len(pipe_output) == 0
-            pipe_output = get_pipe_listing(self.path_to_bucket, versioning=True)
-            assert len(pipe_output) == 1 and self.test_folder_1 in pipe_output[0].name
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing(self.path_to_bucket)
+            assert len(actual_output) == 0
+            actual_output = get_pipe_listing(self.path_to_bucket, versioning=True)
+            assert len(actual_output) == 1 and self.test_folder_1 in actual_output[0].name
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1), versioning=True, recursive=True))
-            aws_output = get_aws_object_version_listing(self.bucket, self.test_folder_1)
-            compare_listing(pipe_output, aws_output, 4)
+            expected_output = [
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), deleted=True, latest=True),
+                f('{}/{}'.format(self.test_folder_1, self.test_file_1), 10, added=True),
+                f('{}/{}/{}'.format(self.test_folder_1, self.test_folder_2, self.test_file_1),
+                  deleted=True, latest=True),
+                f('{}/{}/{}'.format(self.test_folder_1, self.test_folder_2, self.test_file_1), 10, added=True)
+            ]
+            compare_listing(actual_output, expected_output, 4)
 
             pipe_storage_rm('cp://{}/{}'.format(self.bucket, self.test_folder_1), args=['--hard-delete'],
                             recursive=True)
-            pipe_output = get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1))
-            assert len(pipe_output) == 0
-            pipe_output = assert_and_filter_first_versioned_listing_line(
+            actual_output = get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1))
+            assert len(actual_output) == 0
+            actual_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing('cp://{}/{}'.format(self.bucket, self.test_folder_1), versioning=True),
                 result_not_empty=False)
-            aws_output = get_aws_object_version_listing(self.bucket, "/".join([self.test_folder_1, self.test_file_1]))
-            compare_listing(pipe_output, aws_output, 0)
+            expected_output = []
+            compare_listing(actual_output, expected_output, 0)
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-998:" + "\n" + e.message)
 
@@ -259,7 +292,7 @@ class TestDataStorageVersioning(object):
         try:
             pipe_storage_cp(self.test_file_1, destination)
             error_message = pipe_storage_restore(destination, expected_status=1)[1]
-            assert 'Error: Latest version in the buckets is not a delete marker. Please specify "--version" parameter.'\
+            assert 'Error: Latest file version is not deleted. Please specify "--version" parameter.'\
                    in error_message[0]
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-948:" + "\n" + e.message)
@@ -271,7 +304,7 @@ class TestDataStorageVersioning(object):
             pipe_output = assert_and_filter_first_versioned_listing_line(
                 get_pipe_listing(destination, versioning=True))
             version_id = get_latest_version(pipe_output)
-            error_message = pipe_storage_restore(destination, version=version_id, expected_status=0)[1]
+            error_message = pipe_storage_restore(destination, version=version_id, expected_status=1)[1]
             assert 'Version "{}" is already the latest version'.format(version_id)\
                    in error_message[0]
         except BaseException as e:
@@ -298,11 +331,13 @@ class TestDataStorageVersioning(object):
             set_storage_permission(self.user, self.bucket, allow='w')
             pipe_storage_cp(self.test_file_1, destination, token=self.token, expected_status=0)
             pipe_storage_cp(self.test_file_2, destination, force=True, token=self.token, expected_status=0)
-            pipe_output = get_pipe_listing(self.path_to_bucket, token=self.token)
-            aws_output = get_listing(self.bucket, self.test_file_1)
-            compare_listing(pipe_output, aws_output, 1)
-            pipe_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
-            assert "Access is denied" in pipe_output[0]
+            actual_output = get_pipe_listing(self.path_to_bucket, token=self.token)
+            expected_output = [
+                f(self.test_file_1, 14)
+            ]
+            compare_listing(actual_output, expected_output, 1)
+            actual_output = pipe_storage_ls(self.path_to_bucket, expected_status=1, token=self.token, versioning=True)[1]
+            assert "Access is denied" in actual_output[0]
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-891:" + "\n" + e.message)
 
@@ -418,3 +453,39 @@ class TestDataStorageVersioning(object):
             assert len(pipe_output) == 1
         except BaseException as e:
             pytest.fail(ERROR_MESSAGE + "epmcmbibpc-1283:" + "\n" + e.message)
+
+    def test_list_version(self):
+        destination = "cp://{}/{}".format(self.bucket, self.test_file_1)
+        try:
+            pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
+            pipe_storage_cp(os.path.abspath(self.test_file_1), destination, force=True)
+            actual_output = assert_and_filter_first_versioned_listing_line(
+                get_pipe_listing(destination, show_details=True, versioning=True))
+            expected_files = [
+                f(self.test_file_1, 10, added=True, latest=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            expected_versions = get_versions(self.bucket, self.test_file_1)
+            for index, expected_file in enumerate(expected_files):
+                expected_file.version_id = expected_versions[index]
+            compare_listing(actual_output, expected_files, 2, show_details=True, check_version=True, sort=False)
+        except AssertionError as e:
+            pytest.fail(ERROR_MESSAGE + ":\n" + e.message)
+
+    def test_list_deleted_version(self):
+        destination = "cp://{}/{}".format(self.bucket, self.test_file_1)
+        try:
+            pipe_storage_cp(os.path.abspath(self.test_file_1), destination)
+            pipe_storage_rm(destination)
+            actual_output = assert_and_filter_first_versioned_listing_line(
+                get_pipe_listing(destination, show_details=True, versioning=True))
+            expected_files = [
+                f(self.test_file_1, deleted=True, latest=True),
+                f(self.test_file_1, 10, added=True)
+            ]
+            expected_versions = get_versions(self.bucket, self.test_file_1)
+            for index, expected_file in enumerate(expected_files):
+                expected_file.version_id = expected_versions[index]
+            compare_listing(actual_output, expected_files, 2, show_details=True, check_version=True)
+        except AssertionError as e:
+            pytest.fail(ERROR_MESSAGE + ":\n" + e.message)

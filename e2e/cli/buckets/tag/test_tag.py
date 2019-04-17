@@ -20,18 +20,19 @@ from common_utils.entity_managers import EntityManager
 ERROR_MESSAGE = "An error occurred in case "
 
 
-class TestS3Tagging(object):
+class TestTagging(object):
     test_file = "test-tag1.txt"
     test_file2 = "test-tag2.txt"
     test_file_in_folder = "tags/" + test_file
     test_file2_in_folder = "tags/" + test_file2
-    bucket = 'epmcmbibpc-s3-tagging-{}'.format(get_test_prefix()).lower()
+    bucket = 'epmcmbibpc-storage-tagging-{}'.format(get_test_prefix()).lower()
     path_to_bucket = 'cp://{}'.format(bucket)
     tag1 = ("key1", "value1")
     tag2 = ("key2", "value2")
     tag3 = ("key3", "value3")
     owner_token = os.environ['USER_TOKEN']
     owner = os.environ['TEST_USER']
+    versioning_providers = [S3Client.name, GsClient.name]
 
     @classmethod
     def setup_class(cls):
@@ -40,8 +41,10 @@ class TestS3Tagging(object):
         try:
             folder_id = manager.create(cls.bucket)
             set_acl_permissions(cls.owner, str(folder_id), 'folder', allow='rw')
-            create_data_storage(cls.bucket, versioning=os.environ['CP_PROVIDER'] == S3Client.name,
-                                token=cls.owner_token, folder=folder_id)
+            create_data_storage(cls.bucket,
+                                versioning=os.environ['CP_PROVIDER'] in TestTagging.versioning_providers,
+                                token=cls.owner_token,
+                                folder=folder_id)
             create_test_file(os.path.abspath(cls.test_file), TestFiles.DEFAULT_CONTENT)
         except BaseException as e:
             if folder_id is not None:
@@ -140,8 +143,8 @@ class TestS3Tagging(object):
          2. error message
      """
     test_case_for_non_existing = [
-        ('cp://non_exisitng/{}'.format(test_file), 'data storage with id: \'non_exisitng\' was not found'),
-        ('cp://{}/non_existing'.format(bucket), 'Path \'non_existing\' doesn\'t exist')
+        ('cp://non_existing/{}'.format(test_file), 'data storage with id: \'non_existing\' was not found'),
+        ('cp://{}/non_existing'.format(bucket), 'path \'non_existing\' for bucket \'{}\' does not exist'.format(bucket))
     ]
 
     @pytest.mark.parametrize("path,message", test_case_for_non_existing)
@@ -167,7 +170,7 @@ class TestS3Tagging(object):
             set_storage_tags(path, [self.tag1])
 
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Tag \'{}\' doesn\'t exist'.format(self.tag2[1]))
+            assert_error_message_is_present(stderr, 'Tag \'{}\' does not exist'.format(self.tag2[1]))
 
             assert_tags_listing(self.bucket, path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())
@@ -224,4 +227,4 @@ class TestS3Tagging(object):
         pipe_storage_rm(path, args=self.rm_arguments())
 
     def rm_arguments(self):
-        return ['--hard-delete'] if os.environ['CP_PROVIDER'] == S3Client.name else []
+        return ['--hard-delete'] if os.environ['CP_PROVIDER'] in TestTagging.versioning_providers else []

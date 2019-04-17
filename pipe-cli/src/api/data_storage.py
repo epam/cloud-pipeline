@@ -65,6 +65,8 @@ class DataStorage(API):
             return None
         storages = DataStorage.list()
         for storage in storages:
+            if storage.name is not None and storage.name.lower() == name.lower():
+                return storage
             if storage.path is not None and storage.path.lower() == name.lower():
                 return storage
         raise ValueError("Datastorage with name {} does not exist!".format(name))
