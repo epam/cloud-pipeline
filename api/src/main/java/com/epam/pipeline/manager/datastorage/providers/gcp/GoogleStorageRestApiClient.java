@@ -26,9 +26,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 import retrofit2.http.Body;
 import retrofit2.http.Header;
-import retrofit2.http.PUT;
+import retrofit2.http.PATCH;
 import retrofit2.http.Path;
-import retrofit2.http.Query;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -43,12 +42,11 @@ public interface GoogleStorageRestApiClient {
     String CONTENT_TYPE_HEADER = "Content-Type";
     String GOOGLE_STORAGE_API_URL = "https://www.googleapis.com/storage/";
 
-    @PUT("v1/b/{bucketName}")
+    @PATCH("v1/b/{bucketName}?fields=id&alt=json&projection=noAcl")
     Call<Object> disableLifecycleRules(@Header(AUTH_HEADER) String bearer,
                                        @Header(CONTENT_TYPE_HEADER) String contentType,
                                        @Path("bucketName") String bucketName,
-                                       @Query("fields") String lifecycle,
-                                       @Body String data);
+                                       @Body GCPDisablingLifecycleRules data);
 
     static GoogleStorageRestApiClient buildClient() {
         final OkHttpClient client = new OkHttpClient.Builder().build();

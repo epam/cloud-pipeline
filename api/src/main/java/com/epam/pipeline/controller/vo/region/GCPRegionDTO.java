@@ -38,4 +38,5 @@ public class GCPRegionDTO extends AbstractCloudRegionDTO {
     @JsonProperty("tempCredentialsRole")
     private String impersonatedAccount;
     private List<GCPCustomInstanceType> customInstanceTypes;
+    private String corsRules;
 }

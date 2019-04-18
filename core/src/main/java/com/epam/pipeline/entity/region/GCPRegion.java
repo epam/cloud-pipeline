@@ -45,4 +45,5 @@ public class GCPRegion extends AbstractCloudRegion {
     @JsonProperty("tempCredentialsRole")
     private String impersonatedAccount;
     private List<GCPCustomInstanceType> customInstanceTypes;
+    private String corsRules;
 }
