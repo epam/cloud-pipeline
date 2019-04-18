@@ -35,24 +35,29 @@ import java.util.stream.Collectors;
 @Component
 public class GCPCustomMachineExtractor implements GCPObjectExtractor {
 
+    private static final int MEGABYTES_IN_GIGABYTE = 1024;
     private static final String CUSTOM_FAMILY = "custom";
+    private static final double EXTENDED_FACTOR = 6.5;
 
     @Override
     public List<AbstractGCPObject> extract(final GCPRegion region) {
         return CollectionUtils.emptyIfNull(region.getCustomInstanceTypes())
                 .stream()
                 .filter(type -> type.getCpu() > 0 && type.getRam() >= 0)
-                .map(type -> {
-                    if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
-                        final String name = gpuCustomGpuMachine(type);
-                        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), type.getGpu(),
-                                type.getGpuType());
-                    } else {
-                        final String name = customCpuMachine(type);
-                        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), type.getRam(), 0, null);
-                    }
-                })
+                .map(this::toGcpMachine)
                 .collect(Collectors.toList());
+    }
+
+    private GCPMachine toGcpMachine(final GCPCustomInstanceType type) {
+        final String name = type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
+                ? gpuCustomGpuMachine(type)
+                : customCpuMachine(type);
+        final double extendedMemory = type.getRam() / type.getCpu() > EXTENDED_FACTOR
+                ? type.getRam() - type.getCpu() * EXTENDED_FACTOR
+                : 0.0;
+        final double defaultMemory = type.getRam() - extendedMemory;
+        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
+                type.getGpu(), type.getGpuType());
     }
 
     private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {
@@ -61,6 +66,6 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
     }
 
     private String customCpuMachine(final GCPCustomInstanceType type) {
-        return String.format("%s-%s-%s", CUSTOM_FAMILY, type.getCpu(), (int) (type.getRam() * 1024));
+        return String.format("%s-%s-%s", CUSTOM_FAMILY, type.getCpu(), (int) (type.getRam() * MEGABYTES_IN_GIGABYTE));
     }
 }

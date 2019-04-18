@@ -19,6 +19,12 @@ package com.epam.pipeline.manager.cloud.gcp;
 public enum GCPResourceType {
     CPU,
     RAM,
+    EXTENDED_RAM {
+        @Override
+        public String alias() {
+            return super.alias().replace("_", "");
+        }
+    },
     GPU,
     DISK {
         @Override
