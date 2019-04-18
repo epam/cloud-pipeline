@@ -156,7 +156,10 @@ class StorageMounter:
 
     @staticmethod
     def execute_and_check_command(command):
-        install_check = common.execute_cmd_command(command, silent=False)
+        install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
+        if install_check != 0:
+            Logger.warn(
+                'Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr))
         return install_check == 0
 
     @staticmethod
@@ -281,7 +284,7 @@ class AzureMounter(StorageMounter):
         exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
         if exit_code != 0:
             Logger.warn(
-                'Azure BLOB service hostname resolution and writing to /etc/hosts failed:: \n {}'.format(stderr))
+                'Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr))
 
 
 class S3Mounter(StorageMounter):
