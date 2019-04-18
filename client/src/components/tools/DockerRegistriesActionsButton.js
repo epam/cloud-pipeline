@@ -16,8 +16,9 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
+import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Menu, Icon, message, Modal, Button, Dropdown} from 'antd';
+import {Menu, Icon, message, Modal, Button, Dropdown, Row, Checkbox} from 'antd';
 import roleModel from '../../utils/roleModel';
 import AddRegistry from '../../models/tools/RegistryCreate';
 import UpdateRegistry from '../../models/tools/RegistryUpdate';
@@ -49,8 +50,17 @@ export default class DockerRegistriesActionsButton extends React.Component {
     enableToolFormVisible: false,
     createToolGroupFormVisible: false,
     configurationFormVisible: false,
-    registryOperationInProgress: false
+    registryOperationInProgress: false,
+    removeToolGroup: false,
+    removeToolGroupConfirmed: false
   };
+
+  @computed
+  get groupHasChildTools () {
+    return this.props.group
+      ? (this.props.group.tools || []).length > 0
+      : false;
+  }
 
   _openCreateRegistryForm = () => {
     this.setState({addRegistryForm: true});
@@ -268,7 +278,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _deleteGroup = async () => {
     const hide = message.loading('Removing tool group...', 0);
-    const request = new ToolsGroupDelete(this.props.group.id);
+    const request = new ToolsGroupDelete(this.props.group.id, true);
     await request.fetch();
     if (request.error) {
       hide();
@@ -281,16 +291,16 @@ export default class DockerRegistriesActionsButton extends React.Component {
   };
 
   _confirmDeleteGroup = () => {
-    const deleteGroup = this._deleteGroup;
-    Modal.confirm({
-      title: `Are you sure you want to delete '${this.props.group.name}'?`,
-      content: 'This operation cannot be undone.',
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk () {
-        deleteGroup();
-      }
+    this.setState({
+      removeToolGroup: true,
+      removeToolGroupConfirmed: !this.groupHasChildTools
+    });
+  };
+
+  _cancelRemoveGroup = () => {
+    this.setState({
+      removeToolGroup: false,
+      removeToolGroupConfirmed: false
     });
   };
 
@@ -462,6 +472,50 @@ export default class DockerRegistriesActionsButton extends React.Component {
               group={this.props.group}
               visible={this.state.configurationFormVisible}
               onClose={this._closeDockerConfigurationForm}/>
+            <Modal
+              title={`Are you sure you want to delete '${this.props.group ? this.props.group.name : ''}'?`}
+              onCancel={this._cancelRemoveGroup}
+              style={{
+                wordWrap: 'break-word'
+              }}
+              footer={
+                <Row type="flex" justify="end">
+                  <Button id="cancel-remove-group" onClick={this._cancelRemoveGroup}>Cancel</Button>
+                  <Button
+                    type="danger"
+                    id="confirm-remove-group"
+                    disabled={this.groupHasChildTools ? !this.state.removeToolGroupConfirmed : false}
+                    onClick={this._deleteGroup}>
+                    Delete
+                  </Button>
+                </Row>
+              }
+              visible={this.state.removeToolGroup}>
+              {
+                this.groupHasChildTools &&
+                <Row>
+                  <Row>
+                    Group <b>{this.props.group ? this.props.group.name : ''}</b> has child tools, do you want to delete
+                    them?
+                  </Row>
+                  <Row style={{
+                    fontSize: 12,
+                    color: 'rgba(0,0,0,.65)',
+                    marginTop: 8,
+                    marginBottom: 8
+                  }}>
+                    <Checkbox
+                      checked={this.state.removeToolGroupConfirmed}
+                      onChange={(e) => {
+                        this.setState({removeToolGroupConfirmed: e.target.checked});
+                      }}>Delete child tools</Checkbox>
+                  </Row>
+                </Row>
+              }
+              <Row>
+                This operation cannot be undone.
+              </Row>
+            </Modal>
           </Button>
         </Dropdown>
       );
