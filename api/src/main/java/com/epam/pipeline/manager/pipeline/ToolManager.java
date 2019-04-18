@@ -356,12 +356,13 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     /**
-     * Deletes all tools from a group
-     * @param toolGroup to clean
+     * Deletes a tools
+     * @param tool to delete
      */
-    public void deleteToolsInGroup(final ToolGroup toolGroup) {
-        ListUtils.emptyIfNull(toolGroup.getTools())
-                .forEach(tool -> deleteToolWithDependent(tool, tool.getImage(), false));
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool delete(final Tool tool) {
+        deleteToolWithDependent(tool, tool.getImage(), false);
+        return tool;
     }
 
     /**

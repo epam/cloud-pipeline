@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -353,6 +354,8 @@ public class ToolGroupManager implements SecuredEntityManager {
             return;
         }
         Assert.isTrue(force, messageHelper.getMessage(MessageConstants.ERROR_TOOL_GROUP_NOT_EMPTY));
-        toolManager.deleteToolsInGroup(group);
+        ListUtils.emptyIfNull(group.getTools())
+                .forEach(tool -> toolManager.delete(tool));
+
     }
 }
