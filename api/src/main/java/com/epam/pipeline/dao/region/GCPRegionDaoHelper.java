@@ -42,6 +42,7 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
     MapSqlParameterSource getProviderParameters(final GCPRegion region,
                                                 final AbstractCloudRegionCredentials credentials) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(CloudRegionParameters.CORS_RULES.name(), region.getCorsRules());
         params.addValue(CloudRegionParameters.AUTH_FILE.name(), region.getAuthFile());
         params.addValue(CloudRegionParameters.SSH_PUBLIC_KEY.name(), region.getSshPublicKeyPath());
         params.addValue(CloudRegionParameters.PROJECT.name(), region.getProject());
@@ -60,6 +61,7 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
     public GCPRegion parseCloudRegion(final ResultSet rs) {
         final GCPRegion gcpRegion = new GCPRegion();
         fillCommonCloudRegionFields(gcpRegion, rs);
+        gcpRegion.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
         gcpRegion.setAuthFile(rs.getString(CloudRegionParameters.AUTH_FILE.name()));
         gcpRegion.setSshPublicKeyPath(rs.getString(CloudRegionParameters.SSH_PUBLIC_KEY.name()));
         gcpRegion.setProject(rs.getString(CloudRegionParameters.PROJECT.name()));

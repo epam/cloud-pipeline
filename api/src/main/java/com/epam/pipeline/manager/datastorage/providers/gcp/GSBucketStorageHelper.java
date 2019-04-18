@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -32,6 +33,9 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.paging.Page;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.ReadChannel;
@@ -41,12 +45,14 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
+import com.google.cloud.storage.Cors;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -79,9 +85,7 @@ import java.util.stream.Collectors;
 public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
-    private static final String EMPTY_LIFECYCLE_CONTENT = "{}";
     private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
-    private static final String LIFECYCLE_FIELD = "lifecycle";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -93,6 +97,7 @@ public class GSBucketStorageHelper {
     public String createGoogleStorage(final GSBucketStorage storage) {
         final Storage client = gcpClient.buildStorageClient(region);
         final Bucket bucket = client.create(BucketInfo.newBuilder(storage.getPath())
+                .setCors(buildCors())
                 .setStorageClass(StorageClass.REGIONAL)
                 .setLocation(trimRegionZone(region.getRegionCode()))
                 .build());
@@ -395,6 +400,28 @@ public class GSBucketStorageHelper {
         client.update(bucketInfoBuilder.build());
     }
 
+    private List<Cors> buildCors() {
+        if (StringUtils.isBlank(region.getCorsRules())) {
+            return null;
+        }
+
+        final ObjectMapper corsRulesMapper = JsonMapper.newInstance()
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+
+        final List<GCPCors> rawCors = ListUtils.emptyIfNull(JsonMapper.parseData(region.getCorsRules(),
+                new TypeReference<List<GCPCors>>() {}, corsRulesMapper));
+
+        return rawCors.stream()
+                .map(rule ->
+                        Cors.newBuilder()
+                                .setMethods(rule.getMethod())
+                                .setOrigins(rule.getOrigin())
+                                .setMaxAgeSeconds(rule.getMaxAgeSeconds())
+                                .setResponseHeaders(rule.getResponseHeader())
+                                .build()
+                ).collect(Collectors.toList());
+    }
+
     private BucketInfo.LifecycleRule buildStorageClassRelocationRule(final StoragePolicy policy) {
         final BucketInfo.LifecycleRule.SetStorageClassLifecycleAction coldlineLifecycleAction =
                 BucketInfo.LifecycleRule.SetStorageClassLifecycleAction
@@ -565,7 +592,7 @@ public class GSBucketStorageHelper {
             final String token = credentials.refreshAccessToken().getTokenValue();
             GoogleStorageRestApiClient.executeRequest(() ->
                     storageRestApiClient.disableLifecycleRules(buildToken(token), LIFECYCLE_CONTENT_TYPE,
-                            bucketName, LIFECYCLE_FIELD, EMPTY_LIFECYCLE_CONTENT));
+                            bucketName, new GCPDisablingLifecycleRules()));
         } catch (IOException e) {
             throw new DataStorageException(String
                     .format("Failed to disable lifecycle rules for bucket %s", bucketName), e);
