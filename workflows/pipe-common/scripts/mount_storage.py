@@ -281,7 +281,7 @@ class AzureMounter(StorageMounter):
         exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
         if exit_code != 0:
             Logger.warn(
-                'Something goes wrong with resolving azure blob service hosts to /etc/hosts: \n {}'.format(stderr))
+                'Azure BLOB service hostname resolution and writing to /etc/hosts failed:: \n {}'.format(stderr))
 
 
 class S3Mounter(StorageMounter):
