@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.epam.pipeline.config.JsonMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,6 +42,10 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
     private static final String[] CACHED_RESOURCES_LOCATION =
         {"classpath:static/iconfont/", "classpath:static/static/css/", "classpath:static/static/js/"};
 
+    //default value is 30 days
+    @Value("${static.resources.cache.sec.period:2592000}")
+    private long staticResourcesCachePeriod;
+
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         MappingJackson2HttpMessageConverter converter =
@@ -55,7 +60,7 @@ public class AppMVCConfiguration extends WebMvcConfigurerAdapter {
         registry
                 .addResourceHandler(CACHED_RESOURCES_PATH)
                 .addResourceLocations(CACHED_RESOURCES_LOCATION)
-                .setCacheControl(CacheControl.maxAge(1, TimeUnit.DAYS)
+                .setCacheControl(CacheControl.maxAge(staticResourcesCachePeriod, TimeUnit.SECONDS)
                         .cachePublic()
                         .mustRevalidate())
                 .resourceChain(true);
