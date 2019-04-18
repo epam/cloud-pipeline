@@ -785,9 +785,9 @@ export default class Metadata extends React.Component {
       }
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       if (!orderBy) {
-        this.onOrderByChanged(key, ASCEND);
-      } else if (!orderBy.desc) {
         this.onOrderByChanged(key, DESCEND);
+      } else if (orderBy.desc) {
+        this.onOrderByChanged(key, ASCEND);
       } else {
         this.onOrderByChanged(key);
       }
@@ -797,9 +797,9 @@ export default class Metadata extends React.Component {
       let icon;
       if (orderBy) {
         if (orderBy.desc) {
-          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-up" />;
-        } else {
           icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-down" />;
+        } else {
+          icon = <Icon style={{fontSize: 10, marginRight: 5}} type="caret-up" />;
         }
       }
       return (
