@@ -32,6 +32,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -149,8 +153,22 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());
-        //TODO add creds for gcloud to be able to work with storages in the container
+        String credentialsFile = getCredentialsFilePath(region);
+        if (!StringUtils.isEmpty(credentialsFile)) {
+            try {
+                String credentials = String.join(StringUtils.EMPTY, Files.readAllLines(Paths.get(credentialsFile)));
+                envVars.put(SystemParams.CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId(), credentials);
+            } catch (IOException | InvalidPathException e) {
+                log.error("Cannot read credentials file {} for region {}", region.getName(), credentialsFile);
+            }
+        }
         return envVars;
+    }
+
+    private String getCredentialsFilePath(GCPRegion region) {
+        return StringUtils.isEmpty(region.getAuthFile())
+                ? System.getenv(GOOGLE_APPLICATION_CREDENTIALS)
+                : region.getAuthFile();
     }
 
     @Override

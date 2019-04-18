@@ -30,12 +30,12 @@ EXEC_ENVIRONMENT = 'EXEC_ENVIRONMENT'
 NFS_TYPE = 'NFS'
 S3_TYPE = 'S3'
 AZ_TYPE = 'AZ'
-GCP_TYPE = 'GCP'
+GCP_TYPE = 'GS'
 MOUNT_DATA_STORAGES = 'MountDataStorages'
 S3_SCHEME = 's3://'
 AZ_SCHEME = 'az://'
 NFS_SCHEME = 'nfs://'
-GCP_SCHEME = 'gcp://'
+GCP_SCHEME = 'gs://'
 FUSE_GOOFYS_ID = 'goofys'
 FUSE_S3FS_ID = 's3fs'
 FUSE_NA_ID = None
@@ -65,9 +65,9 @@ class MountStorageTask:
     def __init__(self, task):
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.task_name = task
-        available_mounters = [NFSMounter, S3Mounter, AzureMounter]
+        available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
-        self.default_regions = {'AWS': 'us-east-1', 'AZURE': 'eastus'}
+        self.default_regions = {'AWS': 'us-east-1', 'AZURE': 'eastus', 'GCP': 'europe-west3-c'}
 
     def run(self, mount_root, tmp_dir):
         try:
@@ -193,7 +193,7 @@ class StorageMounter:
 
     @staticmethod
     def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, silent=True)
+        result = common.execute_cmd_command(command, silent=True, executable="/bin/bash")
         if result == 0:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
@@ -203,23 +203,27 @@ class StorageMounter:
         return self.storage.path.replace(self.scheme(), '', 1)
 
     def _get_credentials(self, storage):
-        region_id = storage.region_id
-        account_id = os.getenv('CP_ACCOUNT_ID_{}'.format(region_id))
-        account_key = os.getenv('CP_ACCOUNT_KEY_{}'.format(region_id))
-        account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(region_id))
-        if not account_id or not account_key or not account_region:
-            raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
-                               .format(region_id))
-        return account_id, account_key, account_region
+        return self._get_credentials_by_region_id(storage.region_id)
 
     def _get_credentials_by_region_id(self, region_id):
         account_id = os.getenv('CP_ACCOUNT_ID_{}'.format(region_id))
         account_key = os.getenv('CP_ACCOUNT_KEY_{}'.format(region_id))
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(region_id))
-        if not account_id or not account_key or not account_region:
+        account_cred_file_content = os.getenv('CP_CREDENTIALS_FILE_CONTENT_{}'.format(region_id))
+        if not StorageMounter.credentials_exists(region_id, account_id, account_key, account_region, account_cred_file_content):
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(region_id))
-        return account_id, account_key, account_region
+        return account_id, account_key, account_region, account_cred_file_content
+
+    @staticmethod
+    def credentials_exists(region_id, account_id, account_key, account_region, account_cred_file_content):
+        cloud_provider = os.getenv('CP_CLOUD_PROVIDER_{}'.format(region_id))
+        if cloud_provider == "AWS" or cloud_provider == "AZURE":
+            return account_id and account_key and account_region
+        elif cloud_provider == "GCP":
+            return account_region and account_cred_file_content
+        else:
+            raise RuntimeError("Cloud provider for account with id={} wasn\'t found or unsupported".format(region_id))
 
 
 class AzureMounter(StorageMounter):
@@ -249,7 +253,7 @@ class AzureMounter(StorageMounter):
             AzureMounter.fuse_tmp = fuse_tmp
 
     def build_mount_params(self, mount_point):
-        account_id, account_key, _ = self._get_credentials(self.storage)
+        account_id, account_key, _, _ = self._get_credentials(self.storage)
         return {
             'mount': mount_point,
             'path': self.get_path(),
@@ -324,7 +328,7 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
-        aws_key_id, aws_secret, region_name = self._get_credentials(self.storage)
+        aws_key_id, aws_secret, region_name, _ = self._get_credentials(self.storage)
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
@@ -358,6 +362,7 @@ class S3Mounter(StorageMounter):
 
 class GCPMounter(StorageMounter):
     available = False
+    credentials = None
     fuse_tmp = '/tmp'
 
     @staticmethod
@@ -370,7 +375,7 @@ class GCPMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_gcfuse')
+        AzureMounter.available = StorageMounter.execute_and_check_command('install_gcsfuse')
         GCPMounter.available = True
 
     @staticmethod
@@ -379,26 +384,38 @@ class GCPMounter(StorageMounter):
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
-        fuse_tmp = os.path.join(tmp_dir, "gcfuse")
+        fuse_tmp = os.path.join(tmp_dir, "gcsfuse")
         if StorageMounter.create_directory(fuse_tmp, task_name):
             GCPMounter.fuse_tmp = fuse_tmp
 
+    def mount(self, mount_root, task_name):
+        super(GCPMounter, self).mount(mount_root, task_name)
+
     def build_mount_params(self, mount_point):
+        _, _, _, gcp_creds_content = self._get_credentials(self.storage)
+        if not gcp_creds_content:
+            print("GCP credentials is not available, GCP file storage won't be mounted")
+            return {}
+
+        creds_named_pipe_path = "<(echo \'{gcp_creds_content}\')".format(gcp_creds_content=gcp_creds_content)
         mask = '0774'
         permissions = 'rw'
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
         return {'mount': mount_point,
-                'storage_id': str(self.storage.id),
                 'path': self.get_path(),
                 'mask': mask,
                 'permissions': permissions,
-                'tmp_dir': self.fuse_tmp
+                'tmp_dir': self.fuse_tmp,
+                'credentials': creds_named_pipe_path
                 }
 
     def build_mount_command(self, params):
-        return 'gcfuse {path} {mount} '.format(**params)
+        if not params:
+            return ""
+        return 'gcsfuse -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
+               '--dir-mode {mask} --file-mode {mask} {path} {mount}'.format(**params)
 
 
 class NFSMounter(StorageMounter):
@@ -442,7 +459,7 @@ class NFSMounter(StorageMounter):
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
         if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE":
-            az_acc_id, az_acc_key, _ = self._get_credentials_by_region_id(region_id)
+            az_acc_id, az_acc_key, _, _ = self._get_credentials_by_region_id(region_id)
             creds_options = ",".join(["username=" + az_acc_id, "password=" + az_acc_key])
 
             if mount_options:
