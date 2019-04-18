@@ -376,6 +376,19 @@ fi
 
 
 ######################################################
+# Install runtime dependencies
+######################################################
+
+echo "Install runtime dependencies"
+echo "-"
+
+if [ -f /bin/bash ]; then
+    ln -sf /bin/bash /bin/sh
+fi
+
+######################################################
+
+######################################################
 echo "Init default variables if they are not set explicitly"
 echo "-"
 ######################################################
