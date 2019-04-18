@@ -548,6 +548,13 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, group);
     }
 
+    public boolean toolGroupChildPermission(String groupId, String permissionName) {
+        ToolGroup group = toolGroupManager.loadByNameOrId(groupId);
+        return permissionsHelper.isAllowed(permissionName, group) &&
+                ListUtils.emptyIfNull(group.getTools()).stream()
+                        .allMatch(tool -> permissionsHelper.isAllowed(permissionName, tool));
+    }
+
     public boolean runPermission(PipelineRun run, String permissionName) {
         if (permissionsHelper.isOwner(run)) {
             run.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);

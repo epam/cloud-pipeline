@@ -258,8 +258,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
         if (force) {
             //remove all tools from registry to avoid DataIntegrityViolationException
             // But do not delete actual tools from registry
-            registry.getTools().forEach(tool -> toolManager.delete(tool.getRegistry(), tool.getImage(), false));
-            toolGroupManager.loadByRegistryId(id).forEach(g -> toolGroupManager.delete(g.getId().toString()));
+            toolGroupManager.loadByRegistryId(id).forEach(g -> toolGroupManager.delete(g.getId().toString(), force));
         }
         if (StringUtils.isNotBlank(registry.getSecretName())) {
             kubernetesManager.deleteSecret(registry.getSecretName());

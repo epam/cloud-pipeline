@@ -102,6 +102,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_GROUP_IS_NOT_PROVIDED = "error.tool.group.is.not.provided";
     public static final String ERROR_TOOL_GROUP_BY_NAME_NOT_FOUND = "error.tool.group.by.name.not.found";
     public static final String ERROR_PRIVATE_TOOL_GROUP_NOT_FOUND = "error.private.tool.group.not.found";
+    public static final String ERROR_TOOL_GROUP_NOT_EMPTY = "error.tool.group.not.empty";
 
     //PipelineLauncher
     public static final String ERROR_INVALID_CMD_TEMPLATE = "error.invalid.cmd.template";

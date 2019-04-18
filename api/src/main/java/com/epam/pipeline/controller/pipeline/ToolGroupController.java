@@ -88,7 +88,8 @@ public class ToolGroupController extends AbstractRestController {
     }
 
     @RequestMapping(value = TOOL_GROUP_URL, method = RequestMethod.DELETE)
-    public Result<ToolGroup> delete(@RequestParam String id) {
-        return Result.success(toolGroupApiService.delete(id));
+    public Result<ToolGroup> delete(@RequestParam String id, 
+                                    @RequestParam(defaultValue = "false") boolean force) {
+        return Result.success(force ? toolGroupApiService.deleteForce(id) : toolGroupApiService.delete(id));
     }
 }
