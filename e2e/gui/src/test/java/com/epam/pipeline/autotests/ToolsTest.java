@@ -507,9 +507,8 @@ public class ToolsTest
         return group -> group.deleteGroup(confirmGroupDeletion(groupName));
     }
 
-    public Consumer<ConfirmationPopupAO<Registry>> confirmGroupDeletion(final String groupName) {
-        return confirmation ->
-                confirmation.ensureTitleIs(String.format("Are you sure you want to delete '%s'?", groupName))
+    public Consumer<ToolGroupDeletionPopup> confirmGroupDeletion(final String groupName) {
+        return confirmation -> confirmation.ensureGroupNameIs(groupName)
                         .sleep(1, SECONDS)
                         .ok();
     }
