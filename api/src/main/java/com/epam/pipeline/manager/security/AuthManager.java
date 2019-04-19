@@ -36,6 +36,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -149,6 +150,7 @@ public class AuthManager {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
 
         UserContext userContext = new UserContext(defaultAdminId, defaultAdmin);
+        userContext.setRoles(Collections.singletonList(DefaultRoles.ROLE_ADMIN.getRole()));
         Collection<GrantedAuthority> authorities = AuthorityUtils.createAuthorityList("ROLE_ADMIN");
         context.setAuthentication(new JwtAuthenticationToken(userContext, authorities));
 
