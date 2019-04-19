@@ -366,10 +366,10 @@ export class RunConfirmation extends React.Component {
                   <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  Note that if you install any <b>NVIDEA packages</b> manually and commit it, that may produce an unusable image.
+                  Note that if you install any <b>NVIDIA packages</b> manually and commit it, that may produce an unusable image.
                 </Row>
                 <Row>
-                  All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidea/cuda</a></b> base image instead.
+                  All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidia/cuda</a></b> base image instead.
                 </Row>
               </Row>
             } />
