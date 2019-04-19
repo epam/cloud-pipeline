@@ -285,8 +285,12 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       hide();
-      this.props.onRefresh && await this.props.onRefresh();
-      this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
+      this.setState({
+        removeToolGroup: false
+      }, async() => {
+        this.props.onRefresh && await this.props.onRefresh();
+        this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
+      });
     }
   };
 
