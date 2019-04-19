@@ -27,7 +27,7 @@ import LoadTool from '../../../models/tools/LoadTool';
 import AllowedInstanceTypes from '../../../models/utils/AllowedInstanceTypes';
 import LoadToolVersionSettings from '../../../models/tools/LoadToolVersionSettings';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
-import {run, runPipelineActions} from '../../runs/actions';
+import {submitsRun, run, runPipelineActions} from '../../runs/actions';
 import styles from './LaunchPipeline.css';
 import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
@@ -38,6 +38,7 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
   pipelines, preferences
 })
 @localization.localizedComponent
+@submitsRun
 @runPipelineActions
 @inject('awsRegions')
 @inject(({allowedInstanceTypes, awsRegions, routing, pipelines, preferences}, {params}) => {

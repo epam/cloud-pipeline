@@ -81,7 +81,7 @@ const Root = () =>
       pipelinesLibrary,
       dataStorages,
       awsRegions,
-      availableCloudRegions, // awsRegionIds,
+      availableCloudRegions,
       cloudProviders,
       folders,
       instanceTypes,
