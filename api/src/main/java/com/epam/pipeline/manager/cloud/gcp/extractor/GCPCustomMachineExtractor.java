@@ -22,6 +22,7 @@ import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Precision;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -38,6 +39,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
     private static final int MEGABYTES_IN_GIGABYTE = 1024;
     private static final String CUSTOM_FAMILY = "custom";
     private static final double EXTENDED_FACTOR = 6.5;
+    private static final double FACTOR_PRECISION = 0.1;
 
     @Override
     public List<AbstractGCPObject> extract(final GCPRegion region) {
@@ -52,7 +54,8 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         final String name = type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
                 ? gpuCustomGpuMachine(type)
                 : customCpuMachine(type);
-        final double extendedMemory = type.getRam() / type.getCpu() > EXTENDED_FACTOR
+        final double ramCpuFactor = type.getRam() / type.getCpu();
+        final double extendedMemory = Precision.compareTo(ramCpuFactor, EXTENDED_FACTOR, FACTOR_PRECISION) > 0
                 ? type.getRam() - type.getCpu() * EXTENDED_FACTOR
                 : 0.0;
         final double defaultMemory = type.getRam() - extendedMemory;
