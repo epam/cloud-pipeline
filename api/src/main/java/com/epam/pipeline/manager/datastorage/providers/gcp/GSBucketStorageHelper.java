@@ -38,7 +38,10 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.gax.paging.Page;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.Identity;
+import com.google.cloud.Policy;
 import com.google.cloud.ReadChannel;
+import com.google.cloud.Role;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -70,6 +73,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -101,6 +105,7 @@ public class GSBucketStorageHelper {
                 .setStorageClass(StorageClass.REGIONAL)
                 .setLocation(trimRegionZone(region.getRegionCode()))
                 .build());
+        applyIamPolicy(storage, client);
         return bucket.getName();
     }
 
@@ -420,6 +425,41 @@ public class GSBucketStorageHelper {
                                 .setResponseHeaders(rule.getResponseHeader())
                                 .build()
                 ).collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void applyIamPolicy(final GSBucketStorage storage, final Storage client) {
+        if (StringUtils.isNotBlank(region.getPolicy())) {
+            try {
+                final Policy currentPolicy = client.getIamPolicy(storage.getPath());
+                client.setIamPolicy(storage.getPath(),
+                        buildIamPolicy(MapUtils.emptyIfNull(currentPolicy.getBindings())));
+            } catch(Exception e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+    }
+
+    private Policy buildIamPolicy(final Map<Role, Set<Identity>> currentPolicy) {
+        final ObjectMapper policyMapper = JsonMapper.newInstance()
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        final List<com.google.api.services.storage.model.Policy.Bindings> rawPolicy = ListUtils.emptyIfNull(
+                JsonMapper.parseData(region.getPolicy(),
+                new TypeReference<List<com.google.api.services.storage.model.Policy.Bindings>>() {}, policyMapper));
+
+        final Map<Role, Set<Identity>> resultPolicy = new HashMap<>();
+        rawPolicy.forEach(bindings -> {
+            final Role role = Role.of(bindings.getRole());
+            resultPolicy.putIfAbsent(role, new HashSet<>());
+            resultPolicy.get(role).addAll(bindings.getMembers().stream()
+                    .map(Identity::valueOf)
+                    .collect(Collectors.toSet()));
+        });
+        currentPolicy.forEach((role, identities) -> {
+            resultPolicy.putIfAbsent(role, new HashSet<>());
+            resultPolicy.get(role).addAll(identities);
+        });
+        return Policy.newBuilder().setBindings(resultPolicy).build();
     }
 
     private BucketInfo.LifecycleRule buildStorageClassRelocationRule(final StoragePolicy policy) {
