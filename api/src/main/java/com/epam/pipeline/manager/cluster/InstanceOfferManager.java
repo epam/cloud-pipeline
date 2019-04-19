@@ -234,7 +234,7 @@ public class InstanceOfferManager {
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
-        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot), actualRegionId);
+        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);
         double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId, runInstance.getNodeType(), spot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
 
