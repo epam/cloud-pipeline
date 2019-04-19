@@ -46,7 +46,7 @@ import java.util.Optional;
 public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     private static final String GOOGLE_PROJECT_ID = "GOOGLE_PROJECT_ID";
-    private static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
+    protected static final String GOOGLE_APPLICATION_CREDENTIALS = "GOOGLE_APPLICATION_CREDENTIALS";
 
     private final ClusterCommandService commandService;
     private final CommonCloudInstanceService instanceService;
