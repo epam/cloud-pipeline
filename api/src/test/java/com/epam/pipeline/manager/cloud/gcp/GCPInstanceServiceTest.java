@@ -12,6 +12,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
+import static com.epam.pipeline.manager.execution.SystemParams.*;
+
 public class GCPInstanceServiceTest {
 
     private static final String CRED_TEMPLATE = "{\n" +
@@ -53,10 +55,10 @@ public class GCPInstanceServiceTest {
     @Test
     public void credFileExistsInEnvVars() throws IOException {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(region);
-        Assert.assertTrue(envVars.containsKey("CP_ACCOUNT_REGION_" + region.getId()));
-        Assert.assertTrue(envVars.containsKey("CP_CREDENTIALS_FILE_CONTENT_" + region.getId()));
+        Assert.assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + region.getId()));
+        Assert.assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId()));
         String expected = String.join("", Files.readAllLines(Paths.get(region.getAuthFile())));
-        String actual = envVars.get("CP_CREDENTIALS_FILE_CONTENT_" + region.getId());
+        String actual = envVars.get(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId());
         Assert.assertEquals(expected, actual);
     }
 
@@ -64,11 +66,13 @@ public class GCPInstanceServiceTest {
     public void noCredFileInEnvVarsIfNoRegionAuthFile() {
         Map<String, String> envVars = service.buildContainerCloudEnvVars(regionWithoutAuthFile);
         if (System.getenv(GCPInstanceService.GOOGLE_APPLICATION_CREDENTIALS) == null) {
-            Assert.assertFalse(envVars.containsKey("CP_CREDENTIALS_FILE_CONTENT_" + regionWithoutAuthFile.getId()));
+            Assert.assertFalse(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
+                    + regionWithoutAuthFile.getId()));
         } else {
-            Assert.assertTrue(envVars.containsKey("CP_CREDENTIALS_FILE_CONTENT_" + region.getId()));
+            Assert.assertTrue(envVars.containsKey(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX
+                    + regionWithoutAuthFile.getId()));
         }
-        Assert.assertTrue(envVars.containsKey("CP_ACCOUNT_REGION_" + regionWithoutAuthFile.getId()));
+        Assert.assertTrue(envVars.containsKey(CLOUD_REGION_PREFIX + regionWithoutAuthFile.getId()));
     }
 
 }
