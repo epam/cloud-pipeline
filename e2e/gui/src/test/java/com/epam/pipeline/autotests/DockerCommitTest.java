@@ -391,7 +391,7 @@ public class DockerCommitTest
     }
 
     private Consumer<ToolGroup> deleteGroup(final String groupName) {
-        return group -> group.deleteGroup(confirmGroupDeletion(groupName));
+        return group -> group.deleteGroup(deletion -> deletion.ensureGroupNameIs(groupName).ok());
     }
 
     public boolean hasOnPage(String customTag) {
