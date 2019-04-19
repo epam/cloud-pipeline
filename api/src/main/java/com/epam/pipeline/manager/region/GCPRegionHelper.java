@@ -58,6 +58,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
     public GCPRegion mergeRegions(final GCPRegion originalRegion, final GCPRegion updatedRegion) {
         originalRegion.setName(updatedRegion.getName());
         originalRegion.setCorsRules(updatedRegion.getCorsRules());
+        originalRegion.setPolicy(updatedRegion.getPolicy());
         originalRegion.setDefault(updatedRegion.isDefault());
         originalRegion.setSshPublicKeyPath(updatedRegion.getSshPublicKeyPath());
         originalRegion.setAuthFile(updatedRegion.getAuthFile());

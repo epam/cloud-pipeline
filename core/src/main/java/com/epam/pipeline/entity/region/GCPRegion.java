@@ -46,4 +46,5 @@ public class GCPRegion extends AbstractCloudRegion {
     private String impersonatedAccount;
     private List<GCPCustomInstanceType> customInstanceTypes;
     private String corsRules;
+    private String policy;
 }

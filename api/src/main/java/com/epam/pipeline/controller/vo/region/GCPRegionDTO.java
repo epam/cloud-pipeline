@@ -39,4 +39,5 @@ public class GCPRegionDTO extends AbstractCloudRegionDTO {
     private String impersonatedAccount;
     private List<GCPCustomInstanceType> customInstanceTypes;
     private String corsRules;
+    private String policy;
 }
