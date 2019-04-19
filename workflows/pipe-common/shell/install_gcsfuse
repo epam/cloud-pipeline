@@ -45,14 +45,14 @@ repo_gpgcheck=1
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF
-        yum update -y
-        yum install -y gcsfuse
+        yum update -y -q
+        yum install -y -q gcsfuse
     else
         export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
         echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
         curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-        apt-get update -y
-        apt-get install -y gcsfuse
+        apt-get update -qq -y > /dev/null
+        apt-get install -y -qq gcsfuse > /dev/null
     fi
 }
 
@@ -60,8 +60,8 @@ _FUSE_TYPE=gcsfuse
 _FUSE_BIN=/usr/bin/gcsfuse
 
 command -v gcsfuse >/dev/null 2>&1
-_IS_BLOBFUSE_INSTALLED=$?
-if [ $_IS_BLOBFUSE_INSTALLED -eq 0 ]; then
+_IS_GCSFUSE_INSTALLED=$?
+if [ $_IS_GCSFUSE_INSTALLED -eq 0 ]; then
     echo "$_FUSE_TYPE already installed, skipping installation"
     exit 0
 fi
