@@ -117,9 +117,11 @@ fi
 
 # API
 CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
+
+CP_API_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz"
 if [ -z "$CP_API_DIST_URL" ]; then
-    echo "CP_API_DIST_URL is not set, exiting"
-    exit 1
+    echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
+    CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
@@ -177,6 +179,11 @@ docker build    $DOCKERS_SOURCES_PATH/cp-search \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SEARCH_DIST_NAME"
 
+# Node logger
+CP_NODE_LOGGER_DIST_NAME=${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
+                -t "$CP_NODE_LOGGER_DIST_NAME"
+docker push "$CP_NODE_LOGGER_DIST_NAME"
 
 ########################
 # Base tools dockers
@@ -258,13 +265,15 @@ build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/bcl2fastq2 "$CP_DIST_REPO_NA
 # ngs-essential
 build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/ngs-essential "$CP_DIST_REPO_NAME:tools-ngs-essential-${DOCKERS_VERSION}" "ngs/ngs-essential:latest"
 
-# FIXME: store cellranger dist in the own storage, otherwise is will never be built (almost)
 # cellranger
-if [ "$CELLRANGER_URL" ]; then
-    build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
-else
-    echo "CELLRANGER_URL is not specified, cellranger docker WILL NOT be built"
-fi
+export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
+build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
+
+# msgen
+build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/msgen "$CP_DIST_REPO_NAME:tools-ngs-msgen-${DOCKERS_VERSION}" "ngs/msgen:latest"
+
+# bioconductor
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-ngs-bioconductor-${DOCKERS_VERSION}" "ngs/bioconductor:latest" --spec "../../ngs/bioconductor" --build-arg BASE_IMAGE="bioconductor/release_core2:R3.5.3_Bioc3.8"
 
 ########################
 # MD tools dockers

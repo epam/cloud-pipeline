@@ -24,8 +24,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
@@ -33,6 +38,7 @@ import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.NEXT_PAGE;
 import static java.util.stream.Collectors.toList;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class StoragePaginationTest extends AbstractBfxPipelineTest
         implements StorageHandling {
 
@@ -84,6 +90,7 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
 
     @Test
     @TestCase({"EPMCMBIBPC-1068"})
+    @CloudProviderOnly(Cloud.AWS)
     public void filesVersionModeOnShouldEnablePaginationOnRemovedFiles() {
         final int filesNumber = 51;
         final List<String> filesSuffixes = generateNames(filesNumber, fileSuffix);

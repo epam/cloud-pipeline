@@ -65,8 +65,8 @@ import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
-  CP_CAP_SGE_AUTOSCALE,
-  CP_CAP_SGE_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState
@@ -584,8 +584,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -626,8 +626,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -734,11 +734,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_SGE_AUTOSCALE] = {
+        payload[PARAMETERS][CP_CAP_AUTOSCALE] = {
           type: 'boolean',
           value: true
         };
-        payload[PARAMETERS][CP_CAP_SGE_AUTOSCALE_WORKERS] = {
+        payload[PARAMETERS][CP_CAP_AUTOSCALE_WORKERS] = {
           type: 'int',
           value: +this.state.maxNodesCount
         };
@@ -841,11 +841,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         type: 'boolean',
         value: true
       };
-      payload.params[CP_CAP_SGE_AUTOSCALE] = {
+      payload.params[CP_CAP_AUTOSCALE] = {
         type: 'boolean',
         value: true
       };
-      payload.params[CP_CAP_SGE_AUTOSCALE_WORKERS] = {
+      payload.params[CP_CAP_AUTOSCALE_WORKERS] = {
         type: 'int',
         value: +this.state.maxNodesCount
       };
@@ -979,8 +979,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledClusterEnabled: autoScaledCluster,
       nodesCount: +this.props.parameters.node_count,
-      maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-        ? +this.props.parameters.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+      maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
         : 0,
       pipeline: this.props.pipeline,
       version: this.props.version,
@@ -1007,15 +1007,22 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     this.setState(state);
   };
 
-  evaluateEstimatedPrice = ({disk, type, isSpot}) => {
+  evaluateEstimatedPrice = async ({disk, type, isSpot, cloudRegionId}) => {
     if (!disk) {
-      disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk');
+      disk = this.getSectionFieldValue(EXEC_ENVIRONMENT)('disk') ||
+        this.getDefaultValue('instance_disk');
     }
     if (!type) {
-      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type');
+      this.props.allowedInstanceTypes && await this.props.allowedInstanceTypes.fetchIfNeededOrWait();
+      type = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
+        this.correctInstanceTypeValue(this.getDefaultValue('instance_size'));
     }
     if (!isSpot) {
-      isSpot = this.getSectionFieldValue(ADVANCED)('is_spot');
+      isSpot = this.getSectionFieldValue(ADVANCED)('is_spot') || this.getDefaultValue('is_spot');
+    }
+    if (!cloudRegionId) {
+      cloudRegionId = this.getSectionFieldValue(EXEC_ENVIRONMENT)('cloudRegionId') ||
+        this.getDefaultValue('cloudRegionId') || this.defaultCloudRegionId;
     }
     isSpot = `${isSpot}` === 'true';
     if (!isNaN(disk) && type) {
@@ -1032,7 +1039,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         await request.send({
           'instanceType': type,
           'instanceDisk': disk,
-          'spot': isSpot
+          'spot': isSpot,
+          'regionId': cloudRegionId
         });
         estimatedPriceState.pending = false;
         if (!request.error) {
@@ -2474,6 +2482,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
             allowClear={false}
             placeholder="Cloud Region"
             optionFilterProp="children"
+            onSelect={(cloudRegionId) => this.evaluateEstimatedPrice({cloudRegionId})}
             filterOption={
               (input, option) =>
                 option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0}>

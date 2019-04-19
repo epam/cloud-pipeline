@@ -54,6 +54,7 @@ public enum SystemParams {
     GS_OAUTH_REFRESH_TOKEN("google-refresh-token", "GS_OAUTH_REFRESH_TOKEN", true),
     GS_OAUTH_CLIENT_ID("google-client-id", "GS_CLIENT_ID", true),
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
+    PARENT_ID("parent-id", "parent_id", false),
     RESUMED_RUN("resumed-run", "RESUMED_RUN", false);
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";

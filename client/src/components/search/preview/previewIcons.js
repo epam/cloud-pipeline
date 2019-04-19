@@ -20,6 +20,8 @@ export const PreviewIcons = {
   [SearchItemTypes.pipeline]: 'fork',
   [SearchItemTypes.pipelineCode]: 'file-text',
   [SearchItemTypes.run]: 'play-circle-o',
+  [SearchItemTypes.azStorage]: 'inbox',
+  [SearchItemTypes.azFile]: 'file',
   [SearchItemTypes.s3Bucket]: 'inbox',
   [SearchItemTypes.s3File]: 'file',
   [SearchItemTypes.NFSBucket]: 'hdd',

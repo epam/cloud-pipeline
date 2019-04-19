@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-docker-comp
           image: lifescience/cloud-pipeline:docker-comp-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           command: ["/init"]
           ports:
             - containerPort: 8080
@@ -29,6 +29,10 @@ spec:
           volumeMounts:
             - mountPath: /opt/docker-comp/wd
               name: docker-comp-wd
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f docker-comp-scan.jar); sleep 1"]
       volumes:
         - name: docker-comp-wd
           hostPath:

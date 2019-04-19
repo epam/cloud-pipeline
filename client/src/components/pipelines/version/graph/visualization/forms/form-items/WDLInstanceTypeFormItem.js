@@ -137,6 +137,7 @@ export class WDLInstanceTypeFormItem extends React.Component {
       <div>
         <Row>
           <Checkbox
+            id="use-another-compute-node"
             disabled={this.props.disabled}
             checked={this.state.useAnotherComputeNode}
             onChange={this.onUseAnotherComputeNodeChanged}>
@@ -146,6 +147,7 @@ export class WDLInstanceTypeFormItem extends React.Component {
         {
           this.state.useAnotherComputeNode &&
           <Select
+            id="instance-types-select"
             disabled={this.props.disabled}
             showSearch
             allowClear={false}

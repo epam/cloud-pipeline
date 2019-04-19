@@ -226,7 +226,7 @@ function api_create_folder {
     local folder_parent_id="$2"
 
     if [ "$folder_parent_id" ]; then
-        local folder_parent_key_value=", \"parentFolderId\": $folder_parent_id"
+        local folder_parent_key_value=", \"parentId\": $folder_parent_id"
     fi
 
     local payload="{}"
@@ -260,12 +260,57 @@ EOF
     return $call_api_create_folder_result
 }
 
+function api_create_folder_path {
+    local folder_path="$1"
+
+    if [ -z "$folder_path" ]; then
+        return 1
+    fi
+    local path_items=""
+    IFS="/" read -ra path_items <<< "$folder_path"
+    
+    local current_folder_path=""
+    local current_folder_id=""
+    local parent_folder_id=""
+    for path_item in "${path_items[@]}"; do
+        current_folder_path="${current_folder_path}/${path_item}"
+        current_folder_path=${current_folder_path#/}    # Remove leading slash, if any
+        
+        current_folder_id=$(api_get_entity_id "$current_folder_path" "folder")
+        if [ $? -eq 0 ] && [ "$current_folder_id" ]; then
+            print_ok "Folder $current_folder_path already exists, skipping creation"
+            parent_folder_id=$current_folder_id
+            continue
+        fi
+
+        api_create_folder "$path_item" "$parent_folder_id"
+        if [ $? -ne 0 ]; then
+            print_warn "Unable to create a folder $path_item with parent id \"$parent_folder_id\""
+            return 1
+        fi
+
+        parent_folder_id=$(api_get_entity_id "$current_folder_path" "folder")
+        if [ $? -ne 0 ] && [ -z "$parent_folder_id" ]; then
+            print_warn "Unable to get id of the created folder $current_folder_path"
+            return 1
+        fi
+
+    done
+
+    print_ok "Folder path $folder_path created"
+
+    return 0
+}
+
 function api_get_entity_id {
     local entity_name="$1"
     local entity_type="$2"
     if [ -z "$entity_type" ]; then
         return 1
     fi
+
+    # Convert entity_type to lower case, as otherwise api call will fail
+    entity_type="$(echo "$entity_type" | tr '[:upper:]' '[:lower:]')"
 
     local entity_json=$(call_api "/$entity_type/find?id=$entity_name" "$CP_API_JWT_ADMIN")
     local entity_id=$(echo "$entity_json" | jq -r ".payload.id")
@@ -283,6 +328,20 @@ function api_get_docker_registry_id {
     local docker_id=$(echo "$docker_registries_json" | jq -r ".payload.id")
     if [ "$docker_id" ] && [ "$docker_id" != "null" ]; then
         echo "$docker_id"
+        return 0
+    else
+        return 1
+    fi
+}
+
+function api_get_cluster_instance_details {
+    local instance_type="$1"
+    local region_id="$2"
+
+    local get_cluster_instance_details_json=$(call_api "/cluster/instance/loadAll?regionId=$region_id" "$CP_API_JWT_ADMIN")
+    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r ".payload[] | select(.name == \"$instance_type\")")"
+    if [ "$get_cluster_instance_details_result" ] && [ "$get_cluster_instance_details_result" != "null" ]; then
+        echo "$get_cluster_instance_details_result"
         return 0
     else
         return 1
@@ -509,6 +568,13 @@ function api_register_docker_image {
     fi
 
     local image_name_no_version="$(echo $image_name | cut -d: -f1)"
+    local instance_type_json=""
+    if [ "$instance_type" ] && [ "$instance_type" != "NA" ]; then
+        instance_type_json=", \"instanceType\": \"$instance_type\""
+    else
+        print_warn "Instance type for $image_name is not set (actual value: \"$instance_type\"). Image will be registered without a default instance type"
+    fi
+
     local payload="{}"
 read -r -d '' payload <<-EOF
 {
@@ -519,11 +585,9 @@ read -r -d '' payload <<-EOF
     "description": "$full_description",
     "disk": $disk_size,
     "endpoints": $endpoints,
-    "defaultCommand": "$default_command"
+    "defaultCommand": "$default_command" $instance_type_json
 }
 EOF
-# Instance type shall be added to the payload once price lists are synced
-#    "instanceType": "$instance_type",
 
     call_api_register_image_response=$(call_api "/tool/update" "$CP_API_JWT_ADMIN" "$payload")
     call_api_register_image_result=$?
@@ -588,7 +652,7 @@ function api_register_region {
 
     local cors_rules="$(get_file_based_preference storage.cors.policy other $CP_CLOUD_PLATFORM escape)"
     if [ $? -ne 0 ] || [ -z "$cors_rules" ]; then
-        print_err "CORS rules cannot be retrieved for $CP_AWS cloud provider, you will have to specify them manually via GUI/API"
+        print_err "CORS rules cannot be retrieved for $CP_CLOUD_PLATFORM cloud provider, you will have to specify them manually via GUI/API"
         cors_rules=""
     fi
 
@@ -867,8 +931,10 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
 {
     "PIPELINE_RUN": "cp-pipeline-run",
     "S3_FILE": "cp-s3-file*",
+    "AZ_BLOB_FILE": "cp-az-file*",
     "NFS_FILE": "cp-nfs-file*",
     "S3_STORAGE": "cp-s3-storage",
+    "AZ_BLOB_STORAGE": "cp-az-storage",
     "NFS_STORAGE": "cp-nfs-storage",
     "TOOL": "cp-tool",
     "TOOL_GROUP": "cp-tool-group",
@@ -1024,49 +1090,55 @@ EOF
     return $call_api_register_system_storage_result
 }
 
-# FIXME 1. Instance type in the config.json shall be replaced according to the current cloud provider (azure/aws/gcp)
-function api_register_data_transfer_pipeline {
-    local pipeline_role_grant="${1:-ROLE_USER}"
+function api_register_pipeline {
+    local parent_folder_name="$1"
+    local pipeline_name="$2"
+    local pipeline_description="$3"
+    local pipeline_sources_dir="$4"
+    local pipeline_role_grant="${5:-ROLE_USER}"
+    local pipeline_role_premissions="${6:-21}"
+    local pipeline_version="${7:-v1}"
 
-    # 0. Preflight
-    local parent_folder_id="$(api_get_entity_id "$CP_API_SRV_SYSTEM_FOLDER_NAME" "folder")"
+
+    # 0. Preflight and  get parent folder id
+    local parent_folder_id="$(api_get_entity_id "$parent_folder_name" "folder")"
     if [ $? -ne 0 ] || [ ! "$parent_folder_id" ]; then
-        print_err "Unable to determine ID of the system folder ${CP_API_SRV_SYSTEM_FOLDER_NAME}, data transfer pipeline WILL NOT be registered"
+        print_err "Unable to determine ID of the folder ${parent_folder_name}, ${pipeline_name} pipeline will not be registered"
         return 1
     fi
 
-    if [ ! -d "$OTHER_PACKAGES_PATH/data_loader" ]; then
-        print_err "Data transfer pipeline sources cannot be found at $OTHER_PACKAGES_PATH/data_loader, data transfer pipeline WILL NOT be registered "
+    if [ ! -d "$pipeline_sources_dir" ]; then
+        print_err "Pipeline sources cannot be found at $pipeline_sources_dir, pipeline WILL NOT be registered "
     fi
     
     # 1. Create a pipeline from the "Default" template
-    api_create_pipeline "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" \
-                        "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_DESCRIPTION" \
+    api_create_pipeline "$pipeline_name" \
+                        "$pipeline_description" \
                         "$parent_folder_id"
         if [ $? -ne 0 ]; then
-            print_err "Unable to register a new data transfer pipeline template"
+            print_err "Unable to register a new pipeline object from the default template"
             return 1
         fi
 
     # 2. Get it's ID
-    local pipeline_id="$(api_get_entity_id "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" "pipeline")"
+    local pipeline_id="$(api_get_entity_id "$pipeline_name" "pipeline")"
     if [ $? -ne 0 ] || [ ! "$pipeline_id" ]; then
-        print_err "Unable to determine ID of the pipeline ${CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME}, data transfer pipeline WILL NOT be registered"
+        print_err "Unable to determine ID of the pipeline ${pipeline_name}, pipeline WILL NOT be registered"
         return 1
     fi
 
     # 3. Grant corresponding permissions
     api_entity_grant "$pipeline_id" \
                      "PIPELINE" \
-                     "26" \
+                     "$pipeline_role_premissions" \
                      "false" \
                      "$pipeline_role_grant"
     if [ $? -ne 0 ]; then
-        print_warn "Unable to set corresponding permissions for the data transfer pipeline, please fix this manually using GUI/API"
+        print_warn "Unable to set corresponding permissions for the pipeline ${pipeline_name}, please fix this manually using GUI/API"
     fi
 
     # 4. Push the pipeline sources
-    local pipeline_repo_name="$(echo "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" | sed 's/[^0-9a-zA-Z]//g' | awk '{print tolower($0)}')"
+    local pipeline_repo_name="$(echo "$pipeline_name" | sed 's/[^0-9a-zA-Z]//g' | awk '{print tolower($0)}')"
     local pipeline_url="https://${GITLAB_ROOT_USER}:${GITLAB_ROOT_PASSWORD}@${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}/${GITLAB_ROOT_USER}/${pipeline_repo_name}.git"
     local prev_dir="$(pwd)"
 
@@ -1075,7 +1147,8 @@ function api_register_data_transfer_pipeline {
     git clone "$pipeline_url" && \
     cd "$pipeline_repo_name" && \
     rm -rf docs/ src/ config.json && \
-    \cp -r $OTHER_PACKAGES_PATH/data_loader/* ./ && \
+    \cp -r $pipeline_sources_dir/* ./ && \
+    rm -f $pipeline_sources_dir/spec.json && \
     git add -A && \
     git commit -m "Initial commit" && \
     git push -f
@@ -1085,37 +1158,135 @@ function api_register_data_transfer_pipeline {
     rm -rf "/tmp/$pipeline_repo_name"
 
     if [ $pipeline_push_result -ne 0 ]; then
-        print_err "Unable to update data transfer pipeline sources. Data transfer pipeline is left in a not functional state, please fix this manually using GUI/API"
+        print_err "Unable to update pipeline ${pipeline_name} sources. Pipeline is left in a not functional state, please fix this manually using GUI/API"
         return 1
     fi
 
     # 5. Get current commit id
     local pipeline_details_json=$(call_api "/pipeline/$pipeline_id/load" "$CP_API_JWT_ADMIN")
         if [ $? -ne 0 ]; then
-            print_err "Unable to get data transfer pipeline commit id. Data transfer pipeline is left in a not functional state, please fix this manually using GUI/API"
+            print_err "Unable to get pipeline ${pipeline_name} commit id. Pipeline is left in a not functional state, please fix this manually using GUI/API"
             return 1
         fi
 
     local pipeline_commit_id="$(echo $pipeline_details_json | jq -r '.payload.currentVersion.commitId')"
     if [ -z "$pipeline_commit_id" ] || [ "$pipeline_commit_id" == "null" ]; then
-         print_err "Unable to extract data transfer pipeline commit id from the response. Data transfer pipeline is left in a not functional state, please fix this manually using GUI/API"
+        print_err "Unable to extract pipeline ${pipeline_name} commit id from the response. Pipeline is left in a not functional state, please fix this manually using GUI/API"
         return 1
     fi
 
     # 6. Set version number
     api_release_pipeline "$pipeline_id" \
                          "$pipeline_commit_id" \
-                         "${CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION:-latest}"
+                         "$pipeline_version"
      if [ $? -ne 0 ]; then
-         print_err "Unable to set version (${pipeline_id}: ${pipeline_commit_id}). Data transfer pipeline is left in a not functional state, please fix this manually using GUI/API"
+        print_err "Unable to set version (${pipeline_id}: ${pipeline_commit_id}). Pipeline ${pipeline_name} is left in a not functional state, please fix this manually using GUI/API"
+        return 1
+    fi
+
+    print_ok "Pipeline $pipeline_name is registered with ID $pipeline_id"
+}
+
+function api_register_demo_pipelines {
+    local demo_pipelines_path="${1:-$OTHER_PACKAGES_PATH/pipe-demo}"
+
+    for demo_pipeline_spec_file in $(find $demo_pipelines_path -type f -name "spec.json"); do
+        local demo_pipeline_dir=$(dirname $demo_pipeline_spec_file)
+
+        # Validate pipeline structure. At least we need src/ directory and a config.json
+        local demo_pipeline_config_json="$demo_pipeline_dir/config.json"
+        if [ ! -f "$demo_pipeline_config_json" ] || [ ! -d "$demo_pipeline_dir/src" ]; then
+            print_warn "Demo pipeline directory at ${demo_pipeline_dir} is malformed: it shall container src/ directory and a config.json at least. This pipeline will be skipped"
+            continue
+        fi
+
+        local demo_pipeline_spec_json=$(<$demo_pipeline_spec_file)
+        local demo_pipeline_parent_folder_name=$(jq -r '.parent_folder // "Pipelines"' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_name=$(jq -r '.name // "NA"' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_description=$(jq -r '.description // ""' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_version=$(jq -r '.version // "v1"' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_grant_role_name=$(jq -r '.grant_role_name // "ROLE_USER"' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_grant_role_permissions=$(jq -r '.grant_role_permissions // "21"' <<< "$demo_pipeline_spec_json")
+        local demo_pipeline_cloud_provider_instance_type=$(jq -r ".${CP_CLOUD_PLATFORM} // \"NA\"" <<< "$demo_pipeline_spec_json")
+
+        if [ -z "$demo_pipeline_description" ]; then
+            print_warn "Demo pipeline at $demo_pipeline_dir does not contain a descripton in the spec.json. This pipeline will be skipped"
+        fi
+
+        if [ ! "$demo_pipeline_cloud_provider_instance_type" ] || [ "$demo_pipeline_cloud_provider_instance_type" == "NA" ]; then
+            print_warn "Demo pipeline at $demo_pipeline_dir is not support for the current cloud environment (${CP_CLOUD_PLATFORM}). This pipeline will be skipped"
+            continue
+        fi
+
+        # Update the pipeline's config.json with the environment variables (e.g. cloud-specific instance/vm type)
+        export CP_CONFIG_JSON_INSTANCE_TYPE="$demo_pipeline_cloud_provider_instance_type"
+        local demo_pipeline_config_json_contents="$(envsubst < "$demo_pipeline_config_json")"
+        cat <<< "$demo_pipeline_config_json_contents" > "$demo_pipeline_config_json"
+
+        print_info "Creating parent folder $demo_pipeline_parent_folder_name for the pipeline $demo_pipeline_name"
+        api_create_folder_path "$demo_pipeline_parent_folder_name"
+        if [ $? -ne 0 ]; then
+            print_warn "Errors occured while creating parent folder $demo_pipeline_parent_folder_name for the pipeline ${demo_pipeline_name}. This pipeline will be skipped"
+            continue
+        fi
+
+        api_register_pipeline   "$demo_pipeline_parent_folder_name" \
+                                "$demo_pipeline_name" \
+                                "$demo_pipeline_description" \
+                                "$demo_pipeline_dir" \
+                                "$demo_pipeline_grant_role_name" \
+                                "$demo_pipeline_grant_role_permissions" \
+                                "$demo_pipeline_version"
+
+        if [ $? -ne 0 ]; then
+            print_err "Error occured while registering a demo pipeline $demo_pipeline_name (see any output above)"
+            return 1
+        fi
+    done
+    unset CP_CONFIG_JSON_INSTANCE_TYPE
+}
+
+function api_register_data_transfer_pipeline {
+    local dt_role_grant="${1:-ROLE_USER}"
+    local dt_role_permissions="26"
+    local dt_pipeline_version=${CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION:-v1}
+    
+    # 0. Verify and update config.json template
+    local dt_pipeline_dir="$OTHER_PACKAGES_PATH/data_loader"
+    local dt_pipeline_config_json="$dt_pipeline_dir/config.json"
+    if [ ! -f "$dt_pipeline_config_json" ]; then
+        print_err "config.json is not found for the data transfer pipeline at ${dt_pipeline_config_json}. Data transfer pipeline will not be registered"
+        return 1
+    fi
+    local dt_pipeline_config_json_content="$(envsubst < "$dt_pipeline_config_json")"
+    cat <<< "$dt_pipeline_config_json_content" > "$dt_pipeline_config_json"
+
+    # 1. Register a data transfer pipeline in general
+    api_register_pipeline   "$CP_API_SRV_SYSTEM_FOLDER_NAME" \
+                            "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" \
+                            "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_DESCRIPTION" \
+                            "$dt_pipeline_dir" \
+                            "$dt_role_grant" \
+                            "$dt_role_permissions" \
+                            "$dt_pipeline_version"
+
+    if [ $? -ne 0 ]; then
+        print_err "Error occured while registering a data transfer pipeline (see any output above). API will not be configured to use data transfer pipeline"
         return 1
     fi
     
-    # 7. Register it in the preferences
-    api_set_preference "storage.transfer.pipeline.id" "$pipeline_id" "true"
-    api_set_preference "storage.transfer.pipeline.version" "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION" "true"
+    # 2. Get data transfer pipeline registered id
+    local pipeline_id="$(api_get_entity_id "$CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME" "pipeline")"
+    if [ $? -ne 0 ] || [ ! "$pipeline_id" ]; then
+        print_err "Unable to determine ID of the data transfer pipeline. API will not be configured to use data transfer pipeline"
+        return 1
+    fi
 
-    print_ok "Data transfer pipeline $CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_VERSION"
+    # 3. Register data transfer pipeline in the preferences
+    api_set_preference "storage.transfer.pipeline.id" "$pipeline_id" "true"
+    api_set_preference "storage.transfer.pipeline.version" "$dt_pipeline_version" "true"
+
+    print_ok "Data transfer pipeline $CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $dt_pipeline_version"
 }
 
 function api_register_email_templates {

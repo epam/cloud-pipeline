@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-docker-registry
           image: lifescience/cloud-pipeline:registry-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           ports:
             - containerPort: 443
           envFrom:

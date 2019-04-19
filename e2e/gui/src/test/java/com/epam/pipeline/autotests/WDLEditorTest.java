@@ -26,23 +26,27 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_TASK;
 import static com.epam.pipeline.autotests.ao.Primitive.ALIAS;
 import static com.epam.pipeline.autotests.ao.Primitive.ANOTHER_DOCKER_IMAGE;
-import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMAND;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.INPUT_ADD;
-import static com.epam.pipeline.autotests.ao.Primitive.NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.INPUT_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.OUTPUT_ADD;
+import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
 
 public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation {
     private final String pipelineName = "wdl-editor-test-pipeline" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "wdl");
-    private final String logSuccessMessage = "pipe_log SUCCESS \"Running WDL pipeline\" \"%s\"";
     private final String commitMessage = "testing";
     private final String taskName = "testing_task";
+    private final String defaultTask = "workflowTask";
 
     @BeforeClass
     public void createPipeline() {
@@ -65,15 +69,20 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddTaskDialog()
-                .setName(taskName)
-                .setCommand(String.format(logSuccessMessage, taskName))
-                .ok()
+                .parent()
+                .clickTask(defaultTask)
+                .setValue(ALIAS, taskName)
                 .ensure(SAVE, visible, enabled)
+                .ensure(REVERT, visible, enabled)
+                .parent()
+                .clickLabel(taskName)
                 .revert()
-                .ensure(SAVE, visible, disabled);
+                .ensure(fieldWithLabel(taskName), hidden)
+                .ensure(SAVE, visible, disabled)
+                .ensure(REVERT, visible, disabled);
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-621"})
     public void checkDiagramChange() {
         getFirstVersion(pipelineName)
@@ -87,20 +96,22 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .searchLabel("MyTask");
     }
 
-    @Test
+    @Test(priority = 0)
     @TestCase({"EPMCMBIBPC-637"})
     public void validateAddTaskInScatter() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .clickScatter("workflow")
-                .openAddTaskDialog()
-                .setName(taskName)
-                .setCommand(String.format(logSuccessMessage, taskName))
-                .ok()
-                .searchLabel(taskName);
+                .openAddScatterDialog()
+                .parent()
+                .clickScatter("scatter")
+                .click(ADD_TASK)
+                .parent()
+                .searchLabel("scatterTask")
+                .searchScatter("scatter")
+                .revert();
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-638"})
     public void checkDiagramChangeForScatter() {
         getFirstVersion(pipelineName)
@@ -114,7 +125,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .searchScatter("scattername");
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase({"EPMCMBIBPC-640"})
     public void checkDiagramChangeForScatterWithTask() {
         getFirstVersion(pipelineName)
@@ -134,26 +145,29 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
     public void validateTaskEdit() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .clickScatter("HelloWorld_print")
+                .clickLabel("HelloWorld_print")
                 .edit()
-                .ensureVisible(NAME, ALIAS, INPUT_ADD, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, COMMAND, SAVE, CANCEL)
-                .cancel();
+                .ensureVisible(ALIAS, INPUT_ADD, INPUT_PANEL, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, COMMAND, DELETE)
+                .parent()
+                .revert();
     }
 
     @Test
     @TestCase({"EPMCMBIBPC-650"})
     public void checkJsonAfterChangingParameters() {
-        String varName = "somevariable";
-        String varType = "Int";
+        final String varName = "somevariable";
+        final String varType = "Int";
+        final String varValue = "111";
         getFirstVersion(pipelineName)
                 .graphTab()
-                .clickScatter("workflow")
+                .clickLabel("workflow")
                 .editWorkflow()
                 .clickInputSectionAddButton()
                 .setName(varName)
                 .setType(varType)
+                .setValue(varValue)
                 .close()
-                .ok()
+                .parent()
                 .saveAndChangeJsonWithMessage(commitMessage)
                 .codeTab()
                 .clickOnFile("config.json")

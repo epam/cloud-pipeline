@@ -296,22 +296,34 @@ if is_service_requested cp-idp; then
 
         print_info "-> Waiting for IdP to initialize"
         wait_for_deployment "cp-idp"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-idp: https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-idp:"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nUsers auth:     https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nAdministrating: https://$CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/admin"
     fi
     echo
 fi
+
+# Node logger - uploads compute host node logs (kubelet/docker/etc..) to the system bucket
+print_ok "[Starting Node logger daemonset deployment]"
+
+print_info "-> Deleting existing instance of Node logger daemonset"
+kubectl delete daemonset cp-node-logger
+
+print_info "-> Deploying Node logger daemonset"
+create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
+
 
 # Heapster (CPU Utilization monitoring)
 if is_service_requested cp-heapster; then
     print_ok "[Starting Heapster (CPU Utilization monitoring) service deployment]"
 
-    print_info "-> Deleting existing instance of Heapster service"
-    delete_deployment_and_service   "cp-heapster" \
-                                    "/opt/heapster"
-
     print_info "-> Deleting existing instance of Heapster ELK service"
     delete_deployment_and_service   "cp-heapster-elk" \
                                     "/opt/heapster-elk"    
+
+    print_info "-> Deleting existing instance of Heapster service"
+    delete_deployment_and_service   "cp-heapster" \
+                                    "/opt/heapster"
 
     if is_install_requested; then
         print_info "-> Deploying Heapster ELK service"
@@ -459,6 +471,32 @@ if is_service_requested cp-api-srv; then
         # if -env CP_CUSTOM_USERS_SPEC= is specified - it will be used, otherwise default one will be tried ($OTHER_PACKAGES_PATH/prerequisites/users.json)
         print_info "-> Registering custom users in IdP and API services"
         api_register_custom_users "$CP_CUSTOM_USERS_SPEC"
+
+        # Here we wait for the price list sync, this is required by the downstream services to manage the instance types configurations            
+        if [ -z "$CP_CLOUD_REGION_INTERNAL_ID" ]; then
+            print_warn "CP_CLOUD_REGION_INTERNAL_ID is not defined, assuming that a cloud region is not registered correctly previously. WILL NOT wait for price lists synchonization"
+        else
+            default_instance_type_poll_attempts=100
+            default_instance_type_poll_timeout=10
+            print_info "-> Verifying that all instance types are synced to the API DB (will poll $default_instance_type_poll_attempts times for the default instance type: ${CP_PREF_CLUSTER_INSTANCE_TYPE})"
+
+            default_instance_type_result=1
+            while [ $default_instance_type_result -ne 0 ] || [ ! "$default_instance_type_details" ]; do
+                if [ "$default_instance_type_poll_attempts" == 0 ]; then
+                    print_err "Unable to get information on the $CP_PREF_CLUSTER_INSTANCE_TYPE instance type after $default_instance_type_poll_attempts attempts"
+                    break
+                fi
+
+                default_instance_type_details="$(api_get_cluster_instance_details "$CP_PREF_CLUSTER_INSTANCE_TYPE" "$CP_CLOUD_REGION_INTERNAL_ID")"
+                default_instance_type_result=$?
+
+                sleep $default_instance_type_poll_timeout
+                default_instance_type_poll_attempts=$((default_instance_type_poll_attempts-1))
+            done
+            if [ "$default_instance_type_result" -eq 0 ]; then
+                print_ok "Price list is synchronized to the API DB"
+            fi
+        fi
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"
     fi
@@ -664,6 +702,11 @@ if is_service_requested cp-git; then
 
                 print_info "-> Registering DataTransfer pipeline"
                 api_register_data_transfer_pipeline
+
+                if [ "$CP_DEPLOY_DEMO" ]; then
+                    print_info "-> Registering Demo pipelines"
+                    api_register_demo_pipelines
+                fi
             else
                 print_err "Error occured while getting GitLab root's impersonation token (https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/). GitLab won't be registered, but this can be done manually from the Cloud Pipeline GUI/API"
             fi
@@ -773,7 +816,7 @@ if is_service_requested cp-notifier; then
                                           CP_NOTIFIER_SMTP_USER \
                                           CP_NOTIFIER_SMTP_PASS"
         if ! check_params_present "update_config" $CP_NOTIFIER_SMTP_PARAMETERS_LIST; then
-            print_err "not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
+            print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
             create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-pod.yaml

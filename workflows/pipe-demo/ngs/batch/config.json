@@ -1,0 +1,72 @@
+[ {
+  "name" : "default",
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "main_file" : "batch.sh",
+    "instance_size" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
+    "instance_disk" : "20",
+    "docker_image" : "library/centos:7",
+    "cmd_template" : "chmod +x ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] && ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file]",
+    "language" : "other",
+    "parameters" : {
+      "SAMPLE_SHEET" : {
+        "value" : "",
+        "type" : "input",
+        "required" : false
+      },
+      "MACHINE_RUN_FOLDER" : {
+        "value" : "",
+        "type" : "string",
+        "required" : false
+      },
+      "ANALYSIS_FOLDER" : {
+        "value" : "",
+        "type" : "string",
+        "required" : false
+      },
+      "DEMULTIPLEX_PIPELINE" : {
+        "value" : "demultiplex",
+        "type" : "string",
+        "required" : false
+      },
+      "DEMULTIPLEX_VERSION" : {
+        "value" : "v1",
+        "type" : "string",
+        "required" : false
+      },
+      "ANALYTICAL_PIPELINE" : {
+        "value" : "wes",
+        "type" : "string",
+        "required" : false
+      },
+      "ANALYTICAL_VERSION" : {
+        "value" : "v1",
+        "type" : "string",
+        "required" : false
+      },
+      "DEMULTIPLEX_INSTANCE" : {
+        "value" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
+        "type" : "string",
+        "required" : false
+      },
+      "DEMULTIPLEX_DISK" : {
+        "value" : "100",
+        "type" : "string",
+        "required" : false
+      },
+      "ANALYTICAL_INSTANCE" : {
+        "value" : "${CP_CONFIG_JSON_INSTANCE_TYPE}",
+        "type" : "string",
+        "required" : false
+      },
+      "ANALYTICAL_DISK" : {
+        "value" : "100",
+        "type" : "string",
+        "required" : false
+      }
+    },
+    "is_spot" : false,
+    "awsRegionId" : 1
+  },
+  "default" : true
+} ]

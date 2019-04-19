@@ -118,7 +118,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     if (item.type === ItemTypes.pipeline) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.id}`);
     } else if (item.type === ItemTypes.version && item.parent) {
-      console.log(item);
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`);
     } else {
       event.dataTransfer.setData('dropDataKey', node.props.eventKey);

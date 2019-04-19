@@ -1,0 +1,9 @@
+{
+    "name": "MSGEN-GATK",
+    "description": "Microsoft Genomics implementation of the BWA and GATK for secondary analysis.",
+    "version": "v1",
+    "grant_role_name": "ROLE_USER",
+    "grant_role_permissions": "21",
+    "parent_folder": "Pipelines",
+    "az": "Standard_D2s_v3"
+}

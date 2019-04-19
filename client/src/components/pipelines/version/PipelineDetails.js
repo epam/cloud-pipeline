@@ -266,14 +266,11 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
               roleModel.executeAllowed(this.props.pipeline.value) &&
               this.renderRunButton()
             }
-            {
-              roleModel.writeAllowed(this.props.pipeline.value) &&
-              <Button
-                id="edit-pipeline-button"
-                onClick={this.toggleModal} size="small">
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-              </Button>
-            }
+            <Button
+              id="edit-pipeline-button"
+              onClick={this.toggleModal} size="small">
+              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            </Button>
             <Popover
               title={<b>Git repository</b>}
               content={gitRepositoryPopoverContent}

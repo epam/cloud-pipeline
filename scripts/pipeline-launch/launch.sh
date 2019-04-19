@@ -218,7 +218,7 @@ function cp_cap_init {
                   echo "--> Done $_CAP_INIT_SCRIPT"
             fi
 
-            if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_SGE_AUTOSCALE"
+            if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
             then
                   $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py &
             fi
@@ -374,6 +374,19 @@ else
     SINGLE_RUN=false;
 fi
 
+
+######################################################
+# Install runtime dependencies
+######################################################
+
+echo "Install runtime dependencies"
+echo "-"
+
+if [ -f /bin/bash ]; then
+    ln -sf /bin/bash /bin/sh
+fi
+
+######################################################
 
 ######################################################
 echo "Init default variables if they are not set explicitly"
@@ -794,15 +807,9 @@ export CLOUD_PIPELINE_NODE_CORES=$(nproc)
 TOTAL_NODES=$(($node_count+1))
 export CLOUD_PIPELINE_CLUSTER_CORES=$(($CLOUD_PIPELINE_NODE_CORES * $TOTAL_NODES))
 
-if [ "$CP_CAP_SGE_AUTOSCALE" = "true" ] && [ "$CP_CAP_SGE" != "true" ]
-    then
-        echo "Grid engine autoscaling is disabled because grid engine is not enabled."
-        unset CP_CAP_SGE_AUTOSCALE
-fi
-
 # Check if this is a cluster master run 
 _SETUP_RESULT=0
-if [ "$cluster_role" = "master" ] && ([ ! -z "$node_count" ] && (( "$node_count" > 0 )) || [ "$CP_CAP_SGE_AUTOSCALE" = "true" ]);
+if [ "$cluster_role" = "master" ] && ([ ! -z "$node_count" ] && (( "$node_count" > 0 )) || [ "$CP_CAP_AUTOSCALE" = "true" ]);
 then
     setup_nfs_if_required
     mount_nfs_if_required "$RUN_ID"

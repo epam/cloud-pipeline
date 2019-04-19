@@ -241,6 +241,8 @@
   fill: #ae1726;
 }
 
+.wdl-task.wdl-pipeline-task rect {}
+
 @keyframes blink-animation {
   from {
     opacity: 1;

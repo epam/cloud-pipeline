@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-api-srv
           image: lifescience/cloud-pipeline:api-srv-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           securityContext:
             privileged: true
           command: ["/init-api"]
@@ -61,6 +61,10 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f pipeline.jar); sleep 1"]
       volumes:
         - name: api-pki
           hostPath:

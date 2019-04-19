@@ -9,7 +9,7 @@ cache:
     - $HOME/.gradle/caches/
     - $HOME/.gradle/wrapper/
     - $HOME/.npm/
-    - node_modules
+    - client/node_modules
 
 env:
   global:
@@ -18,7 +18,7 @@ env:
   - secure: NxQescyUUT2BgKJzMzPF9vvq2qMdugTe4RYYAQMSb+bjK9LT4OSWvV1/6AbJIk/e9rlAloQMMcmiYnwdVQWmrcFLXGlkIj0bltjlr+pyaGohItW88KsQqrSRI93xQp0pjwADd1Iu7oTuwLQItm1VYC9L5Dvd7wyeHwA0jTsHRR+zNrcsb+V6YNHhClJ1LA5jGVZ8fmcN/LfvhflXryVYqdIYijv6FTdi1AF6CgoNfuXNRMd09tzd+sWNGKWUm6KyN2xFD27mYn01sM2aa6+vVac4RCQ1i/rBc59GY//FruLEBiscs2VHX/krvMCeiUfRWfzEQ531eWZDl/O/X+INXPjm8RJR37wdFVtY3oujHRve7pEHu3Sy+glQUn34m8mKxM96UBePVAJGIRsuvcWYG6oBZqGaJuN7i/PGeYWm8/FzFqhLx7SmImHPd/jDT4bp7xHVMk5GbDuuDWGTpiu1LNBPB7KjgZIb6V4qO1FHLpLva2ZiFEKxcyVaQT5Xp3VcJk/dbgt+lriryz2zqEjNwKcfoFpMi/C4k7pthKM2bqjN+ccGx+3GLN1vKSJtvZc7mWmhP0v0xhb6rfTxoiup5xKLZBUHj4sytQjhVA2x6rwftXXnaPZzGmzcf5uqbo1GiM3IaOxQwDk+e0TmyE4QqxXxMVWoYJJzHP04feIzvxg=
 
 before_install:
-  - pip install --user awscli
+  - pip install --user awscli==1.14.56
 
 jobs:
   include:
@@ -32,24 +32,45 @@ jobs:
       install: true
       language: java
       script: ./gradlew :api:test --no-daemon
-      
-    - name: "Compile"
+      if: tag IS present
+  
+    - stage: "Build"
+      name: "Build GUI"
+      install: true
+      language: java
+      script: 
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release client:buildUI --no-daemon
+        - tar -zcf client.tgz client/build
+      after_success:
+        - aws s3 mv client.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+
+    - stage: "Build"
+      name: "Build CLI Common/Linux"
+      install: true
+      language: java
+      script:
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:build pipe-cli:buildLinux --no-daemon
+        - tar -zcf cli-linux.tgz pipe-cli/dist
+      after_success:
+        - aws s3 mv cli-linux.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+
+    - stage: "Build"
+      name: "Build CLI Win"
+      install: true
+      language: java
+      script:
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildWin --no-daemon
+        - tar -zcf cli-win.tgz pipe-cli/dist
+      after_success:
+        - aws s3 mv cli-win.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+       
+    - stage: "Deploy"
+      name: "Pack jars and deploy"
       install:
         - pip install mkdocs --user
       language: java
       script:
-        - ./gradlew clean distTar -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release -x test --no-daemon
-      after_success:
-        - aws s3 mv build/install/dist/ s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ --recursive
-        
-    - stage: "Deploy"
-      name: "Deploy to S3"
-      language: minimal
-      script:
-        - aws s3 mv s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ s3://cloud-pipeline-oss-builds/builds/${TRAVIS_BRANCH}/ --recursive
-      if: branch IN (develop, master) AND type = push AND repo = epam/cloud-pipeline
+        - bash travis_pack_dist.sh
 
 after_failure:
   - aws s3 rm s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER} --recursive
-
-

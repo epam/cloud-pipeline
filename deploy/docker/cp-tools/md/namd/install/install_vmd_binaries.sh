@@ -1,5 +1,5 @@
 cd /tmp && \
-wget http://www.ks.uiuc.edu/Research/vmd/vmd-1.9.3/files/final/vmd-1.9.3.bin.LINUXAMD64-CUDA8-OptiX4-OSPRay111p1.opengl.tar.gz -O vmd.tgz && \
+wget -q http://www.ks.uiuc.edu/Research/vmd/vmd-1.9.3/files/final/vmd-1.9.3.bin.LINUXAMD64-CUDA8-OptiX4-OSPRay111p1.opengl.tar.gz -O vmd.tgz && \
 tar -zxf vmd.tgz && \
 rm -f /tmp/vmd.tgz && \
 cd vmd-* && \

@@ -159,34 +159,44 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    return (
-      <Row type="flex" justify="space-between">
-        <Col span={12}>
-          <Row type="flex" justify="start">
-            {
-              roleModel.manager.storage(
-                <Button
-                  id="edit-storage-dialog-delete-button"
-                  type="danger"
-                  onClick={this.openDeleteDialog}>Delete</Button>
-              )
-            }
-          </Row>
-        </Col>
-        <Col span={12}>
-          <Row type="flex" justify="end">
-            <Button
-              id="edit-storage-dialog-cancel-button"
-              onClick={this.props.onCancel}>Cancel</Button>
-            <Button
-              id="edit-storage-dialog-save-button"
-              type="primary"
-              htmlType="submit"
-              onClick={this.handleSubmit}>Save</Button>
-          </Row>
-        </Col>
-      </Row>
-    );
+    if (roleModel.writeAllowed(this.props.dataStorage)) {
+      return (
+        <Row type="flex" justify="space-between">
+          <Col span={12}>
+            <Row type="flex" justify="start">
+              {
+                roleModel.manager.storage(
+                  <Button
+                    id="edit-storage-dialog-delete-button"
+                    type="danger"
+                    onClick={this.openDeleteDialog}>Delete</Button>
+                )
+              }
+            </Row>
+          </Col>
+          <Col span={12}>
+            <Row type="flex" justify="end">
+              <Button
+                id="edit-storage-dialog-cancel-button"
+                onClick={this.props.onCancel}>Cancel</Button>
+              <Button
+                id="edit-storage-dialog-save-button"
+                type="primary"
+                htmlType="submit"
+                onClick={this.handleSubmit}>Save</Button>
+            </Row>
+          </Col>
+        </Row>
+      );
+    } else {
+      return (
+        <Row type="flex" justify="end">
+          <Button
+            id="edit-storage-dialog-cancel-button"
+            onClick={this.props.onCancel}>Cancel</Button>
+        </Row>
+      );
+    }
   };
 
   getCreateFooter = () => {
@@ -249,7 +259,9 @@ export class DataStorageEditDialog extends React.Component {
 
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
-    const isReadOnly = this.props.dataStorage ? this.props.dataStorage.locked : false;
+    const isReadOnly = this.props.dataStorage
+      ? this.props.dataStorage.locked || !roleModel.writeAllowed(this.props.dataStorage)
+      : false;
     const modalFooter = this.props.pending ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
     );
@@ -300,7 +312,7 @@ export class DataStorageEditDialog extends React.Component {
                       isFS={this.isNfsMount}
                       isNew={!this.props.dataStorage}
                       addExistingStorageFlag={this.props.addExistingStorageFlag}
-                      disabled={this.props.pending || !!this.props.dataStorage} />
+                      disabled={this.props.pending || !!this.props.dataStorage || isReadOnly} />
                   )}
                 </Form.Item>
                 <Form.Item
@@ -313,14 +325,11 @@ export class DataStorageEditDialog extends React.Component {
                     <Input
                       ref={!!this.props.dataStorage ? this.initializeNameInput : null}
                       onPressEnter={this.handleSubmit}
-                      disabled={this.props.pending} />
+                      disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 {
-                  !this.isNfsMount && (
-                    (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
-                    (this.props.dataStorage && this.props.dataStorage.regionId > 0)
-                  ) &&
+                  !this.isNfsMount &&
                   <Form.Item
                     className={styles.dataStorageFormItem}
                     {...this.formItemLayout}
@@ -332,7 +341,7 @@ export class DataStorageEditDialog extends React.Component {
                     })(
                       <Select
                         style={{width: '100%'}}
-                        disabled={!!this.props.dataStorage}
+                        disabled={!!this.props.dataStorage || isReadOnly}
                       >
                         {this.awsRegions.map(region => {
                           return <Select.Option key={region.id.toString()}>
@@ -350,7 +359,7 @@ export class DataStorageEditDialog extends React.Component {
                   {getFieldDecorator('description', {
                     initialValue: this.props.dataStorage ? this.props.dataStorage.description : undefined
                   })(
-                    <Input type="textarea" disabled={this.props.pending} />
+                    <Input type="textarea" disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 {
@@ -365,7 +374,7 @@ export class DataStorageEditDialog extends React.Component {
                     })(
                       <InputNumber
                         style={{width: '100%'}}
-                        disabled={this.props.pending} />
+                        disabled={this.props.pending || isReadOnly} />
                     )}
                   </Form.Item>
                 }
@@ -381,7 +390,7 @@ export class DataStorageEditDialog extends React.Component {
                     })(
                       <InputNumber
                         style={{width: '100%'}}
-                        disabled={this.props.pending} />
+                        disabled={this.props.pending || isReadOnly} />
                     )}
                   </Form.Item>
                 }
@@ -392,6 +401,7 @@ export class DataStorageEditDialog extends React.Component {
                     <Col xs={24} sm={18}>
                       <Form.Item className={styles.dataStorageFormItem}>
                         <Checkbox
+                          disabled={this.props.pending || isReadOnly}
                           onChange={(e) => this.setState({versioningEnabled: e.target.checked})}
                           checked={this.state.versioningEnabled}>
                           Enable versioning
@@ -413,7 +423,7 @@ export class DataStorageEditDialog extends React.Component {
                       })(
                         <InputNumber
                           style={{width: '100%'}}
-                          disabled={this.props.pending} />
+                          disabled={this.props.pending || isReadOnly} />
                       )}
                     </Form.Item>
                 }
@@ -427,7 +437,7 @@ export class DataStorageEditDialog extends React.Component {
                   })(
                     <Input
                       style={{width: '100%'}}
-                      disabled={this.props.pending} />
+                      disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 <Form.Item
@@ -440,7 +450,7 @@ export class DataStorageEditDialog extends React.Component {
                   })(
                     <Input
                       style={{width: '100%'}}
-                      disabled={this.props.pending} />
+                      disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
                 {
@@ -454,7 +464,7 @@ export class DataStorageEditDialog extends React.Component {
                     <Col xs={24} sm={18}>
                       <Form.Item className={styles.dataStorageFormItem}>
                         <Checkbox
-                          disabled={!!this.props.dataStorage}
+                          disabled={!!this.props.dataStorage || isReadOnly}
                           onChange={(e) => this.setState({sharingEnabled: e.target.checked})}
                           checked={this.state.sharingEnabled}>
                           Enable sharing
@@ -466,7 +476,7 @@ export class DataStorageEditDialog extends React.Component {
               </Form>
             </Tabs.TabPane>
             {
-              this.props.dataStorage && this.props.dataStorage.id && roleModel.isOwner(this.props.dataStorage) &&
+              this.props.dataStorage && this.props.dataStorage.id &&
               <Tabs.TabPane key="permissions" tab="Permissions">
                 <PermissionsForm
                   readonly={isReadOnly}

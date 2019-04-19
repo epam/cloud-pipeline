@@ -20,7 +20,7 @@ spec:
       containers:
         - name: cp-edge
           image: lifescience/cloud-pipeline:edge-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           command: ["/init"]
           envFrom:
           - configMapRef:

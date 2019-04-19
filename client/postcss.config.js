@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-const cssnext = require('postcss-cssnext');
-const use = require('postcss-use')({modules: '*'});
+const postcssPresetEnv = require('postcss-preset-env');
+const postcssFlexbugsFixes = require('postcss-flexbugs-fixes');
+const postcssReporter = require('postcss-reporter');
 
 module.exports = {
   plugins: [
-    cssnext,
-    use,
-    require('postcss-reporter')({
-      clearAllMessages: true,
+    postcssFlexbugsFixes,
+    postcssPresetEnv({
+      autoprefixer: {
+        flexbox: 'no-2009'
+      },
+      stage: 3
     }),
+    postcssReporter({
+      clearAllMessages: true
+    })
   ]
 };

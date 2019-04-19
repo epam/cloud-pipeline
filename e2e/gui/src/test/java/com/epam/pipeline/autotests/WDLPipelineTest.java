@@ -15,64 +15,41 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.ElementsCollection;
+import com.epam.pipeline.autotests.ao.PipelineGraphTabAO;
 import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
-import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selenide.$;
-import static org.testng.Assert.assertThrows;
+import static com.epam.pipeline.autotests.ao.Primitive.FULLSCREEN;
+import static com.epam.pipeline.autotests.ao.Primitive.ZOOM_IN;
+import static com.epam.pipeline.autotests.ao.Primitive.ZOOM_OUT;
 
-public class WDLPipelineTest extends AbstractAutoRemovingPipelineRunningTest {
+public class WDLPipelineTest extends AbstractBfxPipelineTest implements Navigation {
+    private final String pipelineName = "wdl-pipeline-test-" + Utils.randomSuffix();
 
-    @Test(priority = 0)
+    @Test
     @TestCase(value = {"EPMCMBIBPC-351"})
     public void shouldCreateValidWDLPipeline() {
         navigationMenu()
                 .library()
-                .createPipeline(Template.WDL, getPipelineName())
-                .clickOnPipeline(getPipelineName());
-
-        $(".ant-table-row").click();
-
-        $(byText("Graph")).click();
-        $(".graph__wdl-graph-container").find("svg").should(exist);
-
-        ElementsCollection interfaceButtons = getWdlGraphIntefaceButtons();
-        interfaceButtons.shouldHaveSize(3);
-
-        interfaceButtons.get(0).find(".anticon-minus-circle-o").shouldBe(enabled);
-        interfaceButtons.get(1).find(".anticon-plus-circle-o").shouldBe(enabled);
-        interfaceButtons.get(2).find(".anticon-arrows-alt").shouldBe(enabled);
+                .createPipeline(Template.WDL, pipelineName)
+                .clickOnPipeline(pipelineName)
+                .firstVersion()
+                .codeTab()
+                .graphTab()
+                .searchLabel("HelloWorld_print")
+                .searchLabel("workflow")
+                .ensureVisible(ZOOM_IN, ZOOM_OUT, FULLSCREEN);
     }
 
     @Test(dependsOnMethods = {"shouldCreateValidWDLPipeline"})
     @TestCase(value = {"EPMCMBIBPC-352"})
     public void fullScreenGraphShouldBeValid() {
-        ElementsCollection interfaceButtons = getWdlGraphIntefaceButtons();
-
-        //Click full-screen button
-        interfaceButtons.get(2).find("i").click();
-
-        assertThrows(() -> $(".pipelines-library-split-pane-left").click());
-        assertThrows(() -> $("#navigation-container").click());
-        assertThrows(() -> $(".pipeline-details__row-menu").click());
-
-        assertThrows(() -> $(byText("RUN")).click());
-        assertThrows(() -> $(".anticon-edit").click());
-        assertThrows(() -> $(byText("GIT REPOSITORY")).click());
-
-        interfaceButtons = getWdlGraphIntefaceButtons();
-        interfaceButtons.get(0).find(".anticon-minus-circle-o").shouldBe(enabled);
-        interfaceButtons.get(1).find(".anticon-plus-circle-o").shouldBe(enabled);
-        interfaceButtons.get(2).find(".anticon-shrink").shouldBe(enabled);
+        new PipelineGraphTabAO(pipelineName)
+                .click(FULLSCREEN)
+                .verifyFullcreen()
+                .ensureVisible(ZOOM_IN, ZOOM_OUT, FULLSCREEN);
     }
-
-    private ElementsCollection getWdlGraphIntefaceButtons() {
-        return $(".graph__graph-interface").findAll(".graph__graph-interface-button");
-    }
-
 }

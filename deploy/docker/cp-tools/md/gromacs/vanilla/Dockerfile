@@ -19,7 +19,7 @@ RUN yum update -y \
     cmake
 
     # setup gromacs with MPI
-RUN wget ftp://ftp.gromacs.org/pub/gromacs/gromacs-2016.3.tar.gz && \
+RUN wget -q ftp://ftp.gromacs.org/pub/gromacs/gromacs-2016.3.tar.gz && \
     tar xfz gromacs-2016.3.tar.gz && \
     cd gromacs-2016.3 && \
     mkdir build-normal && \

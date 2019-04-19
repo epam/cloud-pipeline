@@ -36,7 +36,6 @@ import {
   Upload
 } from 'antd';
 import dockerRegistries from '../../models/tools/DockerRegistriesTree';
-import {names} from '../../models/utils/ContextualPreference';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -108,6 +107,7 @@ const MAX_INLINE_VERSION_ALIASES = 7;
   preferences
 })
 @runPipelineActions
+@inject('awsRegions')
 @inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {
   return {
     allowedInstanceTypes: allowedInstanceTypes.getAllowedTypes(params.id),
@@ -139,6 +139,23 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   @observable defaultVersionSettings;
+
+  @computed
+  get awsRegions () {
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || []).map(r => r);
+    }
+    return [];
+  }
+
+  @computed
+  get defaultCloudRegionId () {
+    const [defaultRegion] = this.awsRegions.filter(r => r.default);
+    if (defaultRegion) {
+      return `${defaultRegion.id}`;
+    }
+    return null;
+  }
 
   @computed
   get defaultVersionSettingsConfiguration () {
@@ -1424,7 +1441,8 @@ export default class Tool extends localization.LocalizedReactComponent {
         : this.props.preferences.useSpot,
       nodeCount: parameterIsNotEmpty(versionSettingValue('node_count'))
         ? +versionSettingValue('node_count')
-        : undefined
+        : undefined,
+      cloudRegionId: this.defaultCloudRegionId
     }, this.props.allowedInstanceTypes);
     const {allowedToExecute, tooltip, notLoaded} = this.getVersionRunningInformation(version);
     if (!allowedToExecute) {

@@ -97,7 +97,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             initialValue: `${this.props.pipeline ? this.props.pipeline.name : ''}`
           })(
             <Input
-              disabled={this.props.pending}
+              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}
               onPressEnter={this.handleSubmit}
               ref={this.initializeNameInput} />
         )}
@@ -116,7 +116,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             <Input
               type="textarea"
               autosize={{minRows: 2, maxRows: 6}}
-              disabled={this.props.pending} />
+              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
         )}
       </Form.Item>
     ));
@@ -132,7 +132,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             })(
             <Input
               onPressEnter={this.handleSubmit}
-              disabled={!!this.props.pipeline}/>
+              disabled={!!this.props.pipeline || this.props.pending} />
           )}
         </Form.Item>
       ));
@@ -144,7 +144,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           {getFieldDecorator('token', {
             initialValue: `${this.props.pipeline && this.props.pipeline.repositoryToken ? this.props.pipeline.repositoryToken : ''}`
           })(
-            <Input onPressEnter={this.handleSubmit} />
+            <Input
+              onPressEnter={this.handleSubmit}
+              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
           )}
         </Form.Item>
       ));
@@ -203,34 +205,85 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     this.setState({activeTab: key});
   };
 
-  render () {
-    const isNewPipeline = this.props.pipeline === undefined || this.props.pipeline === null;
-    const isReadOnly = this.props.pipeline ? this.props.pipeline.locked : false;
-    const handleDelete = this.props.onDelete;
-    const {resetFields} = this.props.form;
-    const modalFooter = this.props.pending ? false : (
-      <Row type="flex" justify={!isNewPipeline && handleDelete && roleModel.isManager.pipeline(this) ? 'space-between' : 'end'}>
-        {!isNewPipeline && handleDelete &&
-          roleModel.manager.pipeline(
+  getModalFooter = (isNewPipeline) => {
+    if (this.props.pending) {
+      return false;
+    }
+    const deleteAllowed = !isNewPipeline &&
+      !!this.props.onDelete &&
+      roleModel.writeAllowed(this.props.pipeline) &&
+      roleModel.isManager.pipeline(this);
+    const saveAllowed = isNewPipeline
+      ? roleModel.isManager.pipeline(this)
+      : roleModel.writeAllowed(this.props.pipeline);
+    if (deleteAllowed && saveAllowed) {
+      return (
+        <Row type="flex" justify="space-between">
+          <Button
+            disabled={this.props.pending}
+            id="edit-pipeline-form-delete-button"
+            type="danger"
+            onClick={this.openDeleteDialog}>DELETE</Button>
+          <div>
             <Button
               disabled={this.props.pending}
-              id="edit-pipeline-form-delete-button"
-              type="danger"
-              onClick={this.openDeleteDialog}>DELETE</Button>
-          )}
-        <div>
+              id="edit-pipeline-form-cancel-button"
+              onClick={this.props.onCancel}>CANCEL</Button>
+            <Button
+              disabled={this.props.pending}
+              id={`edit-pipeline-form-${isNewPipeline ? 'create' : 'save'}-button`}
+              type="primary" htmlType="submit"
+              onClick={this.handleSubmit}>{isNewPipeline ? 'CREATE' : 'SAVE'}</Button>
+          </div>
+        </Row>
+      );
+    } else if (deleteAllowed) {
+      return (
+        <Row type="flex" justify="space-between">
+          <Button
+            disabled={this.props.pending}
+            id="edit-pipeline-form-delete-button"
+            type="danger"
+            onClick={this.openDeleteDialog}>DELETE</Button>
           <Button
             disabled={this.props.pending}
             id="edit-pipeline-form-cancel-button"
             onClick={this.props.onCancel}>CANCEL</Button>
+        </Row>
+      );
+    } else if (saveAllowed) {
+      return (
+        <Row type="flex" justify="end">
+          <div>
+            <Button
+              disabled={this.props.pending}
+              id="edit-pipeline-form-cancel-button"
+              onClick={this.props.onCancel}>CANCEL</Button>
+            <Button
+              disabled={this.props.pending}
+              id={`edit-pipeline-form-${isNewPipeline ? 'create' : 'save'}-button`}
+              type="primary" htmlType="submit"
+              onClick={this.handleSubmit}>{isNewPipeline ? 'CREATE' : 'SAVE'}</Button>
+          </div>
+        </Row>
+      );
+    } else {
+      return (
+        <Row type="flex" justify="end">
           <Button
             disabled={this.props.pending}
-            id={`edit-pipeline-form-${isNewPipeline ? 'create' : 'save'}-button`}
-            type="primary" htmlType="submit"
-            onClick={this.handleSubmit}>{isNewPipeline ? 'CREATE' : 'SAVE'}</Button>
-        </div>
-      </Row>
-    );
+            id="edit-pipeline-form-cancel-button"
+            onClick={this.props.onCancel}>CANCEL</Button>
+        </Row>
+      );
+    }
+  };
+
+  render () {
+    const isNewPipeline = !this.props.pipeline;
+    const isReadOnly = this.props.pipeline ? this.props.pipeline.locked : false;
+    const {resetFields} = this.props.form;
+    const modalFooter = this.getModalFooter(isNewPipeline);
     const onClose = () => {
       resetFields();
       this.setState({activeTab: 'info', editRepositorySettings: false});
@@ -262,10 +315,10 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
                 {this.renderForm()}
               </Tabs.TabPane>
               {
-                this.props.pipeline && this.props.pipeline.id && roleModel.isOwner(this.props.pipeline) &&
+                this.props.pipeline && this.props.pipeline.id && roleModel.readAllowed(this.props.pipeline) &&
                 <Tabs.TabPane key="permissions" tab="Permissions">
                   <PermissionsForm
-                    readonly={isReadOnly}
+                    readonly={isReadOnly || !roleModel.writeAllowed(this.props.pipeline)}
                     objectIdentifier={this.props.pipeline.id}
                     objectType="pipeline" />
                 </Tabs.TabPane>

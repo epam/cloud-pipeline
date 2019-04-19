@@ -14,7 +14,7 @@ spec:
   containers:
     - name: cp-search-srv
       image: lifescience/cloud-pipeline:search-$CP_VERSION
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       command: ["/init"]
       ports:
         - containerPort: 8080
@@ -29,6 +29,10 @@ spec:
           port: 8080
         initialDelaySeconds: 5
         periodSeconds: 10
+      lifecycle:
+        preStop:
+          exec:
+            command: ["/bin/sh", "-c", "kill -9 $(pgrep -f elasticsearch-agent.jar); sleep 1"]
   volumes:
     - name: search-logs
       hostPath:

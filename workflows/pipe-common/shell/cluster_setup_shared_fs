@@ -16,7 +16,7 @@ MOUNT_DIR="$1"
 PUBLISH_DIR="$2"
 ALLOWED_CLIENTS="$3"
 
-CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-nfs}"
+CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-lfs}"
 
 if [ "$CP_CAP_SHARE_FS_TYPE" == "nfs" ]; then
     cluster_setup_shared_fs_nfs_master "$SHARED_FOLDER" "$PUBLISH_SHARED_FOLDER"

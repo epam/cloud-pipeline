@@ -156,7 +156,10 @@ class StorageMounter:
 
     @staticmethod
     def execute_and_check_command(command):
-        install_check = common.execute_cmd_command(command, silent=False)
+        install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
+        if install_check != 0:
+            Logger.warn(
+                'Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr))
         return install_check == 0
 
     @staticmethod
@@ -246,6 +249,10 @@ class AzureMounter(StorageMounter):
         if StorageMounter.create_directory(fuse_tmp, task_name):
             AzureMounter.fuse_tmp = fuse_tmp
 
+    def mount(self, mount_root, task_name):
+        self.__resolve_azure_blob_service_url()
+        super(AzureMounter, self).mount(mount_root, task_name)
+
     def build_mount_params(self, mount_point):
         account_id, account_key, _ = self._get_credentials(self.storage)
         return {
@@ -267,6 +274,17 @@ class AzureMounter(StorageMounter):
                '-o "{permissions}" ' \
                '-o allow_other ' \
                '{mount_options}'.format(**params)
+
+    def __resolve_azure_blob_service_url(self):
+        # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
+        account_name, _, _ = self._get_credentials(self.storage)
+        command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
+                  '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
+                  '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
+        exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
+        if exit_code != 0:
+            Logger.warn(
+                'Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr))
 
 
 class S3Mounter(StorageMounter):

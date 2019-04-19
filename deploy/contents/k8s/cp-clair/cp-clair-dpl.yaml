@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-clair
           image: lifescience/cloud-pipeline:clair-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           ports:
             - containerPort: 8080
           envFrom:

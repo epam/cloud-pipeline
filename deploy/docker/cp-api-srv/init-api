@@ -14,6 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+export CP_DOLLAR='$'
+
+function update_config_json_templates {
+    local templates_key="$1"
+    local search_pattern="${2:-"config.json"}"
+    local properties_file="${3:-$CP_API_HOME/config/application.properties}"
+
+    IFS="=" read -r param_key param_value <<< $(grep $templates_key < $properties_file)
+    if [ -z "$param_key" ] || [ -z "$param_value" ] || [ ! -d "$param_value" ]; then
+        echo "$templates_key cannot be retireved from $properties_file or that location does not exist (\"$param_value\""
+        return 1
+    else
+        echo "Updating configuration files (properties_file: ${properties_file}, templates_key: ${templates_key}, search_pattern: ${search_pattern})"
+        for config_json_file in $(find "$param_value" -type f -name "$search_pattern"); do
+            local config_json_file_contents="$(envsubst < "$config_json_file")"
+            cat <<< "$config_json_file_contents" > "$config_json_file"
+            echo "$config_json_file"
+        done
+    fi
+    echo
+}
+
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -85,23 +107,11 @@ fi
 ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
 if [ -f "$ca_cert_path" ]; then
     echo "Importing CA cert into global java keystore"
-    keytool  -import \
-            -trustcacerts \
-            -keystore /usr/lib/jvm/jre/lib/security/cacerts \
-            -storepass changeit \
-            -noprompt \
-            -alias cp-ca \
-            -file $ca_cert_path
+    /update-trust $ca_cert_path "cp-ca"
 fi
 
 echo "Importing API SSL cert into global java keystore"
-keytool  -import \
-         -trustcacerts \
-         -keystore /usr/lib/jvm/jre/lib/security/cacerts \
-         -storepass changeit \
-         -noprompt \
-         -alias cp-api-srv \
-         -file $CP_API_SRV_CERT_DIR/ssl-public-cert.pem
+/update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
 echo "Importing IdP signing cert into API keystore"
 keytool  -import \
@@ -111,6 +121,12 @@ keytool  -import \
          -alias idp \
          -file $CP_IDP_CERT_DIR/idp-public-cert.pem
 
+
+# Update pipe/folder templates with any specific values (e.g. instance/vm size)
+update_config_json_templates "templates.directory" "config.json"
+update_config_json_templates "templates.folder.directory" "template.json"
+
+# Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG

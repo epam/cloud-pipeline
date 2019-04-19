@@ -25,7 +25,7 @@ yum install -y  autoconf \
                 perl-devel \
                 curl-devel
 
-wget https://github.com/git/git/archive/v2.15.0.tar.gz -O git.tar.gz && \
+wget -q https://github.com/git/git/archive/v2.15.0.tar.gz -O git.tar.gz && \
     tar -zxf git.tar.gz && \
     cd git-2.15.0 && \
     make configure && \

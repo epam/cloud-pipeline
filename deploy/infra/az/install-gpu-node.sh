@@ -13,19 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-AZURE_RESOURCE_GROUP={{AZURE_RESOURCE_GROUP}}
-instance_name={{instance_name}}
-region={{region}}
-
-rpm --import https://packages.microsoft.com/keys/microsoft.asc
-sh -c 'echo -e "[azure-cli]\nname=Azure CLI\nbaseurl=https://packages.microsoft.com/yumrepos/azure-cli\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/azure-cli.repo'
-
 # Install common
 yum install -y  nc \
                 python \
                 curl \
-                azure-cli \
                 coreutils
 
 
@@ -156,19 +147,5 @@ chmod +x $CUSTOM_USER_ACTIONS_SCRIPT
 echo "bash $CUSTOM_USER_ACTIONS_SCRIPT" >> /etc/rc.d/rc.local
 chmod +x /etc/rc.d/rc.local
 
-mkdir -p ~/.azure
-export AZURE_AUTH_LOCATION=~/.azure/credentials
-cat <<EOF > $AZURE_AUTH_LOCATION
-{{AZURE_CREDS}}
-EOF
-
-echo "Installing jq"
-wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
-chmod +x /usr/bin/jq
-
-az login --service-principal --username $(cat $AZURE_AUTH_LOCATION | jq -r .clientId) --password $(cat $AZURE_AUTH_LOCATION | jq -r .clientSecret) --tenant $(cat $AZURE_AUTH_LOCATION | jq -r .tenantId)
-# delete service credentials from the image
-rm -f $AZURE_AUTH_LOCATION
+# delete CustomData from the image
 rm -f /var/lib/waagent/CustomData
-az vm update --resource-group $AZURE_RESOURCE_GROUP --name $instance_name --set tags.user_data=done
-

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Consumer;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -30,11 +31,12 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
+import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertTrue;
 
 public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO> {
 
@@ -46,11 +48,14 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             entry(FIT, context().find(byId("wdl-graph-fit-button"))),
             entry(SHOW_LINKS, context().find(byId("wdl-graph-show-links-button"))),
             entry(ADD_SCATTER, context().find(byId("wdl-graph-workflow-add-scatter-button"))),
+            entry(PROPERTIES, context().find(byClassName("graph__properties-button"))),
             entry(ADD_TASK, context().find(byId("wdl-graph-workflow-add-task-button"))),
             entry(EDIT_TASK, context().find(byId("wdl-graph-task-edit-button"))),
             entry(EDIT_WORKFLOW, context().find(byId("wdl-graph-workflow-edit-button"))),
             entry(CANVAS, context().find(tagName("canvas"))),
-            entry(MINIMIZE, $(byClassName("graph__graph-interface-button-icon")))
+            entry(ZOOM_OUT, $(id("wdl-graph-zoom-out-button"))),
+            entry(ZOOM_IN, $(id("wdl-graph-zoom-in-button"))),
+            entry(FULLSCREEN, $(id("wdl-graph-fuulscreen-button")))
     );
 
     public PipelineGraphTabAO(String pipelineName) {
@@ -64,11 +69,13 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public TaskAdditionPopupAO openAddTaskDialog() {
+        click(PROPERTIES);
         click(ADD_TASK);
         return new TaskAdditionPopupAO(this);
     }
 
     public ScatterAdditionPopupAO openAddScatterDialog() {
+        click(PROPERTIES);
         click(ADD_SCATTER);
         return new ScatterAdditionPopupAO(this);
     }
@@ -82,11 +89,11 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public PipelineGraphTabAO minimize() {
-        return click(MINIMIZE);
+        return click(ZOOM_OUT);
     }
 
     public PipelineGraphTabAO searchLabel(String labelText) {
-        $$(byClassName("label")).findBy(text(labelText)).shouldBe(visible);
+        $$(byClassName("label")).findBy(matchText(labelText)).shouldBe(visible);
         return this;
     }
 
@@ -95,19 +102,29 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return this;
     }
 
-    public PipelineGraphTabAO clickScatter(String name) {
+    public PipelineGraphTabAO clickLabel(String name) {
         fit().minimize().minimize().minimize();
         $$(byClassName("label")).findBy(text(name)).shouldBe(visible).click();
         return this;
     }
 
+    public TaskAdditionPopupAO clickTask(final String name) {
+        clickLabel(name);
+        return new TaskEditionPopupAO(this);
+    }
+
+    public ScatterAdditionPopupAO clickScatter(final String name) {
+        clickLabel(name);
+        return new ScatterAdditionPopupAO(this);
+    }
+
     public TaskEditionPopupAO edit() {
-        click(EDIT_TASK);
+        click(PROPERTIES);
         return new TaskEditionPopupAO(this);
     }
 
     public WorkflowEditionPopupAO editWorkflow() {
-        click(EDIT_WORKFLOW);
+        click(PROPERTIES);
         return new WorkflowEditionPopupAO(this);
     }
 
@@ -124,6 +141,18 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         return new CommitPopupAO<>(this);
     }
 
+    public PipelineGraphTabAO verifyFullcreen() {
+        final int zIndexGraph = Integer.parseInt(
+                $(byClassName("graph__graph-container-full-screen")).getCssValue("z-index"));
+        final String zIndexPipelineLibrary = $(byId("pipelines-library-content")).getCssValue("z-index");
+        if ("auto".equals(zIndexPipelineLibrary)) {
+            assertTrue(zIndexGraph > 1);
+        } else {
+            assertTrue(zIndexGraph > Integer.parseInt(zIndexPipelineLibrary));
+        }
+        return this;
+    }
+
     @Override
     public SelenideElement context() {
         return $(className("graph__graph-container"));
@@ -138,13 +167,18 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(NAME, context().find(byId("name"))),
-                entry(INPUT_ADD, context().find(byId("edit-wdl-form-add-variable-button"))),
-                entry(OUTPUT_ADD, context().find(byId("edit-wdl-form-add-output-button"))),
+                entry(ALIAS, context().find(byId("alias"))),
+                entry(INPUT_PANEL, context().findAll(byId("expand-panel-button")).find(text("Inputs"))),
+                entry(INPUT_ADD, context().find(".edit-wdl-form-inputs-container").find(byId("add-variable-button"))),
+                entry(OUTPUT_PANEL, context().findAll(byId("expand-panel-button")).find(text("Outputs"))),
+                entry(OUTPUT_ADD, context().find(".edit-wdl-form-outputs-container").find(byId("add-variable-button"))),
                 entry(ANOTHER_DOCKER_IMAGE, Utils.getFormRowByLabel(context(), "Use another docker image").find(byClassName("ant-checkbox-wrapper"))),
-                entry(DOCKER_IMAGE_COMBOBOX, context().find(byText("Docker image:")).closest(".ant-row-flex")),
-                entry(COMMAND, Utils.getFormRowByLabel(context(), "Command").find(byClassName("edit-w-d-l-tool-form__code-editor"))),
+                entry(ANOTHER_COMPUTE_NODE, Utils.getFormRowByLabel(context(), "Use another compute node").find(byClassName("ant-checkbox-wrapper"))),
+                entry(DOCKER_IMAGE_COMBOBOX, context().find(byId("docker-image-input"))),
+                entry(COMMAND, context().find(byClassName("w-d-l-item-properties__code-editor"))),
                 entry(ADD, context().find(byId("edit-wdl-form-add-button"))),
-                entry(CANCEL, context().find(byId("edit-wdl-form-cancel-button")))
+                entry(CANCEL, context().find(byClassName("anticon-close"))),
+                entry(DELETE, context().find(byId("wdl-graph-task-delete-button")))
         );
 
         public TaskAdditionPopupAO(final PipelineGraphTabAO parentAO) {
@@ -155,12 +189,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         public Map<Primitive, SelenideElement> elements() {
             return elements;
         }
-
-        @Override
-        public SelenideElement context() {
-            return Utils.getPopupByTitle("Add task");
-        }
-
         @Override
         public PipelineGraphTabAO cancel() {
             return click(CANCEL).parent();
@@ -172,11 +200,13 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         public SectionRowAO<TaskAdditionPopupAO> clickInputSectionAddButton() {
+            click(INPUT_PANEL);
             click(INPUT_ADD);
             return new SectionRowAO<>(this);
         }
 
         public SectionRowAO<TaskAdditionPopupAO> clickOutputSectionAddButton() {
+            click(OUTPUT_PANEL);
             click(OUTPUT_ADD);
             return new SectionRowAO<>(this);
         }
@@ -191,6 +221,10 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             return this;
         }
 
+        public TaskAdditionPopupAO enableAnotherComputeNode() {
+            return click(ANOTHER_COMPUTE_NODE);
+        }
+
         public TaskAdditionPopupAO enableAnotherDockerImage() {
             return click(ANOTHER_DOCKER_IMAGE);
         }
@@ -200,8 +234,8 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         public DockerImageSelection openDockerImagesCombobox() {
-            click(DOCKER_IMAGE_COMBOBOX);
             sleep(1, SECONDS);
+            click(DOCKER_IMAGE_COMBOBOX);
             return new DockerImageSelection(this);
         }
     }
@@ -211,7 +245,8 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         private Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
                 entry(ALIAS, Utils.getFormRowByLabel(context(), "Alias").find(byId("alias"))),
-                entry(SAVE, context().find(byClassName("ant-modal-footer")).find(byId("edit-wdl-form-save-button")))
+                entry(SAVE, context().find(byId("wdl-graph-save-button"))),
+                entry(REVERT, context().find(byId("wdl-graph-revert-button")))
         );
 
         public TaskEditionPopupAO(PipelineGraphTabAO parentAO) {
@@ -221,11 +256,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
-        }
-
-        @Override
-        public SelenideElement context() {
-            return Utils.getPopupByTitle("Edit task");
         }
 
         @Override
@@ -250,11 +280,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         @Override
-        public SelenideElement context() {
-            return Utils.getPopupByTitle("Edit workflow");
-        }
-
-        @Override
         public PipelineGraphTabAO ok() {
             return click(SAVE).parent();
         }
@@ -263,9 +288,9 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     public static class ScatterAdditionPopupAO extends PopupAO<ScatterAdditionPopupAO, PipelineGraphTabAO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(ADD, context().find(byClassName("ant-modal-footer")).find(button("ADD"))),
-                entry(CANCEL, context().find(byClassName("ant-modal-footer")).find(button("CANCEL"))),
-                entry(INPUT_ADD, context().find(byId("edit-wdl-form-add-variable-button")))
+                entry(ADD_TASK, context().find(byId("wdl-graph-scatter-add-task-button"))),
+                entry(DELETE, context().find(byId("wdl-graph-scatter-delete-button"))),
+                entry(INPUT_PANEL, context().find(byId("expand-panel-button")))
         );
 
         public ScatterAdditionPopupAO(PipelineGraphTabAO parentAO) {
@@ -278,22 +303,17 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         @Override
-        public SelenideElement context() {
-            return Utils.getPopupByTitle("Add scatter");
-        }
-
-        @Override
         public PipelineGraphTabAO ok() {
             return click(ADD).parent();
         }
 
         public SectionRowAO<ScatterAdditionPopupAO> clickInputSectionAddButton() {
-            click(INPUT_ADD);
+            click(INPUT_PANEL);
             return new SectionRowAO<>(this);
         }
 
         public PipelineGraphTabAO cancel() {
-            return click(CANCEL).parent();
+            return parent().revert();
         }
 
     }
@@ -303,10 +323,10 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
             implements AccessObject<SectionRowAO<PARENT_TYPE>> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
-                entry(NAME, inputByColumn(context(), 1)),
-                entry(TYPE, inputByColumn(context(), 2)),
-                entry(VALUE, inputByColumn(context(), 3)),
-                entry(DELETE_ICON, column(context(), 4).find(byClassName("anticon-delete")))
+                entry(NAME, context().find(byClassName("variable-name"))),
+                entry(TYPE, context().find(byClassName("ant-select-search__field"))),
+                entry(VALUE, context().find(byClassName("variable-value"))),
+                entry(DELETE_ICON, context().find(byId("remove-variable-button")))
         );
 
         private final PARENT_TYPE parentAO;
@@ -318,11 +338,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
-        }
-
-        @Override
-        public SelenideElement context() {
-            return $$(className("ant-table")).findBy(text("Input"));
         }
 
         public TypeCombobox openTypeCombobox() {

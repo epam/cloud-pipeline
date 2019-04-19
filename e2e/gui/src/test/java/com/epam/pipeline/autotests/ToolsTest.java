@@ -73,7 +73,8 @@ public class ToolsTest
         loginAsAdminAndPerform(() ->
                 tools().performWithin(defaultRegistry, personalGroup, group ->
                     group.sleep(1, SECONDS)
-                            .performIf(CREATE_PERSONAL_GROUP, not(visible), deleteGroup(personalGroupActualName(C.LOGIN)))
+                            .performIf(CREATE_PERSONAL_GROUP, not(visible),
+                                    deleteGroup(personalGroupActualName(C.LOGIN)))
                 )
         );
     }
@@ -271,6 +272,7 @@ public class ToolsTest
     public void toolVersionsTab() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.versions()
+                        .viewUnscannedVersions()
                         .sleep(2, SECONDS)
                         .ensureAll(tags(), sizeGreaterThanOrEqual(1))
                         .also(tagsHave(RUN, DELETE))
@@ -436,7 +438,7 @@ public class ToolsTest
                 .expandTabs(EXEC_ENVIRONMENT, ADVANCED_PANEL, PARAMETERS_PANEL)
                 .ensure(DOCKER_IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)
-                .ensure(INSTANCE_TYPE, text("Instance type"))
+                .ensure(INSTANCE_TYPE, text("Node type"))
                 .ensure(DISK, empty)
                 .setDefaultLaunchOptions()
                 .setPriceType(priceType)

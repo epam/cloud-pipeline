@@ -122,6 +122,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     if (this.state.searchResults.length > itemIndex) {
       const item = this.state.searchResults[itemIndex];
       switch (item.type) {
+        case SearchItemTypes.azFile:
         case SearchItemTypes.s3File:
         case SearchItemTypes.NFSFile:
         case SearchItemTypes.gsFile:
@@ -136,6 +137,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
             this.closeDialog();
           }
           break;
+        case SearchItemTypes.azStorage:
         case SearchItemTypes.s3Bucket:
         case SearchItemTypes.NFSBucket:
         case SearchItemTypes.gsStorage:

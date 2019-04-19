@@ -100,6 +100,9 @@ else
      pipe_log_info "[INFO] Settings successfully applied to ${FULL_NEW_IMAGE_NAME}" "$TASK_NAME"
 fi
 
+pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
+pipe_log_success "[INFO] Commit pipeline run task succeeded" "$TASK_NAME"
+
 if [[ "$STOP_PIPELINE" = true || "$STOP_PIPELINE" = TRUE ]]; then
     pipe_log_info "[INFO] STOP_PIPELINE flag was got. Pipeline will be stopped." "$TASK_NAME"
 	pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py sp $RUN_ID > /dev/null" "$TASK_NAME"
@@ -110,6 +113,3 @@ if [[ "$STOP_PIPELINE" = true || "$STOP_PIPELINE" = TRUE ]]; then
         pipe_log_info "[INFO] Pipeline was successfully stopped." "$TASK_NAME"
     fi
 fi
-
-pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
-pipe_log_success "[INFO] Commit pipeline run task succeeded" "$TASK_NAME"

@@ -44,15 +44,15 @@ class WaitForNode(Task):
         self.task_name = 'WaitForNode'
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
-    def await_node_start(self, parameters, task_name, run_id):
+    def await_node_start(self, task_name, run_id, parameters=None):
         try:
-            Logger.info('Waiting for node with parameters = {}, task: {}'.format(','.join(parameters), task_name),
+            Logger.info('Waiting for node with parameters = {}, task: {}'.format(','.join(parameters if parameters else ['NA']), task_name),
                         task_name=self.task_name)
             # approximately 10 minutes
             attempts = 60
-            master = self.get_node_info(parameters, task_name, run_id)
+            master = self.get_node_info(task_name, run_id, parameters=parameters)
             while not master and attempts > 0:
-                master = self.get_node_info(parameters, task_name, run_id)
+                master = self.get_node_info(task_name, run_id, parameters=parameters)
                 attempts -= 1
                 Logger.info('Waiting for node ...', task_name=self.task_name)
                 time.sleep(10)
@@ -64,12 +64,26 @@ class WaitForNode(Task):
         except Exception as e:
             self.fail_task(e.message)
 
-    def get_node_info(self, parameters, task_name, run_id):
-        params = self.parse_parameters(parameters)
-        runs = self.pipe_api.search_runs(params, status='RUNNING', run_id=run_id)
-        if len(runs) == 0:
-            params.append(('parent-id', str(run_id)))
-            runs = self.pipe_api.search_runs(params, status='RUNNING')
+    def get_node_info(self, task_name, run_id, parameters=None):
+        if not parameters:
+            params = None
+
+            # Without parameters defined - only run will be searched directly by run_id
+            run_item = self.pipe_api.load_run(run_id)
+            
+            # load_run() may return an empty object if an error occured while requesting api, so check
+            # that run_item is not empty (assuming that 'id' will be always present in the run info)
+            if not 'id' in run_item:
+                return None
+            runs = [run_item]
+        else:
+            # Otherwise - runs will be search by the parameter value and then filtered by the task status
+            params = self.parse_parameters(parameters)
+            runs = self.pipe_api.search_runs(params, status='RUNNING', run_id=run_id)
+            if len(runs) == 0:
+                params.append(('parent-id', str(run_id)))
+                runs = self.pipe_api.search_runs(params, status='RUNNING')
+
         for run in runs:
             if self.check_run(run, params):
                 node = Node(run)
@@ -93,6 +107,8 @@ class WaitForNode(Task):
         return result
 
     def check_run(self, run, params):
+        if not params:
+            return True
         run_params = {}
         for run_param in run['pipelineRunParameters']:
             value = run_param['value'] if 'value' in run_param else None
@@ -104,13 +120,13 @@ class WaitForNode(Task):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--parameter', type=str, required=True, nargs='*')
+    parser.add_argument('--parameter', type=str, default=None, nargs='*')
     parser.add_argument('--task-name', required=True)
     parser.add_argument('--run-id', required=True, type=int)
     args = parser.parse_args()
     status = StatusEntry(TaskStatus.SUCCESS)
     try:
-        node = WaitForNode().await_node_start(args.parameter, args.task_name, args.run_id)
+        node = WaitForNode().await_node_start(args.task_name, args.run_id, parameters=args.parameter)
         print(node.name + " " + node.ip)
         exit(0)
     except Exception as e:

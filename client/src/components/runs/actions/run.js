@@ -152,6 +152,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             pipelineVersion={payload.version}
             pipelineConfiguration={payload.configurationName}
             nodeCount={(+payload.nodeCount) || 0}
+            cloudRegionId={payload.cloudRegionId}
             availableInstanceTypes={availableInstanceTypes} />
         ),
         style: {
@@ -433,7 +434,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     instanceType: PropTypes.string,
     availableInstanceTypes: PropTypes.array,
     hddSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-    nodeCount: PropTypes.number
+    nodeCount: PropTypes.number,
+    cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
   };
 
   static defaultProps = {
@@ -454,7 +456,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
         instanceDisk: this.props.hddSize,
-        spot: this.state.isSpot
+        spot: this.state.isSpot,
+        regionId: this.props.cloudRegionId
       });
     });
   };
@@ -466,7 +469,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
         instanceDisk: this.props.hddSize,
-        spot: this.state.isSpot
+        spot: this.state.isSpot,
+        regionId: this.props.cloudRegionId
       });
     });
   };
@@ -519,7 +523,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
         instanceDisk: this.props.hddSize,
-        spot: this.state.isSpot
+        spot: this.state.isSpot,
+        regionId: this.props.cloudRegionId
       });
     });
   }

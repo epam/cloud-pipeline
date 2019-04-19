@@ -351,29 +351,17 @@ public class ToolManager implements SecuredEntityManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public Tool delete(String registry, final String image, boolean hard) {
         Tool tool = loadTool(registry, image);
-        if (hard) {
-            DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
-            List<String> tags = dockerRegistryManager.loadImageTags(dockerRegistry, image);
+        deleteToolWithDependent(tool, image, hard);
+        return tool;
+    }
 
-            for (String tag : tags) {
-                Optional<ManifestV2> manifestOpt =
-                        dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
-                manifestOpt.ifPresent(manifest -> {
-                    dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
-
-                    Collections.reverse(manifest.getLayers());
-                    for (ManifestV2.Config layer : manifest.getLayers()) {
-                        dockerRegistryManager.deleteLayer(dockerRegistry, image, layer.getDigest());
-                    }
-                });
-            }
-        }
-        toolVulnerabilityDao.loadAllToolVersionScans(tool.getId())
-                .values()
-                .forEach(versionScan -> deleteToolVersionScan(tool.getId(), versionScan.getVersion()));
-        toolDao.deleteToolIcon(tool.getId());
-        toolVersionManager.deleteToolVersions(tool.getId());
-        toolDao.deleteTool(tool.getId());
+    /**
+     * Deletes a tools
+     * @param tool to delete
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public Tool delete(final Tool tool) {
+        deleteToolWithDependent(tool, tool.getImage(), false);
         return tool;
     }
 
@@ -689,5 +677,32 @@ public class ToolManager implements SecuredEntityManager {
         return !StringUtils.hasText(instanceType)
                 || instanceOfferManager.isToolInstanceAllowedInAnyRegion(instanceType, resource);
     }
+
+    private void deleteToolWithDependent(final Tool tool, final String image, final boolean hard) {
+        if (hard) {
+            DockerRegistry dockerRegistry = dockerRegistryManager.load(tool.getRegistryId());
+            List<String> tags = dockerRegistryManager.loadImageTags(dockerRegistry, image);
+
+            for (String tag : tags) {
+                Optional<ManifestV2> manifestOpt =
+                        dockerRegistryManager.deleteImage(dockerRegistry, tool.getImage(), tag);
+                manifestOpt.ifPresent(manifest -> {
+                    dockerRegistryManager.deleteLayer(dockerRegistry, image, manifest.getConfig().getDigest());
+
+                    Collections.reverse(manifest.getLayers());
+                    for (ManifestV2.Config layer : manifest.getLayers()) {
+                        dockerRegistryManager.deleteLayer(dockerRegistry, image, layer.getDigest());
+                    }
+                });
+            }
+        }
+        toolVulnerabilityDao.loadAllToolVersionScans(tool.getId())
+                .values()
+                .forEach(versionScan -> deleteToolVersionScan(tool.getId(), versionScan.getVersion()));
+        toolDao.deleteToolIcon(tool.getId());
+        toolVersionManager.deleteToolVersions(tool.getId());
+        toolDao.deleteTool(tool.getId());
+    }
+
 
 }

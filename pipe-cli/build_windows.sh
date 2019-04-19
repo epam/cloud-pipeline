@@ -50,7 +50,9 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --clean \
             --workpath /tmp \
             --distpath /src/dist/win64 \
-            /src/pipe.py
+            /src/pipe.py && \
+cd /src/dist/win64 && \
+zip -r -q pipe.zip pipe
 EOL
 
 docker run -i --rm \

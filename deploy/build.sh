@@ -100,7 +100,7 @@ mkdir -p "$BUILD_DIR"
 ##########################
 echo
 echo "[BUILDING CLOUD IMAGES]"
-if [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ]; then
+if [ "$CLOUD_IMAGES_MANIFEST_FILE" == "rebuild" ]; then   
     CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
     if [ "$BUILD_AMI_REGIONS" ]; then
         echo "[BUILDING AWS AMIs in ${BUILD_AMI_REGIONS}]"
@@ -130,6 +130,18 @@ if [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ]; then
         cat ${CLOUD_IMAGES_MANIFEST_FILE}.az >> $CLOUD_IMAGES_MANIFEST_FILE
         rm -f ${CLOUD_IMAGES_MANIFEST_FILE}.az
     fi
+elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
+    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
+    CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt"}
+    CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
+    if check_installed "wget"; then
+        wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
+    elif check_installed "curl"; then
+        curl "$CLOUD_IMAGES_MANIFEST_URI" -o $CLOUD_IMAGES_MANIFEST_FILE
+    else
+        echo "ERROR: wget and curl are not installed, please install one of them to use the remote images manifest"
+        exit 1
+    fi
 else
     echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE). Cloud image WILL NOT be rebuilt"
 fi
@@ -152,6 +164,12 @@ if [ "$BUILD_INCLUDE_TESTS" ]; then
     DOCKERS_BUILD_OTHER_OPTIONS="$DOCKERS_BUILD_OTHER_OPTIONS -t"
 fi
 bash $BUILD_SCRIPT_PATH/docker/build-dockers.sh -c "$DOCKERS_MANIFEST_DIR" -s "$BUILD_SCRIPT_PATH/docker" -v "$BUILD_VERSION" $DOCKERS_BUILD_OTHER_OPTIONS
+
+if [ $? -ne 0 ]; then
+    echo "ERROR occured while building/pushing docker images, FAILING build"
+    cleanup_build
+    exit 1
+fi
 
 ##########################################################################
 # Prepare pipectl package directory structure and build pipectl executable
@@ -181,6 +199,13 @@ echo
 echo "[BUILDING PIPECTL]"
 export DEPLOY_BUILD_OUTPUT_PATH=$BUILD_OUTPUT_FILE
 bash $BUILD_SCRIPT_PATH/pipectl/build-pipectl.sh --base64 "$PIPECTL_CONTENTS_DIR/"
+
+if [ $? -ne 0 ]; then
+    echo "ERROR occured while building pipectl executable, FAILING build"
+    cleanup_build
+    rm -f "$BUILD_OUTPUT_FILE"
+    exit 1
+fi
 
 if [ "$KEEP_MANIFEST_FILES" ]; then
     BUILD_OUTPUT_DIR=$(dirname $BUILD_OUTPUT_FILE)

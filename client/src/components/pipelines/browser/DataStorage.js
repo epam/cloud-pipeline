@@ -689,6 +689,7 @@ export default class DataStorage extends React.Component {
     if (item.downloadable) {
       actions.push(
         <Button
+          id={`download ${item.name}`}
           key="download"
           onClick={(event) => this.downloadSingleFile(event, item)}
           size="small"><Icon type="download" /></Button>
@@ -697,6 +698,7 @@ export default class DataStorage extends React.Component {
     if (item.editable) {
       actions.push(
         <Button
+          id={`edit ${item.name}`}
           key="rename"
           size="small"
           onClick={(event) => this.openRenameItemDialog(event, item)}>
@@ -706,7 +708,7 @@ export default class DataStorage extends React.Component {
     }
     if (this.canRestoreItem(item)) {
       actions.push(
-        <Button key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
+        <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
           <Icon type="reload" />
         </Button>
       );
@@ -715,6 +717,7 @@ export default class DataStorage extends React.Component {
       actions.push(separator());
       actions.push(
         <Button
+          id={`remove ${item.name}`}
           key="remove"
           type="danger"
           size="small"
@@ -1376,15 +1379,12 @@ export default class DataStorage extends React.Component {
                   Share
                 </Button>
               }
-              {
-                roleModel.writeAllowed(this.props.info.value) &&
-                <Button
-                  id="edit-storage-button"
-                  size="small"
-                  onClick={() => this.openEditDialog()}>
-                  <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
-                </Button>
-              }
+              <Button
+                id="edit-storage-button"
+                size="small"
+                onClick={() => this.openEditDialog()}>
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              </Button>
               <Button
                 id="refresh-storage-button"
                 size="small"
@@ -1478,6 +1478,7 @@ export default class DataStorage extends React.Component {
           visible={this.state.editDialogVisible}
           dataStorage={this.props.info.value}
           pending={this.props.info.pending}
+          policySupported={this.props.info.value.policySupported}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />

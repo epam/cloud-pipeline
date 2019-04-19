@@ -26,6 +26,10 @@ public class AzureBlobStorage extends AbstractDataStorage {
 
     private Long regionId;
 
+    public AzureBlobStorage() {
+        setType(DataStorageType.AZ);
+    }
+
     public AzureBlobStorage(final Long id, final String name, final String path, final StoragePolicy policy,
                             final String mountPoint) {
         super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.AZ, policy, mountPoint);

@@ -27,7 +27,7 @@ ARG CP_API_DIST_URL=""
 ENV CP_SEARCH_HOME="/opt/search" \
     CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
 RUN cd /tmp && \
-    wget "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     mkdir -p $CP_SEARCH_HOME && \
     mv bin/elasticsearch-agent.jar $CP_SEARCH_HOME/ && \

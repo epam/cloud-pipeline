@@ -53,6 +53,8 @@ export const SearchGroupTypes = {
   },
   storage: {
     types: [
+      SearchItemTypes.azFile,
+      SearchItemTypes.azStorage,
       SearchItemTypes.s3File,
       SearchItemTypes.s3Bucket,
       SearchItemTypes.NFSFile,

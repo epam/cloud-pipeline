@@ -44,9 +44,12 @@ jar {
 }
 
 // >>>>> Exclude tests through property defined in the build.gradle file
-test { 
-    if (project.hasProperty('excludeTests')) { 
+test {
+    if (project.hasProperty('excludeTests')) {
         exclude project.property('excludeTests')
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
     }
     afterSuite { desc, result ->
         if (!desc.parent) { // will match the outermost suite
@@ -101,7 +104,7 @@ dependencies {
     compile "com.google.apis:google-api-services-cloudbilling:v1-rev30-1.25.0"
     compile "com.google.apis:google-api-services-iamcredentials:v1-rev32-1.25.0"
     compile "com.google.cloud:google-cloud-storage:1.64.0"
-    
+
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
     testCompile group: "com.github.tomakehurst", name: "wiremock", version: "2.14.0"
 

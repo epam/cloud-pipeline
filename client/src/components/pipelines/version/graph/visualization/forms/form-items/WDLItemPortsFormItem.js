@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Button, Icon, Row} from 'antd';
 import {
+  LockOptions,
   WDLItemPortFormItem,
   validateSinglePort,
   valuesAreEqual as portsAreEqual
@@ -76,7 +77,19 @@ export class WDLItemPortsFormItem extends React.Component {
     onChange: PropTypes.func,
     onInitialize: PropTypes.func,
     onUnMount: PropTypes.func,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+
+    // if `isRequired = true` user cannot change names and types as well as remove or add variables
+    isRequired: PropTypes.bool,
+    addVariableSupported: PropTypes.bool,
+    removeVariableSupported: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
+    lockVariables: PropTypes.oneOfType([PropTypes.func, PropTypes.number])
+  };
+
+  static defaultProps = {
+    addVariableSupported: true,
+    removeVariableSupported: true,
+    lockVariables: LockOptions.none
   };
 
   state = {
@@ -197,6 +210,7 @@ export class WDLItemPortsFormItem extends React.Component {
       multi: false
     });
     this.setState({
+      collapsed: false,
       ports
     }, this.validate);
   };
@@ -225,6 +239,7 @@ export class WDLItemPortsFormItem extends React.Component {
           type="flex"
           align="middle">
           <a
+            id={this.state.collapsed ? 'expand-panel-button' : 'collapse-panel-button'}
             className={styles.portCollapsibleHeader}
             style={{flex: 1}}
             onClick={this.toggleCollapse}>
@@ -244,13 +259,17 @@ export class WDLItemPortsFormItem extends React.Component {
               </span>
             </Row>
           </a>
-          <Button
-            disabled={this.props.disabled}
-            size="small"
-            style={{lineHeight: 'initial'}}
-            onClick={this.onAddClicked}>
-            ADD
-          </Button>
+          {
+            this.props.addVariableSupported &&
+            <Button
+              id="add-variable-button"
+              disabled={this.props.disabled || this.props.isRequired}
+              size="small"
+              style={{lineHeight: 'initial'}}
+              onClick={this.onAddClicked}>
+              ADD
+            </Button>
+          }
         </Row>
         {
           !this.state.collapsed &&
@@ -274,7 +293,10 @@ export class WDLItemPortsFormItem extends React.Component {
             <WDLItemPortFormItem
               key={index}
               value={port}
+              removable={this.props.removeVariableSupported}
+              lock={this.props.lockVariables}
               disabled={this.props.disabled}
+              isRequired={this.props.isRequired}
               onChange={this.onPortChanged(index)}
               onInitialize={this.portFormItemInitialized(index)}
               onUnMount={this.portFormItemUnMounted(index)}

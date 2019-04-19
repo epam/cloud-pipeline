@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# lifescience/cloud-pipeline:idp-latest
 FROM centos:7
 
 RUN curl -sL https://rpm.nodesource.com/setup_10.x | bash -
@@ -25,7 +24,7 @@ RUN yum install gcc-c++ \
 RUN cd /opt && \
     git clone https://github.com/rodichenko/saml-idp.git && \
     cd saml-idp && \
-    git checkout tags/v1.2.1 && \
+    git checkout tags/v1.2.3 && \
     npm install --global
 
 ADD config.js /opt/saml-idp/

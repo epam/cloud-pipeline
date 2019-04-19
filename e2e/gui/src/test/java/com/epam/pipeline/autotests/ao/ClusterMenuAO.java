@@ -110,7 +110,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void waitForRunIdAppearing(String runId) {
-        for (int i = 0; i < 80; i++) {
+        for (int i = 0; i < 160; i++) {
             $(button("Refresh")).click();
             if ($(byText(runIdLabelText(runId))).exists()) {
                 break;
@@ -196,20 +196,20 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public ClusterMenuAO sortByIncrease(HeaderColumn column) {
         SelenideElement createdHeaderButton = $$("th").findBy(cssClass(column.cssClass));
-        createdHeaderButton.find(".ant-table-column-sorter-down").click();
+        createdHeaderButton.find(".ant-table-column-sorter-up").click();
 
-        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("off"));
-        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("on"));
+        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("on"));
+        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("off"));
 
         return this;
     }
 
     public ClusterMenuAO sortByDecrease(HeaderColumn column) {
         SelenideElement createdHeaderButton = $$("th").findBy(cssClass(column.cssClass));
-        createdHeaderButton.find(".ant-table-column-sorter-up").click();
+        createdHeaderButton.find(".ant-table-column-sorter-down").click();
 
-        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("on"));
-        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("off"));
+        createdHeaderButton.find(".ant-table-column-sorter-up").shouldHave(cssClass("off"));
+        createdHeaderButton.find(".ant-table-column-sorter-down").shouldHave(cssClass("on"));
 
         return this;
     }
@@ -242,9 +242,9 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void validateSortedBy(HeaderColumn column, Comparator<String> comparator) {
-        ElementsCollection dates = column == HeaderColumn.LABEL ?
-                $$("td").filterBy(id("label-RUNID")) :
-                $$("td").filterBy(cssClass(column.cssClass));
+        ElementsCollection dates = column == HeaderColumn.LABEL
+                ? $$("span").filterBy(id("label-RUNID"))
+                : $$("td").filterBy(cssClass(column.cssClass));
         List<String> sortedByStrings = new ArrayList<>();
         for (SelenideElement date : dates) {
             sortedByStrings.add(date.text());
@@ -253,6 +253,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         ArrayList<String> sortedSortedByStrings = new ArrayList<>(sortedByStrings);
         sortedSortedByStrings.sort(comparator);
 
+        assertTrue(sortedByStrings.size() > 0);
         assertEquals(sortedByStrings, sortedSortedByStrings);
     }
 

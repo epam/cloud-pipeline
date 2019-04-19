@@ -118,9 +118,9 @@ public class PipelineDockerCommitTest
                 .perform(registry, defaultGroup, toolFullName, tool ->
                         tool.settings()
                                 .setDefaultCommand("sleep 100")
-                                .ensure(INSTANCE_TYPE, value(instanceType))
-                                .ensure(DISK, value(diskSize))
-                                .ensure(PRICE_TYPE, value(priceType))
+                                .setInstanceType(instanceType)
+                                .setDisk(diskSize)
+                                .setPriceType(priceType)
                                 .save()
                                 .run(this)
                 )

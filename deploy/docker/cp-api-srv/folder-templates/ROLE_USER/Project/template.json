@@ -5,7 +5,7 @@
             "value": "project"
         },
          "DataStorage": {
-            "value": "s3://cloud-pipeline-@@-storage",
+            "value": "${CP_PREF_STORAGE_SCHEMA}://cloud-pipeline-@@-storage",
             "type": "bucket"
         },
          "ProjectID": {
@@ -21,7 +21,7 @@
         {
             "name": "@@-storage",
             "path": "cloud-pipeline-@@-storage",
-            "type": "S3"
+            "serviceType" : "OBJECT_STORAGE"
         }
     ]
 }

@@ -54,6 +54,23 @@ yum install -y  docker-ce-18.09.1 \
                 docker-ce-cli-18.09.1 \
                 containerd.io
 
+if [ "$CP_KUBE_MASTER_DOCKER_PATH" ]; then
+  echo "CP_KUBE_MASTER_DOCKER_PATH is specified - docker will be configured to store data in $CP_KUBE_MASTER_DOCKER_PATH"
+  mkdir -p "$CP_KUBE_MASTER_DOCKER_PATH"
+  DOCKER_DATA_ROOT_ENTRY="\"data-root\": \"$CP_KUBE_MASTER_DOCKER_PATH\","
+fi
+
+mkdir -p /etc/docker
+cat <<EOT > /etc/docker/daemon.json
+{
+  $DOCKER_DATA_ROOT_ENTRY
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOT
+
 #6.2 - Kube
 yum install -y \
             kubeadm-1.7.5-0.x86_64 \
@@ -67,6 +84,8 @@ sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment=
 
 #8
 systemctl daemon-reload
+systemctl enable docker
+systemctl enable kubelet
 systemctl start docker
 systemctl start kubelet
 
@@ -74,6 +93,20 @@ systemctl start kubelet
 sleep 10
 
 #9
+# If another directory for etcd is specified via CP_KUBE_MASTER_ETCD_HOST_PATH - it will be symlinked to the default location at /var/lib/etcd
+# This allows to use different drive for etcd wal/data dirs to overcome any I/O latencies which may cause control plane pods failures
+if [ "$CP_KUBE_MASTER_ETCD_HOST_PATH" ]; then
+  echo "CP_KUBE_MASTER_ETCD_HOST_PATH is specified, etcd will be configured to store data in $CP_KUBE_MASTER_ETCD_HOST_PATH"
+  CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH="${CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH:-"/var/lib/etcd"}"
+  if [ -d "$CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH" ]; then
+    echo "Default etcd directory already exists at $CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH deleting it"
+    rm -rf "$CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH"
+  fi
+
+  ln -s "$CP_KUBE_MASTER_ETCD_HOST_PATH" "$CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH"
+  echo "Symlink created from $CP_KUBE_MASTER_ETCD_HOST_PATH to $CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH"
+fi
+
 FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
 kubeadm init --pod-network-cidr="$FLANNEL_CIDR" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
 

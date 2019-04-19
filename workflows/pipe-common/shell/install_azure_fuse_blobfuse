@@ -19,6 +19,18 @@ function get_os_distribution_parameter {
     echo $(cat /etc/os-release | grep "^$_PARAMETER_NAME=" | awk -F '=' '{gsub(/"/, "", $2); print $2}')
 }
 
+function install_glibc_from_package_repository {
+    /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+
+    if [ $? -eq 0 ]; then
+       yum install -y glibc
+    else
+       apt-get install -y libc-bin
+    fi
+
+    getent --version
+}
+
 function install_from_package_repository {
     # Check whether we are on rpm or deb based distribution
     /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
@@ -31,6 +43,13 @@ function install_from_package_repository {
     then
         echo "OS distribution parameters retrieving failed"
         exit 1
+    fi
+
+    # Workaround for debian distro, as a prebuilt binary is not provided
+    # It is proved that ubuntu 16 version works well for debian 9
+    if [ "$DISTRIB_ID" == "debian" ]; then
+        DISTRIB_ID="ubuntu"
+        DISTRIB_RELEASE="16.04"
     fi
 
     # Install dependencies according to the distribution
@@ -50,6 +69,15 @@ function install_from_package_repository {
 
 _FUSE_TYPE=blobfuse
 _FUSE_BIN=/usr/bin/blobfuse
+
+command -v getent > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+
+    if ! install_glibc_from_package_repository; then
+        echo "glibc is not installed. So resolved ip for Azure blob service will not be added to /etc/hosts. Some connection problem may appear during a work with Azure blob mounts"
+    fi
+fi
+
 
 command -v blobfuse >/dev/null 2>&1
 _IS_BLOBFUSE_INSTALLED=$?

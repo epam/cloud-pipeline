@@ -1,6 +1,7 @@
 {
-    "short_description": "FIXME This is a stub",
-    "instance_type": "m5.large",
-    "disk_size": "20",
-    "default_command": "sleep infinity"
+    "short_description": "Provides tools for the analysis and comprehension of high-throughput genomic data",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "100",
+    "default_command": "/start.sh",
+    "endpoints": [ "{ \"name\": \"Bioconductor\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
 }

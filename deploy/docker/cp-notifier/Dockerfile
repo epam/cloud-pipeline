@@ -26,7 +26,7 @@ RUN yum install -y \
 ARG CP_API_DIST_URL=""
 ENV CP_NOTIFIER_HOME="/opt/notifier"
 RUN cd /tmp && \
-    wget "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
+    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     mkdir -p $CP_NOTIFIER_HOME && \
     mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \

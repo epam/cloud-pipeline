@@ -26,12 +26,16 @@ import java.util.function.Supplier;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.disappears;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.PipelineGraphTabAO.TypeCombobox.shouldContainTypes;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 
 public class WDLTaskEditorTest
@@ -44,6 +48,8 @@ public class WDLTaskEditorTest
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
     private final String pipeline1538 = "pipeline-1538-" + Utils.randomSuffix();
+    private final String defaultTask = "workflowTask";
+    private final String aliasName = "task" + Utils.randomSuffix();
 
     @BeforeClass
     public void createPipeline() {
@@ -66,7 +72,8 @@ public class WDLTaskEditorTest
     public void validateWDLEditButtons() {
         getFirstVersion(pipelineName)
                 .graphTab()
-                .ensureVisible(SAVE, REVERT, LAYOUT, FIT, SHOW_LINKS, ADD_SCATTER, ADD_TASK);
+                .ensureVisible(SAVE, REVERT, LAYOUT, FIT, SHOW_LINKS, ZOOM_IN, ZOOM_OUT, FULLSCREEN, PROPERTIES)
+                .ensureAll(disabled, SAVE, REVERT);
     }
 
     @Test(dependsOnMethods = {"validateWDLEditButtons"})
@@ -75,7 +82,9 @@ public class WDLTaskEditorTest
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddTaskDialog()
-                .ensureVisible(NAME, INPUT_ADD, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, COMMAND, ADD, CANCEL);
+                .parent()
+                .clickTask(defaultTask)
+                .ensureVisible(ALIAS, INPUT_ADD, OUTPUT_ADD, ANOTHER_DOCKER_IMAGE, ANOTHER_COMPUTE_NODE, COMMAND, DELETE);
     }
 
     @Test(dependsOnMethods = {"validateAddTaskPopup"})
@@ -86,7 +95,9 @@ public class WDLTaskEditorTest
                 .openDockerImagesCombobox()
                 .ensureVisible(REGISTRY, GROUP, SEARCH, OK, CANCEL)
                 .click(CANCEL, taskAdditionPopupOf(pipelineName))
-                .disableAnotherDockerImage();
+                .disableAnotherDockerImage()
+                .enableAnotherComputeNode()
+                .selectValue(combobox("Instance type"), menuitem(C.DEFAULT_INSTANCE));
     }
 
     @Test(dependsOnMethods = {"validateAnotherDockerImageCausesDockerImagesListAppearing"})
@@ -110,60 +121,55 @@ public class WDLTaskEditorTest
     @Test(dependsOnMethods = {"validateTypeDropDownList"})
     @TestCase({"EPMCMBIBPC-618"})
     public void validateAddingParameterInTask() {
-        String taskName = generateWdlTaskName();
         taskAdditionDialog()
-                .setName(taskName)
-                .clickInputSectionAddButton()
+                .setValue(ALIAS, aliasName)
+                .enter()
+                .click(INPUT_ADD);
+        sectionRowInTaskAdditionPopup()
                 .setName("test_in")
                 .setType("Int")
                 .setValue("0")
                 .close()
-                .ok()
-                .ensure(SAVE, visible, enabled);
+                .parent()
+                .searchScatter("test_in")
+                .searchLabel(aliasName)
+                .ensure(SAVE, visible, enabled)
+                .ensure(REVERT, visible, enabled);
     }
 
     @Test(dependsOnMethods = {"validateAddingParameterInTask"})
     @TestCase({"EPMCMBIBPC-620"})
     public void checkThatDiagramChangingChangesCode() {
-        String taskName = generateWdlTaskName();
         String varName = "test_in";
         String varType = "Int";
         String varValue = "0";
-        getFirstVersion(pipelineName)
-                .graphTab()
-                .openAddTaskDialog()
-                .clickInputSectionAddButton()
-                .setName(varName)
-                .setType(varType)
-                .setValue(varValue)
-                .close()
-                .setName(taskName)
-                .ok()
+        taskAdditionDialog()
+                .parent()
                 .saveAndCommitWithMessage("commit by EPMCMBIBPC-620 test case")
                 .codeTab()
                 .clickOnFile(fileInPipeline)
                 .ensureVisible(EDIT, CLOSE)
-                .shouldContainInCode(String.format("task %s", taskName))
+                .shouldContainInCode(String.format("task %s", defaultTask))
                 .shouldContainInCode(String.format("%s %s = %s", varType, varName, varValue))
-                .shouldContainInCode(String.format("call %s", taskName))
+                .shouldContainInCode(String.format("call %s as %s", defaultTask, aliasName))
                 .close();
     }
 
     @Test(dependsOnMethods = "validateAnotherDockerImageCausesDockerImagesListAppearing", priority = 1)
     @TestCase({"EPMCMBIBPC-643"})
     public void checkCodeAfterChangingImage() {
-        String taskName = generateWdlTaskName();
         getFirstVersion(pipelineName)
                 .graphTab()
                 .openAddTaskDialog()
-                .setName(taskName)
+                .parent()
+                .clickTask(defaultTask)
                 .enableAnotherDockerImage()
                 .openDockerImagesCombobox()
                 .selectRegistry(defaultRegistry)
                 .selectGroup(defaultGroup)
                 .selectTool(testingTool)
                 .click(OK, taskAdditionPopupOf(pipelineName))
-                .ok()
+                .parent()
                 .saveAndCommitWithMessage("testing")
                 .codeTab()
                 .clickOnFile(fileInPipeline)
@@ -174,9 +180,6 @@ public class WDLTaskEditorTest
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1538"})
     public void closingPopupAfterWdlPipelineCommit() {
-        final String taskName = "taskName";
-        final String taskNewName = "taskNewName";
-
         open(C.ROOT_ADDRESS);
         library()
                 .createPipeline(Template.WDL, pipeline1538)
@@ -184,17 +187,14 @@ public class WDLTaskEditorTest
                 .firstVersion()
                 .graphTab()
                 .openAddTaskDialog()
-                .setName(taskName)
+                .parent()
+                .clickTask(defaultTask)
                 .clickInputSectionAddButton()
                 .setName("test_in")
                 .setType("Int")
                 .setValue("0")
                 .close()
-                .ok()
-                .clickScatter(taskName)
-                .edit()
-                .setValue(ALIAS, taskNewName)
-                .ok()
+                .parent()
                 .saveAndCommitWithMessage("commit message")
                 .ensure(modalWithTitle("Commit"), disappears);
     }
@@ -217,9 +217,5 @@ public class WDLTaskEditorTest
 
     private PipelineGraphTabAO.SectionRowAO<PipelineGraphTabAO.TaskAdditionPopupAO> sectionRowInTaskAdditionPopup() {
         return new PipelineGraphTabAO.SectionRowAO<>(new PipelineGraphTabAO.TaskAdditionPopupAO(new PipelineGraphTabAO(pipelineName)));
-    }
-
-    private String generateWdlTaskName() {
-        return "task" + Utils.randomSuffix();
     }
 }

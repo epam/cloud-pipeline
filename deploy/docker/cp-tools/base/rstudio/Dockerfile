@@ -19,8 +19,16 @@ FROM ${BASE_IMAGE}
 
 ENV ROOT TRUE
 
-    # Install prerequisites
+# Install prerequisites
 RUN apt-get update
+
+# Certain rocker - based image have a missing /var/lib/dpkg/available
+# This causes apt install to fail. E.g. bioconductor: https://github.com/Bioconductor/bioc_docker/blob/5357c40c7273b5eb120e2af012fbb4c7fdc8b61b/out/release_base/Dockerfile#L14
+# Running dselect update will restore the missing files
+RUN if [ ! -f /var/lib/dpkg/available ]; then \
+        apt-get install -y dselect && \
+        dselect update; \
+    fi
 
 RUN  apt-get install -y automake \
                         autotools-dev \
@@ -49,7 +57,7 @@ RUN apt-get install -y libssl1.0-dev \
                         libffi-dev \
                         python-dev
 
-RUN  wget https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
+RUN  wget -q https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
         tar xzf v0.24.1.tar.gz && \
         cd libgit2-0.24.1/ && \
         cmake . && \
@@ -58,7 +66,7 @@ RUN  wget https://github.com/libgit2/libgit2/archive/v0.24.1.tar.gz && \
 RUN ldconfig
 RUN pip install 'pygit2==0.24.1'
 
-RUN wget https://codeload.github.com/PressLabs/gitfs/zip/0.4.5.1 && \
+RUN wget -q https://codeload.github.com/PressLabs/gitfs/zip/0.4.5.1 && \
         unzip 0.4.5.1 && \
         cd gitfs-0.4.5.1 && \
         python setup.py install && cd ..

@@ -122,7 +122,8 @@ public class DockerCommitTest
                 .showLog(getLastRunId())
                 .waitForCommitButton()
                 .commit(commit ->
-                        commit.ensureVisible(REGISTRY, IMAGE_NAME, DELETE_RUNTIME_FILES, STOP_PIPELINE, CANCEL, COMMIT)
+                        commit.ensureVisible(REGISTRY, GROUP, IMAGE_NAME, VERSION, DELETE_RUNTIME_FILES, STOP_PIPELINE,
+                                CANCEL, COMMIT)
                                 .cancel()
                 );
     }

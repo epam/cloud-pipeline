@@ -19,6 +19,8 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.WebElement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toList;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO> {
 
@@ -45,6 +48,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(CLI_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'CLI')]"))),
             entry(SYSTEM_EVENTS_TAB, $(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'System events')]"))),
             entry(USER_MANAGEMENT_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'User management')]"))),
+            entry(PREFERENCES_TAB, context().find(byXpath("//*[contains(@class, 'ant-tabs-tab') and contains(., 'Preferences')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -73,9 +77,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         return new UserManagementAO(parentAO);
     }
 
+    public PreferencesAO switchToPreferences() {
+        click(PREFERENCES_TAB);
+        return new PreferencesAO(parentAO);
+    }
+
     @Override
     public PipelinesLibraryAO cancel() {
         click(CANCEL);
+        return parentAO;
+    }
+
+    public PipelinesLibraryAO ok() {
+        click(OK);
         return parentAO;
     }
 
@@ -450,6 +464,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public final Map<Primitive, SelenideElement> elements = initialiseElements(
                             entry(SEARCH, element),
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
+                            entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form")))
                     );
 
@@ -479,6 +494,22 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         setValue(SEARCH_INPUT, substring);
                         return this;
                     }
+
+                    public EditUserPopup addRoleOrGroup(final String value) {
+                        click(SEARCH);
+                        $$(byClassName("ant-select-dropdown-menu-item")).findBy(text(value)).click();
+                        click(ADD_KEY);
+                        return this;
+                    }
+
+                    public EditUserPopup deleteRoleOrGroup(final String value) {
+                        $$(byClassName("role-name-column"))
+                                .findBy(text(value))
+                                .closest("tr")
+                                .find(By.id("delete-role-button"))
+                                .click();
+                        return this;
+                    }
                 }
             }
         }
@@ -491,8 +522,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .find(byClassName("ant-table-content"))),
                     entry(SEARCH, context().find(byId("search-groups-input"))),
                     entry(CREATE_GROUP, context().$$(byAttribute("type", "button"))
-                            .findBy(text("Create group"))),
-                    entry(OK, $(byClassName("ant-confirm-body-wrapper")).find(byClassName("ant-btn-primary")))
+                            .findBy(text("Create group")))
             );
 
             public GroupsTabAO(final PipelinesLibraryAO parentAO) {
@@ -572,6 +602,232 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return parentAO;
                 }
             }
+        }
+    }
+
+    public class PreferencesAO extends SettingsPageAO {
+        public final Map<Primitive, SelenideElement> elements = initialiseElements(
+                super.elements(),
+                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
+                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
+                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security")))
+        );
+
+        PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
+            super(pipelinesLibraryAO);
+        }
+
+        public ClusterTabAO switchToCluster() {
+            click(CLUSTER_TAB);
+            return new ClusterTabAO(parentAO);
+        }
+
+        public SystemTabAO switchToSystem() {
+            click(SYSTEM_TAB);
+            return new SystemTabAO(parentAO);
+        }
+
+        public DockerSecurityAO switchToDockerSecurity() {
+            click(DOCKER_SECURITY_TAB);
+            return new DockerSecurityAO(parentAO);
+        }
+
+        public PreferencesAO save() {
+            $(byId("edit-preference-form-ok-button")).shouldBe(visible).click();
+            return this;
+        }
+
+        public class ClusterTabAO extends PreferencesAO {
+
+            ClusterTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            private By clusterHddExtraMulti() {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> text("cluster.instance.hdd_extra_multi").apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            public PreferencesAO setClusterHddExtraMulti(final String value) {
+                final By clusterHddExtraMultiValue = clusterHddExtraMulti();
+                click(clusterHddExtraMultiValue);
+                clear(clusterHddExtraMultiValue);
+                setValue(clusterHddExtraMultiValue, value);
+                return this;
+            }
+
+            public String getClusterHddExtraMulti() {
+                return $(clusterHddExtraMulti()).getValue();
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+        }
+
+        public class SystemTabAO extends PreferencesAO {
+
+            private final By maxIdleTimeout = getBySystemField("system.max.idle.timeout.minutes");
+            private final By idleActionTimeout = getBySystemField("system.idle.action.timeout.minutes");
+            private final By idleCpuThreshold = getBySystemField("system.idle.cpu.threshold");
+            private final By idleAction = getBySystemField("system.idle.action");
+
+            SystemTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            private By getBySystemField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            public SystemTabAO setMaxIdleTimeout(final String value) {
+                return setSystemValue(maxIdleTimeout, value);
+            }
+
+            public String getMaxIdleTimeout() {
+                return getSystemValue(maxIdleTimeout);
+            }
+
+            public SystemTabAO setIdleActionTimeout(final String value) {
+                return setSystemValue(idleActionTimeout, value);
+            }
+
+            public String getIdleActionTimeout() {
+                return getSystemValue(idleActionTimeout);
+            }
+
+            public SystemTabAO setIdleCpuThreshold(final String value) {
+                return setSystemValue(idleCpuThreshold, value);
+            }
+
+            public String getIdleCpuThreshold() {
+                return getSystemValue(idleCpuThreshold);
+            }
+
+            public SystemTabAO setIdleAction(final String value) {
+                return setSystemValue(idleAction, value);
+            }
+
+            public String getIdleAction() {
+                return getSystemValue(idleAction);
+            }
+
+            private SystemTabAO setSystemValue(final By systemVariable, final String value) {
+                click(systemVariable);
+                clear(systemVariable);
+                setValue(systemVariable, value);
+                return this;
+            }
+
+            private String getSystemValue(final By systemVariable) {
+                return $(systemVariable).getValue();
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
+        }
+
+        public class DockerSecurityAO extends PreferencesAO {
+
+            private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
+            private final By graceHours = getByDockerSecurityField("security.tools.grace.hours");
+
+            DockerSecurityAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            public DockerSecurityAO enablePolicyDenyNotScanned() {
+                if ($(policyDenyNotScanned).has(text("Disabled"))) {
+                    clickPolicyDenyNotScanned();
+                }
+                return this;
+            }
+
+            public DockerSecurityAO disablePolicyDenyNotScanned() {
+                if ($(policyDenyNotScanned).has(text("Enable"))) {
+                    clickPolicyDenyNotScanned();
+                }
+                return this;
+            }
+
+            public DockerSecurityAO clickPolicyDenyNotScanned() {
+                click(policyDenyNotScanned);
+                return this;
+            }
+
+            public String getGraceHours() {
+                return getDockerSecurityValue(graceHours);
+            }
+
+            public boolean getPolicyDenyNotScanned() {
+                return getDockerSecurityCheckbox(policyDenyNotScanned).equals("Enable");
+            }
+
+            public DockerSecurityAO setGraceHours(final String value) {
+                click(graceHours);
+                clear(graceHours);
+                setValue(graceHours, value);
+                return this;
+            }
+
+            private String getDockerSecurityValue(final By dockerSecurityVar) {
+                return $(dockerSecurityVar).getValue();
+            }
+
+            private String getDockerSecurityCheckbox(final By dockerSecurityVar) {
+                return $(dockerSecurityVar).getText();
+            }
+
+            private By getByDockerSecurityCheckbox(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> text(variable).apply(element))
+                                .map(e -> e.find(".ant-checkbox-wrapper"))
+                                .collect(toList());
+                    }
+                };
+            }
+
+            private By getByDockerSecurityField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+        }
+
+        @Override
+        public Map<Primitive, SelenideElement> elements() {
+            return elements;
         }
     }
 }

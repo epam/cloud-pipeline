@@ -1,0 +1,10 @@
+{
+    "name": "Batch",
+    "description": "Orchestrates secondary analysis of NGS data, including Demultiplexing and Analytical processing",
+    "version": "v1",
+    "grant_role_name": "ROLE_USER",
+    "grant_role_permissions": "21",
+    "parent_folder": "Pipelines",
+    "az": "Standard_D1_v2",
+    "aws": "m5.large"
+}

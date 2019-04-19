@@ -18,8 +18,6 @@ import React from 'react';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
-import Pipeline from '../../../../../models/pipelines/Pipeline';
-import VersionParameters from '../../../../../models/pipelines/VersionParameters';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import pipeline from 'pipeline-builder';
@@ -32,7 +30,12 @@ import {
 } from '../../../../special/resizablePanel';
 import {Alert, Row, Button, Icon, message, Modal, Form, Tooltip} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
-import {Primitives, testPrimitiveTypeFn, quotesFn} from './forms/utilities';
+import {
+  generatePipelineCommand,
+  Primitives,
+  testPrimitiveTypeFn,
+  quotesFn
+} from './forms/utilities';
 import {ItemTypes} from '../../../model/treeStructureFunctions';
 
 const graphFitContentOpts = {padding: 24};
@@ -51,8 +54,8 @@ function reportWDLError (error) {
 @inject(({history, routing, pipelines}, params) => ({
   history,
   routing,
-  parameters: new VersionParameters(params.pipelineId, params.version),
-  pipeline: new Pipeline(params.pipelineId),
+  parameters: pipelines.getVersionParameters(params.pipelineId, params.version),
+  pipeline: pipelines.getPipeline(params.pipelineId),
   pipelineId: params.pipelineId,
   pipelineVersion: params.version,
   pipelines,
@@ -109,7 +112,7 @@ export default class WdlGraph extends Graph {
       }
       let pipelineVersion = parts.slice(2).join('_');
       const hide = message.loading('Fetching pipeline info...', 0);
-      const pipelineRequest = new Pipeline(pipelineId);
+      const pipelineRequest = this.props.pipelines.getPipeline(pipelineId);
       await pipelineRequest.fetch();
       if (pipelineRequest.error) {
         hide();
@@ -147,23 +150,7 @@ export default class WdlGraph extends Graph {
       ? (this.props.runDefaultParameters.value || []).map(p => p.name)
       : [];
     const skipParameterFn = (name) => systemParameters.indexOf(name) >= 0;
-    const listInputParametersStr = () => {
-      const params = [];
-      Object.keys(defaultConfiguration.configuration.parameters || []).forEach(key => {
-        if (!skipParameterFn(key) &&
-          defaultConfiguration.configuration.parameters[key].type !== 'output') {
-          params.push(`\\\n\t\t\t--${key} $\{${key.replace(nameReplacementRegExp, '_')}}`);
-        }
-      });
-      return params.join(' ');
-    };
-    const task = {
-      name: pipelineInfo.name.replace(nameReplacementRegExp, '_'),
-      command: `pipe run \t--pipeline "${pipelineInfo.name}@${version}" -s -y ${listInputParametersStr()}`,
-      inputs: [],
-      outputs: []
-    };
-    const mapParameter = (name, p, value) => {
+    const mapParameter = (name, p, value, forceValue) => {
       if (skipParameterFn(name)) {
         return null;
       }
@@ -180,7 +167,7 @@ export default class WdlGraph extends Graph {
           type = 'Boolean';
           break;
       }
-      const v = p.value || value;
+      const v = forceValue || p.value || value;
       return {
         name: name.replace(nameReplacementRegExp, '_'),
         value: v && (testPrimitiveTypeFn(Primitives.string, type) || testPrimitiveTypeFn(Primitives.file, type))
@@ -191,19 +178,38 @@ export default class WdlGraph extends Graph {
     };
     const inputs = [];
     const outputs = [];
+    const pipelineName = pipelineInfo.name.replace(nameReplacementRegExp, '_');
     Object.keys(defaultConfiguration.configuration.parameters || []).forEach(key => {
       if (defaultConfiguration.configuration.parameters[key].type !== 'output') {
         inputs.push(
           mapParameter(key, defaultConfiguration.configuration.parameters[key])
         );
       } else {
+        inputs.push(
+          mapParameter(key, defaultConfiguration.configuration.parameters[key], ' ', ' ')
+        );
         outputs.push(
-          mapParameter(key, defaultConfiguration.configuration.parameters[key], ' ')
+          mapParameter(
+            `${pipelineName}_${key}`,
+            defaultConfiguration.configuration.parameters[key],
+            ' ',
+            `\${${key}}`
+          )
         );
       }
     });
-    task.inputs = inputs.filter(p => !!p);
-    task.outputs = outputs.filter(p => !!p);
+    const task = {
+      name: pipelineName,
+      command: generatePipelineCommand(
+        pipelineInfo.name, version,
+        inputs.filter(p => !!p).map(p => p.name)
+      ),
+      inputs: inputs.filter(p => !!p),
+      outputs: outputs.filter(p => !!p),
+      runtime: {
+        pipeline: `"${pipelineInfo.name}@${version}"`
+      }
+    };
     if (defaultConfiguration) {
       Modal.confirm({
         title: `Add pipeline '${pipelineInfo.name}' as a task to ${target.type}?`,
@@ -304,9 +310,15 @@ export default class WdlGraph extends Graph {
         }
         let status;
         if (this.props.getNodeInfo) {
-          const info = this.props.getNodeInfo({task: {name: e.step.name || e.action.name}});
+          const info = this.props.getNodeInfo({task: {name: e.step.name || (e.step.action || {}).name}});
           if (info) {
             status = info.status;
+          }
+        }
+        if (e.step.action && e.step.action.data &&
+          e.step.action.data.runtime && !!e.step.action.data.runtime.pipeline) {
+          if (!view.el.classList.contains(styles.wdlPipelineTask)) {
+            view.el.classList.add(styles.wdlPipelineTask);
           }
         }
         if (status) {
@@ -347,6 +359,10 @@ export default class WdlGraph extends Graph {
   };
 
   unsavedChangesConfirm = (onOk, onCancel) => {
+    if (!this.props.canEdit) {
+      onOk();
+      return null;
+    }
     return Modal.confirm({
       title: 'You have unsaved changes. Continue?',
       style: {
@@ -370,7 +386,10 @@ export default class WdlGraph extends Graph {
     if (this.wdlVisualizer && this.wdlVisualizer.selection &&
       this.wdlVisualizer.selection[0] && this.wdlVisualizer.selection[0].step) {
       this.setState({selectedElement: this.wdlVisualizer.selection[0].step},
-        this.prepareEditableTask);
+        () => {
+          this.prepareEditableTask();
+          this.props.onSelect && this.props.onSelect({task: {name: this.state.selectedElement.name}});
+        });
     } else {
       this.setState({selectedElement: null}, this.resetEditableTask);
     }
@@ -457,7 +476,7 @@ export default class WdlGraph extends Graph {
     }
   };
 
-  prepareEditableTask = () => {
+  prepareEditableTask = (callback) => {
     let task;
     if (this.state.selectedElement) {
       task = {
@@ -477,7 +496,7 @@ export default class WdlGraph extends Graph {
         task.outputs = action.o;
       }
     }
-    this.setState({editableTask: prepareTask(task)});
+    this.setState({editableTask: prepareTask(task)}, callback);
   };
 
   resetEditableTask = () => {
@@ -825,7 +844,13 @@ export default class WdlGraph extends Graph {
 
   togglePropertiesSidePanelState = () => {
     const propertiesPanelVisible = !this.state.propertiesPanelVisible;
-    this.setState({propertiesPanelVisible});
+    if (propertiesPanelVisible) {
+      this.prepareEditableTask(() => {
+        this.setState({propertiesPanelVisible});
+      });
+    } else {
+      this.setState({propertiesPanelVisible});
+    }
   };
 
   closePropertiesSidePanel = () => {
@@ -882,7 +907,7 @@ export default class WdlGraph extends Graph {
   };
 
   onFieldsChange = async (props, fields) => {
-    if (!this.state.selectedElement || !this.workflow) {
+    if (!this.state.selectedElement || !this.workflow || !this.props.canEdit) {
       return;
     }
     const values = Object.keys(fields || {})
@@ -1154,10 +1179,9 @@ export default class WdlGraph extends Graph {
   };
 
   renderGraph () {
-    if (this.props.parameters.pending ||
-        this.props.pipeline.pending ||
-        !this._mainFileRequest ||
-        this._mainFileRequest.pending) {
+    if ((this.props.parameters.pending && !this.props.parameters.loaded) ||
+      (this.props.pipeline.pending && !this.props.pipeline.loaded) ||
+      (!this._mainFileRequest || (this._mainFileRequest.pending && !this._mainFileRequest.loaded))) {
       return <LoadingView />;
     }
     if (this.props.parameters.error) {
@@ -1196,26 +1220,8 @@ export default class WdlGraph extends Graph {
   }
 
   componentDidUpdate () {
-    if (!this.props.parameters.pending && !this.props.pipeline.pending &&
-      !this.props.parameters.error &&
-      (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
-      const filePathParts = this.props.parameters.value.main_file.split('.');
-      if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `src/${this.props.parameters.value.main_file}`,
-          this.props.version
-        );
-        this._mainFileRequest.fetch();
-      } else {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `src/${this.props.pipeline.value.name}.wdl`,
-          this.props.version
-        );
-        this._mainFileRequest.fetch();
-      }
-    }
+    this.loadMainFile();
+    super.componentDidUpdate();
   }
 
   renderBottomGraphControlls = () => {
@@ -1236,6 +1242,7 @@ export default class WdlGraph extends Graph {
   _routeChangeConfirm = null;
 
   componentDidMount () {
+    this.loadMainFile();
     this._removeRouterListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (this.state.modified && !this._routeChangeConfirm) {
@@ -1268,5 +1275,27 @@ export default class WdlGraph extends Graph {
       this._removeRouterListener();
     }
   }
+
+  loadMainFile = () => {
+    if (this.props.parameters.loaded && this.props.pipeline.loaded &&
+      (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
+      const filePathParts = this.props.parameters.value.main_file.split('.');
+      if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
+        this._mainFileRequest = new VersionFile(
+          this.props.pipelineId,
+          `src/${this.props.parameters.value.main_file}`,
+          this.props.version
+        );
+        this._mainFileRequest.fetch();
+      } else {
+        this._mainFileRequest = new VersionFile(
+          this.props.pipelineId,
+          `src/${this.props.pipeline.value.name}.wdl`,
+          this.props.version
+        );
+        this._mainFileRequest.fetch();
+      }
+    }
+  };
 
 }

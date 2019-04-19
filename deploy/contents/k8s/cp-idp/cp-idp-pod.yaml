@@ -14,7 +14,7 @@ spec:
   containers:
     - name: cp-idp
       image: lifescience/cloud-pipeline:idp-$CP_VERSION
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       command: ["/init"]
       ports:
         - containerPort: 8080

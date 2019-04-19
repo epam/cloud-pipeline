@@ -98,22 +98,34 @@ function autoCompleteTypes (type) {
   return Object.values(Primitives);
 }
 
+export const LockOptions = {
+  none: 0,
+  type: 1,
+  name: 2,
+  value: 4
+};
+
 @observer
 export class WDLItemPortFormItem extends React.Component {
 
   static propTypes = {
     value: PropTypes.object,
     portType: PropTypes.oneOf([PortTypes.input, PortTypes.output]),
+    lock: PropTypes.oneOfType([PropTypes.func, PropTypes.number]),
     onChange: PropTypes.func,
     onRemove: PropTypes.func,
     onInitialize: PropTypes.func,
     onUnMount: PropTypes.func,
     disabled: PropTypes.bool,
-    removable: PropTypes.bool
+    removable: PropTypes.oneOfType([PropTypes.bool, PropTypes.func]),
+
+    // if `isRequired = true` user cannot change Name & Type fields as well as remove variable
+    isRequired: PropTypes.bool
   };
 
   static defaultProps = {
-    removable: true
+    removable: true,
+    lock: LockOptions.none
   };
 
   state = {
@@ -207,8 +219,11 @@ export class WDLItemPortFormItem extends React.Component {
 
   getClasses = (field, defaultClass) => {
     const classes = [];
-    if (defaultClass) {
+    if (defaultClass && typeof defaultClass === 'string') {
       classes.push(defaultClass);
+    }
+    if (defaultClass && typeof defaultClass === 'object' && Array.isArray(defaultClass)) {
+      classes.push(...defaultClass);
     }
     if (this.state.validation[field]) {
       classes.push(styles.notValid);
@@ -218,30 +233,54 @@ export class WDLItemPortFormItem extends React.Component {
     return classes.join(' ');
   };
 
+  isRemovable = () => {
+    if (typeof this.props.removable === 'boolean') {
+      return this.props.removable;
+    }
+    if (typeof this.props.removable === 'function') {
+      return this.props.removable({name: this.state.name, type: this.state.type});
+    }
+    return true;
+  };
+
+  getLockOptions = () => {
+    if (typeof this.props.lock === 'function') {
+      return this.props.lock({name: this.state.name, type: this.state.type});
+    }
+    return this.props.lock;
+  };
+
+  isLocked = (mask) => {
+    const lockOptions = this.getLockOptions();
+    return (lockOptions & mask) === mask;
+  };
+
   render () {
+    const isRemovable = this.isRemovable();
     return (
       <Row type="flex" align="middle">
         <Input
-          className={this.getClasses('name', styles.portsColumn)}
-          disabled={this.props.disabled}
+          className={this.getClasses('name', [styles.portsColumn, 'variable-name'])}
+          disabled={this.props.disabled || this.props.isRequired || this.isLocked(LockOptions.name)}
           value={this.state.name}
           onChange={this.onChangeName} />
         <AutoComplete
           dataSource={this.state.typesDataSource}
-          className={this.getClasses('type', styles.portsColumn)}
-          disabled={this.props.disabled}
+          className={this.getClasses('type', [styles.portsColumn, 'variable-type'])}
+          disabled={this.props.disabled || this.props.isRequired || this.isLocked(LockOptions.type)}
           value={this.state.type}
           onSearch={this.handleTypesSearch}
           onSelect={this.onChangeType} />
         <Input
-          className={this.getClasses('default', styles.portsColumn)}
-          disabled={this.props.disabled}
+          className={this.getClasses('default', [styles.portsColumn, 'variable-value'])}
+          disabled={this.props.disabled || this.isLocked(LockOptions.value)}
           value={this.state.default}
           onChange={this.onChangeValue} />
         <div className={styles.portsActionColumn}>
           {
-            this.props.removable &&
+            isRemovable && !this.props.isRequired &&
             <Button
+              id="remove-variable-button"
               size="small"
               disabled={this.props.disabled}
               style={{lineHeight: 'initial'}}
@@ -250,7 +289,7 @@ export class WDLItemPortFormItem extends React.Component {
             </Button>
           }
           {
-            !this.props.removable && '\u00A0'
+            (!isRemovable || this.props.isRequired) && '\u00A0'
           }
         </div>
       </Row>

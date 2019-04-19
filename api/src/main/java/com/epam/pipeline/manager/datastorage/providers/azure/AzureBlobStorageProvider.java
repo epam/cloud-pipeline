@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.BlobSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
 
     @Override
     public DataStorageType getStorageType() {
@@ -76,7 +78,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
-        return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, showVersion, pageSize, marker);
+        return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
     }
 
     @Override
@@ -102,14 +104,16 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents) {
-        return getAzureStorageHelper(dataStorage).createFile(dataStorage, path, contents);
+        return getAzureStorageHelper(dataStorage)
+                .createFile(dataStorage, path, contents, authManager.getAuthorizedUser());
     }
 
     @Override
     public DataStorageFile createFile(final AzureBlobStorage dataStorage,
                                       final String path,
                                       final InputStream dataStream) {
-        return getAzureStorageHelper(dataStorage).createFile(dataStorage, path, dataStream);
+        return getAzureStorageHelper(dataStorage)
+                .createFile(dataStorage, path, dataStream, authManager.getAuthorizedUser());
     }
 
     @Override
@@ -151,31 +155,31 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public Map<String, String> updateObjectTags(final AzureBlobStorage dataStorage, final String path,
                                                 final Map<String, String> tags, final String version) {
-        return getAzureStorageHelper(dataStorage).updateObjectTags(dataStorage, path, tags, version);
+        return getAzureStorageHelper(dataStorage).updateObjectTags(dataStorage, path, tags);
     }
 
     @Override
     public Map<String, String> listObjectTags(final AzureBlobStorage dataStorage, final String path,
                                               final String version) {
-        return getAzureStorageHelper(dataStorage).listObjectTags(dataStorage, path, version);
+        return getAzureStorageHelper(dataStorage).listObjectTags(dataStorage, path);
     }
 
     @Override
     public Map<String, String> deleteObjectTags(final AzureBlobStorage dataStorage, final String path,
                                                 final Set<String> tagsToDelete, final String version) {
-        return getAzureStorageHelper(dataStorage).deleteObjectTags(dataStorage, path, tagsToDelete, version);
+        return getAzureStorageHelper(dataStorage).deleteObjectTags(dataStorage, path, tagsToDelete);
     }
 
     @Override
     public DataStorageItemContent getFile(final AzureBlobStorage dataStorage, final String path, final String version,
                                           final Long maxDownloadSize) {
-        return getAzureStorageHelper(dataStorage).getFile(dataStorage, path, version, maxDownloadSize);
+        return getAzureStorageHelper(dataStorage).getFile(dataStorage, path, maxDownloadSize);
     }
 
     @Override
     public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path,
                                                  final String version) {
-        return getAzureStorageHelper(dataStorage).getStream(dataStorage, path, version);
+        return getAzureStorageHelper(dataStorage).getStream(dataStorage, path);
     }
 
     @Override

@@ -8,7 +8,7 @@ RUN yum install -y \
     cmake
 
 
-RUN wget ftp://ftp.gromacs.org/pub/gromacs/gromacs-2016.4.tar.gz && \
+RUN wget -q ftp://ftp.gromacs.org/pub/gromacs/gromacs-2016.4.tar.gz && \
     tar xfz gromacs-2016.4.tar.gz && \
     cd gromacs-2016.4 && \
     mkdir build-normal && \

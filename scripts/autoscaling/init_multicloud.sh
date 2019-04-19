@@ -225,13 +225,17 @@ if [[ $_CLOUD_INSTANCE_IMAGE_ID != "" ]]; then
     _KUBE_NODE_INSTANCE_LABELS=$_KUBE_NODE_INSTANCE_LABELS",cloud_image=$_CLOUD_INSTANCE_IMAGE_ID"
 fi
 
+## Configure kubelet to write logs to the file
+_KUBELET_LOG_PATH=/var/log/kubelet
+mkdir -p $_KUBELET_LOG_PATH
+_KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 
 _KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 ## Append node-labels string to the systemd config
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS"
+Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS"
 EOF
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 

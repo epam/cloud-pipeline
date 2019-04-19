@@ -339,6 +339,21 @@ function load_install_config {
     set +o allexport
 }
 
+function append_install_config {
+    local file_to_append="$1"
+    local main_install_config="${2:-$CP_INSTALL_CONFIG_FILE}"
+    if [ -z "$file_to_append" ] || [ ! -f "$file_to_append" ]; then
+        print_error "File to append to the installation config is provided or does not exist. Provided value is \"$file_to_append\""
+        return 1
+    fi
+
+    while IFS="=" read -r append_key append_value; do
+        update_config_value "$main_install_config" \
+                            "$append_key" \
+                            "$append_value" 
+    done < "$file_to_append"
+}
+
 function parse_env_option {
     local key_value="$1"
     IFS="=" read -r key value <<< "${key_value}"
@@ -438,6 +453,10 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
+        -demo|--deploy-demo)
+        export CP_DEPLOY_DEMO=1
+        shift # past argument
+        ;;
         -s|--service)
         parse_env_option "$2"
         services_count=$((services_count+1))
@@ -497,7 +516,9 @@ function parse_options {
         export CP_CLOUD_CONFIG_PATH="$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_CLOUD_PLATFORM"
         export CP_CLOUD_CONFIG_FILE="$CP_CLOUD_CONFIG_PATH/cloud-config"
     fi
-    load_install_config "$CP_CLOUD_CONFIG_FILE"
+    # Cloud-specific config file is loaded to the environment and also appended to the $CP_INSTALL_CONFIG_FILE to make it's content available in the pods
+    load_install_config "$CP_CLOUD_CONFIG_FILE" && \
+    append_install_config "$CP_CLOUD_CONFIG_FILE"
     if [ $? -ne 0 ]; then
         print_err "Unable to load config from $CP_CLOUD_CONFIG_FILE"
         return 1
@@ -664,6 +685,15 @@ function execute_deployment_command {
     done
 }
 
+function delete_deployment_pods {
+    local DEPLOYMENT_NAME=$1
+
+    pods=$(kubectl get po | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+    for p in $pods; do
+        kubectl delete po $p --grace-period=0 --force
+    done
+}
+
 function create_user_and_db {
     local DEPLOYMENT_NAME=$1
     local USERNAME=$2
@@ -695,11 +725,12 @@ function delete_deployment_and_service {
     local DATA_DIRS="$2"
 
     if kubectl get deployments $NAME &> /dev/null; then
-        kubectl delete deployments $NAME
+        kubectl delete deployments $NAME --grace-period=0 --force
+        delete_deployment_pods "$NAME"
     fi
 
     if kubectl get po $NAME &> /dev/null; then
-        kubectl delete po $NAME
+        kubectl delete po $NAME --grace-period=0 --force
     fi
 
     wait_for_deletion $NAME
@@ -708,14 +739,15 @@ function delete_deployment_and_service {
         kubectl delete svc $NAME
     fi
 
-    local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
-    for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
-        kubectl delete secrets "$kube_secret"
-    done
-
-    if [ ! -z "$DATA_DIRS" ] && [ "$CP_FORCE_DATA_ERASE" ]; then
-        rm -rf $DATA_DIRS
-        print_info "Directory(ies) removed: $DATA_DIRS"
+    if [ "$CP_FORCE_DATA_ERASE" ]; then
+        local secrets_template=${NAME//[^a-zA-Z_0-9]/-}
+        for kube_secret in $(kubectl get secrets  2>/dev/null| grep "$secrets_template" | cut -f1 -d' '); do
+            kubectl delete secrets "$kube_secret"
+        done
+        if [ "$DATA_DIRS" ]; then
+            rm -rf $DATA_DIRS
+            print_info "Directory(ies) removed: $DATA_DIRS"
+        fi
     fi
 }
 

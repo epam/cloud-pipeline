@@ -41,8 +41,8 @@ import {
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
-  CP_CAP_SGE_AUTOSCALE,
-  CP_CAP_SGE_AUTOSCALE_WORKERS,
+  CP_CAP_AUTOSCALE,
+  CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState
@@ -162,12 +162,12 @@ export default class EditToolForm extends React.Component {
               value: true
             });
             params.push({
-              name: CP_CAP_SGE_AUTOSCALE,
+              name: CP_CAP_AUTOSCALE,
               type: 'boolean',
               value: true
             });
             params.push({
-              name: CP_CAP_SGE_AUTOSCALE_WORKERS,
+              name: CP_CAP_AUTOSCALE_WORKERS,
               type: 'int',
               value: +this.state.maxNodesCount
             });
@@ -216,6 +216,36 @@ export default class EditToolForm extends React.Component {
     });
   };
 
+  getInitialValue = (field) => {
+    switch (field) {
+      case 'is_spot': return this.getPriceTypeInitialValue();
+      case 'instance_size': return this.getInstanceTypeInitialValue();
+      case 'instance_disk': return this.getDiskInitialValue();
+      default: return this.props.configuration ? this.props.configuration[field] : undefined;
+    }
+  };
+
+  getInstanceTypeInitialValue = () => {
+    return this.correctInstanceTypeValue(
+      (this.props.configuration && this.props.configuration.instance_size) ||
+      (this.props.tool && this.props.tool.instanceType)
+    );
+  };
+
+  getPriceTypeInitialValue = () => {
+    return this.correctPriceTypeValue(
+      this.props.configuration && this.props.configuration.is_spot !== undefined
+        ? `${this.props.configuration.is_spot}`
+        : `${this.props.defaultPriceTypeIsSpot}`
+    )
+  };
+
+  getDiskInitialValue = () => {
+    return (this.props.configuration && this.props.configuration.instance_disk) ||
+      (this.props.tool && this.props.tool.disk) ||
+      undefined;
+  };
+
   rebuildComponent (props) {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
@@ -227,8 +257,8 @@ export default class EditToolForm extends React.Component {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
-          props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-            ? +props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+          props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
+            ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
             : 0;
         state.nodesCount = props.configuration.node_count;
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
@@ -412,7 +442,7 @@ export default class EditToolForm extends React.Component {
     const configurationFormFieldChanged = (field, formFieldName) => {
       formFieldName = formFieldName || field;
       const formField = this.props.form.getFieldValue(formFieldName);
-      const toolField = this.props.configuration ? this.props.configuration[field] : undefined;
+      const toolField = this.getInitialValue(field);
       const formFieldValue = formField ? `${formField}` : null;
       const toolFieldValue = toolField ? `${toolField}` : null;
       return formFieldValue !== toolFieldValue;
@@ -438,8 +468,8 @@ export default class EditToolForm extends React.Component {
     const toolLabelsArray = this.props.tool ? (this.props.tool.labels || []).map(l => l) : null;
     const nodesCount = this.props.configuration ? this.props.configuration.node_count : 0;
     const maxNodesCount = this.props.configuration && this.props.configuration.parameters &&
-      this.props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS]
-        ? +this.props.configuration.parameters[CP_CAP_SGE_AUTOSCALE_WORKERS].value
+      this.props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +this.props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
         : 0;
     const autoScaledCluster = this.props.configuration &&
       autoScaledClusterEnabled(this.props.configuration.parameters);
@@ -452,10 +482,10 @@ export default class EditToolForm extends React.Component {
       !compareArrays(toolLabelsArray, this.state.labels) ||
       (this.toolFormParameters && this.toolFormParameters.modified) ||
       (this.toolFormSystemParameters && this.toolFormSystemParameters.modified) ||
-      launchCluster !== this.state.launchCluster ||
-      nodesCount !== this.state.nodesCount ||
-      maxNodesCount !== this.state.maxNodesCount ||
-      autoScaledCluster !== this.state.autoScaledCluster ||
+      !!launchCluster !== !!this.state.launchCluster ||
+      !!autoScaledCluster !== !!this.state.autoScaledCluster ||
+      (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
+      (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
       limitMountsFieldChanged();
   };
 
@@ -644,10 +674,7 @@ export default class EditToolForm extends React.Component {
                         message: 'Instance type is required'
                       }
                     ],
-                    initialValue: this.correctInstanceTypeValue(
-                      (this.props.configuration && this.props.configuration.instance_size) ||
-                      (this.props.tool && this.props.tool.instanceType)
-                    )
+                    initialValue: this.getInstanceTypeInitialValue()
                   })(
                   <Select
                     disabled={this.state.pending || this.props.readOnly}
@@ -686,11 +713,7 @@ export default class EditToolForm extends React.Component {
               <Form.Item {...this.formItemLayout} label="Price type" style={{marginTop: 10, marginBottom: 10}}>
                 {getFieldDecorator('is_spot',
                   {
-                    initialValue: this.correctPriceTypeValue(
-                      this.props.configuration && this.props.configuration.is_spot !== undefined
-                      ? `${this.props.configuration.is_spot}`
-                      : `${this.props.defaultPriceTypeIsSpot}`
-                    )
+                    initialValue: this.getPriceTypeInitialValue()
                   })(
                     <Select disabled={this.state.pending || this.props.readOnly}>
                       {
@@ -727,9 +750,7 @@ export default class EditToolForm extends React.Component {
                         message: 'Disk size is required (minimum value is 15)'
                       }
                     ],
-                    initialValue: (this.props.configuration && this.props.configuration.instance_disk) ||
-                    (this.props.tool && this.props.tool.disk) ||
-                    undefined
+                    initialValue: this.getDiskInitialValue()
                   })(
                   <Input disabled={this.state.pending || this.props.readOnly}/>
                 )}

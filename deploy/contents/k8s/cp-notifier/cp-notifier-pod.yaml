@@ -14,7 +14,7 @@ spec:
   containers:
     - name: cp-notifier
       image: lifescience/cloud-pipeline:notifier-$CP_VERSION
-      imagePullPolicy: "IfNotPresent"
+      imagePullPolicy: "Always"
       command: ["/init"]
       envFrom:
       - configMapRef:
@@ -22,6 +22,10 @@ spec:
       volumeMounts:
         - mountPath: /opt/notifier/logs
           name: notifier-logs
+      lifecycle:
+        preStop:
+          exec:
+            command: ["/bin/sh", "-c", "kill -9 $(pgrep -f notifier.jar); sleep 1"]
   volumes:
     - name: notifier-logs
       hostPath:

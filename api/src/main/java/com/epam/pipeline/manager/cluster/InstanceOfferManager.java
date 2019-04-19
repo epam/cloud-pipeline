@@ -218,22 +218,24 @@ public class InstanceOfferManager {
 
     public InstancePrice getInstanceEstimatedPrice(
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
-        Assert.isTrue(isInstanceAllowed(instanceType, regionId),
+        final Long actualRegionId = defaultRegionIfNull(regionId);
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
-                getPricePerHourForInstance(instanceType, isSpotRequest(spot), regionId);
-        double pricePerDisk = getPriceForDisk(instanceDisk, regionId, instanceType, spot);
+                getPricePerHourForInstance(instanceType, isSpotRequest(spot), actualRegionId);
+        double pricePerDisk = getPriceForDisk(instanceDisk, actualRegionId, instanceType, spot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
         return new InstancePrice(instanceType, instanceDisk, pricePerHour);
     }
 
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
+        final Long actualRegionId = defaultRegionIfNull(regionId);
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
-        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot, regionId);
-        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), regionId, runInstance.getNodeType(), spot);
+        double pricePerHourForInstance = getPricePerHourForInstance(runInstance.getNodeType(), spot), actualRegionId);
+        double pricePerDisk = getPriceForDisk(runInstance.getNodeDisk(), actualRegionId, runInstance.getNodeType(), spot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
 
         PipelineRunPrice price = new PipelineRunPrice();

@@ -35,7 +35,7 @@ fi
 ######################################################
 # Wait for NFS node
 ######################################################
-NFS_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_node.py --run-id ${MASTER_RUN_ID} --parameter CP_CAP_NFS=true --task-name InitializeSharedFS")
+NFS_INFO_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/cluster_wait_for_node.py --run-id ${MASTER_RUN_ID} --task-name InitializeSharedFS")
 
 if [ $? -ne 0 ]
 then
@@ -66,7 +66,7 @@ pipe_log_info "Started worker shared FS setup" "$FS_SETUP_TASK"
 ######################################################
 # Install NFS client if not installed
 ######################################################
-CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-nfs}"
+CP_CAP_SHARE_FS_TYPE="${CP_CAP_SHARE_FS_TYPE:-lfs}"
 
 if [ "$CP_CAP_SHARE_FS_TYPE" == "nfs" ]; then
     install_nfs_client

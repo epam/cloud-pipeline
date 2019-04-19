@@ -27,7 +27,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,6 +47,7 @@ public class RoleModelTest
         implements Authorization, Tools {
 
     private final String userGroup = "DOMAIN USERS";
+    private final String userRoleGroup = "ROLE_USER";
 
     private final String pipelineName = "role-model-test-pipeline-" + Utils.randomSuffix();
     private final String fileInPipeline = Utils.getFileNameFromPipelineName(pipelineName, "sh");
@@ -444,6 +444,7 @@ public class RoleModelTest
         loginAs(admin)
                 .library()
                 .selectStorage(bucket)
+                .createFile(tempFileName)
                 .clickEditStorageButton()
                 .clickOnPermissionsTab()
                 .addNewUser(user.login)
@@ -465,8 +466,8 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
-                .ensureNotVisible(CREATE_FOLDER, UPLOAD, EDIT_STORAGE)
-                .ensureVisible(SELECT_ALL, ADDRESS_BAR, DOWNLOAD, REFRESH, SHOW_METADATA);
+                .ensureNotVisible(CREATE_FOLDER, UPLOAD)
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -494,7 +495,7 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, DOWNLOAD);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -571,25 +572,6 @@ public class RoleModelTest
                 .assertNodesTableIsEmpty();
     }
 
-    @Test(priority = 21)
-    @TestCase({"EPMCMBIBPC-568"})
-    public void checkClusterNodesByNonAdminUserWhenPipelineIsWorked() {
-        logoutIfNeeded();
-        loginAs(user);
-        navigationMenu()
-                .library()
-                .clickOnPipeline(pipelineName)
-                .firstVersion()
-                .runPipeline()
-                .launch(this);
-        navigationMenu()
-                .clusterNodes()
-                .waitForTheNode(pipelineName, getLastRunId());
-        navigationMenu()
-                .runs()
-                .stopRun(getLastRunId());
-    }
-
     @Test(priority = 22, enabled = false)
     @TestCase({"EPMCMBIBPC-570"})
     public void checkHistoryOfRunsForNonAdminUserWithRunsBefore() {
@@ -617,28 +599,43 @@ public class RoleModelTest
     @Test(priority = 24)
     @TestCase({"EPMCMBIBPC-572"})
     public void checkToolsPageByReadOnlyUser() {
-        logoutIfNeeded();
-        loginAs(admin);
-        List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
-        givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
-        logout();
-        loginAs(userWithoutCompletedRuns);
-        List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
-        tools().ensureOnlyOneRegistryIsAvailable()
-                .registryWithin(registry, registry ->
-                        registry.ensureGroupAreAvailable(Arrays.asList(group, "personal"))
-                                .resetMouse()
-                                .group(group, ToolGroup::canCreatePersonalGroup)
-                );
-        assertToolsListsAreEqual(adminTools, userTools);
+        try {
+            logoutIfNeeded();
+            loginAs(admin);
+            List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            tools().editRegistry(registry, edition ->
+                    edition.permissions()
+                            .deleteIfPresent(userWithoutCompletedRuns.login)
+                            .deleteIfPresent(userRoleGroup)
+                            .closeAll());
+            addNewUserToGroupPermissions(userWithoutCompletedRuns, registry, group);
+            givePermissions(userWithoutCompletedRuns, GroupPermission.allow(READ, registry, group));
+            logout();
+            loginAs(userWithoutCompletedRuns);
+            List<String> userTools = tools().perform(registry, group, ToolGroup::allToolsNames);
+            tools().registry(registry, registry ->
+                    registry.ensureGroupAreAvailable(Collections.singletonList(group))
+                            .resetMouse()
+                            .group(group, ToolGroup::canCreatePersonalGroup));
+            assertToolsListsAreEqual(adminTools, userTools);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            tools().editRegistry(registry, edition ->
+                    edition.permissions()
+                            .addNewGroup(userRoleGroup)
+                            .selectByName(userRoleGroup)
+                            .showPermissions()
+                            .set(READ, ALLOW)
+                            .set(WRITE, DENY)
+                            .set(EXECUTE, ALLOW)
+                            .closeAll());
+        }
     }
 
     @Test(priority = 25)
     @TestCase({"EPMCMBIBPC-573"})
     public void checkToolsPageByExecutePermissionUser() {
-        logoutIfNeeded();
-        loginAs(admin);
         List<String> adminTools = tools().perform(registry, group, ToolGroup::allToolsNames);
         givePermissions(userWithoutCompletedRuns,
                 GroupPermission.allow(READ, registry, group),
