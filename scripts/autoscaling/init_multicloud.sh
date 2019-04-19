@@ -49,8 +49,12 @@ function update_nameserver {
       fi
     fi
 
+    # /etc/resolv.conf will be overwritten by DHCP client after reboot
+    # As a quick fix - make /etc/resolv.conf immutable
+    chattr -i /etc/resolv.conf
     sed -i '/nameserver/d' /etc/resolv.conf
     echo "nameserver $nameserver" >> /etc/resolv.conf
+    chattr +i /etc/resolv.conf
   fi
 }
 
