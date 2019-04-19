@@ -262,7 +262,7 @@ EOF
             return 1
         fi
         if [ -z "$CP_GCP_PROJECT" ]; then
-            print_warn "GCP project is not defined. Reading project from credentials file."
+            print_warn "GCP project is not defined. Reading project from credentials file. You can specify deployment GCP project using \"-env CP_GCP_PROJECT=\" option"
             export CP_GCP_PROJECT=$(cat "$CP_CLOUD_CREDENTIALS_FILE" | jq ".project_id")
             if [ -z "$CP_GCP_PROJECT" ]; then
                 print_err "Failed to read GCP project from the credentials file. Please check that correct credentials file is specified using \"-env CP_CLOUD_CREDENTIALS_FILE=\" option or specify GCP project using \"-env CP_GCP_PROJECT\" option"
@@ -276,7 +276,7 @@ EOF
             print_warn "GCP Application name is not specified, default value \"Cloud Pipeline\" will be used. You can specify it using \"-env CP_GCP_APPLICATION_NAME=\" option"
         fi
         if [ -z "$CP_GCP_CUSTOM_INSTANCE_TYPES" ]; then
-            print_warn "List of custom instance types for GCP is not provided. You wil have to add GPU instance types manually"
+            print_warn "List of custom instance types for GCP is not provided. You will have to add GPU instance types manually."
         fi
     else
         print_err "Unsupported Cloud Provider ($CP_CLOUD_PLATFORM)"
@@ -292,9 +292,11 @@ EOF
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
-    if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ] && [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
-        print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
-        return 1
+    if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
+        if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
+            print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
+            return 1
+        fi
     else
         export CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="$(escape_comma_separated_values "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS")"
     fi
