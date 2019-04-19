@@ -24,9 +24,9 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
+pip install --upgrade setuptools && \
 pip install -r /src/requirements.txt && \
 pip install pywin32 && \
-pip install --upgrade setuptools && \
 cd /src && \
 pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=UserList \
@@ -45,7 +45,7 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
-            --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
+            --additional-hooks-dir="/src/hooks" \
             -y \
             --clean \
             --workpath /tmp \
