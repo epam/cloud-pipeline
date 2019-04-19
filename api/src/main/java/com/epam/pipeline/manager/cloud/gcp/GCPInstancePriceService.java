@@ -63,13 +63,13 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     public List<InstanceOffer> refreshPriceListForRegion(final GCPRegion region) {
         try {
             final List<AbstractGCPObject> objects = availableObjects(region);
-            final Map<String, String> prefixes = loadBillingPrefixes();
-            final List<GCPResourceRequest> requests = requests(objects, prefixes);
+            final Map<String, GCPResourceMapping> mappings = loadResourceMappings();
+            final List<GCPResourceRequest> requests = requests(objects, mappings);
             final Set<GCPResourcePrice> prices = priceLoader.load(region, requests);
             return objects.stream()
                     .flatMap(object -> Arrays.stream(GCPBilling.values())
                             .map(billing -> object.toInstanceOffer(billing,
-                                    getPrice(object, billing, prices), region.getId())))
+                                    getPrice(object, billing, prices, region.getRegionCode()), region.getId())))
                     .collect(Collectors.toList());
         } catch (GCPInstancePriceException e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -83,33 +83,34 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .collect(Collectors.toList());
     }
 
-    private Map<String, String> loadBillingPrefixes() {
-        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_BILLING_PREFIXES));
+    private Map<String, GCPResourceMapping> loadResourceMappings() {
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.GCP_SKU_MAPPING));
     }
 
     private List<GCPResourceRequest> requests(final List<AbstractGCPObject> objects,
-                                              final Map<String, String> prefixes) {
+                                              final Map<String, GCPResourceMapping> mappings) {
         return objects.stream()
                 .flatMap(machine -> Arrays.stream(GCPResourceType.values())
                         .filter(machine::isRequired)
-                        .flatMap(type -> requests(machine, type, prefixes)))
+                        .flatMap(type -> requests(machine, type, mappings)))
                 .collect(Collectors.toList());
     }
 
     private Stream<GCPResourceRequest> requests(final AbstractGCPObject object,
                                                 final GCPResourceType type,
-                                                final Map<String, String> prefixes) {
+                                                final Map<String, GCPResourceMapping> mappings) {
         return Arrays.stream(GCPBilling.values())
                 .map(billing -> Optional.of(object.billingKey(billing, type))
-                        .map(prefixes::get)
-                        .map(prefix -> new GCPResourceRequest(type, billing, prefix, object)))
+                        .map(mappings::get)
+                        .map(mapping -> new GCPResourceRequest(type, billing, object, mapping)))
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
 
     private Double getPrice(final AbstractGCPObject object,
                             final GCPBilling billing,
-                            final Set<GCPResourcePrice> prices) {
+                            final Set<GCPResourcePrice> prices,
+                            final String region) {
         final List<GCPResourceType> requiredTypes = Arrays.stream(GCPResourceType.values())
                 .filter(object::isRequired)
                 .collect(Collectors.toList());
@@ -121,8 +122,8 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                 .filter(type -> !objectPrices.keySet().contains(type))
                 .findFirst();
         if (typeWithMissingPrice.isPresent()) {
-            log.error("Price for {} with {} billing for GCP object {} wasn't found.", typeWithMissingPrice.get(),
-                    billing.alias(), object.getName());
+            log.error("Price for {} with {} billing for GCP object {} wasn't found in {} region.",
+                    typeWithMissingPrice.get(), billing.alias(), object.getName(), region);
             return 0.0;
         }
         final long nanos = object.totalPrice(new ArrayList<>(objectPrices.values()));

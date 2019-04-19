@@ -47,4 +47,6 @@ public abstract class AbstractGCPObject {
 
     public abstract long totalPrice(List<GCPResourcePrice> prices);
 
+    public abstract String resourceFamily();
+
 }

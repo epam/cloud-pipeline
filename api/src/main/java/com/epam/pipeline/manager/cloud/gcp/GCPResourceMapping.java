@@ -16,30 +16,20 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
-public enum GCPResourceType {
-    CPU,
-    RAM,
-    EXTENDED_RAM {
-        @Override
-        public String alias() {
-            return super.alias().replace("_", "");
-        }
-    },
-    GPU,
-    DISK {
-        @Override
-        public long normalize(final long nanos) {
-            return nanos / HOURS_IN_MONTH;
-        }
-    };
+import lombok.Value;
 
-    private static final long HOURS_IN_MONTH = 24 * 30;
+/**
+ * Google Cloud Provider group of SKUs mapping.
+ */
+@Value
+public class GCPResourceMapping {
+    /**
+     * SKUs description prefix.
+     */
+    private final String prefix;
 
-    public String alias() {
-        return name().toLowerCase();
-    }
-
-    public long normalize(final long nanos) {
-        return nanos;
-    }
+    /**
+     * SKUs resource group.
+     */
+    private final String group;
 }

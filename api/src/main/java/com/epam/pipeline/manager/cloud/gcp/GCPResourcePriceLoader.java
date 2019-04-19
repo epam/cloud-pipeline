@@ -49,6 +49,9 @@ public class GCPResourcePriceLoader {
 
     private final GCPClient gcpClient;
 
+    /**
+     * Retrieves available prices for all the given requests in the specified region.
+     */
     public Set<GCPResourcePrice> load(final GCPRegion region, final List<GCPResourceRequest> requests) {
         try {
             final Cloudbilling cloudbilling = gcpClient.buildBillingClient(region);
@@ -80,9 +83,7 @@ public class GCPResourcePriceLoader {
             final List<GCPResourcePrice> currentPrices = currentSkus.stream()
                     .filter(sku -> sku.getDescription() != null)
                     .flatMap(sku -> requests.stream()
-                            .filter(request -> sku.getDescription().startsWith(request.getPrefix()))
-                            .filter(request -> CollectionUtils.emptyIfNull(sku.getServiceRegions())
-                                    .contains(regionName))
+                            .filter(request -> matches(sku, request, regionName))
                             .map(request -> price(request, sku)))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
@@ -94,6 +95,17 @@ public class GCPResourcePriceLoader {
             }
         }
         return prices;
+    }
+
+    private boolean matches(final Sku sku, final GCPResourceRequest request, final String region) {
+        return sku.getDescription() != null
+                && sku.getCategory() != null
+                && sku.getServiceRegions() != null
+                && sku.getDescription().startsWith(request.getMapping().getPrefix())
+                && request.getObject().resourceFamily().equals(sku.getCategory().getResourceFamily())
+                && request.getBilling().termType().equals(sku.getCategory().getUsageType())
+                && request.getMapping().getGroup().equals(sku.getCategory().getResourceGroup())
+                && sku.getServiceRegions().contains(region);
     }
 
     private Optional<GCPResourcePrice> price(final GCPResourceRequest request, final Sku sku) {

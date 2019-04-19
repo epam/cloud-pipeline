@@ -21,27 +21,54 @@ import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourcePrice;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceType;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.text.WordUtils;
 
 import java.util.Date;
 import java.util.List;
 
-@Getter
+@Value
+@EqualsAndHashCode(callSuper = true)
 public class GCPMachine extends AbstractGCPObject {
     private final int cpu;
     private final double ram;
+    private final double extendedRam;
     private final int gpu;
     private final String gpuType;
 
-    public GCPMachine(final String name, final String family, final int cpu, final double ram, final int gpu,
+    public GCPMachine(final String name,
+                      final String family,
+                      final int cpu,
+                      final double ram,
+                      final double extendedRam,
+                      final int gpu,
                       final String gpuType) {
         super(name, family);
         this.cpu = cpu;
         this.ram = ram;
+        this.extendedRam = extendedRam;
         this.gpu = gpu;
         this.gpuType = gpuType;
+    }
+
+    public static GCPMachine withCpu(final String name,
+                                     final String family,
+                                     final int cpu,
+                                     final double ram,
+                                     final double extendedRam) {
+        return new GCPMachine(name, family, cpu, ram, extendedRam, 0, null);
+    }
+
+    public static GCPMachine withGpu(final String name,
+                                     final String family,
+                                     final int cpu,
+                                     final double ram,
+                                     final double extendedRam,
+                                     final int gpu,
+                                     final String gpuType) {
+        return new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuType);
     }
 
     @Override
@@ -73,6 +100,8 @@ public class GCPMachine extends AbstractGCPObject {
                 return cpu > 0;
             case RAM:
                 return ram > 0;
+            case EXTENDED_RAM:
+                return extendedRam > 0;
             case GPU:
                 return gpu > 0 && StringUtils.isNotBlank(gpuType);
             default:
@@ -89,6 +118,8 @@ public class GCPMachine extends AbstractGCPObject {
                             return cpu * price.getNanos();
                         case RAM:
                             return Math.round(ram * price.getNanos());
+                        case EXTENDED_RAM:
+                            return Math.round(extendedRam * price.getNanos());
                         case GPU:
                             return gpu * price.getNanos();
                         default:
@@ -104,5 +135,10 @@ public class GCPMachine extends AbstractGCPObject {
             return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getGpuType().toLowerCase());
         }
         return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getFamily());
+    }
+
+    @Override
+    public String resourceFamily() {
+        return "Compute";
     }
 }

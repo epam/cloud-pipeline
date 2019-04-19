@@ -67,4 +67,9 @@ public class GCPDisk extends AbstractGCPObject {
     public String billingKey(final GCPBilling billing, final GCPResourceType type) {
         return String.format(SHORT_BILLING_KEY_PATTERN, type.alias(), billing.alias());
     }
+
+    @Override
+    public String resourceFamily() {
+        return "Storage";
+    }
 }
