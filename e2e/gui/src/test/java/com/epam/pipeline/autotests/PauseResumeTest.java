@@ -296,8 +296,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                         endpoint)
                         )
                         .resume(getToolName())
-                        .assertResumingFinishedSuccessfully()
-                        .sleep(10, SECONDS)
+                        .waitForEndpointLink()
+                        .sleep(3, MINUTES)
                         .inAnotherTab(nodeTab ->
                                 checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
                         )
