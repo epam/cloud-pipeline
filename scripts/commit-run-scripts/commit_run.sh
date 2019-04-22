@@ -24,10 +24,15 @@ check_last_exit_code $? "[ERROR] Error occurred while committing temporary conta
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
 
-pipe_exec "docker exec ${tmp_container} sh -c 'if [[ -f ${PRE_COMMIT_COMMAND} ]]; then ${PRE_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}; fi'" "$TASK_NAME"
-
-if [[ $? -ne 0 ]]; then
-    pipe_log_warn "[WARN] There are some troubles while executing pre-commit command." "$TASK_NAME"
+if [[ ! -z "${PRE_COMMIT_COMMAND}" ]]; then
+    pipe_log_info "[INFO] Pre-commit command found by path ${PRE_COMMIT_COMMAND}" "$TASK_NAME"
+    pipe_exec "docker exec ${tmp_container} ls ${PRE_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
+    if [[ $? -eq 0 ]]; then
+        pipe_log_info "[INFO] Run pre-commit command" "$TASK_NAME"
+        pipe_exec "docker exec ${tmp_container} sh -c '${PRE_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+        check_last_exit_code $? "[ERROR] There are some troubles while executing pre-commit script." \
+                        "[INFO] Pre-commit operations were successfully performed."
+    fi
 fi
 
 pipe_log_info "[INFO] Clean up container with env vars and files ..." "$TASK_NAME"
@@ -45,11 +50,14 @@ pipe_exec "docker commit --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DA
 
 commit_exit_code=$?
 
-if [[ "${commit_exit_code}" -eq 0 ]]; then
-    pipe_exec "docker exec ${tmp_container} sh -c 'if [[ -f ${POST_COMMIT_COMMAND} ]]; then ${POST_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}; fi'" "$TASK_NAME"
-
-    if [[ $? -ne 0 ]]; then
-        pipe_log_warn "[WARN] There are some troubles while executing post-commit command." "$TASK_NAME"
+if [[ ! -z "${POST_COMMIT_COMMAND}" ]]; then
+    pipe_log_info "[INFO] Post-commit command found by path ${POST_COMMIT_COMMAND}" "$TASK_NAME"
+    pipe_exec "docker exec ${tmp_container} ls ${POST_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
+    if [[ $? -eq 0 ]]; then
+        pipe_log_info "[INFO] Run post-commit command" "$TASK_NAME"
+        pipe_exec "docker exec ${tmp_container} sh -c '${POST_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+        check_last_exit_code $? "[ERROR] There are some troubles while executing post-commit script." \
+                        "[INFO] Post-commit operations were successfully performed."
     fi
 fi
 
