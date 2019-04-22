@@ -981,6 +981,7 @@ public class RoleModelTest
                 .edit()
                 .addRoleOrGroup(userGroup)
                 .ok()
+                .sleep(1, SECONDS)
                 .closeAll();
     }
 }

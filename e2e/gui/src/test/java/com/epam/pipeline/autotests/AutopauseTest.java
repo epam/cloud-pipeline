@@ -112,6 +112,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                     .waitUntilResumeButtonAppear(getLastRunId())
                     .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
                     .resume(getLastRunId(), getToolName())
+                    .waitUntilStopButtonAppear(getLastRunId())
                     .stopRun(getLastRunId());
             return;
         }
