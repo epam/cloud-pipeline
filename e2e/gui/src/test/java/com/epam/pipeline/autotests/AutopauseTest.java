@@ -112,6 +112,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
                 .activeRuns()
                 .resume(getLastRunId(), getToolName())
+                .waitUntilStopButtonAppear(getLastRunId())
                 .stopRun(getLastRunId());
     }
 
@@ -128,6 +129,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
                 .resume(getLastRunId(), getToolName())
+                .waitUntilStopButtonAppear(getLastRunId())
                 .stopRun(getLastRunId());
     }
 

@@ -306,6 +306,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO waitUntilStopButtonAppear(final String runId) {
+        $("#run-" + runId + "-stop-button").waitUntil(appear, APPEARING_TIMEOUT);
+        return this;
+    }
+
     public RunsMenuAO waitForCompletion(final String runId) {
         $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(hidden, COMPLETION_TIMEOUT);
         return this;
