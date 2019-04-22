@@ -122,8 +122,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             .filter(r -> DateUtils.nowUTC().isAfter(r.getProlongedAtTime().plus(idleTimeout, ChronoUnit.MINUTES)))
             .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
 
-        LOGGER.debug("Checking cpu stats for pipelines: " + running.keySet().stream()
-            .collect(Collectors.joining(", ")));
+        LOGGER.debug("Checking cpu stats for pipelines: " + String.join(", ", running.keySet()));
 
         LocalDateTime now = DateUtils.nowUTC();
         Map<String, Double> cpuMetrics = monitoringDao.loadCpuUsageRateMetrics(

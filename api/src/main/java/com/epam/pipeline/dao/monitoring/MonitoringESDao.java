@@ -66,6 +66,7 @@ public class MonitoringESDao {
 
     private static final String AGGREGATION_POD_NAME = "pod_name";
     private static final String AGGREGATION_CPU_RATE = "avg_cpu_rate";
+    private static final String AGGREGATION_METRIC_RATE = "_avg_rate";
 
     private RestHighLevelClient client;
     private RestClient lowLevelClient;
@@ -78,26 +79,41 @@ public class MonitoringESDao {
 
     public Map<String, Double> loadCpuUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
                                                        LocalDateTime to) {
+        return loadAvarageMetrics(podIds, "cpu", "usage_rate", FIELD_CPU_METRICS_TIMESTAMP, from, to);
+    }
+
+    public Map<String, Double> loadMemoryUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
+                                                       LocalDateTime to) {
+        return loadAvarageMetrics(podIds, "memory", "usage", "MemoryMetricsTimestamp", from, to);
+    }
+
+    public Map<String, Double> loadDiskUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
+                                                          LocalDateTime to) {
+        return loadAvarageMetrics(podIds, "filesystem", "usage", "FileSystemMetricsTimestamp", from, to);
+    }
+
+    private Map<String, Double> loadAvarageMetrics(Collection<String> podIds, String metricType, String metricName,
+                                                   String rangeBy, LocalDateTime from, LocalDateTime to) {
         if (CollectionUtils.isEmpty(podIds)) {
             return Collections.emptyMap();
         }
 
         SearchSourceBuilder builder = new SearchSourceBuilder()
-            .query(QueryBuilders.boolQuery()
-                 .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
-                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
-                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                 .filter(QueryBuilders.rangeQuery(FIELD_CPU_METRICS_TIMESTAMP)
-                             .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                             .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-            .size(0)
-            .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
-                             .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
-                             .size(podIds.size())
-                             .subAggregation(AggregationBuilders.avg(AGGREGATION_CPU_RATE)
-                                                 .field("Metrics.cpu/usage_rate.value")));
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
+                        .filter(QueryBuilders.rangeQuery(rangeBy)
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                .size(0)
+                .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
+                        .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
+                        .size(podIds.size())
+                        .subAggregation(AggregationBuilders.avg(metricType + AGGREGATION_METRIC_RATE)
+                                .field("Metrics." + metricType + "/" + metricName + ".value")));
 
-        SearchRequest request = new SearchRequest(getIndexNames(from, to)).types("cpu").source(builder);
+        SearchRequest request = new SearchRequest(getIndexNames(from, to)).types(metricType).source(builder);
 
         SearchResponse response;
         try {
@@ -108,9 +124,9 @@ public class MonitoringESDao {
 
         Terms terms = response.getAggregations().get(AGGREGATION_POD_NAME);
         return terms.getBuckets().stream()
-            .collect(Collectors.toMap(
-                b -> b.getKey().toString(),
-                b -> ((Avg) b.getAggregations().get(AGGREGATION_CPU_RATE)).getValue()));
+                .collect(Collectors.toMap(
+                        b -> b.getKey().toString(),
+                        b -> ((Avg) b.getAggregations().get(AGGREGATION_CPU_RATE)).getValue()));
     }
 
     private String path(String ...parts) {
