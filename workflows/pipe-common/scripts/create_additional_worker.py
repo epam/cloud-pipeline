@@ -33,6 +33,7 @@ default_hostfile = os.environ['DEFAULT_HOSTFILE']
 instance_disk = os.environ['instance_disk']
 instance_type = os.environ['instance_size']
 instance_image = os.environ['docker_image']
+price_type = os.environ['price_type']
 
 Logger.init(cmd=args.debug, log_file='/common/workdir/.autoscaler.log', task='GridEngineAutoscaling')
 
@@ -44,5 +45,6 @@ pipe = PipelineAPI(api_url=pipeline_api, log_dir='/common/workdir/.pipe.log')
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=master_run_id,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                            instance_type=instance_type, instance_image=instance_image)
+                                            instance_type=instance_type, instance_image=instance_image,
+                                            price_type=price_type)
 scale_up_handler.scale_up()
