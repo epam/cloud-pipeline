@@ -94,7 +94,9 @@ class MountStorageTask:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
             cloud_region = self._get_cloud_region()
-            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE and dsm.storage.region_name == cloud_region), available_storages_with_mounts))
+            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE
+                                                and self.api.get_region(dsm.file_share_mount.region_id).name == cloud_region),
+                                   available_storages_with_mounts))
             if nfs_count > 0:
                 NFSMounter.check_or_install(self.task_name)
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
