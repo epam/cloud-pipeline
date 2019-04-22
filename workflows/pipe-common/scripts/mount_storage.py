@@ -67,14 +67,21 @@ class MountStorageTask:
         self.task_name = task
         available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
-        self.default_regions = {'AWS': 'us-east-1'}
 
     def run(self, mount_root, tmp_dir):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
 
+            # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
+            cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
+            if cloud_region_id == -1:
+                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted', task_name=self.task_name)
+
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount()
+            # filtering nfs storages in order to fetch only nfs from the same region
+            available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
+                                              or x.file_share_mount.region_id == cloud_region_id]
             if not available_storages_with_mounts:
                 Logger.success('No remote storages are available', task_name=self.task_name)
                 return
@@ -93,10 +100,7 @@ class MountStorageTask:
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
-            cloud_region = self._get_cloud_region()
-            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE
-                                                and self.api.get_region(dsm.file_share_mount.region_id).name == cloud_region),
-                                   available_storages_with_mounts))
+            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE), available_storages_with_mounts))
             if nfs_count > 0:
                 NFSMounter.check_or_install(self.task_name)
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
@@ -118,10 +122,6 @@ class MountStorageTask:
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
-
-    def _get_cloud_region(self):
-        cloud_region = os.getenv('CLOUD_REGION')
-        return cloud_region if cloud_region else self.default_regions[os.getenv('CLOUD_PROVIDER')]
 
 
 class StorageMounter:
@@ -472,7 +472,7 @@ class NFSMounter(StorageMounter):
             if not params['path'].startswith("//"):
                 params['path'] = '//' + params['path']
         else:
-            command = command.format(protocol="nfs4")
+            command = command.format(protocol="nfs")
 
         permission = 'g+rwx'
         if not PermissionHelper.is_storage_writable(self.storage):

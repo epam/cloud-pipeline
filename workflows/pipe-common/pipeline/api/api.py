@@ -197,7 +197,6 @@ class PipelineAPI:
     COMMENT_URL = '/comments'
     NOTIFICATION_URL = '/notification'
     REGION_URL = '/cloud/region'
-    REGION_BY_ID_URL = '/cloud/region/{}'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -797,13 +796,6 @@ class PipelineAPI:
             return [] if result is None else [CloudRegion.from_json(region_json) for region_json in result]
         except Exception as e:
             raise RuntimeError("Failed to get all regions.", "Error message: {}".format(str(e.message)))
-
-    def get_region(self, id):
-        try:
-            result = self.execute_request(str(self.api_url) + self.REGION_BY_ID_URL.format(id), method="get")
-            return None if result is None else CloudRegion.from_json(result)
-        except Exception as e:
-            raise RuntimeError("Failed to get region by id = {}.", "Error message: {}".format(id, str(e.message)))
 
     def find_datastorage(self, id):
         """
