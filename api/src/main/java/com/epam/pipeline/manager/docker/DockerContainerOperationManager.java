@@ -72,9 +72,9 @@ public class DockerContainerOperationManager {
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
     private static final String COMMIT_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s %s %s %s %d %s %b %b %d %s %d %d %s %s %s %b &> ~/commit_pipeline.log &";
+            "--login /dev/stdin %s %s %s %s %d %s %b %b %d %s %d %d %s %s %s %b %s %s &> ~/commit_pipeline.log &";
     private static final String PAUSE_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s %s %s %s %d %s %d %s %s &> ~/pause_pipeline.log";
+            "--login /dev/stdin %s %s %s %s %d %s %d %s %s %s &> ~/pause_pipeline.log";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
@@ -174,7 +174,9 @@ public class DockerContainerOperationManager {
                     newImageName,
                     dockerLogin,
                     dockerPassword,
-                    registry.isPipelineAuth()
+                    registry.isPipelineAuth(),
+                    preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH),
+                    preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH)
             );
 
             Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand);
@@ -215,7 +217,8 @@ public class DockerContainerOperationManager {
                     containerId,
                     preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT),
                     run.getDockerImage(),
-                    run.getTaskName()
+                    run.getTaskName(),
+                    preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH)
             );
 
             RunInstance instance = run.getInstance();
