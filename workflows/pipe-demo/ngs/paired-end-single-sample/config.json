@@ -147,7 +147,7 @@
           "required": true
         },
         "PairedEndSingleSample_haplotype_scatter_count": {
-          "value": "5",
+          "value": "",
           "type": "string",
           "required": true
         },
