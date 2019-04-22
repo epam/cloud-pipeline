@@ -30,11 +30,12 @@ default_hostfile = 'default_hostfile'
 instance_disk = 'instance_disk'
 instance_type = 'instance_type'
 instance_image = 'instance_image'
+price_type = 'price_type'
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
                                             instance_type=instance_type, instance_image=instance_image,
-                                            polling_timeout=0)
+                                            price_type=price_type, polling_timeout=0)
 
 
 def setup_function():
