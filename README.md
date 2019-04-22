@@ -18,7 +18,9 @@
 
 ## Documentation
 
-Detailed documentation on the `Cloud Pipeline` platform is available in [Documentation directory](docs/README.md)
+Detailed documentation on the `Cloud Pipeline` platform is available via:
+* [Documentation site](https://epam.github.io/cloud-pipeline/)
+* [Documentation sources](docs/README.md)
 
 ## Prebuilt binaries
 
