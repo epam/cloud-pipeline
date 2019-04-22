@@ -92,6 +92,13 @@ function onValuesChange (props, fields) {
   }
 }
 
+function getFormItemClassName (rootClass, key) {
+  if (key) {
+    return `${rootClass} ${key.replace(/\./g, '_')}`;
+  }
+  return rootClass;
+}
+
 @Form.create({onValuesChange: onValuesChange})
 @inject('runDefaultParameters', 'googleApi', 'awsRegions', 'dtsList', 'preferences', 'dockerRegistries')
 @inject((stores, params) => {
@@ -506,13 +513,50 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       } else {
         const openedPanels = this.state.openedPanels;
         const getPanelKey = (key) => key === SYSTEM_PARAMETERS ? ADVANCED : key;
+        const wrongFields = [];
+        const extractFields = (section) => {
+          if (section === ADVANCED || section === EXEC_ENVIRONMENT) {
+            for (let key in err[section]) {
+              if (err[section].hasOwnProperty(key)) {
+                wrongFields.push(key.replace(/\./g, '_'));
+              }
+            }
+          } else if (section === PARAMETERS || section === SYSTEM_PARAMETERS) {
+            for (let key in err[section].params) {
+              if (err[section].params.hasOwnProperty(key)) {
+                wrongFields.push(key.replace(/\./g, '_'));
+              }
+            }
+          }
+        };
         for (let key in err) {
-          if (err.hasOwnProperty(key) && openedPanels.indexOf(getPanelKey(key)) === -1) {
-            openedPanels.push(getPanelKey(key));
+          if (err.hasOwnProperty(key)) {
+            extractFields(key);
+            if (openedPanels.indexOf(getPanelKey(key)) === -1) {
+              openedPanels.push(getPanelKey(key));
+            }
           }
         }
         this.setState({
           openedPanels
+        }, () => {
+          if (wrongFields.length > 0) {
+            const scrollToWrongField = () => {
+              const element = document.querySelector(`.${wrongFields[0]}`);
+              const layout = document.querySelector(`.${styles.layout}`);
+              const scrollableParent = layout.parentElement.parentElement;
+              if (scrollableParent && element) {
+                // For detached configuration & pipeline configuration scrolling:
+                scrollableParent.scrollTo({left: 0, top: element.offsetTop});
+                if (scrollableParent.parentElement) {
+                  // For launch form scrolling:
+                  scrollableParent.parentElement.scrollTo({left: 0, top: element.offsetTop});
+                }
+              }
+            };
+            const TIMEOUT_MS = 500;
+            setTimeout(scrollToWrongField, TIMEOUT_MS);
+          }
         });
       }
     });
@@ -1621,7 +1665,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     };
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'pipeline')}
         {...this.formItemLayout}
         label={this.localizedString('Pipeline')} >
         <Input
@@ -1659,7 +1703,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     };
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'executionEnvironment')}
         {...this.formItemLayout}
         label="Execution environment" >
         <Select
@@ -1774,7 +1818,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'coresNumber')}
         {...this.formItemLayout}
         label="Cores"
         hasFeedback>
@@ -2076,7 +2120,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       return this.props.currentConfigurationIsDefault && this.state.currentMetadataEntity.length > 0 && (
         <FormItem
           key="root_entity_type_select"
-          className={`${styles.formItemRow} ${styles.rootEntityTypeContainer}`}>
+          className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
           <Row
             style={{marginTop: 10}}
             key="root_entity_type_row"
@@ -2163,7 +2207,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           return (
             <FormItem
               key={key}
-              className={styles.formItemRow}
+              className={getFormItemClassName(styles.formItemRow, key)}
               {...this.parameterItemLayout}
               hasFeedback>
               <FormItem className={styles.hiddenItem}>
@@ -2311,7 +2355,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   renderDockerImageFormItem = () => {
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'dockerImage')}
         {...this.formItemLayout}
         label="Docker image"
         required={!this.state.fireCloudMethodName}
@@ -2364,7 +2408,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     if (this.prettyUrlEnabled) {
       return (
         <FormItem
-          className={styles.formItemRow}
+          className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
           {...this.leftFormItemLayout}
           label="Friendly URL"
           hasFeedback>
@@ -2402,7 +2446,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'type')}
         {...this.formItemLayout}
         required={!this.state.fireCloudMethodName && !this.state.isDts}
         label="Node type"
@@ -2461,7 +2505,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'cloudRegionId')}
         {...this.formItemLayout}
         required={this.awsRegions.length > 0 && !this.state.isDts}
         hasFeedback
@@ -2605,7 +2649,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     return (
       <FormItem
-        className={styles.formItem}
+        className={getFormItemClassName(styles.formItem, 'disk')}
         {...this.formItemLayout}
         label="Disk (Gb)"
         required={!this.state.fireCloudMethodName && !this.state.isDts}
@@ -2693,7 +2737,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     const initialValue = this.correctPriceTypeValue(this.getDefaultValue('is_spot'));
     return (
       <FormItem
-        className={styles.formItemRow}
+        className={getFormItemClassName(styles.formItemRow, 'is_spot')}
         {...this.leftFormItemLayout}
         label="Price type"
         hasFeedback>
@@ -2784,7 +2828,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     }
     return (
       <FormItem
-        className={styles.formItemRow}
+        className={getFormItemClassName(styles.formItemRow, 'timeout')}
         {...this.leftFormItemLayout}
         label="Timeout (min)"
         hasFeedback>
@@ -2823,7 +2867,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     };
     return (
       <FormItem
-        className={styles.formItemRow}
+        className={getFormItemClassName(styles.formItemRow, 'limitMounts')}
         {...this.cmdTemplateFormItemLayout}
         label="Limit mounts">
         <Row type="flex" align="middle">
@@ -2851,7 +2895,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   renderCmdTemplateFormItem = () => {
     return (
       <FormItem
-        className={styles.formItemRow}
+        className={getFormItemClassName(styles.formItemRow, 'cmdTemplate')}
         {...this.cmdTemplateFormItemLayout}
         label="Cmd template">
         <Row>
