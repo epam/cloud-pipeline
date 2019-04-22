@@ -153,22 +153,17 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());
-        String credentialsFile = getCredentialsFilePath(region);
+        final String credentialsFile = getCredentialsFilePath(region);
         if (!StringUtils.isEmpty(credentialsFile)) {
             try {
-                String credentials = String.join(StringUtils.EMPTY, Files.readAllLines(Paths.get(credentialsFile)));
+                final String credentials = String.join(StringUtils.EMPTY,
+                        Files.readAllLines(Paths.get(credentialsFile)));
                 envVars.put(SystemParams.CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX + region.getId(), credentials);
             } catch (IOException | InvalidPathException e) {
                 log.error("Cannot read credentials file {} for region {}", region.getName(), credentialsFile);
             }
         }
         return envVars;
-    }
-
-    private String getCredentialsFilePath(GCPRegion region) {
-        return StringUtils.isEmpty(region.getAuthFile())
-                ? System.getenv(GOOGLE_APPLICATION_CREDENTIALS)
-                : region.getAuthFile();
     }
 
     @Override
@@ -180,6 +175,12 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    private String getCredentialsFilePath(GCPRegion region) {
+        return StringUtils.isEmpty(region.getAuthFile())
+                ? System.getenv(GOOGLE_APPLICATION_CREDENTIALS)
+                : region.getAuthFile();
     }
 
     private Map<String, String> buildScriptGCPEnvVars(final GCPRegion region) {

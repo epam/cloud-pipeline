@@ -67,7 +67,7 @@ class MountStorageTask:
         self.task_name = task
         available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
-        self.default_regions = {'AWS': 'us-east-1', 'AZURE': 'eastus', 'GCP': 'europe-west3-c'}
+        self.default_regions = {'AWS': 'us-east-1'}
 
     def run(self, mount_root, tmp_dir):
         try:
@@ -93,7 +93,8 @@ class MountStorageTask:
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
-            nfs_count = len(filter((lambda ds: ds.storage.storage_type == NFS_TYPE), available_storages_with_mounts))
+            cloud_region = self._get_cloud_region()
+            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE and dsm.storage.region_name == cloud_region), available_storages_with_mounts))
             if nfs_count > 0:
                 NFSMounter.check_or_install(self.task_name)
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
@@ -209,21 +210,10 @@ class StorageMounter:
         account_id = os.getenv('CP_ACCOUNT_ID_{}'.format(region_id))
         account_key = os.getenv('CP_ACCOUNT_KEY_{}'.format(region_id))
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(region_id))
-        account_cred_file_content = os.getenv('CP_CREDENTIALS_FILE_CONTENT_{}'.format(region_id))
-        if not StorageMounter.credentials_exists(region_id, account_id, account_key, account_region, account_cred_file_content):
+        if not account_id or not account_key or not account_region:
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(region_id))
-        return account_id, account_key, account_region, account_cred_file_content
-
-    @staticmethod
-    def credentials_exists(region_id, account_id, account_key, account_region, account_cred_file_content):
-        cloud_provider = os.getenv('CP_CLOUD_PROVIDER_{}'.format(region_id))
-        if cloud_provider == "AWS" or cloud_provider == "AZURE":
-            return account_id and account_key and account_region
-        elif cloud_provider == "GCP":
-            return account_region and account_cred_file_content
-        else:
-            raise RuntimeError("Cloud provider for account with id={} wasn\'t found or unsupported".format(region_id))
+        return account_id, account_key, account_region
 
 
 class AzureMounter(StorageMounter):
@@ -253,7 +243,7 @@ class AzureMounter(StorageMounter):
             AzureMounter.fuse_tmp = fuse_tmp
 
     def build_mount_params(self, mount_point):
-        account_id, account_key, _, _ = self._get_credentials(self.storage)
+        account_id, account_key, _ = self._get_credentials(self.storage)
         return {
             'mount': mount_point,
             'path': self.get_path(),
@@ -328,7 +318,7 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
-        aws_key_id, aws_secret, region_name, _ = self._get_credentials(self.storage)
+        aws_key_id, aws_secret, region_name = self._get_credentials(self.storage)
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
@@ -392,7 +382,7 @@ class GCPMounter(StorageMounter):
         super(GCPMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
-        _, _, _, gcp_creds_content = self._get_credentials(self.storage)
+        gcp_creds_content, _ = self._get_credentials(self.storage)
         if not gcp_creds_content:
             print("GCP credentials is not available, GCP file storage won't be mounted")
             return {}
@@ -416,6 +406,14 @@ class GCPMounter(StorageMounter):
             return ""
         return 'gcsfuse -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
                '--dir-mode {mask} --file-mode {mask} {path} {mount}'.format(**params)
+
+    def _get_credentials(self, storage):
+        account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))
+        account_cred_file_content = os.getenv('CP_CREDENTIALS_FILE_CONTENT_{}'.format(storage.region_id))
+        if not account_cred_file_content or not account_region:
+            raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
+                               .format(storage.region_id))
+        return account_cred_file_content, account_region
 
 
 class NFSMounter(StorageMounter):
@@ -459,7 +457,7 @@ class NFSMounter(StorageMounter):
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
         if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE":
-            az_acc_id, az_acc_key, _, _ = self._get_credentials_by_region_id(region_id)
+            az_acc_id, az_acc_key, _ = self._get_credentials_by_region_id(region_id)
             creds_options = ",".join(["username=" + az_acc_id, "password=" + az_acc_key])
 
             if mount_options:
