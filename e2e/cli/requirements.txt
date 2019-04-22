@@ -1,3 +1,0 @@
-pytest
-boto3
-azure==4.0.0

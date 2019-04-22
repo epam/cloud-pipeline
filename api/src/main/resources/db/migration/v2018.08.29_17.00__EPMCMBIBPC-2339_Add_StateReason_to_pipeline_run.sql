@@ -1,1 +1,0 @@
-ALTER TABLE pipeline.pipeline_run ADD STATE_REASON TEXT NULL;

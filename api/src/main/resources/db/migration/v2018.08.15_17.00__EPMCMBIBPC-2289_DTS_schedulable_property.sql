@@ -1,1 +1,0 @@
-ALTER TABLE pipeline.dts_registry ADD schedulable BOOLEAN DEFAULT FALSE;

@@ -1,1 +1,0 @@
-ALTER TABLE pipeline.pipeline_run DROP exec_environment;

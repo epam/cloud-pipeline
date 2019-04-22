@@ -1,6 +1,0 @@
-[
-    "Server.SpotInstanceShutdown",
-    "Server.SpotInstanceTermination",
-    "Server.InternalError",
-    "Client.UserInitiatedShutdown"
-]

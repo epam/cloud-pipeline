@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>6.1 Create and configure Pipeline - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "6.1 Create and configure Pipeline";
+    var mkdocs_page_input_path = "manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1 Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2 Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3 Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4 Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5 Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1 Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2 Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3 Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4 Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5 Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class=" current">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6._Manage_Pipeline/">6.0 Overview</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">6.1 Create and configure Pipeline</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#61-create-and-configure-pipeline">6.1. Create and configure pipeline</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#create-a-pipeline-in-a-library-space">Create a pipeline in a Library space</a></li>
+        
+            <li><a class="toctree-l5" href="#customize-a-pipeline-version">Customize a pipeline version</a></li>
+        
+            <li><a class="toctree-l5" href="#example-create-pipeline">Example: Create Pipeline</a></li>
+        
+            <li><a class="toctree-l5" href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a></li>
+        
+            <li><a class="toctree-l5" href="#example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1 Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6.2._Launch_a_pipeline/">6.2 Launch a Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1 Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2 Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3 Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4 Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1 Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2 Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3 Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4 Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5 Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6 Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7 Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8 Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1 Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2 Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3 Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4 Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5 Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6 Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7 Tool version menu</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2 Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3 Sharing with other users</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1 Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2 Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14._Command-line_interface/">14.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1 Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2 View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3 Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.4._View_and_manage_Permissions_via_CLI/">14.4 View and manage Permissions</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1 Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2 Using terminal access</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>6. Manage Pipeline &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>6.1 Create and configure Pipeline</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="61-create-and-configure-pipeline">6.1. Create and configure pipeline</h1>
+<ul>
+<li><a href="#create-a-pipeline-in-a-library-space">Create a pipeline in a Library space</a></li>
+<li><a href="#customize-a-pipeline-version">Customize a pipeline version</a><ul>
+<li><a href="#edit-documentation-optional">Edit documentation (optional)</a></li>
+<li><a href="#edit-code-section">Edit code section</a></li>
+<li><a href="#edit-pipeline-configuration-optional">Edit pipeline configuration (optional)</a></li>
+<li><a href="#adddelete-storage-rules-optional">Add/delete storage rules (optional)</a></li>
+</ul>
+</li>
+<li><a href="#example-create-pipeline">Example: Create Pipeline</a><ul>
+<li><a href="#pipeline-input-data">Pipeline input data</a></li>
+<li><a href="#pipeline-output-folder">Pipeline output folder</a></li>
+<li><a href="#configure-the-main_file">Configure the main_file</a></li>
+<li><a href="#configure-pipeline-inputoutput-parameters-via-gui">Configure pipeline input/output parameters via GUI</a></li>
+<li><a href="#check-the-results-of-pipeline-execution">Check the results of pipeline execution</a></li>
+</ul>
+</li>
+<li><a href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a><ul>
+<li><a href="#example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</a></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>To create a <strong>Pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and a role <strong>PIPELINE_MANAGER</strong>. To edit pipeline you need just <strong>WRITE</strong> permissions for a pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<p>To create a working pipeline version you need:</p>
+<ol>
+<li>Create a pipeline in a Library space</li>
+<li>Customize a pipeline version:<ul>
+<li>Edit documentation <em>(optional)</em></li>
+<li>Edit Code file</li>
+<li>Edit Configuration, Add new configuration <em>(optional)</em></li>
+<li>Add storage rules <em>(optional)</em>.</li>
+</ul>
+</li>
+</ol>
+<h2 id="create-a-pipeline-in-a-library-space">Create a pipeline in a Library space</h2>
+<ol>
+<li>Go to the <strong>"Library"</strong> tab and select a folder.</li>
+<li>Click <strong>+ Create → Pipeline</strong> and choose one of the built-in pipeline templates (Pure Python, Shell, Luigi, SAMPLE_SHEET_BATCH, FOLDER_BATCH, WDL). By default, Luigi template will be chosen. Default pipeline templates define the programming language for a pipeline. As templates are empty user shall write pipeline logic on his own. "SAMPLE_SHEET_BATCH" and "FOLDER_BATCH" templates include batch scripts and are devoted to batch processing of NGS files.</li>
+<li>Enter pipeline's name (pipeline description is optional) in the popped-up form.</li>
+<li>Click the <strong>Create</strong> button.</li>
+<li>A new pipeline will appear in the folder.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_01.png" /><br />
+<strong><em>Note</em></strong>: To configure repository where to store pipeline versions click the <strong>Edit repository settings</strong> button.<br />
+    Click on the button and two additional fields will appear: Repository (repository address) and Token (password to access a repository).<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_02.png" /></li>
+<li>The new pipeline will appear in a <strong>Library</strong> space.</li>
+</ol>
+<h2 id="customize-a-pipeline-version">Customize a pipeline version</h2>
+<p>Click a pipeline version to start its configuration process.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_03.png" /></p>
+<h3 id="edit-documentation-optional">Edit documentation (optional)</h3>
+<p>This option allows you to make a detailed description of your pipelines.<br />
+Navigate to the <strong>Documents</strong> tab and:</p>
+<ol>
+<li>Click <strong>Edit</strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_04.png" /></li>
+<li>Change the document using a <a href="https://en.wikipedia.org/wiki/Markdown">markdown language</a>.</li>
+<li>Click the <strong>Save</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_05.png" /></li>
+<li>Enter a description of the change and click <strong>Commit</strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_06.png" /></li>
+<li>Changes are saved.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_07.png" /></li>
+</ol>
+<h3 id="edit-code-section">Edit code section</h3>
+<p>It is not optional because you need to create a pipeline that will be tailored to your specific needs. For that purpose, you need to extend basic pipeline templates/add new files.</p>
+<ol>
+<li>Navigate to the <strong>Code</strong> tab. Click on any file you want to edit.<br />
+<strong><em>Note</em></strong>: each pipeline version has a default code file: it named after a pipeline and has a respective extension.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_08.png" /></li>
+<li>A new window with file contents will open. Click the <strong>Edit</strong> button and change the code file in the desired way.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_09.png" /></li>
+<li>When you are done, click the <strong>Save</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_10.png" /></li>
+<li>You'll be asked to write a <strong>Commit message</strong> (e.g. 'added second "echo" command'). Then click the <strong>Commit</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_11.png" /></li>
+<li>After that changes will be applied to your file.</li>
+</ol>
+<p><strong><em>Note</em></strong>: all code files are downloaded to the node to run the pipeline. Just adding a new file to the <strong>Code</strong> section doesn't change anything. You need to specify the order of scripts execution by yourself.
+E.g. you have three files in your pipeline: <strong><code>first.sh</code></strong> (<strong>main_file</strong>), <strong><code>second.sh</code></strong> and <strong><code>config.json</code></strong>. <strong>cmd_template</strong> parameter is <code>chmod +x $SCRIPTS_DIR/src/* &amp;&amp; $SCRIPTS_DIR/src/[main_file]</code>. So in the <strong><code>first.sh</code></strong> file you need to explicitly specify execution of <strong><code>second.sh</code></strong> script for them both to run inside your pipeline, otherwise this file will be ignored.</p>
+<h3 id="edit-pipeline-configuration-optional">Edit pipeline configuration (optional)</h3>
+<p>See details about pipeline configuration parameters <a href="../6._Manage_Pipeline/#configuration">here</a>.</p>
+<p>Every pipeline has default pipeline configuration from the moment it was created.<br />
+To change default pipeline configuration:</p>
+<ol>
+<li>Navigate to the <strong>Configuration</strong> tab.</li>
+<li>Expand <strong>"Exec environment"</strong> and <strong>"Advanced"</strong> tabs to see a full list of pipeline parameters. <strong>"Parameters"</strong> tab is opened by default.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_12.png" /></li>
+<li>Change any parameter you need. In this example, we will set <strong>Cloud Region</strong> to Europe Ireland, <strong>Disk</strong> to 40 Gb and set the <strong>Timeout</strong> to 400 mins.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_13.png" /></li>
+<li>Click the <strong>Save</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_14.png" /></li>
+<li>Now this will be the default pipeline configuration for the pipeline execution.</li>
+</ol>
+<h3 id="adddelete-storage-rules-optional">Add/delete storage rules (optional)</h3>
+<p>This section allows configuring what data will be transferred to an STS after pipeline execution.<br />
+To add a new rule:</p>
+<ol>
+<li>Click the <strong>Add new rule</strong> button. A pop-up will appear.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_15.png" /></li>
+<li>Enter File mask and then tick the box "Move to STS" to move pipeline output data to STS after pipeline execution.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_16.png" /><br />
+<strong><em>Note</em></strong>: If many rules with different Masks are present all of them are checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.</li>
+<li>To delete storage rule click the <strong>Delete</strong> button in the right part of the storage rule's row.</li>
+</ol>
+<h2 id="example-create-pipeline">Example: Create Pipeline</h2>
+<p>We will create a simple Shell pipeline (Shell template used). For that purpose, we will click <strong>+ Create → Pipeline → SHELL</strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_17.png" /></p>
+<p>Then we will write <strong>Pipeline name</strong> (<strong>1</strong>), <strong>Pipeline description</strong> (<strong>2</strong>) and click <strong>Create</strong> (<strong>3</strong>).<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_18.png" /></p>
+<p>This pipeline will:</p>
+<ol>
+<li>Download a file.</li>
+<li>Rename it.</li>
+<li>Upload renamed the file to the bucket.</li>
+</ol>
+<h3 id="pipeline-input-data">Pipeline input data</h3>
+<p>This is where pipeline input data is stored. This path will be used in pipeline parameters later on.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_19.png" /></p>
+<h3 id="pipeline-output-folder">Pipeline output folder</h3>
+<p>This is where pipeline output data will be stored after pipeline execution. This path will be used in pipeline parameters later on.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_20.png" /></p>
+<h3 id="configure-the-main_file">Configure the main_file</h3>
+<p>The pipeline will consist of 2 files: <strong>main_file</strong> and <strong><code>config.json</code></strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_21.png" /></p>
+<p>Let's extend the <strong>main_file</strong> so that it renames the input file and puts it into the <strong>$ANALYSIS_DIR</strong> folder on the node from which data will be uploaded to the bucket. To do that click the <strong>main_file</strong> name and click the <strong>Edit</strong> button. Then type all the pipeline instructions.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_22.png" /></p>
+<h3 id="configure-pipeline-inputoutput-parameters-via-gui">Configure pipeline input/output parameters via GUI</h3>
+<ol>
+<li>Click the <strong>Run</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_23.png" /></li>
+<li>In the pipeline run configuration select the arrow near the <strong>Add parameter</strong> button and select the <strong>"Input path parameter"</strong> option from the drop-down list.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_24.png" /></li>
+<li>Name the parameter (e.g. "input") and click on the grey <strong>"download"</strong> icon to select the path to the pipeline <strong>input data</strong> (we described pipeline input data <a href="#pipeline-input-data">above</a>).</li>
+<li>For pipeline output folder parameter choose the <strong>"Output path parameter"</strong> option from the drop-down list, name it and click on the grey <strong>"upload"</strong> icon to select the path to the pipeline output folder (we described pipeline output data <a href="#pipeline-output-folder">above</a>).<br />
+    This is how everything looks after these parameters are set:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_25.png" /></li>
+<li>Leave all other parameters default and click the <strong>Launch</strong> button.</li>
+</ol>
+<h3 id="check-the-results-of-pipeline-execution">Check the results of pipeline execution</h3>
+<p>After pipeline finished its execution, you can find the renamed file in the output folder.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_26.png" /></p>
+<h2 id="example-add-pipeline-configuration">Example: Add pipeline configuration</h2>
+<p>In this example, we will create a new pipeline configuration for the example pipeline and set it as default one. To add new pipeline configuration perform the following steps:</p>
+<ol>
+<li>Select a pipeline</li>
+<li>Select a pipeline version</li>
+<li>Navigate to the <strong>CONFIGURATION</strong> tab</li>
+<li>Click the <strong>+ ADD</strong> button in the upper-right corner of the screen</li>
+<li>Specify <strong>Configuration name</strong>, <strong>Description</strong> (optionally) and the <strong>Template</strong> - this is a pipeline configuration, from which the new pipeline configuration will inherit its parameters (right now only the <strong>"default"</strong> template is available).</li>
+<li>Click the <strong>Create</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_27.png" /></li>
+<li>As you can see, the new configuration has the same parameters as the default configuration.<br />
+<strong>Use Delete</strong> (<strong>1</strong>), <strong>Set as default</strong> (<strong>2</strong>) or <strong>Save</strong> (<strong>3</strong>) buttons to delete, set as default or save this configuration respectively.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_28.png" /></li>
+<li>Expand the <strong>Exec environment</strong> section (<strong>1</strong>) and then Specify <strong>30 GB</strong> Disk size (<strong>2</strong>), click the control to choose another <strong>Docker image</strong> (<strong>3</strong>). Click the <strong>Save</strong> button (<strong>4</strong>).<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_29.png" /></li>
+<li>Set "new-configuration" as default with the <strong>Set as default</strong> button.</li>
+<li>Navigate to the <strong>CODE</strong> tab. As you can see, <strong><code>config.json</code></strong> file now contains information about two configurations: "default" and "new-configuration". "new-configuration" is default one for pipeline execution.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_30.png" /></li>
+</ol>
+<h2 id="example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</h2>
+<p>To use Pipeline CLI instead of AWS CLI, the system parameter shall be added.</p>
+<ol>
+<li>In the <strong>Configuration</strong> page navigate to the <strong>Advanced</strong> tab and press <strong>Add system parameter</strong> button.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_31.png" /></li>
+<li>Select the <strong>CP_USE_PIPE_FOR_CP</strong> option and click <strong>OK</strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_32.png" /></li>
+<li>Save the configuration - now the configuration will use CP CLI to upload running results.</li>
+<li>To see the difference, click <strong>"Run"</strong> to launch it.</li>
+<li>Edit or add any parameters you want and click <strong>"Launch"</strong>.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_33.png" /></li>
+<li>In the <strong>Active Runs</strong> tab press the pipeline name.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_34.png" /></li>
+<li>When pipeline finishes its execution, click the <strong>output</strong> link in the <strong>Parameters</strong> tab.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_35.png" /></li>
+<li>
+<p>On the opened page press the output file name and on the bottom-right you'll see a list of tags that was automatically set for the chosen file.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_36.png" /><br />
+    This is a feature of uploading uses the CP CLI - files are automatically tagged with the following attributes:<br />
+<strong><em>Note</em></strong>: The exception is that the storage is based on NFS share. Files in such data storage don't have attributes at all.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CP_OWNER</strong></td>
+<td>User ID</td>
+</tr>
+<tr>
+<td><strong>CP_SOURCE</strong></td>
+<td>Local path used to upload</td>
+</tr>
+<tr>
+<td><strong>CP_CALC_CONFIG</strong></td>
+<td>Instance type</td>
+</tr>
+<tr>
+<td><strong>CP_DOCKER_IMAGE</strong></td>
+<td>Tool that was used</td>
+</tr>
+<tr>
+<td><strong>CP_JOB_CONFIGURATION</strong></td>
+<td>Pipeline configuration</td>
+</tr>
+<tr>
+<td><strong>CP_JOB_ID</strong></td>
+<td>Pipeline ID</td>
+</tr>
+<tr>
+<td><strong>CP_JOB_NAME</strong></td>
+<td>Pipeline name</td>
+</tr>
+<tr>
+<td><strong>CP_JOB_VERSION</strong></td>
+<td>Pipeline version</td>
+</tr>
+<tr>
+<td><strong>CP_RUN_ID</strong></td>
+<td>Run ID</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/" class="btn btn-neutral float-right" title="6.1.1 Building WDL Pipeline with graphical PipelineBuilder">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../6._Manage_Pipeline/" class="btn btn-neutral" title="6.0 Overview"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../6._Manage_Pipeline/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>

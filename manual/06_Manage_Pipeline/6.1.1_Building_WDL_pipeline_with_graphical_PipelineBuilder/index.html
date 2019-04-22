@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>6.1.1 Building WDL Pipeline with graphical PipelineBuilder - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "6.1.1 Building WDL Pipeline with graphical PipelineBuilder";
+    var mkdocs_page_input_path = "manual/06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1 Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2 Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3 Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4 Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5 Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1 Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2 Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3 Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4 Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5 Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class=" current">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6._Manage_Pipeline/">6.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6.1._Create_and_configure_pipeline/">6.1 Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">6.1.1 Building WDL Pipeline with graphical PipelineBuilder</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#611-building-wdl-pipeline-with-graphical-pipelinebuilder">6.1.1 Building WDL pipeline with graphical PipelineBuilder</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#overview">Overview</a></li>
+        
+            <li><a class="toctree-l5" href="#creating-a-new-pipeline-with-a-pipeline-builder">Creating a new pipeline with a Pipeline Builder</a></li>
+        
+            <li><a class="toctree-l5" href="#overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</a></li>
+        
+            <li><a class="toctree-l5" href="#example-pipeline">Example Pipeline</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6.2._Launch_a_pipeline/">6.2 Launch a Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1 Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2 Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3 Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4 Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1 Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2 Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3 Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4 Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5 Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6 Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7 Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8 Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1 Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2 Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3 Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4 Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5 Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6 Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7 Tool version menu</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2 Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3 Sharing with other users</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1 Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2 Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14._Command-line_interface/">14.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1 Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2 View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3 Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.4._View_and_manage_Permissions_via_CLI/">14.4 View and manage Permissions</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0 Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1 Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2 Using terminal access</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>6. Manage Pipeline &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>6.1.1 Building WDL Pipeline with graphical PipelineBuilder</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="611-building-wdl-pipeline-with-graphical-pipelinebuilder">6.1.1 Building WDL pipeline with graphical PipelineBuilder</h1>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#creating-a-new-pipeline-with-a-pipeline-builder">Creating a new pipeline with a Pipeline Builder</a></li>
+<li><a href="#overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</a></li>
+<li><a href="#example-pipeline">Example Pipeline</a></li>
+</ul>
+<blockquote>
+<p>To create a new <strong>WDL pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permissions for that folder and the <strong>PIPELINE_MANAGER</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<h2 id="overview">Overview</h2>
+<p>Cloud Pipeline allows creating pipelines using graphical IDE called "<strong>PipelineBuilder</strong>". "<strong>PipelineBuilder</strong>" provides GUI approach to construct WDL pipeline workflow supported dependencies, loops, etc without programming.</p>
+<p>"<strong>PipelineBuilder</strong>" is based on WDL language (by Broad Institute, <a href="https://github.com/openwdl/wdl">https://github.com/openwdl/wdl</a>) that is executed by "Cromwell" service.</p>
+<h2 id="creating-a-new-pipeline-with-a-pipeline-builder">Creating a new pipeline with a Pipeline Builder</h2>
+<ol>
+<li>To start using <strong>Pipeline Builder</strong> - create a new pipeline from "<strong>WDL</strong>" template: <strong>+ Create → Pipeline → WDL</strong>.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_01.png" /></li>
+<li>Name it (e.g. "pipeline-builder-test").<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_02.png" /></li>
+<li>This will create a new pipeline with a draft version.</li>
+<li>Click on the created pipeline and open the pipeline draft version.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_03.png" /></li>
+<li>Navigate to the <strong>GRAPH</strong> tab.<br />
+    Default pipeline will be generated with a single task "<strong>HelloWorld_print</strong>".<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_04.png" /></li>
+<li>To add more tasks - click the <strong>ADD TASK</strong> button in the top right corner. The <strong>ADD SCATTER</strong> button allows adding <a href="https://github.com/openwdl/wdl/blob/master/versions/draft-2/SPEC.md#scatter">scatters</a>.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_05.png" /></li>
+<li>This will bring a task editor with the following fields:  <ul>
+<li><strong>Name</strong> - a name of a task (it will be used for visualizing in a workflow and logging).</li>
+<li><strong>Input</strong> - a list of parameters that a task can accept from upstream tasks.</li>
+<li><strong>Output</strong> - a list of parameters that a task will pass to the downstream tasks.</li>
+<li><strong>Command</strong> - a shell script that will be executed within a task.</li>
+<li><strong>Use another docker image</strong> - if ticked - docker image, that is used within a task, can be overridden (i.e. different tools/images can be used for each task of the workflow) See more info <a href="#overriding-docker-image-for-a-specific-task">below</a>.<br />
+The following picture presents an example of a basic task creating:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_06.png" /></li>
+</ul>
+</li>
+<li>Click <strong>Add</strong> and then <strong>Save</strong> and <strong>Commit</strong>. The following visualization will be generated  - new "task1" with one output will appear.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_07.png" />  </li>
+<li>To create a "real" workflow - create a second task with one input. Then <strong>Save</strong> and <strong>Commit</strong>.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_08.png" /></li>
+<li>
+<p>Link <em>task1 output</em> with <em>task2 input</em> with a mouse cursor (click "output1" and slide to "input1"). Then click <strong>Save</strong> and <strong>Commit</strong>.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_09.png" /></p>
+<p><strong><em>Note</em></strong>: "<strong>HelloWorld_print</strong>" task isn't linked to other tasks. When code generates from a graph, tasks without links to other tasks can be executed in any order (e.g. <em>task1 → HelloWorld_print → task2</em> or <em>HelloWorld_print → task1 → task2</em>, etc).</p>
+<p>If you want to delete task - click its name and then the <strong>Delete</strong> button.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_10.png" /></p>
+</li>
+</ol>
+<h2 id="overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</h2>
+<p>By default, all tasks (and their commands) will run within a docker image that is specified for the initial run. This is useful when all tools/libraries are packed into a single docker image.<br />
+But if a specific step requires tools that are not packed into the same docker image - "<strong>PipelineBuilder</strong>" allows to specify another docker image:</p>
+<ol>
+<li>Open any task details and check the <strong>Use another docker</strong> image option.</li>
+<li>This will bring a docker image selector.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_11.png" /></li>
+<li>Choose <strong>registry</strong>, <strong>Tool group</strong>. Select an image and its version. Then click the <strong>OK</strong> button.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_12.png" /></li>
+<li>Specified docker image will be used instead of the initial one. This means that a command specified for a task will be executed in another docker container.</li>
+</ol>
+<h2 id="example-pipeline">Example Pipeline</h2>
+<p>As an example - R-based scRNA secondary analysis script. This script uses 10xGenomics matrix as input.</p>
+<p>Workflow diagram:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_13.png" /><br />
+<strong><em>Note</em></strong>: this workflow uses "overridden" docker image for the last task to show how it behaves (as described in <a href="#overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</a> section).</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../6.2._Launch_a_pipeline/" class="btn btn-neutral float-right" title="6.2 Launch a Pipeline">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../6.1._Create_and_configure_pipeline/" class="btn btn-neutral" title="6.1 Create and configure Pipeline"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../6.1._Create_and_configure_pipeline/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../6.2._Launch_a_pipeline/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>

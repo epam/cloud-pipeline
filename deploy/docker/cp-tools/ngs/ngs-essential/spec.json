@@ -1,6 +1,0 @@
-{
-    "short_description": "All-in-one NGS secondary analysis toolset, providing key analysis application for QC, Aligning, Variant Calling, Annotation",
-    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-    "disk_size": "100",
-    "default_command": "sleep infinity"
-}

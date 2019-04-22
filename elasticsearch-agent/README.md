@@ -1,1 +1,0 @@
-Common template for starting new Cloud Pipeline services

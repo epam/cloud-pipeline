@@ -1,8 +1,0 @@
-{
-	"main_file" : "",
-	"main_class" : "",
-	"instance_size" : "m4.2xlarge",
-	"instance_disk" : "200",
-	"docker_image" : "imageFromConfig",
-	"parameters": {}
-}

@@ -1,9 +1,0 @@
-<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
-
-<suite name="UITestsPrerequisites">
-    <test name="PrerequisitesTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.PrerequisitesTest"/>
-        </classes>
-    </test>
-</suite>

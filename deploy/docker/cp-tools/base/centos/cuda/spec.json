@@ -1,6 +1,0 @@
-{
-    "short_description": "CentOS Linux with CUDA and cuDNN for GPU computation",
-    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE_GPU}",
-    "disk_size": "50",
-    "default_command": "sleep infinity"
-}

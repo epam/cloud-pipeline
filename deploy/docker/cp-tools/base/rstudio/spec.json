@@ -1,7 +1,0 @@
-{
-    "short_description": "Basic R development environment with RStudio Web GUI",
-    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-    "disk_size": "50",
-    "default_command": "/start.sh",
-    "endpoints": [ "{ \"name\": \"RStudio\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
-}

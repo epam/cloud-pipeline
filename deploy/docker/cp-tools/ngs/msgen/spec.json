@@ -1,6 +1,0 @@
-{
-    "short_description": "msgen - a command-line client for the Microsoft Genomics service",
-    "instance_type": "Standard_D2s_v3",
-    "disk_size": "20",
-    "default_command": "sleep infinity"
-}

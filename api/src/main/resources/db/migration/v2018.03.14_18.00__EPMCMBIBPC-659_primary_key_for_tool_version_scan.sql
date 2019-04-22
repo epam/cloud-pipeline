@@ -1,2 +1,0 @@
-CREATE SEQUENCE pipeline.s_tool_version_scan START WITH 1 INCREMENT BY 1;
-ALTER TABLE pipeline.tool_version_scan ADD COLUMN id BIGINT NOT NULL PRIMARY KEY DEFAULT NEXTVAL('pipeline.s_tool_version_scan');

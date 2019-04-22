@@ -1,7 +1,0 @@
-{
-    "short_description": "Provides tools for the analysis and comprehension of high-throughput genomic data",
-    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
-    "disk_size": "100",
-    "default_command": "/start.sh",
-    "endpoints": [ "{ \"name\": \"Bioconductor\", \"nginx\": { \"port\": \"8788\" }, \"isDefault\": false }" ]
-}
