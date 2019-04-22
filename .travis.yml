@@ -77,6 +77,7 @@ jobs:
       name: "Publish docs"
       install:
         - pip install mkdocs --user
+      language: java
       script:
         - bash deploy/travis/travis_publish_docs.sh
 

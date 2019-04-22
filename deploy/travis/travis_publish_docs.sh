@@ -18,7 +18,7 @@ set -e
 
 # Publish docs only if it is one of the allowed branches and it is a push (not PR)
 if [ "$TRAVIS_REPO_SLUG" != "epam/cloud-pipeline" ] || \
-    [ "$TRAVIS_BRANCH" != "publish-docs-via-travis" ] || \
+    [ "$TRAVIS_BRANCH" != "develop" ] || \
     [ "$TRAVIS_EVENT_TYPE" != "push" ]; then
     echo "Skipping docs publishing, as a build is not triggered from the correct repo/branch via push"
     exit 0
