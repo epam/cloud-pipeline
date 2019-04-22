@@ -155,11 +155,10 @@ class StorageMounter:
         pass
 
     @staticmethod
-    def execute_and_check_command(command):
+    def execute_and_check_command(command, task_name=MOUNT_DATA_STORAGES):
         install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
         if install_check != 0:
-            Logger.warn(
-                'Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr))
+            Logger.warn('Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr), task_name=task_name)
         return install_check == 0
 
     @staticmethod
@@ -237,7 +236,7 @@ class AzureMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse')
+        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
 
     @staticmethod
     def is_available():
@@ -250,7 +249,7 @@ class AzureMounter(StorageMounter):
             AzureMounter.fuse_tmp = fuse_tmp
 
     def mount(self, mount_root, task_name):
-        self.__resolve_azure_blob_service_url()
+        self.__resolve_azure_blob_service_url(task_name=task_name)
         super(AzureMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
@@ -275,7 +274,7 @@ class AzureMounter(StorageMounter):
                '-o allow_other ' \
                '{mount_options}'.format(**params)
 
-    def __resolve_azure_blob_service_url(self):
+    def __resolve_azure_blob_service_url(self, task_name=MOUNT_DATA_STORAGES):
         # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
         account_name, _, _ = self._get_credentials(self.storage)
         command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
@@ -283,8 +282,7 @@ class AzureMounter(StorageMounter):
                   '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
         exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
         if exit_code != 0:
-            Logger.warn(
-                'Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr))
+            Logger.warn('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr), task_name=task_name)
 
 
 class S3Mounter(StorageMounter):
@@ -307,10 +305,10 @@ class S3Mounter(StorageMounter):
     def _check_or_install(task_name):
         fuse_type = os.getenv('CP_S3_FUSE_TYPE', FUSE_GOOFYS_ID)
         if fuse_type == FUSE_GOOFYS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
             return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_S3FS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs')
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs', task_name=task_name)
             if fuse_installed:
                 return FUSE_S3FS_ID
             else:
@@ -318,7 +316,7 @@ class S3Mounter(StorageMounter):
                     "FUSE {fuse_type} was preferred, but failed to install, will try to setup default goofys".format(
                         fuse_type=fuse_type),
                     task_name=task_name)
-                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
+                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
                 return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         else:
             Logger.warn("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type),
@@ -385,7 +383,7 @@ class NFSMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client')
+        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):
