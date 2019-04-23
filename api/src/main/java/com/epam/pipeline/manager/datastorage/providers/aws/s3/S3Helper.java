@@ -432,13 +432,7 @@ public class S3Helper {
         if (StringUtils.isNullOrEmpty(path) || StringUtils.isNullOrEmpty(path.trim())) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
-        String folderPath = path.trim();
-        if (!folderPath.endsWith(ProviderUtils.DELIMITER)) {
-            folderPath += ProviderUtils.DELIMITER;
-        }
-        if (folderPath.startsWith(ProviderUtils.DELIMITER)) {
-            folderPath = folderPath.substring(1);
-        }
+        String folderPath = ProviderUtils.withoutLeadingDelimiter(ProviderUtils.withTrailingDelimiter(path.trim()));
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         AmazonS3 client = getDefaultS3Client();
         if (itemExists(client, bucket, folderPath, true)) {
