@@ -62,7 +62,7 @@ export default class StatusIcon extends Component {
           !this.props.run.instance.nodeIP ||
           !this.props.run.instance.nodeName
         ) && !this.props.run.initialized) {
-        status = 'SCHEDULED';
+        status = this.props.run.queued ? 'QUEUED' : 'SCHEDULED';
       }
     }
 
@@ -109,6 +109,12 @@ export default class StatusIcon extends Component {
         icon = this.props.iconSet && this.props.iconSet[(status || '').toLowerCase()]
           ? this.props.iconSet[(status || '').toLowerCase()]
           : 'loading';
+        style = 'iconBlue';
+        break;
+      case 'QUEUED':
+        icon = this.props.iconSet && this.props.iconSet[(status || '').toLowerCase()]
+          ? this.props.iconSet[(status || '').toLowerCase()]
+          : 'hourglass';
         style = 'iconBlue';
         break;
       case 'PULLING':

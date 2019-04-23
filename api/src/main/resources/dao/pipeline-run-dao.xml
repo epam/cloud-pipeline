@@ -159,16 +159,23 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         tasks.task_name IS NOT NULL as initialization_finished,
+                        init_node_tasks.task_name IS NULL as queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     LEFT JOIN
-                        (SELECT DISTINCT run_id
-                           task_name,
-                           run_id
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
                          FROM pipeline_run_log
                          WHERE status = ? AND task_name = ?) tasks ON tasks.run_id = r.run_id
+                    LEFT JOIN
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
+                         FROM pipeline_run_log
+                         WHERE run_id = ? AND task_name = ?) init_node_tasks ON init_node_tasks.run_id = r.run_id
                     WHERE
                         r.run_id = ?
                     ORDER BY
@@ -544,6 +551,7 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       TRUE as initialization_finished,
+                      FALSE as queued,
                       p.pipeline_name
                     FROM
                       pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
@@ -600,6 +608,7 @@
                       r.node_real_disk,
                       r.node_cloud_provider,
                       TRUE as initialization_finished,
+                      FALSE as queued,
                       p.pipeline_name
                     FROM
                       pipeline.pipeline_run r LEFT JOIN pipeline.pipeline p ON r.pipeline_id = p.pipeline_id
@@ -976,16 +985,23 @@
                         r.node_real_disk,
                         r.node_cloud_provider,
                         tasks.task_name IS NOT NULL as initialization_finished,
+                        init_node_tasks.task_name IS NULL as queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
                     LEFT JOIN
-                        (SELECT DISTINCT run_id
-                           task_name,
-                           run_id
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
                          FROM pipeline_run_log
                          WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = r.run_id
+                    LEFT JOIN
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
+                         FROM pipeline_run_log
+                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = r.run_id
                     @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -1057,16 +1073,23 @@
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         tasks.task_name IS NOT NULL as initialization_finished,
+                        init_node_tasks.task_name IS NULL as queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
                     LEFT JOIN
-                        (SELECT DISTINCT run_id
-                           task_name,
-                           run_id
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
                          FROM pipeline_run_log
                          WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
+                    LEFT JOIN
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
+                         FROM pipeline_run_log
+                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = runs.run_id
                     WHERE runs.run_id IN (:list)
                 ]]>
             </value>
@@ -1215,16 +1238,23 @@
                         runs.node_real_disk,
                         runs.node_cloud_provider,
                         tasks.task_name IS NOT NULL as initialization_finished,
+                        init_node_tasks.task_name IS NULL as queued,
                         pipelines.pipeline_name
                     FROM
                         runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
                     LEFT JOIN
-                        (SELECT DISTINCT run_id
-                           task_name,
-                           run_id
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
                          FROM pipeline.pipeline_run_log
                          WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
+                    LEFT JOIN
+                        (SELECT DISTINCT
+                           run_id,
+                           task_name
+                         FROM pipeline.pipeline_run_log
+                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = runs.run_id
                  ]]>
             </value>
         </property>

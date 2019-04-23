@@ -71,6 +71,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
+
+    @Value("${run.pipeline.nodeup.task.name?:InitializeNode}")
+    private String nodeUpTaskName;
+
     private TaskStatus initTaskStatus = TaskStatus.SUCCESS;
 
     private String pipelineRunSequence;
@@ -131,7 +135,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun loadPipelineRun(Long id) {
         List<PipelineRun> items = getJdbcTemplate().query(loadRunByIdQuery,
-                PipelineRunParameters.getExtendedRowMapper(), initTaskStatus.ordinal(), initTaskName, id);
+                PipelineRunParameters.getExtendedRowMapper(), initTaskStatus.ordinal(), initTaskName, id,
+                nodeUpTaskName, id);
         if (!items.isEmpty()) {
             PipelineRun pipelineRun = items.get(0);
             List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
@@ -161,6 +166,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         params.addValue("list", runIds);
         params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
         params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
+        params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
         return getNamedParameterJdbcTemplate().query(loadPipelineRunsWithPipelineByIdsQuery,
                 params,
                 PipelineRunParameters.getExtendedRowMapper());
@@ -351,6 +357,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         params.addValue("OFFSET", (filter.getPage() - 1) * filter.getPageSize());
         params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
         params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
+        params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
         return params;
     }
 
@@ -613,7 +620,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         PRICE_PER_HOUR,
         STATE_REASON,
         NON_PAUSE,
-        NODE_REAL_DISK;
+        NODE_REAL_DISK,
+        QUEUED,
+        NODEUP_TASK;
 
         static MapSqlParameterSource getParameters(PipelineRun run, Connection connection) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -678,6 +687,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     PipelineRun run = parsePipelineRun(rs);
                     run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
                     run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+                    if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
+                        run.setQueued(rs.getBoolean(QUEUED.name()));
+                    }
                     runs.put(run.getId(), run);
                     if (run.getParentRunId() != null) {
                         childRuns.putIfAbsent(run.getParentRunId(), new ArrayList<>());
@@ -741,6 +753,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             instance.setNodeName(rs.getString(NODE_NAME.name()));
             instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
             instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
+
             boolean spot = rs.getBoolean(IS_SPOT.name());
             if (!rs.wasNull()) {
                 instance.setSpot(spot);
@@ -799,6 +812,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 PipelineRun run = parsePipelineRun(rs);
                 run.setPipelineName(rs.getString(PIPELINE_NAME.name()));
                 run.setInitialized(rs.getBoolean(INITIALIZATION_FINISHED.name()));
+                if (run.getInstance() == null || StringUtils.isBlank(run.getInstance().getNodeName())) {
+                    run.setQueued(rs.getBoolean(QUEUED.name()));
+                }
                 if (loadEnvVars) {
                     run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
                 }
