@@ -87,10 +87,6 @@ class MountStorageTask:
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
 
-            for mounter in [mounter for mounter in self.mounters.values() if mounter != NFSMounter]:
-                mounter.check_or_install(self.task_name)
-                mounter.init_tmp_dir(tmp_dir, self.task_name)
-
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
                 try:
@@ -100,9 +96,12 @@ class MountStorageTask:
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
-            nfs_count = len(filter((lambda dsm: dsm.storage.storage_type == NFS_TYPE), available_storages_with_mounts))
-            if nfs_count > 0:
-                NFSMounter.check_or_install(self.task_name)
+            for mounter in [mounter for mounter in self.mounters.values()]:
+                storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
+                if storage_count_by_type > 0:
+                    mounter.check_or_install(self.task_name)
+                    mounter.init_tmp_dir(tmp_dir, self.task_name)
+
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
                 Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
                 return
