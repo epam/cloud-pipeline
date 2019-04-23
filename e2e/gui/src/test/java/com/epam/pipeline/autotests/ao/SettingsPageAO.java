@@ -541,7 +541,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(1, SECONDS);
-                performIf(context().$(byText(group)).is(visible), t -> deleteGroup(group));
+                performIf(context().$(byText(group)).isDisplayed(), t -> deleteGroup(group));
                 return this;
             }
 
