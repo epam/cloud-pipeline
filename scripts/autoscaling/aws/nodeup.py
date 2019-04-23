@@ -32,19 +32,6 @@ from distutils.version import LooseVersion
 import fnmatch
 import sys
 
-
-#############################
-### TODO
-### This section corresponds to pipeline logging, so that we will get nodeup logs in GUI as a separate task
-### But current implementation is almost a hack (e.g. relies on application.config location)
-### It shall be completely rewritten once Python scripts are moved to Java
-### How to make sure this will work:
-### 1. application.config shall be located in ../config/application.config
-### 2. application.config shall contain valid values for:
-###     - api.host
-###     - server.api.token
-### 3. Latest "pipeline" package shall be installed using "pip install"
-
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 
@@ -145,13 +132,9 @@ def get_security_groups(aws_region):
     if not config:
         raise RuntimeError('Security group setting is required to run an instance')
     return config
-
-def get_proxies(aws_region):
-    return get_cloud_config_section(aws_region, "proxies")
     
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
-
 
 def get_allowed_instance_image(aws_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
@@ -369,25 +352,31 @@ def get_well_known_hosts_string(aws_region):
         return ''
     return ' && '.join(entries)
 
-def replace_proxies(aws_region, init_script):
-    pipe_log('Setting proxy settings for an instance in {} region'.format(aws_region))
-    proxies_list = get_proxies(aws_region)
-    if not proxies_list:
+def replace_common_params(aws_region, init_script, config_section):
+    pipe_log('Configuring {} settings for an instance in {} region'.format(config_section, aws_region))
+    common_list = get_cloud_config_section(aws_region, config_section)
+    if not common_list:
         return init_script
 
-    for proxy_item in proxies_list:
-        if not 'name' in proxy_item or not 'path' in proxy_item:
+    for common_item in common_list:
+        if not 'name' in common_item or not 'path' in common_item:
             continue
-        proxy_name = proxy_item['name']
-        proxy_path = proxy_item['path']
-        if not proxy_name:
+        item_name = common_item['name']
+        item_path = common_item['path']
+        if not item_name:
             continue
-        if proxy_path == None:
-            proxy_path = ''
-        init_script = init_script.replace('@' + proxy_name +  '@', proxy_path)
-        pipe_log('-> {}={}'.format(proxy_name, proxy_path))
+        if item_path == None:
+            item_path = ''
+        init_script = init_script.replace('@' + item_name +  '@', item_path)
+        pipe_log('-> {}={}'.format(item_name, item_path))
     
     return init_script
+
+def replace_proxies(aws_region, init_script):
+    return replace_common_params(aws_region, init_script, "proxies")
+
+def replace_swap(aws_region, init_script):
+    return replace_common_params(aws_region, init_script, "swap")
 
 def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
@@ -398,6 +387,7 @@ def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token):
         well_known_string = get_well_known_hosts_string(aws_region)
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
+        user_data_script = replace_swap(aws_region, user_data_script)
         return user_data_script.replace('@DOCKER_CERTS@', certs_string)\
             .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
             .replace('@KUBE_IP@', kube_ip)\
