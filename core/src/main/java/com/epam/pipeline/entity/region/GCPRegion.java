@@ -47,4 +47,6 @@ public class GCPRegion extends AbstractCloudRegion {
     private List<GCPCustomInstanceType> customInstanceTypes;
     private String corsRules;
     private String policy;
+    private Integer backupDuration;
+    private boolean versioningEnabled;
 }

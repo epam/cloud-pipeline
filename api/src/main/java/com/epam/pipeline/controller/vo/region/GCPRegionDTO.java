@@ -40,4 +40,6 @@ public class GCPRegionDTO extends AbstractCloudRegionDTO {
     private List<GCPCustomInstanceType> customInstanceTypes;
     private String corsRules;
     private String policy;
+    private Integer backupDuration;
+    private boolean versioningEnabled;
 }

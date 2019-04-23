@@ -54,6 +54,8 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
                     region.getCustomInstanceTypes());
             params.addValue(CloudRegionParameters.CUSTOM_INSTANCE_TYPES.name(), customInstanceTypes);
         }
+        params.addValue(CloudRegionParameters.VERSIONING_ENABLED.name(), region.isVersioningEnabled());
+        params.addValue(CloudRegionParameters.BACKUP_DURATION.name(), region.getBackupDuration());
         return params;
     }
 
@@ -76,6 +78,11 @@ public class GCPRegionDaoHelper extends AbstractCloudRegionDaoHelper<GCPRegion, 
         } else {
             gcpRegion.setCustomInstanceTypes(Collections.emptyList());
         }
+        int backup = rs.getInt(CloudRegionParameters.BACKUP_DURATION.name());
+        if (!rs.wasNull()) {
+            gcpRegion.setBackupDuration(backup);
+        }
+        gcpRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         return gcpRegion;
     }
 
