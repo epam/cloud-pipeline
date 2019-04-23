@@ -374,9 +374,8 @@ public class GSBucketStorageHelper {
                 .iterateAll().iterator().hasNext();
     }
 
-    public void applyStoragePolicy(final GSBucketStorage storage) {
+    public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
         final Storage client = gcpClient.buildStorageClient(region);
-        final StoragePolicy policy = storage.getStoragePolicy();
         final String bucketName = storage.getPath();
         final Bucket bucket = client.get(bucketName);
 

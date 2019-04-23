@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
@@ -65,8 +66,10 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public void applyStoragePolicy(final GSBucketStorage dataStorage) {
-        getHelper(dataStorage).applyStoragePolicy(dataStorage);
+    public void applyStoragePolicy(final GSBucketStorage storage) {
+        final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
+        final StoragePolicy policy = buildPolicy(gcpRegion, storage.getStoragePolicy());
+        getHelper(storage).applyStoragePolicy(storage, policy);
     }
 
     @Override

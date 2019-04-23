@@ -30,7 +30,7 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
-public class GCPRegion extends AbstractCloudRegion {
+public class GCPRegion extends AbstractCloudRegion implements VersioningAwareRegion {
 
     private CloudProvider provider = CloudProvider.GCP;
     /**
