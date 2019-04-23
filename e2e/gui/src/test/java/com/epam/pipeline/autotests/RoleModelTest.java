@@ -124,6 +124,14 @@ public class RoleModelTest
                     .removeStorage(anotherBucket)
                     .removePipeline(pipelineName);
 
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToGroups()
+                    .deleteGroupIfPresent(userGroup)
+                    .sleep(1, SECONDS)
+                    .ok();
+
             Utils.removeStorages(this, bucketForDataStoragesTests, presetBucketForDataStoragesTests);
         });
     }
@@ -933,14 +941,6 @@ public class RoleModelTest
                 ToolPermission.inherit(READ, tool, registry, group),
                 ToolPermission.inherit(WRITE, tool, registry, group),
                 ToolPermission.inherit(EXECUTE, tool, registry, group));
-
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToGroups()
-                .deleteGroupIfPresent(userGroup)
-                .sleep(1, SECONDS)
-                .ok();
     }
 
     private void createGroupPrerequisites() {
@@ -951,6 +951,7 @@ public class RoleModelTest
                         .switchToGroups()
                         .pressCreateGroup()
                         .enterGroupName(userGroup)
+                        .sleep(2, SECONDS)
                         .create()
                         .sleep(3, SECONDS)
                         .ok()
@@ -980,6 +981,7 @@ public class RoleModelTest
                 .searchForUserEntry(userLogin)
                 .edit()
                 .addRoleOrGroup(userGroup)
+                .sleep(2, SECONDS)
                 .ok()
                 .sleep(1, SECONDS)
                 .closeAll();
