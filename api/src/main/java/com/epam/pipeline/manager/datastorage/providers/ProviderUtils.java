@@ -40,4 +40,8 @@ public final class ProviderUtils {
         bucketName = bucketName.replaceAll("[^a-z0-9\\-]+", "-");
         return bucketName;
     }
+
+    public static String withoutTrailingDelimiter(final String path) {
+        return StringUtils.isNotBlank(path) && path.endsWith(DELIMITER) ? path.substring(0, path.length() - 1) : path;
+    }
 }

@@ -423,7 +423,7 @@ public class AzureStorageHelper {
     }
 
     private boolean directoryExists(final AzureBlobStorage dataStorage, final String path) {
-        final String pathWithoutSeparator = path.replaceFirst(ProviderUtils.DELIMITER + "$", "");
+        final String pathWithoutSeparator = ProviderUtils.withoutTrailingDelimiter(path);
         final String pathWithSeparator = pathWithoutSeparator + ProviderUtils.DELIMITER;
         final ListBlobsOptions options = new ListBlobsOptions()
                 .withMaxResults(MAX_PAGE_SIZE)
