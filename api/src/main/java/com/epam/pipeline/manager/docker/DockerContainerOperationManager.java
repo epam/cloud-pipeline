@@ -71,10 +71,6 @@ public class DockerContainerOperationManager {
     private static final String STRICT_HOST_KEY_CHECKING_NO = "StrictHostKeyChecking=no";
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
-    private static final String COMMIT_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s %s %s %s %d %s %b %b %d %s %d %d %s %s %s %b %s %s &> ~/commit_pipeline.log &";
-    private static final String PAUSE_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s %s %s %s %d %s %d %s %s %s &> ~/pause_pipeline.log";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
@@ -156,28 +152,28 @@ public class DockerContainerOperationManager {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
 
-            String commitContainerCommand = String.format(
-                    COMMIT_COMMAND_TEMPLATE,
-                    commitRunStarterScriptUrl,
-                    preferenceManager.getPreference(SystemPreferences.BASE_API_HOST),
-                    apiToken,
-                    commitScriptsDistributionsUrl,
-                    preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL),
-                    run.getId(),
-                    containerId,
-                    clearContainer,
-                    stopPipeline,
-                    preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT),
-                    registry.getPath(),
-                    registry.getId(),
-                    toolGroup.getId(),
-                    newImageName,
-                    dockerLogin,
-                    dockerPassword,
-                    registry.isPipelineAuth(),
-                    preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH),
-                    preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH)
-            );
+            final String commitContainerCommand = DockerCommitCommand.builder()
+                    .runScriptUrl(commitRunStarterScriptUrl)
+                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                    .apiToken(apiToken)
+                    .commitDistributionUrl(commitScriptsDistributionsUrl)
+                    .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                    .runId(String.valueOf(run.getId()))
+                    .containerId(containerId)
+                    .cleanUp(String.valueOf(clearContainer))
+                    .stopPipeline(String.valueOf(stopPipeline))
+                    .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
+                    .registryToPush(registry.getPath())
+                    .registryToPushId(String.valueOf(registry.getId()))
+                    .toolGroupId(String.valueOf(toolGroup.getId()))
+                    .newImageName(newImageName)
+                    .dockerLogin(dockerLogin)
+                    .dockerPassword(dockerPassword)
+                    .isPipelineAuth(String.valueOf(registry.isPipelineAuth()))
+                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
+                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                    .build()
+                    .getCommand();
 
             Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand);
             boolean isFinished = sshConnection.waitFor(
@@ -206,20 +202,20 @@ public class DockerContainerOperationManager {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
 
-            String pauseRunCommand = String.format(
-                    PAUSE_COMMAND_TEMPLATE,
-                    pauseRunScriptUrl,
-                    preferenceManager.getPreference(SystemPreferences.BASE_API_HOST),
-                    apiToken,
-                    commitScriptsDistributionsUrl,
-                    preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL),
-                    run.getId(),
-                    containerId,
-                    preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT),
-                    run.getDockerImage(),
-                    run.getTaskName(),
-                    preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH)
-            );
+            final String pauseRunCommand = DockerPauseCommand.builder()
+                    .runPauseScriptUrl(pauseRunScriptUrl)
+                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                    .apiToken(apiToken)
+                    .pauseDistributionUrl(commitScriptsDistributionsUrl)
+                    .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                    .runId(String.valueOf(run.getId()))
+                    .containerId(containerId)
+                    .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
+                    .newImageName(run.getDockerImage())
+                    .defaultTaskName(run.getTaskName())
+                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
+                    .build()
+                    .getCommand();
 
             RunInstance instance = run.getInstance();
             kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
