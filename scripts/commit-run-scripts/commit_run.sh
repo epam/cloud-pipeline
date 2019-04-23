@@ -17,6 +17,17 @@
 SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 . $SCRIPT_PATH
 
+if [[ ! -z "${PRE_COMMIT_COMMAND}" ]]; then
+    pipe_log_info "[INFO] Pre-commit command found by path ${PRE_COMMIT_COMMAND}" "$TASK_NAME"
+    pipe_exec "docker exec ${CONTAINER_ID} ls ${PRE_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
+    if [[ $? -eq 0 ]]; then
+        pipe_log_info "[INFO] Run pre-commit command" "$TASK_NAME"
+        pipe_exec "docker exec ${CONTAINER_ID} sh -c '${PRE_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+        check_last_exit_code $? "[ERROR] There are some troubles while executing pre-commit script." \
+                        "[INFO] Pre-commit operations were successfully performed."
+    fi
+fi
+
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
                         "[INFO] Temporary container was successfully committed with name: $image_name" \
@@ -24,14 +35,14 @@ check_last_exit_code $? "[ERROR] Error occurred while committing temporary conta
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
 
-if [[ ! -z "${PRE_COMMIT_COMMAND}" ]]; then
-    pipe_log_info "[INFO] Pre-commit command found by path ${PRE_COMMIT_COMMAND}" "$TASK_NAME"
-    pipe_exec "docker exec ${tmp_container} ls ${PRE_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
+if [[ ! -z "${POST_COMMIT_COMMAND}" ]]; then
+    pipe_log_info "[INFO] Post-commit command found by path ${POST_COMMIT_COMMAND}" "$TASK_NAME"
+    pipe_exec "docker exec ${tmp_container} ls ${POST_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
     if [[ $? -eq 0 ]]; then
-        pipe_log_info "[INFO] Run pre-commit command" "$TASK_NAME"
-        pipe_exec "docker exec ${tmp_container} sh -c '${PRE_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
-        check_last_exit_code $? "[ERROR] There are some troubles while executing pre-commit script." \
-                        "[INFO] Pre-commit operations were successfully performed."
+        pipe_log_info "[INFO] Run post-commit command" "$TASK_NAME"
+        pipe_exec "docker exec ${tmp_container} sh -c '${POST_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+        check_last_exit_code $? "[ERROR] There are some troubles while executing post-commit script." \
+                        "[INFO] Post-commit operations were successfully performed."
     fi
 fi
 
@@ -48,21 +59,7 @@ pipe_exec "docker commit --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DA
            CLUSTER_NAME= BUCKETS= MOUNT_OPTIONS= MOUNT_POINTS= OWNER= SSH_PASS= GIT_USER= GIT_TOKEN= cluster_role= \
            node_count= parent_id= \' ${tmp_container} ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
 
-commit_exit_code=$?
-
-if [[ ! -z "${POST_COMMIT_COMMAND}" ]]; then
-    pipe_log_info "[INFO] Post-commit command found by path ${POST_COMMIT_COMMAND}" "$TASK_NAME"
-    pipe_exec "docker exec ${tmp_container} ls ${POST_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
-    if [[ $? -eq 0 ]]; then
-        pipe_log_info "[INFO] Run post-commit command" "$TASK_NAME"
-        pipe_exec "docker exec ${tmp_container} sh -c '${POST_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
-        check_last_exit_code $? "[ERROR] There are some troubles while executing post-commit script." \
-                        "[INFO] Post-commit operations were successfully performed."
-    fi
-fi
-
-check_last_exit_code "${commit_exit_code}" \
-                        "[ERROR] Error occurred while committing container" \
+check_last_exit_code $? "[ERROR] Error occurred while committing container" \
                         "[INFO] Container was successfully committed with name: ${FULL_NEW_IMAGE_NAME}" \
                         "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
