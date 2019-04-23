@@ -16,10 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
-import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES;
-import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT;
-import static com.epam.pipeline.manager.preference.SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES;
-
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -28,8 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.notification.NotificationTime;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -56,6 +55,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.reactivex.Observable;
+
+import static com.epam.pipeline.manager.preference.SystemPreferences.*;
 
 /**
  *  A service component for monitoring resource usage.
@@ -117,18 +118,78 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     public void monitorResourceUsage() {
-        int idleTimeout = preferenceManager.getPreference(SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
         Map<String, PipelineRun> running = pipelineRunManager.loadRunningPipelineRuns().stream()
-            .filter(r -> DateUtils.nowUTC().isAfter(r.getProlongedAtTime().plus(idleTimeout, ChronoUnit.MINUTES)))
-            .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
+                .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
 
-        LOGGER.debug("Checking cpu stats for pipelines: " + String.join(", ", running.keySet()));
+        processIdleRuns(running);
+        processOverloadedRuns(running);
+    }
+
+    private void processOverloadedRuns(Map<String, PipelineRun> running) {
+        final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = new ArrayList<>();
+        int idleTimeout = preferenceManager.getPreference(SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
+        final Map<String, Double> thresholds = getThresholds();
+
+        LOGGER.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
 
         LocalDateTime now = DateUtils.nowUTC();
-        Map<String, Double> cpuMetrics = monitoringDao.loadCpuUsageRateMetrics(
-            running.keySet(),
-            now.minusMinutes(idleTimeout),
-            now);
+        Map<String, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
+                .collect(Collectors.toMap(
+                        ELKUsageMetric::getName,
+                        metric-> monitoringDao.loadUsageRateMetrics(
+                            metric, running.keySet(), now.minusMinutes(idleTimeout), now))
+                );
+
+        running.forEach((pod, run) -> {
+            Map<String, Double> podMetrics = metrics.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, metric -> metric.getValue().get(pod)));
+
+            if (isPodUnderPressure(podMetrics, thresholds)) {
+                NotificationTime timestamp = notificationManager
+                        .getLastNotificationTime(run.getId(), NotificationType.HIGH_CONSUMED_RESOURCES);
+                if(NotificationTime.isTimeOutEnds(timestamp, idleTimeout)) {
+                    runsToNotify.add(new ImmutablePair<>(run, podMetrics));
+                }
+            }
+        });
+
+        notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.IDLE_RUN);
+    }
+
+    private boolean isPodUnderPressure(Map<String, Double> podMetrics,
+                                       Map<String, Double> thresholds) {
+        return thresholds.entrySet()
+                .stream()
+                .anyMatch(
+                        metricThreshold -> Precision.compareTo(
+                                podMetrics.get(metricThreshold.getKey()),
+                                metricThreshold.getValue(), ONE_THOUSANDTH
+                        ) > 0
+                );
+    }
+
+    private Map<String, Double> getThresholds() {
+        HashMap<String, Double> result = new HashMap<>();
+        result.put(ELKUsageMetric.MEM.getName(),
+                preferenceManager.getPreference(SYSTEM_MEMORY_THRESHOLD_PERCENT) / PERCENT);
+        result.put(ELKUsageMetric.FS.getName(),
+                preferenceManager.getPreference(SYSTEM_DISK_THRESHOLD_PERCENT) / PERCENT);
+        return result;
+    }
+
+    private void processIdleRuns(Map<String, PipelineRun> running) {
+        int idleTimeout = preferenceManager.getPreference(SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
+
+        Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
+                .filter(e -> DateUtils.nowUTC().isAfter(e.getValue().getProlongedAtTime()
+                        .plus(idleTimeout, ChronoUnit.MINUTES)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        LOGGER.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
+
+        LocalDateTime now = DateUtils.nowUTC();
+        Map<String, Double> cpuMetrics = monitoringDao.loadUsageRateMetrics(ELKUsageMetric.CPU,
+                notProlongedRuns.keySet(), now.minusMinutes(idleTimeout), now);
 
         LOGGER.debug("CPU Metrics received: " + cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
             .collect(Collectors.joining(", ")));
@@ -138,7 +199,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         IdleRunAction action = IdleRunAction.valueOf(
             preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION));
 
-        List<PipelineRun> runsToUpdate = processRuns(running, cpuMetrics, idleCpuLevel, actionTimeout, action);
+        List<PipelineRun> runsToUpdate = processRuns(notProlongedRuns, cpuMetrics, idleCpuLevel, actionTimeout, action);
         pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdate);
     }
 

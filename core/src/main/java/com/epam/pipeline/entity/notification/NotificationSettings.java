@@ -83,7 +83,8 @@ public class NotificationSettings {
                 true, NotificationGroup.PIPELINE_RUN_STATUS),
         IDLE_RUN(6, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN);
+        IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
+        HIGH_CONSUMED_RESOURCES(9, 0L, 600L, true, NotificationGroup.RESOURCE_CONSUMING);
 
         private static final Map<Long, NotificationType> BY_ID;
 
@@ -135,6 +136,7 @@ public class NotificationSettings {
         LONG_RUNNING,
         ISSUE,
         PIPELINE_RUN_STATUS,
-        IDLE_RUN
+        IDLE_RUN,
+        RESOURCE_CONSUMING
     }
 }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.monitoring;
 
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import org.apache.commons.collections4.CollectionUtils;
@@ -49,6 +50,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric.*;
+
 @Repository
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 public class MonitoringESDao {
@@ -62,10 +65,11 @@ public class MonitoringESDao {
     private static final String FIELD_NAMESPACE_NAME = "namespace_name";
     private static final String FIELD_TYPE = "type";
 
-    private static final String FIELD_CPU_METRICS_TIMESTAMP = "CpuMetricsTimestamp";
-
+    private static final String USAGE = "usage";
+    private static final String USAGE_RATE = "usage_rate";
+    private static final String LIMIT = "limit";
+    
     private static final String AGGREGATION_POD_NAME = "pod_name";
-    private static final String AGGREGATION_CPU_RATE = "avg_cpu_rate";
     private static final String AGGREGATION_METRIC_RATE = "_avg_rate";
 
     private RestHighLevelClient client;
@@ -77,23 +81,20 @@ public class MonitoringESDao {
         this.lowLevelClient = lowLevelClient;
     }
 
-    public Map<String, Double> loadCpuUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
-                                                       LocalDateTime to) {
-        return loadAvarageMetrics(podIds, "cpu", "usage_rate", FIELD_CPU_METRICS_TIMESTAMP, from, to);
+    public Map<String, Double> loadUsageRateMetrics(ELKUsageMetric metric, Collection<String> podIds,
+                                                    LocalDateTime from, LocalDateTime to) {
+        if (metric == CPU) {
+            return loadAvgMetrics(podIds, CPU.getName(), USAGE_RATE, CPU.getTimestamp(), from, to);
+        }
+
+        Map<String, Double> usage = loadAvgMetrics(podIds, metric.getName(), USAGE, metric.getTimestamp(), from, to);
+        Map<String, Double> limit = loadAvgMetrics(podIds, metric.getName(), LIMIT, metric.getTimestamp(), from, to);
+        limit.forEach((k, v) -> usage.merge(k, v, this::getRate));
+        return usage;
     }
 
-    public Map<String, Double> loadMemoryUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
-                                                       LocalDateTime to) {
-        return loadAvarageMetrics(podIds, "memory", "usage", "MemoryMetricsTimestamp", from, to);
-    }
-
-    public Map<String, Double> loadDiskUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
-                                                          LocalDateTime to) {
-        return loadAvarageMetrics(podIds, "filesystem", "usage", "FileSystemMetricsTimestamp", from, to);
-    }
-
-    private Map<String, Double> loadAvarageMetrics(Collection<String> podIds, String metricType, String metricName,
-                                                   String rangeBy, LocalDateTime from, LocalDateTime to) {
+    private Map<String, Double> loadAvgMetrics(Collection<String> podIds, String metricType, String metricName,
+                                               String rangeBy, LocalDateTime from, LocalDateTime to) {
         if (CollectionUtils.isEmpty(podIds)) {
             return Collections.emptyMap();
         }
@@ -125,8 +126,8 @@ public class MonitoringESDao {
         Terms terms = response.getAggregations().get(AGGREGATION_POD_NAME);
         return terms.getBuckets().stream()
                 .collect(Collectors.toMap(
-                        b -> b.getKey().toString(),
-                        b -> ((Avg) b.getAggregations().get(AGGREGATION_CPU_RATE)).getValue()));
+                    b -> b.getKey().toString(),
+                    b -> ((Avg) b.getAggregations().get(metricType + AGGREGATION_METRIC_RATE)).getValue()));
     }
 
     private String path(String ...parts) {
@@ -173,5 +174,10 @@ public class MonitoringESDao {
 
     private boolean olderThanRetentionPeriod(int retentionPeriod, LocalDateTime date) {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
+    }
+
+    private Double getRate(Double um, Double lm) {
+        double rate = um / lm;
+        return Double.isInfinite(rate) ? null : rate;
     }
 }

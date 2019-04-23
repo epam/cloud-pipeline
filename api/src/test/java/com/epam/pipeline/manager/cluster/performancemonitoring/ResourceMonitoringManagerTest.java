@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
@@ -178,7 +179,7 @@ public class ResourceMonitoringManagerTest {
         mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
-        when(monitoringESDao.loadCpuUsageRateMetrics(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(monitoringESDao.loadUsageRateMetrics(ELKUsageMetric.CPU, any(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(mockStats);
 
         resourceMonitoringManager.init();
@@ -231,7 +232,8 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Collections.singletonList(idleRunToProlong));
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
-        when(monitoringESDao.loadCpuUsageRateMetrics(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(monitoringESDao.loadUsageRateMetrics(ELKUsageMetric.CPU, any(), any(LocalDateTime.class),
+                any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonMap(idleRunToProlong.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
