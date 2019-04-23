@@ -80,6 +80,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     private Long parentRunId;
     private List<PipelineRun> childRuns;
     private Boolean initialized;
+    private Boolean queued;
     private List<Long> entitiesIds;
     private Long configurationId;
     private String podStatus;
