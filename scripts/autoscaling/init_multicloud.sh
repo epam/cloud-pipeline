@@ -65,10 +65,10 @@ function setup_swap {
   
   # If swap_ratio/swap_file are not set at all - they will appear with @ in the beginning and the end
   # Consider that as default values
-  if [[ "$swap_ratio" != "@"*"@" ]]; then
+  if [[ "$swap_ratio" == "@"*"@" ]]; then
     swap_ratio=0
   fi
-  if [[ "$swap_file" != "@"*"@" ]]; then
+  if [[ "$swap_file" == "@"*"@" ]]; then
     swap_file=$default_swap_file
   fi
 
