@@ -140,6 +140,7 @@ public class CloudFacadeImpl implements CloudFacade {
                     if (r.getId().equals(regionId)) {
                         envVars.put(SystemParams.CLOUD_PROVIDER.name(), r.getProvider().name());
                         envVars.put(SystemParams.CLOUD_REGION.name(), r.getRegionCode());
+                        envVars.put(SystemParams.CLOUD_REGION_ID.name(), String.valueOf(r.getId()));
                     }
                     return envVars;
                 })
