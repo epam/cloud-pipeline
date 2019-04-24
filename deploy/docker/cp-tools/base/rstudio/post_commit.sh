@@ -15,7 +15,9 @@
 
 if [[ -f /etc/cp_env.sh ]]; then
     source /etc/cp_env.sh
-    rm -rf $OWNER_HOME/.rstudio/sessions/active/session-*
-else
+fi
+if [[ -z $OWNER_HOME ]]; then
     rm -rf /home/*/.rstudio/sessions/active/session-*
+else
+    rm -rf $OWNER_HOME/.rstudio/sessions/active/session-*
 fi
