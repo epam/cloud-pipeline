@@ -19,6 +19,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.google.common.collect.Comparators;
 import java.io.File;
 import java.net.URI;
@@ -720,9 +721,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             return ensure(PATH, disabled, visible)
                     .ensure(NAME, visible)
                     .ensure(DESCRIPTION, visible)
-                    .ensure(STS_DURATION, visible)
-                    .ensure(LTS_DURATION, visible)
-                    .ensure(ENABLE_VERSIONING, visible)
+                    .performIf(C.CLOUD_PROVIDER.equals(Cloud.AWS.name()), popup -> popup
+                            .ensure(STS_DURATION, visible)
+                            .ensure(LTS_DURATION, visible)
+                            .ensure(ENABLE_VERSIONING, visible))
                     .ensure(MOUNT_POINT, visible)
                     .ensure(MOUNT_OPTIONS, visible)
                     .ensure(SAVE, visible)
