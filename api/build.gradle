@@ -167,7 +167,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.microsoft.azure/azure
     compile group: "com.microsoft.azure", name: "azure", version: "1.19.0"
     // Azure Storage Blob
-    compile group: "com.microsoft.azure", name: "azure-storage-blob", version: "10.4.0"
+    compile group: "com.microsoft.azure", name: "azure-storage-blob", version: "11.0.0"
 
     // Retrofit
     compile group: "com.squareup.retrofit2", name: "retrofit", version: "2.3.0"
