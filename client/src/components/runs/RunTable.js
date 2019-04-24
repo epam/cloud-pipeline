@@ -852,7 +852,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
             <span>
-              <StatusIcon run={run} small additionalStyle={{marginLeft: 5}} />
+              <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
               <Popover
                 mouseEnterDelay={1}
                 content={

@@ -21,7 +21,6 @@ import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
 import StatusTooltips from './run-status-tooltips';
 import {getStatus} from './run-statuses';
-import styles from './StatusIcon.css';
 
 const StatusIcon = (props) => {
   const status = getStatus(props);
@@ -48,19 +47,20 @@ const StatusIcon = (props) => {
       style={iconStyle} />
   );
   if (props.displayTooltip && StatusTooltips.hasOwnProperty(status)) {
-    const {description, next, title} = StatusTooltips[status];
-    const tooltip = (
-      <Row className={styles.tooltip}>
-        {!!title && <Row className={styles.title}>{title}</Row>}
-        {!!description && <Row className={styles.description}>{description}</Row>}
-        {!!next && <Row className={styles.next}>Next state: {next}</Row>}
-      </Row>
-    );
-    return (
-      <Tooltip title={tooltip} mouseEnterDelay={1} placement={props.tooltipPlacement}>
-        {result}
-      </Tooltip>
-    );
+    const {description, title} = StatusTooltips[status];
+    if (!!title || !!description) {
+      const tooltip = (
+        <Row>
+          {!!title && <Row>{title}</Row>}
+          {!!description && <Row>{description}</Row>}
+        </Row>
+      );
+      return (
+        <Tooltip title={tooltip} mouseEnterDelay={1} placement={props.tooltipPlacement}>
+          {result}
+        </Tooltip>
+      );
+    }
   }
   return result;
 };
