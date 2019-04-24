@@ -19,7 +19,7 @@ import {inject, observer} from 'mobx-react';
 import {Table} from 'antd';
 import PipelineRunFilter from '../../models/pipelines/PipelineRunFilter';
 import styles from './RunsSearch.css';
-import StatusIcon from '../special/StatusIcon';
+import StatusIcon from '../special/run-status-icon';
 import localization from '../../utils/localization';
 
 const pageSize = 20;

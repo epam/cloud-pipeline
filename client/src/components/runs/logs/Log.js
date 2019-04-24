@@ -48,7 +48,7 @@ import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
 import {TaskLink} from './tasks/TaskLink';
 import LogList from './LogList';
-import StatusIcon from '../../special/StatusIcon';
+import StatusIcon from '../../special/run-status-icon';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';

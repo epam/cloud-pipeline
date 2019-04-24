@@ -23,7 +23,7 @@ import pipelineRun from '../../../models/pipelines/PipelineRun';
 import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
-import StatusIcon from '../../special/StatusIcon';
+import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
@@ -36,42 +36,46 @@ const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 const colors = {
-  failure: {
+  [Statuses.failure]: {
     color: 'rgb(255, 76, 31)'
   },
-  paused: {
+  [Statuses.paused]: {
     color: 'rgb(78, 186, 255)',
     fontWeight: 'bold'
   },
-  pausing: {
+  [Statuses.pausing]: {
     color: 'rgb(78, 186, 255)',
     fontWeight: 'bold'
   },
-  running: {
+  [Statuses.running]: {
     color: 'rgb(78, 186, 255)',
     fontWeight: 'bold'
   },
-  resuming: {
+  [Statuses.queued]: {
     color: 'rgb(78, 186, 255)',
     fontWeight: 'bold'
   },
-  scheduled: {
+  [Statuses.resuming]: {
     color: 'rgb(78, 186, 255)',
     fontWeight: 'bold'
   },
-  stopped: {
+  [Statuses.scheduled]: {
+    color: 'rgb(78, 186, 255)',
+    fontWeight: 'bold'
+  },
+  [Statuses.stopped]: {
     color: '#f79e2c',
     fontWeight: 'bold'
   },
-  success: {
+  [Statuses.success]: {
     color: 'rgb(66, 255, 83)',
     fontWeight: 'bold'
   }
 };
 
 const icons = {
-  failure: 'exclamation-circle-o',
-  stopped: 'clock-circle-o'
+  [Statuses.failure]: 'exclamation-circle-o',
+  [Statuses.stopped]: 'clock-circle-o'
 };
 
 @inject('dtsList', 'preferences')
@@ -394,7 +398,12 @@ export default class PipelineRunPreview extends React.Component {
               (this.props.runTasks.value || []).map((task, index) => {
                 return (
                   <Row key={index} className={styles.task}>
-                    <StatusIcon status={task.status} small colors={colors} iconSet={icons} />
+                    <StatusIcon
+                      status={task.status}
+                      small
+                      additionalStyleByStatus={colors}
+                      iconSet={icons}
+                      displayTooltip={false} />
                     <code>{task.name}</code>
                   </Row>
                 );
@@ -421,7 +430,10 @@ export default class PipelineRunPreview extends React.Component {
           <Row className={styles.title} type="flex" align="middle">
             {
               this.props.runInfo && this.props.runInfo.loaded
-                ? <StatusIcon run={this.props.runInfo.value} colors={colors} iconSet={icons} />
+                ? <StatusIcon
+                    run={this.props.runInfo.value}
+                    additionalStyleByStatus={colors}
+                    iconSet={icons} />
                 : <Icon type={PreviewIcons[this.props.item.type]} style={{fontSize: 'smaller'}} />
             }
             <span>{this.runName}</span>
