@@ -182,7 +182,10 @@ public class AzureStorageHelper {
 
     public DataStorageFolder createFolder(final AzureBlobStorage dataStorage, final String path) {
         String folderPath = ProviderUtils.withoutLeadingDelimiter(ProviderUtils.withTrailingDelimiter(path.trim()));
-        validateDirectory(dataStorage, folderPath, false);
+        if (directoryExists(dataStorage, folderPath)) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS));
+        }
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         folderPath += ProviderUtils.FOLDER_TOKEN_FILE;
         final String[] parts = folderPath.split(ProviderUtils.DELIMITER);

@@ -442,7 +442,8 @@ public class S3Helper {
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         AmazonS3 client = getDefaultS3Client();
         if (itemExists(client, bucket, folderPath, true)) {
-            throw new DataStorageException("Folder already exists");
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS));
         }
         folderPath += ProviderUtils.FOLDER_TOKEN_FILE;
         String[] parts = folderPath.split(ProviderUtils.DELIMITER);
