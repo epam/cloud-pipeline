@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.notification.NotificationTime;
+import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -283,10 +283,11 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         List<Long> ccUserIds = getCCUsers(notificationSettings);
 
-        Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(pipelinesMetrics.stream()
-                .map(p -> p.getLeft().getOwner())
-                .collect(Collectors.toList())).stream()
-                .collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+        Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(
+                pipelinesMetrics.stream()
+                        .map(p -> p.getLeft().getOwner())
+                        .collect(Collectors.toList())
+        ).stream().collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
 
         double memoryThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
         double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
@@ -306,7 +307,10 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         })
                 .collect(Collectors.toList());
 
+        List<Long> runIds = pipelinesMetrics.stream()
+                .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
+        monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
     /**
@@ -330,6 +334,20 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         return message;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void removeNotificationTimestamps(Long runId) {
+        monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void removeNotificationTimestampsByPipelineId(Long id) {
+        monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
+    }
+
+    public NotificationTimestamp getLastNotificationTime(Long pipelineId, NotificationType type) {
+        return monitoringNotificationDao.getNotificationTimestamp(pipelineId, type);
+    }
+
     private List<Long> getCCUsers(NotificationSettings idleRunSettings) {
         List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
         if (idleRunSettings.isKeepInformedAdmins()) {
@@ -339,10 +357,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
                     .collect(Collectors.toList()));
         }
         return ccUserIds;
-    }
-
-    public NotificationTime getLastNotificationTime(Long pipelineId, NotificationType type) {
-        return null;
     }
 
     private List<Long> getKeepInformedUserIds(NotificationSettings settings) {
@@ -388,5 +402,4 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
     }
-
 }

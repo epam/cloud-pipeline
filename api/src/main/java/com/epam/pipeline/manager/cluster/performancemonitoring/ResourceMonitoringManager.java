@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.notification.NotificationTime;
+import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -145,15 +145,15 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     .collect(Collectors.toMap(Map.Entry::getKey, metric -> metric.getValue().get(pod)));
 
             if (isPodUnderPressure(podMetrics, thresholds)) {
-                NotificationTime timestamp = notificationManager
+                NotificationTimestamp timestamp = notificationManager
                         .getLastNotificationTime(run.getId(), NotificationType.HIGH_CONSUMED_RESOURCES);
-                if(NotificationTime.isTimeOutEnds(timestamp, idleTimeout)) {
+                if(NotificationTimestamp.isTimeOutEnds(timestamp, idleTimeout)) {
                     runsToNotify.add(new ImmutablePair<>(run, podMetrics));
                 }
             }
         });
 
-        notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.IDLE_RUN);
+        notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
     }
 
     private boolean isPodUnderPressure(Map<String, Double> podMetrics,

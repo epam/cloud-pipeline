@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
@@ -96,6 +97,9 @@ public class PipelineManager implements SecuredEntityManager {
 
     @Autowired
     private RunStatusManager runStatusManager;
+
+    @Autowired
+    private NotificationManager notificationManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
@@ -213,6 +217,7 @@ public class PipelineManager implements SecuredEntityManager {
             }
         }
         runLogDao.deleteLogsForPipeline(id);
+        notificationManager.removeNotificationTimestampsByPipelineId(id);
         restartRunManager.deleteRestartedRunsForPipeline(id);
         runStatusManager.deleteRunStatusForPipeline(id);
         pipelineRunDao.deleteRunsByPipeline(id);

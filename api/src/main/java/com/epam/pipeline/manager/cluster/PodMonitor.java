@@ -353,6 +353,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         run.setStatus(run.getStatus().isFinal() ? run.getStatus() : TaskStatus.FAILURE);
         run.setTerminating(true);
         run.setEndDate(DateUtils.now());
+        notificationManager.removeNotificationTimestamps(run.getId());
         killAsync(run);
     }
 

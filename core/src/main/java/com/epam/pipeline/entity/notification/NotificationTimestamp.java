@@ -8,14 +8,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Data
-public class NotificationTime {
+public class NotificationTimestamp {
 
-    private Long id;
-    private Long pipelineId;
+    private Long runId;
     private NotificationType type;
     private LocalDateTime timestamp;
 
-    public static boolean isTimeOutEnds(NotificationTime nt, int shift) {
+    public static boolean isTimeOutEnds(NotificationTimestamp nt, int shift) {
         return nt != null && nt.getTimestamp() != null
                 && DateUtils.nowUTC().isAfter(nt.getTimestamp().plus(shift, ChronoUnit.MINUTES));
     }

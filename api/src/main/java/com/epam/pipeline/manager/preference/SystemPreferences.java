@@ -364,12 +364,12 @@ public class SystemPreferences {
      * Level of memory load, blow which a Run is considered `overloaded`
      */
     public static final IntPreference SYSTEM_MEMORY_THRESHOLD_PERCENT =
-            new IntPreference("system.idle.cpu.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
+            new IntPreference("system.memory.consume.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Level of filesystem load, blow which a Run is considered `overloaded`
      */
     public static final IntPreference SYSTEM_DISK_THRESHOLD_PERCENT =
-            new IntPreference("system.idle.cpu.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
+            new IntPreference("system.disk.consume.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
      */
