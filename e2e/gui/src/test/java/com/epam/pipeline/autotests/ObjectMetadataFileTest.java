@@ -159,17 +159,17 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     public void addSeveralKeysToFileMetadata() {
         fileMetadata()
                 .addKeyWithValue(key3, value3)
-                .addKeyWithValue(key4, value4)
+                .addKeyWithValue(key5, value5)
                 .assertKeyWithValueIsPresent(key3, value3)
-                .assertKeyWithValueIsPresent(key4, value4)
+                .assertKeyWithValueIsPresent(key5, value5)
                 .addKeyWithValue(key7, value7)
                 .messageShouldAppear(emptyKeyErrorMessage);
         if ("azure".equals(C.CLOUD_PROVIDER)) {
             return;
         }
         fileMetadata()
-                .addKeyWithValue(key5, value5)
-                .assertKeyWithValueIsPresent(key5, value5);
+                .addKeyWithValue(key4, value4)
+                .assertKeyWithValueIsPresent(key4, value4);
     }
 
     @Test(dependsOnMethods = "addSeveralKeysToFileMetadata")
