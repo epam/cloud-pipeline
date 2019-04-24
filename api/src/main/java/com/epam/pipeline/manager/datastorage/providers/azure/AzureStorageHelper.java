@@ -61,6 +61,7 @@ import com.microsoft.rest.v2.http.HttpPipelineLogger;
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -82,15 +83,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.TimeZone;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Util class providing methods to interact with Azure Storage API.
@@ -341,8 +346,7 @@ public class AzureStorageHelper {
 
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {
         validateDirectory(dataStorage, path, true);
-        listFiles(dataStorage, path)
-                .forEach(item -> deleteBlob(dataStorage, item.getName()));
+        listFiles(dataStorage, path).forEach(item -> deleteBlob(dataStorage, item.getPath()));
     }
 
     private void deleteFile(final AzureBlobStorage dataStorage, final String path) {
@@ -380,19 +384,47 @@ public class AzureStorageHelper {
     }
 
     private Stream<AbstractDataStorageItem> listFiles(final AzureBlobStorage dataStorage, final String path) {
-        // TODO 24.04.19: Replace with a recursive files listing.
         return listItems(dataStorage, path)
                 .filter(it -> it.getType() == DataStorageItemType.File);
     }
 
     private Stream<AbstractDataStorageItem> listFolders(final AzureBlobStorage dataStorage, final String path) {
-        // TODO 24.04.19: Replace with a recursive folders listing.
         return listItems(dataStorage, path)
                 .filter(it -> it.getType() == DataStorageItemType.Folder);
     }
 
     private Stream<AbstractDataStorageItem> listItems(final AzureBlobStorage dataStorage, final String path) {
-        return getItems(dataStorage, path, MAX_PAGE_SIZE, null).getResults().stream();
+        return items(dataStorage, path)
+                .map(response -> Optional.of(response.body())
+                        .map(ListBlobsHierarchySegmentResponse::segment)
+                        .map(segment -> {
+                            final Stream<AbstractDataStorageItem> prefixes = Optional.ofNullable(segment.blobPrefixes())
+                                    .orElseGet(Collections::emptyList)
+                                    .stream()
+                                    .map(blobPrefix -> getDataStorageFolder(blobPrefix.name(), folderName(blobPrefix)));
+                            final Stream<AbstractDataStorageItem> blobs = Optional.ofNullable(segment.blobItems())
+                                    .orElseGet(Collections::emptyList)
+                                    .stream()
+                                    .filter(blob -> !Objects.equals(blob.name(), response.body().prefix()))
+                                    .map(blob -> createDataStorageFile(blob, response.body().prefix()));
+                            return Stream.concat(prefixes, blobs);
+                        }))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(Function.identity());
+    }
+
+    private Stream<ContainerListBlobHierarchySegmentResponse> items(final AzureBlobStorage dataStorage,
+                                                                    final String path) {
+        final HierarchyListingIterator iterator = new HierarchyListingIterator(dataStorage, path);
+        final Spliterator<ContainerListBlobHierarchySegmentResponse> spliterator =
+                Spliterators.spliteratorUnknownSize(iterator, 0);
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    private String folderName(final BlobPrefix blobPrefix) {
+        final String[] parts = blobPrefix.name().split(ProviderUtils.DELIMITER);
+        return parts[parts.length - 1];
     }
 
     private Single<ContainerListBlobHierarchySegmentResponse> listAllBlobs(
@@ -519,14 +551,7 @@ public class AzureStorageHelper {
     }
 
     private String computeFilePath(final String fileName, final String path) {
-        if (StringUtils.isNotBlank(path)) {
-            if (!path.endsWith(ProviderUtils.DELIMITER)) {
-                return String.format("%s/%s", path, fileName);
-            } else {
-                return String.format("%s%s", path, fileName);
-            }
-        }
-        return fileName;
+        return StringUtils.isNotBlank(path) ? ProviderUtils.withTrailingDelimiter(path) + fileName : fileName;
     }
 
     private DataStorageFile getDataStorageFile(final AzureBlobStorage storage, final String path) {
@@ -544,11 +569,8 @@ public class AzureStorageHelper {
     private DataStorageFolder getDataStorageFolder(final String folderFullPath, final String folderName) {
         final DataStorageFolder folder = new DataStorageFolder();
         folder.setName(folderName);
-        String relativePath = Optional.ofNullable(folderFullPath).orElse(folderName);
-        if (StringUtils.isNotBlank(relativePath) && relativePath.endsWith(ProviderUtils.DELIMITER)) {
-            relativePath = relativePath.substring(0, relativePath.length() - 1);
-        }
-        folder.setPath(relativePath);
+        final String relativePath = Optional.ofNullable(folderFullPath).orElse(folderName);
+        folder.setPath(ProviderUtils.withoutTrailingDelimiter(relativePath));
         return folder;
     }
 
@@ -613,6 +635,35 @@ public class AzureStorageHelper {
             throw new DataStorageException(((StorageErrorException) e).body().message(), e);
         } else {
             throw new DataStorageException(e.getMessage(), e);
+        }
+    }
+
+    @RequiredArgsConstructor
+    private class HierarchyListingIterator implements Iterator<ContainerListBlobHierarchySegmentResponse> {
+
+        private final AzureBlobStorage dataStorage;
+        private final String path;
+
+        private ContainerListBlobHierarchySegmentResponse response;
+
+        @Override
+        public boolean hasNext() {
+            return response == null || response.body().nextMarker() != null;
+        }
+
+        @Override
+        public ContainerListBlobHierarchySegmentResponse next() {
+            return response = loadNextResponse();
+        }
+
+        private ContainerListBlobHierarchySegmentResponse loadNextResponse() {
+            final String nextMarker = Optional.ofNullable(response)
+                    .map(ContainerListBlobHierarchySegmentResponse::body)
+                    .map(ListBlobsHierarchySegmentResponse::nextMarker)
+                    .orElse(null);
+            final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(MAX_PAGE_SIZE);
+            return unwrap(getContainerURL(dataStorage)
+                    .listBlobsHierarchySegment(nextMarker, ProviderUtils.DELIMITER, options));
         }
     }
 }
