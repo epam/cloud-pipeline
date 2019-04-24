@@ -214,6 +214,7 @@ public class DockerContainerOperationManager {
                     .newImageName(run.getDockerImage())
                     .defaultTaskName(run.getTaskName())
                     .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
+                    .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
                     .build()
                     .getCommand();
 
