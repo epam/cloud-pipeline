@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -78,7 +79,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         launchTool(onDemand, enabled);
 
-        if ("azure".equals(C.CLOUD_PROVIDER)) {
+        if (Cloud.AZURE.name().equals(C.CLOUD_PROVIDER)) {
             runsMenu()
                     .activeRuns()
                     .ensure(runWithId(getLastRunId()), visible)
@@ -106,7 +107,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         launchTool(onDemand, enabled);
 
-        if ("azure".equals(C.CLOUD_PROVIDER)) {
+        if (Cloud.AZURE.name().equals(C.CLOUD_PROVIDER)) {
             runsMenu()
                     .activeRuns()
                     .waitUntilResumeButtonAppear(getLastRunId())

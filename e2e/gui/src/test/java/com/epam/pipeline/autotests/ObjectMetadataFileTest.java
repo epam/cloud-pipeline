@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -164,7 +165,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .assertKeyWithValueIsPresent(key5, value5)
                 .addKeyWithValue(key7, value7)
                 .messageShouldAppear(emptyKeyErrorMessage);
-        if ("azure".equals(C.CLOUD_PROVIDER)) {
+        if (Cloud.AZURE.name().equals(C.CLOUD_PROVIDER)) {
             return;
         }
         fileMetadata()
