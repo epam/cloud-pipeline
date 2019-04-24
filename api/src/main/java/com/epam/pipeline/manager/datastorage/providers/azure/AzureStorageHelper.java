@@ -52,6 +52,8 @@ import com.microsoft.azure.storage.blob.models.BlobPrefix;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobHierarchySegmentResponse;
 import com.microsoft.azure.storage.blob.models.StorageErrorException;
+import com.microsoft.rest.v2.http.HttpPipelineLogLevel;
+import com.microsoft.rest.v2.http.HttpPipelineLogger;
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -100,6 +102,7 @@ public class AzureStorageHelper {
     private final AzureRegionCredentials azureRegionCredentials;
     private final MessageHelper messageHelper;
     private final DateFormat dateFormat;
+    private final HttpPipelineLogger httpLogger;
 
     public AzureStorageHelper(final AzureRegion azureRegion,
                               final AzureRegionCredentials azureRegionCredentials,
@@ -110,6 +113,17 @@ public class AzureStorageHelper {
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
         this.dateFormat.setTimeZone(tz);
+        this.httpLogger = new HttpPipelineLogger() {
+            @Override
+            public HttpPipelineLogLevel minimumLogLevel() {
+                return HttpPipelineLogLevel.INFO;
+            }
+            @Override
+            public void log(final HttpPipelineLogLevel logLevel, final String message,
+                            final Object... formattedArguments) {
+                log.debug(message, formattedArguments);
+            }
+        };
     }
 
     public String createBlobStorage(final AzureBlobStorage storage) {
@@ -349,9 +363,11 @@ public class AzureStorageHelper {
 
     private ContainerURL getContainerURL(final AzureBlobStorage storage) {
         final SharedKeyCredentials credential = getStorageCredential();
+
         final ServiceURL serviceURL = new ServiceURL(
                 url(String.format(BLOB_URL_FORMAT, azureRegion.getStorageAccount())),
-                StorageURL.createPipeline(credential, new PipelineOptions()));
+                StorageURL.createPipeline(credential, new PipelineOptions()
+                        .withLogger(httpLogger)));
         return serviceURL.createContainerURL(storage.getPath());
     }
 
