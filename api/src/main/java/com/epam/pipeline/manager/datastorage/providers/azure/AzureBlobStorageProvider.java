@@ -34,7 +34,6 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.microsoft.azure.storage.blob.BlobSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -129,11 +128,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public void deleteFolder(final AzureBlobStorage dataStorage, final String path, final Boolean totally) {
-        String folderPath = path;
-        if (StringUtils.isNotBlank(path) && !path.endsWith(ProviderUtils.DELIMITER)) {
-            folderPath += ProviderUtils.DELIMITER;
-        }
-        getAzureStorageHelper(dataStorage).deleteItem(dataStorage, folderPath);
+        getAzureStorageHelper(dataStorage).deleteItem(dataStorage, ProviderUtils.withTrailingDelimiter(path));
     }
 
     @Override
