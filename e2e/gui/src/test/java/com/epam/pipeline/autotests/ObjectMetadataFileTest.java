@@ -191,8 +191,15 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     public void removeAllKeysValidation() {
         fileMetadata()
                 .deleteAllKeys()
-                .cancel()
-                .assertNumberOfKeysIs(3)
+                .cancel();
+        if (Cloud.AZURE.name().toLowerCase().equals(C.CLOUD_PROVIDER.toLowerCase())) {
+            fileMetadata()
+                    .assertNumberOfKeysIs(2);
+        } else {
+            fileMetadata()
+                    .assertNumberOfKeysIs(3);
+        }
+        fileMetadata()
                 .deleteAllKeys()
                 .ensureTitleIs("Do you want to delete all metadata?")
                 .ok()
