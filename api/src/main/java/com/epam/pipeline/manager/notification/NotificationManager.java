@@ -291,7 +291,11 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         double memoryThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
         double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
-        List<NotificationMessage> messages = pipelinesMetrics.stream().map(pair -> {
+
+        List<NotificationMessage> messages = pipelinesMetrics.stream().filter(run ->
+                NotificationTimestamp.isTimeOutEnds(getLastNotificationTime(run.getLeft().getId(),
+                NotificationType.HIGH_CONSUMED_RESOURCES), notificationSettings.getResendDelay())
+        ).map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));

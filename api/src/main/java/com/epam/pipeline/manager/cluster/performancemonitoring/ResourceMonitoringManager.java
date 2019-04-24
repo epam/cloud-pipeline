@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -81,7 +81,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private InstanceOfferManager instanceOfferManager;
     private MonitoringESDao monitoringDao;
     private MessageHelper messageHelper;
-
+    private NotificationSettingsManager notificationSettingsManager;
     private Map<String, InstanceType> instanceTypeMap = new HashMap<>();
 
     @Autowired
@@ -90,7 +90,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                      NotificationManager notificationManager,
                                      InstanceOfferManager instanceOfferManager,
                                      MonitoringESDao monitoringDao,
-                                     TaskScheduler scheduler, MessageHelper messageHelper) {
+                                     TaskScheduler scheduler,
+                                     NotificationSettingsManager notificationSettingsManager,
+                                     MessageHelper messageHelper) {
         this.pipelineRunManager = pipelineRunManager;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
@@ -98,6 +100,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         this.instanceOfferManager = instanceOfferManager;
         this.monitoringDao = monitoringDao;
         this.scheduler = scheduler;
+        this.notificationSettingsManager = notificationSettingsManager;
     }
 
     @PostConstruct
@@ -127,9 +130,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     private void processOverloadedRuns(Map<String, PipelineRun> running) {
         final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = new ArrayList<>();
-        int idleTimeout = preferenceManager.getPreference(SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
+        Long timeout = notificationSettingsManager.load(NotificationType.HIGH_CONSUMED_RESOURCES).getResendDelay();
         final Map<String, Double> thresholds = getThresholds();
-
         LOGGER.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
 
         LocalDateTime now = DateUtils.nowUTC();
@@ -137,7 +139,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 .collect(Collectors.toMap(
                         ELKUsageMetric::getName,
                         metric-> monitoringDao.loadUsageRateMetrics(
-                            metric, running.keySet(), now.minusMinutes(idleTimeout), now))
+                            metric, running.keySet(), now.minusMinutes(timeout), now))
                 );
 
         running.forEach((pod, run) -> {
@@ -145,11 +147,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     .collect(Collectors.toMap(Map.Entry::getKey, metric -> metric.getValue().get(pod)));
 
             if (isPodUnderPressure(podMetrics, thresholds)) {
-                NotificationTimestamp timestamp = notificationManager
-                        .getLastNotificationTime(run.getId(), NotificationType.HIGH_CONSUMED_RESOURCES);
-                if(NotificationTimestamp.isTimeOutEnds(timestamp, idleTimeout)) {
-                    runsToNotify.add(new ImmutablePair<>(run, podMetrics));
-                }
+                runsToNotify.add(new ImmutablePair<>(run, podMetrics));
             }
         });
 
