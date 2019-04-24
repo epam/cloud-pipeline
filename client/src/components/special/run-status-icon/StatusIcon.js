@@ -21,6 +21,7 @@ import {getRunStatusIcon} from './run-status-iconset';
 import DefaultStyles from './run-status-styles';
 import StatusTooltips from './run-status-tooltips';
 import {getStatus} from './run-statuses';
+import '../../../staticStyles/StatusIcon.css';
 
 const StatusIcon = (props) => {
   const status = getStatus(props);
@@ -56,7 +57,11 @@ const StatusIcon = (props) => {
         </Row>
       );
       return (
-        <Tooltip title={tooltip} mouseEnterDelay={1} placement={props.tooltipPlacement}>
+        <Tooltip
+          overlayClassName="run-status-tooltip-container"
+          title={tooltip}
+          mouseEnterDelay={1}
+          placement={props.tooltipPlacement}>
           {result}
         </Tooltip>
       );
