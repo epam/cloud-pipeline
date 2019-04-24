@@ -21,6 +21,6 @@ import com.epam.pipeline.manager.cloud.commands.AbstractCommand;
 public abstract class AbstractDockerCommand extends AbstractCommand {
 
     public String getDockerCommand(final String template, final String runScriptUrl) {
-        return String.format(template, runScriptUrl, getCommand());
+        return String.format(template, runScriptUrl, super.getCommand());
     }
 }
