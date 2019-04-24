@@ -14,19 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+commit_hook() {
+    container_id=${1}
+    prefix=${2}
+    hook_command_path=${3}
+
+    if [[ ! -z "${hook_command_path}" ]]; then
+        docker exec ${container_id} test -f ${hook_command_path} > /dev/null 2> /dev/null
+        if [[ $? -eq 0 ]]; then
+            pipe_log_info "[INFO] Run ${prefix}-commit command from path ${hook_command_path}" "$TASK_NAME"
+            pipe_exec "docker exec ${container_id} sh -c '${hook_command_path} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+            check_last_exit_code $? "[ERROR] There are some troubles while executing ${prefix}-commit script." \
+                    "[INFO] ${prefix}-commit operations were successfully performed."
+        else
+            pipe_log_info "[INFO] ${prefix}-commit script ${hook_command_path} not found" "$TASK_NAME"
+        fi
+    fi
+}
+
 SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 . $SCRIPT_PATH
 
-if [[ ! -z "${PRE_COMMIT_COMMAND}" ]]; then
-    pipe_log_info "[INFO] Pre-commit command found by path ${PRE_COMMIT_COMMAND}" "$TASK_NAME"
-    pipe_exec "docker exec ${CONTAINER_ID} ls ${PRE_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
-    if [[ $? -eq 0 ]]; then
-        pipe_log_info "[INFO] Run pre-commit command" "$TASK_NAME"
-        pipe_exec "docker exec ${CONTAINER_ID} sh -c '${PRE_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
-        check_last_exit_code $? "[ERROR] There are some troubles while executing pre-commit script." \
-                        "[INFO] Pre-commit operations were successfully performed."
-    fi
-fi
+commit_hook ${CONTAINER_ID} "pre" ${PRE_COMMIT_COMMAND}
 
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
@@ -35,16 +44,7 @@ check_last_exit_code $? "[ERROR] Error occurred while committing temporary conta
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
 
-if [[ ! -z "${POST_COMMIT_COMMAND}" ]]; then
-    pipe_log_info "[INFO] Post-commit command found by path ${POST_COMMIT_COMMAND}" "$TASK_NAME"
-    pipe_exec "docker exec ${tmp_container} ls ${POST_COMMIT_COMMAND} > /dev/null" "$TASK_NAME"
-    if [[ $? -eq 0 ]]; then
-        pipe_log_info "[INFO] Run post-commit command" "$TASK_NAME"
-        pipe_exec "docker exec ${tmp_container} sh -c '${POST_COMMIT_COMMAND} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
-        check_last_exit_code $? "[ERROR] There are some troubles while executing post-commit script." \
-                        "[INFO] Post-commit operations were successfully performed."
-    fi
-fi
+commit_hook ${tmp_container} "post" ${POST_COMMIT_COMMAND}
 
 pipe_log_info "[INFO] Clean up container with env vars and files ..." "$TASK_NAME"
 docker cp $SCRIPTS_DIR/cleanup_container.sh "${tmp_container}":/

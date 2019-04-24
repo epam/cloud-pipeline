@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#!/usr/bin/env bash
-
-owner_home_path=`cat /etc/cp_env.sh | grep OWNER_HOME | sed 's/.*\"\([^]]*\)\".*/\1/g'`
-rm -rf $owner_home_path/.rstudio/sessions/active/session-*
+if [[ -f /etc/cp_env.sh ]]; then
+    source /etc/cp_env.sh
+    rm -rf $OWNER_HOME/.rstudio/sessions/active/session-*
+else
+    rm -rf /home/*/.rstudio/sessions/active/session-*
+fi

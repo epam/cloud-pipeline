@@ -90,4 +90,4 @@ RUN export ADD=shiny && \
 RUN rm -f /etc/cont-init.d/userconf
 
 ADD    post_commit.sh /root/post_commit.sh
-RUN    chmod 777 /root/post_commit.sh
+RUN    chmod +x /root/post_commit.sh
