@@ -431,10 +431,12 @@ public class AzureStorageHelper {
         validatePath(path);
         if (exist) {
             Assert.state(directoryExists(storage, path),
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_AZURE_ITEM_DELETE_FAILED, path));
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
+                            path, storage.getPath()));
         } else {
             Assert.state(!directoryExists(storage, path),
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_AZURE_ITEM_ALREADY_EXISTS, path));
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS,
+                            path, storage.getPath()));
         }
     }
 
