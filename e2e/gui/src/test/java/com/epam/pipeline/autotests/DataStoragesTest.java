@@ -20,9 +20,13 @@ import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -37,6 +41,7 @@ import static com.epam.pipeline.autotests.ao.StorageContentAO.folderWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigation {
 
     private String storage = "epmcmbi-test-storage-" + Utils.randomSuffix();
@@ -362,6 +367,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .validateDescription("new description");
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"changeDescriptionAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-474"})
     public void changeLtsDurationAndValidate() {
@@ -374,6 +380,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .validateLtsDuration("5");
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = {"changeLtsDurationAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-473"})
     public void changeStsDurationAndValidate() {
@@ -430,7 +437,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .validateStorageIsNotPresent(deletableStorage);
     }
 
-    @Test(dependsOnMethods = {"changeLtsDurationAndValidate"})
+    @Test(dependsOnMethods = {"changeDescriptionAndValidate"})
     @TestCase(value = {"EPMCMBIBPC-481"})
     public void validateCancelButtonForEditStorageMenu() {
         navigateToLibrary()
@@ -438,11 +445,9 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clickEditStorageButton()
             .setAlias("abcdef")
             .setDescription("asdfas")
-            .setDurations("31", "13")
             .clickCancel()
             .selectStorage(editableStorage)
-            .validateStsDuration("3")
-            .validateLtsDuration("5")
+            .validateHeader(editableStorage)
             .validateDescription("new description");
     }
 
