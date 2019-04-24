@@ -165,7 +165,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .assertKeyWithValueIsPresent(key5, value5)
                 .addKeyWithValue(key7, value7)
                 .messageShouldAppear(emptyKeyErrorMessage);
-        if (Cloud.AZURE.name().toLowerCase().equals(C.CLOUD_PROVIDER.toLowerCase())) {
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
             return;
         }
         fileMetadata()
@@ -192,7 +192,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
         fileMetadata()
                 .deleteAllKeys()
                 .cancel();
-        if (Cloud.AZURE.name().toLowerCase().equals(C.CLOUD_PROVIDER.toLowerCase())) {
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
             fileMetadata()
                     .assertNumberOfKeysIs(2);
         } else {

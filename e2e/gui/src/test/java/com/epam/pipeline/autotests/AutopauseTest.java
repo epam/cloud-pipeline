@@ -79,7 +79,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         launchTool(onDemand, enabled);
 
-        if (Cloud.AZURE.name().toLowerCase().equals(C.CLOUD_PROVIDER.toLowerCase())) {
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
             runsMenu()
                     .activeRuns()
                     .ensure(runWithId(getLastRunId()), visible)
@@ -107,7 +107,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
 
         launchTool(onDemand, enabled);
 
-        if (Cloud.AZURE.name().toLowerCase().equals(C.CLOUD_PROVIDER.toLowerCase())) {
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
             runsMenu()
                     .activeRuns()
                     .waitUntilResumeButtonAppear(getLastRunId())
