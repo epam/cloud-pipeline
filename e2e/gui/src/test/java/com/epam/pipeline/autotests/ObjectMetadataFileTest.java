@@ -21,12 +21,8 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
-import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
-import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -34,11 +30,15 @@ import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
 import static com.codeborne.selenide.Condition.visible;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
+import static com.epam.pipeline.autotests.ao.Primitive.ENLARGE;
+import static com.epam.pipeline.autotests.ao.Primitive.FILE_PREVIEW;
+import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_ALL;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Listeners(value = ConditionalTestAnalyzer.class)
 public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements Authorization {
 
     private final String bucket = "file-metadata-test-bucket-" + Utils.randomSuffix();
@@ -154,19 +154,22 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .assertValueIs(value2);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = "updateKeyValidationForFileInBucket")
     @TestCase(value = {"EPMCMBIBPC-1174"})
     public void addSeveralKeysToFileMetadata() {
         fileMetadata()
                 .addKeyWithValue(key3, value3)
                 .addKeyWithValue(key4, value4)
-                .addKeyWithValue(key5, value5)
                 .assertKeyWithValueIsPresent(key3, value3)
                 .assertKeyWithValueIsPresent(key4, value4)
-                .assertKeyWithValueIsPresent(key5, value5)
                 .addKeyWithValue(key7, value7)
                 .messageShouldAppear(emptyKeyErrorMessage);
+        if ("azure".equals(C.CLOUD_PROVIDER)) {
+            return;
+        }
+        fileMetadata()
+                .addKeyWithValue(key5, value5)
+                .assertKeyWithValueIsPresent(key5, value5);
     }
 
     @Test(dependsOnMethods = "addSeveralKeysToFileMetadata")
