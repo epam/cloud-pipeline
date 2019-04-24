@@ -93,6 +93,8 @@ public class RoleModelTest
                 .createPipeline(Template.SHELL, firstOfTheSeveralPipelines)
                 .createPipeline(Template.SHELL, secondOfTheSeveralPipelines);
 
+        createGroupPrerequisites();
+
         logout();
     }
 
@@ -121,6 +123,14 @@ public class RoleModelTest
                     .removeStorage(bucket)
                     .removeStorage(anotherBucket)
                     .removePipeline(pipelineName);
+
+            navigationMenu()
+                    .settings()
+                    .switchToUserManagement()
+                    .switchToGroups()
+                    .deleteGroupIfPresent(userGroup)
+                    .sleep(1, SECONDS)
+                    .ok();
 
             Utils.removeStorages(this, bucketForDataStoragesTests, presetBucketForDataStoragesTests);
         });
@@ -931,7 +941,22 @@ public class RoleModelTest
                 ToolPermission.inherit(READ, tool, registry, group),
                 ToolPermission.inherit(WRITE, tool, registry, group),
                 ToolPermission.inherit(EXECUTE, tool, registry, group));
+    }
 
+    private void createGroupPrerequisites() {
+        loginAsAdminAndPerform(() ->
+                navigationMenu()
+                        .settings()
+                        .switchToUserManagement()
+                        .switchToGroups()
+                        .pressCreateGroup()
+                        .enterGroupName(userGroup)
+                        .sleep(2, SECONDS)
+                        .create()
+                        .sleep(3, SECONDS)
+                        .ok()
+        );
+        refresh();
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
@@ -939,10 +964,26 @@ public class RoleModelTest
                                 .closeAll()
                 );
 
+        addUserToGroup(user.login.toUpperCase(), userGroup);
+        addUserToGroup(userWithoutCompletedRuns.login.toUpperCase(), userGroup);
+
         givePermissions(userGroup,
                 ToolPermission.inherit(READ, tool, registry, group),
                 ToolPermission.inherit(WRITE, tool, registry, group),
                 ToolPermission.inherit(EXECUTE, tool, registry, group));
     }
 
+    private void addUserToGroup(final String userLogin, final String userGroup) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(userLogin)
+                .edit()
+                .addRoleOrGroup(userGroup)
+                .sleep(2, SECONDS)
+                .ok()
+                .sleep(1, SECONDS)
+                .closeAll();
+    }
 }
