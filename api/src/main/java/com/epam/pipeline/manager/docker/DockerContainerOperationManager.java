@@ -171,7 +171,7 @@ public class DockerContainerOperationManager {
                     .dockerPassword(dockerPassword)
                     .isPipelineAuth(String.valueOf(registry.isPipelineAuth()))
                     .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
-                    .preCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                    .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
                     .build()
                     .getCommand();
 
