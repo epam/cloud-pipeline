@@ -88,6 +88,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -142,14 +143,10 @@ public class AzureStorageHelper {
 
     public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Integer pageSize,
                                        final String marker) {
-        String requestPath = Optional.ofNullable(path).orElse("");
-        if (StringUtils.isNotBlank(requestPath) && !requestPath.endsWith(ProviderUtils.DELIMITER)) {
-            requestPath += ProviderUtils.DELIMITER;
-        }
+        final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
         final ContainerURL containerURL = getContainerURL(storage);
-        final ListBlobsOptions options = new ListBlobsOptions().withMaxResults(pageSize).withPrefix(requestPath);
+        final ListBlobsOptions options = new ListBlobsOptions().withMaxResults(pageSize).withPrefix(prefix);
         final List<AbstractDataStorageItem> items = new ArrayList<>();
-        final String prefix = requestPath;
         final String nextPageMarker = unwrap(
                 containerURL.listBlobsHierarchySegment(marker, ProviderUtils.DELIMITER, options)
                         .flatMap(r -> listAllBlobs(containerURL, r, items, pageSize, prefix))
@@ -212,8 +209,8 @@ public class AzureStorageHelper {
         final String[] parts = newPath.split(ProviderUtils.DELIMITER);
         final String folderName = parts[parts.length - 1];
         final DataStorageFolder folder = createFolder(dataStorage, newPath);
-        copyFile(dataStorage, folder.getPath(), oldPath);
-        copyItem(dataStorage, folder.getPath(), oldPath);
+        copyFile(dataStorage, oldPath, folder.getPath());
+        copyItem(dataStorage, oldPath, folder.getPath());
         deleteItem(dataStorage, oldPath);
         return getDataStorageFolder(folderFullPath, folderName);
     }
@@ -344,10 +341,8 @@ public class AzureStorageHelper {
 
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {
         validateDirectory(dataStorage, path, true);
-        final ListBlobsOptions listOptions = new ListBlobsOptions().withPrefix(path);
-        final ContainerListBlobFlatSegmentResponse response = unwrap(
-                getContainerURL(dataStorage).listBlobsFlatSegment(null, listOptions));
-        response.body().segment().blobItems().forEach(blobItem -> deleteBlob(dataStorage, blobItem.name()));
+        listFiles(dataStorage, path)
+                .forEach(item -> deleteBlob(dataStorage, item.getName()));
     }
 
     private void deleteFile(final AzureBlobStorage dataStorage, final String path) {
@@ -382,6 +377,22 @@ public class AzureStorageHelper {
     private BlockBlobURL getBlobUrl(final AzureBlobStorage dataStorage, final String path) {
         final ContainerURL containerURL = getContainerURL(dataStorage);
         return containerURL.createBlockBlobURL(path);
+    }
+
+    private Stream<AbstractDataStorageItem> listFiles(final AzureBlobStorage dataStorage, final String path) {
+        // TODO 24.04.19: Replace with a recursive files listing.
+        return listItems(dataStorage, path)
+                .filter(it -> it.getType() == DataStorageItemType.File);
+    }
+
+    private Stream<AbstractDataStorageItem> listFolders(final AzureBlobStorage dataStorage, final String path) {
+        // TODO 24.04.19: Replace with a recursive folders listing.
+        return listItems(dataStorage, path)
+                .filter(it -> it.getType() == DataStorageItemType.Folder);
+    }
+
+    private Stream<AbstractDataStorageItem> listItems(final AzureBlobStorage dataStorage, final String path) {
+        return getItems(dataStorage, path, MAX_PAGE_SIZE, null).getResults().stream();
     }
 
     private Single<ContainerListBlobHierarchySegmentResponse> listAllBlobs(
@@ -428,13 +439,22 @@ public class AzureStorageHelper {
     }
 
     private void validateDirectory(final AzureBlobStorage storage, final String path, final boolean exist) {
+        validatePath(storage, path, exist, this::directoryExists);
+    }
+
+    private void validateBlob(final AzureBlobStorage storage, final String path, final boolean exist) {
+        validatePath(storage, path, exist, this::blobExists);
+    }
+
+    private void validatePath(final AzureBlobStorage storage, final String path, final boolean exist,
+                              final BiPredicate<AzureBlobStorage, String> existenceCheck) {
         validatePath(path);
         if (exist) {
-            Assert.state(directoryExists(storage, path),
+            Assert.state(existenceCheck.test(storage, path),
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
                             path, storage.getPath()));
         } else {
-            Assert.state(!directoryExists(storage, path),
+            Assert.state(!existenceCheck.test(storage, path),
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS,
                             path, storage.getPath()));
         }
@@ -461,17 +481,6 @@ public class AzureStorageHelper {
             if (directoryFound || marker == null) {
                 return directoryFound;
             }
-        }
-    }
-
-    private void validateBlob(final AzureBlobStorage storage, final String path, final boolean exist) {
-        validatePath(path);
-        if (exist) {
-            Assert.state(blobExists(storage, path), messageHelper
-                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, storage.getPath()));
-        } else {
-            Assert.state(!blobExists(storage, path), messageHelper
-                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, path, storage.getPath()));
         }
     }
 
@@ -543,22 +552,19 @@ public class AzureStorageHelper {
         return folder;
     }
 
-    private void copyItem(final AzureBlobStorage dataStorage, final String newPath, final String oldPath) {
-        getItems(dataStorage, oldPath, MAX_PAGE_SIZE, null).getResults()
-                .stream()
+    private void copyItem(final AzureBlobStorage dataStorage, final String oldPath, final String newPath) {
+        listFolders(dataStorage, oldPath)
                 .filter(item -> item.getType() == DataStorageItemType.Folder)
                 .forEach(item -> {
                     final String path = String.format("%s/%s", newPath, item.getName());
                     final DataStorageFolder folder = createFolder(dataStorage, path);
-                    copyFile(dataStorage, folder.getPath(), item.getPath());
-                    copyItem(dataStorage, folder.getPath(), item.getPath());
+                    copyFile(dataStorage, item.getPath(), folder.getPath());
+                    copyItem(dataStorage, item.getPath(), folder.getPath());
                 });
     }
 
-    private void copyFile(final AzureBlobStorage storage, final String newPath, final String oldPath) {
-        getItems(storage, oldPath, MAX_PAGE_SIZE, null).getResults()
-                .stream()
-                .filter(item -> item.getType() == DataStorageItemType.File)
+    private void copyFile(final AzureBlobStorage storage, final String oldPath, final String newPath) {
+        listFiles(storage, oldPath)
                 .forEach(item -> {
                     final String blobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s%s", azureRegion.getStorageAccount(),
                             storage.getPath(), ProviderUtils.withTrailingDelimiter(oldPath), item.getName());
