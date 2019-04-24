@@ -37,6 +37,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WDLTaskEditorTest
         extends AbstractBfxPipelineTest
@@ -196,6 +197,7 @@ public class WDLTaskEditorTest
                 .close()
                 .parent()
                 .saveAndCommitWithMessage("commit message")
+                .sleep(1, SECONDS)
                 .ensure(modalWithTitle("Commit"), disappears);
     }
 
