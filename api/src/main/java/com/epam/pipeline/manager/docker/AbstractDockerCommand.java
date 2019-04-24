@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloud.commands;
+package com.epam.pipeline.manager.docker;
 
-public abstract class AbstractClusterCommand extends AbstractCommand {
+import com.epam.pipeline.manager.cloud.commands.AbstractCommand;
 
-    public static final String EXECUTABLE = "python";
-    protected static final String RUN_ID_PARAMETER = "--run_id";
-    protected static final String REGION_PARAMETER = "--region_id";
-    protected static final String INTERNAL_IP_PARAMETER = "--internal_ip";
-    protected static final String NODE_NAME_PARAMETER = "--node_name";
+public abstract class AbstractDockerCommand extends AbstractCommand {
+
+    public String getDockerCommand(final String template, final String runScriptUrl) {
+        return String.format(template, runScriptUrl, getCommand());
+    }
 }

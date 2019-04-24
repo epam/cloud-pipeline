@@ -77,6 +77,7 @@ export CONTAINER_ID=${6}
 TIMEOUT=${7}
 export NEW_IMAGE_NAME=${8}
 export DEFAULT_TASK_NAME=${9}
+export PRE_COMMIT_COMMAND=${10}
 
 export TASK_NAME="PausePipelineRun"
 export CP_PYTHON2_PATH=python

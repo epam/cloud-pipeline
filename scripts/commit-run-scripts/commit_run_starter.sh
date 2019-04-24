@@ -46,9 +46,12 @@ if [[ "$#" -ge 15 ]]; then
     export DOCKER_PASSWORD=${15}
 fi
 
-if [[ "$#" -eq 16 ]]; then
+if [[ "$#" -ge 16 ]]; then
     export IS_PIPELINE_AUTH=${16}
 fi
+
+export PRE_COMMIT_COMMAND=${17}
+export POST_COMMIT_COMMAND=${18}
 
 export TASK_NAME="CommitPipelineRun"
 

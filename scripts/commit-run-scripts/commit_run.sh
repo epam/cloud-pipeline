@@ -14,8 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+commit_hook() {
+    container_id=${1}
+    prefix=${2}
+    hook_command_path=${3}
+
+    if [[ ! -z "${hook_command_path}" ]]; then
+        docker exec ${container_id} test -f ${hook_command_path} > /dev/null 2> /dev/null
+        if [[ $? -eq 0 ]]; then
+            pipe_log_info "[INFO] Run ${prefix}-commit command from path ${hook_command_path}" "$TASK_NAME"
+            pipe_exec "docker exec ${container_id} sh -c '${hook_command_path} ${CLEAN_UP} ${STOP_PIPELINE}'" "$TASK_NAME"
+            check_last_exit_code $? "[ERROR] There are some troubles while executing ${prefix}-commit script." \
+                    "[INFO] ${prefix}-commit operations were successfully performed."
+        else
+            pipe_log_info "[INFO] ${prefix}-commit script ${hook_command_path} not found" "$TASK_NAME"
+        fi
+    fi
+}
+
 SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 . $SCRIPT_PATH
+
+commit_hook ${CONTAINER_ID} "pre" ${PRE_COMMIT_COMMAND}
 
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
@@ -23,6 +43,8 @@ check_last_exit_code $? "[ERROR] Error occurred while committing temporary conta
                         "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
+
+commit_hook ${tmp_container} "post" ${POST_COMMIT_COMMAND}
 
 pipe_log_info "[INFO] Clean up container with env vars and files ..." "$TASK_NAME"
 docker cp $SCRIPTS_DIR/cleanup_container.sh "${tmp_container}":/
