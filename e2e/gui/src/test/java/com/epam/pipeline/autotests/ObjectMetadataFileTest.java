@@ -21,8 +21,12 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -34,7 +38,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-
+@Listeners(value = ConditionalTestAnalyzer.class)
 public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements Authorization {
 
     private final String bucket = "file-metadata-test-bucket-" + Utils.randomSuffix();
@@ -150,6 +154,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .assertValueIs(value2);
     }
 
+    @CloudProviderOnly(Cloud.AWS)
     @Test(dependsOnMethods = "updateKeyValidationForFileInBucket")
     @TestCase(value = {"EPMCMBIBPC-1174"})
     public void addSeveralKeysToFileMetadata() {

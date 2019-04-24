@@ -540,14 +540,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public GroupsTabAO deleteGroupIfPresent(String group) {
-                sleep(1, SECONDS);
-                performIf(context().$(byText(group)).isDisplayed(), t -> deleteGroup(group));
+                sleep(2, SECONDS);
+                performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
                 return this;
             }
 
             public GroupsTabAO deleteGroup(final String groupName) {
                 sleep(1, SECONDS);
-                context().$(byText(groupName))
+                context().$$(byText(groupName))
+                        .filterBy(visible)
+                        .first()
                         .closest(".ant-table-row-level-0")
                         .find(byClassName("ant-btn-danger"))
                         .click();
