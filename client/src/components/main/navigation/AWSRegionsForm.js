@@ -644,7 +644,15 @@ class AWSRegionForm extends React.Component {
       'applicationName',
       'tempCredentialsRole',
       'fileShareMounts',
-      'customInstanceTypes'
+      'customInstanceTypes',
+      'corsRules',
+      'policy',
+      {
+        key: 'backupDuration',
+        visible: form => form.getFieldValue('versioningEnabled'),
+        required: form => form.getFieldValue('versioningEnabled')
+      },
+      'versioningEnabled',
     ]
   };
 
