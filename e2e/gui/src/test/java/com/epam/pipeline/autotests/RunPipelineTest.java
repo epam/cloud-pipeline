@@ -156,7 +156,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
             .ensure(taskWithName("Task1"), Status.SUCCESS.reached)
-            .sleep(1, SECONDS)
+            .sleep(2, SECONDS)
             .ensure(taskWithName(pipeline100), Status.SUCCESS.reached);
     }
 
