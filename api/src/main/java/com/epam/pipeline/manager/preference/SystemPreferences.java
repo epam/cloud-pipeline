@@ -371,6 +371,11 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_DISK_THRESHOLD_PERCENT =
             new IntPreference("system.disk.consume.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
     /**
+     * Period of time for monitoring metrics query
+     */
+    public static final IntPreference SYSTEM_MONITORING_METRIC_TIME_RANGE =
+            new IntPreference("system.monitoring.time.range", 30, SYSTEM_GROUP, isGreaterThan(0));
+    /**
      * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
      */
     public static final IntPreference SYSTEM_MAX_IDLE_TIMEOUT_MINUTES =
