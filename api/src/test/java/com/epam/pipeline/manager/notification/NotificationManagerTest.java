@@ -142,6 +142,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private NotificationSettings longRunningSettings;
     private NotificationSettings issueSettings;
     private NotificationSettings issueCommentSettings;
+    private NotificationSettings highConsuming;
 
     @Mock
     private KubernetesClient mockClient;
@@ -172,7 +173,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
 
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
-        createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
+        highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
 
         longRunnging = new PipelineRun();
@@ -429,6 +430,34 @@ public class NotificationManagerTest extends AbstractManagerTest {
         Assert.assertNotNull(
                 monitoringNotificationDao.loadNotificationTimestamp(run2.getId(), HIGH_CONSUMED_RESOURCES));
 
+        monitoringNotificationDao.deleteNotificationsByTemplateId(HIGH_CONSUMED_RESOURCES.getId());
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(0, messages.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void notifyHighConsumingRunOnlyOnceIfItIsSetup() {
+        highConsuming.setResendDelay(-1L);
+        notificationSettingsDao.updateNotificationSettings(highConsuming);
+
+        PipelineRun run1 = createTestPipelineRun();
+        List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics = Collections.singletonList(
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM.getName(), TEST_MEMORY_RATE)));
+
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+
+        monitoringNotificationDao.deleteNotificationsByTemplateId(HIGH_CONSUMED_RESOURCES.getId());
+
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(0, messages.size());
     }
 
     @Test

@@ -50,7 +50,6 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.reactivex.Observable;
 
@@ -105,7 +104,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         instanceTypesObservable.subscribe(instanceTypes -> instanceTypeMap = instanceTypes.stream()
                 .collect(Collectors.toMap(InstanceType::getName, t -> t, (t1, t2) -> t1)));
 
-        scheduleFixedDelaySecured(this::monitorResourceUsage, SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD,
+        scheduleFixedDelaySecured(this::monitorResourceUsage, SYSTEM_RESOURCE_MONITORING_PERIOD,
                 "Resource Usage Monitoring");
     }
 
@@ -131,11 +130,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         LocalDateTime now = DateUtils.nowUTC();
         Map<String, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
-                .collect(Collectors.toMap(
-                        ELKUsageMetric::getName,
-                        metric-> monitoringDao.loadUsageRateMetrics
-                                (metric, running.keySet(), now.minusMinutes(timeRange), now)
-                ));
+                .collect(Collectors.toMap(ELKUsageMetric::getName, metric ->
+                        monitoringDao.loadUsageRateMetrics(metric, running.keySet(),
+                            now.minusMinutes(timeRange), now)));
 
         running.forEach((pod, run) -> {
             Map<String, Double> podMetrics = metrics.entrySet().stream()

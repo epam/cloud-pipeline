@@ -85,7 +85,8 @@ public class ResourceMonitoringManagerTest {
     private static final double MILICORES_TO_CORES = 1000.0;
     private static final double DELTA = 0.001;
     private static final int HALF_AN_HOUR = 30;
-    public static final String HIGH_CONSUMING_POD_ID = "high-consuming";
+    private static final String HIGH_CONSUMING_POD_ID = "high-consuming";
+    private static final double PERCENTS = 100.0;
 
     private ResourceMonitoringManager resourceMonitoringManager;
 
@@ -219,13 +220,13 @@ public class ResourceMonitoringManagerTest {
         mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(mockStats);
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(mockStats);
 
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(getMockedHighConsumingStats());
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(getMockedHighConsumingStats());
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
 
         resourceMonitoringManager.init();
 
@@ -527,7 +528,8 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(), eq(NotificationType.HIGH_CONSUMED_RESOURCES));
+        verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
+                eq(NotificationType.HIGH_CONSUMED_RESOURCES));
         List<Pair<PipelineRun, Map<String, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
         Assert.assertEquals(1, value.size());
         Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
@@ -535,8 +537,8 @@ public class ResourceMonitoringManagerTest {
 
     private HashMap<String, Double> getMockedHighConsumingStats() {
         HashMap<String, Double> stats = new HashMap<>();
-        stats.put(highConsumingRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / 100.0 + 0.1);
-        stats.put(okayRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / 100.0 - 0.1);
+        stats.put(highConsumingRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
+        stats.put(okayRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
         return stats;
     }
 }

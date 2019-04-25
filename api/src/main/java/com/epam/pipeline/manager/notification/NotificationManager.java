@@ -282,9 +282,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
 
         List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
-                .filter(run -> NotificationTimestamp.isTimeoutEnds(getLastNotificationTime(run.getLeft().getId(),
-                        NotificationType.HIGH_CONSUMED_RESOURCES), notificationSettings.getResendDelay())
-                ).collect(Collectors.toList());
+                .filter(run -> shouldNotifyAboutHighResourceConsuming(notificationSettings, run))
+                .collect(Collectors.toList());
 
         List<Long> ccUserIds = getCCUsers(notificationSettings);
 
@@ -352,6 +351,18 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
     public NotificationTimestamp getLastNotificationTime(Long pipelineId, NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(pipelineId, type);
+    }
+
+    private boolean shouldNotifyAboutHighResourceConsuming(NotificationSettings notificationSettings,
+                                                           Pair<PipelineRun, Map<String, Double>> run) {
+        Long resendDelay = notificationSettings.getResendDelay();
+        NotificationTimestamp notificationTimestamp = getLastNotificationTime(run.getLeft().getId(),
+                NotificationType.HIGH_CONSUMED_RESOURCES);
+        // if it already was sent once and resendDelay <= 0 we won't send it again
+        if (resendDelay <= 0 && notificationTimestamp != null) {
+            return false;
+        }
+        return NotificationTimestamp.isTimeoutEnds(notificationTimestamp, resendDelay);
     }
 
     private List<Long> getCCUsers(NotificationSettings idleRunSettings) {
