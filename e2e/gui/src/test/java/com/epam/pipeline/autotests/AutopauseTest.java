@@ -93,6 +93,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .activeRuns()
                 .ensure(runWithId(getLastRunId()), visible)
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
+                .waitForCompletion(getLastRunId())
                 .waitForCompletion(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
                 .completedRuns()
                 .ensure(runWithId(getLastRunId()), visible)
