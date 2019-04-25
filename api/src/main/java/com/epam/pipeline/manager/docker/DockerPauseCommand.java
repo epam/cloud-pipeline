@@ -36,6 +36,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
     private final String newImageName;
     private final String defaultTaskName;
     private final String preCommitCommand;
+    private final String postCommitCommand;
 
     private final String runPauseScriptUrl;
 
@@ -57,6 +58,7 @@ public class DockerPauseCommand extends AbstractDockerCommand {
         command.add(newImageName);
         command.add(defaultTaskName);
         command.add(preCommitCommand);
+        command.add(postCommitCommand);
         return command;
     }
 }

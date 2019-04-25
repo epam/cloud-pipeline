@@ -120,3 +120,23 @@ kill_on_timeout() {
         kill -9 -$pgid_to_kill
     fi
 }
+
+commit_hook() {
+    container_id=${1}
+    prefix=${2}
+    clean_up=${3}
+    stop_pipeline=${4}
+    hook_command_path=${5}
+
+    if [[ ! -z "${hook_command_path}" ]]; then
+        docker exec ${container_id} test -f ${hook_command_path} > /dev/null 2> /dev/null
+        if [[ $? -eq 0 ]]; then
+            pipe_log_info "[INFO] Run ${prefix}-commit command from path ${hook_command_path}" "$TASK_NAME"
+            pipe_exec "docker exec ${container_id} sh -c '${hook_command_path} ${clean_up} ${stop_pipeline}'" "$TASK_NAME"
+            check_last_exit_code $? "[ERROR] There are some troubles while executing ${prefix}-commit script." \
+                    "[INFO] ${prefix}-commit operations were successfully performed."
+        else
+            pipe_log_info "[INFO] ${prefix}-commit script ${hook_command_path} not found" "$TASK_NAME"
+        fi
+    fi
+}
