@@ -40,9 +40,19 @@ download_file() {
 
 commit_file_and_stop_docker() {
     pipe_log_info "[INFO] Start commiting pipeline run" "$TASK_NAME"
+    commit_hook ${CONTAINER_ID} "pre" false true ${PRE_COMMIT_COMMAND}
+
     commit_file ${NEW_IMAGE_NAME}
     check_last_exit_code $? "[ERROR] Error occured while committing temporary container" \
-                            "[INFO] Temporary container was successfully committed with name: $NEW_IMAGE_NAME"
+                            "[INFO] Temporary container was successfully committed with name: ${NEW_IMAGE_NAME}"
+
+    export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${NEW_IMAGE_NAME} 1d`
+
+    commit_hook ${tmp_container} "post" false true ${POST_COMMIT_COMMAND}
+
+    pipe_exec "docker commit ${tmp_container} ${NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
+    check_last_exit_code $? "[ERROR] Error occured while committing container" \
+                            "[INFO] Container was successfully committed with name: $NEW_IMAGE_NAME"
 
     pipe_exec "docker logs ${CONTAINER_ID}" "${DEFAULT_TASK_NAME}"
     check_last_exit_code $? "[ERROR] Error occurred while retrieving logs from docker container ${CONTAINER_ID}" \
@@ -77,6 +87,8 @@ export CONTAINER_ID=${6}
 TIMEOUT=${7}
 export NEW_IMAGE_NAME=${8}
 export DEFAULT_TASK_NAME=${9}
+export PRE_COMMIT_COMMAND=${10}
+export POST_COMMIT_COMMAND=${11}
 
 export TASK_NAME="PausePipelineRun"
 export CP_PYTHON2_PATH=python

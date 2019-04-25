@@ -48,6 +48,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -296,7 +297,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                         endpoint)
                         )
                         .resume(getToolName())
-                        .assertResumingFinishedSuccessfully()
+                        .waitForEndpointLink()
+                        .sleep(C.ENDPOINT_INITIALIZATION_TIMEOUT, MILLISECONDS)
                         .inAnotherTab(nodeTab ->
                                 checkNodePage(() -> new ToolPageAO(endpoint).validateEndpointPage(), endpoint)
                         )

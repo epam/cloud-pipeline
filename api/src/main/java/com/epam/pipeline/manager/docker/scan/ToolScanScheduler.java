@@ -32,13 +32,11 @@ import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import com.epam.pipeline.manager.security.AuthManager;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
-import org.springframework.security.concurrent.DelegatingSecurityContextRunnable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +56,7 @@ import java.util.concurrent.Future;
  * either in a regular fashion, when all the Tools are
  */
 @Service
+@RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class ToolScanScheduler extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolScanScheduler.class);
@@ -73,9 +72,6 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
 
     @Autowired
     private MessageHelper messageHelper;
-
-    @Autowired
-    private AuthManager authManager;
 
     @Autowired
     private ToolVersionManager toolVersionManager;
@@ -94,20 +90,9 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     @PostConstruct
     public void init() {
         forceScanExecutor = Executors.newSingleThreadExecutor();
-        DelegatingSecurityContextRunnable secureRunnable = new DelegatingSecurityContextRunnable(
-            this::scheduledToolScan, authManager.createSchedulerSecurityContext());
 
-        String cron = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON);
-        LOGGER.info("Scheduled Tool Security Scan at " + cron);
-
-        scheduledFuture.set(scheduler.schedule(secureRunnable, new CronTrigger(cron)));
-
-        preferenceManager.getObservablePreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON)
-            .subscribe(newCron -> scheduledFuture.updateAndGet(f -> {
-                LOGGER.info("Rescheduling Tool Security Scan at " + newCron);
-                f.cancel(false);
-                return scheduler.schedule(secureRunnable, new CronTrigger(newCron));
-            }));
+        scheduleSecured(this::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
+                "Tool Security Scan");
     }
 
     @PreDestroy

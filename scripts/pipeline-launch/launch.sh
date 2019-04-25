@@ -246,6 +246,46 @@ function upgrade_installed_packages {
       return $?
 }
 
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
+      # Get the distro name and version
+      local CP_OS=
+      local CP_VER=
+      if [ -f /etc/os-release ]; then
+            # freedesktop.org and systemd
+            . /etc/os-release
+            CP_OS=$ID
+            CP_VER=$VERSION_ID
+      elif type lsb_release >/dev/null 2>&1; then
+            # linuxbase.org
+            CP_OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+            CP_VER=$(lsb_release -sc | tr '[:upper:]' '[:lower:]')
+      elif [ -f /etc/lsb-release ]; then
+            # For some versions of Debian/Ubuntu without lsb_release command
+            . /etc/lsb-release
+            CP_OS=$DISTRIB_ID
+            CP_VER=$DISTRIB_RELEASE
+      elif [ -f /etc/debian_version ]; then
+            # Older Debian/Ubuntu/etc.
+            CP_OS=debian
+            CP_VER=$(cat /etc/debian_version)
+      else
+            # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+            CP_OS=$(uname -s)
+            CP_VER=$(uname -r)
+      fi
+
+      # Perform any specific cleanup/configuration
+      if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
+            echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
+            echo "deb [check-valid-until=no] http://archive.debian.org/debian jessie-backports main" > /etc/apt/sources.list.d/jessie-backports.list
+            sed -i '/deb http:\/\/deb.debian.org\/debian jessie-updates main/d' /etc/apt/sources.list
+            mkdir -p /etc/apt/apt.conf.d/
+            echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
+            apt-get update
+      fi
+}
+
 # Generates apt-get or yum command to install specified list of packages (second argument)
 # Result will be written into variable named by a second argument
 function get_install_command_by_current_distr {
@@ -374,6 +414,19 @@ else
     SINGLE_RUN=false;
 fi
 
+
+######################################################
+# Install runtime dependencies
+######################################################
+
+echo "Install runtime dependencies"
+echo "-"
+
+if [ -f /bin/bash ]; then
+    ln -sf /bin/bash /bin/sh
+fi
+
+######################################################
 
 ######################################################
 echo "Init default variables if they are not set explicitly"
@@ -551,6 +604,9 @@ echo
 echo Install runtime dependencies
 echo "-"
 ######################################################
+
+# Perform any distro/version specific package manage configuration
+configure_package_manager
 
 # First check whether all packages upgrade required
 if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]

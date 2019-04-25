@@ -19,6 +19,16 @@
                     "init_script": "/opt/api/scripts/init_multicloud.sh"
                 }
             ],
+            "swap": [
+                {
+                    "name": "swap_ratio",
+                    "path": "0.5"
+                },
+                {
+                    "name": "swap_location",
+                    "path": "/mnt/resource/swapfile"
+                }
+            ],
             "security_group_ids": [
                 ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS}
             ]

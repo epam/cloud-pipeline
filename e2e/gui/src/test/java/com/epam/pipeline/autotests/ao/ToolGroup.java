@@ -96,11 +96,11 @@ public class ToolGroup implements AccessObject<ToolGroup> {
         return this;
     }
 
-    public Registry deleteGroup(final Consumer<ConfirmationPopupAO<Registry>> confirmation) {
+    public Registry deleteGroup(final Consumer<ToolGroupDeletionPopup> group) {
         hover(SETTINGS);
         hover(GROUP_SETTINGS);
         click(DELETE_GROUP);
-        confirmation.accept(new ConfirmationPopupAO<>(registry));
+        group.accept(new ToolGroupDeletionPopup(registry));
         return registry;
     }
 

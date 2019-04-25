@@ -15,5 +15,5 @@
  */
 
 export {canCommitRun, canStopRun, stopRun} from './stopRun';
-export {modifyPayloadForAllowedInstanceTypes, run, RunConfirmation} from './run';
+export {submitsRun, modifyPayloadForAllowedInstanceTypes, run, RunConfirmation} from './run';
 export {default as runPipelineActions} from './runPipelineActions';

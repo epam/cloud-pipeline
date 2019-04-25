@@ -18,16 +18,27 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.PipelineGraphTabAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
 
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.FULLSCREEN;
 import static com.epam.pipeline.autotests.ao.Primitive.ZOOM_IN;
 import static com.epam.pipeline.autotests.ao.Primitive.ZOOM_OUT;
 
 public class WDLPipelineTest extends AbstractBfxPipelineTest implements Navigation {
     private final String pipelineName = "wdl-pipeline-test-" + Utils.randomSuffix();
+
+    @AfterClass
+    public void removePipeline() {
+        open(C.ROOT_ADDRESS);
+        navigationMenu()
+                .library()
+                .removePipeline(pipelineName);
+    }
 
     @Test
     @TestCase(value = {"EPMCMBIBPC-351"})

@@ -25,6 +25,7 @@ RUN apt-get update -y && \
 
 ENV CELLRANGER_HOME="/opt/cellranger"
 ENV CELLRANGER_BIN="$CELLRANGER_HOME/cellranger"
+ENV PATH "$PATH:/$CELLRANGER_HOME"
 
 # Configure SGE integration
 ADD sge.template /tmp/sge.template

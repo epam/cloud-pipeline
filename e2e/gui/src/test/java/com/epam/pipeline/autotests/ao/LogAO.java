@@ -173,6 +173,11 @@ public class LogAO implements AccessObject<LogAO> {
         return messageShouldAppear("RESUMING").waitForPauseButton();
     }
 
+    public LogAO waitForEndpointLink() {
+        get(ENDPOINT).waitUntil(appears, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
     public LogAO validateException(final String exception) {
         $(byClassName("ant-alert-error")).has(text(exception));
         return this;

@@ -34,6 +34,7 @@ import static com.codeborne.selenide.CollectionCondition.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
+import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
@@ -92,6 +93,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public LogAO showLog(String runId) {
         sleep(1, SECONDS);
+        show(runId);
+        sleep(3, SECONDS);
+        if (new LogAO().get(STATUS).exists()) {
+            return new LogAO();
+        }
         show(runId);
         return new LogAO();
     }
@@ -303,6 +309,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .ensureTitleContains(String.format("Do you want to resume %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("RESUME"));
+        return this;
+    }
+
+    public RunsMenuAO waitUntilStopButtonAppear(final String runId) {
+        $("#run-" + runId + "-stop-button").waitUntil(appear, APPEARING_TIMEOUT);
         return this;
     }
 

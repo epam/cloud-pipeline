@@ -436,7 +436,10 @@ module.exports = function (webpackEnv) {
         {
           'process.env.SERVER': isEnvProduction
             ? JSON.stringify(process.env.PUBLIC_URL)
-            : JSON.stringify(process.env.SERVER)
+            : JSON.stringify(process.env.SERVER),
+          'process.env.VERSION': isEnvProduction
+            ? JSON.stringify(process.env.VERSION)
+            : JSON.stringify('DEVELOPMENT')
         },
         isEnvDevelopment
           ? {

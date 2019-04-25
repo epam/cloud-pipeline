@@ -45,6 +45,13 @@ function install_from_package_repository {
         exit 1
     fi
 
+    # Workaround for debian distro, as a prebuilt binary is not provided
+    # It is proved that ubuntu 16 version works well for debian 9
+    if [ "$DISTRIB_ID" == "debian" ]; then
+        DISTRIB_ID="ubuntu"
+        DISTRIB_RELEASE="16.04"
+    fi
+
     # Install dependencies according to the distribution
     if [ $_IS_RPM_BASED -eq 0 ]; then
         rpm -Uvh https://packages.microsoft.com/config/$DISTRIB_ID/$DISTRIB_RELEASE/packages-microsoft-prod.rpm && \

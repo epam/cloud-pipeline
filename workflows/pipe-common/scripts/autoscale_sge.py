@@ -343,7 +343,7 @@ class GridEngineScaleUpHandler:
     _POLL_ATTEMPTS = 60
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_type, instance_image, polling_timeout=10):
+                 instance_type, instance_image, price_type, polling_timeout=10):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -357,6 +357,7 @@ class GridEngineScaleUpHandler:
         :param instance_disk: Additional nodes disk size.
         :param instance_type: Additional nodes instance type.
         :param instance_image: Additional nodes docker image.
+        :param price_type: Additional nodes price type.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         """
         self.executor = cmd_executor
@@ -368,6 +369,7 @@ class GridEngineScaleUpHandler:
         self.instance_disk = instance_disk
         self.instance_type = instance_type
         self.instance_image = instance_image
+        self.price_type = price_type
         self.polling_timeout = polling_timeout
 
     def scale_up(self):
@@ -407,13 +409,21 @@ class GridEngineScaleUpHandler:
                            '--docker-image %s ' \
                            '--cmd-template "sleep infinity" ' \
                            '--parent-id %s ' \
-                           '--price-type spot ' \
+                           '--price-type %s ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional' \
-                           % (self.instance_disk, self.instance_type, self.instance_image, self.parent_run_id)
+                           % (self.instance_disk, self.instance_type, self.instance_image, self.parent_run_id,
+                              self._pipe_cli_price_type(self.price_type))
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
+
+    def _pipe_cli_price_type(self, price_type):
+        """
+        Pipe-cli has a bit different price types notation. F.i. server-side "on_demand" price type becomes "on-demand"
+        pipe-cli price type.
+        """
+        return price_type.replace('_', '-')
 
     def _retrieve_pod_name(self, run_id):
         Logger.info('Retrieve pod name of additional worker with run_id=%s.' % run_id)
@@ -875,6 +885,7 @@ if __name__ == '__main__':
     instance_disk = os.environ['instance_disk']
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
+    price_type = os.environ['price_type']
     max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
         if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
     log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
@@ -892,7 +903,8 @@ if __name__ == '__main__':
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                                instance_type=instance_type, instance_image=instance_image)
+                                                instance_type=instance_type, instance_image=instance_image,
+                                                price_type=price_type)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,

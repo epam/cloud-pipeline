@@ -97,6 +97,11 @@ public class SystemPreferences {
                                                                          isGreaterThan(0));
     public static final StringPreference COMMIT_USERNAME = new StringPreference("commit.username", null,
                                                                          COMMIT_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PRE_COMMIT_COMMAND_PATH = new StringPreference("commit.pre.command.path",
+            "/root/pre_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference POST_COMMIT_COMMAND_PATH = new StringPreference("commit.post.command.path",
+            "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));

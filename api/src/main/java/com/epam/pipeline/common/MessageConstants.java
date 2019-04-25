@@ -90,6 +90,8 @@ public final class MessageConstants {
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE = "debug.docker.registry.auto.enable";
     public static final String DEBUG_DOCKER_REGISTRY_AUTO_ENABLE_SUCCESS = "debug.docker.registry.auto.enable.success";
     public static final String ERROR_DOCKER_REGISTRY_NO_EXTERNAL = "error.docker.registry.no.external";
+    public static final String ERROR_DOCKER_REGISTRY_AUTHENTICATION_REQUIRED =
+            "error.docker.registry.authentication.required";
     // Registry access
     public static final String ERROR_REGISTRY_IS_NOT_ALLOWED = "error.registry.not.allowed";
     public static final String ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED = "error.registry.action.not.allowed";
@@ -100,6 +102,7 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_GROUP_IS_NOT_PROVIDED = "error.tool.group.is.not.provided";
     public static final String ERROR_TOOL_GROUP_BY_NAME_NOT_FOUND = "error.tool.group.by.name.not.found";
     public static final String ERROR_PRIVATE_TOOL_GROUP_NOT_FOUND = "error.private.tool.group.not.found";
+    public static final String ERROR_TOOL_GROUP_NOT_EMPTY = "error.tool.group.not.empty";
 
     //PipelineLauncher
     public static final String ERROR_INVALID_CMD_TEMPLATE = "error.invalid.cmd.template";
@@ -179,6 +182,9 @@ public final class MessageConstants {
     public static final String ERROR_SHARED_ROOT_URL_IS_NOT_SET = "error.shared.root.url.is.not.set";
     public static final String ERROR_DATASTORAGE_USED_AS_DEFAULT = "error.datastorage.is.used.default";
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
+    public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
+    public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
+    public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -411,10 +417,6 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_DELETE_FAILED =
-            "error.datastorage.azure.item.delete.failed";
-    public static final String ERROR_DATASTORAGE_AZURE_ITEM_ALREADY_EXISTS =
-            "error.datastorage.azure.item.already.exists";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
 
     private MessageConstants() {

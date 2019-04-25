@@ -32,6 +32,7 @@ public enum SystemParams {
     AUTOSCALING_ENABLED("autoscaling-enabled", "AUTOSCALING_ENABLED"),
     CLOUD_PROVIDER("cloud-provider", "CLOUD_PROVIDER", false),
     CLOUD_REGION("cloud-region", "CLOUD_REGION", false),
+    CLOUD_REGION_ID("cloud-region-id", "CLOUD_REGION_ID", false),
     //AWS SPECIFIC
     AWS_ACCESS_KEY_ID("aws-access-key-id", "AWS_ACCESS_KEY_ID", true),
     AWS_SECRET_ACCESS_KEY("aws-secret-access-key", "AWS_SECRET_ACCESS_KEY", true),

@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -118,8 +119,9 @@ public class ToolGroupManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public ToolGroup delete(String id) {
-        ToolGroup group = loadByNameOrId(id);
+    public ToolGroup delete(final String id, final boolean force) {
+        final ToolGroup group = loadByNameOrId(id);
+        handleChildTools(group, force);
         toolGroupDao.deleteToolGroup(group.getId());
         return group;
     }
@@ -345,5 +347,15 @@ public class ToolGroupManager implements SecuredEntityManager {
         String userName = authManager.getAuthorizedUser();
         String groupName = userName.trim().toLowerCase();
         return groupName.replaceAll("[^a-z0-9\\-]+", "-");
+    }
+
+    private void handleChildTools(final ToolGroup group, final boolean force) {
+        if (CollectionUtils.isEmpty(group.getTools())) {
+            return;
+        }
+        Assert.isTrue(force, messageHelper.getMessage(MessageConstants.ERROR_TOOL_GROUP_NOT_EMPTY));
+        ListUtils.emptyIfNull(group.getTools())
+                .forEach(tool -> toolManager.delete(tool));
+
     }
 }

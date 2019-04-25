@@ -272,6 +272,7 @@ public class ToolsTest
     public void toolVersionsTab() {
         tools().perform(defaultRegistry, defaultGroup, testingTool, tool ->
                 tool.versions()
+                        .viewUnscannedVersions()
                         .sleep(2, SECONDS)
                         .ensureAll(tags(), sizeGreaterThanOrEqual(1))
                         .also(tagsHave(RUN, DELETE))
@@ -427,8 +428,7 @@ public class ToolsTest
                                 .ensure(DISK, empty)
                                 .ensure(INSTANCE_TYPE, text("Instance type"))
                                 .ensure(DEFAULT_COMMAND, empty)
-                                .runUnscannedTool("The version shall be scanned for security vulnerabilities. " +
-                                        "Run anyway?")
+                                .runWithCustomSettings()
                 )
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
@@ -507,9 +507,8 @@ public class ToolsTest
         return group -> group.deleteGroup(confirmGroupDeletion(groupName));
     }
 
-    public Consumer<ConfirmationPopupAO<Registry>> confirmGroupDeletion(final String groupName) {
-        return confirmation ->
-                confirmation.ensureTitleIs(String.format("Are you sure you want to delete '%s'?", groupName))
+    public Consumer<ToolGroupDeletionPopup> confirmGroupDeletion(final String groupName) {
+        return confirmation -> confirmation.ensureGroupNameIs(groupName)
                         .sleep(1, SECONDS)
                         .ok();
     }

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# lifescience/cloud-pipeline:idp-latest
 FROM centos:7
 
 RUN curl -sL https://rpm.nodesource.com/setup_10.x | bash -

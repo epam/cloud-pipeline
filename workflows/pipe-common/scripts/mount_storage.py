@@ -65,22 +65,25 @@ class MountStorageTask:
         self.task_name = task
         available_mounters = [NFSMounter, S3Mounter, AzureMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
-        self.default_regions = {'AWS': 'us-east-1', 'AZURE': 'eastus'}
 
     def run(self, mount_root, tmp_dir):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
 
+            # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
+            cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
+            if cloud_region_id == -1:
+                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted', task_name=self.task_name)
+
             Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount()
+            # filtering nfs storages in order to fetch only nfs from the same region
+            available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
+                                              or x.file_share_mount.region_id == cloud_region_id]
             if not available_storages_with_mounts:
                 Logger.success('No remote storages are available', task_name=self.task_name)
                 return
             Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
-
-            for mounter in [mounter for mounter in self.mounters.values() if mounter != NFSMounter]:
-                mounter.check_or_install(self.task_name)
-                mounter.init_tmp_dir(tmp_dir, self.task_name)
 
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
@@ -91,9 +94,12 @@ class MountStorageTask:
                 except Exception as limited_storages_ex:
                     Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex.message)), task_name=self.task_name)
 
-            nfs_count = len(filter((lambda ds: ds.storage.storage_type == NFS_TYPE), available_storages_with_mounts))
-            if nfs_count > 0:
-                NFSMounter.check_or_install(self.task_name)
+            for mounter in [mounter for mounter in self.mounters.values()]:
+                storage_count_by_type = len(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts))
+                if storage_count_by_type > 0:
+                    mounter.check_or_install(self.task_name)
+                    mounter.init_tmp_dir(tmp_dir, self.task_name)
+
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
                 Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
                 return
@@ -113,10 +119,6 @@ class MountStorageTask:
             Logger.success('Finished data storage mounting', task_name=self.task_name)
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e.message)), task_name=self.task_name)
-
-    def _get_cloud_region(self):
-        cloud_region = os.getenv('CLOUD_REGION')
-        return cloud_region if cloud_region else self.default_regions[os.getenv('CLOUD_PROVIDER')]
 
 
 class StorageMounter:
@@ -155,8 +157,10 @@ class StorageMounter:
         pass
 
     @staticmethod
-    def execute_and_check_command(command):
-        install_check = common.execute_cmd_command(command, silent=False)
+    def execute_and_check_command(command, task_name=MOUNT_DATA_STORAGES):
+        install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
+        if install_check != 0:
+            Logger.warn('Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr), task_name=task_name)
         return install_check == 0
 
     @staticmethod
@@ -234,7 +238,7 @@ class AzureMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse')
+        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
 
     @staticmethod
     def is_available():
@@ -247,12 +251,7 @@ class AzureMounter(StorageMounter):
             AzureMounter.fuse_tmp = fuse_tmp
 
     def mount(self, mount_root, task_name):
-        # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
-        account_name, _, _ = self._get_credentials(self.storage)
-        command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
-                  '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
-                  '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
-        common.execute_cmd_command(command, silent=True)
+        self.__resolve_azure_blob_service_url(task_name=task_name)
         super(AzureMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
@@ -277,6 +276,16 @@ class AzureMounter(StorageMounter):
                '-o allow_other ' \
                '{mount_options}'.format(**params)
 
+    def __resolve_azure_blob_service_url(self, task_name=MOUNT_DATA_STORAGES):
+        # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
+        account_name, _, _ = self._get_credentials(self.storage)
+        command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
+                  '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
+                  '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
+        exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
+        if exit_code != 0:
+            Logger.warn('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr), task_name=task_name)
+
 
 class S3Mounter(StorageMounter):
     fuse_type = FUSE_NA_ID
@@ -298,10 +307,10 @@ class S3Mounter(StorageMounter):
     def _check_or_install(task_name):
         fuse_type = os.getenv('CP_S3_FUSE_TYPE', FUSE_GOOFYS_ID)
         if fuse_type == FUSE_GOOFYS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
             return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_S3FS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs')
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs', task_name=task_name)
             if fuse_installed:
                 return FUSE_S3FS_ID
             else:
@@ -309,7 +318,7 @@ class S3Mounter(StorageMounter):
                     "FUSE {fuse_type} was preferred, but failed to install, will try to setup default goofys".format(
                         fuse_type=fuse_type),
                     task_name=task_name)
-                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
+                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
                 return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         else:
             Logger.warn("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type),
@@ -376,7 +385,7 @@ class NFSMounter(StorageMounter):
 
     @staticmethod
     def check_or_install(task_name):
-        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client')
+        NFSMounter.available = StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
 
     @staticmethod
     def init_tmp_dir(tmp_dir, task_name):

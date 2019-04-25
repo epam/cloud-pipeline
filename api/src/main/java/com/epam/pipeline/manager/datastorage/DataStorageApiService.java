@@ -91,7 +91,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') AND "
+    @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
     @AclMaskList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount() {

@@ -29,7 +29,7 @@ import {
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../models/pipelines/PipelineRunCommitCheck';
 import {stopRun, canStopRun, runPipelineActions} from './actions';
-import StatusIcon from '../special/StatusIcon';
+import StatusIcon from '../special/run-status-icon';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
@@ -851,24 +851,27 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
-            <Popover
-              mouseEnterDelay={1}
-              content={
-                <div>
-                  <ul>
-                    {
-                      urls.map((url, index) =>
-                        <li key={index} style={{margin: 4}}>
-                          <a href={url.url} target="_blank">{url.name || url.url}</a>
-                        </li>
-                      )
-                    }
-                  </ul>
-                </div>
-              }
-              trigger="hover">
-              <StatusIcon run={run} small /> {clusterIcon} <Icon type="export" /> {text}
-            </Popover>
+            <span>
+              <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
+              <Popover
+                mouseEnterDelay={1}
+                content={
+                  <div>
+                    <ul>
+                      {
+                        urls.map((url, index) =>
+                          <li key={index} style={{margin: 4}}>
+                            <a href={url.url} target="_blank">{url.name || url.url}</a>
+                          </li>
+                        )
+                      }
+                    </ul>
+                  </div>
+                }
+                trigger="hover">
+                {clusterIcon} <Icon type="export" /> {text}
+              </Popover>
+            </span>
           );
         } else {
           return (<span><StatusIcon run={run} small /> {clusterIcon} {text}</span>);

@@ -17,12 +17,16 @@
 SCRIPT_PATH="$SCRIPTS_DIR/common_commit_initialization.sh"
 . $SCRIPT_PATH
 
+commit_hook ${CONTAINER_ID} "pre" ${CLEAN_UP} ${STOP_PIPELINE} ${PRE_COMMIT_COMMAND}
+
 commit_file $FULL_NEW_IMAGE_NAME
 check_last_exit_code $? "[ERROR] Error occurred while committing temporary container" \
                         "[INFO] Temporary container was successfully committed with name: $image_name" \
                         "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID FAILURE"
 
 export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${FULL_NEW_IMAGE_NAME} 1d`
+
+commit_hook ${tmp_container} "post" ${CLEAN_UP} ${STOP_PIPELINE} ${POST_COMMIT_COMMAND}
 
 pipe_log_info "[INFO] Clean up container with env vars and files ..." "$TASK_NAME"
 docker cp $SCRIPTS_DIR/cleanup_container.sh "${tmp_container}":/
@@ -100,6 +104,9 @@ else
      pipe_log_info "[INFO] Settings successfully applied to ${FULL_NEW_IMAGE_NAME}" "$TASK_NAME"
 fi
 
+pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
+pipe_log_success "[INFO] Commit pipeline run task succeeded" "$TASK_NAME"
+
 if [[ "$STOP_PIPELINE" = true || "$STOP_PIPELINE" = TRUE ]]; then
     pipe_log_info "[INFO] STOP_PIPELINE flag was got. Pipeline will be stopped." "$TASK_NAME"
 	pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py sp $RUN_ID > /dev/null" "$TASK_NAME"
@@ -110,6 +117,3 @@ if [[ "$STOP_PIPELINE" = true || "$STOP_PIPELINE" = TRUE ]]; then
         pipe_log_info "[INFO] Pipeline was successfully stopped." "$TASK_NAME"
     fi
 fi
-
-pipe_exec "python $COMMON_REPO_DIR/scripts/commit_run.py ups $RUN_ID SUCCESS > /dev/null" "$TASK_NAME"
-pipe_log_success "[INFO] Commit pipeline run task succeeded" "$TASK_NAME"

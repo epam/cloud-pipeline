@@ -179,6 +179,11 @@ docker build    $DOCKERS_SOURCES_PATH/cp-search \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SEARCH_DIST_NAME"
 
+# Node logger
+CP_NODE_LOGGER_DIST_NAME=${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
+                -t "$CP_NODE_LOGGER_DIST_NAME"
+docker push "$CP_NODE_LOGGER_DIST_NAME"
 
 ########################
 # Base tools dockers

@@ -23,7 +23,7 @@ import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import {metadataLoad, renderAttributes} from './renderAttributes';
-import StatusIcon from '../../special/StatusIcon';
+import StatusIcon from '../../special/run-status-icon';
 import UserName from '../../special/UserName';
 import displayDate from '../../../utils/displayDate';
 import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter';

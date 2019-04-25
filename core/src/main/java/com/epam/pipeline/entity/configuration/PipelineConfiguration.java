@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.configuration;
 
+import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,6 +28,7 @@ import lombok.Setter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Class represents pipeline configuration, that is described in config.json file and
@@ -42,6 +44,7 @@ public class PipelineConfiguration {
     private static final String INSTANCE_SIZE = "instance_size";
     private static final String INSTANCE_IMAGE = "instance_image";
     private static final String INSTANCE_DISK = "instance_disk";
+    private static final String PRICE_TYPE = "price_type";
     private static final String DOCKER_IMAGE = "docker_image";
     private static final String TIMEOUT = "timeout";
     private static final String CMD_TEMPLATE = "cmd_template";
@@ -151,6 +154,12 @@ public class PipelineConfiguration {
         putParamIfPresent(environmentParams, NODE_COUNT, getNodeCount());
         putParamIfPresent(environmentParams, CLUSTER_ROLE, getClusterRole());
         putParamIfPresent(environmentParams, EXECUTION_ENVIRONMENT, executionPreferences.getEnvironment().name());
+        putParamIfPresent(environmentParams, PRICE_TYPE,
+                Optional.ofNullable(getIsSpot())
+                        .filter(spot -> spot)
+                        .map(spot -> PriceType.SPOT)
+                        .orElse(PriceType.ON_DEMAND)
+                        .getLiteral());
     }
 
     /**

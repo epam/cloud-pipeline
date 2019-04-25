@@ -82,6 +82,12 @@ public class ToolGroupApiService {
     @PreAuthorize("hasRole('ADMIN') or (hasRole('TOOL_GROUP_MANAGER') AND "
             + "@grantPermissionManager.toolGroupPermission(#id, 'WRITE'))")
     public ToolGroup delete(String id) {
-        return toolGroupManager.delete(id);
+        return toolGroupManager.delete(id, false);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TOOL_GROUP_MANAGER') AND "
+            + "@grantPermissionManager.toolGroupChildPermission(#id, 'WRITE'))")
+    public ToolGroup deleteForce(String id) {
+        return toolGroupManager.delete(id, true);
     }
 }

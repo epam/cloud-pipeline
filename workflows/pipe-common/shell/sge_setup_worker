@@ -192,15 +192,22 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
         rm -rf /var/lib/apt/lists/*
         apt-get clean
 
-        echo "deb [trusted=yes] http://ftp.us.debian.org/debian/ stretch main" >> /etc/apt/sources.list
+        echo "deb [trusted=yes] http://ftp.us.debian.org/debian/ stretch main" > /etc/apt/sources.list.d/sge.list
         apt-get update
+
+         # First install SGE, and fail if error occurs
         DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
             gridengine-client="$CP_CAP_SGE_VERSION" \
-            gridengine-common="$CP_CAP_SGE_VERSION" \
-            sudo \
-            locales > /dev/null
+            gridengine-common="$CP_CAP_SGE_VERSION" > /dev/null
 
         check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
+
+        # Next - try to install any non-mandatory packages, and igore them if error occurs
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" sudo locales > /dev/null
+
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "Additional SGE packages were not installed, error is ignored" "$SGE_MASTER_SETUP_TASK"
+        fi
     fi
 
     ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19

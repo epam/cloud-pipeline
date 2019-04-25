@@ -15,8 +15,8 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {inject, observer} from 'mobx-react';
+import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Alert,
@@ -31,6 +31,9 @@ import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
+
+// Mark class with @submitsRun if it may launch pipelines / tools
+export const submitsRun = (...opts) => inject('instanceTypes')(...opts);
 
 export function run (parent, callback) {
   if (!parent) {
@@ -83,6 +86,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     let launchName;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
+    allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
         availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || [])
@@ -99,6 +103,11 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         }
         return undefined;
       }).filter(p => p !== undefined);
+    } else if (stores && stores.instanceTypes) {
+      await stores.instanceTypes.fetchIfNeededOrWait();
+      if (stores.instanceTypes.loaded) {
+        availableInstanceTypes = (stores.instanceTypes.value || []).map(i => i);
+      }
     }
     if (payload.pipelineId) {
       const {pipelines} = stores;
@@ -213,6 +222,12 @@ export class RunConfirmation extends React.Component {
   static defaultProps = {
     onDemandSelectionAvailable: true
   };
+
+  @computed
+  get gpuEnabled () {
+    const [currentInstanceType] = (this.props.instanceTypes || []).filter(i => i.name === this.state.instanceType);
+    return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') && +currentInstanceType.gpu > 0;
+  }
 
   getInstanceTypes = () => {
     if (!this.props.instanceTypes) {
@@ -336,6 +351,26 @@ export class RunConfirmation extends React.Component {
             message={
               <Row>
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
+              </Row>
+            } />
+        }
+        {
+          !this.props.isCluster && this.gpuEnabled &&
+          <Alert
+            type="info"
+            style={{margin: 2}}
+            showIcon
+            message={
+              <Row>
+                <Row style={{marginBottom: 5}}>
+                  <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
+                </Row>
+                <Row style={{marginBottom: 5}}>
+                  Note that if you install any <b>NVIDIA packages</b> manually and commit it, that may produce an unusable image.
+                </Row>
+                <Row>
+                  All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidia/cuda</a></b> base image instead.
+                </Row>
               </Row>
             } />
         }

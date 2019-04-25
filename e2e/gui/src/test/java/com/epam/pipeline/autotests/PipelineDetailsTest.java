@@ -273,6 +273,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
                 .codeTab()
                 .clickOnFile(Utils.getFileNameFromPipelineName(draftPipelineName, "sh"))
                 .clickEdit()
+                .sleep(1, SECONDS)
                 .fillWith(" this is a new text to set new version")
                 .saveAndCommitWithMessage("new version commit")
                 .documentsTab()

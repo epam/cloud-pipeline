@@ -522,8 +522,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .find(byClassName("ant-table-content"))),
                     entry(SEARCH, context().find(byId("search-groups-input"))),
                     entry(CREATE_GROUP, context().$$(byAttribute("type", "button"))
-                            .findBy(text("Create group"))),
-                    entry(OK, $(byClassName("ant-confirm-body-wrapper")).find(byClassName("ant-btn-primary")))
+                            .findBy(text("Create group")))
             );
 
             public GroupsTabAO(final PipelinesLibraryAO parentAO) {
@@ -540,9 +539,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new CreateGroupPopup(this);
             }
 
+            public GroupsTabAO deleteGroupIfPresent(String group) {
+                sleep(2, SECONDS);
+                performIf(context().$$(byText(group)).filterBy(visible).first().exists(), t -> deleteGroup(group));
+                return this;
+            }
+
             public GroupsTabAO deleteGroup(final String groupName) {
                 sleep(1, SECONDS);
-                context().$(byText(groupName))
+                context().$$(byText(groupName))
+                        .filterBy(visible)
+                        .first()
                         .closest(".ant-table-row-level-0")
                         .find(byClassName("ant-btn-danger"))
                         .click();

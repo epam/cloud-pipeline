@@ -19,7 +19,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import styles from './TaskLink.css';
-import StatusIcon from '../../../special/StatusIcon';
+import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';
 import moment from 'moment';
 
@@ -110,7 +110,7 @@ export class TaskLink extends Component {
     if (to === pathinfo) {
       return (
         <div>
-          <StatusIcon status={status} small />
+          <StatusIcon status={status} small displayTooltip={false} />
           <span>
             <b>{name}</b>
           </span>

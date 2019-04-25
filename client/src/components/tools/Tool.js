@@ -72,7 +72,7 @@ import LoadToolScanPolicy from '../../models/tools/LoadToolScanPolicy';
 import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhiteList';
 import ToolScan from '../../models/tools/ToolScan';
 import VersionScanResult from './elements/VersionScanResult';
-import {modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
+import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
 import InstanceTypesManagementForm
   from '../main/navigation/instance-types-management/InstanceTypesManagementForm';
 
@@ -106,6 +106,7 @@ const MAX_INLINE_VERSION_ALIASES = 7;
   dockerRegistries,
   preferences
 })
+@submitsRun
 @runPipelineActions
 @inject('awsRegions')
 @inject(({allowedInstanceTypes, dockerRegistries, authenticatedUserInfo, preferences}, {params}) => {

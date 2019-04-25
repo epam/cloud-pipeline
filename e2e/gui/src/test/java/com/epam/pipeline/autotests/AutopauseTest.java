@@ -20,17 +20,15 @@ import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.SystemTabAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
-import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
-import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import java.util.function.Function;
@@ -41,8 +39,8 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTO_PAUSE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.runWithId;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Listeners(value = ConditionalTestAnalyzer.class)
 public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements Tools, Authorization {
 
     private final String tool = C.TESTING_TOOL_NAME;
@@ -79,9 +77,18 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         setSystemPreferences("2", "2", "30", "STOP");
         relogin();
 
-        launchTool(defaultPriceType, hidden);
         launchTool(onDemand, enabled);
 
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
+            runsMenu()
+                    .activeRuns()
+                    .ensure(runWithId(getLastRunId()), visible)
+                    .waitForCompletion(getLastRunId())
+                    .completedRuns()
+                    .ensure(runWithId(getLastRunId()), visible);
+            return;
+        }
+        launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
                 .ensure(runWithId(getLastRunId()), visible)
@@ -92,25 +99,36 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase({"EPMCMBIBPC-2634"})
     public void autopauseValidationPauseOrStop() {
         setSystemPreferences("2", "2", "30", "PAUSE_OR_STOP");
         relogin();
 
-        launchTool(defaultPriceType, hidden);
         launchTool(onDemand, enabled);
 
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
+            runsMenu()
+                    .activeRuns()
+                    .waitUntilResumeButtonAppear(getLastRunId())
+                    .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
+                    .resume(getLastRunId(), getToolName())
+                    .waitUntilStopButtonAppear(getLastRunId())
+                    .stopRun(getLastRunId());
+            return;
+        }
+        launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
+                .waitForCompletion(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), hidden)
                 .completedRuns()
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
                 .activeRuns()
                 .resume(getLastRunId(), getToolName())
+                .waitUntilStopButtonAppear(getLastRunId())
                 .stopRun(getLastRunId());
     }
 
@@ -127,14 +145,13 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .waitUntilResumeButtonAppear(getLastRunId())
                 .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
                 .resume(getLastRunId(), getToolName())
+                .waitUntilStopButtonAppear(getLastRunId())
                 .stopRun(getLastRunId());
     }
 
     private void launchTool(final String priceType, final Condition autoPause) {
         tools()
-                .perform(registry, group, tool, toolDescription ->
-                        toolDescription.runUnscannedTool("The version has a critical number of vulnerabilities, "
-                                + "but you can launch it during the grace period .* Run anyway?"))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
                 .ensure(AUTO_PAUSE, autoPause)
@@ -155,6 +172,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                         .setIdleCpuThreshold(idleCpuThreshold)
                         .setIdleAction(idleAction)
                         .save()
+                        .sleep(2, SECONDS)
                         .click(OK)
         );
     }

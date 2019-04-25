@@ -32,6 +32,7 @@ import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
 import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
+  submitsRun,
   modifyPayloadForAllowedInstanceTypes,
   run,
   runPipelineActions,
@@ -50,6 +51,7 @@ const findGroupByName = (groups, name) => {
 };
 
 @roleModel.authenticationInfo
+@submitsRun
 @inject('awsRegions', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
 @runPipelineActions
 @observer

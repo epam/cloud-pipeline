@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.datastorage.providers;
 
+import org.apache.commons.lang3.StringUtils;
+
 public final class ProviderUtils {
 
     public static final String DELIMITER = "/";
@@ -26,12 +28,20 @@ public final class ProviderUtils {
     }
 
     public static String withTrailingDelimiter(final String path) {
-        return !path.endsWith(DELIMITER) ? path + DELIMITER : path;
+        return StringUtils.isNotBlank(path) && !path.endsWith(DELIMITER) ? path + DELIMITER : path;
+    }
+
+    public static String withoutLeadingDelimiter(final String path) {
+        return StringUtils.isNotBlank(path) && path.startsWith(ProviderUtils.DELIMITER) ? path.substring(1) : path;
     }
 
     public static String normalizeBucketName(String name) {
         String bucketName = name.trim().toLowerCase();
         bucketName = bucketName.replaceAll("[^a-z0-9\\-]+", "-");
         return bucketName;
+    }
+
+    public static String withoutTrailingDelimiter(final String path) {
+        return StringUtils.isNotBlank(path) && path.endsWith(DELIMITER) ? path.substring(0, path.length() - 1) : path;
     }
 }

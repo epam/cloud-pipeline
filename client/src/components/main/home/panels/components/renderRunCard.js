@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import StatusIcon from '../../../../special/StatusIcon';
+import StatusIcon from '../../../../special/run-status-icon';
 import {Icon, Popover, Row} from 'antd';
 import moment from 'moment';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
@@ -61,24 +61,27 @@ function renderPipeline (run) {
   if (run.serviceUrl && run.initialized) {
     const urls = parseRunServiceUrl(run.serviceUrl);
     return (
-      <Popover
-        mouseEnterDelay={1}
-        content={
-          <div>
-            <ul>
-              {
-                urls.map((url, index) =>
-                  <li key={index} style={{margin: 4}}>
-                    <a href={url.url} target="_blank">{url.name || url.url}</a>
-                  </li>
-                )
-              }
-            </ul>
-          </div>
-        }
-        trigger="hover">
-        <StatusIcon run={run} small /> <Icon type="export" /> {clusterIcon} {displayName}
-      </Popover>
+      <span>
+        <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
+        <Popover
+          mouseEnterDelay={1}
+          content={
+            <div>
+              <ul>
+                {
+                  urls.map((url, index) =>
+                    <li key={index} style={{margin: 4}}>
+                      <a href={url.url} target="_blank">{url.name || url.url}</a>
+                    </li>
+                  )
+                }
+              </ul>
+            </div>
+          }
+          trigger="hover">
+          <Icon type="export" /> {clusterIcon} {displayName}
+        </Popover>
+      </span>
     );
   } else {
     return (<span><StatusIcon run={run} small /> {clusterIcon} {displayName}</span>);

@@ -303,6 +303,16 @@ if is_service_requested cp-idp; then
     echo
 fi
 
+# Node logger - uploads compute host node logs (kubelet/docker/etc..) to the system bucket
+print_ok "[Starting Node logger daemonset deployment]"
+
+print_info "-> Deleting existing instance of Node logger daemonset"
+kubectl delete daemonset cp-node-logger
+
+print_info "-> Deploying Node logger daemonset"
+create_kube_resource $K8S_SPECS_HOME/cp-node-logger/cp-node-logger-ds.yaml
+
+
 # Heapster (CPU Utilization monitoring)
 if is_service_requested cp-heapster; then
     print_ok "[Starting Heapster (CPU Utilization monitoring) service deployment]"
