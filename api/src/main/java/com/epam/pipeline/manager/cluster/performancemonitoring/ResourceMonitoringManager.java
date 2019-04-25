@@ -156,7 +156,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 .anyMatch(
                         metricThreshold -> {
                             Double podValue = podMetrics.get(metricThreshold.getKey());
-                            return podValue != null &&
+                            return podValue != null && !Double.isInfinite(podValue) &&
                                     Precision.compareTo(podValue, metricThreshold.getValue(), ONE_THOUSANDTH) > 0;
                         }
                 );

@@ -100,19 +100,19 @@ public class MonitoringESDao {
         }
 
         SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                        .filter(QueryBuilders.rangeQuery(rangeBy)
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
-                        .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
-                        .size(podIds.size())
-                        .subAggregation(AggregationBuilders.avg(metricType + AGGREGATION_METRIC_RATE)
-                                .field("Metrics." + metricType + "/" + metricName + ".value")));
+            .query(QueryBuilders.boolQuery()
+                 .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
+                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
+                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
+                 .filter(QueryBuilders.rangeQuery(rangeBy)
+                             .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                             .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+            .size(0)
+            .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
+                             .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
+                             .size(podIds.size())
+                             .subAggregation(AggregationBuilders.avg(metricType + AGGREGATION_METRIC_RATE)
+                                     .field("Metrics." + metricType + "/" + metricName + ".value")));
 
         SearchRequest request = new SearchRequest(getIndexNames(from, to)).types(metricType).source(builder);
 
@@ -125,9 +125,9 @@ public class MonitoringESDao {
 
         Terms terms = response.getAggregations().get(AGGREGATION_POD_NAME);
         return terms.getBuckets().stream()
-                .collect(Collectors.toMap(
-                    b -> b.getKey().toString(),
-                    b -> ((Avg) b.getAggregations().get(metricType + AGGREGATION_METRIC_RATE)).getValue()));
+            .collect(Collectors.toMap(
+                b -> b.getKey().toString(),
+                b -> ((Avg) b.getAggregations().get(metricType + AGGREGATION_METRIC_RATE)).getValue()));
     }
 
     private String path(String ...parts) {
@@ -176,8 +176,8 @@ public class MonitoringESDao {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
     }
 
-    private Double getRate(Double um, Double lm) {
-        double rate = um / lm;
+    private Double getRate(Double usage, Double limit) {
+        double rate = usage / limit;
         return Double.isInfinite(rate) ? null : rate;
     }
 }

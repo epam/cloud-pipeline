@@ -15,7 +15,7 @@ public class NotificationTimestamp {
     private LocalDateTime timestamp;
 
     public static boolean isTimeoutEnds(NotificationTimestamp nt, long shift) {
-        return nt != null && nt.getTimestamp() != null
+        return nt == null || nt.getTimestamp() != null
                 && DateUtils.nowUTC().isAfter(nt.getTimestamp().plus(shift, ChronoUnit.MINUTES));
     }
 

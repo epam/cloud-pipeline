@@ -303,9 +303,10 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
             message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
-                    pair.getRight().get(ELKUsageMetric.MEM.getName()) * PERCENT);
+                    pair.getRight().getOrDefault(ELKUsageMetric.MEM.getName(), 0.0) * PERCENT);
             message.getTemplateParameters().put("diskThreshold", diskThreshold);
-            message.getTemplateParameters().put("diskRate", pair.getRight().get(ELKUsageMetric.FS.getName()) * PERCENT);
+            message.getTemplateParameters().put("diskRate", pair.getRight()
+                    .getOrDefault(ELKUsageMetric.FS.getName(), 0.0) * PERCENT);
 
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
             message.setCopyUserIds(ccUserIds);
@@ -350,7 +351,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     }
 
     public NotificationTimestamp getLastNotificationTime(Long pipelineId, NotificationType type) {
-        return monitoringNotificationDao.getNotificationTimestamp(pipelineId, type);
+        return monitoringNotificationDao.loadNotificationTimestamp(pipelineId, type);
     }
 
     private List<Long> getCCUsers(NotificationSettings idleRunSettings) {

@@ -103,7 +103,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
                 .map(value -> {
                     MapSqlParameterSource param = new MapSqlParameterSource();
                     param.addValue(NotificationTimestampParameters.RUN_ID.name(), value);
-                    param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), notificationType);
+                    param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), notificationType.name());
                     param.addValue(NotificationTimestampParameters.TIMESTAMP.name(), DateUtils.nowUTC());
                     return param;
                 }).toArray(MapSqlParameterSource[]::new);
@@ -112,9 +112,12 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public NotificationTimestamp getNotificationTimestamp(Long runId, NotificationType type) {
-        List<NotificationTimestamp> items = getJdbcTemplate().query(loadNotificationTimestampQuery,
-                NotificationTimestampParameters.getRowMapper(), runId, type);
+    public NotificationTimestamp loadNotificationTimestamp(Long runId, NotificationType type) {
+        MapSqlParameterSource param = new MapSqlParameterSource();
+        param.addValue(NotificationTimestampParameters.RUN_ID.name(), runId);
+        param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), type.name());
+        List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
+                param, NotificationTimestampParameters.getRowMapper());
         return items.isEmpty() ? null : items.get(0);
     }
 
