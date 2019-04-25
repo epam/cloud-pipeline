@@ -76,8 +76,7 @@ public class ResourceMonitoringManagerTest {
     private static final long TEST_IDLE_ON_DEMAND_RUN_ID = 3;
     private static final long TEST_IDLE_RUN_TO_PROLONG_ID = 4;
     private static final long TEST_HIGH_CONSUMING_RUN_ID = 5;
-    private static final int TEST_HIGH_CONSUMING_RUN_MEMORY_LOAD = 80;
-    private static final int TEST_HIGH_CONSUMING_RUN_DISK_LOAD = 80;
+    private static final int TEST_HIGH_CONSUMING_RUN_LOAD = 80;
     private static final double TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD = 200.0;
     private static final Integer TEST_RESOURCE_MONITORING_DELAY = 111;
     private static final int TEST_MAX_IDLE_MONITORING_TIMEOUT = 30;
@@ -86,6 +85,7 @@ public class ResourceMonitoringManagerTest {
     private static final double MILICORES_TO_CORES = 1000.0;
     private static final double DELTA = 0.001;
     private static final int HALF_AN_HOUR = 30;
+    public static final String HIGH_CONSUMING_POD_ID = "high-consuming";
 
     private ResourceMonitoringManager resourceMonitoringManager;
 
@@ -144,9 +144,11 @@ public class ResourceMonitoringManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE))
                 .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT))
-                .thenReturn(TEST_HIGH_CONSUMING_RUN_DISK_LOAD);
+                .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT))
-                .thenReturn(TEST_HIGH_CONSUMING_RUN_MEMORY_LOAD);
+                .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
+                .thenReturn(IdleRunAction.NOTIFY.name());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -205,12 +207,11 @@ public class ResourceMonitoringManagerTest {
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(spotInstance);
-        highConsumingRun.setPodId("idle-spot");
+        highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
-        highConsumingRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
-                .toEpochMilli()));
-        highConsumingRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
-                ChronoUnit.MINUTES));
+        highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
+        highConsumingRun.setProlongedAtTime(DateUtils.nowUTC()
+                .plus(TEST_MAX_IDLE_MONITORING_TIMEOUT, ChronoUnit.MINUTES));
 
         mockStats = new HashMap<>();
         mockStats.put(okayRun.getPodId(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
@@ -222,9 +223,9 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(mockStats);
 
         when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(new HashMap<>());
+                .thenReturn(getMockedHighConsumingStats());
         when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(new HashMap<>());
+                .thenReturn(getMockedHighConsumingStats());
 
         resourceMonitoringManager.init();
 
@@ -521,6 +522,21 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNotifyAboutHighConsumingResources() {
+        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+                Arrays.asList(okayRun, highConsumingRun));
 
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(), eq(NotificationType.HIGH_CONSUMED_RESOURCES));
+        List<Pair<PipelineRun, Map<String, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
+        Assert.assertEquals(1, value.size());
+        Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
+    }
+
+    private HashMap<String, Double> getMockedHighConsumingStats() {
+        HashMap<String, Double> stats = new HashMap<>();
+        stats.put(highConsumingRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / 100.0 + 0.1);
+        stats.put(okayRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / 100.0 - 0.1);
+        return stats;
     }
 }

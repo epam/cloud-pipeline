@@ -269,8 +269,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyHighResourceConsumingRuns(List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
-                                                NotificationType notificationType) {
+    public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
+                                                final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
             return;
         }
@@ -281,25 +281,27 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
+        List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
+                .filter(run -> NotificationTimestamp.isTimeoutEnds(getLastNotificationTime(run.getLeft().getId(),
+                        NotificationType.HIGH_CONSUMED_RESOURCES), notificationSettings.getResendDelay())
+                ).collect(Collectors.toList());
+
         List<Long> ccUserIds = getCCUsers(notificationSettings);
 
         Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(
-                pipelinesMetrics.stream()
+                filtered.stream()
                         .map(p -> p.getLeft().getOwner())
                         .collect(Collectors.toList())
         ).stream().collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
 
-        double memoryThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
+        double memThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
         double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
 
-        List<NotificationMessage> messages = pipelinesMetrics.stream().filter(run ->
-                NotificationTimestamp.isTimeOutEnds(getLastNotificationTime(run.getLeft().getId(),
-                NotificationType.HIGH_CONSUMED_RESOURCES), notificationSettings.getResendDelay())
-        ).map(pair -> {
+        List<NotificationMessage> messages = filtered.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
-            message.getTemplateParameters().put("memoryThreshold", memoryThreshold);
+            message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
                     pair.getRight().get(ELKUsageMetric.MEM.getName()) * PERCENT);
             message.getTemplateParameters().put("diskThreshold", diskThreshold);
@@ -308,10 +310,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
             message.setCopyUserIds(ccUserIds);
             return message;
-        })
-                .collect(Collectors.toList());
+        }).collect(Collectors.toList());
 
-        List<Long> runIds = pipelinesMetrics.stream()
+        List<Long> runIds = filtered.stream()
                 .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);

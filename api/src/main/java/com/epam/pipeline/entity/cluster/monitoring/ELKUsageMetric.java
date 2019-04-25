@@ -9,12 +9,12 @@ public enum ELKUsageMetric {
     MEM("memory", "MemoryMetricsTimestamp"),
     FS("filesystem", "FilesystemMetricsTimestamp");
 
+    private final String name;
+    private final String timestamp;
+
     ELKUsageMetric(String name, String timestamp) {
         this.name = name;
         this.timestamp = timestamp;
     }
-
-    private final String name;
-    private final String timestamp;
 
 }
