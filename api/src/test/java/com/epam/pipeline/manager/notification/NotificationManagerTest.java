@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
@@ -108,6 +109,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
+
+    @Autowired
+    private PipelineManager pipelineManager;
 
     @MockBean
     private KubernetesManager kubernetesManager;
@@ -439,6 +443,22 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testRemoveNotificationTimestampWhenDelete() {
+        Pipeline pipeline = createPipeline(testOwner);
+        PipelineRun run1 = createTestPipelineRun(pipeline.getId());
+        notificationManager.notifyHighResourceConsumingRuns(Collections.singletonList(
+                new ImmutablePair<>(run1, Collections.singletonMap("memoryRate", TEST_MEMORY_RATE))),
+                HIGH_CONSUMED_RESOURCES);
+
+        Assert.assertNotNull(notificationManager.loadLastNotificationTimestamp(run1.getId(), HIGH_CONSUMED_RESOURCES));
+
+        pipelineManager.delete(pipeline.getId(), true);
+
+        Assert.assertNull(notificationManager.loadLastNotificationTimestamp(run1.getId(), HIGH_CONSUMED_RESOURCES));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void notifyHighConsumingRunOnlyOnceIfItIsSetup() {
         highConsuming.setResendDelay(-1L);
         notificationSettingsDao.updateNotificationSettings(highConsuming);
@@ -589,7 +609,14 @@ public class NotificationManagerTest extends AbstractManagerTest {
     }
 
     private PipelineRun createTestPipelineRun() {
+        return createTestPipelineRun(null);
+    }
+
+    private PipelineRun createTestPipelineRun(Long pipelineId) {
         PipelineRun run = new PipelineRun();
+        if (pipelineId != null) {
+            run.setPipelineId(pipelineId);
+        }
         run.setVersion("abcdefg");
         run.setStartDate(new Date());
         run.setEndDate(run.getStartDate());

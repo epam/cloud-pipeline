@@ -349,14 +349,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
-    public NotificationTimestamp getLastNotificationTime(Long pipelineId, NotificationType type) {
-        return monitoringNotificationDao.loadNotificationTimestamp(pipelineId, type);
+    public NotificationTimestamp loadLastNotificationTimestamp(Long runId, NotificationType type) {
+        return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
     }
 
     private boolean shouldNotifyAboutHighResourceConsuming(NotificationSettings notificationSettings,
                                                            Pair<PipelineRun, Map<String, Double>> run) {
         Long resendDelay = notificationSettings.getResendDelay();
-        NotificationTimestamp notificationTimestamp = getLastNotificationTime(run.getLeft().getId(),
+        NotificationTimestamp notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
                 NotificationType.HIGH_CONSUMED_RESOURCES);
         // if it already was sent once and resendDelay <= 0 we won't send it again
         if (resendDelay <= 0 && notificationTimestamp != null) {
