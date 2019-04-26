@@ -82,5 +82,6 @@ ${DEPLOY_DIR}/pipectl install \
                       -env CP_DEPLOYMENT_ID="${CP_AZURE_DEPLOYMENT_ID}" \
                       -env CP_KUBE_MASTER_DOCKER_PATH="${CP_AZURE_KUBE_MASTER_DOCKER_PATH}" \
                       -env CP_KUBE_MASTER_ETCD_HOST_PATH="${CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH}" \
+                      -env CP_KUBE_MIN_DNS_REPLICAS=3 \
                       -m \
                       -demo  ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA
