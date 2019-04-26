@@ -1,8 +1,10 @@
 package com.epam.pipeline.entity.cluster.monitoring;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum ELKUsageMetric {
 
     CPU("cpu", "CpuMetricsTimestamp"),
@@ -11,10 +13,5 @@ public enum ELKUsageMetric {
 
     private final String name;
     private final String timestamp;
-
-    ELKUsageMetric(String name, String timestamp) {
-        this.name = name;
-        this.timestamp = timestamp;
-    }
 
 }

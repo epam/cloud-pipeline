@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +53,6 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -349,39 +349,34 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
-    public NotificationTimestamp loadLastNotificationTimestamp(Long runId, NotificationType type) {
+    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(Long runId, NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
     }
 
     private boolean shouldNotifyAboutHighResourceConsuming(NotificationSettings notificationSettings,
                                                            Pair<PipelineRun, Map<String, Double>> run) {
         Long resendDelay = notificationSettings.getResendDelay();
-        NotificationTimestamp notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
+        Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
                 NotificationType.HIGH_CONSUMED_RESOURCES);
-        // if it already was sent once and resendDelay <= 0 we won't send it again
-        if (resendDelay <= 0 && notificationTimestamp != null) {
-            return false;
-        }
-        return NotificationTimestamp.isTimeoutEnds(notificationTimestamp, resendDelay);
+
+        return notificationTimestamp
+                .map(timestamp -> NotificationTimestamp.isTimeoutEnds(timestamp, resendDelay))
+                .orElse(true);
     }
 
-    private List<Long> getCCUsers(NotificationSettings idleRunSettings) {
-        List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
+    private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
+        final List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
+
         if (idleRunSettings.isKeepInformedAdmins()) {
-            ExtendedRole extendedRole = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId());
-            ccUserIds.addAll(extendedRole.getUsers().stream()
-                    .map(PipelineUser::getId)
-                    .collect(Collectors.toList()));
+            final List<Long> adminsIds = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId())
+                    .getUsers().stream().map(PipelineUser::getId).collect(Collectors.toList());
+            return ListUtils.union(ccUserIds, adminsIds);
         }
         return ccUserIds;
     }
 
     private List<Long> getKeepInformedUserIds(NotificationSettings settings) {
-        if (CollectionUtils.isEmpty(settings.getInformedUserIds())) {
-            return new ArrayList<>();
-        } else {
-            return settings.getInformedUserIds();
-        }
+        return ListUtils.emptyIfNull(settings.getInformedUserIds());
     }
 
     private List<Long> getMentionedUsers(String text) {

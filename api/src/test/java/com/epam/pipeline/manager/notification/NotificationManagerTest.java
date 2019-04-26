@@ -450,11 +450,13 @@ public class NotificationManagerTest extends AbstractManagerTest {
                 new ImmutablePair<>(run1, Collections.singletonMap("memoryRate", TEST_MEMORY_RATE))),
                 HIGH_CONSUMED_RESOURCES);
 
-        Assert.assertNotNull(notificationManager.loadLastNotificationTimestamp(run1.getId(), HIGH_CONSUMED_RESOURCES));
+        Assert.assertTrue(notificationManager.loadLastNotificationTimestamp(run1.getId(),
+                HIGH_CONSUMED_RESOURCES).isPresent());
 
         pipelineManager.delete(pipeline.getId(), true);
 
-        Assert.assertNull(notificationManager.loadLastNotificationTimestamp(run1.getId(), HIGH_CONSUMED_RESOURCES));
+        Assert.assertFalse(notificationManager.loadLastNotificationTimestamp(run1.getId(),
+                HIGH_CONSUMED_RESOURCES).isPresent());
     }
 
     @Test

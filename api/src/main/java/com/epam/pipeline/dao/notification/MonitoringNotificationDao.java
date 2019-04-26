@@ -17,11 +17,12 @@
 package com.epam.pipeline.dao.notification;
 
 import static com.epam.pipeline.config.JsonMapper.parseData;
-import static com.epam.pipeline.entity.notification.NotificationSettings.*;
+import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -112,13 +113,13 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public NotificationTimestamp loadNotificationTimestamp(Long runId, NotificationType type) {
+    public Optional<NotificationTimestamp> loadNotificationTimestamp(Long runId, NotificationType type) {
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue(NotificationTimestampParameters.RUN_ID.name(), runId);
         param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), type.name());
         List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
                 param, NotificationTimestampParameters.getRowMapper());
-        return items.isEmpty() ? null : items.get(0);
+        return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -126,6 +127,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, runId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
     public void deleteNotificationTimestampsForPipeline(Long pipelineId) {
         getJdbcTemplate().update(deleteNotificationTimestampsByPipelineIdQuery, pipelineId);
     }

@@ -14,9 +14,11 @@ public class NotificationTimestamp {
     private NotificationType type;
     private LocalDateTime timestamp;
 
-    public static boolean isTimeoutEnds(NotificationTimestamp nt, long shift) {
-        return nt == null || nt.getTimestamp() != null
-                && DateUtils.nowUTC().isAfter(nt.getTimestamp().plus(shift, ChronoUnit.MINUTES));
+    public static boolean isTimeoutEnds(final NotificationTimestamp nt, final long timeout) {
+        // if it already was sent once and resendDelay <= 0 we won't send it again
+        return timeout > 0
+                && nt.getTimestamp() != null
+                && DateUtils.nowUTC().isAfter(nt.getTimestamp().plus(timeout, ChronoUnit.MINUTES));
     }
 
 }
