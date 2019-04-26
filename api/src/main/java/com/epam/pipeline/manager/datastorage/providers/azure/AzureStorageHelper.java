@@ -39,7 +39,6 @@ import com.microsoft.azure.storage.blob.BlobRange;
 import com.microsoft.azure.storage.blob.BlockBlobURL;
 import com.microsoft.azure.storage.blob.ContainerURL;
 import com.microsoft.azure.storage.blob.IPRange;
-import com.microsoft.azure.storage.blob.ListBlobsOptions;
 import com.microsoft.azure.storage.blob.Metadata;
 import com.microsoft.azure.storage.blob.PipelineOptions;
 import com.microsoft.azure.storage.blob.SASProtocol;
@@ -51,7 +50,6 @@ import com.microsoft.azure.storage.blob.StorageException;
 import com.microsoft.azure.storage.blob.StorageURL;
 import com.microsoft.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.blob.models.BlobPrefix;
-import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.ListBlobsFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.ListBlobsHierarchySegmentResponse;
 import com.microsoft.azure.storage.blob.models.StorageErrorException;
@@ -62,7 +60,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -504,15 +501,12 @@ public class AzureStorageHelper {
     }
 
     private DataStorageFile getDataStorageFile(final AzureBlobStorage storage, final String path) {
-        final ListBlobsOptions listOptions = new ListBlobsOptions().withMaxResults(1).withPrefix(path);
-        final ContainerListBlobFlatSegmentResponse response = unwrap(
-                getContainerURL(storage).listBlobsFlatSegment(null, listOptions));
-        if (response.body().segment() == null || CollectionUtils.isEmpty(response.body().segment().blobItems())) {
-            throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_AZURE_CREATE_FILE, storage.getPath()));
-        }
-        return createDataStorageFile(response.body().segment().blobItems().get(0),
-                FilenameUtils.getPath(response.body().prefix()));
+        return list(AbstractListingIterator.flat(getContainerURL(storage), path, null, 1))
+                .findFirst()
+                .filter(DataStorageFile.class::isInstance)
+                .map(DataStorageFile.class::cast)
+                .orElseThrow(() -> new DataStorageException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_AZURE_CREATE_FILE, storage.getPath())));
     }
 
     private DataStorageFolder getDataStorageFolder(final String folderFullPath, final String folderName) {
