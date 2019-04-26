@@ -122,7 +122,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void processOverloadedRuns(Map<String, PipelineRun> running) {
-        final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = new ArrayList<>();
         int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
         final Map<String, Double> thresholds = getThresholds();
         log.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
@@ -133,20 +132,27 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         monitoringDao.loadUsageRateMetrics(metric, running.keySet(),
                             now.minusMinutes(timeRange), now)));
 
-        running.forEach((pod, run) -> {
-            Map<String, Double> podMetrics = metrics.entrySet().stream()
-                    .collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue().get(pod)), Map::putAll);
-
-            if (isPodUnderPressure(podMetrics, thresholds)) {
-                runsToNotify.add(new ImmutablePair<>(run, podMetrics));
-            }
-        });
+        final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = running.entrySet()
+                .stream()
+                .map(podAndRun -> matchRunAndMetrics(metrics, podAndRun))
+                .filter(pod -> isPodUnderPressure(pod.getValue(), thresholds))
+                .collect(Collectors.toList());
 
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
     }
 
-    private boolean isPodUnderPressure(Map<String, Double> podMetrics,
-                                       Map<String, Double> thresholds) {
+    private Pair<PipelineRun, Map<String, Double>> matchRunAndMetrics(Map<String, Map<String, Double>> metrics,
+                                                                      Map.Entry<String, PipelineRun> podAndRun) {
+        Map<String, Double> podMetrics = metrics.entrySet()
+                .stream()
+                .collect(HashMap::new,
+                        (m, e) -> m.put(e.getKey(), e.getValue().get(podAndRun.getKey())),
+                        Map::putAll);
+
+        return new ImmutablePair<>(podAndRun.getValue(), podMetrics);
+    }
+
+    private boolean isPodUnderPressure(Map<String, Double> podMetrics, Map<String, Double> thresholds) {
         return thresholds.entrySet()
                 .stream()
                 .anyMatch(
