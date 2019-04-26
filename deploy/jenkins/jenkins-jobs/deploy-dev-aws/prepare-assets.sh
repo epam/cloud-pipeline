@@ -28,6 +28,16 @@ if [ "$AWS_HOST_FORCE" ]; then
     export AWS_HOST=$AWS_HOST_FORCE
 fi
 
+if [ "$NEW_HOSTS" == "true" ]; then
+    echo "New AWS host will be created"
+    new_aws_host=$(bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/create-ec2.sh)
+    if [ $? -ne 0 ] || [ -z "$new_aws_host" ]; then
+        echo "Unable to create a new EC2 instance"
+        exit 1
+    fi
+    export AWS_HOST=$new_aws_host
+fi
+
 echo "Deploying using $PIPECTL_DIST_URL to $AWS_HOST"
 
 export DEPLOY_DIR="$WORKSPACE/assets"
@@ -66,6 +76,15 @@ aws s3 cp "$AWS_SSH_KEY_S3" "$AWS_SSH_KEY_PATH_TMP" &>/dev/null &&
 export CP_SERVICES_LIST="-s cp-api-srv -s cp-git-sync -s cp-edge -s cp-notifier -s cp-docker-comp -s cp-docker-registry"
 # And do not clear the data
 unset CP_ERASE_DATA
+
+# If only a basic toolset is requested (to speedup the deployment) - only a subset of docker images will be used
+# Current set of basic tools is:
+# Vanilla centos 7 and ubuntu 18.04
+# CUDA centos 7 and ubuntu 18.04
+# Vanilla RStudio - as an example of the "interactive" tool
+if [ $"BASIC_TOOLSET" == "true" ]; then
+    export CP_BASIC_TOOLSET="-d library/centos:latest -d library/ubuntu:latest -d library/rstudio:latest -d library/centos-cuda:latest -d library/ubuntu-cuda:latest"
+fi
 
 # Substitute parameters and write command to the file
 export DOLLAR="$"

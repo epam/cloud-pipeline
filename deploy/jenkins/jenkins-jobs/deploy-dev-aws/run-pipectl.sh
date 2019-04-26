@@ -15,6 +15,7 @@
 
 _SERVICES_TO_INSTALL="$CP_SERVICES_LIST"
 _ERASE_DATA="$CP_ERASE_DATA"
+_TOOLS_SET="$CP_TOOLSET"
 
 # Simple check for kube and pods availablility
 # If kube is not installed yet or DB pod is not available - treat this as a fresh installation
@@ -45,4 +46,4 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_DOCKER_STORAGE_CONTAINER="$CP_DOCKER_STORAGE_CONTAINER" \
     -env CP_DEPLOYMENT_ID="$CP_DEPLOYMENT_ID" \
     -m \
-    -demo ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA
+    -demo ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA ${DOLLAR}_TOOLS_SET
