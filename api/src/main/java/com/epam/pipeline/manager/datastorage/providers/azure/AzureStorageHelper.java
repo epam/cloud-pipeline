@@ -48,7 +48,6 @@ import com.microsoft.azure.storage.blob.SharedKeyCredentials;
 import com.microsoft.azure.storage.blob.StorageException;
 import com.microsoft.azure.storage.blob.StorageURL;
 import com.microsoft.azure.storage.blob.models.BlobFlatListSegment;
-import com.microsoft.azure.storage.blob.models.BlobHierarchyListSegment;
 import com.microsoft.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.blob.models.BlobPrefix;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
@@ -61,6 +60,7 @@ import com.microsoft.rest.v2.http.HttpPipelineLogger;
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +79,6 @@ import java.security.InvalidKeyException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -94,6 +93,7 @@ import java.util.Spliterators;
 import java.util.TimeZone;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -149,14 +149,17 @@ public class AzureStorageHelper {
     public DataStorageListing getItems(final AzureBlobStorage storage, final String path, final Integer pageSize,
                                        final String marker) {
         final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
-        final ContainerURL containerURL = getContainerURL(storage);
-        final ListBlobsOptions options = new ListBlobsOptions().withMaxResults(pageSize).withPrefix(prefix);
-        final List<AbstractDataStorageItem> items = new ArrayList<>();
-        final String nextPageMarker = unwrap(
-                containerURL.listBlobsHierarchySegment(marker, ProviderUtils.DELIMITER, options)
-                        .flatMap(r -> listAllBlobs(containerURL, r, items, pageSize, prefix))
-                        .map(r -> Optional.ofNullable(r.body().nextMarker()).orElse("")));
-        return new DataStorageListing(nextPageMarker, items);
+        final HierarchyListingIterator iterator = new HierarchyListingIterator(storage, prefix, marker);
+        return listing(iterator, pageSize);
+    }
+
+    private DataStorageListing listing(final HierarchyListingIterator iterator, final Integer pageSize) {
+        final List<AbstractDataStorageItem> items = listItems(iterator)
+                .filter(item -> StringUtils.endsWithIgnoreCase(item.getName(),
+                        ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase()))
+                .limit(Optional.ofNullable(pageSize).orElse(MAX_PAGE_SIZE))
+                .collect(Collectors.toList());
+        return new DataStorageListing(iterator.getNextMarker(), items);
     }
 
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
@@ -394,7 +397,11 @@ public class AzureStorageHelper {
     }
 
     private Stream<AbstractDataStorageItem> listItems(final AzureBlobStorage dataStorage, final String path) {
-        return items(dataStorage, path)
+        return listItems(new HierarchyListingIterator(dataStorage, path));
+    }
+
+    private Stream<AbstractDataStorageItem> listItems(final HierarchyListingIterator iterator) {
+        return iterator.stream()
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsHierarchySegmentResponse::segment)
                         .map(segment -> {
@@ -414,60 +421,9 @@ public class AzureStorageHelper {
                 .flatMap(Function.identity());
     }
 
-    private Stream<ContainerListBlobHierarchySegmentResponse> items(final AzureBlobStorage dataStorage,
-                                                                    final String path) {
-        final HierarchyListingIterator iterator = new HierarchyListingIterator(dataStorage, path);
-        final Spliterator<ContainerListBlobHierarchySegmentResponse> spliterator =
-                Spliterators.spliteratorUnknownSize(iterator, 0);
-        return StreamSupport.stream(spliterator, false);
-    }
-
     private String folderName(final BlobPrefix blobPrefix) {
         final String[] parts = blobPrefix.name().split(ProviderUtils.DELIMITER);
         return parts[parts.length - 1];
-    }
-
-    private Single<ContainerListBlobHierarchySegmentResponse> listAllBlobs(
-            final ContainerURL containerURL,
-            final ContainerListBlobHierarchySegmentResponse response,
-            final List<AbstractDataStorageItem> items,
-            final Integer pageSize,
-            final String prefixPath) {
-        if (response.body().segment() == null) {
-            return Single.just(response);
-        }
-        if (response.body().segment().blobPrefixes() != null) {
-            for (final BlobPrefix blobPrefix : response.body().segment().blobPrefixes()) {
-                final String[] parts = blobPrefix.name().split(ProviderUtils.DELIMITER);
-                final String folderName = parts[parts.length - 1];
-                items.add(getDataStorageFolder(blobPrefix.name(), folderName));
-            }
-        }
-        final List<BlobItem> blobItems = response.body().segment().blobItems();
-        if (blobItems != null) {
-            for (final BlobItem blob : blobItems) {
-                if (Objects.equals(blob.name(), response.body().prefix()) ||
-                        StringUtils.endsWithIgnoreCase(blob.name(), ProviderUtils.FOLDER_TOKEN_FILE.toLowerCase())) {
-                    continue;
-                }
-                items.add(createDataStorageFile(blob, response.body().prefix()));
-            }
-            if (pageSize == null || items.size() == pageSize) {
-                return Single.just(response);
-            }
-        }
-        if (response.body().nextMarker() == null) {
-            return Single.just(response);
-        } else {
-            final String nextMarker = response.body().nextMarker();
-            final int remainingItems = items == null ? pageSize : pageSize - items.size();
-            return containerURL
-                    .listBlobsHierarchySegment(nextMarker, ProviderUtils.DELIMITER,
-                            new ListBlobsOptions().withPrefix(prefixPath).withMaxResults(remainingItems))
-                    .flatMap(containersListBlobFlatSegmentResponse ->
-                            listAllBlobs(containerURL, containersListBlobFlatSegmentResponse, items, pageSize,
-                                    prefixPath));
-        }
     }
 
     private void validateDirectory(final AzureBlobStorage storage, final String path, final boolean exist) {
@@ -495,25 +451,7 @@ public class AzureStorageHelper {
     private boolean directoryExists(final AzureBlobStorage dataStorage, final String path) {
         final String pathWithoutSeparator = ProviderUtils.withoutTrailingDelimiter(path);
         final String pathWithSeparator = pathWithoutSeparator + ProviderUtils.DELIMITER;
-        final ListBlobsOptions options = new ListBlobsOptions()
-                .withMaxResults(MAX_PAGE_SIZE)
-                .withPrefix(pathWithoutSeparator);
-        String marker = null;
-        while (true) {
-            final ContainerListBlobHierarchySegmentResponse response = unwrap(
-                    getContainerURL(dataStorage).listBlobsHierarchySegment(marker, ProviderUtils.DELIMITER, options));
-            final Optional<ListBlobsHierarchySegmentResponse> body = Optional.ofNullable(response.body());
-            final boolean directoryFound = body
-                    .map(ListBlobsHierarchySegmentResponse::segment)
-                    .map(BlobHierarchyListSegment::blobPrefixes)
-                    .map(List::stream)
-                    .orElseGet(Stream::empty)
-                    .anyMatch(it -> it.name().equals(pathWithSeparator));
-            marker = body.map(ListBlobsHierarchySegmentResponse::nextMarker).orElse(null);
-            if (directoryFound || marker == null) {
-                return directoryFound;
-            }
-        }
+        return listItems(dataStorage, pathWithoutSeparator).anyMatch(it -> it.getPath().equals(pathWithSeparator));
     }
 
     private boolean blobExists(final AzureBlobStorage dataStorage, final String path) {
@@ -644,26 +582,45 @@ public class AzureStorageHelper {
         private final AzureBlobStorage dataStorage;
         private final String path;
 
-        private ContainerListBlobHierarchySegmentResponse response;
+        @Getter
+        private String nextMarker = null;
+        private ContainerListBlobHierarchySegmentResponse response = null;
+
+        public HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path,
+                                        final String nextMarker) {
+            this(dataStorage, path);
+            this.nextMarker = nextMarker;
+        }
 
         @Override
         public boolean hasNext() {
-            return response == null || response.body().nextMarker() != null;
+            return response == null || nextMarker != null;
         }
 
         @Override
         public ContainerListBlobHierarchySegmentResponse next() {
-            return response = loadNextResponse();
+            final ContainerListBlobHierarchySegmentResponse response = loadNextResponse();
+            nextMarker = nextMarker(response);
+            return response;
         }
 
         private ContainerListBlobHierarchySegmentResponse loadNextResponse() {
-            final String nextMarker = Optional.ofNullable(response)
-                    .map(ContainerListBlobHierarchySegmentResponse::body)
-                    .map(ListBlobsHierarchySegmentResponse::nextMarker)
-                    .orElse(null);
             final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(MAX_PAGE_SIZE);
             return unwrap(getContainerURL(dataStorage)
                     .listBlobsHierarchySegment(nextMarker, ProviderUtils.DELIMITER, options));
+        }
+
+        private String nextMarker(final ContainerListBlobHierarchySegmentResponse response) {
+            return Optional.ofNullable(response)
+                    .map(ContainerListBlobHierarchySegmentResponse::body)
+                    .map(ListBlobsHierarchySegmentResponse::nextMarker)
+                    .orElse(null);
+        }
+
+        public Stream<ContainerListBlobHierarchySegmentResponse> stream() {
+            final Spliterator<ContainerListBlobHierarchySegmentResponse> spliterator =
+                    Spliterators.spliteratorUnknownSize(this, 0);
+            return StreamSupport.stream(spliterator, false);
         }
     }
 }
