@@ -41,7 +41,6 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners.confine;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-import static java.util.Objects.isNull;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertTrue;
@@ -57,9 +56,6 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     public static final By searchMetadata = byId("search-metadata-input");
     public static final By showColumnsButton = buttonByIconClass("anticon-bars");
     public static final By checkBox = byClassName("ant-checkbox-wrapper");
-
-
-    private List<String> fields;
 
     public MetadataSamplesAO performForEachRow(final Consumer<SampleRow> actions) {
         SelenideElements.of(rows).stream()
@@ -102,10 +98,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
     }
 
     private List<String> getFields() {
-        if (isNull(fields)) {
-            fields = SelenideElements.of(columnHeader).texts();
-        }
-        return fields;
+        return SelenideElements.of(columnHeader).texts();
     }
 
     public MetadataSamplesAO validateSortedByIncrease(final String fieldName) {
@@ -227,7 +220,6 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
                     .closest(".ant-checkbox-wrapper")
                     .should(visible)
                     .click();
-            parentAO.fields = null;
             return this;
         }
 
