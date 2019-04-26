@@ -32,6 +32,8 @@ import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.FlatIterator;
+import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.HierarchyIterator;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.microsoft.azure.storage.blob.BlobRange;
 import com.microsoft.azure.storage.blob.BlockBlobURL;
@@ -50,7 +52,6 @@ import com.microsoft.azure.storage.blob.StorageURL;
 import com.microsoft.azure.storage.blob.models.BlobItem;
 import com.microsoft.azure.storage.blob.models.BlobPrefix;
 import com.microsoft.azure.storage.blob.models.ContainerListBlobFlatSegmentResponse;
-import com.microsoft.azure.storage.blob.models.ContainerListBlobHierarchySegmentResponse;
 import com.microsoft.azure.storage.blob.models.ListBlobsFlatSegmentResponse;
 import com.microsoft.azure.storage.blob.models.ListBlobsHierarchySegmentResponse;
 import com.microsoft.azure.storage.blob.models.StorageErrorException;
@@ -59,8 +60,6 @@ import com.microsoft.rest.v2.http.HttpPipelineLogger;
 import com.microsoft.rest.v2.util.FlowableUtil;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -81,20 +80,16 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.TimeZone;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Util class providing methods to interact with Azure Storage API.
@@ -106,7 +101,7 @@ public class AzureStorageHelper {
     private static final String BLOB_URL_FORMAT = "https://%s.blob.core.windows.net";
     private static final int NOT_FOUND_STATUS_CODE = 404;
     private static final int RANGE_NOT_SATISFIABLE_STATUS_CODE = 416;
-    private static final int MAX_PAGE_SIZE = 5000;
+    static final int MAX_PAGE_SIZE = 5000;
 
     private final AzureRegion azureRegion;
     private final AzureRegionCredentials azureRegionCredentials;
@@ -149,7 +144,8 @@ public class AzureStorageHelper {
                                        final String marker) {
         final String prefix = Optional.ofNullable(path).map(ProviderUtils::withTrailingDelimiter).orElse("");
         final int page = Optional.ofNullable(pageSize).orElse(MAX_PAGE_SIZE);
-        final HierarchyListingIterator iterator = new HierarchyListingIterator(storage, prefix, marker, page);
+        final HierarchyIterator iterator = AbstractListingIterator.hierarchy(getContainerURL(storage), prefix, marker,
+                page);
         final List<AbstractDataStorageItem> items = list(iterator)
                 .filter(this::isNotTokenFile)
                 .limit(page)
@@ -400,14 +396,14 @@ public class AzureStorageHelper {
     }
 
     private Stream<AbstractDataStorageItem> listFlat(final AzureBlobStorage storage, final String path) {
-        return list(new FlatListingIterator(storage, path));
+        return list(AbstractListingIterator.flat(getContainerURL(storage), path));
     }
 
     private Stream<AbstractDataStorageItem> listHierarchy(final AzureBlobStorage storage, final String path) {
-        return list(new HierarchyListingIterator(storage, path));
+        return list(AbstractListingIterator.hierarchy(getContainerURL(storage), path));
     }
 
-    private Stream<AbstractDataStorageItem> list(final HierarchyListingIterator iterator) {
+    private Stream<AbstractDataStorageItem> list(final HierarchyIterator iterator) {
         return iterator.stream()
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsHierarchySegmentResponse::segment)
@@ -418,7 +414,7 @@ public class AzureStorageHelper {
                 .flatMap(Function.identity());
     }
 
-    private Stream<AbstractDataStorageItem> list(final FlatListingIterator iterator) {
+    private Stream<AbstractDataStorageItem> list(final FlatIterator iterator) {
         return iterator.stream()
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
@@ -477,7 +473,8 @@ public class AzureStorageHelper {
     }
 
     private boolean blobExists(final AzureBlobStorage dataStorage, final String path) {
-        return list(new FlatListingIterator(dataStorage, path, null, 1)).anyMatch(it -> it.getName().equals(path));
+        return list(AbstractListingIterator.flat(getContainerURL(dataStorage), path, null, 1))
+                .anyMatch(it -> it.getName().equals(path));
     }
 
     private void validatePath(final String path) {
@@ -546,34 +543,37 @@ public class AzureStorageHelper {
         return new URL(blobUrl);
     }
 
-    private <T> T unwrap(final Single<T> single, final Function<Integer, T> reviveFromErrorCode) {
-        final Pair<T, Throwable> pair = single.map(this::success)
+    static <T> T unwrap(final Single<T> single, final Function<Integer, T> reviveFromErrorCode) {
+        final Pair<T, Throwable> pair = single.map(AzureStorageHelper::success)
                 .onErrorReturn(e ->
                         Optional.of(e)
                                 .filter(StorageException.class::isInstance)
                                 .map(StorageException.class::cast)
                                 .map(StorageException::statusCode)
                                 .map(reviveFromErrorCode)
-                                .map(this::success)
+                                .map(AzureStorageHelper::success)
                                 .orElseGet(() -> failure(e)))
                 .blockingGet();
         return pair.getLeft() != null ? pair.getLeft() : throwException(pair.getRight());
     }
 
-    private <T> T unwrap(final Single<T> single) {
-        final Pair<T, Throwable> pair = single.map(this::success).onErrorReturn(this::failure).blockingGet();
+    static <T> T unwrap(final Single<T> single) {
+        final Pair<T, Throwable> pair = single
+                .map(AzureStorageHelper::success)
+                .onErrorReturn(AzureStorageHelper::failure)
+                .blockingGet();
         return pair.getLeft() != null ? pair.getLeft() : throwException(pair.getRight());
     }
 
-    private <T> Pair<T, Throwable> success(final T t) {
+    private static <T> Pair<T, Throwable> success(final T t) {
         return Pair.of(t, null);
     }
 
-    private <T> Pair<T, Throwable> failure(final Throwable e) {
+    private static <T> Pair<T, Throwable> failure(final Throwable e) {
         return Pair.of(null, e);
     }
 
-    private <T> T throwException(final Throwable e) {
+    private static <T> T throwException(final Throwable e) {
         log.debug("Exception occurred while calling Azure API.", e);
         if (e instanceof StorageException) {
             throw new DataStorageException(((StorageException) e).message(), e);
@@ -581,99 +581,6 @@ public class AzureStorageHelper {
             throw new DataStorageException(((StorageErrorException) e).body().message(), e);
         } else {
             throw new DataStorageException(e.getMessage(), e);
-        }
-    }
-
-    @RequiredArgsConstructor
-    private abstract class AbstractListingIterator<T> implements Iterator<T> {
-        protected final AzureBlobStorage dataStorage;
-        protected final String path;
-
-        protected int pageSize = MAX_PAGE_SIZE;
-        protected T response = null;
-        @Getter
-        protected String nextMarker = null;
-
-        AbstractListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                                final int pageSize) {
-            this(dataStorage, path);
-            this.nextMarker = nextMarker;
-            this.pageSize = pageSize;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return response == null || nextMarker != null;
-        }
-
-        @Override
-        public T next() {
-            response = loadNextResponse();
-            nextMarker = retrieveNextMarker(response);
-            return response;
-        }
-
-        protected abstract T loadNextResponse();
-
-        protected abstract String retrieveNextMarker(T response);
-
-        public Stream<T> stream() {
-            final Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(this, 0);
-            return StreamSupport.stream(spliterator, false);
-        }
-    }
-
-    private class HierarchyListingIterator extends AbstractListingIterator<ContainerListBlobHierarchySegmentResponse> {
-
-        HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                                 final int pageSize) {
-            super(dataStorage, path, nextMarker, pageSize);
-        }
-
-        HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path) {
-            super(dataStorage, path);
-        }
-
-        @Override
-        protected ContainerListBlobHierarchySegmentResponse loadNextResponse() {
-            final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(pageSize);
-            return unwrap(getContainerURL(dataStorage)
-                    .listBlobsHierarchySegment(nextMarker, ProviderUtils.DELIMITER, options));
-        }
-
-        @Override
-        protected String retrieveNextMarker(final ContainerListBlobHierarchySegmentResponse response) {
-            return Optional.ofNullable(response)
-                    .map(ContainerListBlobHierarchySegmentResponse::body)
-                    .map(ListBlobsHierarchySegmentResponse::nextMarker)
-                    .orElse(null);
-        }
-    }
-
-    private class FlatListingIterator extends AbstractListingIterator<ContainerListBlobFlatSegmentResponse> {
-
-        FlatListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                            final int pageSize) {
-            super(dataStorage, path, nextMarker, pageSize);
-        }
-
-        FlatListingIterator(final AzureBlobStorage dataStorage, final String path) {
-            super(dataStorage, path);
-        }
-
-        @Override
-        protected ContainerListBlobFlatSegmentResponse loadNextResponse() {
-            final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(pageSize);
-            return unwrap(getContainerURL(dataStorage)
-                    .listBlobsFlatSegment(nextMarker, options));
-        }
-
-        @Override
-        protected String retrieveNextMarker(final ContainerListBlobFlatSegmentResponse response) {
-            return Optional.ofNullable(response)
-                    .map(ContainerListBlobFlatSegmentResponse::body)
-                    .map(ListBlobsFlatSegmentResponse::nextMarker)
-                    .orElse(null);
         }
     }
 }
