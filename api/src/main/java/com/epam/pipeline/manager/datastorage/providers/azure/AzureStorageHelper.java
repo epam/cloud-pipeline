@@ -585,7 +585,7 @@ public class AzureStorageHelper {
     }
 
     @RequiredArgsConstructor
-    private abstract class ListingIterator<T> implements Iterator<T> {
+    private abstract class AbstractListingIterator<T> implements Iterator<T> {
         protected final AzureBlobStorage dataStorage;
         protected final String path;
 
@@ -594,8 +594,8 @@ public class AzureStorageHelper {
         @Getter
         protected String nextMarker = null;
 
-        public ListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                               final int pageSize) {
+        AbstractListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
+                                final int pageSize) {
             this(dataStorage, path);
             this.nextMarker = nextMarker;
             this.pageSize = pageSize;
@@ -609,13 +609,13 @@ public class AzureStorageHelper {
         @Override
         public T next() {
             response = loadNextResponse();
-            nextMarker = nextMarker(response);
+            nextMarker = retrieveNextMarker(response);
             return response;
         }
 
         protected abstract T loadNextResponse();
 
-        protected abstract String nextMarker(T response);
+        protected abstract String retrieveNextMarker(T response);
 
         public Stream<T> stream() {
             final Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(this, 0);
@@ -623,14 +623,14 @@ public class AzureStorageHelper {
         }
     }
 
-    private class HierarchyListingIterator extends ListingIterator<ContainerListBlobHierarchySegmentResponse> {
+    private class HierarchyListingIterator extends AbstractListingIterator<ContainerListBlobHierarchySegmentResponse> {
 
-        public HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                                        final int pageSize) {
+        HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
+                                 final int pageSize) {
             super(dataStorage, path, nextMarker, pageSize);
         }
 
-        public HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path) {
+        HierarchyListingIterator(final AzureBlobStorage dataStorage, final String path) {
             super(dataStorage, path);
         }
 
@@ -642,7 +642,7 @@ public class AzureStorageHelper {
         }
 
         @Override
-        protected String nextMarker(final ContainerListBlobHierarchySegmentResponse response) {
+        protected String retrieveNextMarker(final ContainerListBlobHierarchySegmentResponse response) {
             return Optional.ofNullable(response)
                     .map(ContainerListBlobHierarchySegmentResponse::body)
                     .map(ListBlobsHierarchySegmentResponse::nextMarker)
@@ -650,14 +650,14 @@ public class AzureStorageHelper {
         }
     }
 
-    private class FlatListingIterator extends ListingIterator<ContainerListBlobFlatSegmentResponse> {
+    private class FlatListingIterator extends AbstractListingIterator<ContainerListBlobFlatSegmentResponse> {
 
-        public FlatListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
-                                   final int pageSize) {
+        FlatListingIterator(final AzureBlobStorage dataStorage, final String path, final String nextMarker,
+                            final int pageSize) {
             super(dataStorage, path, nextMarker, pageSize);
         }
 
-        public FlatListingIterator(final AzureBlobStorage dataStorage, final String path) {
+        FlatListingIterator(final AzureBlobStorage dataStorage, final String path) {
             super(dataStorage, path);
         }
 
@@ -669,7 +669,7 @@ public class AzureStorageHelper {
         }
 
         @Override
-        protected String nextMarker(final ContainerListBlobFlatSegmentResponse response) {
+        protected String retrieveNextMarker(final ContainerListBlobFlatSegmentResponse response) {
             return Optional.ofNullable(response)
                     .map(ContainerListBlobFlatSegmentResponse::body)
                     .map(ListBlobsFlatSegmentResponse::nextMarker)
