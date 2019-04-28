@@ -471,7 +471,7 @@ public class AzureStorageHelper {
 
     private boolean blobExists(final AzureBlobStorage dataStorage, final String path) {
         return list(AbstractListingIterator.flat(getContainerURL(dataStorage), path, null, 1))
-                .anyMatch(it -> it.getName().equals(path));
+                .anyMatch(it -> it.getPath().equals(path));
     }
 
     private void validatePath(final String path) {
@@ -480,10 +480,11 @@ public class AzureStorageHelper {
     }
 
     private DataStorageFile createDataStorageFile(final BlobItem blob, final String path) {
-        final String fileName = StringUtils.isBlank(path) ? blob.name() : FilenameUtils.getName(blob.name());
+        final String fileName = FilenameUtils.getName(blob.name());
+        final String filePath = computeFilePath(path, fileName, blob);
         final DataStorageFile dataStorageFile = new DataStorageFile();
         dataStorageFile.setName(fileName);
-        dataStorageFile.setPath(computeFilePath(fileName, path));
+        dataStorageFile.setPath(filePath);
         final Map<String, String> labels = new HashMap<>();
         if (blob.properties().accessTier() != null) {
             labels.put("StorageClass", blob.properties().accessTier().toString());
@@ -496,8 +497,8 @@ public class AzureStorageHelper {
         return dataStorageFile;
     }
 
-    private String computeFilePath(final String fileName, final String path) {
-        return StringUtils.isNotBlank(path) ? ProviderUtils.withTrailingDelimiter(path) + fileName : fileName;
+    private String computeFilePath(final String path, final String fileName, final BlobItem blob) {
+        return StringUtils.isNotBlank(path) ? ProviderUtils.withTrailingDelimiter(path) + fileName : blob.name();
     }
 
     private DataStorageFile getDataStorageFile(final AzureBlobStorage storage, final String path) {
