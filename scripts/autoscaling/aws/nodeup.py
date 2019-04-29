@@ -36,6 +36,7 @@ import sys
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
+LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 
 current_run_id = 0
 api_url = None
@@ -288,7 +289,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         )
     except ClientError as client_error:
         if 'InstanceLimitExceeded' in client_error.message:
-            pipe_log(client_error.message)
+            pipe_log(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
 
     ins_id = response['Instances'][0]['InstanceId']
@@ -676,7 +677,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     except ClientError as client_error:
         if 'Max spot instance count exceeded' in client_error.message or \
                 'InstanceLimitExceeded' in client_error.message:
-            pipe_log(client_error.message)
+            pipe_log(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
     rep = 0
     ins_id = ''
