@@ -72,8 +72,12 @@ export default class DataStoragePathInput extends React.Component {
       if (region.fileShareMounts && region.fileShareMounts.length) {
         region.fileShareMounts.forEach(fileShareMount => {
           if ((fileShareMount.mountRoot || '').trim()) {
+            const separator = fileShareMount.mountType === 'NFS' ? ':' : '';
+            const mountPathMask = new RegExp(`^${fileShareMount.mountRoot}${separator}(.*)$`, 'i');
             list.push({
               ...fileShareMount,
+              mountPathMask,
+              separator,
               regionName: region.name
             });
           }
@@ -112,11 +116,11 @@ export default class DataStoragePathInput extends React.Component {
   };
 
   getValue = () => {
-    if (this.props.isFS) {
+    if (this.props.isFS && this.currentFileShareMount) {
       return {
-        fileShareMountId: this.currentFileShareMount ? this.currentFileShareMount.id : undefined,
-        regionId: this.currentFileShareMount ? this.currentFileShareMount.regionId : undefined,
-        path: `${this.currentFileShareMount ? this.currentFileShareMount.mountRoot : ''}:${this.state.storagePath || ''}`
+        fileShareMountId: this.currentFileShareMount.id,
+        regionId: this.currentFileShareMount.regionId,
+        path: `${this.currentFileShareMount.mountRoot}${this.currentFileShareMount.separator}${this.state.storagePath || ''}`
       };
     } else {
       return {
@@ -318,9 +322,17 @@ export default class DataStoragePathInput extends React.Component {
     if (value) {
       const getStoragePath = () => {
         if (this.props.isFS) {
-          const parts = (value.path || '').split(':');
-          parts.splice(0, 1);
-          return parts.join(':');
+          const [fileShareMountParseResult] = this.fileShareMountsList.map(fs => {
+            const execResult = fs.mountPathMask.exec(value.path);
+            return {
+              execResult,
+              mount: fs
+            }
+          }).filter(r => !!r.execResult);
+          if (fileShareMountParseResult) {
+            return fileShareMountParseResult.execResult[1];
+          }
+          return value.path;
         } else {
           return value.path;
         }
