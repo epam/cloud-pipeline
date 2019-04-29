@@ -24,9 +24,53 @@ import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './DataStoragePathInput.css';
 import LoadingView from '../../../special/LoadingView';
 
+export function extractFileShareMountList (regions) {
+  const list = [];
+  for (let i = 0; i < regions.length; i++) {
+    const region = regions[i];
+    if (region.fileShareMounts && region.fileShareMounts.length) {
+      region.fileShareMounts.forEach(fileShareMount => {
+        if ((fileShareMount.mountRoot || '').trim()) {
+          const separator = fileShareMount.mountType === 'NFS' ? ':' : '';
+          const mountPathMask = new RegExp(`^${fileShareMount.mountRoot}${separator}(.*)$`, 'i');
+          list.push({
+            ...fileShareMount,
+            mountPathMask,
+            separator,
+            regionName: region.name
+          });
+        }
+      });
+    }
+  }
+  return list;
+}
+
+export function parseFSMountPath (pathInfo, fileShareMountsList) {
+  const [fileShareMountParseResult] = fileShareMountsList.map(fs => {
+    const execResult = +fs.id === +pathInfo.fileShareMountId
+      ? fs.mountPathMask.exec(pathInfo.path)
+      : null;
+    return {
+      execResult,
+      mount: fs
+    }
+  }).filter(r => !!r.execResult);
+  if (fileShareMountParseResult) {
+    return {
+      fileShareMountId: fileShareMountParseResult.mount.id,
+      regionId: fileShareMountParseResult.mount.regionId,
+      storagePath: fileShareMountParseResult.execResult[1],
+      path: pathInfo.path
+    };
+  } else {
+    return pathInfo;
+  }
+}
+
 @inject('preferences')
 @observer
-export default class DataStoragePathInput extends React.Component {
+export class DataStoragePathInput extends React.Component {
 
   static propTypes = {
     value: PropTypes.object,
@@ -67,24 +111,7 @@ export default class DataStoragePathInput extends React.Component {
     if (!this.cloudRegions) {
       return [];
     }
-    const list = [];
-    this.cloudRegions.forEach(region => {
-      if (region.fileShareMounts && region.fileShareMounts.length) {
-        region.fileShareMounts.forEach(fileShareMount => {
-          if ((fileShareMount.mountRoot || '').trim()) {
-            const separator = fileShareMount.mountType === 'NFS' ? ':' : '';
-            const mountPathMask = new RegExp(`^${fileShareMount.mountRoot}${separator}(.*)$`, 'i');
-            list.push({
-              ...fileShareMount,
-              mountPathMask,
-              separator,
-              regionName: region.name
-            });
-          }
-        });
-      }
-    });
-    return list;
+    return extractFileShareMountList(this.cloudRegions);
   }
 
   @computed
@@ -320,29 +347,18 @@ export default class DataStoragePathInput extends React.Component {
 
   parseValue = (value) => {
     if (value) {
-      const getStoragePath = () => {
+      const parse = () => {
         if (this.props.isFS) {
-          const [fileShareMountParseResult] = this.fileShareMountsList.map(fs => {
-            const execResult = fs.mountPathMask.exec(value.path);
-            return {
-              execResult,
-              mount: fs
-            }
-          }).filter(r => !!r.execResult);
-          if (fileShareMountParseResult) {
-            return fileShareMountParseResult.execResult[1];
-          }
-          return value.path;
-        } else {
-          return value.path;
+          return parseFSMountPath(value, this.fileShareMountsList);
         }
+        return {
+          fileShareMountId: value.fileShareMountId,
+          regionId: value.regionId,
+          storagePath: value.path,
+          path: value.path
+        };
       };
-      return {
-        fileShareMountId: value.fileShareMountId,
-        regionId: value.regionId,
-        storagePath: getStoragePath(),
-        path: value.path
-      };
+      return parse();
     } else {
       return {
         fileShareMountId: this.fileShareMountsList.length > 0 ? this.fileShareMountsList[0].id : undefined,

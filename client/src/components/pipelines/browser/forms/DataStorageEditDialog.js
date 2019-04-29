@@ -34,7 +34,11 @@ import {
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 import AWSRegionTag from '../../../special/AWSRegionTag';
-import DataStoragePathInput from './DataStoragePathInput';
+import {
+  extractFileShareMountList,
+  DataStoragePathInput,
+  parseFSMountPath
+} from './DataStoragePathInput';
 import styles from './DataStorageEditDialog.css';
 
 export const ServiceTypes = {
@@ -129,6 +133,11 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
+  }
+
+  @computed
+  get fileShareMountsList () {
+    return extractFileShareMountList(this.awsRegions);
   }
 
   @computed
@@ -247,8 +256,10 @@ export class DataStorageEditDialog extends React.Component {
 
   validateStoragePath = (value, callback) => {
     if (value && this.isNfsMount) {
-      const parts = (value.path || '').split(':');
-      if (parts.length > 1 && !parts[1].startsWith('/')) {
+      const parseResult = parseFSMountPath(value, this.fileShareMountsList);
+      if (!parseResult || !parseResult.storagePath) {
+        callback('Storage path is required');
+      } else if (!parseResult.storagePath.startsWith('/')) {
         callback('Storage path must begin with \'/\'');
       }
     } else if (!value || !value.path) {
