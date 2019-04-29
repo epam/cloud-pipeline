@@ -105,11 +105,11 @@ public class MonitoringESDao {
      * Delete indices, that are older than retention period (in days)
      * @param retentionPeriodDays retention period (in days)
      */
-    public void deleteIndices(int retentionPeriodDays) {
+    public void deleteIndices(final int retentionPeriodDays) {
         try {
-            Response response = lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
+            final Response response = lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                String indicesToDelete = reader.lines()
+                final String indicesToDelete = reader.lines()
                         .flatMap(l -> Arrays.stream(l.split(" ")))
                         .filter(str -> str.startsWith(INDEX_NAME_TOKEN)).map(name -> {
                             String dateString = name.substring(INDEX_NAME_TOKEN.length());
@@ -131,7 +131,7 @@ public class MonitoringESDao {
         }
     }
 
-    private Map<String, Double> loadAvgMetrics(final Collection<String> podIds, String metricType,
+    private Map<String, Double> loadAvgMetrics(final Collection<String> podIds, final String metricType,
                                                final String metricName, final String rangeBy,
                                                final LocalDateTime from, final LocalDateTime to) {
         if (CollectionUtils.isEmpty(podIds)) {
@@ -182,15 +182,17 @@ public class MonitoringESDao {
     }
 
     private Map<String, Double> getUsageRates(final Map<String, Double> limits, final Map<String, Double> usages) {
-        final Map<String, Double> result = new HashMap<>(limits.size());
-        limits.forEach((pod,  value) -> {
-            Double usage = usages.get(pod);
-            result.put(pod, getRate(usage, value));
-        });
-        return result;
+        return limits.entrySet().stream()
+                .collect(HashMap::new,
+                (m, e) -> {
+                    Double usage = usages.get(e.getKey());
+                    Double limit = e.getValue();
+                    m.put(e.getKey(), getRate(usage, limit));
+                },
+                Map::putAll);
     }
 
-    private boolean olderThanRetentionPeriod(int retentionPeriod, final LocalDateTime date) {
+    private boolean olderThanRetentionPeriod(final int retentionPeriod, final LocalDateTime date) {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
     }
 

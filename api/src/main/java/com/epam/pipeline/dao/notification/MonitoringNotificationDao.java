@@ -98,9 +98,8 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void updateNotificationTimestamp(List<Long> ids,
-                                            NotificationType notificationType) {
-        MapSqlParameterSource[] params = ids.stream()
+    public void updateNotificationTimestamp(final List<Long> ids, final NotificationType notificationType) {
+        final MapSqlParameterSource[] params = ids.stream()
                 .map(value -> {
                     MapSqlParameterSource param = new MapSqlParameterSource();
                     param.addValue(NotificationTimestampParameters.RUN_ID.name(), value);
@@ -113,22 +112,22 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public Optional<NotificationTimestamp> loadNotificationTimestamp(Long runId, NotificationType type) {
-        MapSqlParameterSource param = new MapSqlParameterSource();
+    public Optional<NotificationTimestamp> loadNotificationTimestamp(final Long runId, final NotificationType type) {
+        final MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue(NotificationTimestampParameters.RUN_ID.name(), runId);
         param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), type.name());
-        List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
+        final List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
                 param, NotificationTimestampParameters.getRowMapper());
         return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteNotificationTimestampsForRun(Long runId) {
+    public void deleteNotificationTimestampsForRun(final Long runId) {
         getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, runId);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteNotificationTimestampsForPipeline(Long pipelineId) {
+    public void deleteNotificationTimestampsForPipeline(final Long pipelineId) {
         getJdbcTemplate().update(deleteNotificationTimestampsByPipelineIdQuery, pipelineId);
     }
 
@@ -141,8 +140,8 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         TEMPLATE_ID,
         TEMPLATE_PARAMETERS;
 
-        static MapSqlParameterSource getParameters(NotificationMessage notificationMessage) {
-            MapSqlParameterSource params = new MapSqlParameterSource();
+        static MapSqlParameterSource getParameters(final NotificationMessage notificationMessage) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(ID.name(), notificationMessage.getId());
             params.addValue(SUBJECT.name(), notificationMessage.getSubject());
@@ -158,12 +157,12 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
 
         static RowMapper<NotificationMessage> getRowMapper() {
             return (rs, rowNum) -> {
-                NotificationMessage notificationMessage = new NotificationMessage();
+                final NotificationMessage notificationMessage = new NotificationMessage();
                 notificationMessage.setId(rs.getLong(ID.name()));
                 notificationMessage.setSubject(rs.getString(SUBJECT.name()));
                 notificationMessage.setBody(rs.getString(BODY.name()));
 
-                long longVal = rs.getLong(TO_USER_ID.name());
+                final long longVal = rs.getLong(TO_USER_ID.name());
                 if (!rs.wasNull()) {
                     notificationMessage.setToUserId(longVal);
                 }
@@ -197,7 +196,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
-    private static List<Long> mapStringToListLong(String userIds) {
+    private static List<Long> mapStringToListLong(final String userIds) {
         if (StringUtils.isBlank(userIds)) {
             return Collections.emptyList();
         }

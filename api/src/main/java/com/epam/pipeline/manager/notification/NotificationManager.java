@@ -243,16 +243,13 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        List<Long> ccUserIds = getCCUsers(idleRunSettings);
+        final List<Long> ccUserIds = getCCUsers(idleRunSettings);
 
 
-        Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(pipelineCpuRatePairs.stream()
-                .map(p -> p.getLeft().getOwner())
-                .collect(Collectors.toList())).stream()
-                .collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
-        double idleCpuLevel = preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
-        List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
+        final double idleCpuLevel = preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
+        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
@@ -275,28 +272,24 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        NotificationSettings notificationSettings = notificationSettingsManager.load(notificationType);
+        final NotificationSettings notificationSettings = notificationSettingsManager.load(notificationType);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
             LOGGER.info("No template configured for high consuming pipeline run notifications or it was disabled!");
             return;
         }
 
-        List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
+        final List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
                 .filter(run -> shouldNotifyAboutHighResourceConsuming(notificationSettings, run))
                 .collect(Collectors.toList());
 
-        List<Long> ccUserIds = getCCUsers(notificationSettings);
+        final List<Long> ccUserIds = getCCUsers(notificationSettings);
 
-        Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(
-                filtered.stream()
-                        .map(p -> p.getLeft().getOwner())
-                        .collect(Collectors.toList())
-        ).stream().collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(filtered);
 
-        double memThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
-        double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
+        final double memThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
+        final double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
 
-        List<NotificationMessage> messages = filtered.stream().map(pair -> {
+        final List<NotificationMessage> messages = filtered.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
@@ -312,7 +305,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return message;
         }).collect(Collectors.toList());
 
-        List<Long> runIds = filtered.stream()
+        final List<Long> runIds = filtered.stream()
                 .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
         monitoringNotificationDao.createMonitoringNotifications(messages);
         monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
@@ -340,28 +333,36 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void removeNotificationTimestamps(Long runId) {
+    public void removeNotificationTimestamps(final Long runId) {
         monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void removeNotificationTimestampsByPipelineId(Long id) {
+    public void removeNotificationTimestampsByPipelineId(final Long id) {
         monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
-    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(Long runId, NotificationType type) {
+    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId, final NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
     }
 
-    private boolean shouldNotifyAboutHighResourceConsuming(NotificationSettings notificationSettings,
-                                                           Pair<PipelineRun, Map<String, Double>> run) {
-        Long resendDelay = notificationSettings.getResendDelay();
-        Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
+    private boolean shouldNotifyAboutHighResourceConsuming(final NotificationSettings notificationSettings,
+                                                           final Pair<PipelineRun, Map<String, Double>> run) {
+        final Long resendDelay = notificationSettings.getResendDelay();
+        final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
                 NotificationType.HIGH_CONSUMED_RESOURCES);
 
         return notificationTimestamp
                 .map(timestamp -> NotificationTimestamp.isTimeoutEnds(timestamp, resendDelay))
                 .orElse(true);
+    }
+
+    private <T> Map<String, PipelineUser> getPipelinesOwners(List<Pair<PipelineRun, T>> pipelineCpuRatePairs) {
+        return userManager.loadUsersByNames(pipelineCpuRatePairs.stream()
+                .map(p -> p.getLeft().getOwner())
+                .collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+
     }
 
     private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
@@ -375,14 +376,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         return ccUserIds;
     }
 
-    private List<Long> getKeepInformedUserIds(NotificationSettings settings) {
+    private List<Long> getKeepInformedUserIds(final NotificationSettings settings) {
         return ListUtils.emptyIfNull(settings.getInformedUserIds());
     }
 
-    private List<Long> getMentionedUsers(String text) {
-        Matcher matcher = MENTION_PATTERN.matcher(text);
+    private List<Long> getMentionedUsers(final String text) {
+        final Matcher matcher = MENTION_PATTERN.matcher(text);
 
-        List<String> userNames = new ArrayList<>(matcher.groupCount());
+        final List<String> userNames = new ArrayList<>(matcher.groupCount());
         while (matcher.find()) {
             userNames.add(matcher.group(1));
         }
