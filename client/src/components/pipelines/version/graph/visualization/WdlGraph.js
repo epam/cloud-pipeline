@@ -430,7 +430,7 @@ export default class WdlGraph extends Graph {
         x: this.wdlVisualizer.paper.options.width + offset.left,
         y: this.wdlVisualizer.paper.options.height + offset.top
       });
-      const zoomLevel = 0.75; // we want selected element to take 50% of visualizer's size
+      const zoomLevel = 0.75; // we want selected element to take 75% of visualizer's size
       const desiredSize = {x: paperSize.x * zoomLevel, y: paperSize.y * zoomLevel};
       const elementSize = this.wdlVisualizer.paper.clientToLocalPoint({
         x: this.wdlVisualizer.selection[0].attributes.size.width + offset.left,
