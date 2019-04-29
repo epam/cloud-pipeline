@@ -64,7 +64,7 @@ public class DockerCommitTest
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
     private final String customTag = "test_tag";
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
     @Override
     public void removeNodes() {
         sleep(3, MINUTES);

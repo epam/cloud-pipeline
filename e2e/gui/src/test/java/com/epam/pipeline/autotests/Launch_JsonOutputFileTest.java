@@ -67,6 +67,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             .saveAndCommitWithMessage("test: Replace script with custom one")
             .sleep(1, SECONDS)
             .clickOnFile(CONFIG_JSON)
+            .sleep(1, SECONDS)
             .editFile(transferringJsonToObject(profiles -> {
                 final ConfigurationProfile profile = selectProfileWithName("default", profiles);
                 profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));

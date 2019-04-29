@@ -110,7 +110,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     private void waitForRunIdAppearing(String runId) {
-        for (int i = 0; i < 160; i++) {
+        for (int i = 0; i < 320; i++) {
             $(button("Refresh")).click();
             if ($(byText(runIdLabelText(runId))).exists()) {
                 break;
@@ -230,7 +230,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 .findAll("td")
                 .get(3)
                 .text()
-                .replaceAll(", ip-.+", "");
+                .replaceAll(", .+", "");
     }
 
     public String getNodeRunId(int index) {
