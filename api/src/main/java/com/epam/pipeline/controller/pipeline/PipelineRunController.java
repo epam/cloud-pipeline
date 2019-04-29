@@ -450,4 +450,15 @@ public class PipelineRunController extends AbstractRestController {
         runApiService.prolongIdleRun(runId);
         return Result.success();
     }
+
+    @GetMapping(value = "/run/{runId}/terminate")
+    @ResponseBody
+    @ApiOperation(
+            value = "Terminates paused pipeline run.",
+            notes = "Terminates paused pipeline run cloud instance if it exists and stops the pipeline run.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun>  terminateRun(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.terminateRun(runId));
+    }
 }

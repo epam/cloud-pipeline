@@ -159,27 +159,50 @@ public class NodesManager {
     }
 
     public NodeInstance getNode(String name, FilterPodsRequest request) {
-        NodeInstance nodeInstance = null;
+        return findNode(name, request).orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
+    }
+
+    public Optional<NodeInstance> findNode(final String name) {
+        return findNode(name, null);
+    }
+
+    public Optional<NodeInstance> findNode(final String name, final FilterPodsRequest request) {
         try (KubernetesClient client = new DefaultKubernetesClient()) {
-            Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
-            Node node = nodeSearchResult.get();
+            final Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
+            final Node node = nodeSearchResult.get();
             if (node != null) {
                 final List<String> statuses = request != null ? request.getPodStatuses() : null;
-                nodeInstance = new NodeInstance(node);
+                final NodeInstance nodeInstance = new NodeInstance(node);
                 this.attachRunsInfo(Collections.singletonList(nodeInstance));
                 nodeInstance.setPods(PodInstance.convertToInstances(client.pods().list(),
                         FilterPodsRequest.getPodsByNodeNameAndStatusPredicate(name, statuses))
                 );
+                return Optional.of(nodeInstance);
             }
         }
-        Assert.notNull(nodeInstance, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name));
-        return nodeInstance;
+        final List<String> podStatuses = Optional.ofNullable(request)
+                .map(FilterPodsRequest::getPodStatuses)
+                .orElseGet(Collections::emptyList);
+        log.warn("Node with name {} and the following pod statuses {} wasn't found in cluster.", name, podStatuses);
+        return Optional.empty();
     }
 
     public NodeInstance terminateNode(final String name) {
         final NodeInstance nodeInstance = getNode(name);
+        terminateNode(nodeInstance);
+        return nodeInstance;
+    }
+
+    public Optional<NodeInstance> terminateNodeIfExists(final String name) {
+        final Optional<NodeInstance> node = findNode(name);
+        node.ifPresent(this::terminateNode);
+        return node;
+    }
+
+    private void terminateNode(final NodeInstance nodeInstance) {
         Assert.isTrue(!isNodeProtected(nodeInstance),
-                messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, name));
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, nodeInstance.getName()));
 
         if (nodeInstance.getPipelineRun() != null) {
             PipelineRun run = nodeInstance.getPipelineRun();
@@ -194,7 +217,6 @@ public class NodesManager {
                 .filter(a -> a.getType() != null && a.getType().equalsIgnoreCase("internalip"))
                 .findAny();
         internalIP.ifPresent(nodeInstanceAddress -> terminateNode(nodeInstance, nodeInstanceAddress, cloudRegion));
-        return nodeInstance;
     }
 
     private AbstractCloudRegion loadRegionFromLabels(final NodeInstance nodeInstance) {
@@ -202,7 +224,8 @@ public class NodesManager {
         final String region = nodeInstance.getRegion();
         if (provider == null || org.apache.commons.lang3.StringUtils.isBlank(region)) {
             //missing node labels, let's try default region
-            log.error("Node {} is missing cloud provider labels. Provider: {}, region: {}.", provider, region);
+            log.error("Node {} is missing cloud provider labels. Provider: {}, region: {}.", nodeInstance.getName(),
+                    provider, region);
             return regionManager.loadDefaultRegion();
         }
         return regionManager.load(provider, region);

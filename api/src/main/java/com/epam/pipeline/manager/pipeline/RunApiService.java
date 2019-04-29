@@ -54,6 +54,7 @@ import java.util.Date;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
+import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 
@@ -257,5 +258,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public Boolean checkFreeSpaceAvailable(final Long runId) {
         return runManager.checkFreeSpaceAvailable(runId);
+    }
+
+    @PreAuthorize(RUN_ID_OWNER)
+    public PipelineRun terminateRun(final Long runId) {
+        return runManager.terminateRun(runId);
     }
 }

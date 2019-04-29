@@ -51,6 +51,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
@@ -174,6 +175,9 @@ public class PipelineRunManager {
 
     @Autowired
     private CAdvisorMonitoringManager cAdvisorMonitoringManager;
+
+    @Autowired
+    private NodesManager nodesManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -864,6 +868,29 @@ public class PipelineRunManager {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Terminates paused run.
+     *
+     * It terminates the run cloud instance if it exists and stops the run.
+     *
+     * @param runId {@link PipelineRun} id for pipeline run.
+     * @return Terminated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun terminateRun(final Long runId) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+        Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_TERMINATION_WRONG_STATUS, runId,
+                        pipelineRun.getStatus()));
+
+        final String node = pipelineRun.getInstance().getNodeName();
+        updatePipelineStatusIfNotFinal(pipelineRun.getId(), TaskStatus.STOPPED, null);
+        nodesManager.terminateNodeIfExists(node);
+        return pipelineRun;
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
