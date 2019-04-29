@@ -230,7 +230,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                 .findAll("td")
                 .get(3)
                 .text()
-                .replaceAll(", ip-.+", "");
+                .replaceAll(", .+", "");
     }
 
     public String getNodeRunId(int index) {
