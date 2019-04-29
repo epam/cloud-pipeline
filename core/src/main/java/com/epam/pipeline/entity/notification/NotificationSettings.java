@@ -45,6 +45,7 @@ public class NotificationSettings {
     /**
      * Relevant only for LONG_RUNNING and LONG_INIT notification type. Represents time delay (in ms), starting from
      * which a PipelineRun is considered "long running" and therefore a notification should be sent.
+     * Could have value bigger that 0 or -1 to show that threshold value aren't applied here.
      */
     private Long threshold;
     /**
@@ -72,7 +73,11 @@ public class NotificationSettings {
         settings.setResendDelay(type.getDefaultResendDelay());
         return settings;
     }
-
+    /**
+     * Represents types of System Notification.
+     * NOTE: defaultThreshold field could have value bigger that 0 or -1
+     * to show that threshold value aren't applied here.
+     * */
     public enum NotificationType {
 
         LONG_RUNNING(1, 3600L, 600L, true, NotificationGroup.LONG_RUNNING),
@@ -84,7 +89,7 @@ public class NotificationSettings {
         IDLE_RUN(6, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
         IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        HIGH_CONSUMED_RESOURCES(9, 0L, 600L, true, NotificationGroup.RESOURCE_CONSUMING);
+        HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, true, NotificationGroup.RESOURCE_CONSUMING);
 
         private static final Map<Long, NotificationType> BY_ID;
 
