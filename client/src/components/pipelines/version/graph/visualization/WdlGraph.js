@@ -17,7 +17,7 @@
 import React from 'react';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
 import AllowedInstanceTypes from '../../../../../models/utils/AllowedInstanceTypes';
 import pipeline from 'pipeline-builder';
@@ -28,7 +28,19 @@ import {
   ResizablePanel,
   ResizeAnchors
 } from '../../../../special/resizablePanel';
-import {Alert, Row, Button, Icon, message, Modal, Form, Tooltip} from 'antd';
+import {
+  Alert,
+  AutoComplete,
+  Row,
+  Button,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Popover,
+  Form,
+  Tooltip
+} from 'antd';
 import {prepareTask, WDLItemProperties} from './forms/WDLItemProperties';
 import {
   generatePipelineCommand,
@@ -41,6 +53,10 @@ import {ItemTypes} from '../../../model/treeStructureFunctions';
 const graphFitContentOpts = {padding: 24};
 
 const nameReplacementRegExp = /[-\s.,:;'"!@#$%^&*()\[\]{}\/\\~`±§]/g;
+
+const graphSelectableTypes = [
+  'VisualGroup', 'VisualStep', 'VisualWorkflow'
+];
 
 function reportWDLError (error) {
   const message = error.message || error;
@@ -295,7 +311,8 @@ export default class WdlGraph extends Graph {
     }
     this.wdlVisualizer && this.wdlVisualizer.paper.model.getElements().forEach(e => {
       const view = this.wdlVisualizer.paper.findViewByModel(e);
-      if (selectedTaskName && e.step && e.step.name === selectedTaskName) {
+      if (selectedTaskName && e.step && e.step.name === selectedTaskName &&
+        graphSelectableTypes.includes(e.attributes.type)) {
         this.wdlVisualizer.disableSelection();
         this.wdlVisualizer.enableSelection();
         this.wdlVisualizer.selection.push(e);
@@ -1081,6 +1098,132 @@ export default class WdlGraph extends Graph {
     );
   };
 
+  handleSearchControlVisible = (searchControlVisible) => {
+    const handleChange = () => {
+      this.setState({searchControlVisible, tooltipVisible: false}, () => {
+        if (!searchControlVisible) {
+          this.clearSearchAutocomplete();
+        }
+      })
+    };
+    if (!searchControlVisible) {
+      setTimeout(handleChange, 300);
+    } else {
+      handleChange();
+    }
+  };
+
+  clearSearchAutocomplete = () => {
+    this.setState({graphSearch: null});
+  };
+
+  selectElement = (label, option) => {
+    const name = option.props.step.name;
+    this.wdlVisualizer && this.wdlVisualizer.paper.model.getElements().forEach(e => {
+      if (name && e.step && e.step.name === name && graphSelectableTypes.includes(e.attributes.type)) {
+        const view = this.wdlVisualizer.paper.findViewByModel(e);
+        this.wdlVisualizer.disableSelection();
+        this.wdlVisualizer.enableSelection();
+        this.wdlVisualizer.selection.push(e);
+        view && view.el && view.el.classList.toggle('selected', true);
+        this.onSelectItem();
+      }
+    });
+  };
+
+  getGraphFilteredElements = (element = this.workflow) => {
+    const elements = [];
+    if (!this.state.graphSearch) {
+      return [];
+    }
+    for(let key in element.children) {
+      if (element.children.hasOwnProperty(key)) {
+        if (key.toLowerCase().includes(this.state.graphSearch.toLowerCase()) ||
+          (element.children[key].type || 'task').toLowerCase().includes(this.state.graphSearch.toLowerCase())) {
+          elements.push({
+            alias: element.children[key].name,
+            type: element.children[key].type || 'task',
+            step: element.children[key],
+          });
+        }
+        if (element.children[key].children && Object.keys(element.children[key].children).length) {
+          const childEls = this.getGraphFilteredElements(element.children[key].children);
+          if (childEls.length) {
+            elements.concat(childEls);
+          }
+        }
+      }
+    }
+
+    return elements;
+  };
+
+  renderOption = (item) => {
+    let expression = '';
+    if (item.type.toLowerCase() === 'if' || item.type.toLowerCase() === 'while' ||
+      item.type.toLowerCase() === 'scatter') {
+      if (item.step && item.step.action &&
+        item.step.action.data && item.step.action.data.expression) {
+        expression = `(${item.step.action.data.expression})`;
+      }
+    } else {
+      expression = item.alias;
+    }
+    return (
+      <AutoComplete.Option key={item.alias} value={item.alias} step={item.step}>
+        {item.type} {expression}
+      </AutoComplete.Option>
+    );
+  };
+
+  @computed
+  get graphSearchDataSource() {
+    return this.getGraphFilteredElements().map(this.renderOption);
+  };
+
+  renderGraphSearch = () => {
+    const searchControl = (
+      <AutoComplete
+        dataSource={this.graphSearchDataSource}
+        value={this.state.graphSearch}
+        onChange={(graphSearch) => { this.setState({graphSearch}); }}
+        placeholder="Element type or name..."
+        optionLabelProp="value"
+        style={{minWidth: 300}}
+        onSelect={this.selectElement}
+      >
+        <Input.Search />
+      </AutoComplete>
+    );
+    const onTooltipVisibleChange = (visible) => {
+      this.setState({
+        tooltipVisible: visible
+      });
+    };
+    return (
+      <Tooltip
+        title="Search element"
+        onVisibleChange={onTooltipVisibleChange}
+        visible={this.state.tooltipVisible}
+        placement="right">
+        <Popover
+          content={searchControl}
+          placement="right"
+          trigger="click"
+          onVisibleChange={this.handleSearchControlVisible}
+          visible={this.state.searchControlVisible}>
+          <Button
+            id="wdl-graph-search-button"
+            className={styles.wdlAppearanceButton}
+            shape="circle"
+          >
+            <Icon type="search" />
+          </Button>
+        </Popover>
+      </Tooltip>
+    );
+  };
+
   renderAppearancePanel = () => {
     return (
       <div className={`${styles.wdlGraphSidePanel} ${styles.left}`}>
@@ -1165,6 +1308,9 @@ export default class WdlGraph extends Graph {
             <Icon type="plus-circle-o" />
           </Button>
         </Tooltip>
+        {
+          this.renderGraphSearch()
+        }
         <Tooltip title="Fullscreen" placement="right">
           <Button
             className={styles.wdlAppearanceButton}
