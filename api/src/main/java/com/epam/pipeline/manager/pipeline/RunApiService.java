@@ -154,8 +154,8 @@ public class RunApiService {
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
     @AclMask
-    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status, Date endDate) {
-        return runManager.updatePipelineStatusIfNotFinal(runId, status, endDate);
+    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status) {
+        return runManager.updatePipelineStatusIfNotFinal(runId, status);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)

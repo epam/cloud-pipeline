@@ -206,7 +206,7 @@ public class NodesManager {
 
         if (nodeInstance.getPipelineRun() != null) {
             PipelineRun run = nodeInstance.getPipelineRun();
-            pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED, null);
+            pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
         }
 
         final AbstractCloudRegion cloudRegion = Optional.ofNullable(nodeInstance.getPipelineRun())

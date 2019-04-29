@@ -433,13 +433,12 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineStatusIfNotFinalExternal(Long runId, TaskStatus status, Date endDate) {
-        return updatePipelineStatusIfNotFinal(runId, status, endDate);
+    public PipelineRun updatePipelineStatusIfNotFinalExternal(Long runId, TaskStatus status) {
+        return updatePipelineStatusIfNotFinal(runId, status);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status,
-            Date endDate) {
+    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         if (pipelineRun.getStatus().isFinal()) {
             LOGGER.debug("Pipeline run {} is already in the final status: {}.",
@@ -460,7 +459,7 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun stop(Long runId) {
-        return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED, DateUtils.now());
+        return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -888,7 +887,7 @@ public class PipelineRunManager {
                         pipelineRun.getStatus()));
 
         final String node = pipelineRun.getInstance().getNodeName();
-        updatePipelineStatusIfNotFinal(pipelineRun.getId(), TaskStatus.STOPPED, null);
+        updatePipelineStatusIfNotFinal(pipelineRun.getId(), TaskStatus.STOPPED);
         nodesManager.terminateNodeIfExists(node);
         return pipelineRun;
     }

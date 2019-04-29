@@ -216,7 +216,7 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRun> updateRunStatus(@PathVariable(value = RUN_ID) Long runId,
             @RequestBody RunStatusVO statusVO) {
         return Result.success(runApiService.updatePipelineStatusIfNotFinal(runId,
-                statusVO.getStatus(), statusVO.getEndDate()));
+                statusVO.getStatus()));
     }
 
     @RequestMapping(value = "/run/{runId}/instance", method= RequestMethod.POST)
