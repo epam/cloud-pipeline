@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
@@ -74,6 +75,8 @@ public class ResourceMonitoringManagerTest {
     private static final double TEST_IDLE_SPOT_RUN_CPU_LOAD = 400.0;
     private static final long TEST_IDLE_ON_DEMAND_RUN_ID = 3;
     private static final long TEST_IDLE_RUN_TO_PROLONG_ID = 4;
+    private static final long TEST_HIGH_CONSUMING_RUN_ID = 5;
+    private static final int TEST_HIGH_CONSUMING_RUN_LOAD = 80;
     private static final double TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD = 200.0;
     private static final Integer TEST_RESOURCE_MONITORING_DELAY = 111;
     private static final int TEST_MAX_IDLE_MONITORING_TIMEOUT = 30;
@@ -82,6 +85,8 @@ public class ResourceMonitoringManagerTest {
     private static final double MILICORES_TO_CORES = 1000.0;
     private static final double DELTA = 0.001;
     private static final int HALF_AN_HOUR = 30;
+    private static final String HIGH_CONSUMING_POD_ID = "high-consuming";
+    private static final double PERCENTS = 100.0;
 
     private ResourceMonitoringManager resourceMonitoringManager;
 
@@ -105,13 +110,17 @@ public class ResourceMonitoringManagerTest {
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
     @Captor
-    ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyCaptor;
+    ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyIdleCaptor;
+    @Captor
+    ArgumentCaptor<List<Pair<PipelineRun, Map<String, Double>>>> runsToNotifyResConsumingCaptor;
 
     private InstanceType testType;
     private PipelineRun okayRun;
     private PipelineRun idleSpotRun;
     private PipelineRun idleOnDemandRun;
     private PipelineRun idleRunToProlong;
+    private PipelineRun highConsumingRun;
+
 
     private Map<String, Double> mockStats;
 
@@ -133,6 +142,14 @@ public class ResourceMonitoringManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION_TIMEOUT_MINUTES)).thenReturn(1);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES))
             .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE))
+                .thenReturn(TEST_MAX_IDLE_MONITORING_TIMEOUT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT))
+                .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT))
+                .thenReturn(TEST_HIGH_CONSUMING_RUN_LOAD);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
+                .thenReturn(IdleRunAction.NOTIFY.name());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -189,14 +206,27 @@ public class ResourceMonitoringManagerTest {
         idleRunToProlong.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
 
+        highConsumingRun = new PipelineRun();
+        highConsumingRun.setInstance(spotInstance);
+        highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
+        highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
+        highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
+        highConsumingRun.setProlongedAtTime(DateUtils.nowUTC()
+                .plus(TEST_MAX_IDLE_MONITORING_TIMEOUT, ChronoUnit.MINUTES));
+
         mockStats = new HashMap<>();
         mockStats.put(okayRun.getPodId(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
                                                                     // should be = 40% load
         mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
-        when(monitoringESDao.loadCpuUsageRateMetrics(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
-                .thenReturn(mockStats);
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(mockStats);
+
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
 
         resourceMonitoringManager.init();
 
@@ -214,7 +244,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(2, updatedRuns.size());
@@ -222,7 +252,7 @@ public class ResourceMonitoringManagerTest {
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleOnDemandRun.getPodId())));
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getLastIdleNotificationTime() != null));
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(2, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream().anyMatch(r -> r.getLeft().getPodId().equals(idleSpotRun.getPodId())));
         Assert.assertEquals(
@@ -248,7 +278,8 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Collections.singletonList(idleRunToProlong));
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
-        when(monitoringESDao.loadCpuUsageRateMetrics(any(), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
+                any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonMap(idleRunToProlong.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
@@ -257,13 +288,13 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(1, updatedRuns.size());
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
@@ -277,12 +308,12 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager, times(2))
                 .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager, times(2))
-                .notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(0, updatedRuns.size());
 
-        runsToNotify = runsToNotifyCaptor.getValue();
+        runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(0, runsToNotify.size());
 
         //finally reset idleNotificationTime and again check that notification prevents again
@@ -294,13 +325,13 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager, times(3))
                 .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager, times(3))
-                .notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+                .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(1, updatedRuns.size());
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
-        runsToNotify = runsToNotifyCaptor.getValue();
+        runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
@@ -320,14 +351,14 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(2, updatedRuns.size());
         Assert.assertFalse(updatedRuns.stream()
                                .anyMatch(r -> r.getLastIdleNotificationTime().equals(lastNotificationDate)));
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(2, runsToNotify.size());
     }
 
@@ -358,7 +389,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
@@ -374,7 +405,7 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager).pauseRun(TEST_IDLE_ON_DEMAND_RUN_ID, true);
         verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
     }
 
@@ -390,7 +421,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
@@ -407,7 +438,7 @@ public class ResourceMonitoringManagerTest {
         verify(pipelineRunManager, never()).stop(TEST_OK_RUN_ID);
         verify(pipelineRunManager, never()).pauseRun(TEST_OK_RUN_ID, true);
 
-        Assert.assertTrue(runsToNotifyCaptor.getValue().isEmpty());
+        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
     }
 
     @Test
@@ -421,11 +452,11 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager, times(2)).notifyIdleRuns(any(),
                                                                      eq(NotificationType.IDLE_RUN_STOPPED));
 
-        Assert.assertTrue(runsToNotifyCaptor.getValue().isEmpty());
+        Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(2, updatedRuns.size());
@@ -448,7 +479,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(2, updatedRuns.size());
@@ -481,12 +512,33 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.monitorResourceUsage();
 
         verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
-        verify(notificationManager).notifyIdleRuns(runsToNotifyCaptor.capture(), eq(NotificationType.IDLE_RUN));
+        verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
         List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
         Assert.assertEquals(0, updatedRuns.size());
 
-        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyCaptor.getValue();
+        List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(0, runsToNotify.size());
+    }
+
+    @Test
+    public void testNotifyAboutHighConsumingResources() {
+        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+                Arrays.asList(okayRun, highConsumingRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+
+        verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
+                eq(NotificationType.HIGH_CONSUMED_RESOURCES));
+        List<Pair<PipelineRun, Map<String, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
+        Assert.assertEquals(1, value.size());
+        Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
+    }
+
+    private HashMap<String, Double> getMockedHighConsumingStats() {
+        HashMap<String, Double> stats = new HashMap<>();
+        stats.put(highConsumingRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
+        stats.put(okayRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
+        return stats;
     }
 }

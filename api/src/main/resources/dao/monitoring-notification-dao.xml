@@ -83,5 +83,55 @@
                 ]]>
             </value>
         </property>
+        <property name="updateNotificationTimestampQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.notification_timestamp (
+                        run_id,
+                        notification_type,
+                        timestamp)
+                    VALUES (
+                        :RUN_ID,
+                        :NOTIFICATION_TYPE,
+                        :TIMESTAMP)
+                    ON CONFLICT (run_id, notification_type) DO UPDATE SET
+                        timestamp = :TIMESTAMP
+                ]]>
+            </value>
+        </property>
+        <property name="loadNotificationTimestampQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        notification_type,
+                        timestamp
+                    FROM
+                        pipeline.notification_timestamp
+                    WHERE run_id = :RUN_ID AND notification_type = :NOTIFICATION_TYPE
+                ]]>
+            </value>
+        </property>
+        <property name="deleteNotificationTimestampsByRunIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.notification_timestamp
+                    WHERE run_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteNotificationTimestampsByPipelineIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.notification_timestamp nt
+                    USING pipeline.pipeline_run pr
+                    WHERE pr.run_id = nt.run_id AND pr.pipeline_id = ?
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

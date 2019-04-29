@@ -361,10 +361,25 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
     /**
-     * Level of CPU load, blow which a Run is considered `idle`
+     * Level of CPU load, below which a Run is considered `idle`
      */
     public static final IntPreference SYSTEM_IDLE_CPU_THRESHOLD_PERCENT =
             new IntPreference("system.idle.cpu.threshold", 10, SYSTEM_GROUP, isGreaterThan(0));
+    /**
+     * Level of memory load, below which a Run is considered `overloaded`
+     */
+    public static final IntPreference SYSTEM_MEMORY_THRESHOLD_PERCENT =
+            new IntPreference("system.memory.consume.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
+    /**
+     * Level of filesystem load, below which a Run is considered `overloaded`
+     */
+    public static final IntPreference SYSTEM_DISK_THRESHOLD_PERCENT =
+            new IntPreference("system.disk.consume.threshold", 95, SYSTEM_GROUP, isGreaterThan(0));
+    /**
+     * Period of time for monitoring metrics query
+     */
+    public static final IntPreference SYSTEM_MONITORING_METRIC_TIME_RANGE =
+            new IntPreference("system.monitoring.time.range", 30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls maximum timeout (in minutes), which a node can stay idle, before an action will be taken
      */

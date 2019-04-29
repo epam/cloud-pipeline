@@ -28,6 +28,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +53,6 @@ import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -108,16 +110,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             notificationMessage.setToUserId(pipelineOwner.getId());
         }
 
-        List<Long> ccUserIds = getKeepInformedUserIds(settings);
-
-        if (settings.isKeepInformedAdmins()) {
-            ExtendedRole extendedRole = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId());
-            ccUserIds.addAll(extendedRole.getUsers().stream()
-                                 .map(PipelineUser::getId)
-                                 .collect(Collectors.toList()));
-        }
-
-        notificationMessage.setCopyUserIds(ccUserIds);
+        notificationMessage.setCopyUserIds(getCCUsers(settings));
 
         notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
         if (notificationMessage.getTemplate() == null) {
@@ -127,14 +120,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
-    }
-
-    private List<Long> getKeepInformedUserIds(NotificationSettings settings) {
-        if (CollectionUtils.isEmpty(settings.getInformedUserIds())) {
-            return new ArrayList<>();
-        } else {
-            return settings.getInformedUserIds();
-        }
     }
 
     /**
@@ -166,20 +151,6 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
 
         monitoringNotificationDao.createMonitoringNotification(message);
-    }
-
-    private List<Long> getMentionedUsers(String text) {
-        Matcher matcher = MENTION_PATTERN.matcher(text);
-
-        List<String> userNames = new ArrayList<>(matcher.groupCount());
-        while (matcher.find()) {
-            userNames.add(matcher.group(1));
-        }
-
-        return userManager.loadUsersByNames(userNames).stream()
-            .map(PipelineUser::getId)
-            .collect(Collectors.toList());
-
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -238,16 +209,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         message.setTemplate(new NotificationTemplate(runStatusSettings.getTemplateId()));
         message.setTemplateParameters(PipelineRunMapper.map(pipelineRun, null));
 
-        List<Long> ccUserIds = getKeepInformedUserIds(runStatusSettings);
-
-        if (runStatusSettings.isKeepInformedAdmins()) {
-            ExtendedRole extendedRole = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId());
-            ccUserIds.addAll(extendedRole.getUsers().stream()
-                                 .map(PipelineUser::getId)
-                                 .collect(Collectors.toList()));
-        }
-
-        message.setCopyUserIds(ccUserIds);
+        message.setCopyUserIds(getCCUsers(runStatusSettings));
 
         if (runStatusSettings.isKeepInformedOwner()) {
             PipelineUser pipelineOwner = userManager.loadUserByName(pipelineRun.getOwner());
@@ -281,22 +243,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
-        if (idleRunSettings.isKeepInformedAdmins()) {
-            ExtendedRole extendedRole = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId());
-            ccUserIds.addAll(extendedRole.getUsers().stream()
-                                 .map(PipelineUser::getId)
-                                 .collect(Collectors.toList()));
-        }
+        final List<Long> ccUserIds = getCCUsers(idleRunSettings);
 
-        double idleCpuLevel = preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
 
-        Map<String, PipelineUser> pipelineOwners = userManager.loadUsersByNames(pipelineCpuRatePairs.stream()
-                                                                            .map(p -> p.getLeft().getOwner())
-                                                                            .collect(Collectors.toList())).stream()
-            .collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
-        List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
+        final double idleCpuLevel = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
+        final List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
@@ -310,6 +264,52 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             .collect(Collectors.toList());
 
         monitoringNotificationDao.createMonitoringNotifications(messages);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
+                                                final NotificationType notificationType) {
+        if (CollectionUtils.isEmpty(pipelinesMetrics)) {
+            return;
+        }
+
+        final NotificationSettings notificationSettings = notificationSettingsManager.load(notificationType);
+        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+            LOGGER.info("No template configured for high consuming pipeline run notifications or it was disabled!");
+            return;
+        }
+
+        final List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
+                .filter(run -> shouldNotifyAboutHighResourceConsuming(notificationSettings, run))
+                .collect(Collectors.toList());
+
+        final List<Long> ccUserIds = getCCUsers(notificationSettings);
+
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(filtered);
+
+        final double memThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT);
+        final double diskThreshold = preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT);
+
+        final List<NotificationMessage> messages = filtered.stream().map(pair -> {
+            NotificationMessage message = new NotificationMessage();
+            message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
+            message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
+            message.getTemplateParameters().put("memoryThreshold", memThreshold);
+            message.getTemplateParameters().put("memoryRate",
+                    pair.getRight().getOrDefault(ELKUsageMetric.MEM.getName(), 0.0) * PERCENT);
+            message.getTemplateParameters().put("diskThreshold", diskThreshold);
+            message.getTemplateParameters().put("diskRate", pair.getRight()
+                    .getOrDefault(ELKUsageMetric.FS.getName(), 0.0) * PERCENT);
+
+            message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
+            message.setCopyUserIds(ccUserIds);
+            return message;
+        }).collect(Collectors.toList());
+
+        final List<Long> runIds = filtered.stream()
+                .map(pm -> pm.getLeft().getId()).collect(Collectors.toList());
+        monitoringNotificationDao.createMonitoringNotifications(messages);
+        monitoringNotificationDao.updateNotificationTimestamp(runIds, notificationType);
     }
 
     /**
@@ -333,6 +333,70 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         return message;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void removeNotificationTimestamps(final Long runId) {
+        monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void removeNotificationTimestampsByPipelineId(final Long id) {
+        monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
+    }
+
+    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,
+                                                                         final NotificationType type) {
+        return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
+    }
+
+    private boolean shouldNotifyAboutHighResourceConsuming(final NotificationSettings notificationSettings,
+                                                           final Pair<PipelineRun, Map<String, Double>> run) {
+        final Long resendDelay = notificationSettings.getResendDelay();
+        final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
+                run.getLeft().getId(),
+                NotificationType.HIGH_CONSUMED_RESOURCES);
+
+        return notificationTimestamp
+                .map(timestamp -> NotificationTimestamp.isTimeoutEnds(timestamp, resendDelay))
+                .orElse(true);
+    }
+
+    private <T> Map<String, PipelineUser> getPipelinesOwners(List<Pair<PipelineRun, T>> pipelineCpuRatePairs) {
+        return userManager.loadUsersByNames(pipelineCpuRatePairs.stream()
+                .map(p -> p.getLeft().getOwner())
+                .collect(Collectors.toList())).stream()
+                .collect(Collectors.toMap(PipelineUser::getUserName, user -> user));
+
+    }
+
+    private List<Long> getCCUsers(final NotificationSettings idleRunSettings) {
+        final List<Long> ccUserIds = getKeepInformedUserIds(idleRunSettings);
+
+        if (idleRunSettings.isKeepInformedAdmins()) {
+            final List<Long> adminsIds = roleManager.loadRoleWithUsers(DefaultRoles.ROLE_ADMIN.getId())
+                    .getUsers().stream().map(PipelineUser::getId).collect(Collectors.toList());
+            return ListUtils.union(ccUserIds, adminsIds);
+        }
+        return ccUserIds;
+    }
+
+    private List<Long> getKeepInformedUserIds(final NotificationSettings settings) {
+        return ListUtils.emptyIfNull(settings.getInformedUserIds());
+    }
+
+    private List<Long> getMentionedUsers(final String text) {
+        final Matcher matcher = MENTION_PATTERN.matcher(text);
+
+        final List<String> userNames = new ArrayList<>(matcher.groupCount());
+        while (matcher.find()) {
+            userNames.add(matcher.group(1));
+        }
+
+        return userManager.loadUsersByNames(userNames).stream()
+                .map(PipelineUser::getId)
+                .collect(Collectors.toList());
+
+    }
+
     private NotificationMessage toMessage(final NotificationMessageVO messageVO) {
         final NotificationMessage message = new NotificationMessage();
         message.setSubject(messageVO.getSubject());
@@ -354,5 +418,4 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
     }
-
 }

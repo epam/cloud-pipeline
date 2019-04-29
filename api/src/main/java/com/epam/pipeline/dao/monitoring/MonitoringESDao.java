@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.monitoring;
 
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import org.apache.commons.collections4.CollectionUtils;
@@ -45,9 +46,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric.CPU;
 
 @Repository
 @ConditionalOnProperty("monitoring.elasticsearch.url")
@@ -62,10 +66,12 @@ public class MonitoringESDao {
     private static final String FIELD_NAMESPACE_NAME = "namespace_name";
     private static final String FIELD_TYPE = "type";
 
-    private static final String FIELD_CPU_METRICS_TIMESTAMP = "CpuMetricsTimestamp";
-
+    private static final String USAGE = "usage";
+    private static final String USAGE_RATE = "usage_rate";
+    private static final String LIMIT = "limit";
+    
     private static final String AGGREGATION_POD_NAME = "pod_name";
-    private static final String AGGREGATION_CPU_RATE = "avg_cpu_rate";
+    private static final String AGGREGATION_METRIC_RATE = "_avg_rate";
 
     private RestHighLevelClient client;
     private RestClient lowLevelClient;
@@ -76,77 +82,47 @@ public class MonitoringESDao {
         this.lowLevelClient = lowLevelClient;
     }
 
-    public Map<String, Double> loadCpuUsageRateMetrics(Collection<String> podIds, LocalDateTime from,
-                                                       LocalDateTime to) {
-        if (CollectionUtils.isEmpty(podIds)) {
-            return Collections.emptyMap();
+    public Map<String, Double> loadUsageRateMetrics(final ELKUsageMetric metric, Collection<String> podIds,
+                                                    final LocalDateTime from, LocalDateTime to) {
+        if (metric == CPU) {
+            return loadAvgMetrics(podIds, CPU.getName(), USAGE_RATE, CPU.getTimestamp(), from, to)
+                    .entrySet()
+                    .stream()
+                    .collect(HashMap::new,
+                        (m, e) -> m.put(e.getKey(), Double.isFinite(e.getValue()) ? e.getValue() : null),
+                            Map::putAll);
         }
 
-        SearchSourceBuilder builder = new SearchSourceBuilder()
-            .query(QueryBuilders.boolQuery()
-                 .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
-                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
-                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                 .filter(QueryBuilders.rangeQuery(FIELD_CPU_METRICS_TIMESTAMP)
-                             .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                             .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-            .size(0)
-            .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
-                             .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
-                             .size(podIds.size())
-                             .subAggregation(AggregationBuilders.avg(AGGREGATION_CPU_RATE)
-                                                 .field("Metrics.cpu/usage_rate.value")));
+        final Map<String, Double> limits =
+                loadAvgMetrics(podIds, metric.getName(), LIMIT, metric.getTimestamp(), from, to);
+        final Map<String, Double> usages =
+                loadAvgMetrics(podIds, metric.getName(), USAGE, metric.getTimestamp(), from, to);
 
-        SearchRequest request = new SearchRequest(getIndexNames(from, to)).types("cpu").source(builder);
-
-        SearchResponse response;
-        try {
-            response = client.search(request);
-        } catch (IOException e) {
-            throw new PipelineException(e);
-        }
-
-        Terms terms = response.getAggregations().get(AGGREGATION_POD_NAME);
-        return terms.getBuckets().stream()
-            .collect(Collectors.toMap(
-                b -> b.getKey().toString(),
-                b -> ((Avg) b.getAggregations().get(AGGREGATION_CPU_RATE)).getValue()));
-    }
-
-    private String path(String ...parts) {
-        return String.join(".", parts);
-    }
-
-    private String[] getIndexNames(LocalDateTime from, LocalDateTime to) {
-        return Stream.of(from, to)
-            .map(d -> d.format(DATE_FORMATTER))
-            .distinct()
-            .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
-            .toArray(String[]::new);
+        return getUsageRates(limits, usages);
     }
 
     /**
      * Delete indices, that are older than retention period (in days)
      * @param retentionPeriodDays retention period (in days)
      */
-    public void deleteIndices(int retentionPeriodDays) {
+    public void deleteIndices(final int retentionPeriodDays) {
         try {
-            Response response = lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
+            final Response response = lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                String indicesToDelete = reader.lines()
-                    .flatMap(l -> Arrays.stream(l.split(" ")))
-                    .filter(str -> str.startsWith(INDEX_NAME_TOKEN)).map(name -> {
-                        String dateString = name.substring(INDEX_NAME_TOKEN.length());
-                        try {
-                            return new ImmutablePair<>(name, LocalDate.parse(dateString, DATE_FORMATTER)
-                                .atStartOfDay(ZoneOffset.UTC).toLocalDateTime());
-                        } catch (IllegalArgumentException e) {
-                            return new ImmutablePair<String, LocalDateTime>(name, null);
-                        }
-                    })
-                    .filter(pair -> pair.right != null && olderThanRetentionPeriod(retentionPeriodDays, pair.right))
-                    .map(pair -> pair.left)
-                    .collect(Collectors.joining(","));
+                final String indicesToDelete = reader.lines()
+                        .flatMap(l -> Arrays.stream(l.split(" ")))
+                        .filter(str -> str.startsWith(INDEX_NAME_TOKEN)).map(name -> {
+                            String dateString = name.substring(INDEX_NAME_TOKEN.length());
+                            try {
+                                return new ImmutablePair<>(name, LocalDate.parse(dateString, DATE_FORMATTER)
+                                        .atStartOfDay(ZoneOffset.UTC).toLocalDateTime());
+                            } catch (IllegalArgumentException e) {
+                                return new ImmutablePair<String, LocalDateTime>(name, null);
+                            }
+                        })
+                        .filter(pair -> pair.right != null && olderThanRetentionPeriod(retentionPeriodDays, pair.right))
+                        .map(pair -> pair.left)
+                        .collect(Collectors.joining(","));
 
                 lowLevelClient.performRequest(HttpMethod.DELETE.name(), "/" + indicesToDelete);
             }
@@ -155,7 +131,72 @@ public class MonitoringESDao {
         }
     }
 
-    private boolean olderThanRetentionPeriod(int retentionPeriod, LocalDateTime date) {
+    private Map<String, Double> loadAvgMetrics(final Collection<String> podIds, final String metricType,
+                                               final String metricName, final String rangeBy,
+                                               final LocalDateTime from, final LocalDateTime to) {
+        if (CollectionUtils.isEmpty(podIds)) {
+            return Collections.emptyMap();
+        }
+
+        final SearchSourceBuilder builder = new SearchSourceBuilder()
+            .query(QueryBuilders.boolQuery()
+                 .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), podIds))
+                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
+                 .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
+                 .filter(QueryBuilders.rangeQuery(rangeBy)
+                             .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                             .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+            .size(0)
+            .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
+                             .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
+                             .size(podIds.size())
+                             .subAggregation(AggregationBuilders.avg(metricType + AGGREGATION_METRIC_RATE)
+                                     .field("Metrics." + metricType + "/" + metricName + ".value")));
+
+        final SearchRequest request = new SearchRequest(getIndexNames(from, to)).types(metricType).source(builder);
+
+        SearchResponse response;
+        try {
+            response = client.search(request);
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+
+        final Terms terms = response.getAggregations().get(AGGREGATION_POD_NAME);
+        return terms.getBuckets().stream()
+            .collect(Collectors.toMap(
+                b -> b.getKey().toString(),
+                b -> ((Avg) b.getAggregations().get(metricType + AGGREGATION_METRIC_RATE)).getValue()));
+    }
+
+    private String path(String ...parts) {
+        return String.join(".", parts);
+    }
+
+    private String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+        return Stream.of(from, to)
+            .map(d -> d.format(DATE_FORMATTER))
+            .distinct()
+            .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
+            .toArray(String[]::new);
+    }
+
+    private Map<String, Double> getUsageRates(final Map<String, Double> limits, final Map<String, Double> usages) {
+        return limits.entrySet().stream()
+                .collect(HashMap::new,
+                    (m, e) -> {
+                        Double usage = usages.get(e.getKey());
+                        Double limit = e.getValue();
+                        m.put(e.getKey(), getRate(usage, limit));
+                    },
+                Map::putAll);
+    }
+
+    private boolean olderThanRetentionPeriod(final int retentionPeriod, final LocalDateTime date) {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
+    }
+
+    private Double getRate(final Double usage, final Double limit) {
+        return usage == null || limit == null ? null : usage / limit;
     }
 }

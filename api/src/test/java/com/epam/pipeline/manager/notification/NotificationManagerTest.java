@@ -17,18 +17,26 @@
 package com.epam.pipeline.manager.notification;
 
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
+import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType.*;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.execution.EnvVarsBuilder;
+import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
+import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.Matchers;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -59,9 +67,6 @@ import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
-import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -85,6 +90,8 @@ import io.fabric8.kubernetes.client.dsl.PodResource;
 public class NotificationManagerTest extends AbstractManagerTest {
     private static final double TEST_CPU_RATE1 = 0.123;
     private static final double TEST_CPU_RATE2 = 0.456;
+    private static final double TEST_MEMORY_RATE = 0.95;
+    private static final double TEST_DISK_RATE = 0.99;
     private static final double PERCENT = 100.0;
     private static final String SUBJECT = "subject";
     private static final String BODY = "body";
@@ -99,6 +106,12 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @MockBean
     private PipelineRunManager pipelineRunManager;
+
+    @Autowired
+    private PipelineRunDao pipelineRunDao;
+
+    @Autowired
+    private PipelineManager pipelineManager;
 
     @MockBean
     private KubernetesManager kubernetesManager;
@@ -133,6 +146,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private NotificationSettings longRunningSettings;
     private NotificationSettings issueSettings;
     private NotificationSettings issueCommentSettings;
+    private NotificationSettings highConsuming;
 
     @Mock
     private KubernetesClient mockClient;
@@ -153,14 +167,18 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
 
         longRunningTemplate = createTemplate(1L, "testTemplate");
-        longRunningSettings = createSettings(NotificationType.LONG_RUNNING, longRunningTemplate.getId(), 1L, 1L);
+        longRunningSettings = createSettings(LONG_RUNNING, longRunningTemplate.getId(), 1L, 1L);
         issueTemplate = createTemplate(3L, "issueTemplate");
-        issueSettings = createSettings(NotificationType.NEW_ISSUE, issueTemplate.getId(), -1L, -1L);
+        issueSettings = createSettings(NEW_ISSUE, issueTemplate.getId(), -1L, -1L);
         issueCommentTemplate = createTemplate(4L, "issueCommentTemplate");
-        issueCommentSettings = createSettings(NotificationType.NEW_ISSUE_COMMENT, issueCommentTemplate.getId(), -1L,
+        issueCommentSettings = createSettings(NEW_ISSUE_COMMENT, issueCommentTemplate.getId(), -1L,
                                               -1L);
-        createTemplate(NotificationType.IDLE_RUN.getId(), "idle-run-template");
-        createSettings(NotificationType.IDLE_RUN, NotificationType.IDLE_RUN.getId(), -1, -1);
+        createTemplate(IDLE_RUN.getId(), "idle-run-template");
+        createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
+
+        createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
+        highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
+                HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
 
         longRunnging = new PipelineRun();
         DateTime date = DateTime.now(DateTimeZone.UTC).minus(Duration.standardMinutes(6));
@@ -367,7 +385,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         notificationManager.notifyIdleRuns(Arrays.asList(
             new ImmutablePair<>(run1, TEST_CPU_RATE1),
-            new ImmutablePair<>(run2, TEST_CPU_RATE2)), NotificationType.IDLE_RUN);
+            new ImmutablePair<>(run2, TEST_CPU_RATE2)), IDLE_RUN);
 
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(2, messages.size());
@@ -388,6 +406,80 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(TEST_CPU_RATE2 * PERCENT, run2Message.getTemplateParameters().get("cpuRate"));
         Assert.assertEquals(run2.getId().intValue(), run2Message.getTemplateParameters().get("id"));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testNotifyHighConsumingRun() {
+        PipelineRun run1 = createTestPipelineRun();
+        PipelineRun run2 = createTestPipelineRun();
+
+        List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics = Arrays.asList(
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM.getName(), TEST_MEMORY_RATE)),
+                new ImmutablePair<>(run2, Collections.singletonMap(ELKUsageMetric.FS.getName(), TEST_DISK_RATE)));
+
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(2, messages.size());
+
+        Assert.assertEquals(TEST_MEMORY_RATE * PERCENT, messages.get(0).getTemplateParameters().get("memoryRate"));
+        Assert.assertEquals(0.0, messages.get(0).getTemplateParameters().get("diskRate"));
+
+        Assert.assertEquals(0.0, messages.get(1).getTemplateParameters().get("memoryRate"));
+        Assert.assertEquals(TEST_DISK_RATE * PERCENT, messages.get(1).getTemplateParameters().get("diskRate"));
+
+        Assert.assertNotNull(
+                monitoringNotificationDao.loadNotificationTimestamp(run1.getId(), HIGH_CONSUMED_RESOURCES));
+        Assert.assertNotNull(
+                monitoringNotificationDao.loadNotificationTimestamp(run2.getId(), HIGH_CONSUMED_RESOURCES));
+
+        monitoringNotificationDao.deleteNotificationsByTemplateId(HIGH_CONSUMED_RESOURCES.getId());
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(0, messages.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testRemoveNotificationTimestampWhenDelete() {
+        Pipeline pipeline = createPipeline(testOwner);
+        PipelineRun run1 = createTestPipelineRun(pipeline.getId());
+        notificationManager.notifyHighResourceConsumingRuns(Collections.singletonList(
+                new ImmutablePair<>(run1, Collections.singletonMap("memoryRate", TEST_MEMORY_RATE))),
+                HIGH_CONSUMED_RESOURCES);
+
+        Assert.assertTrue(notificationManager.loadLastNotificationTimestamp(run1.getId(),
+                HIGH_CONSUMED_RESOURCES).isPresent());
+
+        pipelineManager.delete(pipeline.getId(), true);
+
+        Assert.assertFalse(notificationManager.loadLastNotificationTimestamp(run1.getId(),
+                HIGH_CONSUMED_RESOURCES).isPresent());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void notifyHighConsumingRunOnlyOnceIfItIsSetup() {
+        highConsuming.setResendDelay(-1L);
+        notificationSettingsDao.updateNotificationSettings(highConsuming);
+
+        PipelineRun run1 = createTestPipelineRun();
+        List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics = Collections.singletonList(
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM.getName(), TEST_MEMORY_RATE)));
+
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+
+        monitoringNotificationDao.deleteNotificationsByTemplateId(HIGH_CONSUMED_RESOURCES.getId());
+
+        notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
+
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(0, messages.size());
     }
 
     @Test
@@ -516,5 +608,39 @@ public class NotificationManagerTest extends AbstractManagerTest {
         notificationTemplateDao.createNotificationTemplate(template);
 
         return template;
+    }
+
+    private PipelineRun createTestPipelineRun() {
+        return createTestPipelineRun(null);
+    }
+
+    private PipelineRun createTestPipelineRun(Long pipelineId) {
+        PipelineRun run = new PipelineRun();
+        if (pipelineId != null) {
+            run.setPipelineId(pipelineId);
+        }
+        run.setVersion("abcdefg");
+        run.setStartDate(new Date());
+        run.setEndDate(run.getStartDate());
+        run.setStatus(TaskStatus.RUNNING);
+        run.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        run.setLastChangeCommitTime(new Date());
+        run.setPodId("pod");
+        run.setOwner(testOwner.getUserName());
+
+        Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
+        PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
+        EnvVarsBuilder.buildEnvVars(run, configuration, systemParams, null);
+        run.setEnvVars(run.getEnvVars());
+        setRunInstance(run);
+        pipelineRunDao.createPipelineRun(run);
+        return run;
+    }
+
+    private void setRunInstance(final PipelineRun run) {
+        RunInstance runInstance = new RunInstance();
+        runInstance.setCloudProvider(CloudProvider.AWS);
+        runInstance.setCloudRegionId(1L);
+        run.setInstance(runInstance);
     }
 }

@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.search.SearchResponse;
@@ -160,7 +161,7 @@ public class MonitoringESDaoTest {
 
     @Test
     public void testLoadCpuUsageRateMetrics() {
-        Map<String, Double> stats = monitoringESDao.loadCpuUsageRateMetrics(
+        Map<String, Double> stats = monitoringESDao.loadUsageRateMetrics(ELKUsageMetric.CPU,
             Arrays.asList(POD1_NAME, POD2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
 
         Assert.assertEquals(2, stats.size());

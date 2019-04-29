@@ -17,14 +17,18 @@
 package com.epam.pipeline.dao.notification;
 
 import static com.epam.pipeline.config.JsonMapper.parseData;
+import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
@@ -49,6 +53,10 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     private String loadMonitoringNotificationQuery;
     private String loadAllMonitoringNotificationsQuery;
     private String deleteNotificationsByTemplateIdQuery;
+    private String updateNotificationTimestampQuery;
+    private String loadNotificationTimestampQuery;
+    private String deleteNotificationTimestampsByRunIdQuery;
+    private String deleteNotificationTimestampsByPipelineIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createMonitoringNotification(NotificationMessage notificationMessage) {
@@ -89,6 +97,40 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteNotificationsByTemplateIdQuery, templateId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateNotificationTimestamp(final List<Long> ids, final NotificationType notificationType) {
+        final MapSqlParameterSource[] params = ids.stream()
+                .map(value -> {
+                    MapSqlParameterSource param = new MapSqlParameterSource();
+                    param.addValue(NotificationTimestampParameters.RUN_ID.name(), value);
+                    param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), notificationType.name());
+                    param.addValue(NotificationTimestampParameters.TIMESTAMP.name(), DateUtils.nowUTC());
+                    return param;
+                }).toArray(MapSqlParameterSource[]::new);
+
+        getNamedParameterJdbcTemplate().batchUpdate(updateNotificationTimestampQuery, params);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<NotificationTimestamp> loadNotificationTimestamp(final Long runId, final NotificationType type) {
+        final MapSqlParameterSource param = new MapSqlParameterSource();
+        param.addValue(NotificationTimestampParameters.RUN_ID.name(), runId);
+        param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), type.name());
+        final List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
+                param, NotificationTimestampParameters.getRowMapper());
+        return items.isEmpty() ? Optional.empty() : Optional.of(items.get(0));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteNotificationTimestampsForRun(final Long runId) {
+        getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, runId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteNotificationTimestampsForPipeline(final Long pipelineId) {
+        getJdbcTemplate().update(deleteNotificationTimestampsByPipelineIdQuery, pipelineId);
+    }
+
     enum MonitoringNotificationParameters {
         ID,
         TO_USER_ID,
@@ -98,8 +140,8 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         TEMPLATE_ID,
         TEMPLATE_PARAMETERS;
 
-        static MapSqlParameterSource getParameters(NotificationMessage notificationMessage) {
-            MapSqlParameterSource params = new MapSqlParameterSource();
+        static MapSqlParameterSource getParameters(final NotificationMessage notificationMessage) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
 
             params.addValue(ID.name(), notificationMessage.getId());
             params.addValue(SUBJECT.name(), notificationMessage.getSubject());
@@ -115,12 +157,12 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
 
         static RowMapper<NotificationMessage> getRowMapper() {
             return (rs, rowNum) -> {
-                NotificationMessage notificationMessage = new NotificationMessage();
+                final NotificationMessage notificationMessage = new NotificationMessage();
                 notificationMessage.setId(rs.getLong(ID.name()));
                 notificationMessage.setSubject(rs.getString(SUBJECT.name()));
                 notificationMessage.setBody(rs.getString(BODY.name()));
 
-                long longVal = rs.getLong(TO_USER_ID.name());
+                final long longVal = rs.getLong(TO_USER_ID.name());
                 if (!rs.wasNull()) {
                     notificationMessage.setToUserId(longVal);
                 }
@@ -137,8 +179,24 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
         }
 
     }
+    enum NotificationTimestampParameters {
+        RUN_ID,
+        NOTIFICATION_TYPE,
+        TIMESTAMP;
 
-    private static List<Long> mapStringToListLong(String userIds) {
+        static RowMapper<NotificationTimestamp> getRowMapper() {
+            return (rs, rowNum) -> {
+                NotificationTimestamp timestamp = new NotificationTimestamp();
+                timestamp.setRunId(rs.getLong(RUN_ID.name()));
+                timestamp.setType(NotificationType.valueOf(rs.getString(NOTIFICATION_TYPE.name())));
+                timestamp.setTimestamp(rs.getTimestamp(TIMESTAMP.name()).toLocalDateTime());
+
+                return timestamp;
+            };
+        }
+
+    }
+    private static List<Long> mapStringToListLong(final String userIds) {
         if (StringUtils.isBlank(userIds)) {
             return Collections.emptyList();
         }
@@ -169,5 +227,25 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllMonitoringNotificationsQuery(String loadAllMonitoringNotificationsQuery) {
         this.loadAllMonitoringNotificationsQuery = loadAllMonitoringNotificationsQuery;
+    }
+
+    @Required
+    public void setUpdateNotificationTimestampQuery(String updateNotificationTimestampQuery) {
+        this.updateNotificationTimestampQuery = updateNotificationTimestampQuery;
+    }
+
+    @Required
+    public void setLoadNotificationTimestampQuery(String loadNotificationTimestampQuery) {
+        this.loadNotificationTimestampQuery = loadNotificationTimestampQuery;
+    }
+
+    @Required
+    public void setDeleteNotificationTimestampsByRunIdQuery(String deleteNotificationTimestampsByRunIdQuery) {
+        this.deleteNotificationTimestampsByRunIdQuery = deleteNotificationTimestampsByRunIdQuery;
+    }
+
+    @Required
+    public void setDeleteNotificationTimestampsByPipelineIdQuery(String deleteNotificationTimestampsByPipelineIdQuery) {
+        this.deleteNotificationTimestampsByPipelineIdQuery = deleteNotificationTimestampsByPipelineIdQuery;
     }
 }
