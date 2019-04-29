@@ -255,6 +255,24 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     return result;
   };
 
+  processAggregates = () => {
+    const aggregates = {};
+    if (this.props.searchEngine.loaded && this.props.searchEngine.value.aggregates) {
+      const resultAggregates = this.props.searchEngine.value.aggregates;
+      for (let key in resultAggregates) {
+        if (resultAggregates.hasOwnProperty(key)) {
+          for (let i = 0; i < this.searchTypesArray.length; i++) {
+            if (this.searchTypesArray[i].types.indexOf(key) >= 0) {
+              aggregates[this.searchTypesArray[i].key] = (aggregates[this.searchTypesArray[i].key] || 0) +
+                resultAggregates[key];
+            }
+          }
+        }
+      }
+    }
+    return aggregates;
+  };
+
   performSearch = (force = false) => {
     this.delayedSearch && clearTimeout(this.delayedSearch);
     if (!force &&
@@ -285,20 +303,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         if (this.props.searchEngine.loaded) {
           const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
-          const aggregates = {};
-          if (this.props.searchEngine.value.aggregates) {
-            const resultAggregates = this.props.searchEngine.value.aggregates;
-            for (let key in resultAggregates) {
-              if (resultAggregates.hasOwnProperty(key)) {
-                for (let i = 0; i < this.searchTypesArray.length; i++) {
-                  if (this.searchTypesArray[i].types.indexOf(key) >= 0) {
-                    aggregates[this.searchTypesArray[i].key] = (aggregates[this.searchTypesArray[i].key] || 0) +
-                      resultAggregates[key];
-                  }
-                }
-              }
-            }
-          }
+          const aggregates = this.processAggregates();
           this.setState({
             searching: false,
             searchResultsFor: searchCriteria,
@@ -335,7 +340,9 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         if (this.props.searchEngine.loaded) {
           const totalPages = Math.ceil(this.props.searchEngine.value.totalHits / PAGE_SIZE);
           const results = (this.props.searchEngine.value.documents || []).map(d => d);
+          const aggregates = this.processAggregates();
           this.setState({
+            aggregates,
             searching: false,
             searchResultsFor: searchCriteria,
             searchResults: results,
