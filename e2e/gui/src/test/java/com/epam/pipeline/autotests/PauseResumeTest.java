@@ -16,6 +16,8 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -84,9 +86,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                             .switchToPreferences()
                             .switchToCluster()
                             .getClusterHddExtraMulti();
-                    click(button("OK"));
-            }
-        );
+            new SettingsPageAO(new PipelinesLibraryAO()).click(OK);
+        });
     }
 
     @AfterClass(alwaysRun = true)
