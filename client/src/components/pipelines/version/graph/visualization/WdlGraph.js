@@ -412,6 +412,44 @@ export default class WdlGraph extends Graph {
     }
   };
 
+  fitToSelectedItem = () => {
+    if (this.wdlVisualizer && this.wdlVisualizer.selection &&
+      this.wdlVisualizer.selection[0]) {
+      const getOffset = (el) => {
+        el = el.getBoundingClientRect();
+        return {
+          left: el.left + window.scrollX,
+          top: el.top + window.scrollY,
+        };
+      };
+      const offset = getOffset(this.wdlVisualizer.paper.el);
+      this.wdlVisualizer.paper.setOrigin(0, 0);
+      this.wdlVisualizer.paper.scale(1, 1);
+      this.wdlVisualizer.zoom._currDeg = 0;
+      const paperSize = this.wdlVisualizer.paper.clientToLocalPoint({
+        x: this.wdlVisualizer.paper.options.width + offset.left,
+        y: this.wdlVisualizer.paper.options.height + offset.top
+      });
+      const zoomLevel = 0.75; // we want selected element to take 50% of visualizer's size
+      const desiredSize = {x: paperSize.x * zoomLevel, y: paperSize.y * zoomLevel};
+      const elementSize = this.wdlVisualizer.paper.clientToLocalPoint({
+        x: this.wdlVisualizer.selection[0].attributes.size.width + offset.left,
+        y: this.wdlVisualizer.selection[0].attributes.size.height + offset.top
+      });
+      const scale = Math.min(1, desiredSize.x / elementSize.x, desiredSize.y / elementSize.y);
+      const degree = Math.log(scale) / Math.log(this.wdlVisualizer.zoom._mult) - this.wdlVisualizer.zoom._currDeg;
+      const elementPosition = this.wdlVisualizer.selection[0].attributes.position;
+      this.wdlVisualizer.paper.setOrigin(
+        (-elementPosition.x + paperSize.x / 2.0 - elementSize.x / 2.0),
+        (-elementPosition.y + paperSize.y / 2.0 - elementSize.y / 2.0)
+      );
+      this.wdlVisualizer.zoom._scale(degree, {
+        x: this.wdlVisualizer.paper.options.width / 2.0 + offset.left,
+        y: this.wdlVisualizer.paper.options.height / 2.0 + offset.top
+      });
+    }
+  };
+
   modelChanged = () => {
     this.setState({modified: true});
   };
@@ -1127,6 +1165,7 @@ export default class WdlGraph extends Graph {
         this.wdlVisualizer.selection.push(e);
         view && view.el && view.el.classList.toggle('selected', true);
         this.onSelectItem();
+        this.fitToSelectedItem();
       }
     });
   };
