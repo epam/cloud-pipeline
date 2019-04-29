@@ -132,6 +132,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         monitoringDao.loadUsageRateMetrics(metric, running.keySet(),
                             now.minusMinutes(timeRange), now)));
 
+        log.debug("memory and disk metrics received: " + metrics.entrySet().stream()
+                .map(e -> e.getKey() + ": { " + e.getValue().entrySet().stream()
+                        .map(metric -> metric.getKey() + ":" + metric.getValue())
+                        .collect(Collectors.joining(", ")) + " }"
+                )
+                .collect(Collectors.joining("; ")));
+
         final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = running.entrySet()
                 .stream()
                 .map(podAndRun -> matchRunAndMetrics(metrics, podAndRun))
