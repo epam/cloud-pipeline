@@ -1100,7 +1100,7 @@ export default class WdlGraph extends Graph {
 
   handleSearchControlVisible = (searchControlVisible) => {
     const handleChange = () => {
-      this.setState({searchControlVisible}, () => {
+      this.setState({searchControlVisible, tooltipVisible: false}, () => {
         if (!searchControlVisible) {
           this.clearSearchAutocomplete();
         }
@@ -1126,6 +1126,7 @@ export default class WdlGraph extends Graph {
         this.wdlVisualizer.enableSelection();
         this.wdlVisualizer.selection.push(e);
         view && view.el && view.el.classList.toggle('selected', true);
+        this.onSelectItem();
       }
     });
   };
@@ -1194,8 +1195,17 @@ export default class WdlGraph extends Graph {
         <Input.Search />
       </AutoComplete>
     );
+    const onTooltipVisibleChange = (visible) => {
+      this.setState({
+        tooltipVisible: visible
+      });
+    };
     return (
-      <Tooltip title="Search element" placement="right">
+      <Tooltip
+        title="Search element"
+        onVisibleChange={onTooltipVisibleChange}
+        visible={this.state.tooltipVisible}
+        placement="right">
         <Popover
           content={searchControl}
           placement="right"
