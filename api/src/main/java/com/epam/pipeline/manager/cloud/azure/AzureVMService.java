@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -65,6 +66,18 @@ public class AzureVMService {
                     MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
         }
         return virtualMachine;
+    }
+
+    public Optional<VirtualMachine> findRunningVmByName(final AzureRegion region,
+                                                        final String instanceId) {
+        try {
+            return Optional.of(getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId))
+                    .filter(vm -> !vm.powerState().equals(PowerState.RUNNING)
+                            && !vm.powerState().equals(PowerState.STARTING));
+        } catch (NoSuchElementException e) {
+            log.warn("Azure virtual machine retrieving has failed.", e);
+            return Optional.empty();
+        }
     }
 
     public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {

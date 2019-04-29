@@ -80,6 +80,21 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     void stopInstance(T region, String instanceId);
 
     /**
+     * Terminates cloud instance
+     * @param region
+     * @param instanceId
+     */
+    void terminateInstance(T region, String instanceId);
+
+    /**
+     * Checks if cloud instance exists
+     * @param region
+     * @param instanceId
+     * @return
+     */
+    boolean instanceExists(T region, String instanceId);
+
+    /**
      * Returns date time of node launch
      * @param region
      * @param runId

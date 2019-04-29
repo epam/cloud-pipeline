@@ -132,6 +132,18 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public void terminateInstance(final Long regionId, final String instanceId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).terminateInstance(region, instanceId);
+    }
+
+    @Override
+    public boolean instanceExists(final Long regionId, final String instanceId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).instanceExists(region, instanceId);
+    }
+
+    @Override
     public Map<String, String> buildContainerCloudEnvVars(final Long regionId) {
         return regionManager.loadAll().stream()
                 .map(r -> {

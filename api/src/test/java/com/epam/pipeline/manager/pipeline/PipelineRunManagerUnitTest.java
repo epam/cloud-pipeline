@@ -79,7 +79,7 @@ public class PipelineRunManagerUnitTest {
 
         pipelineRunManager.terminateRun(RUN_ID);
 
-        verify(nodesManager).terminateNodeIfExists(eq(NODE_NAME));
+        verify(nodesManager).terminateRun(argThat(matches(run -> run.getId().equals(RUN_ID))));
     }
 
     @Test
@@ -105,6 +105,7 @@ public class PipelineRunManagerUnitTest {
 
     private PipelineRun run() {
         final PipelineRun run = new PipelineRun();
+        run.setId(RUN_ID);
         final RunInstance instance = new RunInstance();
         instance.setNodeName(NODE_NAME);
         run.setInstance(instance);

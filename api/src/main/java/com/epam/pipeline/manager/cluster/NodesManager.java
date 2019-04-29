@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -194,10 +195,46 @@ public class NodesManager {
         return nodeInstance;
     }
 
-    public Optional<NodeInstance> terminateNodeIfExists(final String name) {
-        final Optional<NodeInstance> node = findNode(name);
-        node.ifPresent(this::terminateNode);
-        return node;
+    /**
+     * Terminates run cloud instance.
+     *
+     * If there is a corresponding Kubernetes node it terminates it as well.
+     * Otherwise just the cloud instance is terminated.
+     */
+    public void terminateRun(final PipelineRun run) {
+        final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
+        final Optional<NodeInstance> node = instance.map(RunInstance::getNodeName).flatMap(this::findNode);
+        if (node.isPresent()) {
+            log.debug("Kubernetes node {} for run {} was found and will be terminated.", node.get().getId(),
+                    run.getId());
+            terminateNode(node.get());
+        } else {
+            log.debug("Kubernetes node for run {} wasn't found and its termination will be skipped.", run.getId());
+            final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
+                    .map(regionManager::load)
+                    .orElseGet(regionManager::loadDefaultRegion);
+            final Optional<String> nodeId = instance.map(RunInstance::getNodeId)
+                    .filter(id -> cloudFacade.instanceExists(region.getId(), id))
+                    .map(Optional::of)
+                    .orElseGet(() -> instanceIdFromRunId(run.getId()));
+            if (nodeId.isPresent()) {
+                log.debug("Cloud instance {} for run {} was found in region {} and will be terminated.", nodeId.get(),
+                        run.getId(), region.getRegionCode());
+                terminateInstance(region, nodeId.get());
+            } else {
+                log.debug("Cloud instance for run {} wasn't found in region {} and its termination will be skipped.",
+                        run.getId(), region.getRegionCode());
+            }
+        }
+    }
+
+    private Optional<String> instanceIdFromRunId(final Long runId) {
+        return Optional.ofNullable(cloudFacade.describeInstance(runId, new RunInstance()))
+                .map(RunInstance::getNodeId);
+    }
+
+    private void terminateInstance(final AbstractCloudRegion region, final String nodeId) {
+        cloudFacade.terminateInstance(region.getId(), nodeId);
     }
 
     private void terminateNode(final NodeInstance nodeInstance) {

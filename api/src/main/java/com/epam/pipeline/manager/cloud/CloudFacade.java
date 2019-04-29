@@ -46,6 +46,10 @@ public interface CloudFacade {
 
     void startInstance(Long regionId, String instanceId);
 
+    void terminateInstance(Long regionId, String instanceId);
+
+    boolean instanceExists(Long regionId, String instanceId);
+
     Map<String, String> buildContainerCloudEnvVars(Long regionId);
 
     List<InstanceOffer> refreshPriceListForRegion(Long regionId);

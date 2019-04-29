@@ -128,6 +128,18 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public void terminateInstance(final AwsRegion region, final String instanceId) {
+        log.debug("Terminating AWS instance {}", instanceId);
+        ec2Helper.terminateInstance(instanceId, region.getRegionCode());
+    }
+
+    @Override
+    public boolean instanceExists(final AwsRegion region, final String instanceId) {
+        log.debug("Checking if AWS instance {} exists", instanceId);
+        return ec2Helper.findActiveInstance(instanceId, region.getRegionCode()).isPresent();
+    }
+
+    @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
     }

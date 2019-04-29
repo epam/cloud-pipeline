@@ -133,6 +133,16 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public void terminateInstance(final AzureRegion region, final String instanceId) {
+        stopInstance(region, instanceId);
+    }
+
+    @Override
+    public boolean instanceExists(final AzureRegion region, final String instanceId) {
+        return vmService.findRunningVmByName(region, instanceId).isPresent();
+    }
+
+    @Override
     public LocalDateTime getNodeLaunchTime(final AzureRegion region, final Long runId) {
         return kubernetesManager.findNodeByRunId(String.valueOf(runId))
                 .map(node -> node.getMetadata().getCreationTimestamp())

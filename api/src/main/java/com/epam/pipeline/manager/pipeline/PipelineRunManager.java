@@ -887,8 +887,7 @@ public class PipelineRunManager {
                         pipelineRun.getStatus()));
         pipelineRun.setStatus(TaskStatus.STOPPED);
         updatePipelineStatus(pipelineRun);
-        final String node = pipelineRun.getInstance().getNodeName();
-        nodesManager.terminateNodeIfExists(node);
+        nodesManager.terminateRun(pipelineRun);
         return pipelineRun;
     }
 
