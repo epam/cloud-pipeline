@@ -885,9 +885,9 @@ public class PipelineRunManager {
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_TERMINATION_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
-
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        updatePipelineStatus(pipelineRun);
         final String node = pipelineRun.getInstance().getNodeName();
-        updatePipelineStatusIfNotFinal(pipelineRun.getId(), TaskStatus.STOPPED);
         nodesManager.terminateNodeIfExists(node);
         return pipelineRun;
     }
