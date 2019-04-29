@@ -50,6 +50,7 @@ public class PipelineRunManagerUnitTest {
     private PipelineRunDao pipelineRunDao;
 
     @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
     @InjectMocks
