@@ -68,7 +68,9 @@ public class EC2Helper {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String NAME_TAG = "tag:Name";
     private static final String INSTANCE_STATE_NAME = "instance-state-name";
-    private static final String[] ACTIVE_INSTANCE_STATES = {"pending", "running"};
+    static final String PENDING_STATE = "pending";
+    static final String RUNNING_STATE = "running";
+    static final String TERMINATED_STATE = "terminated";
 
     private final PreferenceManager preferenceManager;
 
@@ -175,7 +177,7 @@ public class EC2Helper {
      */
     public Instance getActiveInstance(final String runId, final String awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
-                new Filter().withName(INSTANCE_STATE_NAME).withValues(ACTIVE_INSTANCE_STATES));
+                new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
     }
 
     private Instance getInstance(final String runId, final String awsRegion, final Filter... filters) {
@@ -196,11 +198,9 @@ public class EC2Helper {
         return instances.get(0);
     }
 
-    public Optional<Instance> findActiveInstance(final String instanceId, final String awsRegion) {
+    public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
         return getEC2Client(awsRegion)
-                .describeInstances(new DescribeInstancesRequest()
-                        .withInstanceIds(instanceId)
-                        .withFilters(new Filter().withName(INSTANCE_STATE_NAME).withValues(ACTIVE_INSTANCE_STATES)))
+                .describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId))
                 .getReservations()
                 .stream()
                 .findFirst()

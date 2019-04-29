@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.network.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
@@ -139,7 +140,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public boolean instanceExists(final AzureRegion region, final String instanceId) {
-        return vmService.findRunningVmByName(region, instanceId).isPresent();
+        return vmService.findVmByName(region, instanceId)
+                .filter(vm -> !PowerState.STOPPED.equals(vm.powerState())).isPresent();
     }
 
     @Override

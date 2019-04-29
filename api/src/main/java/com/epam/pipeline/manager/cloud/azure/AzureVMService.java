@@ -68,12 +68,10 @@ public class AzureVMService {
         return virtualMachine;
     }
 
-    public Optional<VirtualMachine> findRunningVmByName(final AzureRegion region,
-                                                        final String instanceId) {
+    public Optional<VirtualMachine> findVmByName(final AzureRegion region,
+                                                 final String instanceId) {
         try {
-            return Optional.of(getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId))
-                    .filter(vm -> !vm.powerState().equals(PowerState.RUNNING)
-                            && !vm.powerState().equals(PowerState.STARTING));
+            return Optional.ofNullable(getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId));
         } catch (NoSuchElementException e) {
             log.warn("Azure virtual machine retrieving has failed.", e);
             return Optional.empty();

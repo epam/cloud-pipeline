@@ -136,7 +136,9 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public boolean instanceExists(final AwsRegion region, final String instanceId) {
         log.debug("Checking if AWS instance {} exists", instanceId);
-        return ec2Helper.findActiveInstance(instanceId, region.getRegionCode()).isPresent();
+        return ec2Helper.findInstance(instanceId, region.getRegionCode())
+                .filter(instance -> !EC2Helper.TERMINATED_STATE.equals(instance.getState().getName()))
+                .isPresent();
     }
 
     @Override
