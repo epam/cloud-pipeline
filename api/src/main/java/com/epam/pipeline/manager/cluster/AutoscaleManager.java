@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(value = "cluster.disable.autoscaling", matchIfMissing = true, havingValue = "false")
 public class AutoscaleManager extends AbstractSchedulingManager {
     public static final int NODEUP_SPOT_FAILED_EXIT_CODE = 5;
+    public static final int NODEUP_LIMIT_EXCEEDED_EXIT_CODE = 6;
 
     private String kubeNamespace;
 
@@ -471,6 +472,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (e.getCause() instanceof CmdExecutionException &&
                 Objects.equals(NODEUP_SPOT_FAILED_EXIT_CODE, ((CmdExecutionException) e.getCause()).getExitCode())) {
                 spotNodeUpAttempts.merge(longId, 1, (oldVal, newVal) -> oldVal + 1);
+            }
+            if (e.getCause() instanceof CmdExecutionException && Objects.equals(
+                    NODEUP_LIMIT_EXCEEDED_EXIT_CODE, ((CmdExecutionException) e.getCause()).getExitCode())) {
+                // do not fail and do not change attempts count if instance quota exceeded
+                nodeUpAttempts.merge(longId,  1, (oldVal, newVal) -> oldVal - 1);
             }
 
             removeNodeUpTask(longId, false);

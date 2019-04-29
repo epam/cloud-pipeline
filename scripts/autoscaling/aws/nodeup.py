@@ -23,6 +23,7 @@ import pykube
 import logging
 import os
 import pytz
+from botocore.exceptions import ClientError
 from pipeline import Logger, TaskStatus, PipelineAPI
 from itertools import groupby
 from operator import itemgetter
@@ -34,6 +35,7 @@ import sys
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
+LIMIT_EXCEEDED_EXIT_CODE = 6
 
 current_run_id = 0
 api_url = None
@@ -265,22 +267,30 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
-    response = ec2.run_instances(
-        ImageId=ins_img,
-        MinCount=1,
-        MaxCount=1,
-        KeyName=ins_key,
-        InstanceType=ins_type,
-        UserData=user_data_script,
-        BlockDeviceMappings=[root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)],
-        TagSpecifications=[
-            {
-                'ResourceType': 'instance',
-                "Tags": get_tags(run_id)
-            }
-        ],
-        **additional_args
-    )
+
+    response = {}
+    try:
+        response = ec2.run_instances(
+            ImageId=ins_img,
+            MinCount=1,
+            MaxCount=1,
+            KeyName=ins_key,
+            InstanceType=ins_type,
+            UserData=user_data_script,
+            BlockDeviceMappings=[root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)],
+            TagSpecifications=[
+                {
+                    'ResourceType': 'instance',
+                    "Tags": get_tags(run_id)
+                }
+            ],
+            **additional_args
+        )
+    except ClientError as client_error:
+        if 'InstanceLimitExceeded' in client_error.message:
+            pipe_log(client_error.message)
+            sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+
     ins_id = response['Instances'][0]['InstanceId']
     ins_ip = response['Instances'][0]['PrivateIpAddress']
 
@@ -652,14 +662,22 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
         specifications['SecurityGroupIds'] = get_security_groups(aws_region)
 
     current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
-    response = ec2.request_spot_instances(
-        SpotPrice=str(bid_price),
-        InstanceCount=1,
-        Type='one-time',
-        ValidFrom=current_time,
-        ValidUntil=current_time + timedelta(seconds=num_rep * time_rep),
-        LaunchSpecification=specifications,
-    )
+
+    response = None
+    try:
+        response = ec2.request_spot_instances(
+            SpotPrice=str(bid_price),
+            InstanceCount=1,
+            Type='one-time',
+            ValidFrom=current_time,
+            ValidUntil=current_time + timedelta(seconds=num_rep * time_rep),
+            LaunchSpecification=specifications,
+        )
+    except ClientError as client_error:
+        if 'Max spot instance count exceeded' in client_error.message or \
+                'InstanceLimitExceeded' in client_error.message:
+            pipe_log(client_error.message)
+            sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
     rep = 0
     ins_id = ''
     ins_ip = ''
