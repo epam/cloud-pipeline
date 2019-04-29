@@ -20,6 +20,7 @@ import requests
 from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
+from src.api.tool import Tool
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
 from src.utilities.cluster_manager import ClusterManager
@@ -195,8 +196,11 @@ class PipelineRunOperations(object):
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
-            elif docker_image is None or parent_node is None \
-                    and (instance_type is None or instance_disk is None or cmd_template is None):
+            elif docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
+                instance_disk, instance_type, cmd_template = cls.load_missing_args(docker_image, instance_disk,
+                                                                                   instance_type, cmd_template)
+            if docker_image is None or cls.required_args_missing(parent_node, instance_type, instance_disk,
+                                                                 cmd_template):
                 if not quiet:
                     click.echo('Docker image, instance type, instance disk and cmd template '
                                'are required parameters if pipeline was not provided.')
@@ -293,3 +297,44 @@ class PipelineRunOperations(object):
             sleep(DELAY)
             status = cls.pipeline_run_get(identifier).status
         return status
+
+    @staticmethod
+    def parse_image(docker_image):
+        splitted_image = docker_image.split(':')
+        image_name = splitted_image[0]
+        image_tag = 'latest' if len(splitted_image) == 1 else splitted_image[1]
+        return image_name, image_tag
+
+    @classmethod
+    def load_missing_args(cls, docker_image, instance_disk, instance_type, cmd_template):
+        image_name, image_tag = cls.parse_image(docker_image)
+
+        tool = Tool().find_tool_by_name(docker_image)
+        if tool and 'id' in tool:
+            tool_id = tool['id']
+        else:
+            click.echo("Failed to find tool by name %s" % docker_image, err=True)
+            sys.exit(1)
+
+        tool_settings = Tool().load_settings(tool_id, image_tag)
+        if tool_settings and 'settings' in tool_settings[0] and 'configuration' in tool_settings[0]['settings'][0]:
+            configuration = tool_settings[0]['settings'][0]['configuration']
+            if not instance_disk and 'instance_disk' in configuration:
+                instance_disk = configuration['instance_disk']
+            if not instance_type and 'instance_size' in configuration:
+                instance_type = configuration['instance_size']
+            if not cmd_template and 'cmd_template' in configuration:
+                cmd_template = configuration['cmd_template']
+
+        if not instance_disk and 'disk' in tool:
+            instance_disk = tool['disk']
+        if not instance_type and 'instanceType' in tool:
+            instance_type = tool['instanceType']
+        if not cmd_template and 'defaultCommand' in tool:
+            cmd_template = tool['defaultCommand']
+
+        return instance_disk, instance_type, cmd_template
+
+    @staticmethod
+    def required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
+        return parent_node is None and (instance_type is None or instance_disk is None or cmd_template is None)

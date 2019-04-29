@@ -1,0 +1,37 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: dns-autoscaler
+  namespace: default
+  labels:
+    k8s-app: dns-autoscaler
+spec:
+  selector:
+    matchLabels:
+      k8s-app: dns-autoscaler
+  template:
+    metadata:
+      labels:
+        k8s-app: dns-autoscaler
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/master: ""
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: default
+      containers:
+      - name: autoscaler
+        image: k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1
+        resources:
+          requests:
+            cpu: 20m
+            memory: 10Mi
+        command:
+        - /cluster-proportional-autoscaler
+        - --namespace=kube-system
+        - --configmap=dns-autoscaler
+        - --target=Deployment/kube-dns
+        - --default-params={"linear":{"coresPerReplica":128,"nodesPerReplica":5,"min":${CP_KUBE_MIN_DNS_REPLICAS}}}
+        - --logtostderr=true
+        - --v=2

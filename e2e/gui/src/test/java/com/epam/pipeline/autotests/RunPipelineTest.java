@@ -155,9 +155,11 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
-            .ensure(taskWithName("Task1"), Status.SUCCESS.reached)
-            .sleep(1, SECONDS)
-            .ensure(taskWithName(pipeline100), Status.SUCCESS.reached);
+            .ensure(taskWithName("Task1"), Status.SUCCESS.reached);
+        runsMenu()
+                .completedRuns()
+                .showLog(runId)
+                .ensure(taskWithName(pipeline100), Status.SUCCESS.reached);
     }
 
     @Test(priority = 1, dependsOnMethods = "pipelineLogPageShouldBeValid")

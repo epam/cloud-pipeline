@@ -94,6 +94,7 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                 .ensure(runWithId(getLastRunId()), visible)
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
                 .waitForCompletion(getLastRunId())
+                .waitForCompletion(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
                 .completedRuns()
                 .ensure(runWithId(getLastRunId()), visible)
                 .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible);
@@ -120,16 +121,16 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
-                .waitUntilResumeButtonAppear(getLastRunId())
-                .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
-                .waitForCompletion(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
-                .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), hidden)
+                .waitUntilResumeButtonAppear(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
+                .validateStatus(String.valueOf(Integer.parseInt(getLastRunId()) - 1), LogAO.Status.PAUSED)
+                .waitForCompletion(getLastRunId())
+                .ensure(runWithId(getLastRunId()), hidden)
                 .completedRuns()
-                .ensure(runWithId(String.valueOf(Integer.parseInt(getLastRunId()) - 1)), visible)
+                .ensure(runWithId(getLastRunId()), visible)
                 .activeRuns()
-                .resume(getLastRunId(), getToolName())
-                .waitUntilStopButtonAppear(getLastRunId())
-                .stopRun(getLastRunId());
+                .resume(String.valueOf(Integer.parseInt(getLastRunId()) - 1), getToolName())
+                .waitUntilStopButtonAppear(String.valueOf(Integer.parseInt(getLastRunId()) - 1))
+                .stopRun(String.valueOf(Integer.parseInt(getLastRunId()) - 1));
     }
 
     @Test

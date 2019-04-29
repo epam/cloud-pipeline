@@ -77,6 +77,14 @@ if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
             print_err "Aborting installation"
             exit 1
         fi
+
+        export CP_KUBE_MIN_DNS_REPLICAS=${CP_KUBE_MIN_DNS_REPLICAS:-1}
+        print_info "-> Enabling DNS autoscaling with a minimal replicas count: $CP_KUBE_MIN_DNS_REPLICAS"
+        kubectl delete configmap "dns-autoscaler" --namespace "kube-system"
+        delete_deployment_and_service "dns-autoscaler"
+        create_kube_resource $K8S_SPECS_HOME/cp-dns-autoscale/cp-dns-autoscale-dpl.yaml
+        print_info "-> Waiting for the DNS autoscaler to initialize"
+        wait_for_deployment "dns-autoscaler"
     fi
 else
     print_info "Kube master installation skipped"
