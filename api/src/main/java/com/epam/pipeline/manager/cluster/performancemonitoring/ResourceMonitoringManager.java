@@ -146,7 +146,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final Map<String, Double> podMetrics = metrics.entrySet()
                 .stream()
                 .collect(HashMap::new,
-                        (m, e) -> m.put(e.getKey(), e.getValue().get(podAndRun.getKey())),
+                    (m, e) -> m.put(e.getKey(), e.getValue().get(podAndRun.getKey())),
                         Map::putAll);
 
         return new ImmutablePair<>(podAndRun.getValue(), podMetrics);
@@ -197,7 +197,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final IdleRunAction action = IdleRunAction.valueOf(preferenceManager
                 .getPreference(SystemPreferences.SYSTEM_IDLE_ACTION));
 
-        final List<PipelineRun> runsToUpdate = processRuns(notProlongedRuns, cpuMetrics, idleCpuLevel, actionTimeout, action);
+        final List<PipelineRun> runsToUpdate = processRuns(notProlongedRuns, cpuMetrics,
+                idleCpuLevel, actionTimeout, action);
         pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdate);
     }
 

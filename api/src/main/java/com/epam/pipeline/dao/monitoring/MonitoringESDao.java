@@ -89,7 +89,7 @@ public class MonitoringESDao {
                     .entrySet()
                     .stream()
                     .collect(HashMap::new,
-                            (m, e) -> m.put(e.getKey(), Double.isFinite(e.getValue()) ? e.getValue() : null),
+                        (m, e) -> m.put(e.getKey(), Double.isFinite(e.getValue()) ? e.getValue() : null),
                             Map::putAll);
         }
 
@@ -184,11 +184,11 @@ public class MonitoringESDao {
     private Map<String, Double> getUsageRates(final Map<String, Double> limits, final Map<String, Double> usages) {
         return limits.entrySet().stream()
                 .collect(HashMap::new,
-                (m, e) -> {
-                    Double usage = usages.get(e.getKey());
-                    Double limit = e.getValue();
-                    m.put(e.getKey(), getRate(usage, limit));
-                },
+                    (m, e) -> {
+                        Double usage = usages.get(e.getKey());
+                        Double limit = e.getValue();
+                        m.put(e.getKey(), getRate(usage, limit));
+                    },
                 Map::putAll);
     }
 

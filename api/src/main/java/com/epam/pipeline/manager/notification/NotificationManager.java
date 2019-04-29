@@ -248,7 +248,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineCpuRatePairs);
 
-        final double idleCpuLevel = preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
+        final double idleCpuLevel = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT);
         final List<NotificationMessage> messages = pipelineCpuRatePairs.stream().map(pair -> {
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
@@ -342,14 +343,16 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         monitoringNotificationDao.deleteNotificationTimestampsForPipeline(id);
     }
 
-    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId, final NotificationType type) {
+    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,
+                                                                         final NotificationType type) {
         return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
     }
 
     private boolean shouldNotifyAboutHighResourceConsuming(final NotificationSettings notificationSettings,
                                                            final Pair<PipelineRun, Map<String, Double>> run) {
         final Long resendDelay = notificationSettings.getResendDelay();
-        final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(run.getLeft().getId(),
+        final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
+                run.getLeft().getId(),
                 NotificationType.HIGH_CONSUMED_RESOURCES);
 
         return notificationTimestamp
