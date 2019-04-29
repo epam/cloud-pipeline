@@ -270,6 +270,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
                                                 final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
+            LOGGER.debug("No pipelines are high loaded, notifications won't be sent!");
             return;
         }
 

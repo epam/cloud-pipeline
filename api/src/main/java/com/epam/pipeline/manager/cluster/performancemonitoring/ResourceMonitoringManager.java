@@ -145,6 +145,10 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 .filter(pod -> isPodUnderPressure(pod.getValue(), thresholds))
                 .collect(Collectors.toList());
 
+        log.debug("High resource consuming notifications for pipelines: " +
+                runsToNotify.stream().map(p -> p.getLeft().getName()).collect(Collectors.joining(",")) +
+                " will be sent!");
+
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
     }
 
