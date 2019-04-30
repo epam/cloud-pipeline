@@ -18,6 +18,7 @@
 # Preflight setup
 ##########
 INSTALL_SCRIPT_PATH="$( cd "$(dirname "$0")" ; pwd -P )"
+K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
 
 source format-utils.sh
 source install-utils.sh
@@ -248,7 +249,6 @@ echo
 ##########
 # Run Pods
 ##########
-K8S_SPECS_HOME=${K8S_SPECS_HOME:-"$INSTALL_SCRIPT_PATH/../../k8s"}
 CP_INSTALL_SUMMARY=
 
 if is_install_requested; then
