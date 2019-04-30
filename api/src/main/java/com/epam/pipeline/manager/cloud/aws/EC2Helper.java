@@ -31,6 +31,7 @@ import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
+import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -56,6 +57,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +68,10 @@ public class EC2Helper {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String NAME_TAG = "tag:Name";
     private static final String INSTANCE_STATE_NAME = "instance-state-name";
+    private static final String PENDING_STATE = "pending";
+    private static final String RUNNING_STATE = "running";
+    private static final String STOPPING_STATE = "stopping";
+    private static final String STOPPED_STATE = "stopped";
 
     private final PreferenceManager preferenceManager;
 
@@ -106,6 +112,15 @@ public class EC2Helper {
         StopInstancesRequest stopInstancesRequest = new StopInstancesRequest().withInstanceIds(instanceId);
         client.stopInstances(stopInstancesRequest);
         Waiter<DescribeInstancesRequest> waiter = client.waiters().instanceStopped();
+        waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
+    }
+
+    public void terminateInstance(String instanceId, String awsRegion) {
+        AmazonEC2 client = getEC2Client(awsRegion);
+        TerminateInstancesRequest terminateInstancesRequest = new TerminateInstancesRequest()
+                .withInstanceIds(instanceId);
+        client.terminateInstances(terminateInstancesRequest);
+        Waiter<DescribeInstancesRequest> waiter = client.waiters().instanceTerminated();
         waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
     }
 
@@ -163,7 +178,20 @@ public class EC2Helper {
      */
     public Instance getActiveInstance(final String runId, final String awsRegion) {
         return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
-                new Filter().withName(INSTANCE_STATE_NAME).withValues("pending", "running"));
+                new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
+    }
+
+    /**
+     * Retrieves running or paused instance.
+     *
+     * @param runId Instance run id.
+     * @param awsRegion Instance aws region.
+     * @return Required instance.
+     */
+    public Instance getAliveInstance(final String runId, final String awsRegion) {
+        return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
+                new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE,
+                        STOPPING_STATE, STOPPED_STATE));
     }
 
     private Instance getInstance(final String runId, final String awsRegion, final Filter... filters) {
@@ -184,6 +212,20 @@ public class EC2Helper {
         return instances.get(0);
     }
 
+    public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
+        return getEC2Client(awsRegion)
+                .describeInstances(new DescribeInstancesRequest()
+                        .withInstanceIds(instanceId)
+                        .withFilters(new Filter().withName(INSTANCE_STATE_NAME)
+                                .withValues(RUNNING_STATE, PENDING_STATE, STOPPING_STATE, STOPPED_STATE)))
+                .getReservations()
+                .stream()
+                .findFirst()
+                .map(Reservation::getInstances)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .findFirst();
+    }
 
     private double getMeanValue(List<SpotPrice> value) {
         if (CollectionUtils.isEmpty(value)) {

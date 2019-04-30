@@ -47,6 +47,9 @@ public final class AclExpressions {
     public static final String RUN_ID_WRITE =
             "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'WRITE')";
 
+    public static final String RUN_ID_OWNER =
+            "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'OWNER')";
+
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
             + "AND @grantPermissionManager.checkStorageShared(#id)";

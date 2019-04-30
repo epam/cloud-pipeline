@@ -137,6 +137,7 @@ public final class MessageConstants {
     public static final String ERROR_EXCEED_MAX_RESTART_RUN_COUNT = "error.exceed.max.restart.run.count";
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
+    public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
@@ -415,6 +416,7 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
+    public static final String ERROR_AZURE_INSTANCE_NOT_ALIVE = "error.azure.instance.not.alive";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";

@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -133,6 +134,16 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
+    public void terminateInstance(final AzureRegion region, final String instanceId) {
+        vmService.terminateInstance(region, instanceId);
+    }
+
+    @Override
+    public boolean instanceExists(final AzureRegion region, final String instanceId) {
+        return vmService.findVmByName(region, instanceId).isPresent();
+    }
+
+    @Override
     public LocalDateTime getNodeLaunchTime(final AzureRegion region, final Long runId) {
         return kubernetesManager.findNodeByRunId(String.valueOf(runId))
                 .map(node -> node.getMetadata().getCreationTimestamp())
@@ -150,8 +161,21 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public RunInstance describeInstance(final AzureRegion region, final String nodeLabel, final RunInstance instance) {
+        return describeInstance(region, nodeLabel, instance, () -> vmService.getRunningVMByRunId(region, nodeLabel));
+    }
+
+    @Override
+    public RunInstance describeAliveInstance(final AzureRegion region, final String nodeLabel,
+                                             final RunInstance instance) {
+        return describeInstance(region, nodeLabel, instance, () -> vmService.getAliveVMByRunId(region, nodeLabel));
+    }
+
+    private RunInstance describeInstance(final AzureRegion region,
+                                         final String nodeLabel,
+                                         final RunInstance instance,
+                                         final Supplier<VirtualMachine> supplier) {
         try {
-            final VirtualMachine vm = vmService.getRunningVMByRunId(region, nodeLabel);
+            final VirtualMachine vm = supplier.get();
             instance.setNodeId(vm.vmId());
             final NetworkInterface networkInterface = vmService.getVMNetworkInterface(region.getAuthFile(), vm);
             instance.setNodeName(networkInterface.primaryIPConfiguration().privateIPAddress());

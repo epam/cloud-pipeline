@@ -37,6 +37,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -56,6 +57,10 @@ public class AzureVMService {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
     }
 
+    public void terminateInstance(final AzureRegion region, final String instanceId) {
+        getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).deallocate();
+    }
+
     public VirtualMachine getRunningVMByRunId(final AzureRegion region, final String tagValue) {
         final Azure azure = buildClient(region.getAuthFile());
         final VirtualMachine virtualMachine = findVMByTag(region, tagValue, azure);
@@ -65,6 +70,28 @@ public class AzureVMService {
                     MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
         }
         return virtualMachine;
+    }
+
+    public VirtualMachine getAliveVMByRunId(final AzureRegion region, final String tagValue) {
+        final Azure azure = buildClient(region.getAuthFile());
+        final VirtualMachine virtualMachine = findVMByTag(region, tagValue, azure);
+        final PowerState powerState = virtualMachine.powerState();
+        if (powerState == PowerState.DEALLOCATING || powerState == PowerState.DEALLOCATED) {
+            throw new AzureException(messageHelper.getMessage(
+                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_ALIVE, tagValue, powerState));
+        }
+        return virtualMachine;
+    }
+
+    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
+        try {
+            return Optional.ofNullable(getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId))
+                    .filter(vm -> vm.powerState() != PowerState.DEALLOCATING
+                            && vm.powerState() != PowerState.DEALLOCATED);
+        } catch (NoSuchElementException e) {
+            log.warn("Azure virtual machine retrieving has failed.", e);
+            return Optional.empty();
+        }
     }
 
     public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {

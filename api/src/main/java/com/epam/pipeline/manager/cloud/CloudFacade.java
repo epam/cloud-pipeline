@@ -38,13 +38,27 @@ public interface CloudFacade {
 
     boolean reassignNode(Long oldId, Long newId);
 
+    /**
+     * Fills in provider related data for running instance associated with run,
+     * otherwise returns {@code null}.
+     */
     RunInstance describeInstance(Long runId, RunInstance instance);
+
+    /**
+     * Fills in provider related data for running or paused instance associated with run,
+     * otherwise returns {@code null}.
+     */
+    RunInstance describeAliveInstance(Long runId, RunInstance instance);
 
     RunInstance describeDefaultInstance(String nodeLabel, RunInstance instance);
 
     void stopInstance(Long regionId, String instanceId);
 
     void startInstance(Long regionId, String instanceId);
+
+    void terminateInstance(Long regionId, String instanceId);
+
+    boolean instanceExists(Long regionId, String instanceId);
 
     Map<String, String> buildContainerCloudEnvVars(Long regionId);
 

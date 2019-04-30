@@ -45,44 +45,30 @@ import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.security.acl.AclMaskPage;
 import com.epam.pipeline.manager.utils.UtilsManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Date;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
+import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 
 @Service
+@RequiredArgsConstructor
 public class RunApiService {
 
-    @Autowired
-    private ToolApiService toolApiService;
-
-    @Autowired
-    private PipelineRunManager runManager;
-
-    @Autowired
-    private FilterManager filterManager;
-
-    @Autowired
-    private RunLogManager logManager;
-
-    @Autowired
-    private InstanceOfferManager offerManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
-    private UtilsManager utilsManager;
-
-    @Autowired
-    private ConfigurationRunner configurationLauncher;
+    private final ToolApiService toolApiService;
+    private final PipelineRunManager runManager;
+    private final FilterManager filterManager;
+    private final RunLogManager logManager;
+    private final InstanceOfferManager offerManager;
+    private final MessageHelper messageHelper;
+    private final UtilsManager utilsManager;
+    private final ConfigurationRunner configurationLauncher;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -153,8 +139,8 @@ public class RunApiService {
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
     @AclMask
-    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status, Date endDate) {
-        return runManager.updatePipelineStatusIfNotFinal(runId, status, endDate);
+    public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status) {
+        return runManager.updatePipelineStatusIfNotFinal(runId, status);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
@@ -257,5 +243,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public Boolean checkFreeSpaceAvailable(final Long runId) {
         return runManager.checkFreeSpaceAvailable(runId);
+    }
+
+    @PreAuthorize(RUN_ID_OWNER)
+    public PipelineRun terminateRun(final Long runId) {
+        return runManager.terminateRun(runId);
     }
 }

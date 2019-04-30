@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @Service
 @Slf4j
@@ -128,6 +129,18 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
+    public void terminateInstance(final AwsRegion region, final String instanceId) {
+        log.debug("Terminating AWS instance {}", instanceId);
+        ec2Helper.terminateInstance(instanceId, region.getRegionCode());
+    }
+
+    @Override
+    public boolean instanceExists(final AwsRegion region, final String instanceId) {
+        log.debug("Checking if AWS instance {} exists", instanceId);
+        return ec2Helper.findInstance(instanceId, region.getRegionCode()).isPresent();
+    }
+
+    @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
     }
@@ -141,9 +154,24 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     public RunInstance describeInstance(final AwsRegion region,
                                         final String nodeLabel,
                                         final RunInstance instance) {
+        return describeInstance(nodeLabel, instance,
+            () -> ec2Helper.getActiveInstance(nodeLabel, region.getRegionCode()));
+    }
+
+    @Override
+    public RunInstance describeAliveInstance(final AwsRegion region,
+                                             final String nodeLabel,
+                                             final RunInstance instance) {
+        return describeInstance(nodeLabel, instance,
+            () -> ec2Helper.getAliveInstance(nodeLabel, region.getRegionCode()));
+    }
+
+    private RunInstance describeInstance(final String nodeLabel,
+                                         final RunInstance instance,
+                                         final Supplier<Instance> supplier) {
         log.debug("Getting instance description for label {}.", nodeLabel);
         try {
-            final Instance ec2Instance = ec2Helper.getActiveInstance(nodeLabel, region.getRegionCode());
+            final Instance ec2Instance = supplier.get();
             instance.setNodeId(ec2Instance.getInstanceId());
             instance.setNodeIP(ec2Instance.getPrivateIpAddress());
             instance.setNodeName(ec2Instance.getPrivateDnsName().split("\\.")[0]);

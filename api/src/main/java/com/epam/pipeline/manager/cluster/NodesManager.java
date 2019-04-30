@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -159,31 +160,90 @@ public class NodesManager {
     }
 
     public NodeInstance getNode(String name, FilterPodsRequest request) {
-        NodeInstance nodeInstance = null;
+        return findNode(name, request).orElseThrow(() -> new IllegalArgumentException(
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
+    }
+
+    public Optional<NodeInstance> findNode(final String name) {
+        return findNode(name, null);
+    }
+
+    public Optional<NodeInstance> findNode(final String name, final FilterPodsRequest request) {
         try (KubernetesClient client = new DefaultKubernetesClient()) {
-            Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
-            Node node = nodeSearchResult.get();
+            final Resource<Node, DoneableNode> nodeSearchResult = client.nodes().withName(name);
+            final Node node = nodeSearchResult.get();
             if (node != null) {
                 final List<String> statuses = request != null ? request.getPodStatuses() : null;
-                nodeInstance = new NodeInstance(node);
+                final NodeInstance nodeInstance = new NodeInstance(node);
                 this.attachRunsInfo(Collections.singletonList(nodeInstance));
                 nodeInstance.setPods(PodInstance.convertToInstances(client.pods().list(),
                         FilterPodsRequest.getPodsByNodeNameAndStatusPredicate(name, statuses))
                 );
+                return Optional.of(nodeInstance);
             }
         }
-        Assert.notNull(nodeInstance, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name));
-        return nodeInstance;
+        final List<String> podStatuses = Optional.ofNullable(request)
+                .map(FilterPodsRequest::getPodStatuses)
+                .orElseGet(Collections::emptyList);
+        log.warn("Node with name {} and the following pod statuses {} wasn't found in cluster.", name, podStatuses);
+        return Optional.empty();
     }
 
     public NodeInstance terminateNode(final String name) {
         final NodeInstance nodeInstance = getNode(name);
+        terminateNode(nodeInstance);
+        return nodeInstance;
+    }
+
+    /**
+     * Terminates run cloud instance.
+     *
+     * If there is a corresponding Kubernetes node it terminates it as well.
+     * Otherwise just the cloud instance is terminated.
+     */
+    public void terminateRun(final PipelineRun run) {
+        final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
+        final Optional<NodeInstance> node = instance.map(RunInstance::getNodeName).flatMap(this::findNode);
+        if (node.isPresent()) {
+            log.debug("Kubernetes node {} for run {} was found and will be terminated.", node.get().getId(),
+                    run.getId());
+            terminateNode(node.get());
+        } else {
+            log.debug("Kubernetes node for run {} wasn't found and its termination will be skipped.", run.getId());
+            final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
+                    .map(regionManager::load)
+                    .orElseGet(regionManager::loadDefaultRegion);
+            final Optional<String> nodeId = instance.map(RunInstance::getNodeId)
+                    .filter(id -> cloudFacade.instanceExists(region.getId(), id))
+                    .map(Optional::of)
+                    .orElseGet(() -> instanceIdFromRunId(run.getId()));
+            if (nodeId.isPresent()) {
+                log.debug("Cloud instance {} for run {} was found in region {} and will be terminated.", nodeId.get(),
+                        run.getId(), region.getRegionCode());
+                terminateInstance(region, nodeId.get());
+            } else {
+                log.debug("Cloud instance for run {} wasn't found in region {} and its termination will be skipped.",
+                        run.getId(), region.getRegionCode());
+            }
+        }
+    }
+
+    private Optional<String> instanceIdFromRunId(final Long runId) {
+        return Optional.ofNullable(cloudFacade.describeAliveInstance(runId, new RunInstance()))
+                .map(RunInstance::getNodeId);
+    }
+
+    private void terminateInstance(final AbstractCloudRegion region, final String nodeId) {
+        cloudFacade.terminateInstance(region.getId(), nodeId);
+    }
+
+    private void terminateNode(final NodeInstance nodeInstance) {
         Assert.isTrue(!isNodeProtected(nodeInstance),
-                messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, name));
+                messageHelper.getMessage(MessageConstants.ERROR_NODE_IS_PROTECTED, nodeInstance.getName()));
 
         if (nodeInstance.getPipelineRun() != null) {
             PipelineRun run = nodeInstance.getPipelineRun();
-            pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED, null);
+            pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
         }
 
         final AbstractCloudRegion cloudRegion = Optional.ofNullable(nodeInstance.getPipelineRun())
@@ -194,7 +254,6 @@ public class NodesManager {
                 .filter(a -> a.getType() != null && a.getType().equalsIgnoreCase("internalip"))
                 .findAny();
         internalIP.ifPresent(nodeInstanceAddress -> terminateNode(nodeInstance, nodeInstanceAddress, cloudRegion));
-        return nodeInstance;
     }
 
     private AbstractCloudRegion loadRegionFromLabels(final NodeInstance nodeInstance) {
@@ -202,7 +261,8 @@ public class NodesManager {
         final String region = nodeInstance.getRegion();
         if (provider == null || org.apache.commons.lang3.StringUtils.isBlank(region)) {
             //missing node labels, let's try default region
-            log.error("Node {} is missing cloud provider labels. Provider: {}, region: {}.", provider, region);
+            log.error("Node {} is missing cloud provider labels. Provider: {}, region: {}.", nodeInstance.getName(),
+                    provider, region);
             return regionManager.loadDefaultRegion();
         }
         return regionManager.load(provider, region);

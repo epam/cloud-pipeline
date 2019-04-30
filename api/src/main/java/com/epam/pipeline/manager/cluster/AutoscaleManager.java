@@ -53,7 +53,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -176,7 +175,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             if (!isNodeAvailable(node)) {
                 if (previousConfiguration != null) {
                     LOGGER.debug("Trying to set failure status for run {}.", runId);
-                    pipelineRunManager.updatePipelineStatusIfNotFinal(currentRunId, TaskStatus.FAILURE, new Date());
+                    pipelineRunManager.updatePipelineStatusIfNotFinal(currentRunId, TaskStatus.FAILURE);
                     updatePodStatus(node, currentRunId);
                 }
                 LOGGER.debug("Scaling down unavailable {} node.", runId);
@@ -263,7 +262,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         if (retryCount >= nodeUpRetryCount) {
             LOGGER.debug("Exceeded max nodeup attempts ({}) for run ID {}. Setting run status 'FAILURE'.",
                     retryCount, runId);
-            pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE, new Date());
+            pipelineRunManager.updatePipelineStatusIfNotFinal(longId, TaskStatus.FAILURE);
             removeNodeUpTask(longId);
             return;
         }
