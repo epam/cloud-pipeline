@@ -117,6 +117,7 @@ public class PipelineRunManagerUnitTest {
 
             @Override
             public void describeTo(final Description description) {
+                description.appendText("custom matcher");
             }
 
             @Override
