@@ -226,7 +226,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .ensure(SSH_LINK, visible);
     }
 
-    @Test
+    @Test(priority = 99)
     @TestCase({"EPMCMBIBPC-2636"})
     public void hddExtraMultiValidation() {
         loginAsAdminAndPerform(() ->
@@ -234,7 +234,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .settings()
                         .switchToPreferences()
                         .switchToCluster()
-                        .setClusterHddExtraMulti("50")
+                        .setClusterHddExtraMulti("100")
                         .save()
                         .click(OK));
 
