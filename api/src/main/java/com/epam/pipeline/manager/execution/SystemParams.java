@@ -72,6 +72,7 @@ public enum SystemParams {
     static {
         SECURED_PREFIXES.add(CLOUD_ACCOUNT_PREFIX);
         SECURED_PREFIXES.add(CLOUD_ACCOUNT_KEY_PREFIX);
+        SECURED_PREFIXES.add(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX);
     }
 
     private String optionName;
