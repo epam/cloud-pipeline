@@ -65,7 +65,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             .clickOnFile(pipelineScript)
             .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
             .saveAndCommitWithMessage("test: Replace script with custom one")
-            .sleep(1, SECONDS)
+            .sleep(3, SECONDS)
             .clickOnFile(CONFIG_JSON)
             .sleep(1, SECONDS)
             .editFile(transferringJsonToObject(profiles -> {
