@@ -57,6 +57,23 @@ def pipe_log_init(run_id):
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
 
 
+def pipe_log_warn(message):
+    global api_token
+    global api_url
+    global script_path
+    global current_run_id
+
+    if api_url and api_token:
+        Logger.warn('[{}] {}'.format(current_run_id, message),
+                    task_name=NODEUP_TASK,
+                    run_id=current_run_id,
+                    api_url=api_url,
+                    log_dir=script_path,
+                    omit_console=True)
+    else:
+        logging.warn(message)
+
+
 def pipe_log(message, status=TaskStatus.RUNNING):
     global api_token
     global api_url
@@ -289,7 +306,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         )
     except ClientError as client_error:
         if 'InstanceLimitExceeded' in client_error.message:
-            pipe_log(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
 
     ins_id = response['Instances'][0]['InstanceId']
@@ -677,7 +694,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     except ClientError as client_error:
         if 'Max spot instance count exceeded' in client_error.message or \
                 'InstanceLimitExceeded' in client_error.message:
-            pipe_log(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
     rep = 0
     ins_id = ''
