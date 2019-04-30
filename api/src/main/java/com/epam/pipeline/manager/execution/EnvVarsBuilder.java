@@ -20,12 +20,14 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Build environment variables for kubernetes node from {@link SystemParams} and {@link PipelineConfiguration}
@@ -94,7 +96,12 @@ public final class EnvVarsBuilder {
                     .forEach(fullEnvVars::add);
         }
 
-        run.setEnvVars(envVarsMap);
+        run.setEnvVars(MapUtils.emptyIfNull(envVarsMap)
+                .entrySet()
+                .stream()
+                .filter(e -> StringUtils.isNotBlank(e.getKey()))
+                .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
         return fullEnvVars;
     }
 
