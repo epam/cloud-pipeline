@@ -229,7 +229,7 @@ public class NodesManager {
     }
 
     private Optional<String> instanceIdFromRunId(final Long runId) {
-        return Optional.ofNullable(cloudFacade.describeInstance(runId, new RunInstance()))
+        return Optional.ofNullable(cloudFacade.describeAliveInstance(runId, new RunInstance()))
                 .map(RunInstance::getNodeId);
     }
 

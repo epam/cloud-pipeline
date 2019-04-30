@@ -38,7 +38,17 @@ public interface CloudFacade {
 
     boolean reassignNode(Long oldId, Long newId);
 
+    /**
+     * Fills in provider related data for running instance associated with run,
+     * otherwise returns {@code null}.
+     */
     RunInstance describeInstance(Long runId, RunInstance instance);
+
+    /**
+     * Fills in provider related data for running or paused instance associated with run,
+     * otherwise returns {@code null}.
+     */
+    RunInstance describeAliveInstance(Long runId, RunInstance instance);
 
     RunInstance describeDefaultInstance(String nodeLabel, RunInstance instance);
 

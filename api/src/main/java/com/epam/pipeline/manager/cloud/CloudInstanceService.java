@@ -103,7 +103,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     LocalDateTime getNodeLaunchTime(T region, Long runId);
 
     /**
-     * Fills in provider related data for instance associated with label,
+     * Fills in provider related data for running instance associated with label,
      * if it exists, otherwise returns {@code null}
      * @param region
      * @param nodeLabel
@@ -111,6 +111,16 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @return
      */
     RunInstance describeInstance(T region, String nodeLabel, RunInstance instance);
+
+    /**
+     * Fills in provider related data for running or paused instance associated with label,
+     * if it exists, otherwise returns {@code null}
+     * @param region
+     * @param nodeLabel
+     * @param instance
+     * @return
+     */
+    RunInstance describeAliveInstance(T region, String nodeLabel, RunInstance instance);
 
     /**
      * Reassigns node from one run to a new one

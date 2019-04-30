@@ -68,9 +68,10 @@ public class EC2Helper {
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final String NAME_TAG = "tag:Name";
     private static final String INSTANCE_STATE_NAME = "instance-state-name";
-    static final String PENDING_STATE = "pending";
-    static final String RUNNING_STATE = "running";
-    static final String TERMINATED_STATE = "terminated";
+    private static final String PENDING_STATE = "pending";
+    private static final String RUNNING_STATE = "running";
+    private static final String STOPPING_STATE = "stopping";
+    private static final String STOPPED_STATE = "stopped";
 
     private final PreferenceManager preferenceManager;
 
@@ -180,6 +181,19 @@ public class EC2Helper {
                 new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE));
     }
 
+    /**
+     * Retrieves running or paused instance.
+     *
+     * @param runId Instance run id.
+     * @param awsRegion Instance aws region.
+     * @return Required instance.
+     */
+    public Instance getAliveInstance(final String runId, final String awsRegion) {
+        return getInstance(runId, awsRegion, new Filter().withName(NAME_TAG).withValues(runId),
+                new Filter().withName(INSTANCE_STATE_NAME).withValues(RUNNING_STATE, PENDING_STATE,
+                        STOPPING_STATE, STOPPED_STATE));
+    }
+
     private Instance getInstance(final String runId, final String awsRegion, final Filter... filters) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final List<Reservation> reservations = client.describeInstances(new DescribeInstancesRequest()
@@ -200,7 +214,10 @@ public class EC2Helper {
 
     public Optional<Instance> findInstance(final String instanceId, final String awsRegion) {
         return getEC2Client(awsRegion)
-                .describeInstances(new DescribeInstancesRequest().withInstanceIds(instanceId))
+                .describeInstances(new DescribeInstancesRequest()
+                        .withInstanceIds(instanceId)
+                        .withFilters(new Filter().withName(INSTANCE_STATE_NAME)
+                                .withValues(RUNNING_STATE, PENDING_STATE, STOPPING_STATE, STOPPED_STATE)))
                 .getReservations()
                 .stream()
                 .findFirst()

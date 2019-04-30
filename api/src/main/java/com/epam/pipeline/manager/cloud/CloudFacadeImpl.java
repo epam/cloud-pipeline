@@ -114,6 +114,12 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public RunInstance describeAliveInstance(final Long runId, final RunInstance instance) {
+        final AbstractCloudRegion region = getRegionByRunId(runId);
+        return getInstanceService(region).describeAliveInstance(region, String.valueOf(runId), instance);
+    }
+
+    @Override
     public RunInstance describeDefaultInstance(final String nodeLabel, final RunInstance instance) {
         final AbstractCloudRegion region = regionManager.loadDefaultRegion();
         return getInstanceService(region).describeInstance(region, nodeLabel, instance);
