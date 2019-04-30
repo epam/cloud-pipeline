@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.manager.execution;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public enum SystemParams {
 
     API("api", "API"),
@@ -63,6 +66,13 @@ public enum SystemParams {
     public static final String CLOUD_ACCOUNT_KEY_PREFIX = "CP_ACCOUNT_KEY_";
     public static final String CLOUD_PROVIDER_PREFIX = "CP_CLOUD_PROVIDER_";
     public static final String CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX = "CP_CREDENTIALS_FILE_CONTENT_";
+
+    public static final Set<String> SECURED_PREFIXES = new HashSet<>();
+
+    static {
+        SECURED_PREFIXES.add(CLOUD_ACCOUNT_PREFIX);
+        SECURED_PREFIXES.add(CLOUD_ACCOUNT_KEY_PREFIX);
+    }
 
     private String optionName;
     private String envName;
