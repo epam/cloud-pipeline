@@ -311,7 +311,7 @@ public class CAdvisorMonitoringManager {
         return LocalDateTime.parse(dateTime, FORMATTER).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    private String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
+    public String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
         final MonitoringStats monitoringStats = getLastMonitoringStat(
                 getStatsForContainerDisk(nodeName, podId, dockerImage), nodeName);
 

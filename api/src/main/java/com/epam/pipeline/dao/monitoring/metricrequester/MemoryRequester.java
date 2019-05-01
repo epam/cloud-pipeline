@@ -1,0 +1,53 @@
+package com.epam.pipeline.dao.monitoring.metricrequester;
+
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.avg.Avg;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class MemoryRequester extends AbstractMetricRequester{
+    public MemoryRequester(RestHighLevelClient client) {
+        super(client);
+    }
+
+    @Override
+    public SearchRequest buildRequest(Collection<String> resourceIds, String[] indexName,
+                                      LocalDateTime from, LocalDateTime to) {
+        final SearchSourceBuilder builder = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
+                                resourceIds))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "node"))
+                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.MEM.getTimestamp())
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                .size(0)
+                .aggregation(AggregationBuilders.terms(NODENAME_FIELD_VALUE)
+                        .field(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD))
+                        .size(resourceIds.size())
+                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + NODE_UTILIZATION)
+                                .field("Metrics." + ELKUsageMetric.MEM.getName()
+                                        + "/" + NODE_UTILIZATION + ".value")));
+
+        return new SearchRequest(indexName).types(ELKUsageMetric.MEM.getName()).source(builder);
+    }
+
+    @Override
+    public Map<String, Double> parseResponse(SearchResponse response) {
+        return ((Terms) response.getAggregations().get(NODENAME_FIELD_VALUE)).getBuckets().stream()
+                .collect(Collectors.toMap(
+                    b -> b.getKey().toString(),
+                    b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()));
+    }
+}

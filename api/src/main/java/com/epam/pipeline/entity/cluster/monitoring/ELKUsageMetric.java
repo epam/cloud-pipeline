@@ -7,11 +7,12 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ELKUsageMetric {
 
-    CPU("cpu", "CpuMetricsTimestamp"),
-    MEM("memory", "MemoryMetricsTimestamp"),
-    FS("filesystem", "FilesystemMetricsTimestamp");
+    CPU("cpu", "CpuMetricsTimestamp", false),
+    MEM("memory", "MemoryMetricsTimestamp", true),
+    FS("filesystem", "FilesystemMetricsTimestamp", true);
 
     private final String name;
     private final String timestamp;
+    private boolean nodeMetric;
 
 }

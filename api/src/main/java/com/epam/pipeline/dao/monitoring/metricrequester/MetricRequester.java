@@ -1,0 +1,20 @@
+package com.epam.pipeline.dao.monitoring.metricrequester;
+
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Map;
+
+public interface MetricRequester {
+
+    SearchRequest buildRequest(Collection<String> resourceIds, String[] indexName,
+                               LocalDateTime from, LocalDateTime to);
+
+    Map<String, Double> parseResponse(SearchResponse response);
+
+    Map<String, Double> performRequest(Collection<String> resourceIds, String[] indexName,
+                                       LocalDateTime from, LocalDateTime to);
+
+}
