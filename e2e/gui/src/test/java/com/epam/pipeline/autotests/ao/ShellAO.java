@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellAO implements AccessObject<ShellAO> {
 
@@ -80,6 +81,17 @@ public class ShellAO implements AccessObject<ShellAO> {
     public NavigationMenuAO close() {
         Selenide.open(C.ROOT_ADDRESS);
         return new NavigationMenuAO();
+    }
+
+    public ShellAO waitUntilTextAppears(final String text) {
+        for (int i = 0; i < 12; i++) {
+            if ($(withText(text)).shouldBe(visible).exists()) {
+                break;
+            }
+            Utils.refresh();
+            sleep(10, SECONDS);
+        }
+        return this;
     }
 
     @Override
