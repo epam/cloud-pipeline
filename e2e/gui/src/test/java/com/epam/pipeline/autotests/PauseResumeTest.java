@@ -134,6 +134,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
+                                                .waitUntilTextAppears(String.format("pipeline-%s", getLastRunId()))
                                                 .execute(String.format("cat %s", testFileName))
                                                 .assertOutputContains(testFileContent))
                                 )
@@ -248,6 +249,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
+                                                .waitUntilTextAppears(String.format("pipeline-%s", getLastRunId()))
                                                 .execute("fallocate -l 15G test.big")
                                                 .sleep(10, SECONDS))
                                 )
@@ -265,6 +267,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                 .assertResumingFinishedSuccessfully()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
+                                                .waitUntilTextAppears(String.format("pipeline-%s", getLastRunId()))
                                                 .execute("ls test.big")
                                                 .assertOutputContains("test.big")
                                                 .close())
