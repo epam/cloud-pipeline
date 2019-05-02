@@ -83,13 +83,17 @@ public class ShellAO implements AccessObject<ShellAO> {
         return new NavigationMenuAO();
     }
 
-    public ShellAO waitUntilTextAppears(final String text) {
-        for (int i = 0; i < 12; i++) {
-            if ($(withText(text)).exists()) {
+    public ShellAO waitUntilTextAppears(final String runId) {
+        for (int i = 0; i < 2; i++) {
+            sleep(2, SECONDS);
+            if ($(withText(String.format("pipeline-%s", runId))).exists()) {
                 break;
             }
             Utils.refresh();
-            sleep(10, SECONDS);
+            sleep(30, SECONDS);
+            close();
+            sleep(30, SECONDS);
+            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
         }
         return this;
     }
