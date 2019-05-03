@@ -16,9 +16,7 @@
 
 package com.epam.pipeline.dao.monitoring;
 
-import com.epam.pipeline.dao.monitoring.metricrequester.CPURequester;
-import com.epam.pipeline.dao.monitoring.metricrequester.FSRequester;
-import com.epam.pipeline.dao.monitoring.metricrequester.MemoryRequester;
+import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
@@ -44,14 +42,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Repository
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 public class MonitoringESDao {
     protected static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
-    private static final String INDEX_NAME_PATTERN = "heapster-%s";
     private static final String INDEX_NAME_TOKEN = "heapster-";
 
     private RestHighLevelClient client;
@@ -63,23 +59,13 @@ public class MonitoringESDao {
         this.lowLevelClient = lowLevelClient;
     }
 
-    public Map<String, Double> loadMetrics(final  ELKUsageMetric metric, final Collection<String> resourceIds,
+    public Map<String, Double> loadMetrics(final ELKUsageMetric metric, final Collection<String> resourceIds,
                                                     final LocalDateTime from, final LocalDateTime to) {
 
         if (CollectionUtils.isEmpty(resourceIds)) {
             return Collections.emptyMap();
         }
-        switch (metric) {
-            case CPU:
-                return new CPURequester(client).performRequest(resourceIds, getIndexNames(from, to), from, to);
-            case MEM:
-                return new MemoryRequester(client).performRequest(resourceIds, getIndexNames(from, to), from, to);
-            case FS:
-                return new FSRequester(client).performRequest(resourceIds, getIndexNames(from, to), from, to);
-            default:
-                throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
-
-        }
+        return AbstractMetricRequester.getRequester(metric, client).performRequest(resourceIds, from, to);
     }
 
     /**
@@ -110,14 +96,6 @@ public class MonitoringESDao {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-    }
-
-    private String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
-        return Stream.of(from, to)
-            .map(d -> d.format(DATE_FORMATTER))
-            .distinct()
-            .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
-            .toArray(String[]::new);
     }
 
     private boolean olderThanRetentionPeriod(final int retentionPeriod, final LocalDateTime date) {

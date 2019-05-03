@@ -17,13 +17,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MemoryRequester extends AbstractMetricRequester{
-    public MemoryRequester(RestHighLevelClient client) {
+
+    MemoryRequester(RestHighLevelClient client) {
         super(client);
     }
 
     @Override
-    public SearchRequest buildRequest(Collection<String> resourceIds, String[] indexName,
-                                      LocalDateTime from, LocalDateTime to) {
+    public SearchRequest buildRequest(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
@@ -40,7 +40,7 @@ public class MemoryRequester extends AbstractMetricRequester{
                                 .field("Metrics." + ELKUsageMetric.MEM.getName()
                                         + "/" + NODE_UTILIZATION + ".value")));
 
-        return new SearchRequest(indexName).types(ELKUsageMetric.MEM.getName()).source(builder);
+        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.MEM.getName()).source(builder);
     }
 
     @Override

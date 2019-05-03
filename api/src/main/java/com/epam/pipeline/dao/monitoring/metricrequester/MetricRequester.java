@@ -9,12 +9,12 @@ import java.util.Map;
 
 public interface MetricRequester {
 
-    SearchRequest buildRequest(Collection<String> resourceIds, String[] indexName,
+    SearchRequest buildRequest(Collection<String> resourceIds,
                                LocalDateTime from, LocalDateTime to);
 
     Map<String, Double> parseResponse(SearchResponse response);
 
-    Map<String, Double> performRequest(Collection<String> resourceIds, String[] indexName,
+    Map<String, Double> performRequest(Collection<String> resourceIds,
                                        LocalDateTime from, LocalDateTime to);
 
 }

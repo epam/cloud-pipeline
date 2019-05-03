@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
 
 public class CPURequester extends AbstractMetricRequester {
 
-    public CPURequester(RestHighLevelClient client) {
+    CPURequester(RestHighLevelClient client) {
         super(client);
     }
 
     @Override
-    public SearchRequest buildRequest(final Collection<String> resourceIds, final String[] indexName,
+    public SearchRequest buildRequest(final Collection<String> resourceIds,
                                       final LocalDateTime from, final LocalDateTime to) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
@@ -41,7 +41,7 @@ public class CPURequester extends AbstractMetricRequester {
                                 .field("Metrics." + ELKUsageMetric.CPU.getName() + "/"
                                         + USAGE_RATE + ".value")));
 
-        return new SearchRequest(indexName).types(ELKUsageMetric.CPU.getName()).source(builder);
+        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.CPU.getName()).source(builder);
     }
 
     @Override

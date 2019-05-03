@@ -18,13 +18,12 @@ import java.util.stream.Collectors;
 
 public class FSRequester extends AbstractMetricRequester {
 
-    public FSRequester(RestHighLevelClient client) {
+    FSRequester(RestHighLevelClient client) {
         super(client);
     }
 
     @Override
-    public SearchRequest buildRequest(Collection<String> resourceIds, String[] indexName,
-                                      LocalDateTime from, LocalDateTime to) {
+    public SearchRequest buildRequest(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
@@ -45,7 +44,7 @@ public class FSRequester extends AbstractMetricRequester {
                                         .field("Metrics." + ELKUsageMetric.FS.getName()
                                                 + "/usage.value"))));
 
-        return new SearchRequest(indexName).types(ELKUsageMetric.FS.getName()).source(builder);
+        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.FS.getName()).source(builder);
     }
 
     @Override
