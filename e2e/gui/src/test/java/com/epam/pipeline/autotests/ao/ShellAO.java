@@ -86,12 +86,17 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO waitUntilTextAppears(final String runId) {
         for (int i = 0; i < 2; i++) {
-            sleep(2, SECONDS);
+            sleep(10, SECONDS);
             if ($(withText(String.format("pipeline-%s", runId))).exists()) {
                 break;
             }
-            Utils.refresh();
             sleep(1, MINUTES);
+            screenshot("ssh_session_before");
+            close();
+            sleep(2, SECONDS);
+            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
+            screenshot("ssh_session_after");
+            System.out.println("Refresh ssh session page for run " + runId);
         }
         return this;
     }
