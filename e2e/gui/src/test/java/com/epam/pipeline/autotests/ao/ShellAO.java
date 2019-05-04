@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellAO implements AccessObject<ShellAO> {
@@ -90,10 +91,7 @@ public class ShellAO implements AccessObject<ShellAO> {
                 break;
             }
             Utils.refresh();
-            sleep(30, SECONDS);
-            close();
-            sleep(30, SECONDS);
-            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
+            sleep(1, MINUTES);
         }
         return this;
     }
