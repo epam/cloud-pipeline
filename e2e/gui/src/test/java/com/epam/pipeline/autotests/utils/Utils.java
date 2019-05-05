@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.utils;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
-import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import java.awt.AWTException;
@@ -43,7 +42,6 @@ import java.util.stream.Stream;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import static com.codeborne.selenide.Condition.exist;
@@ -361,10 +359,5 @@ public class Utils {
     public static void restartBrowser(final String address) {
         Selenide.close();
         Selenide.open(address);
-    }
-
-    public static void refresh() {
-        final WebDriver webDriver = WebDriverRunner.getWebDriver();
-        webDriver.navigate().refresh();
     }
 }

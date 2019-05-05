@@ -92,9 +92,8 @@ public class ShellAO implements AccessObject<ShellAO> {
             }
             sleep(1, MINUTES);
             screenshot("ssh_session_before");
-            close();
-            sleep(2, SECONDS);
-            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
+            refresh();
+            sleep(10, SECONDS);
             screenshot("ssh_session_after");
             System.out.println("Refresh ssh session page for run " + runId);
         }
