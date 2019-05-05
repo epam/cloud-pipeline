@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellAO implements AccessObject<ShellAO> {
@@ -89,6 +90,7 @@ public class ShellAO implements AccessObject<ShellAO> {
             if ($(withText(String.format("pipeline-%s", runId))).exists()) {
                 break;
             }
+            sleep(1, MINUTES);
             refresh();
             close();
             sleep(5, SECONDS);
