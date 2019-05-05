@@ -26,6 +26,7 @@ import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.InstanceViewStatus;
 import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
+import com.microsoft.azure.management.compute.VirtualMachineInstanceView;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.resources.GenericResource;
 import com.microsoft.rest.LogLevel;
@@ -36,9 +37,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -47,6 +51,8 @@ public class AzureVMService {
     private static final String VM_FAILED_STATE = "ProvisioningState/failed";
     private static final String TAG_NAME = "Name";
     private static final String VIRTUAL_MACHINES = "virtualMachines";
+    private static final String NETWORK_INTERFACES = "networkInterfaces";
+    private static final String RESOURCE_DELIMITER = "/";
     private final MessageHelper messageHelper;
 
     public void startInstance(final AzureRegion region, final String instanceId) {
@@ -58,12 +64,43 @@ public class AzureVMService {
     }
 
     public void terminateInstance(final AzureRegion region, final String instanceId) {
-        getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).deallocate();
+        final Azure azure = buildClient(region.getAuthFile());
+        final String instanceName = getInstanceName(region, instanceId);
+        resourcesByTag(region, instanceName)
+                .sorted(this::resourcesTerminationOrder)
+                .map(GenericResource::id)
+                .forEach(resource -> azure.genericResources().deleteById(resource));
+    }
+
+    private String getInstanceName(final AzureRegion region, final String instanceId) {
+        return findVmByName(region, instanceId)
+                .map(VirtualMachine::tags)
+                .map(Map::entrySet)
+                .map(Set::stream)
+                .orElseGet(Stream::empty)
+                .filter(it -> it.getKey().equals(TAG_NAME))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElseThrow(() -> new AzureException(messageHelper.getMessage(
+                        MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, instanceId)));
+    }
+
+    private int resourcesTerminationOrder(final GenericResource r1, final GenericResource r2) {
+        return resourceType(r1).equals(VIRTUAL_MACHINES)
+                || resourceType(r1).equals(NETWORK_INTERFACES) && !resourceType(r2).equals(VIRTUAL_MACHINES)
+                ? -1 : 0;
+    }
+
+    private String resourceType(final GenericResource resource) {
+        return last(resource.resourceType().split(RESOURCE_DELIMITER));
+    }
+
+    private String last(final String[] items) {
+        return items[items.length - 1];
     }
 
     public VirtualMachine getRunningVMByRunId(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
-        final VirtualMachine virtualMachine = findVMByTag(region, tagValue, azure);
+        final VirtualMachine virtualMachine = getVMByTag(region, tagValue);
         final PowerState powerState = virtualMachine.powerState();
         if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
             throw new AzureException(messageHelper.getMessage(
@@ -73,25 +110,11 @@ public class AzureVMService {
     }
 
     public VirtualMachine getAliveVMByRunId(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
-        final VirtualMachine virtualMachine = findVMByTag(region, tagValue, azure);
-        final PowerState powerState = virtualMachine.powerState();
-        if (powerState == PowerState.DEALLOCATING || powerState == PowerState.DEALLOCATED) {
-            throw new AzureException(messageHelper.getMessage(
-                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_ALIVE, tagValue, powerState));
-        }
-        return virtualMachine;
+        return getVMByTag(region, tagValue);
     }
 
     public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
-        try {
-            return Optional.ofNullable(getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId))
-                    .filter(vm -> vm.powerState() != PowerState.DEALLOCATING
-                            && vm.powerState() != PowerState.DEALLOCATED);
-        } catch (NoSuchElementException e) {
-            log.warn("Azure virtual machine retrieving has failed.", e);
-            return Optional.empty();
-        }
+        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
     }
 
     public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
@@ -100,13 +123,15 @@ public class AzureVMService {
     }
 
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
-        final VirtualMachine virtualMachine = buildClient(region.getAuthFile()).virtualMachines()
-                .getByResourceGroup(region.getResourceGroup(), vmName);
-        if (virtualMachine == null) {
+        final Optional<VirtualMachine> virtualMachine = findVmByName(region, vmName);
+        if (!virtualMachine.isPresent()) {
             return Optional.empty();
         }
 
-        final List<InstanceViewStatus> statuses = virtualMachine.instanceView().statuses();
+        final List<InstanceViewStatus> statuses = virtualMachine
+                .map(VirtualMachine::instanceView)
+                .map(VirtualMachineInstanceView::statuses)
+                .orElseGet(Collections::emptyList);
         if (CollectionUtils.isEmpty(statuses)) {
             log.debug("Virtual machine found, but status is not available");
             return Optional.empty();
@@ -120,12 +145,20 @@ public class AzureVMService {
     private VirtualMachine getVmByName(final String authFile,
                                        final String resourceGroup,
                                        final String instanceId) {
-        return buildClient(authFile).virtualMachines().getByResourceGroup(resourceGroup, instanceId);
+        return findVmByName(authFile, resourceGroup, instanceId)
+                .orElseThrow(() -> new AzureException(messageHelper.getMessage(
+                        MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, instanceId)));
     }
 
-    private VirtualMachine findVMByTag(final AzureRegion region,
-                                       final String tagValue,
-                                       final Azure azure) {
+    private Optional<VirtualMachine> findVmByName(final String authFile,
+                                                  final String resourceGroup,
+                                                  final String instanceId) {
+        return Optional.of(buildClient(authFile).virtualMachines())
+                .map(client -> client.getByResourceGroup(resourceGroup, instanceId));
+    }
+
+    private VirtualMachine getVMByTag(final AzureRegion region, final String tagValue) {
+        final Azure azure = buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return findVMInPagedResult(resources.currentPage(), resources)
@@ -154,6 +187,33 @@ public class AzureVMService {
             }
         }
         return Optional.empty();
+    }
+
+    private Stream<GenericResource> resourcesByTag(final AzureRegion region, final String tagValue) {
+        final Azure azure = buildClient(region.getAuthFile());
+        final PagedList<GenericResource> resources = azure.genericResources()
+                .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
+        return resourcesInPagedResult(resources.currentPage(), resources);
+    }
+
+    private Stream<GenericResource> resourcesInPagedResult(final Page<GenericResource> currentPage,
+                                                           final PagedList<GenericResource> resources) {
+        if (currentPage == null || CollectionUtils.isEmpty(currentPage.items())) {
+            return Stream.empty();
+        }
+        return Stream.concat(currentPage.items().stream(), resourcesFromNextPage(currentPage, resources));
+    }
+
+    private Stream<GenericResource> resourcesFromNextPage(final Page<GenericResource> currentPage,
+                                                          final PagedList<GenericResource> resources) {
+        if (resources.hasNextPage()) {
+            try {
+                return resourcesInPagedResult(resources.nextPage(currentPage.nextPageLink()), resources);
+            } catch (IOException e) {
+                log.error(e.getMessage(), e);
+            }
+        }
+        return Stream.empty();
     }
 
     private Azure buildClient(final String authFile) {
