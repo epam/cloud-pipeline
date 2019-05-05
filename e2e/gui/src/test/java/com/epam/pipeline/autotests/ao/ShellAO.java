@@ -24,12 +24,13 @@ import java.util.Collections;
 import java.util.Map;
 import org.openqa.selenium.Keys;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.codeborne.selenide.Selenide.back;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellAO implements AccessObject<ShellAO> {
@@ -90,9 +91,14 @@ public class ShellAO implements AccessObject<ShellAO> {
             if ($(withText(String.format("pipeline-%s", runId))).exists()) {
                 break;
             }
-            sleep(1, MINUTES);
+            sleep(30, SECONDS);
             screenshot("ssh_session_before");
-            refresh();
+            back();
+            sleep(10, SECONDS);
+            if (!$(byId("navigation-button-runs")).exists()) {
+                close();
+            }
+            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
             sleep(10, SECONDS);
             screenshot("ssh_session_after");
             System.out.println("Refresh ssh session page for run " + runId);
