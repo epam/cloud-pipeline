@@ -153,7 +153,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void forbiddenPauseValidation() {
         loginAsAdminAndPerform(() ->
@@ -205,7 +205,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase({"EPMCMBIBPC-2632"})
     public void pauseAndResumeRunsPageValidation() {
         tools()
@@ -275,7 +275,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 );
     }
 
-    @Test(priority = 100, enabled = false)
+    @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
         endpoint = tools()
