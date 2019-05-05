@@ -451,7 +451,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success();
     }
 
-    @GetMapping(value = "/run/{runId}/terminate")
+    @PostMapping(value = "/run/{runId}/terminate")
     @ResponseBody
     @ApiOperation(
             value = "Terminates paused pipeline run.",
