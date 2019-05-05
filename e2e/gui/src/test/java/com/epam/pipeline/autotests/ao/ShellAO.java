@@ -93,12 +93,7 @@ public class ShellAO implements AccessObject<ShellAO> {
             }
             sleep(30, SECONDS);
             screenshot("ssh_session_before");
-            back();
-            sleep(10, SECONDS);
-            if (!$(byId("navigation-button-runs")).exists()) {
-                close();
-            }
-            new NavigationMenuAO().runs().log(runId, LogAO::clickOnSshLink);
+            close();
             sleep(10, SECONDS);
             screenshot("ssh_session_after");
             System.out.println("Refresh ssh session page for run " + runId);
