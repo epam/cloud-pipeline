@@ -29,6 +29,8 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ShellAO implements AccessObject<ShellAO> {
 
@@ -80,6 +82,21 @@ public class ShellAO implements AccessObject<ShellAO> {
     public NavigationMenuAO close() {
         Selenide.open(C.ROOT_ADDRESS);
         return new NavigationMenuAO();
+    }
+
+    public ShellAO waitUntilTextAppears(final String runId) {
+        for (int i = 0; i < 2; i++) {
+            sleep(10, SECONDS);
+            if ($(withText(String.format("pipeline-%s", runId))).exists()) {
+                break;
+            }
+            sleep(1, MINUTES);
+            refresh();
+            close();
+            sleep(5, SECONDS);
+            new NavigationMenuAO().runs().showLog(runId).clickOnSshLink();
+        }
+        return this;
     }
 
     @Override
