@@ -15,6 +15,7 @@
 import base64
 import functools
 import os
+import sys
 import uuid
 from random import randint
 
@@ -22,7 +23,9 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
-from cloudprovider import AbstractInstanceProvider
+from msrestazure.azure_exceptions import CloudError
+
+from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 
 import utils
 
@@ -300,15 +303,23 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 }
             }
 
-        creation_result = self.compute_client.virtual_machines.create_or_update(
-            self.resource_group_name,
-            instance_name,
-            vm_parameters
-        )
-        creation_result.result()
+        try:
+            creation_result = self.compute_client.virtual_machines.create_or_update(
+                self.resource_group_name,
+                instance_name,
+                vm_parameters
+            )
+            creation_result.result()
 
-        start_result = self.compute_client.virtual_machines.start(self.resource_group_name, instance_name)
-        start_result.wait()
+            start_result = self.compute_client.virtual_machines.start(self.resource_group_name, instance_name)
+            start_result.wait()
+        except CloudError as client_error:
+            error_message = client_error.__str__()
+            if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            else:
+                raise client_error
 
         private_ip = self.network_client.network_interfaces \
             .get(self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address

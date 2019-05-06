@@ -25,7 +25,9 @@ from itertools import groupby
 from operator import itemgetter
 import sys
 
-from cloudprovider import AbstractInstanceProvider
+from botocore.exceptions import ClientError
+
+from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from pipeline import TaskStatus
 from pipeline.autoscaling import utils
 
@@ -213,23 +215,32 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
             additional_args = {'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
-        response = self.ec2.run_instances(
-            ImageId=ins_img,
-            MinCount=1,
-            MaxCount=1,
-            KeyName=ins_key,
-            InstanceType=ins_type,
-            UserData=user_data_script,
-            BlockDeviceMappings=[self.__root_device(ins_img),
-                                 AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
-            TagSpecifications=[
-                {
-                    'ResourceType': 'instance',
-                    "Tags": AWSInstanceProvider.get_tags(run_id)
-                }
-            ],
-            **additional_args
-        )
+
+        try:
+            response = self.ec2.run_instances(
+                ImageId=ins_img,
+                MinCount=1,
+                MaxCount=1,
+                KeyName=ins_key,
+                InstanceType=ins_type,
+                UserData=user_data_script,
+                BlockDeviceMappings=[self.__root_device(ins_img),
+                                     AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+                TagSpecifications=[
+                    {
+                        'ResourceType': 'instance',
+                        "Tags": AWSInstanceProvider.get_tags(run_id)
+                    }
+                ],
+                **additional_args
+            )
+        except ClientError as client_error:
+            if 'InstanceLimitExceeded' in client_error.message:
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            else:
+                raise client_error
+
         ins_id = response['Instances'][0]['InstanceId']
         ins_ip = response['Instances'][0]['PrivateIpAddress']
 
@@ -380,14 +391,24 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             specifications['SecurityGroupIds'] = utils.get_security_groups(self.cloud_region)
 
         current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
-        response = self.ec2.request_spot_instances(
-            SpotPrice=str(bid_price),
-            InstanceCount=1,
-            Type='one-time',
-            ValidFrom=current_time,
-            ValidUntil=current_time + timedelta(seconds=num_rep * time_rep),
-            LaunchSpecification=specifications,
-        )
+
+        try:
+            response = self.ec2.request_spot_instances(
+                SpotPrice=str(bid_price),
+                InstanceCount=1,
+                Type='one-time',
+                ValidFrom=current_time,
+                ValidUntil=current_time + timedelta(seconds=num_rep * time_rep),
+                LaunchSpecification=specifications,
+            )
+        except ClientError as client_error:
+            if 'Max spot instance count exceeded' in client_error.message or \
+                    'InstanceLimitExceeded' in client_error.message:
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            else:
+                raise client_error
+
         rep = 0
         ins_id = ''
         ins_ip = ''

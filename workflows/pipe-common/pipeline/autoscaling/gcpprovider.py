@@ -14,9 +14,11 @@
 
 import os
 import socket
+import sys
 import time
 import uuid
-from cloudprovider import AbstractInstanceProvider
+
+from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from random import randint
 from time import sleep
 
@@ -116,12 +118,18 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 ]}
             body.update(gpu)
 
-        response = self.client.instances().insert(
-            project=self.project_id,
-            zone=self.cloud_region,
-            body=body).execute()
-
-        self.__wait_for_operation(response['name'])
+        try:
+            response = self.client.instances().insert(
+                project=self.project_id,
+                zone=self.cloud_region,
+                body=body).execute()
+            self.__wait_for_operation(response['name'])
+        except Exception as client_error:
+            if 'quota' in client_error.__str__().lower():
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            else:
+                raise client_error
 
         ip_response = self.client.instances().get(
             project=self.project_id,
