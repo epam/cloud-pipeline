@@ -16,6 +16,8 @@ import argparse
 import functools
 import os
 import json
+import sys
+
 import pykube
 import logging
 import fnmatch
@@ -27,6 +29,7 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from msrestazure.azure_exceptions import CloudError
 from pipeline import Logger, TaskStatus, PipelineAPI
 
 VM_NAME_PREFIX = "az-"
@@ -34,6 +37,8 @@ UUID_LENGHT = 16
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
+LIMIT_EXCEEDED_EXIT_CODE = 6
+LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 
 current_run_id = 0
 api_url = None
@@ -52,6 +57,23 @@ def pipe_log_init(run_id):
 
     if not api_url or not api_token:
         logging.basicConfig(filename='nodeup.log', level=logging.INFO, format='%(asctime)s %(message)s')
+
+
+def pipe_log_warn(message):
+    global api_token
+    global api_url
+    global script_path
+    global current_run_id
+
+    if api_url and api_token:
+        Logger.warn('[{}] {}'.format(current_run_id, message),
+                    task_name=NODEUP_TASK,
+                    run_id=current_run_id,
+                    api_url=api_url,
+                    log_dir=script_path,
+                    omit_console=True)
+    else:
+        logging.warn(message)
 
 
 def pipe_log(message, status=TaskStatus.RUNNING):
@@ -388,15 +410,23 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
             }
         }
 
-    creation_result = compute_client.virtual_machines.create_or_update(
-        resource_group_name,
-        instance_name,
-        vm_parameters
-    )
-    creation_result.result()
+    try:
+        creation_result = compute_client.virtual_machines.create_or_update(
+            resource_group_name,
+            instance_name,
+            vm_parameters
+        )
+        creation_result.result()
 
-    start_result = compute_client.virtual_machines.start(resource_group_name, instance_name)
-    start_result.wait()
+        start_result = compute_client.virtual_machines.start(resource_group_name, instance_name)
+        start_result.wait()
+    except CloudError as client_error:
+        error_message = client_error.__str__()
+        if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
+            pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+        else:
+            raise client_error
 
     private_ip = network_client.network_interfaces.get(
         resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
