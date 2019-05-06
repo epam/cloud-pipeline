@@ -75,7 +75,23 @@ public abstract class AbstractBfxPipelineTest {
                 result.getTestClass().getRealClass().getSimpleName(),
                 result.getMethod().getMethodName(),
                 testCasesString.toString(),
-                result.isSuccess() ? "SUCCESS" : "FAILS")
+                getStatus(result.getStatus()))
         );
+    }
+
+    private String getStatus(final int numericStatus) {
+        String status;
+        switch (numericStatus) {
+            case 1:
+                status = "SUCCESS";
+                break;
+            case 3:
+                status = "SKIP";
+                break;
+            default:
+                status = "FAILS";
+                break;
+        }
+        return status;
     }
 }
