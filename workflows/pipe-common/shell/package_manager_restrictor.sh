@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The script is a package managers wrapper provided by Cloud Pipeline.
+#
+# It checks for the restricted packages in the package manager commands.
+# If restricted packages are found in the command and the shell is interactive then additional confirmation is
+# required to perform package manager operation.
+# See https://github.com/epam/cloud-pipeline/issues/158 for more information.
+
+FORWARDING_ARGUMENTS="$@"
+# TODO 06.05.19: Retrieve restricted packages from the application preferences.
+RESTRICTED_PACKAGES="nano,vim"
+# TODO 06.05.19: Unify underlying package manager resolving.
+UNDERLYING_PACKAGE_MANAGER=/usr/bin/yum
+
+function any_restricted_packages() {
+    _FORWARDING_ARGUMENTS="$1"
+    IFS=',' read -r -a _RESTRICTED_PACKAGES <<< "$2"
+    for PACKAGE in "${_RESTRICTED_PACKAGES[@]}"
+    do
+        if [[ "$_FORWARDING_ARGUMENTS" == *"$PACKAGE"* ]]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function shell_is_interactive() {
+    # Checks if the current shell is interactive or if the current shell stdout is terminal.
+    if [[ -t 1 || "$-" == *"i"* ]]
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if any_restricted_packages "$FORWARDING_ARGUMENTS" "$RESTRICTED_PACKAGES"
+then
+    echo "######################################################################################"
+    echo "##                                                                                  ##"
+    echo "##                    CLOUD PIPELINE PACKAGE MANAGEMENT RESTRICTION                 ##"
+    echo "##                                                                                  ##"
+    echo "##   You tried to install one of the packages that are restricted to be installed   ##"
+    echo "##   within Cloud Pipeline run container.                                           ##"
+    echo "##                                                                                  ##"
+    echo "##   Please see the corresponding GitHub issue to get more information on why the   ##"
+    echo "##   packages are restricted:                                                       ##"
+    echo "##   https://github.com/epam/cloud-pipeline/issues/158                              ##"
+    echo "##                                                                                  ##"
+    echo "######################################################################################"
+
+    if shell_is_interactive
+    then
+        read -r -p "Do you want to ignore the Cloud Pipeline package management restriction? [y/N] " response
+        if [[ ! "$response" =~ [yY][eE][sS]|[yY] ]]
+        then
+            exit 1
+        fi
+    else
+        echo "Cloud Pipeline package management restriction was ignored because the shell is not interactive."
+    fi
+fi
+
+"$UNDERLYING_PACKAGE_MANAGER" "$FORWARDING_ARGUMENTS"
