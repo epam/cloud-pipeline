@@ -308,6 +308,8 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
         if 'InstanceLimitExceeded' in client_error.message:
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+        else:
+            raise client_error
 
     ins_id = response['Instances'][0]['InstanceId']
     ins_ip = response['Instances'][0]['PrivateIpAddress']
@@ -696,6 +698,9 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
                 'InstanceLimitExceeded' in client_error.message:
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+        else:
+            raise client_error
+
     rep = 0
     ins_id = ''
     ins_ip = ''
