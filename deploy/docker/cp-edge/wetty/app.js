@@ -86,11 +86,12 @@ httpserv = http.createServer(app).listen(opts.port, function() {
 var io = server(httpserv,{path: '/ssh/socket.io'});
 io.on('connection', function(socket){
     var sshhost = 'localhost';
+    var pipeline_id = 0
     var request = socket.request;
-    console.log((new Date()) + ' Connection accepted.');
+    console.log((new Date()) + ' Connection accepted for ' + request.headers.referer);
     var term;
     if (match = request.headers.referer.match('/ssh/(pipeline|container)/(.+)$')) {
-        var pipeline_id = match[2];
+        pipeline_id = match[2];
         if (!pipeline_id){
             socket.disconnect();
             return;
@@ -98,8 +99,9 @@ io.on('connection', function(socket){
 
         var auth_key = socket.handshake.headers['token'];
         pipe_details = get_pipe_details(pipeline_id, auth_key)
-        if (!pipe_details)
+        if (!pipe_details || !pipe_details.ip || !pipe_details.pass)
         {
+            console.log((new Date()) + " Cannot get ip/pass for a run #" + pipeline_id);
             socket.disconnect();
             return;
         }
@@ -114,7 +116,7 @@ io.on('connection', function(socket){
                     rows: 30
             });
         } else if (match[1] == "container") {
-            console.log((new Date()) + ' Try to exec kubeclt exec for pod: ' + pipe_details.pod_id);
+            console.log((new Date()) + ' Trying to exec kubectl exec for pod: ' + pipe_details.pod_id);
             term = pty.spawn('kubectl', ['exec', '-it', pipe_details.pod_id, '/bin/bash'], {
                     name: 'xterm-256color',
                     cols: 80,
@@ -131,7 +133,7 @@ io.on('connection', function(socket){
     }
 
 
-    console.log((new Date()) + " PID=" + term.pid + " STARTED on behalf of user=" + sshuser)
+    console.log((new Date()) + " PID=" + term.pid + " STARTED to IP=" + sshhost + ", RUNNO=" + pipeline_id + " on behalf of user=" + sshuser);
     term.on('data', function(data) {
         socket.emit('output', data);
     });
@@ -145,6 +147,13 @@ io.on('connection', function(socket){
         term.write(data);
     });
     socket.on('disconnect', function() {
+        console.log((new Date()) + " Disconnecting PID=" + term.pid);
         term.end();
+        try {
+            process.kill(term.pid);
+        }
+        catch(ex) {
+            console.log(ex);
+        }
     });
 })
