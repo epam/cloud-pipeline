@@ -9,8 +9,8 @@ import java.util.Map;
 
 public interface MetricRequester {
 
-    SearchRequest buildRequest(Collection<String> resourceIds,
-                               LocalDateTime from, LocalDateTime to);
+    SearchRequest buildRequest(Collection<String> resourceIds, LocalDateTime from,
+                               LocalDateTime to, Map <String, String> additional);
 
     Map<String, Double> parseResponse(SearchResponse response);
 

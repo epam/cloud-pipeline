@@ -44,6 +44,10 @@ public abstract class AbstractMetricRequester implements MetricRequester {
     static final String NODE_UTILIZATION = "node_utilization";
     static final String LIMIT = "limit";
 
+    public static final String NODE = "node";
+    public static final String RESOURCE_ID = "resource_id";
+    public static final String POD_CONTAINER = "pod_container";
+
     static final String AVG_AGGREGATION = "avg_";
     static final String AGGREGATION_POD_NAME = "pod_name";
     static final String FIELD_POD_NAME_RAW = "pod_name.raw";
@@ -73,18 +77,22 @@ public abstract class AbstractMetricRequester implements MetricRequester {
 
     public Map<String, Double> performRequest(final Collection<String> resourceIds,
                                               final LocalDateTime from, final LocalDateTime to) {
-        SearchRequest searchRequest = buildRequest(resourceIds, from, to);
+        SearchRequest searchRequest = buildRequest(resourceIds, from, to, null);
+        SearchResponse response = executeRequest(searchRequest);
+        return parseResponse(response);
+    }
+
+    SearchResponse executeRequest(final SearchRequest searchRequest) {
         SearchResponse response;
         try {
             response = client.search(searchRequest);
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-
-        return parseResponse(response);
+        return response;
     }
 
-    protected static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+    static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
         return Stream.of(from, to)
                 .map(d -> d.format(DATE_FORMATTER))
                 .distinct()

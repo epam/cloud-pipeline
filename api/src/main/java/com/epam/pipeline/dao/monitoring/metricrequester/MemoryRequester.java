@@ -32,15 +32,15 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class MemoryRequester extends AbstractMetricRequester{
+public class MemoryRequester extends AbstractMetricRequester {
 
     MemoryRequester(final RestHighLevelClient client) {
         super(client);
     }
 
     @Override
-    public SearchRequest buildRequest(final Collection<String> resourceIds,
-                                      final LocalDateTime from, final LocalDateTime to) {
+    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
+                                      final LocalDateTime to, final Map<String, String> additional) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),

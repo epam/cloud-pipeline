@@ -39,8 +39,8 @@ public class CPURequester extends AbstractMetricRequester {
     }
 
     @Override
-    public SearchRequest buildRequest(final Collection<String> resourceIds,
-                                      final LocalDateTime from, final LocalDateTime to) {
+    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
+                                      final LocalDateTime to, final Map<String, String> additional) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), resourceIds))
