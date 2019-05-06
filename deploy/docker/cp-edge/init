@@ -56,7 +56,7 @@ if [ ! -f "$JWT_PUB_KEY" ]; then
 fi
 
 # Start wetty.js for SSH proxy
-nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/cron.log 2>&1 &
+nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
 
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
@@ -68,4 +68,4 @@ crond
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
 # Pring wetty and cron logs to the stdout
-tail -f /var/log/cron.log
+tail -f /var/log/wetty.log -f /var/log/sync-routes.log

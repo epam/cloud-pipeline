@@ -64,7 +64,8 @@ ADD sync-routes.sh /etc/sync-routes/sync-routes.sh
 ADD	sync-routes.py /etc/sync-routes/sync-routes.py
 ADD	route-template.conf /etc/sync-routes/route-template.conf
 RUN	chmod 0644 /etc/cron.d/sync-routes
-RUN	touch /var/log/cron.log
+RUN touch /var/log/sync-routes.log && \
+    touch /var/log/wetty.log
 
 # Configure nginx
 ## Main config file
