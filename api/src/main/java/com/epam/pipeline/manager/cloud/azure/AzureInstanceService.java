@@ -182,7 +182,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
             instance.setNodeIP(networkInterface.primaryIPConfiguration().privateIPAddress());
             return instance;
         } catch (AzureException e) {
-            log.error(String.format("An error while getting instance description %s", nodeLabel), e);
+            log.error("An error while getting instance description {}", nodeLabel);
             return null;
         }
     }
