@@ -1053,6 +1053,40 @@ echo
 
 
 ######################################################
+echo "Create package manager restriction wrappers"
+echo "-"
+######################################################
+
+CP_USR_BIN="/usr/cpbin"
+
+mkdir -p "$CP_USR_BIN"
+IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MANAGERS"
+
+for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
+do
+    MANAGER_PATH=$(command -v "$MANAGER")
+    if [[ "$?" == 0 ]]
+    then
+        MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
+        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
+        if [[ "$?" == 0 ]]
+        then
+            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
+            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
+        fi
+    fi
+done
+
+echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
+
+echo "Finished creating package manager restriction wrappers"
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
 echo Symlink common locations for OWNER and root
 echo "-"
 ######################################################
