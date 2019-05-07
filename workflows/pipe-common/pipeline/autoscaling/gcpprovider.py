@@ -51,8 +51,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
 
         allowed_networks = utils.get_networks_config(self.cloud_region)
-        subnet_id = None
-        network_name = None
+        subnet_id = 'default'
+        network_name = 'default'
         if allowed_networks and len(allowed_networks) > 0:
             network_num = randint(0, len(allowed_networks) - 1)
             network_name = allowed_networks.items()[network_num][0]
