@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.datastorage.providers;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.amazonaws.services.s3.waiters.AmazonS3Waiters;
+import com.amazonaws.waiters.Waiter;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -33,7 +35,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +67,12 @@ public class S3StorageProviderTest extends AbstractSpringTest {
         when(amazonClient.createBucket(any(CreateBucketRequest.class)))
                 .thenReturn(bucket);
         doReturn(amazonClient).when(s3Helper).getDefaultS3Client();
-        AwsRegion region = new AwsRegion();
+        final AmazonS3Waiters waiters = mock(AmazonS3Waiters.class);
+        when(amazonClient.waiters()).thenReturn(waiters);
+        final Waiter waiter = mock(Waiter.class);
+        when(waiters.bucketExists()).thenReturn(waiter);
+        doNothing().when(waiter).run(any());
+        final AwsRegion region = new AwsRegion();
         region.setId(REGION_ID);
         region.setRegionCode("us-east-1");
         region.setCorsRules("[" +

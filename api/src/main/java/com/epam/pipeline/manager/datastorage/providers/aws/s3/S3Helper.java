@@ -33,6 +33,7 @@ import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.GetObjectMetadataRequest;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.HeadBucketRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
@@ -59,6 +60,8 @@ import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
 import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
+import com.amazonaws.waiters.Waiter;
+import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -138,6 +141,8 @@ public class S3Helper {
             throw new IllegalArgumentException(String.format("Bucket with name '%s' already exist", name));
         }
         final Bucket bucket = s3client.createBucket(new CreateBucketRequest(name));
+        final Waiter waiter = s3client.waiters().bucketExists();
+        waiter.run(new WaiterParameters<>(new HeadBucketRequest(name)));
 
         if (!StringUtils.isNullOrEmpty(policy)) {
             String contents = populateBucketPolicy(name, policy, allowedCidrs, shared);
