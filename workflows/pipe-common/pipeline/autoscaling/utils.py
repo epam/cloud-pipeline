@@ -60,6 +60,23 @@ def pipe_log(message, status=TaskStatus.RUNNING):
         logging.info(message)
 
 
+def pipe_log_warn(message):
+    global api_token
+    global api_url
+    global script_path
+    global current_run_id
+
+    if api_url and api_token:
+        Logger.warn('[{}] {}'.format(current_run_id, message),
+                    task_name=NODEUP_TASK,
+                    run_id=current_run_id,
+                    api_url=api_url,
+                    log_dir=script_path,
+                    omit_console=True)
+    else:
+        logging.warn(message)
+
+
 __CLOUD_METADATA__ = None
 __CLOUD_TAGS__ = None
 
