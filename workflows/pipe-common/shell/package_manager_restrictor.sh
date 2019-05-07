@@ -16,23 +16,27 @@
 
 # The script is a package managers wrapper provided by Cloud Pipeline.
 #
-# It checks for the restricted packages in the package manager commands.
-# If restricted packages are found in the command and the shell is interactive then additional confirmation is
-# required to perform package manager operation.
+# It checks for the restricted packages in the package manager commands. If restricted packages are found in a command
+# and the shell is interactive then the additional confirmation is required to perform the operation.
+#
+# It takes the required package manager absolute path as a first argument and all its arguments as the following
+# arguments.
+#
+# It uses CP_RESTRICTED_PACKAGES to get comma-separated list of restricted package prefixes.
+#
 # See https://github.com/epam/cloud-pipeline/issues/158 for more information.
 
+UNDERLYING_PACKAGE_MANAGER="$1"
+shift # removes the first argument from the arguments list
 FORWARDING_ARGUMENTS="$@"
-# TODO 06.05.19: Retrieve restricted packages from the application preferences.
-RESTRICTED_PACKAGES="nano,vim"
-# TODO 06.05.19: Unify underlying package manager resolving.
-UNDERLYING_PACKAGE_MANAGER=/usr/bin/yum
+RESTRICTED_PACKAGES="$CP_RESTRICTED_PACKAGES"
 
 function any_restricted_packages() {
     _FORWARDING_ARGUMENTS="$1"
     IFS=',' read -r -a _RESTRICTED_PACKAGES <<< "$2"
     for PACKAGE in "${_RESTRICTED_PACKAGES[@]}"
     do
-        if [[ "$_FORWARDING_ARGUMENTS" == *"$PACKAGE"* ]]
+        if [[ "$_FORWARDING_ARGUMENTS" == *" $PACKAGE"* ]]
         then
             return 0
         fi
@@ -77,4 +81,4 @@ then
     fi
 fi
 
-"$UNDERLYING_PACKAGE_MANAGER" "$FORWARDING_ARGUMENTS"
+"$UNDERLYING_PACKAGE_MANAGER" $FORWARDING_ARGUMENTS
