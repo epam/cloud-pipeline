@@ -76,9 +76,9 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
     @Test
     @TestCase({"EPMCMBIBPC-646"})
     public void checkAccessToSSHForNonOwnerUser() {
-        open(C.ROOT_ADDRESS);
         navigationMenu()
                 .library()
+                .sleep(1, SECONDS)
                 .clickOnPipeline(pipelineName)
                 .clickEditButton()
                 .clickOnPermissionsTab()
