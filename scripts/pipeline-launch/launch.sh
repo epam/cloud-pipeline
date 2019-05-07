@@ -1064,12 +1064,16 @@ IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MAN
 
 for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
 do
-    MANAGER_PATH=$(which "$MANAGER")
+    MANAGER_PATH=$(command -v "$MANAGER")
     if [[ "$?" == 0 ]]
     then
         MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
-        echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
-        chmod +x "$MANAGER_WRAPPER_PATH"
+        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
+        if [[ "$?" == 0 ]]
+        then
+            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
+            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
+        fi
     fi
 done
 
