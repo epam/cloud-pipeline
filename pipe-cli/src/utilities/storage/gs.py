@@ -152,7 +152,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
             check_file = False
         bucket = self.client.bucket(self.bucket.path)
         if not recursive and not hard_delete:
-            self._delete_blob(self._blob(bucket, prefix, version), exclude, include)
+            self._delete_blob(bucket.blob(prefix, generation=version), exclude, include)
         else:
             blobs_for_deletion = []
             listing_manager = self._get_listing_manager(show_versions=version is not None or hard_delete)
@@ -162,7 +162,7 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
                         matching_item_versions = [item_version for item_version in item.versions
                                                   if item_version.version == version]
                         if matching_item_versions:
-                            blobs_for_deletion = [self._blob(bucket, item.name, matching_item_versions[0].version)]
+                            blobs_for_deletion = [bucket.blob(item.name, generation=matching_item_versions[0].version)]
                     else:
                         blobs_for_deletion.extend(self._item_blobs_for_deletion(bucket, item, hard_delete))
                     break
@@ -173,27 +173,13 @@ class GsDeleteManager(GsManager, AbstractDeleteManager):
 
     def _item_blobs_for_deletion(self, bucket, item, hard_delete):
         if hard_delete:
-            return [self._blob(bucket, item.name, item_version.version) for item_version in item.versions]
+            return [bucket.blob(item.name, generation=item_version.version) for item_version in item.versions]
         else:
             return [bucket.blob(item.name)]
 
-    def _blob(self, bucket, blob_name, generation):
-        """
-        Returns blob instance with the specified name and generation.
-
-        The current method is a workaround for the absence of support for the operation in the official SDK.
-        The support for such an operation was requested implemented in #7444 pull request that is
-        already merged. Therefore, as long as google-cloud-storage==1.15.0 is released the usage of the current
-        method should be replaced with the usage of a corresponding SDK method.
-        """
-        blob = bucket.blob(blob_name)
-        if generation:
-            blob._patch_property('generation', int(generation))
-        return blob
-
     def _delete_blob(self, blob, exclude, include, prefix=None):
         if self._is_matching_delete_filters(blob.name, exclude, include, prefix):
-            self.client._delete_blob_generation(blob)
+            blob.delete()
 
     def _is_matching_delete_filters(self, blob_name, exclude, include, prefix=None):
         if prefix:
@@ -439,41 +425,7 @@ class _ProxySession(AuthorizedSession):
         return super(_ProxySession, self).request(method, url, data, headers, **kwargs)
 
 
-class _DeleteBlobGenerationMixin:
-
-    def _delete_blob_generation(self, blob):
-        """
-        Deletes a specific blob generation.
-
-        If the given blob has generation then it will be deleted, otherwise the latest blob generation will.
-
-        The current method is a workaround for the absence of support for the operation in the official SDK.
-        The support for such an operation was requested in #5781 issue and implemented in #7444 pull request that is
-        already merged. Therefore, as long as google-cloud-storage==1.15.0 is released the usage of the current
-        method should be replaced with the usage of a corresponding SDK method.
-
-        See also:
-        https://github.com/googleapis/google-cloud-python/issues/5781
-        https://github.com/googleapis/google-cloud-python/pull/7444
-        """
-        bucket = blob.bucket
-        query_params = {}
-
-        if bucket.user_project is not None:
-            query_params["userProject"] = bucket.user_project
-        if blob.generation:
-            query_params['generation'] = blob.generation
-
-        blob_path = Blob.path_helper(bucket.path, blob.name)
-        bucket.client._connection.api_request(
-            method="DELETE",
-            path=blob_path,
-            query_params=query_params,
-            _target_object=None,
-        )
-
-
-class _RefreshingClient(Client, _DeleteBlobGenerationMixin):
+class _RefreshingClient(Client):
     MAX_REFRESH_ATTEMPTS = 100
 
     def __init__(self, bucket, read, write, refresh_credentials, versioning=False):
