@@ -54,11 +54,11 @@ public abstract class AbstractMetricRequester implements MetricRequester {
     protected static final String NODENAME_FIELD_VALUE = "nodename";
     protected static final String NODENAME_RAW_FIELD = "nodename.raw";
 
+    private RestHighLevelClient client;
+
     AbstractMetricRequester(RestHighLevelClient client) {
         this.client = client;
     }
-
-    private RestHighLevelClient client;
 
 
     public static MetricRequester getRequester(final ELKUsageMetric metric, final RestHighLevelClient client) {
