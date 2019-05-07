@@ -414,9 +414,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
         PipelineRun run1 = createTestPipelineRun();
         PipelineRun run2 = createTestPipelineRun();
 
-        List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics = Arrays.asList(
-                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM.getName(), TEST_MEMORY_RATE)),
-                new ImmutablePair<>(run2, Collections.singletonMap(ELKUsageMetric.FS.getName(), TEST_DISK_RATE)));
+        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Arrays.asList(
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE)),
+                new ImmutablePair<>(run2, Collections.singletonMap(ELKUsageMetric.FS, TEST_DISK_RATE)));
 
         notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
 
@@ -447,7 +447,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         Pipeline pipeline = createPipeline(testOwner);
         PipelineRun run1 = createTestPipelineRun(pipeline.getId());
         notificationManager.notifyHighResourceConsumingRuns(Collections.singletonList(
-                new ImmutablePair<>(run1, Collections.singletonMap("memoryRate", TEST_MEMORY_RATE))),
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE))),
                 HIGH_CONSUMED_RESOURCES);
 
         Assert.assertTrue(notificationManager.loadLastNotificationTimestamp(run1.getId(),
@@ -466,8 +466,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         notificationSettingsDao.updateNotificationSettings(highConsuming);
 
         PipelineRun run1 = createTestPipelineRun();
-        List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics = Collections.singletonList(
-                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM.getName(), TEST_MEMORY_RATE)));
+        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Collections.singletonList(
+                new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE)));
 
         notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
 

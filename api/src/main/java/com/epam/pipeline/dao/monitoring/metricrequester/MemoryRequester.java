@@ -45,7 +45,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
                                 resourceIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "node"))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
                         .filter(QueryBuilders.rangeQuery(ELKUsageMetric.MEM.getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                 .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))

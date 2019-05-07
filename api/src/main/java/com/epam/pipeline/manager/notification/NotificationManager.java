@@ -268,8 +268,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
-                                                final NotificationType notificationType) {
+    public void notifyHighResourceConsumingRuns(
+            final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
+            final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
             LOGGER.debug("No pipelines are high loaded, notifications won't be sent!");
             return;
@@ -281,7 +282,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        final List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> filtered = pipelinesMetrics.stream()
                 .filter(run -> shouldNotify(run.getLeft().getId(), notificationSettings))
                 .collect(Collectors.toList());
 
@@ -303,10 +304,10 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
             message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
-                    pair.getRight().getOrDefault(ELKUsageMetric.MEM.getName(), 0.0) * PERCENT);
+                    pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
             message.getTemplateParameters().put("diskThreshold", diskThreshold);
             message.getTemplateParameters().put("diskRate", pair.getRight()
-                    .getOrDefault(ELKUsageMetric.FS.getName(), 0.0) * PERCENT);
+                    .getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
 
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
             message.setCopyUserIds(ccUserIds);

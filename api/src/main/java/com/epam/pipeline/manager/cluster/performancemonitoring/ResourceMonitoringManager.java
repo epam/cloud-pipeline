@@ -124,23 +124,23 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final Map<String, PipelineRun> running = runs.stream()
                 .collect(Collectors.toMap(p -> p.getInstance().getNodeName(), r -> r));
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
-        final Map<String, Double> thresholds = getThresholds();
+        final Map<ELKUsageMetric, Double> thresholds = getThresholds();
         log.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
 
         final LocalDateTime now = DateUtils.nowUTC();
-        final Map<String, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
-                .collect(Collectors.toMap(ELKUsageMetric::getName, metric ->
+        final Map<ELKUsageMetric, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
+                .collect(Collectors.toMap(metric -> metric, metric ->
                         monitoringDao.loadMetrics(metric, running.keySet(),
                             now.minusMinutes(timeRange), now)));
 
         log.debug("memory and disk metrics received: " + metrics.entrySet().stream()
-                .map(e -> e.getKey() + ": { " + e.getValue().entrySet().stream()
+                .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
                         .map(metric -> metric.getKey() + ":" + metric.getValue())
                         .collect(Collectors.joining(", ")) + " }"
                 )
                 .collect(Collectors.joining("; ")));
 
-        final List<Pair<PipelineRun, Map<String, Double>>> runsToNotify = running.entrySet()
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> runsToNotify = running.entrySet()
                 .stream()
                 .map(nodeAndRun -> matchRunAndMetrics(metrics, nodeAndRun))
                 .filter(pod -> isPodUnderPressure(pod.getValue(), thresholds))
@@ -149,9 +149,10 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
     }
 
-    private Pair<PipelineRun, Map<String, Double>> matchRunAndMetrics(final Map<String, Map<String, Double>> metrics,
-                                                                      final Map.Entry<String, PipelineRun> podAndRun) {
-        final Map<String, Double> podMetrics = metrics.entrySet()
+    private Pair<PipelineRun, Map<ELKUsageMetric, Double>> matchRunAndMetrics(
+            final Map<ELKUsageMetric, Map<String, Double>> metrics,
+            final Map.Entry<String, PipelineRun> podAndRun) {
+        final Map<ELKUsageMetric, Double> podMetrics = metrics.entrySet()
                 .stream()
                 .collect(HashMap::new,
                     (m, e) -> m.put(e.getKey(), e.getValue().get(podAndRun.getKey())),
@@ -160,7 +161,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         return new ImmutablePair<>(podAndRun.getValue(), podMetrics);
     }
 
-    private boolean isPodUnderPressure(final Map<String, Double> podMetrics, final Map<String, Double> thresholds) {
+    private boolean isPodUnderPressure(final Map<ELKUsageMetric, Double> podMetrics,
+                                       final Map<ELKUsageMetric, Double> thresholds) {
         return thresholds.entrySet()
                 .stream()
                 .anyMatch(
@@ -172,11 +174,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 );
     }
 
-    private Map<String, Double> getThresholds() {
-        final HashMap<String, Double> result = new HashMap<>();
-        result.put(ELKUsageMetric.MEM.getName(),
+    private Map<ELKUsageMetric, Double> getThresholds() {
+        final HashMap<ELKUsageMetric, Double> result = new HashMap<>();
+        result.put(ELKUsageMetric.MEM,
                 preferenceManager.getPreference(SystemPreferences.SYSTEM_MEMORY_THRESHOLD_PERCENT) / PERCENT);
-        result.put(ELKUsageMetric.FS.getName(),
+        result.put(ELKUsageMetric.FS,
                 preferenceManager.getPreference(SystemPreferences.SYSTEM_DISK_THRESHOLD_PERCENT) / PERCENT);
         return result;
     }

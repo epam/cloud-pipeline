@@ -35,24 +35,24 @@ public abstract class AbstractMetricRequester implements MetricRequester {
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
 
-    static final String FIELD_METRICS_TAGS = "MetricsTags";
-    static final String FIELD_NAMESPACE_NAME = "namespace_name";
-    static final String FIELD_TYPE = "type";
+    protected static final String FIELD_METRICS_TAGS = "MetricsTags";
+    protected static final String FIELD_NAMESPACE_NAME = "namespace_name";
+    protected static final String FIELD_TYPE = "type";
 
-    static final String USAGE = "usage";
-    static final String USAGE_RATE = "usage_rate";
-    static final String NODE_UTILIZATION = "node_utilization";
-    static final String LIMIT = "limit";
+    protected static final String USAGE = "usage";
+    protected static final String USAGE_RATE = "usage_rate";
+    protected static final String NODE_UTILIZATION = "node_utilization";
+    protected static final String LIMIT = "limit";
 
-    public static final String NODE = "node";
-    public static final String RESOURCE_ID = "resource_id";
-    public static final String POD_CONTAINER = "pod_container";
+    protected static final String NODE = "node";
+    protected static final String RESOURCE_ID = "resource_id";
+    protected static final String POD_CONTAINER = "pod_container";
 
-    static final String AVG_AGGREGATION = "avg_";
-    static final String AGGREGATION_POD_NAME = "pod_name";
-    static final String FIELD_POD_NAME_RAW = "pod_name.raw";
-    static final String NODENAME_FIELD_VALUE = "nodename";
-    static final String NODENAME_RAW_FIELD = "nodename.raw";
+    protected static final String AVG_AGGREGATION = "avg_";
+    protected static final String AGGREGATION_POD_NAME = "pod_name";
+    protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
+    protected static final String NODENAME_FIELD_VALUE = "nodename";
+    protected static final String NODENAME_RAW_FIELD = "nodename.raw";
 
     AbstractMetricRequester(RestHighLevelClient client) {
         this.client = client;
@@ -82,7 +82,7 @@ public abstract class AbstractMetricRequester implements MetricRequester {
         return parseResponse(response);
     }
 
-    SearchResponse executeRequest(final SearchRequest searchRequest) {
+    protected SearchResponse executeRequest(final SearchRequest searchRequest) {
         SearchResponse response;
         try {
             response = client.search(searchRequest);
@@ -92,7 +92,7 @@ public abstract class AbstractMetricRequester implements MetricRequester {
         return response;
     }
 
-    static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+    protected static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
         return Stream.of(from, to)
                 .map(d -> d.format(DATE_FORMATTER))
                 .distinct()
@@ -100,7 +100,7 @@ public abstract class AbstractMetricRequester implements MetricRequester {
                 .toArray(String[]::new);
     }
 
-    protected String path(final String ...parts) {
+    protected static String path(final String ...parts) {
         return String.join(".", parts);
     }
 }

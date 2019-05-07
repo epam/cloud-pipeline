@@ -112,7 +112,7 @@ public class ResourceMonitoringManagerTest {
     @Captor
     ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyIdleCaptor;
     @Captor
-    ArgumentCaptor<List<Pair<PipelineRun, Map<String, Double>>>> runsToNotifyResConsumingCaptor;
+    ArgumentCaptor<List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>>> runsToNotifyResConsumingCaptor;
 
     private InstanceType testType;
     private PipelineRun okayRun;
@@ -533,7 +533,7 @@ public class ResourceMonitoringManagerTest {
 
         verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
                 eq(NotificationType.HIGH_CONSUMED_RESOURCES));
-        List<Pair<PipelineRun, Map<String, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
+        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
         Assert.assertEquals(1, value.size());
         Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
     }
