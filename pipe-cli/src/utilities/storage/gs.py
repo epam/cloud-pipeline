@@ -1,6 +1,7 @@
 import copy
 import os
 from datetime import datetime, timedelta
+from google.resumable_media.requests import Download, ChunkedDownload
 
 try:
     from urllib.parse import urlparse  # Python 3
@@ -48,6 +49,19 @@ class GsManager:
 
     def __init__(self, client):
         self.client = client
+
+    def _chunked_blob(self, bucket, blob_name, progress_callback):
+        """
+        The method is a workaround for the absence of support for the uploading and downloading callbacks
+        in the official SDK.
+
+        See _ChunkedBlob documentation for more info.
+        """
+        return _ChunkedBlob(
+            name=blob_name,
+            bucket=bucket,
+            progress_callback=progress_callback
+        )
 
 
 class GsListingManager(GsManager, AbstractListingManager):
@@ -262,11 +276,13 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         source_bucket = source_client.bucket(source_wrapper.bucket.path)
         source_blob = source_bucket.blob(full_path)
         destination_bucket = self.client.bucket(destination_wrapper.bucket.path)
-        progress_callback = GsProgressPercentage.callback(full_path, size, quiet)
         source_bucket.copy_blob(source_blob, destination_bucket, destination_path, client=self.client)
         destination_blob = destination_bucket.blob(destination_path)
         destination_blob.metadata = self._destination_tags(source_wrapper, full_path, tags)
         destination_blob.patch()
+        # Transfer between buckets in GCP is almost an instant operation. Therefore the progress bar can be updated
+        # only once.
+        progress_callback = GsProgressPercentage.callback(full_path, size, quiet)
         if progress_callback is not None:
             progress_callback(size)
         if clean:
@@ -277,6 +293,58 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
             else source_wrapper.get_list_manager().get_file_tags(full_path)
         tags.update(StorageOperations.source_tags(tags, full_path, source_wrapper))
         return tags
+
+
+class _ChunkedBlob(Blob):
+    DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4 MB
+
+    def __init__(self, progress_callback=None, *args, **kwargs):
+        """
+        The class is a workaround for the absence of support for the uploading and downloading callbacks
+        in the official SDK. There is no issues for support of such a feature. Nevertheless if the support for
+        uploading and downloading callbacks will be provided the usages of _ChunkedBlob class should be removed.
+        """
+        super(_ChunkedBlob, self).__init__(chunk_size=_ChunkedBlob.DEFAULT_CHUNK_SIZE, *args, **kwargs)
+        self.progress_callback = progress_callback
+
+    def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
+        if self.chunk_size is None:
+            download = Download(
+                download_url, stream=file_obj, headers=headers, start=start, end=end
+            )
+            download.consume(transport)
+        else:
+            download = ChunkedDownload(
+                download_url,
+                self.chunk_size,
+                file_obj,
+                headers=headers,
+                start=start if start else 0,
+                end=end,
+            )
+
+            while not download.finished:
+                if self.progress_callback:
+                    self.progress_callback(download.bytes_downloaded)
+                download.consume_next_chunk(transport)
+
+    def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
+        upload, transport = self._initiate_resumable_upload(
+            client,
+            stream,
+            content_type,
+            size,
+            num_retries,
+            predefined_acl=predefined_acl,
+            chunk_size=self.chunk_size
+        )
+
+        while not upload.finished:
+            if self.progress_callback:
+                self.progress_callback(upload._bytes_uploaded)
+            response = upload.transmit_next_chunk(transport)
+
+        return response
 
 
 class GsDownloadManager(GsManager, AbstractTransferManager):
@@ -301,9 +369,9 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         folder = os.path.dirname(destination_key)
         if folder and not os.path.exists(folder):
             os.makedirs(folder)
-        bucket = self.client.bucket(source_wrapper.bucket.path)
-        blob = bucket.blob(source_key)
         progress_callback = GsProgressPercentage.callback(source_key, size, quiet)
+        bucket = self.client.bucket(source_wrapper.bucket.path)
+        blob = self._chunked_blob(bucket, source_key, progress_callback)
         blob.download_to_filename(destination_key)
         if progress_callback is not None:
             progress_callback(size)
@@ -329,7 +397,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = bucket.blob(destination_key)
+        blob = self._chunked_blob(bucket, destination_key, progress_callback)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
         if progress_callback is not None:
@@ -377,7 +445,7 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = bucket.blob(destination_key)
+        blob = self._chunked_blob(bucket, destination_key, progress_callback)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
         if progress_callback is not None:
