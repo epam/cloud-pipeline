@@ -36,7 +36,7 @@ function any_restricted_packages() {
     IFS=',' read -r -a _RESTRICTED_PACKAGES <<< "$2"
     for PACKAGE in "${_RESTRICTED_PACKAGES[@]}"
     do
-        if [[ "$_FORWARDING_ARGUMENTS" == *" $PACKAGE"* ]]
+        if [[ "$_FORWARDING_ARGUMENTS" =~ (^|.* )"$PACKAGE".* ]]
         then
             return 0
         fi
