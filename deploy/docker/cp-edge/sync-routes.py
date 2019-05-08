@@ -117,6 +117,11 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
         response_data = call_api(get_run_details_method)
         if response_data:
                 run_info = response_data["payload"]
+
+                if not run_info["status"] or run_info["status"] != 'RUNNING':
+                        print('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
+                        return {}
+
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
                 runs_sids = None
@@ -173,7 +178,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 else:
                                                         edge_target = edge_target + "/"
 
-                                                services_list[edge_location] = {"pod_id": pod_id,
+                                                service_list[edge_location] = {"pod_id": pod_id,
                                                                                 "pod_ip": pod_ip,
                                                                                 "pod_owner": pod_owner,
                                                                                 "shared_users_sids": shared_users_sids,
