@@ -375,6 +375,7 @@ class GitServer(object):
                     group_friendly_name,
                     group.name
                 )
+            self.synchronize_ssh_keys(pipeline_user, git_user)
             return git_user.id
         return None
 
