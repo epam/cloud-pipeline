@@ -299,7 +299,7 @@ class GitServer(object):
             return None, None
         for key in ssh_keys:
             if 'id' not in key or 'title' not in key or 'key' not in key:
-                return None
+                return None, None
             if key['title'] == self.__config__.git_ssh_title:
                 return key['id'], key['key']
         return None, None
