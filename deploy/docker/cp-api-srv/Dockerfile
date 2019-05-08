@@ -40,7 +40,8 @@ RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
                     pykube==0.15.0 \
                     psycopg2==2.7.7 \
                     sqlalchemy==1.3.2 \
-                    luigi==2.8.3
+                    luigi==2.8.3 \
+                    cryptography==2.6.1
 
 # AWS - specific packages
 RUN pip install -I awscli \
