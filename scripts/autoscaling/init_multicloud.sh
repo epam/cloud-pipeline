@@ -49,9 +49,74 @@ function update_nameserver {
       fi
     fi
 
+    # /etc/resolv.conf will be overwritten by DHCP client after reboot
+    # As a quick fix - make /etc/resolv.conf immutable
+    chattr -i /etc/resolv.conf
     sed -i '/nameserver/d' /etc/resolv.conf
     echo "nameserver $nameserver" >> /etc/resolv.conf
+    chattr +i /etc/resolv.conf
   fi
+}
+
+function setup_swap {
+  local default_swap_file="/ebs/swap/swapfile"
+  local swap_ratio="${1:-0}"
+  local swap_file="${2:-$default_swap_file}"
+
+  # If swap_ratio/swap_file are not set at all - they will appear with @ in the beginning and the end
+  # Consider that as default values
+  if [[ "$swap_ratio" == "@"*"@" ]]; then
+    swap_ratio=0
+  fi
+  if [[ "$swap_file" == "@"*"@" ]]; then
+    swap_file=$default_swap_file
+  fi
+
+  # If explicitely set to 0 - do not do anything
+  if [ -z "$swap_ratio" ] || [ "$swap_ratio" == "0" ]; then
+    echo "Swap ratio is not set of equals to 0"
+    return 0
+  fi
+
+  # If swap file already exists - fallback, as it may be a paused run
+  if [ -f "$swap_file" ]; then
+    echo "Swap file already exists at ${swap_file}. Refusing to proceed with the swap configuration"
+    return 1
+  fi
+
+  local physical_ram_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  local swap_size_gb=$(echo "$physical_ram_kb * $swap_ratio / 1024 / 1024" | bc)
+  if [ $? -ne 0 ] || [ "$swap_size_gb" == "0" ]; then
+    echo "Unable to compute swap size. physical_ram_kb: $physical_ram_kb swap_ratio: $swap_ratio swap_size_gb: $swap_size_gb"
+    return 1
+  fi
+
+  mkdir -p $(dirname $swap_file)
+
+  echo "$swap_size_gb Gb swap file will be create at $swap_file"
+  dd if=/dev/zero of=$swap_file bs=1G count=$swap_size_gb
+  if [ $? -ne 0 ]; then
+    echo "Unable to create a swapfile at $swap_file"
+    rm -f "$swap_file"
+    return 1
+  fi
+
+  chmod 600 $swap_file
+  mkswap $swap_file
+  if [ $? -ne 0 ]; then
+    echo "Unable to mkswap at $swap_file"
+    rm -f "$swap_file"
+    return 1
+  fi
+
+  swapon $swap_file
+  if [ $? -ne 0 ]; then
+    echo "Unable to swapon at $swap_file"
+    rm -f "$swap_file"
+    return 1
+  fi
+
+  return 0
 }
 
 # Mount all drives that do not have mount points yet. Each drive will be mounted to /ebsN folder (N is a number of a drive)
@@ -86,6 +151,11 @@ do
   rm -rf $MOUNT_POINT/lost+found/   
  
 done
+
+# Setup swap configuration
+swap_ratio="@swap_ratio@"
+swap_location="@swap_location@"
+setup_swap "${swap_ratio:-0}" "${swap_location:-/ebs/swap/swapfile}"
 
 # Stop docker if it is running and clean any remaining default directories
 systemctl stop docker
@@ -182,7 +252,7 @@ fi
 # This will be replaced by "echo {IP} {HOSTNAME} >> /etc/hosts" in nodeup.py
 @WELL_KNOWN_HOSTS@
 
-# Setup proxies for a current AWS region
+# Setup proxies for a current region
 nameserver_val="@dns_proxy@"
 nameserver_post_val="@dns_proxy_post@"
 http_proxy_val="@http_proxy@"

@@ -207,25 +207,31 @@ def get_well_known_hosts_string(cloud_region):
     return ' && '.join(entries)
 
 
-def replace_proxies(aws_region, init_script):
-    pipe_log('Setting proxy settings for an instance in {} region'.format(aws_region))
-    proxies_list = get_proxies(aws_region)
-    if not proxies_list:
+def replace_common_params(cloud_region, init_script, config_section):
+    pipe_log('Configuring {} settings for an instance in {} region'.format(config_section, cloud_region))
+    common_list = get_cloud_config_section(cloud_region, config_section)
+    if not common_list:
         return init_script
 
-    for proxy_item in proxies_list:
-        if not 'name' in proxy_item or not 'path' in proxy_item:
+    for common_item in common_list:
+        if not 'name' in common_item or not 'path' in common_item:
             continue
-        proxy_name = proxy_item['name']
-        proxy_path = proxy_item['path']
-        if not proxy_name:
+        item_name = common_item['name']
+        item_path = common_item['path']
+        if not item_name:
             continue
-        if proxy_path == None:
-            proxy_path = ''
-        init_script = init_script.replace('@' + proxy_name + '@', proxy_path)
-        pipe_log('-> {}={}'.format(proxy_name, proxy_path))
+        if item_path == None:
+            item_path = ''
+        init_script = init_script.replace('@' + item_name +  '@', item_path)
+        pipe_log('-> {}={}'.format(item_name, item_path))
 
-    return init_script
+
+def replace_proxies(cloud_region, init_script):
+    return replace_common_params(cloud_region, init_script, "proxies")
+
+
+def replace_swap(cloud_region, init_script):
+    return replace_common_params(cloud_region, init_script, "swap")
 
 
 def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token):
@@ -237,6 +243,7 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         well_known_string = get_well_known_hosts_string(cloud_region)
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
+        user_data_script = replace_swap(cloud_region, user_data_script)
         return user_data_script\
             .replace('@DOCKER_CERTS@', certs_string) \
             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
