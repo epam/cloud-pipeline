@@ -277,7 +277,7 @@ class GitServer(object):
         return None
 
     def synchronize_ssh_keys(self, pipeline_user, git_user):
-        user_private_key, user_public_key = self.__pipeline_server_.get_user_keys()
+        user_private_key, user_public_key = self.__pipeline_server_.get_user_keys(pipeline_user)
         _, git_public_key = self.get_ssh_key(git_user)
         if user_private_key and user_public_key:
             if not git_public_key:
@@ -285,7 +285,7 @@ class GitServer(object):
             elif user_public_key != git_public_key:
                 self.replace_user_ssh_key(git_user, user_public_key)
         else:
-            print 'Generating user {} ({}) ssh keys'.format(git_user.name, git_user.email)
+            print 'Generating ssh keys for user {} ({})'.format(git_user.name, git_user.email)
             private_key, public_key = self.generate_ssh_keys()
             if not git_public_key:
                 self.add_user_ssh_key(git_user, public_key)
@@ -296,16 +296,16 @@ class GitServer(object):
     def get_ssh_key(self, git_user):
         ssh_keys = self.__api__.get_user_ssh_keys(git_user.id)
         if not ssh_keys:
-            return None
+            return None, None
         for key in ssh_keys:
             if 'id' not in key or 'title' not in key or 'key' not in key:
                 return None
             if key['title'] == self.__config__.git_ssh_title:
                 return key['id'], key['key']
-        return None
+        return None, None
 
     def add_user_ssh_key(self, git_user, public_key):
-        print 'Creating user {} ({}) ssh public key in git'.format(git_user.name, git_user.email)
+        print 'Creating ssh public key for user {} ({}) in git'.format(git_user.name, git_user.email)
         self.__api__.add_user_ssh_key(git_user.id, self.__config__.git_ssh_title, public_key)
 
     def replace_user_ssh_key(self, git_user, public_key):
@@ -313,9 +313,10 @@ class GitServer(object):
         self.add_user_ssh_key(git_user, public_key)
 
     def remove_user_ssh_key(self, git_user):
-        print 'Removing user {} ({}) ssh public key in git'.format(git_user.name, git_user.email)
+        print 'Removing ssh public key for user {} ({}) in git'.format(git_user.name, git_user.email)
         key_id, _ = self.get_ssh_key(git_user)
-        self.__api__.remove_user_ssh_key(git_user.id, key_id)
+        if key_id:
+            self.__api__.remove_user_ssh_key(git_user.id, key_id)
 
     def create_ssh_keys(self, pipeline_user, git_user):
         private_key, public_key = self.generate_ssh_keys()

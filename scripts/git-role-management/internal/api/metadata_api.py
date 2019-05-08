@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 from .base import API
 
 
@@ -28,7 +30,7 @@ class Metadata(API):
                 'entityClass': entity_class
             }
         ]
-        response_data = api.call('metadata/load', payload)
+        response_data = api.call('metadata/load', json.dumps(payload))
         metadata = {}
         if 'payload' not in response_data or not response_data['payload']:
             return metadata
@@ -50,7 +52,7 @@ class Metadata(API):
                 'entityClass': entity_class
             }
         }
-        api.call('metadata/updateKeys', payload)
+        api.call('metadata/updateKeys', json.dumps(payload))
 
     class Class:
         PIPELINE = 'PIPELINE'
