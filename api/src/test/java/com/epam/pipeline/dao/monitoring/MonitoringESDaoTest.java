@@ -161,8 +161,8 @@ public class MonitoringESDaoTest {
 
     @Test
     public void testLoadCpuUsageRateMetrics() {
-        Map<String, Double> stats = monitoringESDao.loadUsageRateMetrics(ELKUsageMetric.CPU,
-            Arrays.asList(POD1_NAME, POD2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
+        Map<String, Double> stats = monitoringESDao.loadMetrics(ELKUsageMetric.CPU,
+                Arrays.asList(POD1_NAME, POD2_NAME), NOW.minusMinutes(HALF_AN_HOUR), NOW);
 
         Assert.assertEquals(2, stats.size());
         Assert.assertEquals(3, stats.get(POD1_NAME), TEST_DELTA);

@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -267,8 +268,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<String, Double>>> pipelinesMetrics,
-                                                final NotificationType notificationType) {
+    public void notifyHighResourceConsumingRuns(
+            final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
+            final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
             LOGGER.debug("No pipelines are high loaded, notifications won't be sent!");
             return;
@@ -280,9 +282,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        final List<Pair<PipelineRun, Map<String, Double>>> filtered = pipelinesMetrics.stream()
-                .filter(run -> shouldNotifyAboutHighResourceConsuming(notificationSettings, run))
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> filtered = pipelinesMetrics.stream()
+                .filter(run -> shouldNotify(run.getLeft().getId(), notificationSettings))
                 .collect(Collectors.toList());
+
+        LOGGER.debug("High resource consuming notifications for pipelines: " +
+                filtered.stream()
+                        .map(p -> p.getLeft().getId().toString())
+                        .collect(Collectors.joining(",")) + " will be sent!");
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
 
@@ -297,10 +304,10 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
             message.getTemplateParameters().put("memoryThreshold", memThreshold);
             message.getTemplateParameters().put("memoryRate",
-                    pair.getRight().getOrDefault(ELKUsageMetric.MEM.getName(), 0.0) * PERCENT);
+                    pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
             message.getTemplateParameters().put("diskThreshold", diskThreshold);
             message.getTemplateParameters().put("diskRate", pair.getRight()
-                    .getOrDefault(ELKUsageMetric.FS.getName(), 0.0) * PERCENT);
+                    .getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
 
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
             message.setCopyUserIds(ccUserIds);
@@ -349,15 +356,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
     }
 
-    private boolean shouldNotifyAboutHighResourceConsuming(final NotificationSettings notificationSettings,
-                                                           final Pair<PipelineRun, Map<String, Double>> run) {
+    private boolean shouldNotify(final Long runId, final NotificationSettings notificationSettings) {
         final Long resendDelay = notificationSettings.getResendDelay();
         final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
-                run.getLeft().getId(),
-                NotificationType.HIGH_CONSUMED_RESOURCES);
+                runId,
+                notificationSettings.getType());
 
         return notificationTimestamp
-                .map(timestamp -> NotificationTimestamp.isTimeoutEnds(timestamp, resendDelay))
+                .map(timestamp -> NotificationTimestamp.isTimeoutEnds(timestamp, resendDelay,  ChronoUnit.SECONDS))
                 .orElse(true);
     }
 

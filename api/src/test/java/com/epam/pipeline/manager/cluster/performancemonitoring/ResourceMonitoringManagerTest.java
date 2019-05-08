@@ -18,8 +18,8 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
-import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -112,7 +112,7 @@ public class ResourceMonitoringManagerTest {
     @Captor
     ArgumentCaptor<List<Pair<PipelineRun, Double>>> runsToNotifyIdleCaptor;
     @Captor
-    ArgumentCaptor<List<Pair<PipelineRun, Map<String, Double>>>> runsToNotifyResConsumingCaptor;
+    ArgumentCaptor<List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>>> runsToNotifyResConsumingCaptor;
 
     private InstanceType testType;
     private PipelineRun okayRun;
@@ -166,7 +166,8 @@ public class ResourceMonitoringManagerTest {
 
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
 
-        RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null, null, null, null, true, null, null);
+        RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
+                null, null, "spotNode", true, null, null);
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
         okayRun.setPodId("okay-pod");
@@ -177,7 +178,8 @@ public class ResourceMonitoringManagerTest {
                 ChronoUnit.MINUTES));
 
         idleSpotRun = new PipelineRun();
-        idleSpotRun.setInstance(spotInstance);
+        idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
+                null, null, "idleSpotNode", true, null, null));
         idleSpotRun.setPodId("idle-spot");
         idleSpotRun.setId(TEST_IDLE_SPOT_RUN_ID);
         idleSpotRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
@@ -188,7 +190,7 @@ public class ResourceMonitoringManagerTest {
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, null, false, null, null));
+                new RunInstance(testType.getName(), 0, 0, null, null, null, "idleNode", false, null, null));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
         idleOnDemandRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -198,7 +200,7 @@ public class ResourceMonitoringManagerTest {
 
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
-                new RunInstance(testType.getName(), 0, 0, null, null, null, null, false, null, null));
+                new RunInstance(testType.getName(), 0, 0, null, null, null, "prolongedNode", false, null, null));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
         idleRunToProlong.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -207,7 +209,8 @@ public class ResourceMonitoringManagerTest {
                 ChronoUnit.MINUTES));
 
         highConsumingRun = new PipelineRun();
-        highConsumingRun.setInstance(spotInstance);
+        highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
+                null, null, "highConsumingNode", true, null, null));
         highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
@@ -220,12 +223,12 @@ public class ResourceMonitoringManagerTest {
         mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(mockStats);
 
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class),
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.MEM), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.FS), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(getMockedHighConsumingStats());
 
         resourceMonitoringManager.init();
@@ -278,7 +281,7 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
                 Collections.singletonList(idleRunToProlong));
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
-        when(monitoringESDao.loadUsageRateMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
+        when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonMap(idleRunToProlong.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
@@ -530,15 +533,15 @@ public class ResourceMonitoringManagerTest {
 
         verify(notificationManager).notifyHighResourceConsumingRuns(runsToNotifyResConsumingCaptor.capture(),
                 eq(NotificationType.HIGH_CONSUMED_RESOURCES));
-        List<Pair<PipelineRun, Map<String, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
+        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> value = runsToNotifyResConsumingCaptor.getValue();
         Assert.assertEquals(1, value.size());
         Assert.assertEquals(HIGH_CONSUMING_POD_ID, value.get(0).getKey().getPodId());
     }
 
     private HashMap<String, Double> getMockedHighConsumingStats() {
         HashMap<String, Double> stats = new HashMap<>();
-        stats.put(highConsumingRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
-        stats.put(okayRun.getPodId(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
+        stats.put(highConsumingRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
+        stats.put(okayRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
         return stats;
     }
 }
