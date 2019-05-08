@@ -117,6 +117,16 @@ class PipelineServer(object):
             return None
         return matches[0]
 
+    def update_user_keys(self, pipeline_user, public_key, private_key):
+        pipeline_user.attributes[self.__config__.ssh_pub_attribute_name] = public_key
+        pipeline_user.attributes[self.__config__.ssh_prv_attribute_name] = private_key
+        self.update_user_attributes(pipeline_user.identifier, pipeline_user.attributes)
+        return pipeline_user
+
+    def update_user_attributes(self, user_id, metadata):
+        # TODO 08.05.2019: Method is not implemented yet.
+        raise RuntimeError('Method is not implemented yet.')
+
     def list_pipelines(self):
         page = 0
         page_size = 150

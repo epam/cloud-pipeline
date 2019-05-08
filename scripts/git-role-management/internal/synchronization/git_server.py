@@ -20,6 +20,9 @@ from urlparse import urlparse
 from urllib import quote_plus
 from requests.exceptions import ConnectionError
 from exceptions import KeyboardInterrupt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 
 class GitServer(object):
@@ -268,6 +271,9 @@ class GitServer(object):
                 GitServer.generate_password(100)
             )
             self.__users__.append(result)
+            private_key, public_key = self.generate_ssh_keys()
+            self.__api__.add_user_ssh_key(result.id, public_key)
+            self.__pipeline_server_.update_user_keys(pipeline_user, public_key, private_key)
             return result
         return None
 
@@ -357,3 +363,20 @@ class GitServer(object):
                     print 'Group #{} {} removed.'.format(group.id, group.name)
                 except GitLabException as error:
                     print 'Error removing group {} ({}): {}'.format(group.name, self.__server__, error.message)
+
+    @classmethod
+    def generate_ssh_keys(cls):
+        key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=2048,
+            backend=default_backend()
+        )
+        private_key = key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption())
+        public_key = key.public_key().public_bytes(
+            encoding=serialization.Encoding.OpenSSH,
+            format=serialization.PublicFormat.OpenSSH
+        )
+        return private_key, public_key
