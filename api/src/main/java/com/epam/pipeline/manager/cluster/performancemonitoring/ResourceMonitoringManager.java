@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -122,7 +123,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     private void processOverloadedRuns(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = runs.stream()
-                .collect(Collectors.toMap(p -> p.getInstance().getNodeName(), r -> r));
+                .filter(r -> {
+                    log.debug("Pipeline with id: " + r.getId() + " has not node name.");
+                    return Objects.nonNull(r.getInstance()) && Objects.nonNull(r.getInstance().getNodeName());
+                })
+                .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
         final Map<ELKUsageMetric, Double> thresholds = getThresholds();
         log.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
