@@ -30,8 +30,8 @@ class Config(object):
         self.proxy = None
         self.email_attribute_name = 'Email'
         self.name_attribute_name = 'Name'
-        self.ssh_pub_attribute_name = 'SshPub'
-        self.ssh_prv_attribute_name = 'SshPrv'
+        self.ssh_pub_metadata_name = 'ssh_pub'
+        self.ssh_prv_metadata_name = 'ssh_prv'
         self.admins_group_name = 'ROLE_ADMIN'
         self.git_group_prefix = 'PIPELINE-'
         if self.api and self.access_key:
@@ -51,10 +51,10 @@ class Config(object):
                     self.email_attribute_name = data['email-attribute-name']
                 if 'name-attribute-name' in data:
                     self.name_attribute_name = data['name-attribute-name']
-                if 'ssh-pub-attribute-name' in data:
-                    self.ssh_pub_attribute_name = data['ssh-pub-attribute-name']
-                if 'ssh-prv-attribute-name' in data:
-                    self.ssh_prv_attribute_name = data['ssh-prv-attribute-name']
+                if 'ssh-pub-metadata-name' in data:
+                    self.ssh_pub_metadata_name = data['ssh-pub-metadata-name']
+                if 'ssh-prv-metadata-name' in data:
+                    self.ssh_prv_metadata_name = data['ssh-prv-metadata-name']
                 if 'admins-group-name' in data:
                     self.admins_group_name = data['admins-group-name']
                 if 'git-group-prefix' in data:
@@ -72,8 +72,8 @@ class Config(object):
             'proxy': proxy,
             'email-attribute-name': email_attribute_name if email_attribute_name is not None else current_config.email_attribute_name,
             'name-attribute-name': name_attribute_name if name_attribute_name is not None else current_config.name_attribute_name,
-            'ssh-pub-attribute-name': ssh_pub_attribute_name if ssh_pub_attribute_name is not None else current_config.ssh_pub_attribute_name,
-            'ssh-prv-attribute-name': ssh_prv_attribute_name if ssh_prv_attribute_name is not None else current_config.ssh_prv_attribute_name,
+            'ssh-pub-metadata-name': ssh_pub_attribute_name if ssh_pub_attribute_name is not None else current_config.ssh_pub_metadata_name,
+            'ssh-prv-metadata-name': ssh_prv_attribute_name if ssh_prv_attribute_name is not None else current_config.ssh_prv_metadata_name,
             'admins-group-name': admins_group if admins_group is not None else current_config.admins_group_name,
             'git-group-prefix': git_group_prefix if git_group_prefix is not None else current_config.git_group_prefix
         }

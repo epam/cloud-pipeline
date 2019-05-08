@@ -21,8 +21,6 @@ class UserModel(object):
         self.username = None
         self.git_username = None
         self.email = None
-        self.ssh_pub = None
-        self.ssh_prv = None
         self.friendly_name = None
         self.roles = []
         self.groups = []
@@ -46,10 +44,6 @@ class UserModel(object):
             instance.email = json['attributes'][config.email_attribute_name]
         if 'attributes' in json and config.name_attribute_name in json['attributes']:
             instance.friendly_name = json['attributes'][config.name_attribute_name]
-        if 'attributes' in json and config.ssh_pub_attribute_name in json['attributes']:
-            instance.ssh_pub = json['attributes'][config.ssh_pub_attribute_name]
-        if 'attributes' in json and config.ssh_prv_attribute_name in json['attributes']:
-            instance.ssh_prv = json['attributes'][config.ssh_prv_attribute_name]
         if instance.friendly_name is None and instance.email is not None:
             instance.friendly_name = UserModel.get_username_safe(instance.email)
         return instance

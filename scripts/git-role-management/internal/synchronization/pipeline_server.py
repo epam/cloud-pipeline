@@ -15,6 +15,7 @@
 from ..config import Config
 from ..api.users_api import Users
 from ..api.pipeline_api import Pipeline
+from ..api.metadata_api import Metadata
 from ..model.permission_model import PermissionModel
 from .git_server import GitServer
 from urlparse import urlparse
@@ -28,6 +29,7 @@ class PipelineServer(object):
     def __init__(self):
         self.__users_api__ = Users()
         self.__pipeline_api__ = Pipeline()
+        self.__metadata_api__ = Metadata()
         self.__config__ = Config.instance()
         self.__users__ = []
         self.__groups__ = []
@@ -118,14 +120,14 @@ class PipelineServer(object):
         return matches[0]
 
     def update_user_keys(self, pipeline_user, public_key, private_key):
-        pipeline_user.attributes[self.__config__.ssh_pub_attribute_name] = public_key
-        pipeline_user.attributes[self.__config__.ssh_prv_attribute_name] = private_key
-        self.update_user_attributes(pipeline_user.identifier, pipeline_user.attributes)
-        return pipeline_user
+        metadata = {
+            self.__config__.ssh_pub_metadata_name: public_key,
+            self.__config__.ssh_prv_metadata_name: private_key
+        }
+        self.update_user_metadata(pipeline_user.identifier, metadata)
 
-    def update_user_attributes(self, user_id, metadata):
-        # TODO 08.05.2019: Method is not implemented yet.
-        raise RuntimeError('Method is not implemented yet.')
+    def update_user_metadata(self, user_id, metadata):
+        self.__metadata_api__.update_keys(user_id, Metadata.Class.PIPELINE_USER, metadata)
 
     def list_pipelines(self):
         page = 0
