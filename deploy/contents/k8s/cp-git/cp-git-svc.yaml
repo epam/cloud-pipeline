@@ -12,6 +12,10 @@ spec:
     port: 30080
     targetPort: 30080
     name: cp-git-port-http
+  - protocol: TCP
+    port: 22
+    targetPort: 22
+    name: cp-git-port-ssh
   type: NodePort
   selector:
     cloud-pipeline/cp-git: "true"
