@@ -143,7 +143,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public SelenideElement waitEndpoint() {
-        return endpoint().waitUntil(appears, 15 * 60 * 1_000); // 15 minutes
+        return endpoint().waitUntil(appears, C.ENDPOINT_INITIALIZATION_TIMEOUT);
     }
 
     public ToolPageAO clickEndpoint() {
