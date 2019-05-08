@@ -17,7 +17,8 @@
 yum install -y  nc \
                 python \
                 curl \
-                coreutils
+                coreutils \
+                bc
 
 
 # Install nvidia driver deps

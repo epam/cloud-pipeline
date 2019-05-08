@@ -17,7 +17,8 @@
 # Install common
 yum install -y  nc \
                 python \
-                curl && \
+                curl \
+                bc && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
 

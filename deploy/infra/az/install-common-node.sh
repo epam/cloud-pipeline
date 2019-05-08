@@ -17,7 +17,8 @@
 yum install -y  nc \
                 python \
                 curl \
-                coreutils
+                coreutils \
+                bc
 
 # Install Docker
 yum install -y yum-utils \
