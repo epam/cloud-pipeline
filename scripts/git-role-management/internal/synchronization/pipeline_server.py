@@ -119,15 +119,24 @@ class PipelineServer(object):
             return None
         return matches[0]
 
-    def update_user_keys(self, pipeline_user, public_key, private_key):
+    def update_user_keys(self, pipeline_user, private_key, public_key):
         metadata = {
-            self.__config__.ssh_pub_metadata_name: public_key,
-            self.__config__.ssh_prv_metadata_name: private_key
+            self.__config__.ssh_prv_metadata_name: private_key,
+            self.__config__.ssh_pub_metadata_name: public_key
         }
         self.update_user_metadata(pipeline_user.identifier, metadata)
 
     def update_user_metadata(self, user_id, metadata):
         self.__metadata_api__.update_keys(user_id, Metadata.Class.PIPELINE_USER, metadata)
+
+    def get_user_keys(self, pipeline_user):
+        metadata = self.get_user_metadata(pipeline_user.identifier)
+        private_key = metadata.get(self.__config__.ssh_prv_metadata_name)
+        public_key = metadata.get(self.__config__.ssh_pub_metadata_name)
+        return private_key, public_key
+
+    def get_user_metadata(self, user_id):
+        return self.__metadata_api__.load(user_id, Metadata.Class.PIPELINE_USER)
 
     def list_pipelines(self):
         page = 0

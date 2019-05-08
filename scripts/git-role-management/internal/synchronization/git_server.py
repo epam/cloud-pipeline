@@ -261,6 +261,7 @@ class GitServer(object):
         git_user = self.find_user_by_email(pipeline_user.email)
         if git_user is not None:
             print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
+            self.synchronize_ssh_keys(pipeline_user, git_user)
             return git_user
         if pipeline_user.friendly_name is not None:
             print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
@@ -271,11 +272,52 @@ class GitServer(object):
                 GitServer.generate_password(100)
             )
             self.__users__.append(result)
-            private_key, public_key = self.generate_ssh_keys()
-            self.__api__.add_user_ssh_key(result.id, public_key)
-            self.__pipeline_server_.update_user_keys(pipeline_user, public_key, private_key)
+            self.create_ssh_keys(pipeline_user, result)
             return result
         return None
+
+    def synchronize_ssh_keys(self, pipeline_user, git_user):
+        user_private_key, user_public_key = self.__pipeline_server_.get_user_keys()
+        _, git_public_key = self.get_ssh_key(git_user.id)
+        if user_private_key and user_public_key:
+            if not git_public_key:
+                self.add_user_ssh_key(git_user.id, user_public_key)
+            elif user_public_key != git_public_key:
+                self.replace_user_ssh_key(git_user.id, user_public_key)
+        else:
+            private_key, public_key = self.generate_ssh_keys()
+            if not git_public_key:
+                self.add_user_ssh_key(git_user.id, public_key)
+            else:
+                self.replace_user_ssh_key(git_user.id, public_key)
+            self.__pipeline_server_.update_user_keys(pipeline_user, private_key, public_key)
+
+    def get_ssh_key(self, user_id):
+        ssh_keys = self.__api__.get_user_ssh_keys(user_id)
+        if not ssh_keys:
+            return None
+        for key in ssh_keys:
+            if 'id' not in key or 'title' not in key or 'key' not in key:
+                return None
+            if key['title'] == self.__config__.git_ssh_title:
+                return key['id'], key['key']
+        return None
+
+    def add_user_ssh_key(self, user_id, public_key):
+        self.__api__.add_user_ssh_key(user_id, self.__config__.git_ssh_title, public_key)
+
+    def replace_user_ssh_key(self, user_id, public_key):
+        self.remove_user_ssh_key(user_id)
+        self.add_user_ssh_key(user_id, public_key)
+
+    def remove_user_ssh_key(self, user_id):
+        key_id, _ = self.get_ssh_key(user_id)
+        self.__api__.remove_user_ssh_key(user_id, key_id)
+
+    def create_ssh_keys(self, pipeline_user, git_user):
+        private_key, public_key = self.generate_ssh_keys()
+        self.add_user_ssh_key(git_user.id, public_key)
+        self.__pipeline_server_.update_user_keys(pipeline_user, private_key, public_key)
 
     def synchronize_group(self, group, members):
         git_group = self.find_git_group(group)

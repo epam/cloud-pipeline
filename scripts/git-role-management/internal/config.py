@@ -34,6 +34,7 @@ class Config(object):
         self.ssh_prv_metadata_name = 'ssh_prv'
         self.admins_group_name = 'ROLE_ADMIN'
         self.git_group_prefix = 'PIPELINE-'
+        self.git_ssh_title = 'Cloud Pipeline'
         if self.api and self.access_key:
             return
 

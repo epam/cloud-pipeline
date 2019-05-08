@@ -199,5 +199,13 @@ class GitLab(object):
     def remove_user(self, user_id):
         return self.call('users/{}'.format(user_id), None, http_method='DELETE')
 
-    def add_user_ssh_key(self, user_id, ssh_pub):
-        return self.call('users/{}/keys'.format(user_id), {'title': 'Cloud Pipeline', 'key': ssh_pub}, http_method='POST')
+    def add_user_ssh_key(self, user_id, title, key):
+        payload = {'title': title, 'key': key}
+        return self.call('users/{}/keys'.format(user_id), payload, http_method='POST')
+
+    def get_user_ssh_keys(self, user_id):
+        return self.call('users/{}/keys'.format(user_id), None, http_method='GET',
+                         success_loader=json.loads)
+
+    def remove_user_ssh_key(self, user_id, key_id):
+        self.call('users/{}/keys/{}'.format(user_id, key_id), None, http_method='DELETE')
