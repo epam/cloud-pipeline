@@ -67,8 +67,8 @@ def help():
           '--key=<api token> ' \
           '--email-attribute=<attribute name for \'email\' field, case sensitive, default - \'Email\'> ' \
           '--name-attribute=<attribute name for \'name\' field, case sensitive, default - \'Name\'> ' \
-          '--ssh-pub-attribute=<attribute name for \'ssh_pub\' field, case sensitive, default - \'SshPub\'> ' \
-          '--ssh-prv-attribute=<attribute name for \'ssh_prv\' field, case sensitive, default - \'SshPrv\'> ' \
+          '--ssh-pub-attribute=<attribute name for \'ssh_pub\' field, case sensitive, default - \'ssh_pub\'> ' \
+          '--ssh-prv-attribute=<attribute name for \'ssh_prv\' field, case sensitive, default - \'ssh_prv\'> ' \
           '--admins-group=<administrators group name, defualt - \'ROLE_ADMIN\'> ' \
           '--git-group-prefix=<prefix for group names, default - \'PIPELINE-\'>'
     print ''
