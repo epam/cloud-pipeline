@@ -47,11 +47,13 @@ public class FSRequester extends AbstractMetricRequester {
     @Override
     public Map<String, Double> performRequest(final Collection<String> resourceIds,
                                               final LocalDateTime from, final LocalDateTime to) {
-        Map<String, String> diskNamesResponse =
+        final Map<String, String> diskNamesResponse =
                 parseDiskNamesResponse(executeRequest(buildDiskNameRequest(resourceIds, from, to)));
-        SearchRequest searchRequest = buildRequest(resourceIds, from, to, diskNamesResponse);
-        SearchResponse response = executeRequest(searchRequest);
-        return parseResponse(response);
+        return parseResponse(
+                executeRequest(
+                        buildRequest(
+                                resourceIds, from, to, diskNamesResponse))
+        );
     }
 
     @Override
@@ -79,12 +81,12 @@ public class FSRequester extends AbstractMetricRequester {
 
     private BoolQueryBuilder getQueryWithNodeToDiskMatching(final Collection<String> resourceIds,
                                                             final Map<String, String> additional) {
-        BoolQueryBuilder result = QueryBuilders.boolQuery();
+        final BoolQueryBuilder result = QueryBuilders.boolQuery();
         resourceIds.forEach(node -> {
-            String nodeDiskName = additional.get(node);
+            final String nodeDiskName = additional.get(node);
             if (nodeDiskName != null) {
-                BoolQueryBuilder query = QueryBuilders.boolQuery();
-                List<QueryBuilder> must = query.must();
+                final BoolQueryBuilder query = QueryBuilders.boolQuery();
+                final List<QueryBuilder> must = query.must();
                 must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), node));
                 must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, RESOURCE_ID), nodeDiskName));
                 result.should().add(query);
@@ -98,8 +100,8 @@ public class FSRequester extends AbstractMetricRequester {
         return ((Terms) response.getAggregations().get(NODENAME_FIELD_VALUE)).getBuckets().stream().collect(
             HashMap::new,
             (m, b) -> {
-                double limit = ((Avg) b.getAggregations().get(AVG_AGGREGATION + LIMIT)).getValue();
-                double usage = ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE)).getValue();
+                final double limit = ((Avg) b.getAggregations().get(AVG_AGGREGATION + LIMIT)).getValue();
+                final double usage = ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE)).getValue();
                 m.put(b.getKey().toString(), getRate(usage, limit));
             },
             Map::putAll

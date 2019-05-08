@@ -56,7 +56,7 @@ public abstract class AbstractMetricRequester implements MetricRequester {
 
     private RestHighLevelClient client;
 
-    AbstractMetricRequester(RestHighLevelClient client) {
+    AbstractMetricRequester(final RestHighLevelClient client) {
         this.client = client;
     }
 
@@ -77,19 +77,19 @@ public abstract class AbstractMetricRequester implements MetricRequester {
 
     public Map<String, Double> performRequest(final Collection<String> resourceIds,
                                               final LocalDateTime from, final LocalDateTime to) {
-        SearchRequest searchRequest = buildRequest(resourceIds, from, to, null);
-        SearchResponse response = executeRequest(searchRequest);
-        return parseResponse(response);
+        return parseResponse(
+                executeRequest(
+                        buildRequest(
+                                resourceIds, from, to, null))
+        );
     }
 
     protected SearchResponse executeRequest(final SearchRequest searchRequest) {
-        SearchResponse response;
         try {
-            response = client.search(searchRequest);
+            return client.search(searchRequest);
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-        return response;
     }
 
     protected static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {

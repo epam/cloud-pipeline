@@ -101,7 +101,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     public void updateNotificationTimestamp(final List<Long> ids, final NotificationType notificationType) {
         final MapSqlParameterSource[] params = ids.stream()
                 .map(value -> {
-                    MapSqlParameterSource param = new MapSqlParameterSource();
+                    final MapSqlParameterSource param = new MapSqlParameterSource();
                     param.addValue(NotificationTimestampParameters.RUN_ID.name(), value);
                     param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), notificationType.name());
                     param.addValue(NotificationTimestampParameters.TIMESTAMP.name(), DateUtils.nowUTC());
@@ -168,7 +168,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
                 }
 
                 notificationMessage.setCopyUserIds(mapStringToListLong(rs.getString(USER_IDS.name())));
-                long templateId = rs.getLong(TEMPLATE_ID.name());
+                final long templateId = rs.getLong(TEMPLATE_ID.name());
                 if (!rs.wasNull()) {
                     notificationMessage.setTemplate(new NotificationTemplate(templateId));
                 }
@@ -186,7 +186,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
 
         static RowMapper<NotificationTimestamp> getRowMapper() {
             return (rs, rowNum) -> {
-                NotificationTimestamp timestamp = new NotificationTimestamp();
+                final NotificationTimestamp timestamp = new NotificationTimestamp();
                 timestamp.setRunId(rs.getLong(RUN_ID.name()));
                 timestamp.setType(NotificationType.valueOf(rs.getString(NOTIFICATION_TYPE.name())));
                 timestamp.setTimestamp(rs.getTimestamp(TIMESTAMP.name()).toLocalDateTime());

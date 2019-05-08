@@ -79,7 +79,7 @@ public class MonitoringESDao {
                 final String indicesToDelete = reader.lines()
                         .flatMap(l -> Arrays.stream(l.split(" ")))
                         .filter(str -> str.startsWith(INDEX_NAME_TOKEN)).map(name -> {
-                            String dateString = name.substring(INDEX_NAME_TOKEN.length());
+                            final String dateString = name.substring(INDEX_NAME_TOKEN.length());
                             try {
                                 return new ImmutablePair<>(name, LocalDate.parse(dateString, DATE_FORMATTER)
                                         .atStartOfDay(ZoneOffset.UTC).toLocalDateTime());

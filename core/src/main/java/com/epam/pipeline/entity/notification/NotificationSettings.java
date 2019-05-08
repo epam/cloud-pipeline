@@ -63,8 +63,8 @@ public class NotificationSettings {
     private NotificationType type;
     private boolean enabled;
 
-    public static NotificationSettings getDefault(NotificationType type) {
-        NotificationSettings settings = new NotificationSettings();
+    public static NotificationSettings getDefault(final NotificationType type) {
+        final NotificationSettings settings = new NotificationSettings();
         settings.setId(type.getId());
         settings.setTemplateId(type.getId());
         settings.setType(type);
@@ -103,8 +103,8 @@ public class NotificationSettings {
         private final boolean enabled;
         private final NotificationGroup group;
 
-        NotificationType(long id, Long defaultThreshold, Long defaultResendDelay,
-                         boolean enabled, NotificationGroup group) {
+        NotificationType(final long id, Long defaultThreshold, final Long defaultResendDelay,
+                         final boolean enabled, final NotificationGroup group) {
             this.id = id;
             this.defaultThreshold = defaultThreshold;
             this.defaultResendDelay = defaultResendDelay;
@@ -124,7 +124,7 @@ public class NotificationSettings {
             return enabled;
         }
 
-        public static NotificationType getById(long id) {
+        public static NotificationType getById(final long id) {
             return BY_ID.get(id);
         }
 
