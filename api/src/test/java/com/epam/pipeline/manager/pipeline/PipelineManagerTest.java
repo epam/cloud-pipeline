@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class PipelineManagerTest {
 
     private static final String REPOSITORY_NAME = "repository";
@@ -50,9 +51,11 @@ public class PipelineManagerTest {
     private GitManager gitManager;
 
     @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
     @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
     private AuthManager securityManager;
 
     @Mock

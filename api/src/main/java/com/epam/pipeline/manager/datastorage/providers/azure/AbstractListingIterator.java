@@ -91,7 +91,7 @@ abstract class AbstractListingIterator<T> implements Iterator<T> {
         return new FlatIterator(container, path, null, AzureStorageHelper.MAX_PAGE_SIZE);
     }
 
-    static class HierarchyIterator extends AbstractListingIterator<ContainerListBlobHierarchySegmentResponse> {
+    static final class HierarchyIterator extends AbstractListingIterator<ContainerListBlobHierarchySegmentResponse> {
 
         private final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(pageSize);
 
@@ -114,11 +114,12 @@ abstract class AbstractListingIterator<T> implements Iterator<T> {
         }
     }
 
-    static class FlatIterator extends AbstractListingIterator<ContainerListBlobFlatSegmentResponse> {
+    static final class FlatIterator extends AbstractListingIterator<ContainerListBlobFlatSegmentResponse> {
 
         private final ListBlobsOptions options = new ListBlobsOptions().withPrefix(path).withMaxResults(pageSize);
 
-        private FlatIterator(final ContainerURL container, final String path, final String nextMarker, final int pageSize) {
+        private FlatIterator(final ContainerURL container, final String path, final String nextMarker,
+                             final int pageSize) {
             super(container, path, nextMarker, pageSize);
         }
 
