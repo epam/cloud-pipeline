@@ -828,4 +828,12 @@ public class GitManager {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
+
+    public GitProject getRepository(String name) {
+        try {
+            return getDefaultGitlabClient().getProject(name);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
 }

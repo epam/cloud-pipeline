@@ -209,6 +209,11 @@ public class PipelineManager implements SecuredEntityManager {
             setCurrentVersion(pipeline);
         }
         pipeline.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(id, AclClass.PIPELINE)));
+        if (StringUtils.isEmpty(pipeline.getRepositorySsh())) {
+            GitProject project = gitManager.getRepository(pipeline.getName());
+            pipeline.setRepositorySsh(project.getRepoSsh());
+            pipelineDao.updatePipeline(pipeline);
+        }
         return pipeline;
     }
 
