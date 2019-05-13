@@ -53,6 +53,7 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
     private static final String TEST_PIPELINE1 = "Pipeline1";
     private static final String TEST_PIPELINE2 = "Pipeline2";
     private static final String TEST_PIPELINE_REPO = "///";
+    private static final String TEST_PIPELINE_REPO_SSH = "git@test";
 
     @Autowired
     private AclTestDao aclTestDao;
@@ -94,11 +95,11 @@ public class PipelineWithPermissionsTest extends AbstractManagerTest {
         folder2.setParentId(folder1.getId());
         folderDao.createFolder(folder2);
 
-        pipeline1 = constructPipeline(TEST_PIPELINE1, TEST_PIPELINE_REPO, folder2.getId());
+        pipeline1 = constructPipeline(TEST_PIPELINE1, TEST_PIPELINE_REPO, TEST_PIPELINE_REPO_SSH, folder2.getId());
         pipeline1.setOwner(TEST_OWNER1);
         pipelineDao.createPipeline(pipeline1);
 
-        pipeline2 = constructPipeline(TEST_PIPELINE2, TEST_PIPELINE_REPO, folder1.getId());
+        pipeline2 = constructPipeline(TEST_PIPELINE2, TEST_PIPELINE_REPO, TEST_PIPELINE_REPO_SSH, folder1.getId());
         pipeline2.setOwner(TEST_OWNER1);
         pipelineDao.createPipeline(pipeline2);
     }

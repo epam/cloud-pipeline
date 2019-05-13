@@ -63,6 +63,7 @@ public class FolderDaoTest extends AbstractSpringTest {
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";
     private static final String TEST_REPO = "///";
+    private static final String TEST_REPO_SSH = "git@test";
     private static final String TEST_DATASTORAGE = "test-datastorage";
     private static final String S3_TEST_DATASTORAGE_PATH = "s3://datastorage/data";
     private static final String TEST_ENTITY_NAME_1 = "test_entity";
@@ -135,7 +136,7 @@ public class FolderDaoTest extends AbstractSpringTest {
         assertEquals(1, result2.size());
 
         //add pipeline
-        Pipeline pipeline = ObjectCreatorUtils.constructPipeline(TEST_NAME, TEST_REPO, parent.getId());
+        Pipeline pipeline = ObjectCreatorUtils.constructPipeline(TEST_NAME, TEST_REPO, TEST_REPO_SSH, parent.getId());
         pipeline.setOwner(TEST_USER);
         pipelineDao.createPipeline(pipeline);
         Folder loadedParent2 = folderDao.loadFolder(parent.getId());

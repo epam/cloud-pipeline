@@ -112,10 +112,11 @@ public final class ObjectCreatorUtils {
     }
 
 
-    public static Pipeline constructPipeline(String name, String repo, Long parentFolderId) {
+    public static Pipeline constructPipeline(String name, String repo, String repoSsh, Long parentFolderId) {
         Pipeline pipeline = new Pipeline();
         pipeline.setName(name);
         pipeline.setRepository(repo);
+        pipeline.setRepositorySsh(repoSsh);
         pipeline.setParentFolderId(parentFolderId);
         return pipeline;
     }
