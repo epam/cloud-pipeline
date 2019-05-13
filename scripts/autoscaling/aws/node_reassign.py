@@ -17,7 +17,8 @@ import argparse
 import pykube
 
 RUN_ID_LABEL = 'runid'
-AWS_REGION_LABEL = 'cloud_region'
+AWS_REGION_LABEL = 'aws_region'
+CLOUD_REGION_LABEL = 'cloud_region'
 
 
 def find_and_tag_instance(ec2, old_id, new_id):
@@ -68,13 +69,14 @@ def change_label(api, nodename, new_id, aws_region):
         "metadata": {
             "name": nodename,
             "labels": {
-                RUN_ID_LABEL: new_id
+                RUN_ID_LABEL: new_id,
+                AWS_REGION_LABEL: None
             }
         }
     }
     node = pykube.Node(api, obj)
     node.labels[RUN_ID_LABEL] = new_id
-    node.labels[AWS_REGION_LABEL] = aws_region
+    node.labels[CLOUD_REGION_LABEL] = aws_region
     node.update()
 
 
@@ -84,9 +86,9 @@ def get_aws_region(api, run_id):
         raise RuntimeError('Cannot find node matching RUN ID %s' % run_id)
     node = nodes.response['items'][0]
     labels = node['metadata']['labels']
-    if AWS_REGION_LABEL not in labels:
+    if AWS_REGION_LABEL not in labels and CLOUD_REGION_LABEL not in labels:
         raise RuntimeError('Node %s is not labeled with AWS Region' % node['metadata']['name'])
-    return labels[AWS_REGION_LABEL]
+    return labels[CLOUD_REGION_LABEL] if CLOUD_REGION_LABEL in labels else labels[AWS_REGION_LABEL]
 
 
 def get_kube_api():
