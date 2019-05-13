@@ -40,8 +40,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.List;
 
-import static org.mockito.Matchers.any;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
 
 @DirtiesContext
@@ -68,6 +69,8 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     private final EntityVO roleEntity = new EntityVO(TEST_USER1_ID, AclClass.ROLE);
     private MetadataVO pipelineUserMetadataVO;
     private MetadataVO roleMetadataVO;
+    private MetadataEntry pipelineUserMetadata;
+    private MetadataEntry roleMetadata;
 
     @Before
     public void setUp() {
@@ -83,9 +86,9 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
         pipelineUser1.setId(TEST_USER1_ID);
         pipelineUser1.setUserName(TEST_USER1);
 
-        final MetadataEntry pipelineUserMetadata = new MetadataEntry();
+        pipelineUserMetadata = new MetadataEntry();
         pipelineUserMetadata.setEntity(pipelineUserEntity);
-        final MetadataEntry roleMetadata = new MetadataEntry();
+        roleMetadata = new MetadataEntry();
         roleMetadata.setEntity(roleEntity);
         pipelineUserMetadataVO = new MetadataVO();
         pipelineUserMetadataVO.setEntity(pipelineUserEntity);
@@ -94,7 +97,10 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
 
         doReturn(pipelineUser1).when(userManager).loadUserById(TEST_USER1_ID);
         doReturn(pipelineUser1).when(userManager).loadUserByNameOrId(TEST_USER1);
-        doReturn(Collections.emptyList()).when(metadataManager).listMetadataItems(any());
+        doReturn(Collections.singletonList(pipelineUserMetadata)).when(metadataManager)
+                .listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        doReturn(Collections.singletonList(roleMetadata)).when(metadataManager)
+                .listMetadataItems(Collections.singletonList(roleEntity));
         doReturn(pipelineUserMetadata).when(metadataManager)
                 .findMetadataEntryByNameOrId(TEST_USER1, AclClass.PIPELINE_USER);
         doReturn(roleMetadata).when(metadataManager).findMetadataEntryByNameOrId(TEST_USER1, AclClass.ROLE);
@@ -106,14 +112,18 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldLoadMetadataForPipelineUser() {
-        metadataApiService.listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        final List<MetadataEntry> metadataEntries = metadataApiService
+                .listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        assertEquals(Collections.singletonList(pipelineUserMetadata), metadataEntries);
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void ownerShouldLoadMetadataForPipelineUser() {
-        metadataApiService.listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        final List<MetadataEntry> metadataEntries = metadataApiService
+                .listMetadataItems(Collections.singletonList(pipelineUserEntity));
+        assertEquals(Collections.singletonList(pipelineUserMetadata), metadataEntries);
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -127,7 +137,9 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldLoadMetadataForRole() {
-        metadataApiService.listMetadataItems(Collections.singletonList(roleEntity));
+        final List<MetadataEntry> metadataEntries = metadataApiService
+                .listMetadataItems(Collections.singletonList(roleEntity));
+        assertEquals(Collections.singletonList(roleMetadata), metadataEntries);
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -141,14 +153,18 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldFindMetadataForPipelineUser() {
-        metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER);
+        final MetadataEntry metadataEntityIdByName = metadataApiService
+                .findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER);
+        assertEquals(pipelineUserEntity, metadataEntityIdByName.getEntity());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void ownerShouldFindMetadataForPipelineUser() {
-        metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER);
+        final MetadataEntry metadataEntityIdByName = metadataApiService
+                .findMetadataEntityIdByName(TEST_USER1, AclClass.PIPELINE_USER);
+        assertEquals(pipelineUserEntity, metadataEntityIdByName.getEntity());
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -162,7 +178,9 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldFindMetadataForRole() {
-        metadataApiService.findMetadataEntityIdByName(TEST_USER1, AclClass.ROLE);
+        final MetadataEntry metadataEntityIdByName = metadataApiService
+                .findMetadataEntityIdByName(TEST_USER1, AclClass.ROLE);
+        assertEquals(roleEntity, metadataEntityIdByName.getEntity());
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -176,14 +194,16 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldUpdateMetadataForPipelineUser() {
-        metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO);
+        final MetadataEntry metadataEntry = metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO);
+        assertEquals(pipelineUserEntity, metadataEntry.getEntity());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1)
     public void ownerShouldUpdateMetadataForPipelineUser() {
-        metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO);
+        final MetadataEntry metadataEntry = metadataApiService.updateMetadataItemKey(pipelineUserMetadataVO);
+        assertEquals(pipelineUserEntity, metadataEntry.getEntity());
     }
 
     @Test(expected = AccessDeniedException.class)
@@ -197,7 +217,8 @@ public class MetadataApiServiceTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     @WithMockUser(username = TEST_USER1, roles = ADMIN_ROLE)
     public void adminShouldUpdateMetadataForRole() {
-        metadataApiService.updateMetadataItemKey(roleMetadataVO);
+        final MetadataEntry metadataEntry = metadataApiService.updateMetadataItemKey(roleMetadataVO);
+        assertEquals(roleEntity, metadataEntry.getEntity());
     }
 
     @Test(expected = AccessDeniedException.class)
