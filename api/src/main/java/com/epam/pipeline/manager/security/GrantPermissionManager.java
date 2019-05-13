@@ -52,6 +52,7 @@ import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -125,7 +126,6 @@ public class GrantPermissionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrantPermissionManager.class);
     private static final String OWNER = "OWNER";
-    private static final String READ_PERMISSION = "READ";
 
     @Autowired private PermissionEvaluator permissionEvaluator;
 
@@ -395,8 +395,11 @@ public class GrantPermissionManager {
         return permissionsHelper.isOwner(entity);
     }
 
-    public boolean hasMetadataOwnerPermission(Long id, AclClass aclClass) {
-        return aclClass.isSupportsEntityManager() && ownerPermission(id, aclClass);
+    public boolean hasMetadataOwnerPermission(final Long id, final AclClass aclClass) {
+        if (aclClass.isSupportsEntityManager()) {
+            return ownerPermission(id, aclClass);
+        }
+        return hasPipelineUserOrRolePermission(id, aclClass);
     }
 
     public boolean isOwnerOrAdmin(String owner) {
@@ -593,7 +596,10 @@ public class GrantPermissionManager {
     }
 
     public boolean metadataPermission(Long entityId, AclClass entityClass, String permissionName) {
-        AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
+        if (!entityClass.isSupportsEntityManager()) {
+            return hasPipelineUserOrRolePermission(entityId, entityClass);
+        }
+        final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(securedEntity.getOwner());
         } else {
@@ -601,26 +607,33 @@ public class GrantPermissionManager {
         }
     }
 
-    public boolean metadataPermission(MetadataEntry metadataEntry, String permissionName) {
-        EntityVO entity = metadataEntry.getEntity();
-        return hasUserOrRoleAccess(entity.getEntityClass(), permissionName) ||
-                metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName);
+    public boolean metadataPermission(final MetadataEntry metadataEntry, final String permissionName) {
+        final EntityVO entity = metadataEntry.getEntity();
+        return metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName);
     }
 
-    public boolean listMetadataPermissions(List<EntityVO> entities, String permissionName) {
+    public boolean listMetadataPermissions(final List<EntityVO> entities, final String permissionName) {
         for (EntityVO entity : entities) {
-            if (hasUserOrRoleAccess(entity.getEntityClass(), permissionName)) {
-                return true;
-            }
-            if (!metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName)) {
+            if (!entity.getEntityClass().isSupportsEntityManager()) {
+                if (!hasPipelineUserOrRolePermission(entity.getEntityId(), entity.getEntityClass())) {
+                    return false;
+                }
+            } else if (!metadataPermission(entity.getEntityId(), entity.getEntityClass(), permissionName)) {
                 return false;
             }
         }
         return true;
     }
 
-    private boolean hasUserOrRoleAccess(AclClass entityClass, String permissionName) {
-        return !entityClass.isSupportsEntityManager() && permissionName.equals(READ_PERMISSION);
+    private boolean hasPipelineUserOrRolePermission(final Long entityId, final AclClass entityClass) {
+        if (entityClass.equals(AclClass.ROLE)) {
+            return isAdmin(getSids());
+        }
+        if (entityClass.equals(AclClass.PIPELINE_USER)) {
+            final PipelineUser user = userManager.loadUserById(entityId);
+            return isOwnerOrAdmin(user.getUserName());
+        }
+        return false;
     }
 
     public boolean entityPermission(AbstractSecuredEntity entity, String permissionName) {
