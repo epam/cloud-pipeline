@@ -34,4 +34,8 @@ ADD sge.template /tmp/sge.template
 ARG CELLRANGER_URL=""
 RUN install_cr_versions.sh "$CELLRANGER_URL" "$CELLRANGER_HOME"
 
+# Install bcl2fastq, if required
+ARG WITH_BCL2FASTQ="false"
+RUN install_bcl2fastq.sh "$WITH_BCL2FASTQ"
+
 WORKDIR $CELLRANGER_HOME
