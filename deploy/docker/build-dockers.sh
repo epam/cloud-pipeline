@@ -266,7 +266,7 @@ build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/bcl2fastq2 "$CP_DIST_REPO_NA
 build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/ngs-essential "$CP_DIST_REPO_NAME:tools-ngs-essential-${DOCKERS_VERSION}" "ngs/ngs-essential:latest"
 
 # cellranger
-export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
+export CELLRANGER_URL=${CELLRANGER_URL:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-2.1.0.tar.gz https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/cellranger/cellranger-3.0.2.tar.gz"}
 build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/cellranger "$CP_DIST_REPO_NAME:tools-ngs-cellranger-${DOCKERS_VERSION}" "ngs/cellranger:latest" --build-arg CELLRANGER_URL="$CELLRANGER_URL"
 
 # msgen

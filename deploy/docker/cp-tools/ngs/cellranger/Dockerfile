@@ -24,22 +24,14 @@ RUN apt-get update -y && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
 
 ENV CELLRANGER_HOME="/opt/cellranger"
-ENV CELLRANGER_BIN="$CELLRANGER_HOME/cellranger"
-ENV PATH "$PATH:/$CELLRANGER_HOME"
+ENV CELLRANGER_BIN="$CELLRANGER_HOME/cellranger-latest/cellranger"
+ENV PATH "$PATH:/$CELLRANGER_HOME/cellranger-latest"
 
 # Configure SGE integration
 ADD sge.template /tmp/sge.template
 
 # Install cellranger
 ARG CELLRANGER_URL=""
-RUN     if [ -z "${CELLRANGER_URL}" ]; then echo "CELLRANGER_URL is not set. Specify it using \"--build-arg CELLRANGER_URL=http://\". Valid temporary distr URL can be obtained from https://support.10xgenomics.com/single-cell-gene-expression/software/downloads/latest" exit 1; fi && \
-        cd /tmp && \
-        wget -q -O cellranger.tar.gz "${CELLRANGER_URL}" && \
-        tar -zxf cellranger.tar.gz && \
-        rm -rf cellranger.tar.gz && \
-        cp /tmp/sge.template cellranger-*/martian-cs/v*/jobmanagers/ && \
-        mv cellranger-* $CELLRANGER_HOME ; \
-        rm -f /tmp/sge.template && \
-        chmod 0777 -R "$CELLRANGER_HOME"
+RUN install_cr_versions.sh "$CELLRANGER_URL" "$CELLRANGER_HOME"
 
 WORKDIR $CELLRANGER_HOME
