@@ -29,5 +29,7 @@ public class GitProject extends BaseEntity {
 
     @JsonProperty("http_url_to_repo") private String repoUrl;
 
+    @JsonProperty("ssh_url_to_repo") private String repoSsh;
+
     @JsonProperty("path_with_namespace") private String path;
 }

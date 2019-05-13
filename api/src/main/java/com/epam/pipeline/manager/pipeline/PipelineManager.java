@@ -26,6 +26,7 @@ import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -109,22 +110,28 @@ public class PipelineManager implements SecuredEntityManager {
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
-            String repository = gitManager.createRepository(
+            GitProject project = gitManager.createRepository(
                     pipelineVO.getTemplateId() == null ? defaultTemplate : pipelineVO.getTemplateId(),
                     pipelineVO.getName(),
                     pipelineVO.getDescription());
-            pipelineVO.setRepository(repository);
+            pipelineVO.setRepository(project.getRepoUrl());
+            pipelineVO.setRepositorySsh(project.getRepoSsh());
         } else {
             CheckRepositoryVO checkRepositoryVO = new CheckRepositoryVO();
             checkRepositoryVO.setRepository(pipelineVO.getRepository());
             checkRepositoryVO.setToken(pipelineVO.getRepositoryToken());
             checkRepositoryVO = this.check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
-                gitManager.createRepository(
+                GitProject project = gitManager.createRepository(
                         pipelineVO.getTemplateId() == null ? defaultTemplate : pipelineVO.getTemplateId(),
                         pipelineVO.getDescription(),
                         pipelineVO.getRepository(),
                         pipelineVO.getRepositoryToken());
+                pipelineVO.setRepositorySsh(project.getRepoSsh());
+            } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
+                GitProject project = gitManager.getRepository(pipelineVO.getRepository(),
+                        pipelineVO.getRepositoryToken());
+                pipelineVO.setRepositorySsh(project.getRepoSsh());
             }
         }
         Pipeline pipeline = pipelineVO.toPipeline();

@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.metadata.FolderWithMetadata;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -162,6 +163,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         MockitoAnnotations.initMocks(this);
         when(gitManagerMock.getPipelineRevisions(any(Pipeline.class),
                 any(Long.class))).thenReturn(Collections.emptyList());
+        when(gitManagerMock.getRepository(any(String.class), any(String.class)))
+                .thenReturn(new GitProject());
         pipelineManager.setGitManager(gitManagerMock);
     }
 
