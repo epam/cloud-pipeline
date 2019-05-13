@@ -30,6 +30,7 @@ public class Pipeline extends AbstractSecuredEntity {
 
     private String description;
     private String repository;
+    private String repositorySsh;
     private Revision currentVersion;
     private Long parentFolderId;
     private String templateId;

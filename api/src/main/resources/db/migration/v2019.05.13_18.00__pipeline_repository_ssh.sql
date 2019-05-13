@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.pipeline ADD repository_ssh text NULL;

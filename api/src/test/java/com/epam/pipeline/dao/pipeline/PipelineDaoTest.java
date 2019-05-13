@@ -39,6 +39,7 @@ public class PipelineDaoTest extends AbstractSpringTest {
     private static final String TEST_USER = "Test";
     private static final String TEST_NAME = "Test";
     private static final String TEST_REPO = "///";
+    private static final String TEST_REPO_SSH = "git@test";
 
     @Autowired
     private PipelineDao pipelineDao;
@@ -166,6 +167,7 @@ public class PipelineDaoTest extends AbstractSpringTest {
         Pipeline pipeline = new Pipeline();
         pipeline.setName(name);
         pipeline.setRepository(TEST_REPO);
+        pipeline.setRepositorySsh(TEST_REPO_SSH);
         pipeline.setOwner(TEST_USER);
         return pipeline;
     }
