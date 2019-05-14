@@ -90,6 +90,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TEST_SERVICE_URL = "service_url";
     private static final String GROUP_NAME = "group_1";
     private static final BigDecimal PRICE_PER_HOUR = new BigDecimal("0.08");
+    private static final String TEST_REPO = "///";
+    private static final String TEST_REPO_SSH = "git@test";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -107,7 +109,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     public void setup() {
         testPipeline = new Pipeline();
         testPipeline.setName("Test");
-        testPipeline.setRepository("///");
+        testPipeline.setRepository(TEST_REPO);
+        testPipeline.setRepositorySsh(TEST_REPO_SSH);
         testPipeline.setOwner(TEST_USER);
         pipelineDao.createPipeline(testPipeline);
 
@@ -370,7 +373,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private Pipeline getPipeline() {
         Pipeline testPipeline2 = new Pipeline();
         testPipeline2.setName("Test");
-        testPipeline2.setRepository("///");
+        testPipeline2.setRepository(TEST_REPO);
+        testPipeline2.setRepositorySsh(TEST_REPO_SSH);
         testPipeline2.setOwner(TEST_USER);
         pipelineDao.createPipeline(testPipeline2);
         return testPipeline2;
