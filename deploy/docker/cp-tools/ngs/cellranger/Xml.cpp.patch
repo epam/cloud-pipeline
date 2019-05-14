@@ -1,0 +1,22 @@
+--- src/cxx/lib/io/Xml.cpp	2018-01-05 14:12:25.000000000 -0500
++++ src/cxx/lib/io/Xml.cpp	2018-01-05 14:12:35.000000000 -0500
+@@ -168,19 +168,11 @@
+     if (!tree.empty())
+     {
+         unindex(*tree.begin(), treeWithIndexAttributes);
+-#ifndef WIN32
+-        boost::property_tree::write_xml(os, treeWithIndexAttributes, boost::property_tree::xml_writer_make_settings(' ', 2));
+-#else
+         boost::property_tree::write_xml(os, treeWithIndexAttributes, boost::property_tree::xml_writer_make_settings<std::string>(' ', 2));
+-#endif
+     }
+     else
+     {
+-#ifndef WIN32
+-        boost::property_tree::write_xml(os, tree, boost::property_tree::xml_writer_make_settings(' ', 2));
+-#else
+         boost::property_tree::write_xml(os, tree, boost::property_tree::xml_writer_make_settings<std::string>(' ', 2));
+-#endif
+     }
+     return os;
+ }

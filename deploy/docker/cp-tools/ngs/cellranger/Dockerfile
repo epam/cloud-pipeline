@@ -31,11 +31,23 @@ ENV PATH "$PATH:/$CELLRANGER_HOME/cellranger-latest"
 ADD sge.template /tmp/sge.template
 
 # Install cellranger
+ADD install_cr_versions.sh /tmp/install_cr_versions.sh
 ARG CELLRANGER_URL=""
-RUN install_cr_versions.sh "$CELLRANGER_URL" "$CELLRANGER_HOME"
+RUN bash /tmp/install_cr_versions.sh "$CELLRANGER_URL" "$CELLRANGER_HOME" && \
+    rm -f /tmp/install_cr_versions.sh
 
-# Install bcl2fastq, if required
-ARG WITH_BCL2FASTQ="false"
-RUN install_bcl2fastq.sh "$WITH_BCL2FASTQ"
+ENV BCL2FASTQ_HOME="/opt/bcl2fastq"
+# Install bcl2fastq 2, if required
+ADD install_bcl2fastq2.sh /tmp/install_bcl2fastq2.sh
+ADD Xml.cpp.patch /tmp/Xml.cpp.patch
+ARG WITH_BCL2FASTQ2="false"
+RUN bash /tmp/install_bcl2fastq2.sh "$WITH_BCL2FASTQ2" && \
+    rm -f /tmp/install_bcl2fastq2.sh
+
+# Install bcl2fastq 1.8, if required
+ADD install_bcl2fastq18.sh /tmp/install_bcl2fastq18.sh
+ARG WITH_BCL2FASTQ18="false"
+RUN bash /tmp/install_bcl2fastq18.sh "$WITH_BCL2FASTQ18" && \
+    rm -f /tmp/install_bcl2fastq18.sh
 
 WORKDIR $CELLRANGER_HOME

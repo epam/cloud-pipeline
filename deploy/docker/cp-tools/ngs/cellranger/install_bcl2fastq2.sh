@@ -14,19 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 _WITH_BCL2FASTQ="$1"
 
 if [ "$_WITH_BCL2FASTQ" != "true" ]; then
-    echo "bcl2fastq will not be installed. If it is required - rebuild with \"--build-arg WITH_BCL2FASTQ=true\""
+    echo "bcl2fastq2 will not be installed. If it is required - rebuild with \"--build-arg WITH_BCL2FASTQ2=true\""
     exit 0
 fi
 
-apt install -y build-essential libbz2-dev libxml2-dev libboost-all-dev
+apt install -y build-essential g++ python-dev autotools-dev libicu-dev libbz2-dev zlib1g-dev unzip libboost-all-dev=1.58.0.1ubuntu1
 
 _BCL2FASTQ_VERSION="v2-20-0"
 export TMP=/tmp
 cd $TMP
-wget ftp://webdata2:webdata2@ussd-ftp.illumina.com/downloads/software/bcl2fastq/bcl2fastq2-$_BCL2FASTQ_VERSION-tar.zip -O bcl2fastq2.tar.zip
+wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/bcl2fastq/bcl2fastq2-$_BCL2FASTQ_VERSION.tar.zip -O bcl2fastq2.tar.zip
 unzip bcl2fastq2.tar.zip
 tar -zxf bcl2fastq2-*.tar.gz
 rm -f bcl2fastq2.tar.zip
@@ -34,8 +36,13 @@ rm -f bcl2fastq2-*.tar.gz
 
 export SOURCE=${TMP}/bcl2fastq
 export BUILD=${TMP}/bcl2fastq2-build
-export INSTALL_DIR=/opt/bcl2fastq-$_BCL2FASTQ_VERSION
+export INSTALL_DIR=$BCL2FASTQ_HOME/bcl2fastq-$_BCL2FASTQ_VERSION
 export C_INCLUDE_PATH=/usr/include/x86_64-linux-gnu
+
+# Patch for the newer version of boost 
+# https://backwardincompatible.com/post/169360794395/compiling-illumina-bcl2fastq-220-on-ubuntu-with
+cd $SOURCE
+patch src/cxx/lib/io/Xml.cpp < /tmp/Xml.cpp.patch
 
 mkdir -p ${BUILD}
 cd ${BUILD}
@@ -46,7 +53,11 @@ ${SOURCE}/src/configure --prefix=${INSTALL_DIR}
 make -j$(nproc)
 make install
 
-apt remove -y build-essential libbz2-dev libxml2-dev libboost-all-dev=1.58.0.1ubuntu1
 cd $INSTALL_DIR
 rm -rf $SOURCE
 rm -rf $BUILD
+
+ln -s $INSTALL_DIR/bin/bcl2fastq /usr/local/bin/bcl2fastq
+ln -s $INSTALL_DIR/bin/bcl2fastq /usr/local/bin/bcl2fastq2
+
+chmod -R g+rwx $INSTALL_DIR

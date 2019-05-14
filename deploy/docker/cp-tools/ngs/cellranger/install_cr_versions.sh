@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -e
+
 _CELLRANGER_URL="$1"
 _CELLRANGER_HOME="$2"
 
