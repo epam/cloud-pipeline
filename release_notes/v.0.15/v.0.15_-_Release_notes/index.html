@@ -643,13 +643,15 @@ RStudio will work correctly, but it may confuse the users.</p>
 <p>While this is only one example - there are other applications, that require extra cleanup to be performed before the termination.</p>
 <p>To workaround such issues (RStudio and others) an approach of <code>pre/post-commit hooks</code> is implemented. That allows to perform some graceful cleanup/restore before/after performing the commit itself.</p>
 <p>Those hooks are valid only for the specific images and therefore shall be contained within those images. <code>Cloud Pipeline</code> itself performs the calls to the hooks if they exist.</p>
-<p>Two preferences are introduced:
-- <code>commit.pre.command.path</code>: specified a path to a script within a docker image, that will be executed in a currently running container, <strong>BEFORE</strong> <code>docker commit</code> occurs. (default: <code>/root/pre_commit.sh</code>). 
-  - This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent <code>post</code> operation - only filesystem operations will be available. 
-  - <em>Note</em> that any changes done at this stage will affect the running container.
-- <code>commit.post.command.path</code>: specified a path to a script within a docker image, that will be executed in a committed image, <strong>AFTER</strong> <code>docker commit</code> occurs. (default: <code>/root/post_commit.sh</code>). 
-  - This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.
-- If a corresponding pre/post script is not found in the docker image - it will not be executed.</p>
+<p>Two preferences are introduced:</p>
+<ul>
+<li><code>commit.pre.command.path</code>: specified a path to a script within a docker image, that will be executed in a currently running container, <strong>BEFORE</strong> <code>docker commit</code> occurs. (default: <code>/root/pre_commit.sh</code>).</li>
+<li>This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent <code>post</code> operation - only filesystem operations will be available. </li>
+<li><em>Note</em> that any changes done at this stage will affect the running container.</li>
+<li><code>commit.post.command.path</code>: specified a path to a script within a docker image, that will be executed in a committed image, <strong>AFTER</strong> <code>docker commit</code> occurs. (default: <code>/root/post_commit.sh</code>). </li>
+<li>This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.</li>
+<li>If a corresponding pre/post script is not found in the docker image - it will not be executed.</li>
+</ul>
 <h2 id="restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</h2>
 <p>It was uncovered that some of the GPU-enabled runs are not able to initialize due to an issue describe at <a href="https://github.com/NVIDIA/nvidia-docker/issues/825">NVIDIA/nvidia-docker#825</a>.</p>
 <p>To limit a possibility of producing such docker images (which will not be able to start using GPU instance types) - a set of restrictions/notifications was implemented:</p>
@@ -728,14 +730,18 @@ All the deployment tasks were handed manually or by custom scripts.</p>
 <h2 id="add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</h2>
 <p>When a <code>Cloud Pipeline</code> is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
 I.e. the following behavior was observed couple of times over the last year:</p>
-<p><em>Scenario 1</em>
-1. Run is launched and initialized fine
-2. During processing execution - run fails
-3. Console logs print nothing, compute node is fine and is attached to the cluster</p>
-<p><em>Scenario 2</em>
-1. Run is launched, compute node is up
-2. Run fails during initialization
-3. Console logs print the similar error message:</p>
+<p><em>Scenario 1</em></p>
+<ol>
+<li>Run is launched and initialized fine</li>
+<li>During processing execution - run fails</li>
+<li>Console logs print nothing, compute node is fine and is attached to the cluster</li>
+</ol>
+<p><em>Scenario 2</em></p>
+<ol>
+<li>Run is launched, compute node is up</li>
+<li>Run fails during initialization</li>
+<li>Console logs print the similar error message:</li>
+</ol>
 <pre><code>failed to open log file &quot;/var/log/pods/**.log&quot;: open /var/log/pods/**.log: no such file or directory
 </code></pre>
 
