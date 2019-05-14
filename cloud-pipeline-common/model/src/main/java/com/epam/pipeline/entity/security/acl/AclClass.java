@@ -31,7 +31,10 @@ public enum AclClass {
     ATTACHMENT,
     CLOUD_REGION,
     PIPELINE_USER(false),
-    ROLE(false);
+    ROLE(false),
+    // added only for backward compatibility with old APi versions
+    @Deprecated
+    AWS_REGION;
 
     private final boolean supportsEntityManager;
 
