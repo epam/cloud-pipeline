@@ -56,7 +56,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class CAdvisorMonitoringManager {
+public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CAdvisorMonitoringManager.class);
 
@@ -115,12 +115,14 @@ public class CAdvisorMonitoringManager {
         this.client = builder.build();
     }
 
-    public List<MonitoringStats> getStatsForNode(String nodeName) {
+    @Override
+    public List<MonitoringStats> getStatsForNode(final String nodeName) {
         return getInternalip(nodeName)
                 .map(this::executeStatsRequest)
                 .orElse(Collections.emptyList());
     }
 
+    @Override
     public long getDiskAvailableForDocker(final String nodeName,
                                           final String podId,
                                           final String dockerImage) {
@@ -140,9 +142,9 @@ public class CAdvisorMonitoringManager {
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
-    public List<MonitoringStats> getStatsForContainerDisk(final String nodeName,
-                                                          final String podId,
-                                                          final String dockerImage) {
+    private List<MonitoringStats> getStatsForContainerDisk(final String nodeName,
+                                                           final String podId,
+                                                           final String dockerImage) {
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(podId, dockerImage);
         return getInternalip(nodeName)
                 .map(ip -> executeContainerRequest(ip, containerId))
@@ -311,7 +313,7 @@ public class CAdvisorMonitoringManager {
         return LocalDateTime.parse(dateTime, FORMATTER).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    public String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
+    private String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
         final MonitoringStats monitoringStats = getLastMonitoringStat(
                 getStatsForContainerDisk(nodeName, podId, dockerImage), nodeName);
 
