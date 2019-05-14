@@ -46,6 +46,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.withText;
@@ -359,5 +360,9 @@ public class Utils {
     public static void restartBrowser(final String address) {
         Selenide.close();
         Selenide.open(address);
+    }
+
+    public static void click(final By selector) {
+        $(selector).shouldBe(visible).click();
     }
 }

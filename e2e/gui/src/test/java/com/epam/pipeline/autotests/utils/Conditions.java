@@ -212,4 +212,14 @@ public interface Conditions {
             }
         };
     }
+
+    Condition selectedMenuItem = new Condition("selected navigation menu item") {
+        @Override
+        public boolean apply(final WebElement element) {
+            return Condition.or("selected navigation menu item",
+                    cssClass("navigation__navigation-menu-item-selected"),
+                    cssClass("navigation__highlighted-navigation-menu-item-selected"))
+                    .apply(element);
+        }
+    };
 }

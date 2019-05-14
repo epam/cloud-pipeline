@@ -20,14 +20,19 @@ import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolsPage;
-import static com.codeborne.selenide.Condition.visible;
+import org.openqa.selenium.By;
+
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
+import static com.epam.pipeline.autotests.utils.Utils.click;
 
 public interface Navigation {
 
     default NavigationMenuAO navigationMenu() {
-        $(byId("navigation-button-pipelines")).shouldBe(visible).click();
+        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        click(pipelinesPageSelector);
+        $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
     }
 
@@ -36,17 +41,23 @@ public interface Navigation {
     }
 
     default ToolsPage tools() {
-        $(byId("navigation-button-tools")).shouldBe(visible).click();
+        final By toolsPageSelector = byId("navigation-button-tools");
+        click(toolsPageSelector);
+        $(toolsPageSelector).shouldBe(selectedMenuItem);
         return new ToolsPage();
     }
 
     default ClusterMenuAO clusterMenu() {
-        $(byId("navigation-button-cluster")).shouldBe(visible).click();
+        final By clusterPageSelector = byId("navigation-button-cluster");
+        click(clusterPageSelector);
+        $(clusterPageSelector).shouldBe(selectedMenuItem);
         return new ClusterMenuAO();
     }
 
     default RunsMenuAO runsMenu() {
-        $(byId("navigation-button-runs")).shouldBe(visible).click();
+        final By runsPageSelector = byId("navigation-button-runs");
+        click(runsPageSelector);
+        $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
     }
 }
