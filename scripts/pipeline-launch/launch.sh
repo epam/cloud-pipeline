@@ -427,9 +427,45 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
-_DEPS_INSTALL_COMMAND=
-get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "acl"
-eval "$_DEPS_INSTALL_COMMAND"
+# Perform any distro/version specific package manage configuration
+configure_package_manager
+
+# First check whether all packages upgrade required
+if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]
+then
+      echo "Packages upgrade requested. Performing upgrade"
+      upgrade_installed_packages
+      _CP_UPGRADE_RESULT=$?
+      if [ "$_CP_UPGRADE_RESULT" -ne 0 ]
+      then
+            echo "[WARN] Packages upgrade done with exit code $_CP_UPGRADE_RESULT, review any issues above"
+            exit "$_DOWNLOAD_RESULT"
+      else
+            echo "Packages upgrade done"
+      fi
+fi
+
+# Install dependencies
+if [ ! -z $CP_CAP_DISTR_STORAGE_COMMON ]; then
+    local_package_install $CP_CAP_DISTR_STORAGE_COMMON
+else
+    _DEPS_INSTALL_COMMAND=
+    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
+    eval "$_DEPS_INSTALL_COMMAND"
+fi
+
+# Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
+export CP_PYTHON2_PATH=$(command -v python2)
+if [ -z "$CP_PYTHON2_PATH" ]
+then
+      echo "[ERROR] python2 environment not found, exiting."
+      exit 1
+fi
+
+check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
+
+echo "------"
+echo
 
 ######################################################
 
@@ -594,65 +630,13 @@ if [ -z "$MAX_NOPEN_LIMIT" ] ;
 fi
 
 # Setup max open files and max processes limits for a current session, as default limit is 1024
-# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH seesions
+# Further this command is also pushed to the "profile" and "bashrc scripts" for SSH sessions
 _CP_ENV_ULIMIT="ulimit -n $MAX_NOPEN_LIMIT -u $MAX_PROCS_LIMIT"
 eval "$_CP_ENV_ULIMIT"
 
 echo "------"
 echo
 ######################################################
-
-
-
-
-######################################################
-echo Install runtime dependencies
-echo "-"
-######################################################
-
-# Perform any distro/version specific package manage configuration
-configure_package_manager
-
-# First check whether all packages upgrade required
-if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]
-then
-      echo "Packages upgrade requested. Performing upgrade"
-      upgrade_installed_packages
-      _CP_UPGRADE_RESULT=$?
-      if [ "$_CP_UPGRADE_RESULT" -ne 0 ]
-      then
-            echo "[WARN] Packages upgrade done with exit code $_CP_UPGRADE_RESULT, review any issues above"
-            exit "$_DOWNLOAD_RESULT"
-      else
-            echo "Packages upgrade done"
-      fi
-fi
-
-# Install dependencies
-if [ ! -z $CP_CAP_DISTR_STORAGE_COMMON ]; then
-    local_package_install $CP_CAP_DISTR_STORAGE_COMMON
-else
-    _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata"
-    eval "$_DEPS_INSTALL_COMMAND"
-fi
-
-# Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
-export CP_PYTHON2_PATH=$(command -v python2)
-if [ -z "$CP_PYTHON2_PATH" ]
-then
-      echo "[ERROR] python2 environment not found, exiting."
-      exit 1
-fi
-
-check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
-
-echo "------"
-echo
-######################################################
-
-
-
 
 ######################################################
 echo Configure owner account
