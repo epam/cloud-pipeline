@@ -20,6 +20,9 @@ from urlparse import urlparse
 from urllib import quote_plus
 from requests.exceptions import ConnectionError
 from exceptions import KeyboardInterrupt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.backends import default_backend
 
 
 class GitServer(object):
@@ -258,6 +261,7 @@ class GitServer(object):
         git_user = self.find_user_by_email(pipeline_user.email)
         if git_user is not None:
             print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
+            self.synchronize_ssh_keys(pipeline_user, git_user)
             return git_user
         if pipeline_user.friendly_name is not None:
             print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
@@ -268,8 +272,56 @@ class GitServer(object):
                 GitServer.generate_password(100)
             )
             self.__users__.append(result)
+            self.create_ssh_keys(pipeline_user, result)
             return result
         return None
+
+    def synchronize_ssh_keys(self, pipeline_user, git_user):
+        user_private_key, user_public_key = self.__pipeline_server_.get_user_keys(pipeline_user)
+        _, git_public_key = self.get_ssh_key(git_user)
+        if user_private_key and user_public_key:
+            if not git_public_key:
+                self.add_user_ssh_key(git_user, user_public_key)
+            elif user_public_key != git_public_key:
+                self.replace_user_ssh_key(git_user, user_public_key)
+        else:
+            print 'Generating ssh keys for user {} ({})'.format(git_user.name, git_user.email)
+            private_key, public_key = self.generate_ssh_keys()
+            if not git_public_key:
+                self.add_user_ssh_key(git_user, public_key)
+            else:
+                self.replace_user_ssh_key(git_user, public_key)
+            self.__pipeline_server_.update_user_keys(pipeline_user, private_key, public_key)
+
+    def get_ssh_key(self, git_user):
+        ssh_keys = self.__api__.get_user_ssh_keys(git_user.id)
+        if not ssh_keys:
+            return None, None
+        for key in ssh_keys:
+            if 'id' not in key or 'title' not in key or 'key' not in key:
+                return None, None
+            if key['title'] == self.__config__.git_ssh_title:
+                return key['id'], key['key']
+        return None, None
+
+    def add_user_ssh_key(self, git_user, public_key):
+        print 'Creating ssh public key for user {} ({}) in git'.format(git_user.name, git_user.email)
+        self.__api__.add_user_ssh_key(git_user.id, self.__config__.git_ssh_title, public_key)
+
+    def replace_user_ssh_key(self, git_user, public_key):
+        self.remove_user_ssh_key(git_user)
+        self.add_user_ssh_key(git_user, public_key)
+
+    def remove_user_ssh_key(self, git_user):
+        print 'Removing ssh public key for user {} ({}) in git'.format(git_user.name, git_user.email)
+        key_id, _ = self.get_ssh_key(git_user)
+        if key_id:
+            self.__api__.remove_user_ssh_key(git_user.id, key_id)
+
+    def create_ssh_keys(self, pipeline_user, git_user):
+        private_key, public_key = self.generate_ssh_keys()
+        self.add_user_ssh_key(git_user, public_key)
+        self.__pipeline_server_.update_user_keys(pipeline_user, private_key, public_key)
 
     def synchronize_group(self, group, members):
         git_group = self.find_git_group(group)
@@ -323,6 +375,7 @@ class GitServer(object):
                     group_friendly_name,
                     group.name
                 )
+            self.synchronize_ssh_keys(pipeline_user, git_user)
             return git_user.id
         return None
 
@@ -357,3 +410,20 @@ class GitServer(object):
                     print 'Group #{} {} removed.'.format(group.id, group.name)
                 except GitLabException as error:
                     print 'Error removing group {} ({}): {}'.format(group.name, self.__server__, error.message)
+
+    @classmethod
+    def generate_ssh_keys(cls):
+        key = rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=4096,
+            backend=default_backend()
+        )
+        private_key = key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption())
+        public_key = key.public_key().public_bytes(
+            encoding=serialization.Encoding.OpenSSH,
+            format=serialization.PublicFormat.OpenSSH
+        )
+        return private_key, public_key

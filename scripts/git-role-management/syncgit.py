@@ -24,13 +24,16 @@ def configure(argv):
     opts, args = getopt.getopt(
         argv,
         "a:k:p:",
-        ["api=", "key=", "proxy=", "email-attribute=", "name-attribute=", "admins-group=", "git-group-prefix="]
+        ["api=", "key=", "proxy=", "email-attribute=", "name-attribute=", "ssh-pub-attribute=",
+         "ssh-prv-attribute=", "admins-group=", "git-group-prefix="]
     )
     api = None
     key = None
     proxy = None
     email = None
     name = None
+    ssh_pub = None
+    ssh_prv = None
     admins_group = None
     git_group_prefix = None
     for opt, arg in opts:
@@ -44,11 +47,15 @@ def configure(argv):
             email = arg
         elif opt == "--name-attribute":
             name = arg
+        elif opt == "--ssh-pub-attribute":
+            ssh_pub = arg
+        elif opt == "--ssh-prv-attribute":
+            ssh_prv = arg
         elif opt == "--admins-group":
             admins_group = arg
         elif opt == "--git-group-prefix":
             git_group_prefix = arg
-    Config.store(key, api, proxy, email, name, admins_group, git_group_prefix)
+    Config.store(key, api, proxy, email, name, ssh_pub, ssh_prv, admins_group, git_group_prefix)
     print 'syncgit configuration updated'
     exit(0)
 
@@ -60,6 +67,8 @@ def help():
           '--key=<api token> ' \
           '--email-attribute=<attribute name for \'email\' field, case sensitive, default - \'Email\'> ' \
           '--name-attribute=<attribute name for \'name\' field, case sensitive, default - \'Name\'> ' \
+          '--ssh-pub-attribute=<attribute name for \'ssh_pub\' field, case sensitive, default - \'ssh_pub\'> ' \
+          '--ssh-prv-attribute=<attribute name for \'ssh_prv\' field, case sensitive, default - \'ssh_prv\'> ' \
           '--admins-group=<administrators group name, defualt - \'ROLE_ADMIN\'> ' \
           '--git-group-prefix=<prefix for group names, default - \'PIPELINE-\'>'
     print ''
