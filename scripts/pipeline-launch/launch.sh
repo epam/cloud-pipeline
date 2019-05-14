@@ -388,6 +388,7 @@ function create_sys_dir {
       local _DIR_NAME="$1"
       mkdir -p "$_DIR_NAME"
       chmod g+rw "$_DIR_NAME" -R
+      setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
 ######################################################
@@ -425,6 +426,10 @@ echo "-"
 if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
+
+_DEPS_INSTALL_COMMAND=
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "acl"
+eval "$_DEPS_INSTALL_COMMAND"
 
 ######################################################
 
