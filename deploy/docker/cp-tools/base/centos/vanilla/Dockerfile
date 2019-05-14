@@ -25,6 +25,7 @@ RUN yum install -y wget \
                    unzip \
                    git \
                    curl \
-                   epel-release && \
+                   epel-release \
+                   acl && \
     yum clean all && \
     curl https://bootstrap.pypa.io/get-pip.py | python -

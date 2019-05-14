@@ -26,5 +26,6 @@ RUN apt-get update -y && \
     apt-get install -y wget \
                    curl \
                    python \
-                   git && \
+                   git \
+                   acl && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
