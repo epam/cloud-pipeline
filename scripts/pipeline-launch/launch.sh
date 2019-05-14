@@ -306,10 +306,10 @@ function local_package_install {
 
     if [ -z $_SOURCE ]; then
          echo "Env var SOURCE not found, no package will be installed"
-         exit 1
+         return 1
     fi
 
-    local _PATH_TO_PACKAGES=/tmp/localisntall
+    local _PATH_TO_PACKAGES=/tmp/localinstall
     local _ARCH_NAME=$(basename "$_SOURCE")
     local _BIN_DIR=${_ARCH_NAME%.*}
 
@@ -446,7 +446,7 @@ then
 fi
 
 # Install dependencies
-if [ ! -z $CP_CAP_DISTR_STORAGE_COMMON ]; then
+if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
