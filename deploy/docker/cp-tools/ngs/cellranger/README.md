@@ -13,11 +13,6 @@ Please refer to the [10x Genomics online documentation](https://support.10xgenom
 
 # Configuration
 
-[Cellranger 3.0.2](https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/what-is-cell-ranger) is installed into `/opt/cellranger` directory
-
-Two environment variables point to the installation location:
-
-* `CELLRANGER_HOME` - points to the installation location: `/opt/cellranger/`
-* `CELLRANGER_BIN` - points to the executable file: `/opt/cellranger/cellranger`
-
-These variables can be used in scripts to launch the application, instead of hardcoding tool version/location.
+* [Cellranger 3.0.2](https://support.10xgenomics.com/single-cell-gene-expression/software/release-notes/3-0) is installed into `/opt/cellranger/cellranger-3.0.2` directory and symlinked to `/opt/cellranger/latest`
+* [Cellranger 2.1.0](https://support.10xgenomics.com/single-cell-gene-expression/software/release-notes/2-1) is installed into `/opt/cellranger/cellranger-2.1.0` directory
+* `/opt/cellranger/latest` is exported to `$PATH`
