@@ -327,6 +327,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         Pipeline pipeline = new Pipeline();
         pipeline.setName("testPipeline");
         pipeline.setRepository("testRepo");
+        pipeline.setRepositorySsh("testRepoSsh");
         pipeline.setOwner(testOwner.getUserName());
         pipelineDao.createPipeline(pipeline);
         return pipeline;

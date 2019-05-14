@@ -57,6 +57,8 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
     private static final String TEST_CONFIGURATION_MANAGER_ROLE = "CONFIGURATION_MANAGER";
     private static final String TEST_IMAGE = "library/image";
     private static final String TOOL_GROUP_NAME = "repository/TEST_USER_1";
+    private static final String TEST_REPO = "///";
+    private static final String TEST_REPO_SSH = "git@test";
 
     @Autowired
     private RunConfigurationApiService runConfigurationApiService;
@@ -115,7 +117,7 @@ public class RunConfigurationApiServiceTest extends AbstractManagerTest {
                 AclPermission.WRITE.getMask(), true);
         aclTestDao.createAclEntry(folderAclEntry);
 
-        Pipeline pipeline = constructPipeline(TEST_NAME, TEST_NAME, folderId);
+        Pipeline pipeline = constructPipeline(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folderId);
         pipeline.setOwner(TEST_USER_1);
         pipelineDao.createPipeline(pipeline);
         Pipeline loadPipelineByName = pipelineDao.loadPipelineByName(TEST_NAME);

@@ -162,6 +162,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_ID,
         PIPELINE_NAME,
         PIPELINE_REPO,
+        PIPELINE_REPO_SSH,
         PIPELINE_DESCRIPTION,
         PIPELINE_CREATED_DATE,
         PIPELINE_REPOSITORY_TOKEN,
@@ -246,6 +247,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setName(rs.getString(PIPELINE_NAME.name()));
                         pipeline.setDescription(rs.getString(PIPELINE_DESCRIPTION.name()));
                         pipeline.setRepository(rs.getString(PIPELINE_REPO.name()));
+                        pipeline.setRepositorySsh(rs.getString(PIPELINE_REPO_SSH.name()));
                         pipeline.setRepositoryToken(rs.getString(PIPELINE_REPOSITORY_TOKEN.name()));
                         pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(PIPELINE_REPOSITORY_TYPE.name())));
                         pipeline.setCreatedDate(

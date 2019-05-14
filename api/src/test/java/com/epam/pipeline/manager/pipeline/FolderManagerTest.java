@@ -91,6 +91,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private static final String TEST_NAME = "Test";
     private static final String TEST_DESCRIPTION = "description";
     private static final String TEST_REPO = "http://gitlab.com/test/test.git";
+    private static final String TEST_REPO_SSH = "git@gitlab.com:test/test.git";
     private static final String TEST_PATH = "path";
     private static final int STS_DURATION = 1;
     private static final int LTS_DURATION = 1;
@@ -189,7 +190,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     @Test(expected = IllegalArgumentException.class)
     public void deleteFolderWithPipeline() throws Exception {
         folderManager.create(folder);
-        PipelineVO pipeline = constructPipelineVO(TEST_NAME, TEST_REPO, folder.getId());
+        PipelineVO pipeline = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         pipelineManager.create(pipeline);
         folderManager.delete(folder.getId());
     }
@@ -208,7 +209,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     @Test
     public void deleteFolderAfterMovingPipelineAndStorage() throws Exception {
         folderManager.create(folder);
-        PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, folder.getId());
+        PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         DataStorageVO storageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
                 STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
@@ -232,11 +233,11 @@ public class FolderManagerTest extends AbstractSpringTest {
         folderManager.create(subFolder);
         folder.setParent(subFolder);
         folderManager.create(folder);
-        PipelineVO pipeline1 = constructPipelineVO(TEST_NAME, TEST_REPO, folder.getId());
+        PipelineVO pipeline1 = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         pipelineManager.create(pipeline1);
         generateDataStorage(folder.getId());
 
-        PipelineVO pipeline2 = constructPipelineVO(TEST_NAME, TEST_REPO, subFolder.getId());
+        PipelineVO pipeline2 = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, subFolder.getId());
         pipelineManager.create(pipeline2);
         generateDataStorage(subFolder.getId());
 
@@ -288,7 +289,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     @Test
     public void loadFolderWithPipelineAndStorage() throws Exception {
         folderManager.create(folder);
-        PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, folder.getId());
+        PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         DataStorageVO storageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
                 STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS

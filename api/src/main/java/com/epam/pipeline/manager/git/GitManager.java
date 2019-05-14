@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -695,7 +696,7 @@ public class GitManager {
         return config;
     }
 
-    public String createRepository(String templateId, String pipelineName, String description)
+    public GitProject createRepository(String templateId, String pipelineName, String description)
             throws GitClientException {
         TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
         Template template = templatesScanner.listTemplates().get(templateId);
@@ -705,8 +706,7 @@ public class GitManager {
                         pipelineName,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL))
-                .getRepoUrl();
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
     public boolean checkProjectExists(String name) {
@@ -726,10 +726,10 @@ public class GitManager {
                 .initializeGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
     }
 
-    public String createRepository(String templateId,
-                                   String description,
-                                   String repository,
-                                   String token)
+    public GitProject createRepository(String templateId,
+                                       String description,
+                                       String repository,
+                                       String token)
             throws GitClientException {
         TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
         Template template = templatesScanner.listTemplates().get(templateId);
@@ -738,8 +738,7 @@ public class GitManager {
                 .createTemplateRepository(template,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL))
-                .getRepoUrl();
+                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
     public void deletePipelineRepository(Pipeline pipeline)
@@ -820,5 +819,21 @@ public class GitManager {
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipelineManager.load(id));
         return gitlabClient.createProjectHook(
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
+    }
+
+    public GitProject getRepository(String repository, String token) {
+        try {
+            return getGitlabClientForRepository(repository, token).getProject();
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    public GitProject getRepository(String name) {
+        try {
+            return getDefaultGitlabClient().getProject(name);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 }

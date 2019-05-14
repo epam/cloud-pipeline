@@ -143,6 +143,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_NAME,
         DESCRIPTION,
         REPOSITORY,
+        REPOSITORY_SSH,
         FOLDER_ID,
         CREATED_DATE,
         OWNER,
@@ -158,6 +159,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PIPELINE_NAME.name(), pipeline.getName());
             params.addValue(DESCRIPTION.name(), pipeline.getDescription());
             params.addValue(REPOSITORY.name(), pipeline.getRepository());
+            params.addValue(REPOSITORY_SSH.name(), pipeline.getRepositorySsh());
             params.addValue(FOLDER_ID.name(), pipeline.getParentFolderId());
             params.addValue(CREATED_DATE.name(), pipeline.getCreatedDate());
             params.addValue(OWNER.name(), pipeline.getOwner());
@@ -206,6 +208,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setName(rs.getString(PIPELINE_NAME.name()));
             pipeline.setDescription(rs.getString(DESCRIPTION.name()));
             pipeline.setRepository(rs.getString(REPOSITORY.name()));
+            pipeline.setRepositorySsh(rs.getString(REPOSITORY_SSH.name()));
             pipeline.setOwner(rs.getString(OWNER.name()));
             pipeline.setRepositoryToken(rs.getString(REPOSITORY_TOKEN.name()));
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));

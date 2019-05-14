@@ -271,11 +271,8 @@ public class GitlabClient {
     }
 
     public boolean projectExists(String name) throws GitClientException {
-        String project = convertPipeNameToProject(name);
         try {
-            URI uri = new URI(String.format(GIT_PROJECT_URL, gitHost, makeProjectId(adminName, project)));
-            ResponseEntity<GitProject> response = new RestTemplate().exchange(uri, HttpMethod.GET,
-                    getAuthHeaders(), new ParameterizedTypeReference<GitProject>() {});
+            ResponseEntity<GitProject> response = loadProject(name);
             return response.getStatusCode() == HttpStatus.OK;
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
@@ -285,6 +282,33 @@ public class GitlabClient {
         } catch (URISyntaxException | UnsupportedEncodingException e) {
             throw new GitClientException(e.getMessage(), e);
         }
+    }
+
+    public GitProject getProject() throws GitClientException {
+        return getProject(projectName);
+    }
+
+    public GitProject getProject(String name) throws GitClientException {
+        try {
+            ResponseEntity<GitProject> response = loadProject(name);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                return response.getBody();
+            } else {
+                throw new UnexpectedResponseStatusException(response.getStatusCode());
+            }
+        } catch (HttpClientErrorException e) {
+            throw new UnexpectedResponseStatusException(e.getStatusCode());
+        } catch (URISyntaxException | UnsupportedEncodingException e) {
+            throw new GitClientException(e.getMessage(), e);
+        }
+    }
+
+    private ResponseEntity<GitProject> loadProject(String name) throws URISyntaxException,
+            UnsupportedEncodingException {
+        String project = convertPipeNameToProject(name);
+        URI uri = new URI(String.format(GIT_PROJECT_URL, gitHost, makeProjectId(adminName, project)));
+        return new RestTemplate().exchange(uri, HttpMethod.GET, getAuthHeaders(),
+                new ParameterizedTypeReference<GitProject>() {});
     }
 
     public GitProject createTemplateRepository(Template template,

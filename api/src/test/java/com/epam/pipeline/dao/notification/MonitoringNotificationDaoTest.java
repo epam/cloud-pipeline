@@ -63,6 +63,8 @@ public class MonitoringNotificationDaoTest extends AbstractSpringTest {
     private static final long TEST_THRESHOLD = 10L;
     private static final String TEMPLATE_PARAMETER = "template_parameter";
     private static final String TEMPLATE_PARAMETER_VALUE = "template_parameter_value";
+    private static final String TEST_REPO = "///";
+    private static final String TEST_REPO_SSH = "git@test";
 
     @Autowired
     private MonitoringNotificationDao monitoringNotificationDao;
@@ -98,7 +100,8 @@ public class MonitoringNotificationDaoTest extends AbstractSpringTest {
 
         testPipeline = new Pipeline();
         testPipeline.setName("Test");
-        testPipeline.setRepository("///");
+        testPipeline.setRepository(TEST_REPO);
+        testPipeline.setRepositorySsh(TEST_REPO_SSH);
         testPipeline.setOwner(TEST_USER1);
         pipelineDao.createPipeline(testPipeline);
 

@@ -28,6 +28,7 @@ public class PipelineVO {
     private String name;
     private String description;
     private String repository;
+    private String repositorySsh;
     private String repositoryToken;
     private Long parentFolderId;
     private String templateId;
@@ -40,6 +41,7 @@ public class PipelineVO {
         pipeline.setDescription(getDescription());
         pipeline.setParentFolderId(getParentFolderId());
         pipeline.setRepository(getRepository());
+        pipeline.setRepositorySsh(getRepositorySsh());
         pipeline.setRepositoryToken(getRepositoryToken());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());

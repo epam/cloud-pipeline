@@ -102,19 +102,21 @@ public final class ObjectCreatorUtils {
         return storageVO;
     }
 
-    public static PipelineVO constructPipelineVO(String name, String repo, Long parentFolderId) {
+    public static PipelineVO constructPipelineVO(String name, String repo, String repoSsh, Long parentFolderId) {
         PipelineVO pipeline = new PipelineVO();
         pipeline.setName(name);
         pipeline.setRepository(repo);
+        pipeline.setRepositorySsh(repoSsh);
         pipeline.setParentFolderId(parentFolderId);
         return pipeline;
     }
 
 
-    public static Pipeline constructPipeline(String name, String repo, Long parentFolderId) {
+    public static Pipeline constructPipeline(String name, String repo, String repoSsh, Long parentFolderId) {
         Pipeline pipeline = new Pipeline();
         pipeline.setName(name);
         pipeline.setRepository(repo);
+        pipeline.setRepositorySsh(repoSsh);
         pipeline.setParentFolderId(parentFolderId);
         return pipeline;
     }

@@ -43,6 +43,7 @@ public class RunStatusDaoTest extends AbstractSpringTest {
 
     private static final String TEST_NAME = "TEST";
     private static final String TEST_REPOSITORY = "///";
+    private static final String TEST_REPOSITORY_SSH = "git@test";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -70,6 +71,7 @@ public class RunStatusDaoTest extends AbstractSpringTest {
         testPipeline = new Pipeline();
         testPipeline.setName(TEST_NAME);
         testPipeline.setRepository(TEST_REPOSITORY);
+        testPipeline.setRepositorySsh(TEST_REPOSITORY_SSH);
         testPipeline.setOwner(TEST_NAME);
         pipelineDao.createPipeline(testPipeline);
 

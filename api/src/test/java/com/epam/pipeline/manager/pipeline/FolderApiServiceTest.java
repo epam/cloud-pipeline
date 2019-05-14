@@ -56,6 +56,7 @@ public class FolderApiServiceTest extends AbstractManagerTest {
     private static final String FOLDER_NAME = "Folder name";
     private static final String TEST_PIPELINE1 = "Pipeline1";
     private static final String TEST_PIPELINE_REPO = "///";
+    private static final String TEST_PIPELINE_REPO_SSH = "git@test";
 
     @Autowired
     private FolderApiService folderApiService;
@@ -111,7 +112,7 @@ public class FolderApiServiceTest extends AbstractManagerTest {
         childFolder.setParentId(parent.getId());
         childFolder.setOwner(TEST_USER2);
 
-        pipeline1 = constructPipeline(TEST_PIPELINE1, TEST_PIPELINE_REPO, childFolder.getId());
+        pipeline1 = constructPipeline(TEST_PIPELINE1, TEST_PIPELINE_REPO, TEST_PIPELINE_REPO_SSH, childFolder.getId());
         pipeline1.setOwner(TEST_USER2);
         pipelineDao.createPipeline(pipeline1);
 
