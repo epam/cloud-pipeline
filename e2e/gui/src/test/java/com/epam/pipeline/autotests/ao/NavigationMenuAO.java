@@ -15,44 +15,56 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import org.openqa.selenium.By;
+
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
+import static com.epam.pipeline.autotests.utils.Utils.click;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NavigationMenuAO {
 
     public PipelinesLibraryAO library() {
-        $(byId("navigation-button-pipelines")).shouldBe(visible).click();
+        final By pipelinesPageSelector = byId("navigation-button-pipelines");
+        click(pipelinesPageSelector);
+        $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
                 .waitUntil(visible, 5000);
         return new PipelinesLibraryAO();
     }
 
     public RunsMenuAO runs() {
-        $(byId("navigation-button-runs")).shouldBe(visible).click();
+        final By runsPageSelector = byId("navigation-button-runs");
+        click(runsPageSelector);
+        $(runsPageSelector).shouldBe(selectedMenuItem);
         $(byId("active-runs-button")).waitUntil(visible, 5000);
         return new RunsMenuAO();
     }
 
     public ToolsPage tools() {
-        $(byId("navigation-button-tools")).shouldBe(visible).click();
+        final By toolsPageSelector = byId("navigation-button-tools");
+        click(toolsPageSelector);
+        $(toolsPageSelector).shouldBe(selectedMenuItem);
         $(byId("current-registry-button")).waitUntil(visible, 5000);
         return new ToolsPage();
     }
 
     public ClusterMenuAO clusterNodes() {
-        $(byId("navigation-button-cluster")).shouldBe(visible).click();
+        final By clusterPageSelector = byId("navigation-button-cluster");
+        click(clusterPageSelector);
+        $(clusterPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Cluster nodes')]] and contains(@id, 'root-content')]"))
                 .waitUntil(visible, 5000);
         return new ClusterMenuAO();
     }
 
     public SettingsPageAO settings() {
-        $(byId("navigation-button-settings")).shouldBe(visible).click();
+        click(byId("navigation-button-settings"));
         sleep(1, SECONDS);
         $(byClassName("ant-modal-content")).waitUntil(visible, 5000);
         return new SettingsPageAO(new PipelinesLibraryAO());

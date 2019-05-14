@@ -100,6 +100,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .switchToDockerSecurity()
                         .clickPolicyDenyNotScanned()
                         .save()
+                        .sleep(1, SECONDS)
                         .ok();
             }
         });
