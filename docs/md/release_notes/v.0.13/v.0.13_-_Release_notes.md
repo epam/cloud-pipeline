@@ -1,15 +1,15 @@
 # Cloud Pipeline v.0.13 - Release notes
 
-1. [Data sharing with external collaborators](#data-sharing-with-external-collaborators)
-2. [Batch processing in EU](#batch-processing-in-eu)
-3. [Running instances sharing with other user(s) or group(s) of users](#running-instances-sharing-with-other-users-or-groups-of-users)
-4. [Automated instances pause/stop according to the resource usage](#automated-instances-pausestop-according-to-the-resource-usage)
-5. [Tools versions details](#tools-versions-details)
-6. [Data download from external http/ftp resources to the cloud data storage](#data-download-from-external-httpftp-resources-to-the-cloud-data-storage)
-7. [Automatically rerun a batch job if a spot instance is terminated](#automatically-rerun-a-batch-job-if-a-spot-instance-is-terminated)
-8. [Displaying estimated price of a job run](#displaying-estimated-price-of-a-job-run)
-9. [Displaying details of the user profile](#displaying-details-of-the-user-profile)
-10. [Breadcrumbs for the Library view](#breadcrumbs-for-the-library-view)
+- [Data sharing with external collaborators](#data-sharing-with-external-collaborators)
+- [Batch processing in EU](#batch-processing-in-eu)
+- [Running instances sharing with other user(s) or group(s) of users](#running-instances-sharing-with-other-users-or-groups-of-users)
+- [Automated instances pause/stop according to the resource usage](#automated-instances-pausestop-according-to-the-resource-usage)
+- [Tools versions details](#tools-versions-details)
+- [Data download from external http/ftp resources to the cloud data storage](#data-download-from-external-httpftp-resources-to-the-cloud-data-storage)
+- [Automatically rerun a batch job if a spot instance is terminated](#automatically-rerun-a-batch-job-if-a-spot-instance-is-terminated)
+- [Displaying estimated price of a job run](#displaying-estimated-price-of-a-job-run)
+- [Displaying details of the user profile](#displaying-details-of-the-user-profile)
+- [Breadcrumbs for the Library view](#breadcrumbs-for-the-library-view)
 
 ## Data sharing with external collaborators
 

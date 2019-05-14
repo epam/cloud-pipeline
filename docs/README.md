@@ -11,6 +11,7 @@ The following sections are currently covered in a documentation:
 - Release notes
     - [Release notes v.0.13](md/release_notes/v.0.13/v.0.13_-_Release_notes.md)
     - [Release notes v.0.14](md/release_notes/v.0.14/v.0.14_-_Release_notes.md)
+    - [Release notes v.0.15](md/release_notes/v.0.15/v.0.15_-_Release_notes.md)
 - User guide
     - [Table of contents](md/manual/Cloud_Pipeline_-_Manual.md)
 
