@@ -175,7 +175,8 @@ To workaround such issues (RStudio and others) an approach of `pre/post-commit h
 Those hooks are valid only for the specific images and therefore shall be contained within those images. `Cloud Pipeline` itself performs the calls to the hooks if they exist.
 
 Two preferences are introduced:
-- `commit.pre.command.path`: specified a path to a script within a docker image, that will be executed in a currently running container, **BEFORE** `docker commit` occurs. (default: `/root/pre_commit.sh`). 
+
+- `commit.pre.command.path`: specified a path to a script within a docker image, that will be executed in a currently running container, **BEFORE** `docker commit` occurs. (default: `/root/pre_commit.sh`).
   - This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent `post` operation - only filesystem operations will be available. 
   - *Note* that any changes done at this stage will affect the running container.
 - `commit.post.command.path`: specified a path to a script within a docker image, that will be executed in a committed image, **AFTER** `docker commit` occurs. (default: `/root/post_commit.sh`). 
@@ -305,14 +306,17 @@ When a `Cloud Pipeline` is being for a long time (e.g. years), it is common to o
 I.e. the following behavior was observed couple of times over the last year:
 
 *Scenario 1*
+
 1. Run is launched and initialized fine
 2. During processing execution - run fails
 3. Console logs print nothing, compute node is fine and is attached to the cluster
 
 *Scenario 2*
+
 1. Run is launched, compute node is up
 2. Run fails during initialization
 3. Console logs print the similar error message:
+
 ```
 failed to open log file "/var/log/pods/**.log": open /var/log/pods/**.log: no such file or directory
 ```
