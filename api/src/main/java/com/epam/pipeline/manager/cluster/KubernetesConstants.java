@@ -29,6 +29,7 @@ public final class KubernetesConstants {
 
     public static final String RUN_ID_LABEL = "runid";
     public static final String CLOUD_REGION_LABEL = "cloud_region";
+    public static final String AWS_REGION_LABEL = "aws_region";
     public static final String CLOUD_PROVIDER_LABEL = "cloud_provider";
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";

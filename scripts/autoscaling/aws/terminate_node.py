@@ -17,7 +17,8 @@ import pykube
 import argparse
 
 RUN_ID_LABEL = 'runid'
-AWS_REGION_LABEL = 'cloud_region'
+AWS_REGION_LABEL = 'aws_region'
+CLOUD_REGION_LABEL = 'cloud_region'
 KUBE_CONFIG_PATH = '~/.kube/config'
 
 
@@ -66,9 +67,9 @@ def get_aws_region(api, nodename):
     if node is None:
         raise RuntimeError('Cannot find node matching name %s' % nodename)
     labels = node['metadata']['labels']
-    if AWS_REGION_LABEL not in labels:
+    if AWS_REGION_LABEL not in labels and CLOUD_REGION_LABEL not in labels:
         raise RuntimeError('Node %s is not labeled with AWS Region' % node['metadata']['name'])
-    return labels[AWS_REGION_LABEL]
+    return labels[CLOUD_REGION_LABEL] if CLOUD_REGION_LABEL in labels else labels[AWS_REGION_LABEL]
 
 
 def get_kube_api():

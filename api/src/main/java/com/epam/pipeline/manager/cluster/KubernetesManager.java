@@ -349,12 +349,18 @@ public class KubernetesManager {
         }
         final Node node = nodes.get(0);
         final Map<String, String> labels = node.getMetadata().getLabels();
-        if (MapUtils.isEmpty(labels) || !labels.containsKey(KubernetesConstants.CLOUD_REGION_LABEL)) {
+        if (MapUtils.isEmpty(labels) || (!labels.containsKey(KubernetesConstants.CLOUD_REGION_LABEL)
+                        && !labels.containsKey(KubernetesConstants.AWS_REGION_LABEL))) {
             throw new IllegalArgumentException(String.format("Node %s is not labeled with Cloud Region",
                     node.getMetadata().getName()));
         }
+
+        final String regionLabel = labels.containsKey(KubernetesConstants.CLOUD_REGION_LABEL)
+                ? getLabel(node, KubernetesConstants.CLOUD_REGION_LABEL)
+                : getLabel(node, KubernetesConstants.AWS_REGION_LABEL);
+
         return new NodeRegionLabels(CloudProvider.valueOf(getLabel(node, KubernetesConstants.CLOUD_PROVIDER_LABEL)),
-                getLabel(node, KubernetesConstants.CLOUD_REGION_LABEL));
+                regionLabel);
     }
 
     private String getLabel(final Node node, final String label) {

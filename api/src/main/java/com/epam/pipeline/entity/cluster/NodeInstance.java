@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.AWS_REGION_LABEL;
 import static com.epam.pipeline.manager.cluster.KubernetesConstants.CLOUD_PROVIDER_LABEL;
 import static com.epam.pipeline.manager.cluster.KubernetesConstants.CLOUD_REGION_LABEL;
 import static com.epam.pipeline.manager.cluster.KubernetesConstants.RUN_ID_LABEL;
@@ -79,7 +80,13 @@ public class NodeInstance extends AbstractSecuredEntity {
             this.setLabels(labels);
             if (labels != null) {
                 this.setRunId(labels.get(RUN_ID_LABEL));
-                this.setRegion(labels.get(CLOUD_REGION_LABEL));
+
+                if (labels.containsKey(CLOUD_REGION_LABEL)) {
+                    this.setRegion(labels.get(CLOUD_REGION_LABEL));
+                } else if (labels.containsKey(AWS_REGION_LABEL)) {
+                    this.setRegion(labels.get(AWS_REGION_LABEL));
+                }
+
                 String providerLabel = labels.get(CLOUD_PROVIDER_LABEL);
                 if (StringUtils.isNotBlank(providerLabel)) {
                     this.setProvider(CloudProvider.valueOf(providerLabel));
