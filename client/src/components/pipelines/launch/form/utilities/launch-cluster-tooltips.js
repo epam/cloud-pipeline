@@ -30,20 +30,23 @@ import {Icon, Row, Tooltip} from 'antd';
  * Tooltip won't be shown if no value is presented (`undefined`).
  */
 
-const CLUSTER_MODES_TOOLTIP = (
-  <div>
-    <Row><h3 style={{color: 'white'}}>Cluster modes</h3></Row>
-    <ul>
-      <li><b>Single node</b>: single node will be launched</li>
-      <li><b>Cluster</b>: a cluster with fixed child nodes will be launched</li>
-      <li><b>Auto-scaled cluster</b>: you can configure default and maximum child nodes count</li>
-    </ul>
-  </div>
-);
-
-const ENABLE_GRID_ENGINE_TOOLTIP = 'Enable grid engine';
-const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = undefined;
-const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = undefined;
+const CLUSTER_MODES_TOOLTIP = 'Cluster configuration allows you specify number of compute nodes that will process a job.'
+                              'This is useful if a job is too heavy for a single node or it uses scheduling approach to process a series of tasks across nodes.'
+                              '- Single node: no cluster will be provisioned - this is a default run configuration'
+                              '- Cluster: a specified number of compute nodes will be created and interconnected via a shared filesystem (/common/) and SSH'
+                              '  Optionally, GridEngine can be configured for the cluster. See "Enable GridEngine" checkbox below'
+                              '- Autoscaling: allows to startup a small cluster (even a single/master node) and then scale it up/down according to the workload'
+                              '  This mode will always setup GridEngine, as it is used to control the current jobs queue';
+const ENABLE_GRID_ENGINE_TOOLTIP = 'Setting this checkbox will enable the GridEngine for the cluster, providing all the compatible command-line utilities,e.g.:'
+                                   'qsub, qstat, qhost, qconf, etc.'
+                                   'This checkbox is a convenience option for the "CP_CAP_SGE=true" parameter';
+const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = 'Defines maximum number of compute nodes, that can be created in the cluster (besides the master node and the "fixed" nodes, see "Default child nodes")'
+                                         'GridEngine queue will be checked for the entries in "wait" state and new compute nodes will be spawned to schedule the jobs'
+                                         'Once the autoscaled nodes are not needed - they will terminated';
+const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = 'Defines the number of compute nodes, that will be created initially.'
+                                                       'These nodes will not be scaled down, even if no workload is currently running.'
+                                                       'It can be considered a "fixed" part of the cluster.'
+                                                       'If not set - only a master node will be available at a startup time.';
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
