@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
 public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
@@ -60,6 +61,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
                 .saveAndCommitWithMessage("test: Prepare pipeline script")
                 .clickOnFile("config.json")
+                .sleep(1, SECONDS)
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName("default", profiles);
                     profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));
