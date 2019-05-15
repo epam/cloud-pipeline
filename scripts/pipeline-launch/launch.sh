@@ -1097,6 +1097,23 @@ echo
 
 
 
+######################################################
+echo Setup personal SSH keys
+echo "-"
+######################################################
+
+if [ "$OWNER" ]
+then
+      ssh_setup_personal_keys
+else
+      echo "Owner $OWNER account is not set, personal SSH keys will NOT be configured"
+fi
+
+echo "------"
+echo
+######################################################
+
+
 
 ######################################################
 echo Executing task
