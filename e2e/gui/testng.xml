@@ -369,4 +369,10 @@
             <class name="com.epam.pipeline.autotests.ToolsScanTest"/>
         </classes>
     </test>
+
+    <test name="GlobalSearchTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.GlobalSearchTest"/>
+        </classes>
+    </test>
 </suite>

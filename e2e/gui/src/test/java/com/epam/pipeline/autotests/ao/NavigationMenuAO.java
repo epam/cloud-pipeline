@@ -70,6 +70,12 @@ public class NavigationMenuAO {
         return new SettingsPageAO(new PipelinesLibraryAO());
     }
 
+    public GlobalSearchAO search() {
+        $(byId("navigation-button-search")).shouldBe(visible).click();
+        $(byClassName("earch__search-container")).waitUntil(visible, 5000);
+        return new GlobalSearchAO();
+    }
+
     public PipelineLibraryContentAO createPipeline(final Template template, final String name) {
         return new PipelinesLibraryAO()
                 .createPipeline(template, name)

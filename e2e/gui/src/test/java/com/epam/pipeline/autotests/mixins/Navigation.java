@@ -16,6 +16,8 @@
 package com.epam.pipeline.autotests.mixins;
 
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
+import com.epam.pipeline.autotests.ao.GlobalSearchAO;
+import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
@@ -34,6 +36,11 @@ public interface Navigation {
         click(pipelinesPageSelector);
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
+    }
+
+    default NavigationHomeAO home() {
+        $(byId("navigation-button-home")).shouldBe(visible).click();
+        return new NavigationHomeAO();
     }
 
     default PipelinesLibraryAO library() {
@@ -59,5 +66,9 @@ public interface Navigation {
         click(runsPageSelector);
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
+    }
+
+    default GlobalSearchAO search() {
+        return navigationMenu().search();
     }
 }
