@@ -94,16 +94,19 @@ export default class DockerImageInput extends React.Component {
             </div>
           }
           size="large"
-          disabled={this.props.disabled || this.props.registries.pending}
+          disabled={this.props.disabled || this.props.registries.pending || this.registries.length === 0}
           ref={this.refInput}
           onFocus={this.openBrowser}
           value={this.state.value} />
-        <DockerImageBrowser
-          registries={this.registries}
-          visible={this.state.browserVisible}
-          onCancel={this.closeBrowser}
-          onChange={this.selectDockerImage}
-          dockerImage={this.state.value} />
+        {
+          this.registries.length > 0 ?
+          <DockerImageBrowser
+            registries={this.registries}
+            visible={this.state.browserVisible}
+            onCancel={this.closeBrowser}
+            onChange={this.selectDockerImage}
+            dockerImage={this.state.value}/> : undefined
+        }
       </div>
     );
   }
