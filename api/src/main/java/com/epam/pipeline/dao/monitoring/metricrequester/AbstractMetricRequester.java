@@ -75,6 +75,18 @@ public abstract class AbstractMetricRequester implements MetricRequester {
         }
     }
 
+    public static MonitoringRequester getStatsRequester(final ELKUsageMetric metric, final RestHighLevelClient client) {
+        switch (metric) {
+            case CPU:
+                return new CPURequester(client);
+            case MEM:
+                return new MemoryRequester(client);
+            default:
+                throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
+
+        }
+    }
+
     public Map<String, Double> performRequest(final Collection<String> resourceIds,
                                               final LocalDateTime from, final LocalDateTime to) {
         return parseResponse(
