@@ -27,7 +27,7 @@ import MetadataDelete from '../../../models/metadata/MetadataDelete';
 import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageTagsUpdate';
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
-import {Alert, Button, Col, Icon, Input, message, Modal, Row} from 'antd';
+import {Alert, Button, Col, Icon, Input, message, Modal, Row, Tooltip} from 'antd';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel/SplitPanel';
 import localization from '../../../utils/localization';
@@ -76,6 +76,32 @@ const downloadUrlLoad = (params, dataStorageCache) => {
     );
   } else {
     return null;
+  }
+};
+
+const MetadataDisplayOptions = {
+  preview: {
+    maxLength: 100,
+    display: function (value) {
+      if (value && value.length > this.maxLength) {
+        return (
+          <Tooltip
+            overlayClassName="metadata-entry-tooltip-container"
+            mouseEnterDelay="1"
+            title={value}
+            placement="left">
+            <span>{value.substring(0, this.maxLength)}...</span>
+          </Tooltip>
+        );
+      }
+      return value;
+    }
+  },
+  edit: {
+    autosize: {
+      maxRows: 6,
+      minRows: undefined
+    }
   }
 };
 
@@ -592,7 +618,10 @@ export default class Metadata extends localization.LocalizedReactComponent {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
-            <Input {...inputOptions('value')} type="textarea" autosize={true} />
+            <Input
+              {...inputOptions('value')}
+              type="textarea"
+              autosize={MetadataDisplayOptions.edit.autosize} />
           </td>
         </tr>
       );
@@ -602,7 +631,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           <td
             id={`value-column-${metadataItem.key}`}
             colSpan={6} onClick={this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)}>
-            {metadataItem.value}
+            {MetadataDisplayOptions.preview.display(metadataItem.value)}
           </td>
         </tr>
       );
