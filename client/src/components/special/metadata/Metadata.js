@@ -27,7 +27,7 @@ import MetadataDelete from '../../../models/metadata/MetadataDelete';
 import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageTagsUpdate';
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
-import {Alert, Button, Col, Icon, Input, message, Modal, Row, Tooltip} from 'antd';
+import {Alert, Button, Col, Icon, Input, message, Modal, Row} from 'antd';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel/SplitPanel';
 import localization from '../../../utils/localization';
@@ -84,15 +84,7 @@ const MetadataDisplayOptions = {
     maxLength: 100,
     display: function (value) {
       if (value && value.length > this.maxLength) {
-        return (
-          <Tooltip
-            overlayClassName="metadata-entry-tooltip-container"
-            mouseEnterDelay="1"
-            title={value}
-            placement="left">
-            <span>{value.substring(0, this.maxLength)}...</span>
-          </Tooltip>
-        );
+        return `${value.substring(0, this.maxLength)}...`;
       }
       return value;
     }
