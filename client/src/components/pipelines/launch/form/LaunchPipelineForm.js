@@ -69,7 +69,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
-  getSystemParameterDisabledState
+  getSystemParameterDisabledState,
+  gridEngineEnabled
 } from './utilities/launch-cluster';
 import {names} from '../../../../models/utils/ContextualPreference';
 
@@ -179,6 +180,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     pipelineConfiguration: null,
     launchCluster: false,
     autoScaledCluster: false,
+    gridEngineEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
@@ -616,6 +618,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   resetState = (keepPipeline) => {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -627,6 +630,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         dockerImageBrowserVisible: false,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        gridEngineEnabled: gridEngineEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -669,6 +673,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         pipelineConfiguration: null,
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
+        gridEngineEnabled: gridEngineEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
           ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -787,6 +792,12 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           value: +this.state.maxNodesCount
         };
       }
+      if (this.state.launchCluster && this.state.gridEngineEnabled) {
+        payload[PARAMETERS][CP_CAP_SGE] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
@@ -893,6 +904,12 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         type: 'int',
         value: +this.state.maxNodesCount
       };
+    }
+    if (this.state.launchCluster && this.state.gridEngineEnabled) {
+      payload.params[CP_CAP_SGE] = {
+        type: 'boolean',
+        value: true
+      }
     }
     return payload;
   };
@@ -1019,9 +1036,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
 
   prepare = (updateFireCloud = false) => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledClusterEnabled: autoScaledCluster,
+      gridEngineEnabled: gridEngineEnabledValue,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters && this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
         ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -2562,10 +2581,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   };
 
   onChangeClusterConfiguration = (configuration) => {
-    const {launchCluster, autoScaledCluster, nodesCount, maxNodesCount} = configuration;
+    const {launchCluster, autoScaledCluster, nodesCount, maxNodesCount, gridEngineEnabled} = configuration;
     this.setState({
       launchCluster,
       autoScaledCluster,
+      gridEngineEnabled,
       nodesCount,
       maxNodesCount
     }, this.closeConfigureClusterDialog);
@@ -3590,6 +3610,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                         instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
                         launchCluster={this.state.launchCluster}
                         autoScaledCluster={this.state.autoScaledCluster}
+                        gridEngineEnabled={this.state.gridEngineEnabled}
                         nodesCount={this.state.nodesCount}
                         maxNodesCount={this.state.maxNodesCount || 1}
                         onClose={this.closeConfigureClusterDialog}
