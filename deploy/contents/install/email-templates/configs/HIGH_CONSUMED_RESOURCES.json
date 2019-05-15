@@ -4,5 +4,5 @@
     "enabled":true,
     "resendDelay": 1800,
     "threshold": -1,
-    "subject":"Job #$templateParameters[\"id\"] can be stopped due to high resource consuming"
+    "subject":"Job #$templateParameters[\"id\"] is under RAM/Disk pressure"
 }

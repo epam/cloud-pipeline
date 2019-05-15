@@ -860,6 +860,9 @@ function api_setup_base_preferences {
     api_set_preference "system.resource.monitoring.stats.retention.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD:-5}" "false"    # How often we drop elastic indices (default: each 5 days)
     api_set_preference "system.idle.action" "${CP_PREF_SYSTEM_IDLE_ACTION:-"NOTIFY"}" "false"                               # Which action to perform if a run is idle for system.max.idle.timeout.minutes + system.idle.action.timeout.minutes (default: notify only)
     api_set_preference "system.idle.cpu.threshold" "${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1}" "false"                        # %% of CPU utilization, which is considered idle (default: all runs with utilization below 1% are idle)
+    api_set_preference "system.memory.consume.threshold" "${CP_PREF_SYSTEM_MEMORY_CONSUME_THRESHOLD:-95}" "false"           # %% of memory utilization that is considered "HIGH" (default: runs with RAM utilization above 95% are under pressure)
+    api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
+    api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
 
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
