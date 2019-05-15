@@ -23,6 +23,7 @@ import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
+import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import moment from 'moment';
 
 export function canStopRun (run) {
@@ -52,6 +53,19 @@ export function stopRun (parent, callback) {
   };
 }
 
+export function terminateRun (parent, callback) {
+  if (!parent) {
+    console.warn('"terminateRun" function should be called with parent component passed to arguments:');
+    console.warn('"terminateRun(parent)"');
+    console.warn('Parent component should be marked with @runPipelineActions');
+    throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
+  }
+  const {localization, dockerRegistries} = parent.props;
+  return function (run) {
+    return terminateRunFn(run, callback, {localization, dockerRegistries});
+  };
+}
+
 async function stopPipeline (run) {
   const hide = message.loading('Terminating run...', 0);
   const request = new StopPipeline(run.id);
@@ -61,6 +75,14 @@ async function stopPipeline (run) {
       status: 'STOPPED'
     }
   );
+  hide();
+  return request.error;
+}
+
+async function terminatePipeline (run) {
+  const hide = message.loading('Terminating run...', 0);
+  const request = new TerminatePipeline(run.id);
+  await request.send({});
   hide();
   return request.error;
 }
@@ -129,13 +151,58 @@ function stopRunFn (run, callback, stores) {
   });
 }
 
+function terminateRunFn (run, callback, stores) {
+  let content;
+  const onOkClicked = async (close, resolve) => {
+    let validationResult = true;
+    if (content) {
+      validationResult = await content.validate();
+    }
+    if (validationResult) {
+      const error = await terminatePipeline(run);
+      if (error) {
+        message.error(error, 5);
+      }
+      close();
+      callback && callback();
+      resolve(!error);
+    }
+  };
+  return new Promise((resolve) => {
+    Modal.confirm({
+      title: `Terminate ${run.podId}?`,
+      width: '50%',
+      okText: 'TERMINATE',
+      okType: 'danger',
+      content: (
+        <Provider {...stores}>
+          <StopRunConfirmation
+            ref={(el) => {
+              content = el;
+            }}
+            runId={run.id}
+            dockerImage={run.dockerImage}
+            isTermination />
+        </Provider>
+      ),
+      onOk (close) {
+        onOkClicked(close, resolve);
+      },
+      onCancel () {
+        resolve();
+      }
+    });
+  });
+}
+
 @observer
 class StopRunConfirmation extends React.Component {
 
   static propTypes = {
     runId: PropTypes.number,
     canCommitRun: PropTypes.bool,
-    dockerImage: PropTypes.string
+    dockerImage: PropTypes.string,
+    isTermination: PropTypes.bool
   };
 
   state = {
@@ -200,7 +267,7 @@ class StopRunConfirmation extends React.Component {
           <Alert
             type="info"
             showIcon
-            message="Once a run is stopped - all local data will be deleted (that is not stored within shared data storages)" />
+            message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
           this.props.canCommitRun &&
