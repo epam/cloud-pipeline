@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
-import {Alert, Input, Menu, message, Popover, Row, Dropdown, Button, Icon, Col} from 'antd';
+import {Alert, Menu, message, Row, Dropdown, Button, Icon, Col} from 'antd';
 import {graphIsSupportedForLanguage} from './graph/visualization';
 import pipelines from '../../../models/pipelines/Pipelines';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -31,6 +31,7 @@ import AdaptedLink from '../../special/AdaptedLink';
 import EditPipelineForm from './forms/EditPipelineForm';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import GitRepositoryControl from '../../special/git-repository-control';
 import styles from './PipelineDetails.css';
 import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -193,8 +194,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             id="launch-pipeline-button"
             size="small"
             type="primary"
+            style={{lineHeight: 1}}
             onClick={() => this.runPipeline()}>
-            <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>RUN</span>
+            RUN
           </Button>
           <Dropdown overlay={configurationsMenu} placement="bottomRight">
             <Button size="small" id="run-dropdown-button" type="primary">
@@ -209,8 +211,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           id="launch-pipeline-button"
           size="small"
           type="primary"
+          style={{lineHeight: 1}}
           onClick={() => this.runPipeline()}>
-          <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>RUN</span>
+          RUN
         </Button>
       );
     }
@@ -229,14 +232,6 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
 
     const {router: {location}} = this.props;
     const activeTab = this.props.router.location.pathname.split('/').slice(3)[0];
-
-    const gitRepositoryPopoverContent = (
-      <Row className={browserStyles.gitRepositoryPopover}>
-        <Input
-          readOnly={true}
-          value={this.props.pipeline.value.repository} />
-      </Row>
-    );
 
     let displayGraph = false;
     if (!this.props.language.pending) {
@@ -268,20 +263,15 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             }
             <Button
               id="edit-pipeline-button"
-              onClick={this.toggleModal} size="small">
-              <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+              onClick={this.toggleModal}
+              style={{lineHeight: 1}}
+              size="small">
+              <Icon type="setting" />
             </Button>
-            <Popover
-              title={<b>Git repository</b>}
-              content={gitRepositoryPopoverContent}
-              trigger="click"
-              placement="bottomRight">
-              <Button id="pipeline-repository-button" size="small">
-                <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>
-                  GIT REPOSITORY
-                </span>
-              </Button>
-            </Popover>
+            <GitRepositoryControl
+              overlayClassName={browserStyles.gitRepositoryPopover}
+              https={this.props.pipeline.value.repository}
+              ssh={this.props.pipeline.value.repositorySsh} />
           </Col>
         </Row>
         <Row>
