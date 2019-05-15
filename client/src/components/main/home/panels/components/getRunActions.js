@@ -97,6 +97,12 @@ export default function (callbacks) {
             action: callbacks ? callbacks.resume : undefined
           });
         }
+        actions.push({
+          title: 'TERMINATE',
+          icon: 'close-circle-o',
+          style: {color: 'red'},
+          action: callbacks ? callbacks.terminate : undefined
+        });
         break;
       case 'PAUSING':
       case 'RESUMING':

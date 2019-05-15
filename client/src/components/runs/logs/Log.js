@@ -36,7 +36,12 @@ import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
-import {stopRun, canStopRun, runPipelineActions} from '../actions';
+import {
+  stopRun,
+  canStopRun,
+  runPipelineActions,
+  terminateRun
+} from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
@@ -137,6 +142,10 @@ export default class Logs extends localization.LocalizedReactComponent {
 
   stopPipeline = () => {
     return stopRun(this, () => { this.props.run.fetch(); })(this.props.run.value);
+  };
+
+  terminatePipeline = () => {
+    return terminateRun(this, () => { this.props.run.fetch(); })(this.props.run.value);
   };
 
   showPauseConfirmDialog = async () => {
@@ -1206,8 +1215,12 @@ export default class Logs extends localization.LocalizedReactComponent {
         </Collapse>;
       if (roleModel.executeAllowed(this.props.run.value)) {
         switch (status.toLowerCase()) {
-          case 'running':
           case 'paused':
+            if (roleModel.isOwner(this.props.run.value)) {
+              ActionButton = <a style={{color: 'red'}} onClick={() => this.terminatePipeline()}>TERMINATE</a>;
+            }
+            break;
+          case 'running':
           case 'pausing':
           case 'resuming':
             if (roleModel.isOwner(this.props.run.value) && canStopRun(this.props.run.value)) {

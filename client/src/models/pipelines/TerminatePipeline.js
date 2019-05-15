@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-export {canCommitRun, canStopRun, stopRun, terminateRun} from './stopRun';
-export {submitsRun, modifyPayloadForAllowedInstanceTypes, run, RunConfirmation} from './run';
-export {default as runPipelineActions} from './runPipelineActions';
+import RemotePost from '../basic/RemotePost';
+
+class TerminatePipeline extends RemotePost {
+  static auto = false;
+
+  constructor (runId) {
+    super();
+    this.url = `/run/${runId}/terminate`;
+  }
+}
+
+export default TerminatePipeline;
