@@ -114,6 +114,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
         search()
                 .search(title)
                 .enter()
+                .sleep(2, SECONDS)
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
                 .ensure(TITLE, hasText(title))
