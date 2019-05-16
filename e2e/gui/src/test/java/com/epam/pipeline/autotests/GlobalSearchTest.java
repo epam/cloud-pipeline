@@ -223,6 +223,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .search(innerFolder1.substring(0, innerFolder1.length()/2 - 1))
                 .enter()
                 .validateSearchResults(0, "")
+                .close()
                 .close();
     }
 
