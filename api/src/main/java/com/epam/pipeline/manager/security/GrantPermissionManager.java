@@ -110,8 +110,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -822,6 +824,23 @@ public class GrantPermissionManager {
      */
     public boolean hasPermissionToConfiguration(List<AbstractRunConfigurationEntry> entries, String permissionName) {
         return entries.stream().noneMatch(entry -> configurationProviderManager.hasNoPermission(entry, permissionName));
+    }
+
+    /**
+     * Checks if at least one group from input groups is registered and refer to some entity.
+     * @param groups the list of groups
+     * @return true if at least one such group found
+     */
+    public boolean isGroupRegistered(final List<String> groups) {
+        final Set<Long> sidIds = groups.stream()
+                .map(group ->  aclService.getSidId(group, false))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (CollectionUtils.isEmpty(sidIds)) {
+            return false;
+        }
+        final Integer entriesCount = aclService.loadEntriesBySidsCount(sidIds);
+        return entriesCount != null && entriesCount != 0;
     }
 
     private List<Sid> convertUserToSids(String user) {
