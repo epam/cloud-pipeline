@@ -363,6 +363,6 @@ public class Utils {
     }
 
     public static void click(final By selector) {
-        $(selector).shouldBe(visible).click();
+        actions().moveToElement($(selector)).click().build().perform();
     }
 }
