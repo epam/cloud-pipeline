@@ -15,10 +15,11 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import {computed, observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Alert, Checkbox, message, Modal, Row} from 'antd';
+import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -151,47 +152,117 @@ function stopRunFn (run, callback, stores) {
   });
 }
 
-function terminateRunFn (run, callback, stores) {
-  let content;
-  const onOkClicked = async (close, resolve) => {
-    let validationResult = true;
-    if (content) {
-      validationResult = await content.validate();
-    }
-    if (validationResult) {
-      const error = await terminatePipeline(run);
+@observer
+class TerminateRunDialog extends React.Component {
+  static propTypes = {
+    onInitialized: PropTypes.func
+  };
+  state = {
+    pending: false,
+    visible: false
+  };
+  @observable run;
+  @observable onClose;
+  @observable displayPromiseResolve;
+  onTerminateClicked = () => {
+    this.setState({
+      pending: true
+    }, async () => {
+      const error = await terminatePipeline(this.run);
       if (error) {
         message.error(error, 5);
       }
-      close();
-      callback && callback();
-      resolve(!error);
-    }
-  };
-  return new Promise((resolve) => {
-    Modal.confirm({
-      title: `Terminate ${run.podId}?`,
-      width: '50%',
-      okText: 'TERMINATE',
-      okType: 'danger',
-      content: (
-        <Provider {...stores}>
-          <StopRunConfirmation
-            ref={(el) => {
-              content = el;
-            }}
-            runId={run.id}
-            dockerImage={run.dockerImage}
-            isTermination />
-        </Provider>
-      ),
-      onOk (close) {
-        onOkClicked(close, resolve);
-      },
-      onCancel () {
-        resolve();
-      }
+      this.setState({
+        visible: false
+      }, () => {
+        this.displayPromiseResolve && this.displayPromiseResolve(!error);
+      });
     });
+  };
+  display = async (run) => {
+    this.run = run;
+    this.setState({
+      visible: true,
+      pending: false
+    });
+    return new Promise((resolve) => {
+      this.displayPromiseResolve = resolve;
+    });
+  };
+  hide = () => {
+    this.setState({
+      visible: false,
+      pending: false
+    }, () => {
+      this.displayPromiseResolve && this.displayPromiseResolve(true);
+    });
+  };
+  componentDidMount () {
+    this.props.onInitialized && this.props.onInitialized(this);
+  }
+  render () {
+    if (!this.run) {
+      return null;
+    }
+    return (
+      <Modal
+        footer={null}
+        closable={false}
+        title={null}
+        width="50%"
+        visible={this.state.visible}>
+        <div>
+          <Row style={{marginBottom: 10}} type="flex" align="middle">
+            <Icon
+              type="question-circle"
+              style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
+            <b style={{marginLeft: 10, fontSize: 14, color: 'rgba(0, 0, 0, 0.65)'}}>Terminate {this.run.podId}?</b>
+          </Row>
+          <Row type="flex" style={{marginBottom: 5, marginLeft: 55}}>
+            <Alert
+              type="info"
+              showIcon
+              message="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
+          </Row>
+          <Row type="flex" justify="end" style={{marginTop: 10}}>
+            <Button
+              disabled={this.state.pending}
+              onClick={this.hide}>
+              CANCEL
+            </Button>
+            <Button
+              disabled={this.state.pending}
+              type="danger"
+              style={{marginLeft: 10}}
+              onClick={this.onTerminateClicked}>
+              TERMINATE
+            </Button>
+          </Row>
+        </div>
+      </Modal>
+    );
+  }
+}
+
+let terminateRunDialogInstance;
+
+const initializeTerminateRunDialog = (dialog) => {
+  terminateRunDialogInstance = dialog;
+};
+
+const terminateRunDialogContainer = document.createElement('div');
+document.body.appendChild(terminateRunDialogContainer);
+
+ReactDOM.render(
+  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />,
+  terminateRunDialogContainer
+);
+
+function terminateRunFn (run, callback) {
+  return new Promise(async (resolve) => {
+    const success = await terminateRunDialogInstance.display(run);
+    callback && callback();
+    resolve(success);
   });
 }
 
