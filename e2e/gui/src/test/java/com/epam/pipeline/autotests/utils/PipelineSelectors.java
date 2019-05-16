@@ -43,6 +43,7 @@ public interface PipelineSelectors {
     By attributesMenu = visible(byClassName("ant-dropdown-menu"));
     By showAttributes = confine(byText("Attributes"), attributesMenu,"show attributes");
     By hideAttributes = confine(byText("Hide attributes"), attributesMenu, "hide attributes");
+    By showIssues = confine(byText("Issue"), attributesMenu,"show issues");
 
     /**
      * Returns {@link By} qualifier of a button with text (case-sensitive full match).

@@ -39,6 +39,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.attributesMenu
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.displayAttributes;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.showAttributes;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.showIssues;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.tagName;
 
@@ -87,6 +88,17 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
                 page -> resetMouse()
         );
         return new MetadataSectionAO(this);
+    }
+
+    public IssueSectionAO showIssues() {
+        final SelenideElement displayButton = $(displayAttributes);
+        displayButton.shouldBe(visible).hover();
+        $(attributesMenu).should(appear);
+        performIf(showIssues, visible,
+                page -> click(showIssues),
+                page -> resetMouse()
+        );
+        return new IssueSectionAO(this);
     }
 
     public LibraryFolderAO assertPipelineIsNotEditable(String pipelineName) {

@@ -168,7 +168,6 @@ public enum Primitive {
     REGISTRIES_LIST,
     GROUPS_LIST,
     SETTINGS,
-    METADATA,
     REGISTRY_SETTINGS,
     GROUP_SETTINGS,
     CREATE_REGISTRY,
@@ -234,5 +233,17 @@ public enum Primitive {
     ESTIMATED_PRICE,
     INFORMATION_ICON,
     PRICE_TABLE,
-    ARROW
+    ARROW,
+    PIPELINES,
+    RUNS,
+    TOOLS,
+    DATA,
+    ISSUES,
+    QUESTION_MARK,
+    SEARCH_RESULT,
+    NEW_ISSUE,
+    WRITE_TAB,
+    PREVIEW_TAB,
+    PREVIEW,
+    HIGHLIGHTS
 }
