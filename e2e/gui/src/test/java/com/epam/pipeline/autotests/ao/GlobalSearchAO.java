@@ -10,6 +10,7 @@ import org.openqa.selenium.WebElement;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
@@ -60,16 +61,27 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         }
     };
 
+    public static By searchItem(final String item) {
+        return confine(byText(item), byId("search-results"),"search result item");
+    }
+
     public GlobalSearchAO search(final String query) {
+        clear(SEARCH);
         get(SEARCH).shouldBe(enabled).sendKeys(Keys.chord(Keys.CONTROL), query);
-        enter();
         return this;
     }
 
     public SearchResultItemPreviewAO openSearchResultItem(final String item) {
-        final By searchItem = confine(byText(item), byId("search-results"),"search result item");
+        final By searchItem = searchItem(item);
         hover(searchItem);
         return new SearchResultItemPreviewAO(this);
+    }
+
+    public <TARGET extends AccessObject<TARGET>> TARGET moveToSearchResultItem(final String name,
+                                                                               final Supplier<TARGET> targetSupplier) {
+        final By searchItem = searchItem(name);
+        click(searchItem);
+        return targetSupplier.get();
     }
 
     public GlobalSearchAO validateSearchResults(final int count, final String itemName) {
@@ -106,23 +118,20 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
         return elements;
     }
 
-    public static class SearchResultItemPreviewAO implements AccessObject<SearchResultItemPreviewAO> {
-        private final GlobalSearchAO parentAO;
-
+    public static class SearchResultItemPreviewAO extends PopupAO<SearchResultItemPreviewAO, GlobalSearchAO> {
         public SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
-            this.parentAO = parentAO;
+            super(parentAO);
         }
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(TITLE, context().find(byClassName("review__title"))),
                 entry(DESCRIPTION, context().find(byClassName("review__description"))),
                 entry(HIGHLIGHTS, context().find(byClassName("review__highlights"))),
-                entry(PREVIEW, context().find(byClassName("review__md-preview")))
+                entry(PREVIEW, context().find(byClassName("review__content-preview")))
         );
 
         public GlobalSearchAO close() {
-            parentAO.close();
-            return parentAO;
+            return parent().close();
         }
 
         @Override

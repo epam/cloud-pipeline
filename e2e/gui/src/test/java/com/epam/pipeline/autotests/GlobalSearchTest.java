@@ -1,6 +1,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
+import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -88,6 +89,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     public void searchResultCancel() {
         search()
                 .search(folder)
+                .enter()
                 .sleep(3, SECONDS)
                 .ensure(FOLDERS, enabled)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
@@ -108,6 +110,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
         home().sleep(2, MINUTES);
         search()
                 .search(title)
+                .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
                 .ensure(TITLE, hasText(title))
@@ -119,6 +122,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
         search()
                 .click(ISSUES)
                 .search(description)
+                .enter()
                 .hover(SEARCH_RESULT)
                 .openSearchResultItem(title)
                 .ensure(TITLE, hasText(title))
@@ -138,6 +142,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
         search()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
+                .enter()
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
                 .ensureAll(enabled, FOLDERS, ISSUES)
                 .ensure(FOLDERS, hasText("1 FOLDER"))
@@ -155,6 +160,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .ensure(ISSUES, GlobalSearchAO.selected)
                 .search(title)
+                .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
                 .ensure(ISSUES, enabled)
                 .ensure(ISSUES, hasText("1 ISSUE"))
@@ -164,6 +170,39 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
                 .ensureAll(enabled, FOLDERS, ISSUES)
                 .validateSearchResults(2, title);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2654"})
+    public void folderSearch() {
+        search()
+                .search(innerFolder1)
+                .sleep(3, SECONDS)
+                .validateSearchResults(1, innerFolder1)
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(innerFolder1)
+                .ensure(TITLE, hasText(innerFolder1))
+                .ensure(HIGHLIGHTS, hasText("Found in name"))
+                .ensure(PREVIEW, hasText(innerFolder2))
+                .parent()
+                .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
+                .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2655"})
+    public void folderSearchByEnterKey() {
+        search()
+                .search(innerFolder1)
+                .enter()
+                .hover(SEARCH_RESULT)
+                .openSearchResultItem(innerFolder1)
+                .ensure(TITLE, hasText(innerFolder1))
+                .ensure(HIGHLIGHTS, hasText("Found in name"))
+                .ensure(PREVIEW, hasText(innerFolder2))
+                .parent()
+                .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
+                .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
     }
 
     @Test(priority = 100)
