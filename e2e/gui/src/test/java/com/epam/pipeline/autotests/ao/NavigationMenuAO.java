@@ -71,7 +71,8 @@ public class NavigationMenuAO {
     }
 
     public GlobalSearchAO search() {
-        $(byId("navigation-button-search")).shouldBe(visible).click();
+        click(byId("navigation-button-search"));
+        sleep(1, SECONDS);
         $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();
     }

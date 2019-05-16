@@ -39,7 +39,9 @@ public interface Navigation {
     }
 
     default NavigationHomeAO home() {
-        $(byId("navigation-button-home")).shouldBe(visible).click();
+        final By homePageSelector = byId("navigation-button-home");
+        click(homePageSelector);
+        $(homePageSelector).shouldBe(selectedMenuItem);
         return new NavigationHomeAO();
     }
 
