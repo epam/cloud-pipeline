@@ -1267,11 +1267,12 @@ export default class Logs extends localization.LocalizedReactComponent {
           (commitStatus || '').toLowerCase() !== 'committing' &&
           roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': previousStatus = <span>COMMIT FAILURE</span>; break;
-            case 'success': previousStatus = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
@@ -1280,11 +1281,12 @@ export default class Logs extends localization.LocalizedReactComponent {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
         } else {
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': CommitStatusButton = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': CommitStatusButton = <span>COMMIT FAILURE</span>; break;
-            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': CommitStatusButton = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
         }
