@@ -75,6 +75,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .close();
         home()
                 .ensure(NavigationHomeAO.panel("Active runs"), visible);
+        sleep(2, SECONDS);
         search()
                 .hover(QUESTION_MARK)
                 .sleep(1, SECONDS)
@@ -203,6 +204,25 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .parent()
                 .moveToSearchResultItem(innerFolder1, () -> new LibraryFolderAO(innerFolder1))
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
+    }
+
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2656"})
+    public void negativeFolderSearch() {
+        search()
+                .click(PIPELINES)
+                .search(innerFolder1)
+                .enter()
+                .validateSearchResults(0, "")
+                .close()
+                .search(innerFolder1.toLowerCase())
+                .enter()
+                .validateSearchResults(0, "")
+                .close()
+                .search(innerFolder1.substring(0, innerFolder1.length()/2 - 1))
+                .enter()
+                .validateSearchResults(0, "")
+                .close();
     }
 
     @Test(priority = 100)
