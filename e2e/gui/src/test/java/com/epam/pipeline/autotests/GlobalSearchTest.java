@@ -110,7 +110,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
-        home().sleep(3, MINUTES);
+        home().sleep(5, MINUTES);
         search()
                 .search(title)
                 .enter()
