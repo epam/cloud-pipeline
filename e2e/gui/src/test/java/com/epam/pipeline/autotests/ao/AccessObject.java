@@ -89,7 +89,8 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE click(Primitive primitive) {
-        get(primitive).shouldBe(visible, enabled).click();
+        get(primitive).shouldBe(visible, enabled);
+        Selenide.executeJavaScript("arguments[0].click();", get(primitive));
         return (ELEMENT_TYPE) this;
     }
 
