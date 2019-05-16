@@ -1,9 +1,11 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import org.openqa.selenium.Keys;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -38,7 +40,7 @@ public class IssueSectionAO extends PopupAO<IssueSectionAO, AccessObject> {
     }
 
     public IssueSectionAO addNewIssue(final String title, final String description) {
-        setValue(TITLE, title);
+        get(TITLE).shouldBe(enabled).sendKeys(Keys.chord(Keys.CONTROL), title);
         click(WRITE_TAB);
         click(DESCRIPTION);
         setValue(DESCRIPTION, description);
