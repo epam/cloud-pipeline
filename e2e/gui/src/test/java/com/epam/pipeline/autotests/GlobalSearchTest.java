@@ -76,6 +76,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .close();
         home()
                 .ensure(NavigationHomeAO.panel("Active runs"), visible);
+        sleep(2, SECONDS);
         search()
                 .hover(QUESTION_MARK)
                 .sleep(1, SECONDS)
