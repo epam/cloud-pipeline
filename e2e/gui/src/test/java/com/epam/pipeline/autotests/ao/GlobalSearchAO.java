@@ -123,16 +123,16 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     }
 
     public static class SearchResultItemPreviewAO extends PopupAO<SearchResultItemPreviewAO, GlobalSearchAO> {
-        public SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
-            super(parentAO);
-        }
-
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(TITLE, context().find(byClassName("review__title"))),
                 entry(DESCRIPTION, context().find(byClassName("review__description"))),
                 entry(HIGHLIGHTS, context().find(byClassName("review__highlights"))),
                 entry(PREVIEW, context().find(byClassName("review__content-preview")))
         );
+
+        SearchResultItemPreviewAO(final GlobalSearchAO parentAO) {
+            super(parentAO);
+        }
 
         public GlobalSearchAO close() {
             return parent().close();
