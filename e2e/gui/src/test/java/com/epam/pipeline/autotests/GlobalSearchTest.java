@@ -143,7 +143,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
         library()
                 .cd(folder)
                 .createFolder(title);
-        home().sleep(2, MINUTES);
+        home().sleep(5, MINUTES);
         search()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
