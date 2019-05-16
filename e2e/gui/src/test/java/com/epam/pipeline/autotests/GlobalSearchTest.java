@@ -98,7 +98,8 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .hover(SEARCH_RESULT)
                 .close()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
-                .ensure(SEARCH, empty);
+                .ensure(SEARCH, empty)
+                .close();
     }
 
     @Test
