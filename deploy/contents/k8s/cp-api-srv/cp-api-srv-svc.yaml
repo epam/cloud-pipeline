@@ -8,8 +8,8 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: 31080
-    port: 31080
+    nodePort: ${CP_API_SRV_INTERNAL_PORT}
+    port: ${CP_API_SRV_INTERNAL_PORT}
     targetPort: 8080
     name: cp-api-srv-port-https
   type: NodePort

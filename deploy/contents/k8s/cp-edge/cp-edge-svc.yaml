@@ -9,13 +9,13 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: 31081
-    port: 31081
+    nodePort: ${CP_EDGE_INTERNAL_PORT}
+    port: ${CP_EDGE_INTERNAL_PORT}
     targetPort: 8080
     name: cp-edge-port-https
   - protocol: TCP
-    nodePort: 31091
-    port: 31091
+    nodePort: ${CP_EDGE_CONNECT_INTERNAL_PORT}
+    port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
     targetPort: 8081
     name: cp-edge-port-connect
   type: NodePort

@@ -21,7 +21,7 @@ spec:
           image: lifescience/cloud-pipeline:git-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
-            - containerPort: 30080
+            - containerPort: ${CP_GITLAB_INTERNAL_PORT}
           envFrom:
           - configMapRef:
               name: cp-config-global
@@ -42,7 +42,7 @@ spec:
           # readinessProbe:
           #   httpGet:
           #     path: /
-          #     port: 30080
+          #     port: ${CP_GITLAB_INTERNAL_PORT}
           #   initialDelaySeconds: 5
           #   periodSeconds: 10
       volumes:

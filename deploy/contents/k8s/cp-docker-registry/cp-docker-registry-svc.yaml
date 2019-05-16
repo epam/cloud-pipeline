@@ -8,8 +8,8 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: 31443
-    port: 31443
+    nodePort: ${CP_DOCKER_INTERNAL_PORT}
+    port: ${CP_DOCKER_INTERNAL_PORT}
     targetPort: 443
     name: cp-docker-registry-port-https
   type: NodePort

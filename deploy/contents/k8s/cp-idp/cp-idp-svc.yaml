@@ -8,8 +8,8 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: 32080
-    port: 32080
+    nodePort: ${CP_IDP_INTERNAL_PORT}
+    port: ${CP_IDP_INTERNAL_PORT}
     targetPort: 8080
     name: cp-idp-port-https
   type: NodePort
