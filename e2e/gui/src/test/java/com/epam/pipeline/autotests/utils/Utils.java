@@ -363,6 +363,6 @@ public class Utils {
     }
 
     public static void click(final By selector) {
-        actions().moveToElement($(selector)).click().build().perform();
+        Selenide.executeJavaScript("arguments[0].click();", $(selector));
     }
 }

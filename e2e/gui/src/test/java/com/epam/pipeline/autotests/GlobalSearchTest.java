@@ -230,7 +230,25 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     @Test(priority = 100)
     @TestCase(value = {"EPMCMBIBPC-2676"})
     public void searchAfterDeleting() {
-
+        library()
+                .removeNotEmptyFolder(folder)
+                .sleep(5, MINUTES);
+        home();
+        search()
+                .search(pipeline)
+                .enter()
+                .validateSearchResults(0, "")
+                .search(configuration)
+                .enter()
+                .validateSearchResults(0, "")
+                .search(innerFolder1)
+                .enter()
+                .validateSearchResults(0, "")
+                .search(title)
+                .enter()
+                .validateSearchResults(0, "")
+                .close()
+                .close();
     }
 
     private GlobalSearchAO search() {
