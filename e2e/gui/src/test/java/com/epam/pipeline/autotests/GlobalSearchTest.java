@@ -3,6 +3,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.GlobalSearchAO;
 import com.epam.pipeline.autotests.ao.LibraryFolderAO;
 import com.epam.pipeline.autotests.ao.NavigationHomeAO;
+import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -205,9 +206,32 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .ensureAll(visible, SETTINGS, UPLOAD_METADATA);
     }
 
+    @Test
+    @TestCase(value = {"EPMCMBIBPC-2656"})
+    public void negativeFolderSearch() {
+        search()
+                .click(PIPELINES)
+                .search(innerFolder1)
+                .enter()
+                .validateSearchResults(0, "")
+                .close()
+                .search(innerFolder1.toLowerCase())
+                .enter()
+                .validateSearchResults(0, "")
+                .close()
+                .search(innerFolder1.substring(0, innerFolder1.length()/2 - 1))
+                .enter()
+                .validateSearchResults(0, "")
+                .close();
+    }
+
     @Test(priority = 100)
     @TestCase(value = {"EPMCMBIBPC-2676"})
     public void searchAfterDeleting() {
 
+    }
+
+    private GlobalSearchAO search() {
+        return new NavigationMenuAO().search();
     }
 }

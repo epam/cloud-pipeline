@@ -85,6 +85,10 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     }
 
     public GlobalSearchAO validateSearchResults(final int count, final String itemName) {
+        if (count <= 0) {
+            messageShouldAppear("Nothing found");
+            return this;
+        }
         get(SEARCH_RESULT)
                 .findAll(".earch__search-result-item")
                 .shouldHaveSize(count)
