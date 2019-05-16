@@ -132,6 +132,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .ensure(DESCRIPTION, matchText("Opened .* by You"))
                 .ensure(HIGHLIGHTS, hasText("Found in text"))
                 .ensure(PREVIEW, hasText(description))
+                .close()
                 .close();
     }
 
@@ -172,7 +173,9 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .click(ISSUES)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
                 .ensureAll(enabled, FOLDERS, ISSUES)
-                .validateSearchResults(2, title);
+                .validateSearchResults(2, title)
+                .close()
+                .close();
     }
 
     @Test
