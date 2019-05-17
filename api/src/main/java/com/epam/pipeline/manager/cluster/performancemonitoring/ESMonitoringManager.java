@@ -64,6 +64,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
             .appendFraction(ChronoField.NANO_OF_SECOND, 3, 3, false).appendLiteral("Z")
             .toFormatter();
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
+    private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
 
     private final RestHighLevelClient client;
@@ -114,7 +115,16 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     private Duration interval(final LocalDateTime start, final LocalDateTime end) {
-        return Duration.between(start, end).dividedBy(Math.max(1, numberOfIntervals() - 1));
+        final Duration requested = Duration.between(start, end).dividedBy(Math.max(1, numberOfIntervals() - 1));
+        final Duration minimal = minimalDuration();
+        return requested.compareTo(minimal) < 0 ? minimal : requested;
+    }
+
+    private Duration minimalDuration() {
+        return Optional.of(SystemPreferences.CLUSTER_MONITORING_ELASTIC_MINIMAL_INTERVAL)
+                .map(preferenceManager::getPreference)
+                .map(Duration::ofMillis)
+                .orElse(FALLBACK_MINIMAL_INTERVAL);
     }
 
     private int numberOfIntervals() {

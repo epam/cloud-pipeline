@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -299,6 +300,9 @@ public class SystemPreferences {
             new IntPreference("cluster.docker.extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_MONITORING_ELASTIC_INTERVALS_NUMBER = new IntPreference(
             "cluster.monitoring.elastic.intervals.number", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final LongPreference CLUSTER_MONITORING_ELASTIC_MINIMAL_INTERVAL = new LongPreference(
+            "cluster.monitoring.elastic.minimal.interval", TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES),
+            CLUSTER_GROUP, isGreaterThan(0L));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
