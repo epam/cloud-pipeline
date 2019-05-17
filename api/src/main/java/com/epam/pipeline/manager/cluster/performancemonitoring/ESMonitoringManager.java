@@ -23,30 +23,80 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 public class ESMonitoringManager implements UsageMonitoringManager {
 
+    private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
+            ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
     private final RestHighLevelClient client;
+    private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .toFormatter();
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName) {
-        final long timeRange = 20;
-        final LocalDateTime now = DateUtils.nowUTC();
-        final LocalDateTime end = now;
-        final LocalDateTime start = end.minusMinutes(timeRange);
-        return Stream.of(ELKUsageMetric.CPU, ELKUsageMetric.MEM, ELKUsageMetric.FS, ELKUsageMetric.NETWORK)
+        final Duration interval = Duration.ofMinutes(5);
+        final Duration monitoringPeriod = Duration.ofMinutes(20);
+        final LocalDateTime end = DateUtils.nowUTC();
+        final LocalDateTime start = end.minus(monitoringPeriod);
+        return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end))
                 .flatMap(List::stream)
+                .collect(Collectors.groupingBy(MonitoringStats::getStartTime, Collectors.reducing(this::mergeStats)))
+                .values()
+                .stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .peek(stats -> {
+                    final LocalDateTime intervalStart = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
+                    final LocalDateTime intervalEnd = intervalStart.plus(interval);
+                    stats.setEndTime(FORMATTER.format(intervalEnd));
+                    stats.setMillsInPeriod(interval.toMillis());
+                })
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime))
                 .collect(Collectors.toList());
+    }
+
+    private MonitoringStats mergeStats(final MonitoringStats first, final MonitoringStats second) {
+        final Optional<MonitoringStats> original = Optional.of(first);
+        first.setCpuUsage(original.map(MonitoringStats::getCpuUsage).orElseGet(second::getCpuUsage));
+        first.setMemoryUsage(original.map(MonitoringStats::getMemoryUsage).orElseGet(second::getMemoryUsage));
+        first.setNetworkUsage(original.map(MonitoringStats::getNetworkUsage).orElseGet(second::getNetworkUsage));
+        if (first.getDisksUsage() != null && second.getDisksUsage() != null) {
+            if (first.getDisksUsage().getStatsByDevices() != null
+                    && second.getDisksUsage().getStatsByDevices() != null) {
+                first.getDisksUsage().getStatsByDevices().putAll(second.getDisksUsage().getStatsByDevices());
+            } else {
+                first.getDisksUsage().setStatsByDevices(Optional.ofNullable(first.getDisksUsage().getStatsByDevices())
+                        .orElse(second.getDisksUsage().getStatsByDevices()));
+            }
+            first.getDisksUsage().getStatsByDevices().putAll(second.getDisksUsage().getStatsByDevices());
+        } else {
+            first.setDisksUsage(original.map(MonitoringStats::getDisksUsage).orElseGet(second::getDisksUsage));
+        }
+        if (first.getContainerSpec() != null && second.getContainerSpec() != null) {
+            final long maxMemory = Math.max(first.getContainerSpec().getMaxMemory(),
+                    second.getContainerSpec().getMaxMemory());
+            final int numberOfCores = Math.max(first.getContainerSpec().getNumberOfCores(),
+                    second.getContainerSpec().getNumberOfCores());
+            first.getContainerSpec().setMaxMemory(maxMemory);
+            first.getContainerSpec().setNumberOfCores(numberOfCores);
+        } else {
+            first.setContainerSpec(original.map(MonitoringStats::getContainerSpec).orElseGet(second::getContainerSpec));
+        }
+        return first;
     }
 
     @Override
