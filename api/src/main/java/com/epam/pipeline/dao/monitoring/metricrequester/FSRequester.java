@@ -174,6 +174,7 @@ public class FSRequester extends AbstractMetricRequester {
                         .subAggregation(AggregationBuilders.dateHistogram(DISKS_HISTOGRAM)
                                 .field(metric().getTimestamp())
                                 .interval(interval.toMillis())
+                                .minDocCount(1L)
                                 .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
                                         .field(field(USAGE)))
                                 .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)

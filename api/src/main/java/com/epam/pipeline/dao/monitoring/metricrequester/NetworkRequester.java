@@ -84,6 +84,7 @@ public class NetworkRequester extends AbstractMetricRequester {
                 .aggregation(AggregationBuilders.dateHistogram(NETWORK_HISTOGRAM)
                         .field(metric().getTimestamp())
                         .interval(interval.toMillis())
+                        .minDocCount(1L)
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + RX_RATE)
                                 .field(field(RX_RATE)))
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + TX_RATE)

@@ -96,6 +96,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                 .aggregation(AggregationBuilders.dateHistogram(MEMORY_HISTOGRAM)
                         .field(metric().getTimestamp())
                         .interval(interval.toMillis())
+                        .minDocCount(1L)
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + MEMORY_UTILIZATION)
                                 .field(field(USAGE)))
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + MEMORY_CAPACITY)

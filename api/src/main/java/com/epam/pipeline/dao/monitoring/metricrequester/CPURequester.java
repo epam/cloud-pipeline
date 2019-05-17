@@ -96,6 +96,7 @@ public class CPURequester extends AbstractMetricRequester {
                 .aggregation(AggregationBuilders.dateHistogram(CPU_HISTOGRAM)
                         .field(metric().getTimestamp())
                         .interval(interval.toMillis())
+                        .minDocCount(1L)
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_UTILIZATION)
                                 .field(field(NODE_UTILIZATION)))
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_CAPACITY)
