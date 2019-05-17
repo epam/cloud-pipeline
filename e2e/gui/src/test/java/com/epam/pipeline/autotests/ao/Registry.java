@@ -57,7 +57,7 @@ public class Registry implements AccessObject<Registry> {
     }
 
     private void changeGroupTo(final String groupName) {
-        resetMouse();
+        sleep(1, SECONDS);
         if (!get(GROUP).getText().equals(groupName)) {
             click(GROUP);
             get(GROUPS_LIST).find(button(groupName)).shouldBe(visible).click();
