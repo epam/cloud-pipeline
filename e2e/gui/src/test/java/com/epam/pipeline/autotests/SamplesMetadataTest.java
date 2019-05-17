@@ -221,6 +221,7 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes3repset))
                 .uploadMetadata(getFile(wes11repsamples))
                 .uploadMetadata(getFile(wes11repset))
+                .sleep(2, SECONDS)
                 .ensure(byText(metadataFolder), visible);
     }
 
