@@ -16,8 +16,12 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import com.epam.pipeline.entity.cluster.DockerMount;
+
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -64,6 +68,21 @@ public final class KubernetesConstants {
     static {
         NODE_OUT_OF_ORDER_REASONS.add("KubeletOutOfDisk");
         NODE_OUT_OF_ORDER_REASONS.add("NodeStatusUnknown");
+    }
+
+    public static final List<DockerMount> DEFAULT_DOCKER_IN_DOCKER_MOUNTS = new ArrayList<>();
+
+    static {
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
+                .name("docker-sock")
+                .hostPath("/var/run/docker.sock")
+                .mountPath("/var/run/docker.sock")
+                .build());
+        DEFAULT_DOCKER_IN_DOCKER_MOUNTS.add(DockerMount.builder()
+                .name("docker-bin")
+                .hostPath("/bin/docker")
+                .mountPath("/usr/bin/docker")
+                .build());
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
