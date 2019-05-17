@@ -289,7 +289,7 @@ public class SystemPreferences {
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
     public static final BooleanPreference DOCKER_IN_DOCKER_ENABLED = new BooleanPreference(
-            "launch.dind.enable", true, LAUNCH_GROUP, pass);
+            "launch.dind.enable", false, LAUNCH_GROUP, pass);
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", KubernetesConstants.DEFAULT_DOCKER_IN_DOCKER_MOUNTS,
             new TypeReference<List<DockerMount>>() {},

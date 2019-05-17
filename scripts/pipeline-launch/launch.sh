@@ -459,14 +459,7 @@ if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
-    _DEPS_INSTALL_LIST="python git curl wget fuse python-docutils tzdata acl"
-
-    # If DinD is enable - add it's dependencies to the packages list being installed
-    if [ "$CP_CAP_DIND" == "true" ]; then
-      _DEPS_INSTALL_LIST="${_DEPS_INSTALL_LIST} ltdl"
-    fi
-
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "$_DEPS_INSTALL_LIST"
+    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
     eval "$_DEPS_INSTALL_COMMAND"
 fi
 
@@ -484,6 +477,8 @@ echo "------"
 echo
 
 ######################################################
+
+
 
 ######################################################
 echo "Init default variables if they are not set explicitly"
@@ -1127,6 +1122,35 @@ fi
 
 echo "------"
 echo
+######################################################
+
+
+
+######################################################
+# Setup DinD
+######################################################
+
+echo "Setup DinD"
+echo "-"
+
+ # If DinD is enabled - setup dependencies and configure docker
+if [ "$CP_CAP_DIND" == "true" ] && check_installed "docker"; then
+    _DIND_DEPS_INSTALL_COMMAND=
+    get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
+    eval "$_DIND_DEPS_INSTALL_COMMAND"
+    
+    # Credentials will be configure only for the root user
+    _DIND_REGISTRY_HOST="$(echo "$docker_image" | cut -d "/" -f1)"
+    docker login "$_DIND_REGISTRY_HOST" -u "$OWNER" --password-stdin <<< "$API_TOKEN" > /dev/null 2>&1   
+    if [ $? -ne 0 ]; then
+      echo "Unable to configure docker credentials for $_DIND_REGISTRY_HOST registry and $OWNER user"
+    else
+      echo "DinD is configured"
+    fi
+else
+    echo "DinD configuration is not requested"
+fi
+
 ######################################################
 
 
