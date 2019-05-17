@@ -170,6 +170,9 @@ public class PipelineLauncher {
         systemParamsWithValue.put(SystemParams.CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         systemParamsWithValue.put(SystemParams.SSH_PASS, run.getSshPassword());
         putIfStringValuePresent(systemParamsWithValue, SystemParams.RUN_CONFIG_NAME, run.getConfigName());
+        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED))) {
+            systemParamsWithValue.put(SystemParams.ENABLE_DOCKER_IN_DOCKER, "true");
+        }
         if (enableAutoscaling) {
             systemParamsWithValue.put(SystemParams.AUTOSCALING_ENABLED, "");
         }

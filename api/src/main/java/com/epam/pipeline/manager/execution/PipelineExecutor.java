@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.execution;
 
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -45,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +56,9 @@ import java.util.Optional;
 
 @Service
 public class PipelineExecutor {
+    public static final String REF_DATA_MOUNT = "ref-data";
+    public static final String RUNS_DATA_MOUNT = "runs-data";
+    public static final String EMPTY_MOUNT = "dshm";
     @Autowired
     private PreferenceManager preferenceManager;
 
@@ -125,13 +130,11 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        spec.setVolumes(Arrays.asList(
-                createVolume("ref-data", "/ebs/reference"),
-                createVolume("runs-data", "/ebs/runs"),
-                createEmptyVolume("dshm", "Memory")));
+        spec.setVolumes(getVolumes());
         spec.setContainers(Collections.singletonList(getContainer(envVars, dockerImage, command, pullImage)));
         return spec;
     }
+
 
     private Container getContainer(List<EnvVar> envVars, String dockerImage, String command, boolean pullImage) {
         Container container = new Container();
@@ -147,11 +150,36 @@ public class PipelineExecutor {
         }
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(pullImage ? "Always" : "Never");
-        container.setVolumeMounts(Arrays.asList(
-                getVolumeMount("ref-data", "/common"),
-                getVolumeMount("runs-data", "/runs"),
-                getVolumeMount("dshm", "/dev/shm")));
+        container.setVolumeMounts(getMounts());
         return container;
+    }
+
+    private List<Volume> getVolumes() {
+        final List<Volume> volumes = new ArrayList<>();
+        volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
+        volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
+        volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
+        final List<DockerMount> dockerMounts = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
+        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+                CollectionUtils.isNotEmpty(dockerMounts)) {
+            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+        }
+        return volumes;
+    }
+
+    private List<VolumeMount> getMounts() {
+        final List<VolumeMount> mounts = new ArrayList<>();
+        mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
+        mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
+        mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
+        final List<DockerMount> dockerMounts = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
+        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+                CollectionUtils.isNotEmpty(dockerMounts)) {
+            dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+        }
+        return mounts;
     }
 
     private VolumeMount getVolumeMount(String name, String path) {
