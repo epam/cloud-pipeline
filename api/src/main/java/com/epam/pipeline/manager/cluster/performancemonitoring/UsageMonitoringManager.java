@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 
+import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -31,6 +33,20 @@ public interface UsageMonitoringManager {
      * @param nodeName Cluster node name.
      * @return List of monitoring stats.
      */
-    List<MonitoringStats> getStatsForNode(String nodeName);
+    default List<MonitoringStats> getStatsForNode(String nodeName) {
+        return getStatsForNode(nodeName, null, null);
+    }
+
+    /**
+     * Retrieves monitoring stats for node.
+     *
+     * @param nodeName Cluster node name.
+     * @param from Minimal date for collecting stats.
+     * @param to Maximal date for collecting stats.
+     * @return List of monitoring stats.
+     */
+    List<MonitoringStats> getStatsForNode(String nodeName,
+                                          @Nullable LocalDateTime from,
+                                          @Nullable LocalDateTime to);
 
 }

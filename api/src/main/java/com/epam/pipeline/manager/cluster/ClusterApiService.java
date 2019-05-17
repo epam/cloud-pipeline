@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
@@ -90,8 +91,8 @@ public class ClusterApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
-    public List<MonitoringStats> getStatsForNode(String nodeName) {
-        return usageMonitoringManager.getStatsForNode(nodeName);
+    public List<MonitoringStats> getStatsForNode(String nodeName, final LocalDateTime from, final LocalDateTime to) {
+        return usageMonitoringManager.getStatsForNode(nodeName, from, to);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {

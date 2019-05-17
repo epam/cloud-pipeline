@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
@@ -27,6 +29,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -51,6 +54,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
             ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
+            // Example: 2019-05-17T10:24:23.033Z
             .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
             .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
             .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
@@ -65,11 +69,26 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final RestHighLevelClient client;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
+    private final MessageHelper messageHelper;
 
     @Override
-    public List<MonitoringStats> getStatsForNode(final String nodeName) {
-        final LocalDateTime end = DateUtils.nowUTC();
-        final LocalDateTime start = creationDate(nodeName);
+    public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to) {
+        final LocalDateTime start;
+        final LocalDateTime end;
+        if (from == null || to == null) {
+            start = creationDate(nodeName);
+            end = DateUtils.nowUTC();
+        } else {
+            start = from;
+            end = to;
+        }
+        return getStats(nodeName, start, end);
+    }
+
+    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
+        Assert.isTrue(start.isBefore(end), messageHelper.getMessage(
+                MessageConstants.ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL, start, end));
         final Duration interval = interval(start, end);
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))

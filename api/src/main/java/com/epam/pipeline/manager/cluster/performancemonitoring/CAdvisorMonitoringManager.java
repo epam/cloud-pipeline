@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class CAdvisorMonitoringManager implements UsageMonitoringManager {
@@ -116,10 +117,32 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     }
 
     @Override
-    public List<MonitoringStats> getStatsForNode(final String nodeName) {
+    public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to) {
+        if (from == null || to == null) {
+            return getStats(nodeName);
+        }
+        Assert.isTrue(from.isBefore(to), messageHelper.getMessage(
+                MessageConstants.ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL, from, to));
+        return getStats(nodeName, from, to);
+    }
+
+    public List<MonitoringStats> getStats(final String nodeName) {
         return getInternalip(nodeName)
                 .map(this::executeStatsRequest)
                 .orElse(Collections.emptyList());
+    }
+
+    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
+        return getStats(nodeName)
+                .stream()
+                .filter(stats -> dateTime(stats.getStartTime()).compareTo(start) >= 0
+                        && dateTime(stats.getEndTime()).compareTo(end) <= 0)
+                .collect(Collectors.toList());
+    }
+
+    private static LocalDateTime dateTime(final String dateTime) {
+        return LocalDateTime.parse(dateTime, FORMATTER);
     }
 
     public long getDiskAvailableForDocker(final String nodeName,
@@ -309,7 +332,7 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
 
     private static long getMills(String dateTime) {
-        return LocalDateTime.parse(dateTime, FORMATTER).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        return dateTime(dateTime).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     private String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
