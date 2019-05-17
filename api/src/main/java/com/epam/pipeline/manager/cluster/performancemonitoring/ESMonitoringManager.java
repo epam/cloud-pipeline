@@ -17,20 +17,28 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.SignStyle;
+import java.time.temporal.ChronoField;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -43,17 +51,26 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
             ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
-            .appendPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
+            .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
+            .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
+            .appendValue(ChronoField.HOUR_OF_DAY, 2).appendLiteral(":")
+            .appendValue(ChronoField.MINUTE_OF_HOUR, 2).appendLiteral(":")
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 2).appendLiteral(".")
+            .appendFraction(ChronoField.NANO_OF_SECOND, 3, 3, false).appendLiteral("Z")
             .toFormatter();
+    private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
+    private static final int FALLBACK_INTERVALS_NUMBER = 10;
 
     private final RestHighLevelClient client;
+    private final PreferenceManager preferenceManager;
+    private final NodesManager nodesManager;
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName) {
-        final Duration interval = Duration.ofMinutes(1);
-        final Duration monitoringPeriod = Duration.ofHours(1);
         final LocalDateTime end = DateUtils.nowUTC();
-        final LocalDateTime start = end.minus(monitoringPeriod);
+        final LocalDateTime start = creationDate(nodeName);
+        final Duration interval = interval(start, end);
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end, interval))
@@ -63,14 +80,35 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .peek(stats -> {
-                    final LocalDateTime intervalStart = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
-                    final LocalDateTime intervalEnd = intervalStart.plus(interval);
-                    stats.setEndTime(FORMATTER.format(intervalEnd));
-                    stats.setMillsInPeriod(interval.toMillis());
-                })
+                .peek(stats -> fillStatsDuration(stats, interval))
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime))
                 .collect(Collectors.toList());
+    }
+
+    private LocalDateTime creationDate(final String nodeName) {
+        return nodesManager.findNode(nodeName)
+                .map(BaseEntity::getCreatedDate)
+                .map(Date::toInstant)
+                .map(it -> it.atZone(ZoneOffset.UTC))
+                .map(ZonedDateTime::toLocalDateTime)
+                .orElseGet(() -> DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD));
+    }
+
+    private Duration interval(final LocalDateTime start, final LocalDateTime end) {
+        return Duration.between(start, end).dividedBy(Math.max(1, numberOfIntervals() - 1));
+    }
+
+    private int numberOfIntervals() {
+        return Optional.of(SystemPreferences.CLUSTER_MONITORING_ELASTIC_INTERVALS_NUMBER)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_INTERVALS_NUMBER);
+    }
+
+    private void fillStatsDuration(final MonitoringStats stats, final Duration interval) {
+        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
+        final LocalDateTime end = start.plus(interval);
+        stats.setEndTime(FORMATTER.format(end));
+        stats.setMillsInPeriod(interval.toMillis());
     }
 
     private MonitoringStats mergeStats(final MonitoringStats first, final MonitoringStats second) {
