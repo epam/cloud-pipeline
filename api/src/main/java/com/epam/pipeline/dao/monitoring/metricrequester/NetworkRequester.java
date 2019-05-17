@@ -26,10 +26,11 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,7 +45,7 @@ public class NetworkRequester extends AbstractMetricRequester {
     private static final String NETWORK_HISTOGRAM = "network_histogram";
     private static final String RX_RATE = "rx_rate";
     private static final String TX_RATE = "tx_rate";
-    public static final String NETWORK_INTERFACE = "summary";
+    private static final String NETWORK_INTERFACE = "summary";
 
     NetworkRequester(final RestHighLevelClient client) {
         super(client);
@@ -56,7 +57,8 @@ public class NetworkRequester extends AbstractMetricRequester {
     }
 
     @Override
-    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from, final LocalDateTime to, final Map<String, String> additional) {
+    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
+                                      final LocalDateTime to, final Map<String, String> additional) {
         // TODO 17.05.19: Method NetworkRequester::buildRequest is not implemented yet.
         throw new RuntimeException("Method NetworkRequester::buildRequest is not implemented yet.");
     }
@@ -68,17 +70,20 @@ public class NetworkRequester extends AbstractMetricRequester {
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from, final LocalDateTime to) {
+    public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from,
+                                              final LocalDateTime to, final Duration interval) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName())))
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                 .size(0)
                 .aggregation(AggregationBuilders.dateHistogram(NETWORK_HISTOGRAM)
                         .field(metric().getTimestamp())
-                        .interval(1L)
-                        .dateHistogramInterval(DateHistogramInterval.minutes(5))
+                        .interval(interval.toMillis())
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + RX_RATE)
                                 .field(field(RX_RATE)))
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + TX_RATE)

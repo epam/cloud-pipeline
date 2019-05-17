@@ -29,11 +29,11 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
@@ -130,7 +130,7 @@ public class FSRequester extends AbstractMetricRequester {
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
                                 resourceIds))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
-                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.FS.getTimestamp())
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                 .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                 .size(0)
@@ -159,19 +159,21 @@ public class FSRequester extends AbstractMetricRequester {
 
     @Override
     public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from,
-                                              final LocalDateTime to) {
+                                              final LocalDateTime to, final Duration interval) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName())))
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                 .size(0)
                 .aggregation(AggregationBuilders.terms(DISKS)
                         .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                         .subAggregation(AggregationBuilders.dateHistogram(DISKS_HISTOGRAM)
                                 .field(metric().getTimestamp())
-                                .interval(1L)
-                                .dateHistogramInterval(DateHistogramInterval.minutes(5))
+                                .interval(interval.toMillis())
                                 .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
                                         .field(field(USAGE)))
                                 .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)

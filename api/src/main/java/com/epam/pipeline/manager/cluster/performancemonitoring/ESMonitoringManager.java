@@ -47,12 +47,12 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName) {
         final Duration interval = Duration.ofMinutes(5);
-        final Duration monitoringPeriod = Duration.ofMinutes(20);
+        final Duration monitoringPeriod = Duration.ofHours(1);
         final LocalDateTime end = DateUtils.nowUTC();
         final LocalDateTime start = end.minus(monitoringPeriod);
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
-                .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end))
+                .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end, interval))
                 .flatMap(List::stream)
                 .collect(Collectors.groupingBy(MonitoringStats::getStartTime, Collectors.reducing(this::mergeStats)))
                 .values()

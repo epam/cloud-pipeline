@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +36,9 @@ public interface MonitoringRequester {
      * @param resourceIds Node name to collect stats for.
      * @param from Minimal date for collecting stats.
      * @param to Maximal date for collecting stats.
+     * @param interval Duration of a single monitoring.
      * @return Monitoring stats for the given period.
      */
-    List<MonitoringStats> requestStats(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to);
+    List<MonitoringStats> requestStats(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to,
+                                       Duration interval);
 }
