@@ -29,6 +29,7 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.monitor import MonitorManagementClient
 from msrestazure.azure_exceptions import CloudError
 from pipeline import Logger, TaskStatus, PipelineAPI
 
@@ -200,6 +201,8 @@ zone = None
 resource_client = get_client_from_auth_file(ResourceManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
 compute_client = get_client_from_auth_file(ComputeManagementClient)
+monitor_client = get_client_from_auth_file(MonitorManagementClient)
+
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
@@ -351,13 +354,16 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
     image = compute_client.images.get(resource_group, image_name)
 
+    storage_profile = get_storage_profile(disk, image, instance_type)
+    storage_profile["dataDisks"][0]["name"] = instance_name + "-data"
+
     vm_parameters = {
         'location': zone,
-        'os_profile': get_os_profile(instance_name, ssh_pub_key, user, user_data_script),
+        'os_profile': get_os_profile(instance_name, ssh_pub_key, user, user_data_script, 'computer_name'),
         'hardware_profile': {
             'vm_size': instance_type
         },
-        'storage_profile': get_storage_profile(disk, image, instance_name, instance_type),
+        'storage_profile': storage_profile,
         'network_profile': {
             'network_interfaces': [{
                 'id': nic.id
@@ -389,7 +395,8 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
     return instance_name, private_ip
 
-def create_low_priority_vm(instance_name, run_id, instance_type, instance_image, disk, user_data_script, ssh_pub_key, user):
+
+def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script, ssh_pub_key, user):
 
     resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
 
@@ -400,33 +407,37 @@ def create_low_priority_vm(instance_name, run_id, instance_type, instance_image,
     try:
         service = compute_client.virtual_machine_scale_sets
 
-        vm_parameters = {
+        vmss_parameters = {
             "location": zone,
             "sku": {
                 "name": instance_type,
                 "capacity": "1"
             },
+            "upgradePolicy": {
+                "mode": "Manual",
+                "automaticOSUpgrade": False
+            },
             "properties": {
                 "virtualMachineProfile": {
-                    'os_profile': get_os_profile(instance_name, ssh_pub_key, user, user_data_script),
-                    'storage_profile': get_storage_profile(disk, image, instance_name, instance_type),
+                    'os_profile': get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
+                    'storage_profile': get_storage_profile(disk, image, instance_type),
                     "network_profile": {
                         "networkInterfaceConfigurations": [
                             {
-                                "name": instance_name + "-nic",
+                                "name": scale_set_name + "-nic",
                                 "properties": {
                                     "primary": True,
                                     "networkSecurityGroup": {
                                         "id": security_group_info.id
                                     },
                                     'dns_settings': {
-                                        'domain_name_label': instance_name
+                                        'domain_name_label': scale_set_name
                                     },
                                     "ipConfigurations": [
                                         {
-                                            "name": "ipconfig",
+                                            "name": scale_set_name + "-ip",
                                             "publicIPAddressConfiguration": {
-                                                "name": instance_name + "-ip"
+                                                "name": scale_set_name + "-publicip"
                                             },
                                             "properties": {
                                                 "subnet": {
@@ -445,12 +456,34 @@ def create_low_priority_vm(instance_name, run_id, instance_type, instance_image,
         }
         creation_result = service.create_or_update(
             resource_group_name,
-            instance_name,
-            vm_parameters
+            scale_set_name,
+            vmss_parameters
         )
         creation_result.result()
+        scale_set_res_id = service.get(resource_group_name, scale_set_name).id
 
-        start_result = service.start(resource_group_name, instance_name)
+        autoscaling_param = {
+            "location": zone,
+            "tags": get_tags(run_id),
+            "properties": {
+                "profiles": [
+                    {
+                        "name": scale_set_name + "-arp",
+                        "capacity": {
+                            "minimum": "1",
+                            "maximum": "1",
+                            "default": "1"
+                        },
+                        "rules": []
+                    }
+                ],
+            "enabled": True,
+            "targetResourceUri": scale_set_res_id
+            }
+        }
+        monitor_client.autoscale_settings.create_or_update(resource_group, scale_set_name + "-ar", autoscaling_param)
+
+        start_result = service.start(resource_group_name, scale_set_name)
         start_result.wait()
     except CloudError as client_error:
         error_message = client_error.__str__()
@@ -460,13 +493,28 @@ def create_low_priority_vm(instance_name, run_id, instance_type, instance_image,
         else:
             raise client_error
 
-    private_ip = network_client.network_interfaces.get(
-        resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
+    instance_name, private_ip = get_instance_name_and_private_ip_from_vmss(scale_set_name)
 
     return instance_name, private_ip
 
 
-def get_storage_profile(disk, image, instance_name, instance_type):
+def get_instance_name_and_private_ip_from_vmss(scale_set_name):
+    vm_vmss_id = None
+    for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
+        vm_vmss_id = vm.instance_id
+        print "Instance_id: " + vm_vmss_id
+        break
+    instance_name = compute_client.virtual_machine_scale_set_vms \
+        .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
+        .additional_properties["computerName"]
+    private_ip = network_client.network_interfaces. \
+        get_virtual_machine_scale_set_ip_configuration(resource_group_name, scale_set_name, vm_vmss_id,
+                                                       scale_set_name + "-nic", scale_set_name + "-ip") \
+        .private_ip_address
+    return instance_name, private_ip
+
+
+def get_storage_profile(disk, image, instance_type):
     return {
         'image_reference': {
             'id': image.id
@@ -480,7 +528,6 @@ def get_storage_profile(disk, image, instance_name, instance_type):
         },
         "dataDisks": [
             {
-                "name": instance_name + "-data",
                 "diskSizeGB": disk,
                 "lun": 63,
                 "createOption": "Empty",
@@ -492,9 +539,9 @@ def get_storage_profile(disk, image, instance_name, instance_type):
     }
 
 
-def get_os_profile(instance_name, ssh_pub_key, user, user_data_script):
-    return {
-        'computer_name': instance_name,
+def get_os_profile(instance_name, ssh_pub_key, user, user_data_script, computer_name_parameter):
+    profile = {
+        computer_name_parameter: instance_name,
         'admin_username': user,
         "linuxConfiguration": {
             "ssh": {
@@ -509,6 +556,7 @@ def get_os_profile(instance_name, ssh_pub_key, user, user_data_script):
         },
         "custom_data": base64.b64encode(user_data_script)
     }
+    return profile
 
 
 def get_cloud_region(region_id):
@@ -571,10 +619,13 @@ def verify_run_id(run_id):
     for resource in resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
         if str(resource.type).split('/')[-1] == "virtualMachines":
             vm_name = resource.name
-
-    if vm_name is not None:
-        private_ip = network_client.network_interfaces\
-            .get(resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
+            private_ip = network_client.network_interfaces\
+                .get(resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
+            break
+        if str(resource.type).split('/')[-1] == "virtualMachineScaleSet":
+            scale_set_name = resource.name
+            vm_name, private_ip = get_instance_name_and_private_ip_from_vmss(scale_set_name)
+            break
 
     return vm_name, private_ip
 
@@ -596,22 +647,14 @@ def get_nodename(api, nodename):
 
 
 def verify_regnode(ins_id, num_rep, time_rep, api):
-    public_ip = network_client.public_ip_addresses.get(
-        resource_group_name,
-        ins_id + '-ip'
-    )
-    nodename_full = public_ip.dns_settings.fqdn
-    nodename = nodename_full.split('.', 1)[0]
-    pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
-
     ret_namenode = ''
     rep = 0
     while rep <= num_rep:
-        ret_namenode = find_node(nodename, nodename_full, api)
+        ret_namenode = find_node(ins_id, ins_id, api)
         if ret_namenode:
             break
         rep = increment_or_fail(num_rep, rep,
-                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, nodename), ins_id)
+                                'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) cluster registration'.format(num_rep, ins_id, ins_id), ins_id)
         sleep(time_rep)
 
     if ret_namenode:  # useless?
@@ -640,7 +683,7 @@ def verify_regnode(ins_id, num_rep, time_rep, api):
             rep = increment_or_fail(num_rep, rep,
                                     'Exceeded retry count ({}) for instance (ID: {}, NodeName: {}) kube system pods check'.format(num_rep, ins_id, ret_namenode), ins_id)
             sleep(time_rep)
-        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, nodename))
+        pipe_log('Instance {} successfully registred in cluster with name {}\n-'.format(ins_id, ins_id))
     return ret_namenode
 
 
@@ -722,9 +765,9 @@ def resolve_azure_api(resource):
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1] == "virtualMachines":
+    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and str(r2.type).split('/')[-1] != "virtualMachines":
+    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
         return -1
     return 0
 
@@ -744,8 +787,9 @@ def delete_all_by_run_id(run_id):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-        detach_disks_and_nic(vm_name)
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].startswith('virtualMachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        if str(resources[0].type).split('/')[-1] == 'virtualMachines':
+            detach_disks_and_nic(vm_name)
         for resource in resources:
             resource_client.resources.delete(
                 resource_group_name=resource.id.split('/')[4],
@@ -788,8 +832,10 @@ def replace_common_params(cloud_region, init_script, config_section):
 
     return init_script
 
+
 def replace_proxies(cloud_region, init_script):
     return replace_common_params(cloud_region, init_script, "proxies")
+
 
 def replace_swap(cloud_region, init_script):
     return replace_common_params(cloud_region, init_script, "swap")
