@@ -68,7 +68,7 @@ export DOCKER_CHANNEL="stable"
 export DOCKER_VERSION="18.09.6"
 export DOCKER_ARCH="x86_64"
 
-wget -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
+wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Unable to install download docker distribution ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
@@ -85,7 +85,7 @@ pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKE
 ######################################################
 
 export DIND_COMMIT=37498f009d8bf25fbb6199e8ccd34bed84f2874b
-wget -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
+wget -q -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Unable to install download dind fix $DIND_COMMIT" "$DIND_SETUP_TASK"
