@@ -292,6 +292,15 @@ function get_install_command_by_current_distr {
       local _RESULT_VAR="$1"
       local _TOOLS_TO_INSTALL="$2"
       local _INSTALL_COMMAND_TEXT=
+
+      # Handle some distro-specific package names
+      if [[ "$_TOOLS_TO_INSTALL" == *"ltdl"* ]]; then
+            local _ltdl_lib_name=
+            check_installed "apt-get" && _ltdl_lib_name="libltdl7"
+            check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
+
       check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
@@ -450,7 +459,14 @@ if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
+    _DEPS_INSTALL_LIST="python git curl wget fuse python-docutils tzdata acl"
+
+    # If DinD is enable - add it's dependencies to the packages list being installed
+    if [ "$CP_CAP_DIND" == "true" ]; then
+      _DEPS_INSTALL_LIST="${_DEPS_INSTALL_LIST} ltdl"
+    fi
+
+    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "$_DEPS_INSTALL_LIST"
     eval "$_DEPS_INSTALL_COMMAND"
 fi
 
