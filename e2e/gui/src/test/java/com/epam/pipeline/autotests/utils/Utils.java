@@ -44,6 +44,8 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
+
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -363,6 +365,7 @@ public class Utils {
     }
 
     public static void click(final By selector) {
+        $(selector).shouldBe(visible, enabled);
         Selenide.executeJavaScript("arguments[0].click();", $(selector));
     }
 }

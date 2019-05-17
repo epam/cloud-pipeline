@@ -279,6 +279,6 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     }
 
     private PipelinesLibraryAO pipelinesLibrary() {
-        return library().resetMouse().clickRoot();
+        return library().sleep(2, SECONDS).clickRoot();
     }
 }
