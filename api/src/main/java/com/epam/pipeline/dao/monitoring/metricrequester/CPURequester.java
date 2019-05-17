@@ -18,31 +18,38 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class CPURequester extends AbstractMetricRequester implements MonitoringRequester {
+public class CPURequester extends AbstractMetricRequester {
 
     CPURequester(final RestHighLevelClient client) {
         super(client);
+    }
+
+    @Override
+    protected ELKUsageMetric metric() {
+        return ELKUsageMetric.CPU;
     }
 
     @Override
@@ -53,7 +60,7 @@ public class CPURequester extends AbstractMetricRequester implements MonitoringR
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), resourceIds))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.CPU.getTimestamp())
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                 .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                 .size(0)
@@ -61,10 +68,9 @@ public class CPURequester extends AbstractMetricRequester implements MonitoringR
                         .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
                         .size(resourceIds.size())
                         .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE_RATE)
-                                .field("Metrics." + ELKUsageMetric.CPU.getName() + "/"
-                                        + USAGE_RATE + ".value")));
+                                .field(field(USAGE_RATE))));
 
-        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.CPU.getName()).source(builder);
+        return new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
     }
 
     @Override
@@ -82,50 +88,57 @@ public class CPURequester extends AbstractMetricRequester implements MonitoringR
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.CPU.getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())));
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName())))
+                .size(0)
+                .aggregation(AggregationBuilders.dateHistogram(CPU_HISTOGRAM)
+                        .field(metric().getTimestamp())
+                        .interval(1L)
+                        .dateHistogramInterval(DateHistogramInterval.minutes(5))
+                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_UTILIZATION)
+                                .field(field(NODE_UTILIZATION)))
+                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_CAPACITY)
+                                .field(field(NODE_CAPACITY))));
 
         final SearchRequest request =
-                new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.CPU.getName()).source(builder);
+                new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
         return parse(executeRequest(request));
     }
 
     private List<MonitoringStats> parse(final SearchResponse response) {
-        return Optional.ofNullable(response.getHits())
-                .map(SearchHits::getHits)
-                .map(Arrays::stream)
+        return Optional.ofNullable(response.getAggregations())
+                .map(Aggregations::asList)
+                .map(List::stream)
                 .orElseGet(Stream::empty)
-                .map(hit -> {
-                    final Map<String, Object> source = MapUtils.emptyIfNull(hit.getSource());
-                    final String timestamp = (String) source.get(ELKUsageMetric.CPU.getTimestamp());
+                .filter(it -> CPU_HISTOGRAM.equals(it.getName()))
+                .filter(it -> it instanceof MultiBucketsAggregation)
+                .map(MultiBucketsAggregation.class::cast)
+                .findFirst()
+                .map(MultiBucketsAggregation::getBuckets)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(bucket -> {
+                    final Optional<String> intervalStartOrEnd = Optional.ofNullable(bucket.getKeyAsString());
+                    final List<Aggregation> aggregations = Optional.ofNullable(bucket.getAggregations())
+                            .map(Aggregations::asList)
+                            .orElseGet(Collections::emptyList);
+                    final Optional<Double> utilization = value(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
+                    final Optional<Integer> capacity = value(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
+                            .map(Double::longValue)
+                            .map(Object::toString)
+                            // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
+                            .map(it -> it.substring(0, it.length() - 3))
+                            .map(Integer::valueOf);
                     final MonitoringStats monitoringStats = new MonitoringStats();
-                    monitoringStats.setStartTime(timestamp);
-                    final Optional<Long> cpuUsageValue = Optional.of(source)
-                            .map(map -> map.get("Metrics"))
-                            .filter(this::isMap)
-                            .map(this::toMap)
-                            .map(map -> map.get("cpu/usage"))
-                            .filter(this::isMap)
-                            .map(this::toMap)
-                            .map(map -> map.get("value"))
-                            .filter(Long.class::isInstance)
-                            .map(it -> (Long) it);
+                    intervalStartOrEnd.ifPresent(monitoringStats::setStartTime);
                     final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
-                    // TODO 15.05.19: Delete usage by the capacity to get load.
-                    cpuUsageValue.ifPresent(cpuUsage::setLoad);
+                    utilization.ifPresent(cpuUsage::setLoad);
                     monitoringStats.setCpuUsage(cpuUsage);
+                    final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
+                    capacity.ifPresent(containerSpec::setNumberOfCores);
+                    monitoringStats.setContainerSpec(containerSpec);
                     return monitoringStats;
                 })
                 .collect(Collectors.toList());
     }
 
-    private boolean isMap(final Object object) {
-        return object instanceof Map;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> toMap(final Object object) {
-        return (Map<String, Object>) object;
-    }
 }

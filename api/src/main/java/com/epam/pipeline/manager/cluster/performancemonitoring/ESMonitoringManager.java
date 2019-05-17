@@ -41,7 +41,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime now = DateUtils.nowUTC();
         final LocalDateTime end = now;
         final LocalDateTime start = end.minusMinutes(timeRange);
-        return Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.CPU)
+        return Stream.of(ELKUsageMetric.CPU, ELKUsageMetric.MEM, ELKUsageMetric.FS, ELKUsageMetric.NETWORK)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end))
                 .flatMap(List::stream)

@@ -21,28 +21,43 @@ import com.epam.pipeline.exception.PipelineException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-public abstract class AbstractMetricRequester implements MetricRequester {
+public abstract class AbstractMetricRequester implements MetricRequester, MonitoringRequester {
 
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
 
+    protected static final String FIELD_METRICS = "Metrics";
     protected static final String FIELD_METRICS_TAGS = "MetricsTags";
     protected static final String FIELD_NAMESPACE_NAME = "namespace_name";
     protected static final String FIELD_TYPE = "type";
+    protected static final String FIELD_DOCUMENT_TYPE = "_type";
 
     protected static final String USAGE = "usage";
     protected static final String USAGE_RATE = "usage_rate";
     protected static final String NODE_UTILIZATION = "node_utilization";
+    protected static final String NODE_CAPACITY = "node_capacity";
+    protected static final String CPU_CAPACITY = "cpu_capacity";
+    protected static final String CPU_UTILIZATION = "cpu_utilization";
+    protected static final String MEMORY_UTILIZATION = "memory_utilization";
+    protected static final String MEMORY_CAPACITY = "memory_capacity";
     protected static final String LIMIT = "limit";
+    protected static final String VALUE = "value";
+
+    protected static final String CPU_HISTOGRAM = "cpu_histogram";
+    protected static final String MEMORY_HISTOGRAM = "memory_histogram";
 
     protected static final String NODE = "node";
     protected static final String RESOURCE_ID = "resource_id";
@@ -81,6 +96,10 @@ public abstract class AbstractMetricRequester implements MetricRequester {
                 return new CPURequester(client);
             case MEM:
                 return new MemoryRequester(client);
+            case FS:
+                return new FSRequester(client);
+            case NETWORK:
+                return new NetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
 
@@ -115,4 +134,19 @@ public abstract class AbstractMetricRequester implements MetricRequester {
     protected static String path(final String ...parts) {
         return String.join(".", parts);
     }
+
+    protected Optional<Double> value(final List<Aggregation> aggregations, final String name) {
+        return aggregations.stream()
+                .filter(it -> name.equals(it.getName()))
+                .findFirst()
+                .filter(it -> it instanceof ParsedSingleValueNumericMetricsAggregation)
+                .map(ParsedSingleValueNumericMetricsAggregation .class::cast)
+                .map(ParsedSingleValueNumericMetricsAggregation::value);
+    }
+
+    protected String field(final String name) {
+        return path(FIELD_METRICS, metric().getName() + "/" + name, VALUE);
+    }
+
+    protected abstract ELKUsageMetric metric();
 }

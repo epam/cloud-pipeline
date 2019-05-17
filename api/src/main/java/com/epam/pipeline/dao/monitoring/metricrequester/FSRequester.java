@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,7 +25,11 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -32,16 +37,27 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FSRequester extends AbstractMetricRequester {
 
     private static final String DISKNAME_AGG_NAME = "diskname";
+    private static final String DISKS = "disks";
+    private static final String DISKS_HISTOGRAM = "disks_histogram";
 
     FSRequester(final RestHighLevelClient client) {
         super(client);
+    }
+
+    @Override
+    protected ELKUsageMetric metric() {
+        return ELKUsageMetric.FS;
     }
 
     @Override
@@ -63,18 +79,16 @@ public class FSRequester extends AbstractMetricRequester {
         final SearchSourceBuilder builder = new SearchSourceBuilder().query(
                 QueryBuilders.boolQuery().must(getQueryWithNodeToDiskMatching(resourceIds, additional))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.FS.getTimestamp())
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                 .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                 .size(0)
                 .aggregation(AggregationBuilders.terms(NODENAME_FIELD_VALUE)
                         .field(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD))
                             .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)
-                                    .field("Metrics." + ELKUsageMetric.FS.getName()
-                                            + "/" + LIMIT +".value"))
+                                    .field(field(LIMIT)))
                             .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
-                                    .field("Metrics." + ELKUsageMetric.FS.getName()
-                                            + "/" + USAGE + ".value")));
+                                    .field(field(USAGE))));
 
         return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.FS.getName()).source(builder);
     }
@@ -141,5 +155,79 @@ public class FSRequester extends AbstractMetricRequester {
 
     private Double getRate(final Double usage, final Double limit) {
         return usage == null || limit == null ? null : usage / limit;
+    }
+
+    @Override
+    public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from,
+                                              final LocalDateTime to) {
+        final SearchSourceBuilder builder = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName())))
+                .size(0)
+                .aggregation(AggregationBuilders.terms(DISKS)
+                        .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
+                        .subAggregation(AggregationBuilders.dateHistogram(DISKS_HISTOGRAM)
+                                .field(metric().getTimestamp())
+                                .interval(1L)
+                                .dateHistogramInterval(DateHistogramInterval.minutes(5))
+                                .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
+                                        .field(field(USAGE)))
+                                .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)
+                                        .field(field(LIMIT)))));
+
+        final SearchRequest request =
+                new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
+        return parse(executeRequest(request));
+    }
+
+    private List<MonitoringStats> parse(final SearchResponse response) {
+        return Optional.ofNullable(response.getAggregations())
+                .map(Aggregations::asList)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .filter(it -> DISKS.equals(it.getName()))
+                .filter(it -> it instanceof Terms)
+                .map(Terms.class::cast)
+                .findFirst()
+                .map(term -> Optional.of(term.getBuckets())
+                        .map(List::stream)
+                        .orElseGet(Stream::empty)
+                        .flatMap(diskBucket -> Optional.ofNullable(diskBucket.getAggregations())
+                                .map(Aggregations::asList)
+                                .map(List::stream)
+                                .orElseGet(Stream::empty)
+                                .filter(it -> DISKS_HISTOGRAM.equals(it.getName()))
+                                .findFirst()
+                                .filter(it -> it instanceof MultiBucketsAggregation)
+                                .map(MultiBucketsAggregation.class::cast)
+                                .map(MultiBucketsAggregation::getBuckets)
+                                .map(List::stream)
+                                .orElseGet(Stream::empty)
+                                .map(monitoringBucket -> {
+                                    final Optional<String> disk = Optional.ofNullable(diskBucket.getKeyAsString());
+                                    final Optional<String> intervalStartOrEnd = Optional.ofNullable(monitoringBucket.getKeyAsString());
+                                    final List<Aggregation> aggregations = Optional.ofNullable(monitoringBucket.getAggregations())
+                                            .map(Aggregations::asList)
+                                            .orElseGet(Collections::emptyList);
+                                    final Optional<Long> memoryUtilization = value(aggregations, AVG_AGGREGATION + USAGE)
+                                            .map(Double::longValue);
+                                    final Optional<Long> memoryCapacity = value(aggregations, AVG_AGGREGATION + LIMIT)
+                                            .map(Double::longValue);
+                                    final MonitoringStats monitoringStats = new MonitoringStats();
+                                    intervalStartOrEnd.ifPresent(monitoringStats::setStartTime);
+                                    final MonitoringStats.DisksUsage disksUsage = new MonitoringStats.DisksUsage();
+                                    final HashMap<String, MonitoringStats.DisksUsage.DiskStats> diskUsageMap = new HashMap<>();
+                                    disksUsage.setStatsByDevices(diskUsageMap);
+                                    monitoringStats.setDisksUsage(disksUsage);
+                                    final MonitoringStats.DisksUsage.DiskStats diskStats = new MonitoringStats.DisksUsage.DiskStats();
+                                    memoryUtilization.ifPresent(diskStats::setUsableSpace);
+                                    memoryCapacity.ifPresent(diskStats::setCapacity);
+                                    disk.ifPresent(d -> disksUsage.getStatsByDevices().put(d, diskStats));
+                                    return monitoringStats;
+                                })))
+                .orElseGet(Stream::empty)
+                .collect(Collectors.toList());
     }
 }
