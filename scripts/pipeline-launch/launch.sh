@@ -1133,20 +1133,19 @@ echo
 echo "Setup DinD"
 echo "-"
 
- # If DinD is enabled - setup dependencies and configure docker
-if [ "$CP_CAP_DIND" == "true" ] && check_installed "docker"; then
+ if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
     _DIND_DEPS_INSTALL_COMMAND=
     get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
     eval "$_DIND_DEPS_INSTALL_COMMAND"
-    
-    # Credentials will be configure only for the root user
-    _DIND_REGISTRY_HOST="$(echo "$docker_image" | cut -d "/" -f1)"
-    docker login "$_DIND_REGISTRY_HOST" -u "$OWNER" --password-stdin <<< "$API_TOKEN" > /dev/null 2>&1   
-    if [ $? -ne 0 ]; then
-      echo "Unable to configure docker credentials for $_DIND_REGISTRY_HOST registry and $OWNER user"
-    else
-      echo "DinD is configured"
-    fi
+    # Skipping registry certificate configuration for the "native" mode as is shall be inherited from the host node
+    docker_setup_credentials --skip-cert
+elif [ "$CP_CAP_DIND_CONTAINER" == "true" ]; then
+      dind_setup
+      if [ $? -eq 0 ]; then
+            docker_setup_credentials
+      else
+            "DinD (containerized mode) setup failed, docker credentials will not be confgiured"
+      fi
 else
     echo "DinD configuration is not requested"
 fi

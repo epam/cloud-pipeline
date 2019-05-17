@@ -60,7 +60,7 @@ public enum SystemParams {
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
     PARENT_ID("parent-id", "parent_id", false),
     RESUMED_RUN("resumed-run", "RESUMED_RUN", false),
-    ENABLE_DOCKER_IN_DOCKER("dind-enabled", "CP_CAP_DIND");
+    ENABLE_DOCKER_IN_DOCKER("dind-enabled", "CP_CAP_DIND_NATIVE");
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";
