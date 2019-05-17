@@ -54,7 +54,6 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                                 .setValue(DISK, customDisk)
                                 .selectValue(INSTANCE_TYPE, defaultInstanceType)
                                 .setValue(NAME, customConfigurationProfile)
-                                .click(SAVE)
                                 .selectDockerImage(dockerImage ->
                                         dockerImage
                                                 .selectRegistry(defaultRegistry)
@@ -110,7 +109,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
                 .showIssues()
                 .clickNewIssue()
                 .addNewIssue(title, description);
-        home().sleep(5, MINUTES);
+        home().sleep(6, MINUTES);
         search()
                 .search(title)
                 .enter()
