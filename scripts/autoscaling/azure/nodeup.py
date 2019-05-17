@@ -29,7 +29,6 @@ from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.monitor import MonitorManagementClient
 from msrestazure.azure_exceptions import CloudError
 from pipeline import Logger, TaskStatus, PipelineAPI
 
@@ -201,8 +200,6 @@ zone = None
 resource_client = get_client_from_auth_file(ResourceManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
 compute_client = get_client_from_auth_file(ComputeManagementClient)
-monitor_client = get_client_from_auth_file(MonitorManagementClient)
-
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
@@ -344,6 +341,51 @@ def get_disk_type(instance_type):
     return disk_type
 
 
+def get_os_profile(instance_name, ssh_pub_key, user, user_data_script, computer_name_parameter):
+    profile = {
+        computer_name_parameter: instance_name,
+        'admin_username': user,
+        "linuxConfiguration": {
+            "ssh": {
+                "publicKeys": [
+                    {
+                        "path": "/home/" + user + "/.ssh/authorized_keys",
+                        "key_data": "{key}".format(key=ssh_pub_key)
+                    }
+                ]
+            },
+            "disablePasswordAuthentication": True,
+        },
+        "custom_data": base64.b64encode(user_data_script)
+    }
+    return profile
+
+
+def get_storage_profile(disk, image, instance_type):
+    return {
+        'image_reference': {
+            'id': image.id
+        },
+        "osDisk": {
+            "caching": "ReadWrite",
+            "managedDisk": {
+                "storageAccountType": get_disk_type(instance_type)
+            },
+            "createOption": "FromImage"
+        },
+        "dataDisks": [
+            {
+                "diskSizeGB": disk,
+                "lun": 63,
+                "createOption": "Empty",
+                "managedDisk": {
+                    "storageAccountType": get_disk_type(instance_type)
+                }
+            }
+        ]
+    }
+
+
 def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_data_script,
               ssh_pub_key, user):
     nic = network_client.network_interfaces.get(
@@ -372,23 +414,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
         'tags': get_tags(run_id)
     }
 
-    try:
-        creation_result = compute_client.virtual_machines.create_or_update(
-            resource_group_name,
-            instance_name,
-            vm_parameters
-        )
-        creation_result.result()
-
-        start_result = compute_client.virtual_machines.start(resource_group_name, instance_name)
-        start_result.wait()
-    except CloudError as client_error:
-        error_message = client_error.__str__()
-        if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
-            pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
-            sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
-        else:
-            raise client_error
+    create_node_resource(compute_client.virtual_machines, instance_name, vm_parameters)
 
     private_ip = network_client.network_interfaces.get(
         resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
@@ -404,88 +430,74 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
     subnet_info = get_subnet_info()
     security_group_info = get_security_group_info()
 
-    try:
-        service = compute_client.virtual_machine_scale_sets
+    service = compute_client.virtual_machine_scale_sets
 
-        vmss_parameters = {
-            "location": zone,
-            "sku": {
-                "name": instance_type,
-                "capacity": "1"
-            },
-            "upgradePolicy": {
-                "mode": "Manual",
-                "automaticOSUpgrade": False
-            },
-            "properties": {
-                "virtualMachineProfile": {
-                    'os_profile': get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
-                    'storage_profile': get_storage_profile(disk, image, instance_type),
-                    "network_profile": {
-                        "networkInterfaceConfigurations": [
-                            {
-                                "name": scale_set_name + "-nic",
-                                "properties": {
-                                    "primary": True,
-                                    "networkSecurityGroup": {
-                                        "id": security_group_info.id
-                                    },
-                                    'dns_settings': {
-                                        'domain_name_label': scale_set_name
-                                    },
-                                    "ipConfigurations": [
-                                        {
-                                            "name": scale_set_name + "-ip",
-                                            "publicIPAddressConfiguration": {
-                                                "name": scale_set_name + "-publicip"
-                                            },
-                                            "properties": {
-                                                "subnet": {
-                                                    "id": subnet_info.id
-                                                }
+    vmss_parameters = {
+        "location": zone,
+        "sku": {
+            "name": instance_type,
+            "capacity": "1"
+        },
+        "upgradePolicy": {
+            "mode": "Manual",
+            "automaticOSUpgrade": False
+        },
+        "properties": {
+            "virtualMachineProfile": {
+                'os_profile': get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
+                'storage_profile': get_storage_profile(disk, image, instance_type),
+                "network_profile": {
+                    "networkInterfaceConfigurations": [
+                        {
+                            "name": scale_set_name + "-nic",
+                            "properties": {
+                                "primary": True,
+                                "networkSecurityGroup": {
+                                    "id": security_group_info.id
+                                },
+                                'dns_settings': {
+                                    'domain_name_label': scale_set_name
+                                },
+                                "ipConfigurations": [
+                                    {
+                                        "name": scale_set_name + "-ip",
+                                        "publicIPAddressConfiguration": {
+                                            "name": scale_set_name + "-publicip"
+                                        },
+                                        "properties": {
+                                            "subnet": {
+                                                "id": subnet_info.id
                                             }
                                         }
-                                    ]
-                                }
+                                    }
+                                ]
                             }
-                        ]
-                    }
+                        }
+                    ]
                 }
-            },
-            'tags': get_tags(run_id)
-        }
+            }
+        },
+        'tags': get_tags(run_id)
+    }
+
+    create_node_resource(service, scale_set_name, vmss_parameters)
+
+    return get_instance_name_and_private_ip_from_vmss(scale_set_name)
+
+
+def create_node_resource(service, instance_name, node_parameters):
+    try:
         creation_result = service.create_or_update(
             resource_group_name,
-            scale_set_name,
-            vmss_parameters
+            instance_name,
+            node_parameters
         )
         creation_result.result()
-        scale_set_res_id = service.get(resource_group_name, scale_set_name).id
 
-        autoscaling_param = {
-            "location": zone,
-            "tags": get_tags(run_id),
-            "properties": {
-                "profiles": [
-                    {
-                        "name": scale_set_name + "-arp",
-                        "capacity": {
-                            "minimum": "1",
-                            "maximum": "1",
-                            "default": "1"
-                        },
-                        "rules": []
-                    }
-                ],
-            "enabled": True,
-            "targetResourceUri": scale_set_res_id
-            }
-        }
-        monitor_client.autoscale_settings.create_or_update(resource_group, scale_set_name + "-ar", autoscaling_param)
-
-        start_result = service.start(resource_group_name, scale_set_name)
+        start_result = service.start(resource_group_name, instance_name)
         start_result.wait()
     except CloudError as client_error:
+        delete_all_by_run_id(node_parameters['tags']['Name'])
         error_message = client_error.__str__()
         if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
@@ -493,16 +505,11 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
         else:
             raise client_error
 
-    instance_name, private_ip = get_instance_name_and_private_ip_from_vmss(scale_set_name)
-
-    return instance_name, private_ip
-
 
 def get_instance_name_and_private_ip_from_vmss(scale_set_name):
     vm_vmss_id = None
     for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
         vm_vmss_id = vm.instance_id
-        print "Instance_id: " + vm_vmss_id
         break
     instance_name = compute_client.virtual_machine_scale_set_vms \
         .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
@@ -512,51 +519,6 @@ def get_instance_name_and_private_ip_from_vmss(scale_set_name):
                                                        scale_set_name + "-nic", scale_set_name + "-ip") \
         .private_ip_address
     return instance_name, private_ip
-
-
-def get_storage_profile(disk, image, instance_type):
-    return {
-        'image_reference': {
-            'id': image.id
-        },
-        "osDisk": {
-            "caching": "ReadWrite",
-            "managedDisk": {
-                "storageAccountType": get_disk_type(instance_type)
-            },
-            "createOption": "FromImage"
-        },
-        "dataDisks": [
-            {
-                "diskSizeGB": disk,
-                "lun": 63,
-                "createOption": "Empty",
-                "managedDisk": {
-                    "storageAccountType": get_disk_type(instance_type)
-                }
-            }
-        ]
-    }
-
-
-def get_os_profile(instance_name, ssh_pub_key, user, user_data_script, computer_name_parameter):
-    profile = {
-        computer_name_parameter: instance_name,
-        'admin_username': user,
-        "linuxConfiguration": {
-            "ssh": {
-                "publicKeys": [
-                    {
-                        "path": "/home/" + user + "/.ssh/authorized_keys",
-                        "key_data": "{key}".format(key=ssh_pub_key)
-                    }
-                ]
-            },
-            "disablePasswordAuthentication": True,
-        },
-        "custom_data": base64.b64encode(user_data_script)
-    }
-    return profile
 
 
 def get_cloud_region(region_id):
@@ -603,13 +565,6 @@ def get_tags(run_id):
     if res_tags:
         tags.update(res_tags)
     return tags
-
-
-def run_id_filter(run_id):
-    return {
-                'Name': 'tag:Name',
-                'Values': [run_id]
-           }
 
 
 def verify_run_id(run_id):
