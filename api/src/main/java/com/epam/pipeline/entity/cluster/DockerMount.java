@@ -22,7 +22,7 @@ import lombok.Data;
 @Data
 @Builder
 public class DockerMount {
-    final String name;
-    final String hostPath;
-    final String mountPath;
+    private final String name;
+    private final String hostPath;
+    private final String mountPath;
 }
