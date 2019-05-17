@@ -200,6 +200,17 @@ echo "STORAGE_DRIVER=" >> /etc/sysconfig/docker-storage-setup
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 
+# Setup docker cli location for DinD
+docker_cli_bin="/bin/docker"
+if [ ! -f "$docker_cli_bin" ]; then
+  docker_cli_location="$(command -v docker)"
+  if [ "$docker_cli_location" ]; then
+    \cp $docker_cli_location $docker_cli_bin
+  else
+    echo 'docker executable not found via "command -v docker"'
+  fi
+fi
+
 # Load NFS module
 modprobe nfs
 modprobe nfsd
