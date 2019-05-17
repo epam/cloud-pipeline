@@ -140,8 +140,8 @@ class TestS3Tagging(object):
          2. error message
      """
     test_case_for_non_existing = [
-        ('cp://non_exisitng/{}'.format(test_file), 'data storage with id: \'non_exisitng\' was not found'),
-        ('cp://{}/non_existing'.format(bucket), 'Path \'non_existing\' doesn\'t exist')
+        ('cp://non_exisitng/{}'.format(test_file), "data storage with id: 'non_exisitng' was not found"),
+        ('cp://{}/non_existing'.format(bucket), "Storage path 'non_existing' for bucket '%s' does not exist" % bucket)
     ]
 
     @pytest.mark.parametrize("path,message", test_case_for_non_existing)
@@ -167,7 +167,7 @@ class TestS3Tagging(object):
             set_storage_tags(path, [self.tag1])
 
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Tag \'{}\' doesn\'t exist'.format(self.tag2[1]))
+            assert_error_message_is_present(stderr, "Tag '%s' does not exist" % self.tag2[1])
 
             assert_tags_listing(self.bucket, path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())

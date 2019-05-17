@@ -6,9 +6,6 @@ from tzlocal import get_localzone
 
 from buckets.utils.cloud.cloud_client import CloudClient
 
-ACCOUNT_NAME = os.environ['AZURE_STORAGE_ACCOUNT']
-ACCOUNT_KEY = os.environ['AZURE_ACCOUNT_KEY'] if 'AZURE_ACCOUNT_KEY' in os.environ else 'NO ACCOUNT KEY'
-
 
 class AzureClient(CloudClient):
 
@@ -66,4 +63,6 @@ class AzureClient(CloudClient):
         return False
 
     def _get_client(self):
-        return BlockBlobService(account_name=ACCOUNT_NAME, account_key=ACCOUNT_KEY)
+        account_name = os.environ['AZURE_STORAGE_ACCOUNT']
+        account_key = os.environ['AZURE_ACCOUNT_KEY'] if 'AZURE_ACCOUNT_KEY' in os.environ else 'NO ACCOUNT KEY'
+        return BlockBlobService(account_name=account_name, account_key=account_key)

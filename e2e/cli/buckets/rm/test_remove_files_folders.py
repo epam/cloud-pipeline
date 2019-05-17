@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..utils.listing import get_pipe_listing, get_aws_listing, compare_listing
 from common_utils.pipe_cli import *
 from ..utils.listing import get_pipe_listing, compare_listing, f
 from ..utils.assertions_utils import *

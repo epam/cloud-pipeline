@@ -63,9 +63,8 @@ class TestPolicy(object):
         bucket_name = "{}-{}".format(self.bucket_name, test_case)
         create_buckets(bucket_name)
         try:
-            assert_policy(bucket_name, None, None, 20)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts))
-            assert_policy(bucket_name, sts, lts, 20)
+            assert_policy(bucket_name, sts, lts, None)
             pipe_storage_policy(bucket_name, sts=str(sts), lts=str(lts), backup_duration=str(backup_duration))
             assert_policy(bucket_name, sts, lts, backup_duration)
         except AssertionError as e:
