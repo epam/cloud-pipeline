@@ -189,6 +189,22 @@ function cp_cap_publish {
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -1127,27 +1143,23 @@ echo
 
 
 ######################################################
-# Setup DinD
+# Setup native DinD
 ######################################################
 
-echo "Setup DinD"
+echo "Setup DinD (native)"
 echo "-"
 
- if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
-    _DIND_DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
-    eval "$_DIND_DEPS_INSTALL_COMMAND"
-    # Skipping registry certificate configuration for the "native" mode as is shall be inherited from the host node
-    docker_setup_credentials --skip-cert
-elif [ "$CP_CAP_DIND_CONTAINER" == "true" ]; then
-      dind_setup
-      if [ $? -eq 0 ]; then
-            docker_setup_credentials
-      else
-            "DinD (containerized mode) setup failed, docker credentials will not be confgiured"
-      fi
+# DinD container mode is set for all cluster nodes via cp_cap_publish
+# as the $CP_CAP_DIND_CONTAINER parameter will not be available for workers
+# Same approach as for SGE
+if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
+      _DIND_DEPS_INSTALL_COMMAND=
+      get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
+      eval "$_DIND_DEPS_INSTALL_COMMAND"
+      # Skipping registry certificate configuration for the "native" mode as is shall be inherited from the host node
+      docker_setup_credentials --skip-cert
 else
-    echo "DinD configuration is not requested"
+    echo "DinD (native) configuration is not requested"
 fi
 
 ######################################################
