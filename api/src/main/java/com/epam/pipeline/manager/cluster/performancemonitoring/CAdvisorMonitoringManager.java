@@ -122,7 +122,6 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
                 .orElse(Collections.emptyList());
     }
 
-    @Override
     public long getDiskAvailableForDocker(final String nodeName,
                                           final String podId,
                                           final String dockerImage) {

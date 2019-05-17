@@ -33,13 +33,4 @@ public interface UsageMonitoringManager {
      */
     List<MonitoringStats> getStatsForNode(String nodeName);
 
-    /**
-     * Get available disk space for container.
-     *
-     * @param nodeName Cluster node name.
-     * @param podId Cluster pod name.
-     * @param dockerImage Container docker image.
-     * @return Available disk space in container.
-     */
-    long getDiskAvailableForDocker(String nodeName, String podId, String dockerImage);
 }

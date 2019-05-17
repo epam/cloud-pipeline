@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -34,19 +36,21 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Service
 @RequiredArgsConstructor
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
             ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
-    private final RestHighLevelClient client;
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
             .appendPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             .toFormatter();
 
+    private final RestHighLevelClient client;
+
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName) {
-        final Duration interval = Duration.ofMinutes(5);
+        final Duration interval = Duration.ofMinutes(1);
         final Duration monitoringPeriod = Duration.ofHours(1);
         final LocalDateTime end = DateUtils.nowUTC();
         final LocalDateTime start = end.minus(monitoringPeriod);
@@ -97,11 +101,5 @@ public class ESMonitoringManager implements UsageMonitoringManager {
             first.setContainerSpec(original.map(MonitoringStats::getContainerSpec).orElseGet(second::getContainerSpec));
         }
         return first;
-    }
-
-    @Override
-    public long getDiskAvailableForDocker(final String nodeName, final String podId, final String dockerImage) {
-        // TODO 15.05.19: Method ESMonitoringManager::getDiskAvailableForDocker is not implemented yet.
-        throw new RuntimeException("Method ESMonitoringManager::getDiskAvailableForDocker is not implemented yet.");
     }
 }
