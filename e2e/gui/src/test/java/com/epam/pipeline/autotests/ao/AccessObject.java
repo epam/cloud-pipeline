@@ -288,7 +288,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         $(byId("navigation-button-logo")).shouldBe(visible).click();
         sleep(300, MILLISECONDS);
         $(byId("navigation-button-logo")).shouldBe(visible).click();
-        sleep(300, MILLISECONDS);
+        sleep(2, SECONDS);
         return (ELEMENT_TYPE) this;
     }
 
