@@ -34,6 +34,13 @@ ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 # Always use sge setup to leverge multi-node autoscaled capabilities
 ENV CP_CAP_SGE="true"
 
+# Always use DinD's "container" mode to allow docker-based workflows
+ENV CP_CAP_DIND_CONAINER="true"
+
+# Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
+ENV ANALYSIS_DIR="/common/analysis"
+ENV INPUT_DIR="/common/input"
+
 # Install nextflow itlself into $NEXTFLOW_HOME
 RUN mkdir -p $NEXTFLOW_HOME && \
     cd $NXF_HOME_ROOT && \
