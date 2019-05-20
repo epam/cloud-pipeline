@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -93,7 +92,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final Duration interval = interval(start, end);
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
-                .map(it -> it.requestStats(Collections.singletonList(nodeName), start, end, interval))
+                .map(it -> it.requestStats(nodeName, start, end, interval))
                 .flatMap(List::stream)
                 .collect(Collectors.groupingBy(MonitoringStats::getStartTime, Collectors.reducing(this::mergeStats)))
                 .values()

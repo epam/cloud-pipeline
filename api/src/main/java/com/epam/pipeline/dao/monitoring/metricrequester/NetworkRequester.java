@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import org.apache.commons.lang.NotImplementedException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -59,22 +60,20 @@ public class NetworkRequester extends AbstractMetricRequester {
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        // TODO 17.05.19: Method NetworkRequester::buildRequest is not implemented yet.
-        throw new RuntimeException("Method NetworkRequester::buildRequest is not implemented yet.");
+        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        // TODO 17.05.19: Method NetworkRequester::buildRequest is not implemented yet.
-        throw new RuntimeException("Method NetworkRequester::buildRequest is not implemented yet.");
+        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from,
-                                              final LocalDateTime to, final Duration interval) {
+    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+                                              final Duration interval) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), nodeName))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
                         .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
                         .filter(QueryBuilders.rangeQuery(metric().getTimestamp())

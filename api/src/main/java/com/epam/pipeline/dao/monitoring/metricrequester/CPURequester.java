@@ -82,11 +82,11 @@ public class CPURequester extends AbstractMetricRequester {
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final Collection<String> resourceIds, final LocalDateTime from,
-                                              final LocalDateTime to, final Duration interval) {
+    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+                                              final Duration interval) {
         final SearchSourceBuilder builder = new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), resourceIds))
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), nodeName))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
                         .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
                         .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
