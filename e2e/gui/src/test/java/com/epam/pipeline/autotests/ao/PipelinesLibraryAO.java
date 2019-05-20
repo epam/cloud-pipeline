@@ -149,7 +149,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public PipelinesLibraryAO cd(String folderName) {
         $(byId("pipelines-library-tree-container")).shouldBe(visible)
-                .find(byText(folderName)).shouldBe(visible).click();
+                .find(titleOfTreeItem(treeItem(folderName))).shouldBe(visible).click();
         return this;
     }
 
