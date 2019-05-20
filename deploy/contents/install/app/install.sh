@@ -301,6 +301,9 @@ if is_service_requested cp-idp; then
         print_info "-> Deploying IdP"
         create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-pod.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml
+        expose_cluster_port "cp-idp" \
+                            "${CP_IDP_EXTERNAL_PORT}" \
+                            "8080"
 
         print_info "-> Waiting for IdP to initialize"
         wait_for_deployment "cp-idp"
@@ -432,6 +435,9 @@ if is_service_requested cp-api-srv; then
         print_info "-> Deploying API Service"
         create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-svc.yaml
+        expose_cluster_port "cp-api-srv" \
+                            "${CP_API_SRV_EXTERNAL_PORT}" \
+                            "8080"
 
         print_info "-> Waiting for API Service to initialize"
         wait_for_deployment "cp-api-srv"
@@ -530,6 +536,9 @@ if is_service_requested cp-docker-registry; then
         print_info "-> Deploying Docker registry"
         create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-svc.yaml
+        expose_cluster_port "cp-docker-registry" \
+                            "${CP_DOCKER_EXTERNAL_PORT}" \
+                            "443"
 
         print_info "-> Waiting for Docker registry to initialize"
         wait_for_deployment "cp-docker-registry"
@@ -598,6 +607,12 @@ if is_service_requested cp-edge; then
         print_info "-> Deploying EDGE"
         create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_EXTERNAL_PORT}" \
+                            "8080"
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
+                            "8081"
 
         print_info "-> Waiting for EDGE to initialize"
         wait_for_deployment "cp-edge"
@@ -654,6 +669,9 @@ if is_service_requested cp-git; then
         print_info "-> Deploying GitLab"
         create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-svc.yaml
+        expose_cluster_port "cp-git" \
+                            "${CP_GITLAB_EXTERNAL_PORT}" \
+                            "${CP_GITLAB_INTERNAL_PORT}"
 
         # For gitlab we are waiting for endpoint to be alive (return redirect to IdP) as kube readiness probe cannot handle redirects
         print_info "-> Waiting for GitLab to initialize"

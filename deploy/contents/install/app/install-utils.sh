@@ -608,6 +608,22 @@ function create_kube_resource {
     rm -f "$updated_spec_file"
 }
 
+function expose_cluster_port {
+    local service_name="$1"
+    local cluster_port="$2"
+    local container_port="$3"
+
+    kubectl patch svc "$service_name" \
+        --type='json' \
+        -p="[{\"op\":\"add\",\"path\":\"/spec/ports/-\",\"value\":{\"port\": $cluster_port, \"targetPort\": $container_port, \"name\": \"${service_name}-${cluster_port}-to-${container_port}\"}}]"
+    
+    if [ $? -ne 0 ]; then
+        print_warn "Unable to expose port ${cluster_port} -> ${container_port} for the ${service_name} service. May be it is already exposed"
+    else
+        print_ok "Exposed port ${cluster_port} -> ${container_port} for the ${service_name} service"
+    fi
+}
+
 function check_pod_is_ready {
     local pod_name="$1"
     stuck_pod=$(kubectl get pods $pod_name -o json | jq -r 'select(.status.phase != "Running" or ([ .status.conditions[] | select(.type == "Ready" and .status == "False") ] | length ) == 1 ) | .metadata.name')
