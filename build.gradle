@@ -75,14 +75,14 @@ task buildDoc(type: Tar) {
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
-                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar"]) {
+                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar"]) {
     group = 'build'
 }
 
 task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
-                          ":elasticsearch-agent:build", ":data-transfer-service:build"]) {
+                          ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build"]) {
     group = 'build'
 }
 
@@ -131,6 +131,11 @@ task installDist() {
             into "$distFolder/search-mappings"
         }
 
+        copy {
+            from "$rootDir/vm-monitor/src/main/resources/templates"
+            into "$distFolder/vm-monitor-templates"
+        }
+
         def distFiles = files(
                 "$rootDir/api/build/libs/pipeline.jar",
                 "$rootDir/api/pipeline.sh",
@@ -139,7 +144,8 @@ task installDist() {
                 "$rootDir/docker-comp-scan/build/libs/docker-comp-scan.jar",
                 "$rootDir/dist/cloud-pipeline-docs.tar.gz",
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
-                "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar"
+                "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
+                "$rootDir/vm-monitor/build/libs/vm-monitor.jar"
         )
 
         distFiles.each {
