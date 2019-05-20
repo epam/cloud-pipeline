@@ -96,9 +96,6 @@ public class PipelineLauncher {
     @Autowired
     private MessageHelper messageHelper;
 
-    @Autowired
-    private PipelineLaunchHelper launchHelper;
-
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
@@ -173,9 +170,6 @@ public class PipelineLauncher {
         systemParamsWithValue.put(SystemParams.CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
         systemParamsWithValue.put(SystemParams.SSH_PASS, run.getSshPassword());
         putIfStringValuePresent(systemParamsWithValue, SystemParams.RUN_CONFIG_NAME, run.getConfigName());
-        if (launchHelper.isDockerInDockerEnabled()) {
-            systemParamsWithValue.put(SystemParams.ENABLE_DOCKER_IN_DOCKER, "true");
-        }
         if (enableAutoscaling) {
             systemParamsWithValue.put(SystemParams.AUTOSCALING_ENABLED, "");
         }

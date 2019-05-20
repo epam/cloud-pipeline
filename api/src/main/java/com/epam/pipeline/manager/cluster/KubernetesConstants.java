@@ -38,6 +38,8 @@ public final class KubernetesConstants {
     public static final String POD_WORKER_NODE_LABEL = "cluster_id";
     public static final String PAUSED_NODE_LABEL = "Paused";
 
+    public static final String CP_CAP_DIND_NATIVE = "CP_CAP_DIND_NATIVE";
+
     protected static final String POD_SUCCEEDED_PHASE = "Succeeded";
     protected static final String POD_FAILED_PHASE = "Failed";
     protected static final String NODE_LOST = "NodeLost";
