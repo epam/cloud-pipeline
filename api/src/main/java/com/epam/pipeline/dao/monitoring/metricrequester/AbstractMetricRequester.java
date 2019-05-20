@@ -17,17 +17,28 @@
 package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
+import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,9 +66,15 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String MEMORY_CAPACITY = "memory_capacity";
     protected static final String LIMIT = "limit";
     protected static final String VALUE = "value";
+    protected static final String DEFAULT = "default";
 
     protected static final String CPU_HISTOGRAM = "cpu_histogram";
     protected static final String MEMORY_HISTOGRAM = "memory_histogram";
+    protected static final String NETWORK_HISTOGRAM = "network_histogram";
+    protected static final String DISKS_HISTOGRAM = "disks_histogram";
+
+    protected static final String RX_RATE = "rx_rate";
+    protected static final String TX_RATE = "tx_rate";
 
     protected static final String NODE = "node";
     protected static final String RESOURCE_ID = "resource_id";
@@ -66,8 +83,11 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String AVG_AGGREGATION = "avg_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
-    protected static final String NODENAME_FIELD_VALUE = "nodename";
-    protected static final String NODENAME_RAW_FIELD = "nodename.raw";
+    protected static final String AGGREGATION_NODE_NAME = "nodename";
+    protected static final String FIELD_NODENAME_RAW = "nodename.raw";
+    protected static final String AGGREGATION_DISK_NAME = "disk_name";
+
+    protected static final String SYNTHETIC_NETWORK_INTERFACE = "summary";
 
     private RestHighLevelClient client;
 
@@ -75,6 +95,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         this.client = client;
     }
 
+    protected abstract ELKUsageMetric metric();
+
+    protected abstract SearchRequest buildStatsRequest(String nodeName, LocalDateTime from, LocalDateTime to,
+                                                       Duration interval);
+
+    protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
     public static MetricRequester getRequester(final ELKUsageMetric metric, final RestHighLevelClient client) {
         switch (metric) {
@@ -86,7 +112,6 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new FSRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
-
         }
     }
 
@@ -102,10 +127,10 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new NetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
-
         }
     }
 
+    @Override
     public Map<String, Double> performRequest(final Collection<String> resourceIds,
                                               final LocalDateTime from, final LocalDateTime to) {
         return parseResponse(
@@ -123,16 +148,21 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         }
     }
 
-    protected static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+    protected static String path(final String ...parts) {
+        return String.join(".", parts);
+    }
+
+    protected SearchRequest request(final LocalDateTime from, final LocalDateTime to,
+                                    final SearchSourceBuilder builder) {
+        return new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
+    }
+
+    private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
         return Stream.of(from, to)
                 .map(d -> d.format(DATE_FORMATTER))
                 .distinct()
                 .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
                 .toArray(String[]::new);
-    }
-
-    protected static String path(final String ...parts) {
-        return String.join(".", parts);
     }
 
     protected Optional<Double> value(final List<Aggregation> aggregations, final String name) {
@@ -144,9 +174,49 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .map(ParsedSingleValueNumericMetricsAggregation::value);
     }
 
-    protected String field(final String name) {
+    protected Optional<Long> longValue(final List<Aggregation> aggregations, final String name) {
+        return value(aggregations, name).map(Double::longValue);
+    }
+
+    @Override
+    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+                                              final Duration interval) {
+        final SearchRequest request = buildStatsRequest(nodeName, from, to, interval);
+        return parseStatsResponse(executeRequest(request));
+    }
+
+    protected SearchSourceBuilder nodeStatsQuery(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to) {
+        return new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                .size(0);
+    }
+
+    protected DateHistogramAggregationBuilder dateHistogram(final String name, final Duration interval) {
+        return AggregationBuilders.dateHistogram(name)
+                .field(metric().getTimestamp())
+                .interval(interval.toMillis())
+                .minDocCount(1L);
+    }
+
+    protected AvgAggregationBuilder average(final String name, final String field) {
+        return AggregationBuilders.avg(name)
+                .field(field(field));
+    }
+
+    private String field(final String name) {
         return path(FIELD_METRICS, metric().getName() + "/" + name, VALUE);
     }
 
-    protected abstract ELKUsageMetric metric();
+    protected List<Aggregation> aggregations(final MultiBucketsAggregation.Bucket bucket) {
+        return Optional.ofNullable(bucket.getAggregations())
+                                .map(Aggregations::asList)
+                                .orElseGet(Collections::emptyList);
+    }
 }

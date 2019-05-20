@@ -37,7 +37,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +45,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FSRequester extends AbstractMetricRequester {
-
-    private static final String DISKNAME_AGG_NAME = "diskname";
-    private static final String DISKS = "disks";
-    private static final String DISKS_HISTOGRAM = "disks_histogram";
 
     FSRequester(final RestHighLevelClient client) {
         super(client);
@@ -76,21 +71,18 @@ public class FSRequester extends AbstractMetricRequester {
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map <String, String> additional) {
 
-        final SearchSourceBuilder builder = new SearchSourceBuilder().query(
-                QueryBuilders.boolQuery().must(getQueryWithNodeToDiskMatching(resourceIds, additional))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(NODENAME_FIELD_VALUE)
-                        .field(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD))
-                            .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)
-                                    .field(field(LIMIT)))
-                            .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
-                                    .field(field(USAGE))));
-
-        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.FS.getName()).source(builder);
+        return request(from, to,
+                new SearchSourceBuilder().query(
+                        QueryBuilders.boolQuery().must(getQueryWithNodeToDiskMatching(resourceIds, additional))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
+                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
+                                .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT))
+                                .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))));
     }
 
     private BoolQueryBuilder getQueryWithNodeToDiskMatching(final Collection<String> resourceIds,
@@ -101,7 +93,7 @@ public class FSRequester extends AbstractMetricRequester {
             if (nodeDiskName != null) {
                 final BoolQueryBuilder query = QueryBuilders.boolQuery();
                 final List<QueryBuilder> must = query.must();
-                must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), node));
+                must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), node));
                 must.add(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, RESOURCE_ID), nodeDiskName));
                 result.should().add(query);
             }
@@ -111,7 +103,7 @@ public class FSRequester extends AbstractMetricRequester {
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms) response.getAggregations().get(NODENAME_FIELD_VALUE)).getBuckets().stream().collect(
+        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream().collect(
             HashMap::new,
             (m, b) -> {
                 final double limit = ((Avg) b.getAggregations().get(AVG_AGGREGATION + LIMIT)).getValue();
@@ -125,29 +117,29 @@ public class FSRequester extends AbstractMetricRequester {
 
     private SearchRequest buildDiskNameRequest(final Collection<String> resourceIds,
                                                final LocalDateTime from, final LocalDateTime to) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
-                                resourceIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(NODENAME_FIELD_VALUE)
-                    .field(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD))
-                        .subAggregation(AggregationBuilders.terms(DISKNAME_AGG_NAME)
-                            .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))));
 
-        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.FS.getName()).source(builder);
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
+                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
+                                .subAggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                                        .field(path(FIELD_METRICS_TAGS, RESOURCE_ID)))));
     }
 
     private Map<String, String> parseDiskNamesResponse(final SearchResponse response) {
-        return  ((Terms) response.getAggregations().get(NODENAME_FIELD_VALUE))
+        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME))
                 .getBuckets().stream()
                 .map((b) -> new ImmutablePair<>(
                         b.getKey().toString(),
-                        ((Terms) b.getAggregations().get(DISKNAME_AGG_NAME)).getBuckets().stream().findFirst()
+                        ((Terms) b.getAggregations().get(AGGREGATION_DISK_NAME)).getBuckets().stream().findFirst()
                                 .map(d -> d.getKey().toString()).orElse(null)))
 
                 .collect(HashMap::new, (m, b) -> m.put(b.getKey(), b.getValue()), Map::putAll);
@@ -158,39 +150,24 @@ public class FSRequester extends AbstractMetricRequester {
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+    protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(DISKS)
-                        .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
-                        .subAggregation(AggregationBuilders.dateHistogram(DISKS_HISTOGRAM)
-                                .field(metric().getTimestamp())
-                                .interval(interval.toMillis())
-                                .minDocCount(1L)
-                                .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE)
-                                        .field(field(USAGE)))
-                                .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + LIMIT)
-                                        .field(field(LIMIT)))));
-
-        final SearchRequest request =
-                new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
-        return parse(executeRequest(request));
+        return request(from, to,
+                nodeStatsQuery(nodeName, from, to)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                                .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
+                                .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
+                                        .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))
+                                        .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT)))));
     }
 
-    private List<MonitoringStats> parse(final SearchResponse response) {
+    @Override
+    protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
         return Optional.ofNullable(response.getAggregations())
                 .map(Aggregations::asList)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .filter(it -> DISKS.equals(it.getName()))
+                .filter(it -> AGGREGATION_DISK_NAME.equals(it.getName()))
                 .filter(it -> it instanceof Terms)
                 .map(Terms.class::cast)
                 .findFirst()
@@ -208,29 +185,27 @@ public class FSRequester extends AbstractMetricRequester {
                                 .map(MultiBucketsAggregation::getBuckets)
                                 .map(List::stream)
                                 .orElseGet(Stream::empty)
-                                .map(monitoringBucket -> {
-                                    final Optional<String> disk = Optional.ofNullable(diskBucket.getKeyAsString());
-                                    final Optional<String> intervalStartOrEnd = Optional.ofNullable(monitoringBucket.getKeyAsString());
-                                    final List<Aggregation> aggregations = Optional.ofNullable(monitoringBucket.getAggregations())
-                                            .map(Aggregations::asList)
-                                            .orElseGet(Collections::emptyList);
-                                    final Optional<Long> memoryUtilization = value(aggregations, AVG_AGGREGATION + USAGE)
-                                            .map(Double::longValue);
-                                    final Optional<Long> memoryCapacity = value(aggregations, AVG_AGGREGATION + LIMIT)
-                                            .map(Double::longValue);
-                                    final MonitoringStats monitoringStats = new MonitoringStats();
-                                    intervalStartOrEnd.ifPresent(monitoringStats::setStartTime);
-                                    final MonitoringStats.DisksUsage disksUsage = new MonitoringStats.DisksUsage();
-                                    final HashMap<String, MonitoringStats.DisksUsage.DiskStats> diskUsageMap = new HashMap<>();
-                                    disksUsage.setStatsByDevices(diskUsageMap);
-                                    monitoringStats.setDisksUsage(disksUsage);
-                                    final MonitoringStats.DisksUsage.DiskStats diskStats = new MonitoringStats.DisksUsage.DiskStats();
-                                    memoryUtilization.ifPresent(diskStats::setUsableSpace);
-                                    memoryCapacity.ifPresent(diskStats::setCapacity);
-                                    disk.ifPresent(d -> disksUsage.getStatsByDevices().put(d, diskStats));
-                                    return monitoringStats;
-                                })))
+                                .map(monitoringBucket -> toMonitoringStats(diskBucket, monitoringBucket))))
                 .orElseGet(Stream::empty)
                 .collect(Collectors.toList());
+    }
+
+    private MonitoringStats toMonitoringStats(final Terms.Bucket diskBucket,
+                                              final MultiBucketsAggregation.Bucket monitoringBucket) {
+        final MonitoringStats monitoringStats = new MonitoringStats();
+        Optional.ofNullable(monitoringBucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
+        final List<Aggregation> aggregations = aggregations(monitoringBucket);
+        final Optional<Long> memoryUtilization = longValue(aggregations, AVG_AGGREGATION + USAGE);
+        final Optional<Long> memoryCapacity = longValue(aggregations, AVG_AGGREGATION + LIMIT);
+        final MonitoringStats.DisksUsage disksUsage = new MonitoringStats.DisksUsage();
+        final HashMap<String, MonitoringStats.DisksUsage.DiskStats> diskUsageMap = new HashMap<>();
+        disksUsage.setStatsByDevices(diskUsageMap);
+        monitoringStats.setDisksUsage(disksUsage);
+        final MonitoringStats.DisksUsage.DiskStats diskStats = new MonitoringStats.DisksUsage.DiskStats();
+        memoryUtilization.ifPresent(diskStats::setUsableSpace);
+        memoryCapacity.ifPresent(diskStats::setCapacity);
+        Optional.ofNullable(diskBucket.getKeyAsString())
+                .ifPresent(disk -> disksUsage.getStatsByDevices().put(disk, diskStats));
+        return monitoringStats;
     }
 }

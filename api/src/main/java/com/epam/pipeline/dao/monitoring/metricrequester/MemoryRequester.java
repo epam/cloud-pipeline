@@ -34,7 +34,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,59 +54,42 @@ public class MemoryRequester extends AbstractMetricRequester {
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD),
-                                resourceIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(NODENAME_FIELD_VALUE)
-                        .field(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD))
-                        .size(resourceIds.size())
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + NODE_UTILIZATION)
-                                .field(field(NODE_UTILIZATION))));
-
-        return new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
+                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
+                                .size(resourceIds.size())
+                                .subAggregation(average(AVG_AGGREGATION + NODE_UTILIZATION, NODE_UTILIZATION))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms) response.getAggregations().get(NODENAME_FIELD_VALUE)).getBuckets().stream()
+        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
                 .collect(Collectors.toMap(
                     b -> b.getKey().toString(),
                     b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()));
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+    protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.dateHistogram(MEMORY_HISTOGRAM)
-                        .field(metric().getTimestamp())
-                        .interval(interval.toMillis())
-                        .minDocCount(1L)
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + MEMORY_UTILIZATION)
-                                .field(field(USAGE)))
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + MEMORY_CAPACITY)
-                                .field(field(NODE_CAPACITY))));
-
-        final SearchRequest request =
-                new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
-        return parse(executeRequest(request));
+        return request(from, to,
+                nodeStatsQuery(nodeName, from, to)
+                        .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, USAGE))
+                                .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
     }
 
-    private List<MonitoringStats> parse(final SearchResponse response) {
+    @Override
+    protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
         return Optional.ofNullable(response.getAggregations())
                 .map(Aggregations::asList)
                 .map(List::stream)
@@ -119,27 +101,23 @@ public class MemoryRequester extends AbstractMetricRequester {
                 .map(MultiBucketsAggregation::getBuckets)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .map(bucket -> {
-                    final Optional<String> intervalStartOrEnd = Optional.ofNullable(bucket.getKeyAsString());
-                    final List<Aggregation> aggregations = Optional.ofNullable(bucket.getAggregations())
-                            .map(Aggregations::asList)
-                            .orElseGet(Collections::emptyList);
-                    final Optional<Long> utilization = value(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION)
-                            .map(Double::longValue);
-                    final Optional<Long> capacity = value(aggregations, AVG_AGGREGATION + MEMORY_CAPACITY)
-                            .map(Double::longValue);
-                    final MonitoringStats monitoringStats = new MonitoringStats();
-                    intervalStartOrEnd.ifPresent(monitoringStats::setStartTime);
-                    final MonitoringStats.MemoryUsage memoryUsage = new MonitoringStats.MemoryUsage();
-                    utilization.ifPresent(memoryUsage::setUsage);
-                    capacity.ifPresent(memoryUsage::setCapacity);
-                    monitoringStats.setMemoryUsage(memoryUsage);
-                    final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
-                    capacity.ifPresent(containerSpec::setMaxMemory);
-                    monitoringStats.setContainerSpec(containerSpec);
-                    return monitoringStats;
-                })
+                .map(this::toMonitoringStats)
                 .collect(Collectors.toList());
     }
 
+    private MonitoringStats toMonitoringStats(final MultiBucketsAggregation.Bucket bucket) {
+        final MonitoringStats monitoringStats = new MonitoringStats();
+        Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
+        final List<Aggregation> aggregations = aggregations(bucket);
+        final Optional<Long> utilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
+        final Optional<Long> capacity = longValue(aggregations, AVG_AGGREGATION + MEMORY_CAPACITY);
+        final MonitoringStats.MemoryUsage memoryUsage = new MonitoringStats.MemoryUsage();
+        utilization.ifPresent(memoryUsage::setUsage);
+        capacity.ifPresent(memoryUsage::setCapacity);
+        monitoringStats.setMemoryUsage(memoryUsage);
+        final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
+        capacity.ifPresent(containerSpec::setMaxMemory);
+        monitoringStats.setContainerSpec(containerSpec);
+        return monitoringStats;
+    }
 }

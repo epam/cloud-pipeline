@@ -34,7 +34,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -55,22 +54,22 @@ public class CPURequester extends AbstractMetricRequester {
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), resourceIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
-                        .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
-                        .size(resourceIds.size())
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE_RATE)
-                                .field(field(USAGE_RATE))));
-
-        return new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME),
+                                        DEFAULT))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
+                                .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
+                                .size(resourceIds.size())
+                                .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));
     }
 
     @Override
@@ -82,32 +81,18 @@ public class CPURequester extends AbstractMetricRequester {
     }
 
     @Override
-    public List<MonitoringStats> requestStats(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+    protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, NODENAME_RAW_FIELD), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.dateHistogram(CPU_HISTOGRAM)
-                        .field(metric().getTimestamp())
-                        .interval(interval.toMillis())
-                        .minDocCount(1L)
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_UTILIZATION)
-                                .field(field(NODE_UTILIZATION)))
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + CPU_CAPACITY)
-                                .field(field(NODE_CAPACITY))));
 
-        final SearchRequest request =
-                new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
-        return parse(executeRequest(request));
+        return request(from, to,
+                nodeStatsQuery(nodeName, from, to)
+                        .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
+                                .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
+                                .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));
     }
 
-    private List<MonitoringStats> parse(final SearchResponse response) {
+    @Override
+    protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
         return Optional.ofNullable(response.getAggregations())
                 .map(Aggregations::asList)
                 .map(List::stream)
@@ -119,29 +104,26 @@ public class CPURequester extends AbstractMetricRequester {
                 .map(MultiBucketsAggregation::getBuckets)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .map(bucket -> {
-                    final Optional<String> intervalStartOrEnd = Optional.ofNullable(bucket.getKeyAsString());
-                    final List<Aggregation> aggregations = Optional.ofNullable(bucket.getAggregations())
-                            .map(Aggregations::asList)
-                            .orElseGet(Collections::emptyList);
-                    final Optional<Double> utilization = value(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
-                    final Optional<Integer> capacity = value(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
-                            .map(Double::longValue)
-                            .map(Object::toString)
-                            // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
-                            .map(it -> it.substring(0, it.length() - 3))
-                            .map(Integer::valueOf);
-                    final MonitoringStats monitoringStats = new MonitoringStats();
-                    intervalStartOrEnd.ifPresent(monitoringStats::setStartTime);
-                    final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
-                    utilization.ifPresent(cpuUsage::setLoad);
-                    monitoringStats.setCpuUsage(cpuUsage);
-                    final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
-                    capacity.ifPresent(containerSpec::setNumberOfCores);
-                    monitoringStats.setContainerSpec(containerSpec);
-                    return monitoringStats;
-                })
+                .map(this::toMonitoringStats)
                 .collect(Collectors.toList());
     }
 
+    private MonitoringStats toMonitoringStats(final MultiBucketsAggregation.Bucket bucket) {
+        final MonitoringStats monitoringStats = new MonitoringStats();
+        Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
+        final List<Aggregation> aggregations = aggregations(bucket);
+        final Optional<Double> utilization = value(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
+        final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
+                .map(Object::toString)
+                // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
+                .map(it -> it.substring(0, it.length() - 3))
+                .map(Integer::valueOf);
+        final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
+        utilization.ifPresent(cpuUsage::setLoad);
+        monitoringStats.setCpuUsage(cpuUsage);
+        final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
+        capacity.ifPresent(containerSpec::setNumberOfCores);
+        monitoringStats.setContainerSpec(containerSpec);
+        return monitoringStats;
+    }
 }
