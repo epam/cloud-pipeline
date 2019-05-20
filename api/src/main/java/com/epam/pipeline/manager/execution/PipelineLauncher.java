@@ -97,7 +97,7 @@ public class PipelineLauncher {
     private MessageHelper messageHelper;
 
     @Autowired
-    PipelineLaunchHelper launchHelper;
+    private PipelineLaunchHelper launchHelper;
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
