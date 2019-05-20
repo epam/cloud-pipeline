@@ -71,6 +71,14 @@ cat <<EOT > /etc/docker/daemon.json
 }
 EOT
 
+if [ "$http_proxy" ] || [ "$https_proxy" ]; then
+  mkdir -p /etc/systemd/system/docker.service.d
+cat > /etc/systemd/system/docker.service.d/http-proxy.conf << EOF
+  [Service]
+  Environment="http_proxy=$http_proxy" "https_proxy=$https_proxy" "no_proxy=$no_proxy"
+EOF
+fi
+
 #6.2 - Kube
 yum install -y \
             kubeadm-1.7.5-0.x86_64 \
@@ -137,6 +145,6 @@ sleep 10
 # Allow services to bind to 80+ ports, as the default range is 30000-32767
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
 # kubelet monitors /etc/kubernetes/manifests folder, so kube-api pod will be recreated automatically
-sed '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
+sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
 
 sleep 30

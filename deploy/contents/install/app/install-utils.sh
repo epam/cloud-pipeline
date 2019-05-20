@@ -114,10 +114,10 @@ function init_cloud_config {
         CP_CLOUD_EXTERNAL_HOST=$(echo $metadata | cut -f4 -d' ')
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_AWS" ]; then
-        CP_CLOUD_REGION_ID=$(curl -s $aws_meta_url_dynamic | grep region | cut -d\" -f4)
-        CP_CLOUD_INSTANCE_TYPE=$(curl -s $aws_meta_url/instance-type)
-        CP_CLOUD_INTERNAL_HOST=$(curl -s $aws_meta_url/local-ipv4)
-        CP_CLOUD_EXTERNAL_HOST=$(curl -s $aws_meta_url/public-ipv4)
+        CP_CLOUD_REGION_ID=$(curl -s -f $aws_meta_url_dynamic | grep region | cut -d\" -f4)
+        CP_CLOUD_INSTANCE_TYPE=$(curl -s -f $aws_meta_url/instance-type)
+        CP_CLOUD_INTERNAL_HOST=$(curl -s -f $aws_meta_url/local-ipv4)
+        CP_CLOUD_EXTERNAL_HOST=$(curl -s -f $aws_meta_url/public-ipv4)
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
         print_err "Metadata is NOT supported for $CP_GOOGLE, cannot auto initialize cloud config"
