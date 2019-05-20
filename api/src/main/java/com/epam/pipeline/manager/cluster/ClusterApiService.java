@@ -49,7 +49,7 @@ public class ClusterApiService {
                              final InstanceOfferManager instanceOfferManager,
                              final CAdvisorMonitoringManager cAdvisorMonitoringManager,
                              final ESMonitoringManager esMonitoringManager,
-                             @Value("${monitoring.backend?:" + CADVISOR + "}") final String backend) {
+                             @Value("${monitoring.backend:" + CADVISOR + "}") final String backend) {
         this.nodesManager = nodesManager;
         this.instanceOfferManager = instanceOfferManager;
         if (StringUtils.isBlank(backend) || backend.equals(CADVISOR)) {
