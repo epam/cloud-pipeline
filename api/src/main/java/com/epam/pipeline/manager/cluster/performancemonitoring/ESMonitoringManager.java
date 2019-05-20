@@ -99,7 +99,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .peek(stats -> fillStatsDuration(stats, interval))
+                .filter(this::isMonitoringStatsComplete)
+                .peek(stats -> addStatsDuration(stats, interval))
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime))
                 .collect(Collectors.toList());
     }
@@ -132,13 +133,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .orElse(FALLBACK_INTERVALS_NUMBER);
     }
 
-    private void fillStatsDuration(final MonitoringStats stats, final Duration interval) {
-        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
-        final LocalDateTime end = start.plus(interval);
-        stats.setEndTime(FORMATTER.format(end));
-        stats.setMillsInPeriod(interval.toMillis());
-    }
-
     private MonitoringStats mergeStats(final MonitoringStats first, final MonitoringStats second) {
         final Optional<MonitoringStats> original = Optional.of(first);
         first.setCpuUsage(original.map(MonitoringStats::getCpuUsage).orElseGet(second::getCpuUsage));
@@ -167,5 +161,19 @@ public class ESMonitoringManager implements UsageMonitoringManager {
             first.setContainerSpec(original.map(MonitoringStats::getContainerSpec).orElseGet(second::getContainerSpec));
         }
         return first;
+    }
+
+    private boolean isMonitoringStatsComplete(final MonitoringStats monitoringStats) {
+        return monitoringStats.getCpuUsage() != null
+                && monitoringStats.getMemoryUsage() != null
+                && monitoringStats.getDisksUsage() != null
+                && monitoringStats.getNetworkUsage() != null;
+    }
+
+    private void addStatsDuration(final MonitoringStats stats, final Duration interval) {
+        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
+        final LocalDateTime end = start.plus(interval);
+        stats.setEndTime(FORMATTER.format(end));
+        stats.setMillsInPeriod(interval.toMillis());
     }
 }
