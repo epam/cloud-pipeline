@@ -42,7 +42,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -56,19 +55,25 @@ import java.util.Optional;
 
 @Service
 public class PipelineExecutor {
-    public static final String REF_DATA_MOUNT = "ref-data";
-    public static final String RUNS_DATA_MOUNT = "runs-data";
-    public static final String EMPTY_MOUNT = "dshm";
-    @Autowired
-    private PreferenceManager preferenceManager;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
-    private static final String NGINX_ENDPOINT = "nginx";
 
-    @Value("${kube.namespace}")
+    private static final String REF_DATA_MOUNT = "ref-data";
+    private static final String RUNS_DATA_MOUNT = "runs-data";
+    private static final String EMPTY_MOUNT = "dshm";
+    private static final String NGINX_ENDPOINT = "nginx";
+    private static final long KUBE_TERMINATION_PERIOD = 30L;
+
+    private PreferenceManager preferenceManager;
+    private PipelineLaunchHelper launchHelper;
     private String kubeNamespace;
 
-    private static final long KUBE_TERMINATION_PERIOD = 30L;
+    public PipelineExecutor(final PreferenceManager preferenceManager,
+                            final PipelineLaunchHelper launchHelper,
+                            @Value("${kube.namespace}") final String kubeNamespace) {
+        this.preferenceManager = preferenceManager;
+        this.launchHelper = launchHelper;
+        this.kubeNamespace = kubeNamespace;
+    }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
                               String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
@@ -161,7 +166,7 @@ public class PipelineExecutor {
         volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
-        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+        if (launchHelper.isDockerInDockerEnabled() &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
@@ -175,7 +180,7 @@ public class PipelineExecutor {
         mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
-        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+        if (launchHelper.isDockerInDockerEnabled() &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
         }
