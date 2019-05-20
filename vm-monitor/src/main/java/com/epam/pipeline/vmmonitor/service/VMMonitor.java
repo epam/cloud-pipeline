@@ -154,9 +154,12 @@ public class VMMonitor {
         if (matchingRunExists(vm)) {
             return;
         }
+        log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
             notificationService.notifyMissingLabels(vm, node, labels);
+        } else {
+            log.debug("All required labels are present on node {}.", node.getName());
         }
     }
 

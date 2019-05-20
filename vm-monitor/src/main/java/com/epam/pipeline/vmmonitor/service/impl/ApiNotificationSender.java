@@ -22,9 +22,13 @@ import com.epam.pipeline.vmmonitor.service.NotificationSender;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @RequiredArgsConstructor
+@Service
+@ConditionalOnProperty(value = "notification.send.method", havingValue = "api", matchIfMissing = true)
 public class ApiNotificationSender implements NotificationSender {
 
     private final CloudPipelineAPIClient apiClient;

@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vmmonitor.service.impl;
+package com.epam.pipeline.vmmonitor.config;
 
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Data
-@Builder
+@Getter
+@Setter
+@Configuration
+@ConfigurationProperties(prefix = "email")
+@ConditionalOnProperty(value = "notification.send.method", havingValue = "smtp")
 public class SMTPConfiguration {
-    private int notifyRetryCount;
+
+    private int notificationRetryCount;
     private String smtpServerHostName;
     private int smtpPort;
     private boolean sslOnConnect;
     private boolean startTlsEnabled;
-    private String emailFrom;
-    private String username;
+    private String from;
+    private String user;
     private String password;
-    private long emailDelay;
-    private long retryDelay;
+    private long notificationLetterDelay;
+    private long notificationRetryDelay;
 }

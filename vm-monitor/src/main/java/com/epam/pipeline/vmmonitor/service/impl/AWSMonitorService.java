@@ -81,15 +81,18 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
                                                 final DescribeInstancesRequest request,
                                                 final List<VirtualMachine> vms) {
         final DescribeInstancesResult result = ec2.describeInstances(request);
-        List<VirtualMachine> mergedVms = Stream.concat(vms.stream(),
+        final List<VirtualMachine> mergedVms = Stream.concat(
+                ListUtils.emptyIfNull(vms)
+                        .stream(),
                 ListUtils.emptyIfNull(result.getReservations())
                         .stream()
                         .map(reservation -> ListUtils.emptyIfNull(reservation.getInstances()))
                         .flatMap(Collection::stream)
-                        .map(this::toVM)).collect(Collectors.toList());
+                        .map(this::toVM))
+                .collect(Collectors.toList());
         if (StringUtils.isNotBlank(result.getNextToken())) {
             request.setNextToken(result.getNextToken());
-            return fetchInstances(ec2, request, vms);
+            return fetchInstances(ec2, request, mergedVms);
         }
         return mergedVms;
     }

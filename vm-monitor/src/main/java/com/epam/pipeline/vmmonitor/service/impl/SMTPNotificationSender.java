@@ -18,6 +18,7 @@ package com.epam.pipeline.vmmonitor.service.impl;
 
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
+import com.epam.pipeline.vmmonitor.config.SMTPConfiguration;
 import com.epam.pipeline.vmmonitor.service.CloudPipelineAPIClient;
 import com.epam.pipeline.vmmonitor.service.NotificationSender;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
@@ -33,6 +34,8 @@ import org.apache.commons.mail.HtmlEmail;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.tools.generic.NumberTool;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 import javax.mail.internet.InternetAddress;
 import java.io.StringWriter;
@@ -45,6 +48,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
+@Service
+@ConditionalOnProperty(value = "notification.send.method", havingValue = "smtp")
 public class SMTPNotificationSender implements NotificationSender {
 
     private static final String MESSAGE_TAG = "message";
@@ -55,7 +60,7 @@ public class SMTPNotificationSender implements NotificationSender {
     @Override
     public void sendMessage(final NotificationMessageVO message) {
         log.debug("Submitting notification using SMTP");
-        for (int i = 0; i < configuration.getNotifyRetryCount(); i++) {
+        for (int i = 0; i < configuration.getNotificationRetryCount(); i++) {
             try {
                 Optional<Email> email = buildEmail(message);
                 if (email.isPresent()) {
@@ -63,12 +68,12 @@ public class SMTPNotificationSender implements NotificationSender {
                     log.info("SMTP: Message with subject: '{}' was successfully send", message.getSubject());
                 }
 
-                sleepIfRequired(configuration.getEmailDelay());
+                sleepIfRequired(configuration.getNotificationLetterDelay());
                 return;
             } catch (EmailException e) {
                 log.warn(String.format("SMTP: Fail to send message with subject '%s'. Attempt %d/%d. %n Cause: %n ",
-                        message.getSubject(), i + 1, configuration.getNotifyRetryCount()), e);
-                sleepIfRequired(configuration.getRetryDelay());
+                        message.getSubject(), i + 1, configuration.getNotificationRetryCount()), e);
+                sleepIfRequired(configuration.getNotificationRetryDelay());
             }
         }
         log.error(String.format("SMTP: All attempts are failed. Message with subject: '%s' will not be sent.",
@@ -83,12 +88,12 @@ public class SMTPNotificationSender implements NotificationSender {
         email.setStartTLSEnabled(configuration.isStartTlsEnabled());
 
         // check that credentials are provided, otherwise try to proceed without authentication
-        if (StringUtils.isNotBlank(configuration.getUsername()) &&
+        if (StringUtils.isNotBlank(configuration.getUser()) &&
                 StringUtils.isNotBlank(configuration.getPassword())) {
-            email.setAuthenticator(new DefaultAuthenticator(configuration.getUsername(), configuration.getPassword()));
+            email.setAuthenticator(new DefaultAuthenticator(configuration.getUser(), configuration.getPassword()));
         }
 
-        email.setFrom(configuration.getEmailFrom());
+        email.setFrom(configuration.getFrom());
 
         final String subject = message.getSubject();
         final String body = message.getBody();

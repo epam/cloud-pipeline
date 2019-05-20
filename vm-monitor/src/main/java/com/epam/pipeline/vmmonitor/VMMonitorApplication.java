@@ -16,12 +16,6 @@
 
 package com.epam.pipeline.vmmonitor;
 
-import com.epam.pipeline.vmmonitor.service.CloudPipelineAPIClient;
-import com.epam.pipeline.vmmonitor.service.NotificationSender;
-import com.epam.pipeline.vmmonitor.service.impl.ApiNotificationSender;
-import com.epam.pipeline.vmmonitor.service.impl.SMTPConfiguration;
-import com.epam.pipeline.vmmonitor.service.impl.SMTPNotificationSender;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -43,37 +37,6 @@ public class VMMonitorApplication {
 
     private static final int SCHEDULED_TASKS_POOL_SIZE = 1;
 
-    @Value(value = "${email.notification.retry.count:3}")
-    private int notifyRetryCount;
-
-    @Value(value = "${email.smtp.server.host.name:}")
-    private String smtpServerHostName;
-
-    @Value(value = "${email.smtp.port:0}")
-    private int smtpPort;
-
-    @Value(value = "${email.ssl.on.connect:false}")
-    private boolean sslOnConnect;
-
-    @Value(value = "${email.start.tls.enabled:false}")
-    private boolean startTlsEnabled;
-
-    @Value(value = "${email.from:}")
-    private String emailFrom;
-
-    @Value(value = "${email.user:}")
-    private String username;
-
-    @Value(value = "${email.password:}")
-    private String password;
-
-    @Value(value = "${email.notification.letter.delay:-1}")
-    private long emailDelay;
-
-    @Value(value = "${email.notification.retry.delay:-1}")
-    private long retryDelay;
-
-
     public static void main(String[] args) {
         SpringApplication.run(VMMonitorApplication.class, args);
     }
@@ -86,27 +49,4 @@ public class VMMonitorApplication {
         scheduler.setPoolSize(SCHEDULED_TASKS_POOL_SIZE);
         return scheduler;
     }
-
-    @Bean
-    public NotificationSender notificationSender(
-            @Value("${notification.send-via-api:false}") final boolean useApi,
-            final CloudPipelineAPIClient apiClient) {
-        return useApi ? new ApiNotificationSender(apiClient) : new SMTPNotificationSender(apiClient, buildSmtpConfig());
-    }
-
-    private SMTPConfiguration buildSmtpConfig() {
-        return SMTPConfiguration.builder()
-                .notifyRetryCount(notifyRetryCount)
-                .smtpServerHostName(smtpServerHostName)
-                .smtpPort(smtpPort)
-                .sslOnConnect(sslOnConnect)
-                .startTlsEnabled(startTlsEnabled)
-                .emailFrom(emailFrom)
-                .username(username)
-                .password(password)
-                .emailDelay(emailDelay)
-                .retryDelay(retryDelay)
-                .build();
-    }
-
 }
