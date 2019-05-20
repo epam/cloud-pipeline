@@ -112,7 +112,7 @@ public class CPURequester extends AbstractMetricRequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Double> utilization = value(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
+        final Optional<Double> utilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
         final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
                 .map(Object::toString)
                 // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.

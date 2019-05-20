@@ -166,7 +166,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .toArray(String[]::new);
     }
 
-    protected Optional<Double> value(final List<Aggregation> aggregations, final String name) {
+    protected Optional<Double> doubleValue(final List<Aggregation> aggregations, final String name) {
         return aggregations.stream()
                 .filter(it -> name.equals(it.getName()))
                 .findFirst()
@@ -176,7 +176,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     protected Optional<Long> longValue(final List<Aggregation> aggregations, final String name) {
-        return value(aggregations, name).map(Double::longValue);
+        return doubleValue(aggregations, name).map(Double::longValue);
     }
 
     @Override

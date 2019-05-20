@@ -51,7 +51,7 @@ import java.util.stream.Stream;
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
-            ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
+        ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
     private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
             // Example: 2019-05-17T10:24:23.033Z
             .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
