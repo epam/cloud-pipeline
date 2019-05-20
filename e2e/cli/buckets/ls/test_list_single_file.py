@@ -19,7 +19,8 @@ from buckets.utils.listing import *
 from buckets.utils.file_utils import *
 from buckets.utils.utilities_for_test import *
 
-
+# TODO: disable test until the GCP support is merged
+@pytest.mark.skip()
 class TestLsSingleFile(object):
     epam_test_case = "EPMCMBIBPC-617"
     resources_root = "resources-{}/".format(epam_test_case)
