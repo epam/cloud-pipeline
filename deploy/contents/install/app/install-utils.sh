@@ -853,6 +853,8 @@ function generate_self_signed_key_pair {
 
     if [ -f $key_path ] && [ -f $cert_path ]; then
         print_warn "-> Certificate ($cert_path) and private key ($key_path) already exist, new pair will NOT be generated"
+    elif [ ! -f $key_path ] && [ -f $cert_path ]; then
+        print_warn "-> Certificate ($cert_path) already exists but a private key ($key_path) DOES NOT exist, new pair will NOT be generated"
     else
         if [ "$CP_COMMON_SSL_SELF_SIGNED" == "true" ] || [ "$force_self_sign" == "true" ]; then
             openssl req -x509 -new -newkey rsa:2048 -nodes -subj "/CN=$subject" \

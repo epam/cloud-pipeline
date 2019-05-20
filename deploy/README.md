@@ -48,6 +48,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_AWS_SECRET_ACCESS_KEY= \                    # For AWS key secret can be specified via environment variables
                 -env CP_AWS_KMS_ARN= \
                 -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE= \
+                -env CP_DOCKER_STORAGE_ROOT_DIR= \                  # Root directory within a $CP_DOCKER_STORAGE_CONTAINER, used to store images blobs. If not set - "cloud-pipeline-${CP_DEPLOYMENT_ID}" will be used
                 ## Azure
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)

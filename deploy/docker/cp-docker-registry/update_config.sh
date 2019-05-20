@@ -31,6 +31,9 @@ if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
     if [ -z "$CP_DOCKER_STORAGE_KEY_SECRET" ]; then
       CP_DOCKER_STORAGE_KEY_SECRET="$(echo $(cat $CP_CLOUD_CREDENTIALS_LOCATION | grep aws_secret_access_key | cut -d'=' -f2))"
     fi
+    if [ -z "$CP_DOCKER_STORAGE_ROOT_DIR" ]; then
+      CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
+    fi
 
 read -r -d '' storage_driver_config <<-EOF
   s3:
@@ -40,7 +43,7 @@ read -r -d '' storage_driver_config <<-EOF
     secretkey: ${CP_DOCKER_STORAGE_KEY_SECRET}
     secure: true
     chunksize: 52428800
-    rootdirectory: cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}
+    rootdirectory: ${CP_DOCKER_STORAGE_ROOT_DIR}
 EOF
 
   elif [ "$CP_CLOUD_PLATFORM" == "az" ]; then
