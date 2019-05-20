@@ -83,10 +83,10 @@ public class VMMonitor {
         log.debug("Checking VMs in region {} {}", region.getRegionCode(), region.getProvider());
         getVmService(region)
                 .ifPresent(service -> {
-                    final List<VirtualMachine> vms = service.fetchRunningVms(region);
+                    final List<VirtualMachine> vms = ListUtils.emptyIfNull(service.fetchRunningVms(region));
                     log.debug("Found {} running VM(s) in {} {}", vms.size(),
                             region.getRegionCode(), region.getProvider());
-                    ListUtils.emptyIfNull(vms).forEach(this::checkVmState);
+                    vms.forEach(this::checkVmState);
                 });
     }
 

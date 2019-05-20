@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class AWSMonitorService implements VMMonitorService<AwsRegion> {
@@ -62,8 +63,7 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
         final DescribeInstancesRequest request = new DescribeInstancesRequest()
                 .withFilters(getFilters());
         final List<VirtualMachine> vms = new ArrayList<>();
-        fetchInstances(ec2, request, vms);
-        return vms;
+        return fetchInstances(ec2, request, vms);
     }
 
     private AmazonEC2 getEc2Client(final AwsRegion region) {
@@ -77,20 +77,21 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
                 .build();
     }
 
-    private void fetchInstances(final AmazonEC2 ec2,
-                                final DescribeInstancesRequest request,
-                                final List<VirtualMachine> vms) {
+    private List<VirtualMachine> fetchInstances(final AmazonEC2 ec2,
+                                                final DescribeInstancesRequest request,
+                                                final List<VirtualMachine> vms) {
         final DescribeInstancesResult result = ec2.describeInstances(request);
-        vms.addAll(ListUtils.emptyIfNull(result.getReservations())
-                .stream()
-                .map(reservation -> ListUtils.emptyIfNull(reservation.getInstances()))
-                .flatMap(Collection::stream)
-                .map(this::toVM)
-                .collect(Collectors.toList()));
+        List<VirtualMachine> mergedVms = Stream.concat(vms.stream(),
+                ListUtils.emptyIfNull(result.getReservations())
+                        .stream()
+                        .map(reservation -> ListUtils.emptyIfNull(reservation.getInstances()))
+                        .flatMap(Collection::stream)
+                        .map(this::toVM)).collect(Collectors.toList());
         if (StringUtils.isNotBlank(result.getNextToken())) {
             request.setNextToken(result.getNextToken());
-            fetchInstances(ec2, request, vms);
+            return fetchInstances(ec2, request, vms);
         }
+        return mergedVms;
     }
 
     @Override

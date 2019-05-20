@@ -70,7 +70,7 @@ public class AzureMonitorService implements VMMonitorService<AzureRegion> {
 
     private VirtualMachine toVM(final com.microsoft.azure.management.compute.VirtualMachine azureVM) {
         return VirtualMachine.builder()
-                .instanceId(azureVM.computerName())
+                .instanceId(azureVM.name())
                 .instanceName(azureVM.name())
                 .privateIp(azureVM.getPrimaryNetworkInterface().primaryPrivateIP())
                 .tags(azureVM.tags())
