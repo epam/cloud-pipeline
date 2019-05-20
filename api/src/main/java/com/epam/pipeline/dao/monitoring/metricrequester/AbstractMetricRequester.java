@@ -42,7 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
 public abstract class AbstractMetricRequester implements MetricRequester, MonitoringRequester {
 
@@ -158,9 +158,10 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
-        return Stream.of(from, to)
+        return IntStream.iterate(0, i -> i + 1)
+                .limit(Duration.between(from, to).toDays() + 1)
+                .mapToObj(from::plusDays)
                 .map(d -> d.format(DATE_FORMATTER))
-                .distinct()
                 .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
                 .toArray(String[]::new);
     }
