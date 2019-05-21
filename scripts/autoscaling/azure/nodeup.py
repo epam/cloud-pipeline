@@ -585,6 +585,10 @@ def verify_run_id(run_id):
     return vm_name, private_ip
 
 
+# There is a strange behavior, when you create scale set with one node,
+# two node will be created at first and then one of it will be deleted
+# Some times this node can rich startup script before it will be terminated, so node will join a kube cluster
+# In order to get rid of this 'phantom' node this method will delete node with status NotReady and name like computerNamePrefix + 000000
 def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
     # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
     node_names = [ins_id + '000000', ins_id + '000001']

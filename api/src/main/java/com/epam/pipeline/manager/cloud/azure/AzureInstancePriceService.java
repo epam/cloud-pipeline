@@ -67,7 +67,8 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
 
     @Override
     public double getSpotPrice(final String instanceType, final AzureRegion region) {
-        throw new UnsupportedOperationException("Spot instances is not supported for Azure provider.");
+        // TODO replace with actual logic for azure cloud
+        return 0.0d;
     }
 
     @Override

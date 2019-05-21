@@ -55,6 +55,8 @@ def azure_resource_type_cmp(r1, r2):
 def delete_cloud_node(node_name):
     low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, node_name)
     if low_priority_search:
+        # just because we set computer_name_prefix in nodeup script,
+        # we know that it is the same with scale set name, so let's extract it
         scale_set_name = low_priority_search.group(1)
         info = compute_client.virtual_machine_scale_sets.get(resource_group_name, scale_set_name)
     else:
