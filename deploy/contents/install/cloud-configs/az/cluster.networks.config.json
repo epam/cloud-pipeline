@@ -33,5 +33,8 @@
                 ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS}
             ]
         }
-    ]
+    ],
+    "tags": {
+        ${CP_VM_MONITOR_INSTANCE_TAG_NAME} : ${CP_VM_MONITOR_INSTANCE_TAG_VALUE}
+    }
 }
