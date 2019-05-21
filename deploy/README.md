@@ -53,8 +53,12 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
-                -env CP_AZURE_OFFER_DURABLE_ID = \                  # 
-                -env CP_AZURE_SUBSCRIPTION_ID = \                   # 
+                -env CP_AZURE_OFFER_DURABLE_ID=\                    # 
+                -env CP_AZURE_SUBSCRIPTION_ID=\                     # 
+
+                # Core API
+                -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
+                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to aut register all users that passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions (default: false)
 
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \

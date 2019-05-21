@@ -370,7 +370,7 @@ function parse_env_option {
 function set_service_host {
     local service_host_name="$1"
     local service_host_internal_name="$2"
-    local service_host_value="${!service_host_var}"
+    local service_host_value="${!service_host_name}"
     local service_host_internal_value=""
     if [ "$service_host_internal_name" ]; then
         service_host_internal_value="${!service_host_internal_name}"

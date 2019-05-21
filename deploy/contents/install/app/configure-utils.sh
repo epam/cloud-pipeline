@@ -846,7 +846,6 @@ function api_setup_base_preferences {
     ## Launch
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
     api_set_preference "launch.cmd.template" "${CP_PREF_LAUNCH_CMD_TEMPLATE}" "true"
-    api_set_preference "launch.dind.enable" "${CP_PREF_LAUNCH_DIND_ENABLE:-"false"}" "false"
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
