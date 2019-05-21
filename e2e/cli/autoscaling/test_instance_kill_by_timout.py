@@ -84,6 +84,7 @@ class TestTerminateNodeByTimeout(object):
     @pytest.mark.run(order=3)
     def test_instance_should_be_terminated(self):
         try:
+            sleep(60)
             instance = describe_instance(self.run_id)
             assert not instance, 'The instance {} was not terminated.'.format(self.run_id)
         except AssertionError as e:
