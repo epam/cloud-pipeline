@@ -13,7 +13,6 @@ from buckets.utils.cloud.utilities import *
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from buckets.utils.cloud.utilities import *
 from common_utils.pipe_cli import *
 
 

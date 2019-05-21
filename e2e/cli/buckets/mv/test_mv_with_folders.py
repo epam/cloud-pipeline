@@ -23,7 +23,7 @@ class TestMoveWithFolders(object):
     bucket_name = "epmcmbibpc-it-mv-folders{}".format(get_test_prefix())
     other_bucket_name = "{}-other".format(bucket_name)
     current_directory = os.getcwd()
-    home_dir = "test_cp_home_dir-681/"
+    home_dir = "test_cp_home_dir-681%s/" % get_test_prefix()
     checkout_dir = "mv-folders-checkout/"
     output_folder = "mv-folders-" + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = "mv-folders-" + TestFiles.TEST_FILE1
@@ -31,7 +31,7 @@ class TestMoveWithFolders(object):
     test_file_2 = "mv-folders-" + TestFiles.TEST_FILE2
     test_folder = "mv-folders-" + TestFiles.TEST_FOLDER
     test_folder_2 = "mv-folders-" + TestFiles.TEST_FOLDER2
-    source_dir = "mv-folders-" + "sources/"
+    source_dir = "mv-folders-sources%s/" % get_test_prefix()
 
     @classmethod
     def setup_class(cls):
