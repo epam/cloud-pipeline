@@ -36,6 +36,14 @@ GIT_SSO_CERT_CONTENTS="$(<$GIT_SSO_CERT_PATH)"
 GIT_SSO_KEY_CONTENTS="$(<$GIT_SSO_KEY_PATH)"
 
 cat >> /etc/gitlab/gitlab.rb <<-EOF
+
+gitlab_rails['db_adapter'] = '${GITLAB_DATABASE_ADAPTER}'
+gitlab_rails['db_encoding'] = '${GITLAB_DATABASE_ENCODING}'
+gitlab_rails['db_host'] = '${GITLAB_DATABASE_HOST}'
+gitlab_rails['db_port'] = ${GITLAB_DATABASE_PORT}
+gitlab_rails['db_username'] = '${GITLAB_DATABASE_USERNAME}'
+gitlab_rails['db_password'] = '${GITLAB_DATABASE_PASSWORD}'
+
 external_url 'https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}'
 nginx['ssl_certificate'] = "/opt/gitlab/pki/ssl-public-cert.pem"
 nginx['ssl_certificate_key'] = "/opt/gitlab/pki/ssl-private-key.pem"
