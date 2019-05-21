@@ -185,6 +185,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
+#VM Monitor
+CP_VM_MONITOR_DIST_NAME=${CP_VM_MONITOR_DIST_NAME:-"$CP_DIST_REPO_NAME:vm-monitor-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \
+                -t "$CP_VM_MONITOR_DIST_NAME"
+docker push "$CP_VM_MONITOR_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
