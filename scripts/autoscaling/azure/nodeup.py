@@ -203,7 +203,7 @@ compute_client = get_client_from_auth_file(ComputeManagementClient)
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user, kms_encyr_key_id,
+def run_instance(instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
                  ins_type, is_spot, kube_ip, kubeadm_token):
     try:
         ins_key = read_ssh_key(ssh_pub_key)
@@ -585,6 +585,23 @@ def verify_run_id(run_id):
     return vm_name, private_ip
 
 
+def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
+    # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
+    node_names = [ins_id + '000000', ins_id + '000001']
+    for node_name in node_names:
+        nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_name})
+        for node in nodes.response['items']:
+            if any(condition['status'] and condition['type'] == "NotReady" for condition in node["status"]["conditions"]):
+                obj = {
+                    "apiVersion": "v1",
+                    "kind": "Node",
+                    "metadata": {
+                        "name": node["metadata"]["name"]
+                    }
+                }
+                pykube.Node(kube_api, obj).delete()
+
+
 def find_node(nodename, nodename_full, api):
     ret_namenode = get_nodename(api, nodename)
     if not ret_namenode:
@@ -879,7 +896,6 @@ def main():
     kube_ip = args.kube_ip
     kubeadm_token = args.kubeadm_token
     region_id = args.region_id
-    kms_encyr_key_id = args.kms_encyr_key_id
 
     global zone
     zone = region_id
@@ -914,7 +930,7 @@ def main():
 
         if not ins_id:
             ins_id, ins_ip = run_instance(ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path, "pipeline",
-                                          kms_encyr_key_id, ins_type, is_spot, kube_ip, kubeadm_token)
+                                          ins_type, is_spot, kube_ip, kubeadm_token)
 
 
         try:
@@ -923,6 +939,7 @@ def main():
             api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
         api.session.verify = False
 
+        delete_phantom_low_priority_kubernetes_node(api, ins_id)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
         pipe_log('Node created:\n'
