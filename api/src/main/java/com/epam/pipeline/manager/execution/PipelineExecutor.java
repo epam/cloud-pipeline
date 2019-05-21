@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -39,10 +40,10 @@ import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -56,19 +57,26 @@ import java.util.Optional;
 
 @Service
 public class PipelineExecutor {
-    public static final String REF_DATA_MOUNT = "ref-data";
-    public static final String RUNS_DATA_MOUNT = "runs-data";
-    public static final String EMPTY_MOUNT = "dshm";
-    @Autowired
-    private PreferenceManager preferenceManager;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
+
+    private static final String REF_DATA_MOUNT = "ref-data";
+    private static final String RUNS_DATA_MOUNT = "runs-data";
+    private static final String EMPTY_MOUNT = "dshm";
     private static final String NGINX_ENDPOINT = "nginx";
-
-    @Value("${kube.namespace}")
-    private String kubeNamespace;
-
     private static final long KUBE_TERMINATION_PERIOD = 30L;
+    private static final String TRUE = "true";
+
+    private final PreferenceManager preferenceManager;
+    private final String kubeNamespace;
+    private final AuthManager authManager;
+
+    public PipelineExecutor(final PreferenceManager preferenceManager,
+                            final AuthManager authManager,
+                            @Value("${kube.namespace}") final String kubeNamespace) {
+        this.preferenceManager = preferenceManager;
+        this.kubeNamespace = kubeNamespace;
+        this.authManager = authManager;
+    }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
                               String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
@@ -130,13 +138,22 @@ public class PipelineExecutor {
         if (!StringUtils.isEmpty(secretName)) {
             spec.setImagePullSecrets(Collections.singletonList(new LocalObjectReference(secretName)));
         }
-        spec.setVolumes(getVolumes());
-        spec.setContainers(Collections.singletonList(getContainer(envVars, dockerImage, command, pullImage)));
+        boolean isDockerInDockerEnabled = authManager.isAdmin() && ListUtils.emptyIfNull(envVars)
+                .stream()
+                .anyMatch(env -> KubernetesConstants.CP_CAP_DIND_NATIVE.equals(env.getName()) &&
+                        TRUE.equals(env.getValue()));
+        spec.setVolumes(getVolumes(isDockerInDockerEnabled));
+        spec.setContainers(Collections.singletonList(getContainer(
+                envVars, dockerImage, command, pullImage, isDockerInDockerEnabled)));
         return spec;
     }
 
 
-    private Container getContainer(List<EnvVar> envVars, String dockerImage, String command, boolean pullImage) {
+    private Container getContainer(List<EnvVar> envVars,
+                                   String dockerImage,
+                                   String command,
+                                   boolean pullImage,
+                                   boolean isDockerInDockerEnabled) {
         Container container = new Container();
         container.setName("pipeline");
         SecurityContext securityContext = new SecurityContext();
@@ -150,32 +167,32 @@ public class PipelineExecutor {
         }
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(pullImage ? "Always" : "Never");
-        container.setVolumeMounts(getMounts());
+        container.setVolumeMounts(getMounts(isDockerInDockerEnabled));
         return container;
     }
 
-    private List<Volume> getVolumes() {
+    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled) {
         final List<Volume> volumes = new ArrayList<>();
         volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
         volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
         volumes.add(createEmptyVolume(EMPTY_MOUNT, "Memory"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
-        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+        if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
         return volumes;
     }
 
-    private List<VolumeMount> getMounts() {
+    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled) {
         final List<VolumeMount> mounts = new ArrayList<>();
         mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
         mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
         mounts.add(getVolumeMount(EMPTY_MOUNT, "/dev/shm"));
         final List<DockerMount> dockerMounts = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
-        if (Boolean.TRUE.equals(preferenceManager.getPreference(SystemPreferences.DOCKER_IN_DOCKER_ENABLED)) &&
+        if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
         }
