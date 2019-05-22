@@ -612,7 +612,7 @@ function is_kube_dns_configured_for_custom_entries {
 function prepare_kube_dns {
     local static_names="$1"
 
-    if [ ! is_kube_dns_configured_for_custom_entries ]; then
+    if ! is_kube_dns_configured_for_custom_entries; then
         # 1. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
         kubectl patch deployment kube-dns \
@@ -769,7 +769,7 @@ EOF
     fi
 
     # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
-    if [ ! is_kube_dns_configured_for_custom_entries ]; then
+    if ! is_kube_dns_configured_for_custom_entries; then
         prepare_kube_dns
     fi
     # Trigger dns update (rollout)
