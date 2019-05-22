@@ -906,7 +906,7 @@ function api_setup_base_preferences {
     ## Set cluster.networks.config preference
     local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
     if [ -f "$cloud_config_network_file" ]; then
-        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES}' < "$cloud_config_network_file")")"
+        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE}' < "$cloud_config_network_file")")"
         
         # cluster.networks.config shall be visible, or otherwise node_up.py will NOT be able to get the information from the API Services
         api_set_preference "cluster.networks.config" "$cluster_networks_config_json" "true"

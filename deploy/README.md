@@ -75,6 +75,13 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_DEFAULT_ADMIN_NAME= \
                 -env CP_DEFAULT_ADMIN_PASS= \
                 -env CP_DEFAULT_ADMIN_EMAIL= \
+                
+                # VM Monitor
+                -env CP_VM_MONITOR_HOUR_INTERVAL= \                 # Specify interval in hours between VM Monitor checks. Value 1 (default) means that VM Monitor will check VMs each hour       
+                -env CP_VM_MONITOR_INSTANCE_TAG_NAME= \             # VM Monitor will check status only of nodes labeled by this tag and value CP_VM_MONITOR_INSTANCE_TAG_VALUE 
+                -env CP_VM_MONITOR_INSTANCE_TAG_VALUE= \            # VM Monitor will check status only of nodes labeled by tag CP_VM_MONITOR_INSTANCE_TAG_NAME and this value 
+                -env CP_VM_MONITOR_TO_USER= \                       # Username that shall by notified when VM Monitor detects invalid VM state
+                -env CP_VM_MONITOR_CC_USERS= \                      # Usernames that shall by additionaly notified (cc) when VM Monitor detects invalid VM state
 
                 # Pipectl options
                 -m \                                                # Install kuberneters master
