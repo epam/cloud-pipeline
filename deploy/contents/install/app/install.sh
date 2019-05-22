@@ -322,8 +322,16 @@ if is_service_requested cp-idp; then
                                         $CP_IDP_INTERNAL_HOST
 
         print_info "-> Deploying IdP"
+        set_kube_service_external_ip CP_IDP_SVC_EXTERNAL_IP_LIST \
+                                     CP_IDP_NODE_IP \
+                                     CP_IDP_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-idp"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-idp"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-pod.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml --svc
         expose_cluster_port "cp-idp" \
                             "${CP_IDP_EXTERNAL_PORT}" \
                             "8080"
@@ -457,8 +465,16 @@ if is_service_requested cp-api-srv; then
         fi
 
         print_info "-> Deploying API Service"
+        set_kube_service_external_ip CP_API_SRV_SVC_EXTERNAL_IP_LIST \
+                                     CP_API_SRV_NODE_IP \
+                                     CP_API_SRV_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-api-srv"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-api-srv"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-svc.yaml --svc
         expose_cluster_port "cp-api-srv" \
                             "${CP_API_SRV_EXTERNAL_PORT}" \
                             "8080"
@@ -559,8 +575,16 @@ if is_service_requested cp-docker-registry; then
                                         $CP_DOCKER_INTERNAL_HOST
 
         print_info "-> Deploying Docker registry"
+        set_kube_service_external_ip CP_DOCKER_SVC_EXTERNAL_IP_LIST \
+                                     CP_DOCKER_NODE_IP \
+                                     CP_DOCKER_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-docker-registry"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-docker-registry"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-svc.yaml --svc
         expose_cluster_port "cp-docker-registry" \
                             "${CP_DOCKER_EXTERNAL_PORT}" \
                             "443"
@@ -631,8 +655,16 @@ if is_service_requested cp-edge; then
         print_ok "   EDGE_EXTERNAL:         $EDGE_EXTERNAL"
 
         print_info "-> Deploying EDGE"
+        set_kube_service_external_ip CP_EDGE_SVC_EXTERNAL_IP_LIST \
+                                     CP_EDGE_NODE_IP \
+                                     CP_EDGE_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-edge"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-edge"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml --svc
         expose_cluster_port "cp-edge" \
                             "${CP_EDGE_EXTERNAL_PORT}" \
                             "8080"
@@ -694,8 +726,16 @@ if is_service_requested cp-git; then
                                         $CP_GITLAB_INTERNAL_HOST
 
         print_info "-> Deploying GitLab"
+        set_kube_service_external_ip CP_GITLAB_SVC_EXTERNAL_IP_LIST \
+                                     CP_GITLAB_NODE_IP \
+                                     CP_GITLAB_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-git"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-git"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-svc.yaml --svc
         expose_cluster_port "cp-git" \
                             "${CP_GITLAB_EXTERNAL_PORT}" \
                             "${CP_GITLAB_INTERNAL_PORT}"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-docker-registry: "true"
+  name: cp-docker-registry
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_DOCKER_INTERNAL_PORT}
+    targetPort: 443
+    name: cp-docker-registry-port-https
+  externalIPs:
+${CP_DOCKER_SVC_EXTERNAL_IP_LIST}
+  selector:
+    cloud-pipeline/cp-docker-registry: "true"

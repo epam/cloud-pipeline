@@ -604,6 +604,72 @@ function parse_options {
     return 0
 }
 
+function get_kube_node_ip_list {
+    local node_name="$1"
+    local node_name_ext=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.addresses[] | select(.type=="ExternalIP") | .address' -r)
+    local node_name_int=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.addresses[] | select(.type=="InternalIP") | .address' -r)
+    echo $node_name_ext $node_name_int
+}
+
+function get_svc_preferred_external_ip {
+    local source_explicit_ip="$1"
+    local source_kube_node_name="$2"
+    local source_kube_node_label="$3"
+
+    local source_explicit_ip_value=
+    local source_kube_node_name_value=
+    local source_kube_node_label_value=
+    local source_selected_ip=
+    
+    if [ "$source_explicit_ip" ]; then
+        source_explicit_ip_value="${!source_explicit_ip}"
+    fi
+    if [ "$source_kube_node_name" ]; then
+        source_kube_node_name_value="${!source_kube_node_name}"
+        if [ "$source_kube_node_name_value" ]; then
+            source_kube_node_name_value="$(get_kube_node_ip_list $source_kube_node_name_value)"
+        fi
+    fi
+    if [ "$source_kube_node_label" ]; then
+        source_kube_node_label_value="$source_kube_node_label"
+        local source_kube_node_label_names_item_ip=
+        source_kube_node_label_names=$(kubectl get no --selector "$source_kube_node_label_value" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+        for source_kube_node_label_names_item in $source_kube_node_label_names; do
+            source_kube_node_label_names_item_ip="$source_kube_node_label_names_item_ip $(get_kube_node_ip_list $source_kube_node_label_names_item)"
+        done
+        source_kube_node_label_value=$(echo $source_kube_node_label_names_item_ip)
+    fi
+
+    # CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE can be one of:
+    # - source_explicit_ip: defines explicit list of IPs
+    # - source_kube_node_name: defines explicit name of the kube node
+    # - source_kube_node_label: defines label, that will be used for search
+    if [ "$CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE" ]; then
+        preferred_source_var_name="${CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE}_value"
+        source_selected_ip=${!preferred_source_var_name}
+        if [ "$source_selected_ip" ]; then
+            echo "$source_selected_ip"
+            return 0
+        fi
+    fi
+
+    # Otherwise check options one by one
+    if [ "$source_explicit_ip_value" ]; then
+        echo $source_explicit_ip_value
+        return 0
+    elif [ "$source_kube_node_name_value" ]; then
+        echo $source_kube_node_name_value
+        return 0
+    elif [ "$source_kube_node_label_value" ]; then
+        echo $source_kube_node_label_value
+        return 0
+    else
+        return 1
+    fi
+}
+
 function is_kube_dns_configured_for_custom_entries {
    kubectl get deployment kube-dns -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
    return $?
@@ -687,8 +753,62 @@ function prepare_kube_dns {
     fi
 }
 
+function get_kube_resource_spec_file_by_type {
+    local original_spec_file="$1"
+    local resource_type="$2"
+
+    if [ "$resource_type" == "--svc" ]; then
+        if [ -f "$original_spec_file" ]; then
+            echo "$original_spec_file"
+            return 0
+        fi
+        local spec_dir="$(dirname $original_spec_file)"
+        local spec_file="$(basename $original_spec_file)"
+
+        local spec_ext="${spec_file##*.}"
+        local spec_file="${spec_file%.*}"
+        local spec_suffix="${CP_KUBE_SERVICES_TYPE:-"node-port"}"
+        
+        echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
+    else
+        echo "$original_spec_file"
+    fi
+}
+
+function set_kube_service_external_ip {
+    local result_var="$1"
+    local source_explicit_ip="$2"
+    local source_kube_node_name="$3"
+    local source_kube_node_label="$4"
+
+    if [ "$CP_KUBE_SERVICES_TYPE" != "external-ip" ]; then
+        print_info "Services mode type is not \"external-ip\", external ip list WILL NOT be applied"
+        return 0
+    fi
+
+    local result_ip_list=$(get_svc_preferred_external_ip "$source_explicit_ip" \
+                                                        "$source_kube_node_name" \
+                                                        "$source_kube_node_label")
+
+    if [ -z "$result_ip_list" ]; then
+        return 1
+    fi
+
+    local result_ip_list_yml=
+    for result_ip in $result_ip_list; do
+        result_ip_list_yml="${result_ip_list_yml}  - ${result_ip}\n"
+    done
+    result_ip_list_yml="$(echo -e "$result_ip_list_yml")"
+    declare -xg "${result_var}"="${result_ip_list_yml}"
+    return 0
+}
+
 function create_kube_resource {
     local spec_file="$1"
+    local resource_type="$2"
+
+    spec_file="$(get_kube_resource_spec_file_by_type "$spec_file" "$resource_type")"
+
     local updated_spec_file="/tmp/$(basename $spec_file)"
     envsubst < $spec_file > "$updated_spec_file"
     kubectl create -f "$updated_spec_file"
