@@ -25,12 +25,13 @@ class TestMoveWithFolders(object):
     current_directory = os.getcwd()
     home_dir = "test_cp_home_dir-681%s/" % get_test_prefix()
     checkout_dir = "mv-folders-checkout/"
-    output_folder = "mv-folders-" + TestFiles.TEST_FOLDER_FOR_OUTPUT + get_test_prefix()
-    test_file_1 = "mv-folders-" + TestFiles.TEST_FILE1
-    test_file_with_other_extension = "mv-folders-" + TestFiles.TEST_FILE_WITH_OTHER_EXTENSION
-    test_file_2 = "mv-folders-" + TestFiles.TEST_FILE2
-    test_folder = "mv-folders-" + TestFiles.TEST_FOLDER
-    test_folder_2 = "mv-folders-" + TestFiles.TEST_FOLDER2
+    test_prefix = "%s-mv-folders-" % get_test_prefix()
+    output_folder = test_prefix + TestFiles.TEST_FOLDER_FOR_OUTPUT + get_test_prefix()
+    test_file_1 = test_prefix + TestFiles.TEST_FILE1
+    test_file_with_other_extension = test_prefix + TestFiles.TEST_FILE_WITH_OTHER_EXTENSION
+    test_file_2 = test_prefix + TestFiles.TEST_FILE2
+    test_folder = test_prefix + TestFiles.TEST_FOLDER
+    test_folder_2 = test_prefix + TestFiles.TEST_FOLDER2
     source_dir = "mv-folders-sources%s/" % get_test_prefix()
 
     @classmethod
