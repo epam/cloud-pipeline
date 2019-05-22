@@ -51,7 +51,7 @@ class TestTerminateNodeByTimeout(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.run_id, 30)
+            wait_for_instance_termination(cls.run_id, 50)
 
     @pytest.mark.run(order=1)
     def test_pipeline_should_be_completed(self):
