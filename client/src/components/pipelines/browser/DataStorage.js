@@ -1393,7 +1393,10 @@ export default class DataStorage extends React.Component {
             </Row>
           </Col>
         </Row>
-        <ContentMetadataPanel onPanelClose={onPanelClose} contentContainerStyle={{overflow: 'inherit'}}>
+        <ContentMetadataPanel
+          style={{flex: 1, overflow: 'auto'}}
+          onPanelClose={onPanelClose}
+          contentContainerStyle={{overflow: 'inherit'}}>
           <div
             key={CONTENT_PANEL_KEY}
             style={{flex: 1, display: 'flex', flexDirection: 'column'}}>

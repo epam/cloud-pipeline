@@ -1066,7 +1066,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
     };
     return (
-      <ContentIssuesMetadataPanel onPanelClose={onPanelClose}>
+      <ContentIssuesMetadataPanel
+        style={{flex: 1, overflow: 'auto'}}
+        onPanelClose={onPanelClose}>
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
