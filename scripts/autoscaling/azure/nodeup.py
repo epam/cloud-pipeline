@@ -17,6 +17,7 @@ import functools
 import os
 import json
 import sys
+import re
 
 import pykube
 import logging
@@ -39,6 +40,7 @@ NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 
 current_run_id = 0
 api_url = None
@@ -444,6 +446,8 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
         },
         "properties": {
             "virtualMachineProfile": {
+                'priority': 'Low',
+                'evictionPolicy': 'delete',
                 'os_profile': get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
                 'storage_profile': get_storage_profile(disk, image, instance_type),
                 "network_profile": {
@@ -590,20 +594,27 @@ def verify_run_id(run_id):
 # Some times this node can rich startup script before it will be terminated, so node will join a kube cluster
 # In order to get rid of this 'phantom' node this method will delete node with status NotReady and name like computerNamePrefix + 000000
 def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
-    # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
-    node_names = [ins_id + '000000', ins_id + '000001']
-    for node_name in node_names:
-        nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_name})
-        for node in nodes.response['items']:
-            if any(condition['status'] and condition['type'] == "NotReady" for condition in node["status"]["conditions"]):
-                obj = {
-                    "apiVersion": "v1",
-                    "kind": "Node",
-                    "metadata": {
-                        "name": node["metadata"]["name"]
+    low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, ins_id)
+    if low_priority_search:
+        scale_set_name = low_priority_search.group(1)
+        # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
+        node_names = [scale_set_name + '000000', scale_set_name + '000001']
+        for node_name in node_names:
+            nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_name})
+            for node in nodes.response['items']:
+                if any((condition['status'] == 'False' or condition['status'] == 'Unknown')
+                       and condition['type'] == "Ready" for condition in node["status"]["conditions"]):
+                    obj = {
+                        "apiVersion": "v1",
+                        "kind": "Node",
+                        "metadata": {
+                            "name": node["metadata"]["name"]
+                        }
                     }
-                }
-                pykube.Node(kube_api, obj).delete()
+                    pykube.Node(kube_api, obj).delete()
+    else:
+        pipe_log_warn('instance id does not match with scale set vm name pattern: {}, '
+                      'checking statuses for this scale set VMs will not executed'.format(ins_id))
 
 
 def find_node(nodename, nodename_full, api):
