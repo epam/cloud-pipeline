@@ -725,7 +725,7 @@ function register_custom_name_in_dns {
         # If so - add new/update existing entry
         current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
         if [ $? -ne 0 ]; then
-            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_type WILL NOT be registered"
+            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
             return 1
         fi
         # Delete existing entry
@@ -742,7 +742,7 @@ function register_custom_name_in_dns {
             --type merge \
             -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
         if [ $? -ne 0 ]; then
-            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_type}. Entry WILL NOT be registered"
+            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
             print_info "================"
             print_info "$current_custom_names"
             print_info "================"
@@ -763,7 +763,7 @@ data:
     ${custom_target_value} ${custom_name}
 EOF
          if [ $? -ne 0 ]; then
-            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_type}. Entry WILL NOT be registered"
+            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
             return 1
         fi
     fi
@@ -779,7 +779,7 @@ EOF
         -p="[{\"op\": \"replace\", \"path\": \"/spec/template/metadata/annotations/cp-updated\", \"value\": \"$(date)\" }]"
 
     if [ $? -ne 0 ]; then
-        print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_type}"
+        print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_value}"
         return 1
     fi
 
@@ -788,7 +788,7 @@ EOF
     # Just in case...
     sleep 10
 
-    print_ok "Custom entry $custom_name for ${custom_target_type} is registered in the DNS"
+    print_ok "Custom entry $custom_name for ${custom_target_value} is registered in the DNS"
 }
 
 function expose_cluster_port {
