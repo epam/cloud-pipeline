@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -67,8 +68,19 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
 
     @Override
     public double getSpotPrice(final String instanceType, final AzureRegion region) {
-        // TODO replace with actual logic for azure cloud
-        return 0.0d;
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(LOW_PRIORITY_TERM_TYPE);
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(region.getId());
+        final List<InstanceOffer> offers = ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO));
+        return offers.stream()
+                .findFirst()
+                .map(InstanceOffer::getPricePerUnit)
+                .orElse(0.0);
     }
 
     @Override
