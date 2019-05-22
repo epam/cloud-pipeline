@@ -32,10 +32,13 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.network.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,6 +61,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final CommonCloudInstanceService instanceService;
     private final AzureVMService vmService;
     private final KubernetesManager kubernetesManager;
+    private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
     private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
@@ -69,6 +73,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String kubeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
+                                final PreferenceManager preferenceManager,
                                 final AzureVMService vmService,
                                 final KubernetesManager kubernetesManager,
                                 final CloudRegionManager regionManager,
@@ -81,6 +86,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${kube.kubeadm.token}") final String kubeToken) {
         this.instanceService = instanceService;
         this.cloudRegionManager = regionManager;
+        this.preferenceManager = preferenceManager;
         this.vmService = vmService;
         this.kubernetesManager = kubernetesManager;
         this.executorService = executorService;
@@ -240,6 +246,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .kubeToken(kubeToken)
                 .region(region.getRegionCode());
 
+        Boolean clusterSpotStrategy = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
+        if (BooleanUtils.isTrue(clusterSpotStrategy) || BooleanUtils.isTrue(instance.getSpot())) {
+            commandBuilder.isSpot(true);
+        }
         return commandBuilder.build().getCommand();
     }
 
