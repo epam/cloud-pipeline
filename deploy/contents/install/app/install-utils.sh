@@ -604,48 +604,60 @@ function parse_options {
     return 0
 }
 
+function is_kube_dns_configured_for_custom_entries {
+   kubectl get deployment kube-dns -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
+   return $?
+}
+
 function prepare_kube_dns {
     local static_names="$1"
 
-    # 1. Mount hosts config map into dnsmasq
-    kubectl patch deployment kube-dns \
-        --namespace kube-system \
-        --type='json' \
-        -p='[
-                {
-                    "op": "add",
-                    "path": "/spec/template/spec/volumes/-",
-                    "value": {
-                    "configMap": {
-                        "name": "cp-dnsmasq-hosts",
-                        "optional": true
+    if [ ! is_kube_dns_configured_for_custom_entries ]; then
+        # 1. Mount hosts config map into dnsmasq
+        print_info "Configuring kube-dns for custom entries support"
+        kubectl patch deployment kube-dns \
+            --namespace kube-system \
+            --type='json' \
+            -p='[
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/volumes/-",
+                        "value": {
+                            "configMap": {
+                                "name": "cp-dnsmasq-hosts",
+                                "optional": true
+                            },
+                            "name": "cp-dnsmasq-hosts"
+                        }
                     },
-                    "name": "cp-dnsmasq-hosts"
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
+                        "value": {
+                            "mountPath": "/etc/hosts.d",
+                            "name": "cp-dnsmasq-hosts"
+                        }
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d"
                     }
-                },
-                {
-                    "op": "add",
-                    "path": "/spec/template/spec/containers/1/volumeMounts/-",
-                    "value": {
-                    "mountPath": "/etc/hosts.d",
-                    "name": "cp-dnsmasq-hosts"
-                    }
-                },
-                {
-                    "op": "add",
-                    "path": "/spec/template/spec/containers/1/args/-",
-                    "value": "--hostsdir=/etc/hosts.d"
-                }
-            ]'
-    if [ $? -ne 0 ]; then
-        print_err "Unable to patch kube-dns deployment"
-        return 1
-    fi
+                ]'
+        if [ $? -ne 0 ]; then
+            print_err "Unable to patch kube-dns deployment"
+            return 1
+        fi
 
-    # Wait for the pods restart
-    kubectl rollout status deployment/kube-dns -n kube-system -w
-    # Just in case...
-    sleep 10
+        # Wait for the pods restart
+        kubectl rollout status deployment/kube-dns -n kube-system -w
+        # Just in case...
+        sleep 10
+        
+        print_ok "kube-dns is configured for custom entries support"
+    else
+        print_info "kube-dns seems to be already configured for custom entries support"
+    fi
 
     # 2. Add ${static_names} to the kube-dns
     local custom_name_registration_results=0
@@ -756,6 +768,10 @@ EOF
         fi
     fi
 
+    # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
+    if [ ! is_kube_dns_configured_for_custom_entries ]; then
+        prepare_kube_dns
+    fi
     # Trigger dns update (rollout)
     kubectl patch deployment kube-dns \
         -n kube-system \
