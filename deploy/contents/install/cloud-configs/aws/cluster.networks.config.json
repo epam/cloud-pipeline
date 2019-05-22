@@ -35,6 +35,6 @@
         }
     ],
     "tags": {
-        ${CP_VM_MONITOR_INSTANCE_TAG_NAME} : ${CP_VM_MONITOR_INSTANCE_TAG_VALUE}
+        "${CP_VM_MONITOR_INSTANCE_TAG_NAME}" : "${CP_VM_MONITOR_INSTANCE_TAG_VALUE}"
     }
 }
