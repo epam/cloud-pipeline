@@ -160,78 +160,78 @@ KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kuberne
 # TODO: allow to specify node name for different roles"
 
 # Allow to schedule API DB to the master
-CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-api-db to $CP_DB_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DB_KUBE_NODE_NAME" cloud-pipeline/cp-api-db="true" --overwrite
 
 # Allow to schedule API Service to the master
-CP_API_SRV_KUBE_NODE_NAME=${CP_API_SRV_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_API_SRV_KUBE_NODE_NAME=${CP_API_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-api-srv to $CP_API_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_API_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-api-srv="true" --overwrite
 
 # Allow to schedule GitLab to the master
-CP_GITLAB_KUBE_NODE_NAME=${CP_GITLAB_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_GITLAB_KUBE_NODE_NAME=${CP_GITLAB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-git to $CP_GITLAB_KUBE_NODE_NAME"
 kubectl label nodes "$CP_GITLAB_KUBE_NODE_NAME" cloud-pipeline/cp-git="true" --overwrite
 
 # Allow to schedule GitLab to API sync job to the master
-CP_SYNC_GIT_KUBE_NODE_NAME=${CP_SYNC_GIT_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_SYNC_GIT_KUBE_NODE_NAME=${CP_SYNC_GIT_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-git-sync to $CP_SYNC_GIT_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SYNC_GIT_KUBE_NODE_NAME" cloud-pipeline/cp-git-sync="true" --overwrite
 
 # Allow to schedule basic IdP to the master
-CP_IDP_KUBE_NODE_NAME=${CP_IDP_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_IDP_KUBE_NODE_NAME=${CP_IDP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-idp to $CP_IDP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_IDP_KUBE_NODE_NAME" cloud-pipeline/cp-idp="true" --overwrite
 
 # Allow to schedule EDGE to the master
-CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-edge to $CP_EDGE_KUBE_NODE_NAME"
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
 kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
 
 # Allow to schedule notifier to the master
-CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-notifier to $CP_NOTIFIER_KUBE_NODE_NAME"
 kubectl label nodes "$CP_NOTIFIER_KUBE_NODE_NAME" cloud-pipeline/cp-notifier="true" --overwrite
 
 # Allow to schedule Docker registry to the master
-CP_DOCKER_KUBE_NODE_NAME=${CP_DOCKER_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_DOCKER_KUBE_NODE_NAME=${CP_DOCKER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-docker-registry to $CP_DOCKER_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_KUBE_NODE_NAME" cloud-pipeline/cp-docker-registry="true" --overwrite
 
 # Allow to schedule Docker comp scanner to the master
-CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
 
 # Allow to schedule Clair scanner to the master
-CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-clair to $CP_CLAIR_KUBE_NODE_NAME"
 kubectl label nodes "$CP_CLAIR_KUBE_NODE_NAME" cloud-pipeline/cp-clair="true" --overwrite
 
 # Allow to schedule Search ELK to the master
-CP_SEARCH_ELK_KUBE_NODE_NAME=${CP_SEARCH_ELK_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_SEARCH_ELK_KUBE_NODE_NAME=${CP_SEARCH_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-elk to $CP_SEARCH_ELK_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_ELK_KUBE_NODE_NAME" cloud-pipeline/cp-search-elk="true" --overwrite
 
 # Allow to schedule Search service to the master
-CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
 # Allow to schedule Heapster ELK to the master
-CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
 kubectl label nodes "$CP_HEAPSTER_ELK_KUBE_NODE_NAME" cloud-pipeline/cp-heapster-elk="true" --overwrite
 
 # Allow to schedule Heapster service to the master
-CP_HEAPSTER_KUBE_NODE_NAME=${CP_HEAPSTER_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_HEAPSTER_KUBE_NODE_NAME=${CP_HEAPSTER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster to $CP_HEAPSTER_KUBE_NODE_NAME"
 kubectl label nodes "$CP_HEAPSTER_KUBE_NODE_NAME" cloud-pipeline/cp-heapster="true" --overwrite
 
 # Allow to schedule VM Monitor service to the master
-CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-KUBE_MASTER_NODE_NAME}
+CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-vm-monitor to $CP_VM_MONITOR_KUBE_NODE_NAME"
 kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-vm-monitor="true" --overwrite
 
