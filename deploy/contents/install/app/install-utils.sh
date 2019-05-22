@@ -448,6 +448,10 @@ function parse_options {
         export CP_FORCE_DATA_ERASE=1
         shift # past argument
         ;;
+        -n|--external-host-dns)
+        export CP_REGISTER_EXTERNAL_NAMES_IN_CLUSTER_DNS=1
+        shift # past argument
+        ;;
         -d|--docker)
         CP_DOCKERS_TO_INIT="$CP_DOCKERS_TO_INIT $2"
         shift # past argument
@@ -600,12 +604,175 @@ function parse_options {
     return 0
 }
 
+function prepare_kube_dns {
+    local static_names="$1"
+
+    # 1. Mount hosts config map into dnsmasq
+    kubectl patch deployment kube-dns \
+        --namespace kube-system \
+        --type='json' \
+        -p='[
+                {
+                    "op": "add",
+                    "path": "/spec/template/spec/volumes/-",
+                    "value": {
+                    "configMap": {
+                        "name": "cp-dnsmasq-hosts",
+                        "optional": true
+                    },
+                    "name": "cp-dnsmasq-hosts"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/spec/template/spec/containers/1/volumeMounts/-",
+                    "value": {
+                    "mountPath": "/etc/hosts.d",
+                    "name": "cp-dnsmasq-hosts"
+                    }
+                },
+                {
+                    "op": "add",
+                    "path": "/spec/template/spec/containers/1/args/-",
+                    "value": "--hostsdir=/etc/hosts.d"
+                }
+            ]'
+    if [ $? -ne 0 ]; then
+        print_err "Unable to patch kube-dns deployment"
+        return 1
+    fi
+
+    # Wait for the pods restart
+    kubectl rollout status deployment/kube-dns -n kube-system -w
+    # Just in case...
+    sleep 10
+
+    # 2. Add ${static_names} to the kube-dns
+    local custom_name_registration_results=0
+    IFS="," read -ra static_names_arr <<< "$static_names"
+
+    if [ "${#static_names_arr[@]}" == "0" ]; then
+        print_info "Static custom DNS entries registration is not requested, skipping"
+        return 0
+    fi
+
+    for name_pair in "${static_names_arr[@]}"; do
+        static_name=
+        static_ip=
+        IFS="=" read -r static_name static_ip <<< "$name_pair"
+        if [ "$static_name" ] && [ "$static_ip" ]; then
+            register_custom_name_in_dns "$static_name" --ip "$static_ip"
+            custom_name_registration_results=$?
+        else
+            print_warn "Cannot parse $name_pair name or ip is empty"
+        fi
+    done
+
+    if [ $custom_name_registration_results -ne 0 ]; then
+        print_err "Errors occured while registering custom DNS entries. Some of the names may not be resolved"
+    else
+        print_ok "All custom DNS entries are registered"
+    fi
+}
+
 function create_kube_resource {
     local spec_file="$1"
     local updated_spec_file="/tmp/$(basename $spec_file)"
     envsubst < $spec_file > "$updated_spec_file"
     kubectl create -f "$updated_spec_file"
     rm -f "$updated_spec_file"
+}
+
+function register_svc_custom_names_in_cluster {
+    local service_name="$1"
+    local custom_name="$2"
+
+    if [ "$CP_REGISTER_EXTERNAL_NAMES_IN_CLUSTER_DNS" == "1" ]; then
+        register_custom_name_in_dns "$custom_name" --svc "$service_name"
+        return $?
+    else
+        print_info "Custom name $custom_name DNS registration is skipped for $service_name as it was not requested. To make it work please specify \"-n|--external-host-dns\" option"
+        return 0
+    fi
+}
+
+function register_custom_name_in_dns {
+    local custom_name="$1"
+    # custom_target_type can be --ip <ip> or --svc <kube_svc_name>
+    local custom_target_type="$2"
+    local custom_target_value="$3"
+
+    if [ "$custom_target_type" == "--svc" ]; then
+        # If it is svc - get the cluster ip
+        custom_target_value=$(get_service_cluster_ip "${custom_target_value}")
+    fi
+
+    print_info "Registering DNS entry $custom_name as $custom_target_value (source type: $custom_target_type)"
+    # Check config map with hosts exists
+    if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
+        # If so - add new/update existing entry
+        current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
+        if [ $? -ne 0 ]; then
+            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_type WILL NOT be registered"
+            return 1
+        fi
+        # Delete existing entry
+        if grep -q "$custom_name" <<< "$current_custom_names"; then
+            current_custom_names="$(sed "/$custom_name/d" <<< "$current_custom_names")"
+        fi
+        # And add an update one
+        current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
+        # Escape the newlines
+        current_custom_names="$(escape_string "$current_custom_names")"
+        # Apply changes to the configmap
+        kubectl patch cm cp-dnsmasq-hosts \
+            -n kube-system \
+            --type merge \
+            -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
+        if [ $? -ne 0 ]; then
+            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_type}. Entry WILL NOT be registered"
+            print_info "================"
+            print_info "$current_custom_names"
+            print_info "================"
+            echo
+            return 1
+        fi
+
+    else
+        # Else create it from scratch
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cp-dnsmasq-hosts
+  namespace: kube-system
+data:
+  hosts: |
+    ${custom_target_value} ${custom_name}
+EOF
+         if [ $? -ne 0 ]; then
+            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_type}. Entry WILL NOT be registered"
+            return 1
+        fi
+    fi
+
+    # Trigger dns update (rollout)
+    kubectl patch deployment kube-dns \
+        -n kube-system \
+        --type='json' \
+        -p="[{\"op\": \"replace\", \"path\": \"/spec/template/metadata/annotations/cp-updated\", \"value\": \"$(date)\" }]"
+
+    if [ $? -ne 0 ]; then
+        print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_type}"
+        return 1
+    fi
+
+    # Wait for the pods restart
+    kubectl rollout status deployment/kube-dns -n kube-system -w
+    # Just in case...
+    sleep 10
+
+    print_ok "Custom entry $custom_name for ${custom_target_type} is registered in the DNS"
 }
 
 function expose_cluster_port {

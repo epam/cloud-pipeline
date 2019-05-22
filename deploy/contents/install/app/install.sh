@@ -86,6 +86,9 @@ if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
         create_kube_resource $K8S_SPECS_HOME/cp-dns-autoscale/cp-dns-autoscale-dpl.yaml
         print_info "-> Waiting for the DNS autoscaler to initialize"
         wait_for_deployment "dns-autoscaler"
+
+        print_info "-> Configuring Kube DNS well-known entries"
+        prepare_kube_dns "$CP_DNS_STATIC_ENTRIES"
     fi
 else
     print_info "Kube master installation skipped"
@@ -133,6 +136,7 @@ else
                         "$CP_KUBE_KUBEADM_TOKEN"
 fi
 echo
+
 
 ##########
 # Setup config for Kube
@@ -304,6 +308,7 @@ if is_service_requested cp-idp; then
         expose_cluster_port "cp-idp" \
                             "${CP_IDP_EXTERNAL_PORT}" \
                             "8080"
+        register_svc_custom_names_in_cluster "cp-idp" "$CP_IDP_EXTERNAL_HOST"
 
         print_info "-> Waiting for IdP to initialize"
         wait_for_deployment "cp-idp"
@@ -438,6 +443,7 @@ if is_service_requested cp-api-srv; then
         expose_cluster_port "cp-api-srv" \
                             "${CP_API_SRV_EXTERNAL_PORT}" \
                             "8080"
+        register_svc_custom_names_in_cluster "cp-api-srv" "$CP_API_SRV_EXTERNAL_HOST"
 
         print_info "-> Waiting for API Service to initialize"
         wait_for_deployment "cp-api-srv"
@@ -539,6 +545,7 @@ if is_service_requested cp-docker-registry; then
         expose_cluster_port "cp-docker-registry" \
                             "${CP_DOCKER_EXTERNAL_PORT}" \
                             "443"
+        register_svc_custom_names_in_cluster "cp-docker-registry" "$CP_DOCKER_EXTERNAL_HOST"
 
         print_info "-> Waiting for Docker registry to initialize"
         wait_for_deployment "cp-docker-registry"
@@ -613,6 +620,7 @@ if is_service_requested cp-edge; then
         expose_cluster_port "cp-edge" \
                             "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
                             "8081"
+        register_svc_custom_names_in_cluster "cp-edge" "$CP_EDGE_EXTERNAL_HOST"
 
         print_info "-> Waiting for EDGE to initialize"
         wait_for_deployment "cp-edge"
@@ -672,6 +680,7 @@ if is_service_requested cp-git; then
         expose_cluster_port "cp-git" \
                             "${CP_GITLAB_EXTERNAL_PORT}" \
                             "${CP_GITLAB_INTERNAL_PORT}"
+        register_svc_custom_names_in_cluster "cp-git" "$CP_GITLAB_EXTERNAL_HOST"
 
         # For gitlab we are waiting for endpoint to be alive (return redirect to IdP) as kube readiness probe cannot handle redirects
         print_info "-> Waiting for GitLab to initialize"
