@@ -231,7 +231,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance) {
 
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
                 .runId(String.valueOf(runId))
@@ -243,7 +243,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .kubeToken(kubeToken)
                 .region(region.getRegionCode());
 
-        Boolean clusterSpotStrategy = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
+        final Boolean clusterSpotStrategy = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
         if (BooleanUtils.isTrue(clusterSpotStrategy) || BooleanUtils.isTrue(instance.getSpot())) {
             commandBuilder.isSpot(true);
         }

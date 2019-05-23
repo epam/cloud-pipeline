@@ -107,7 +107,7 @@ public class AzureVMService {
     }
 
     private Optional<String> getScaleSetName(final String instanceId) {
-        Matcher matcher = LOW_PRIORITY_VM_NAME_PATTERN.matcher(instanceId);
+        final Matcher matcher = LOW_PRIORITY_VM_NAME_PATTERN.matcher(instanceId);
         return matcher.matches() ? Optional.ofNullable(matcher.group(1)) : Optional.empty();
     }
 
