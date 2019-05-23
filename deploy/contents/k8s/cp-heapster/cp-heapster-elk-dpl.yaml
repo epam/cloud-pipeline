@@ -22,8 +22,6 @@ spec:
           - sh
           - elasticsearch/bin/elasticsearch
           - -Ehttp.host=0.0.0.0
-          - -Ehttp.publish_port=${CP_HEAPSTER_ELK_INTERNAL_PORT}
-          - -Ehttp.publish_host=${CP_HEAPSTER_ELK_INTERNAL_HOST}
           image: nshou/elasticsearch-kibana:kibana5
           imagePullPolicy: "IfNotPresent"
           envFrom:
