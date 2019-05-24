@@ -13,8 +13,12 @@ spec:
     targetPort: 8080
     name: cp-edge-port-https
   - protocol: TCP
+    port: ${CP_EDGE_WEB_INTERNAL_PORT}
+    targetPort: 8181
+    name: cp-edge-port-web
+  - protocol: TCP
     port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
-    targetPort: 8081
+    targetPort: 8282
     name: cp-edge-port-connect
   externalIPs:
 ${CP_EDGE_SVC_EXTERNAL_IP_LIST}

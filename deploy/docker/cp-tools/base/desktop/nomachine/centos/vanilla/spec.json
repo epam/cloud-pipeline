@@ -2,6 +2,6 @@
     "short_description": "Centos 7 with Xfce desktop environment (via noMachine) and CPU-only support",
     "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "disk_size": "100",
-    "default_command": "export CP_NM_PROXY_HOST=${CP_EDGE_EXTERNAL_HOST} && export CP_NM_PROXY_PORT=${CP_EDGE_CONNECT_EXTERNAL_PORT} && bash /etc/nomachine/nomachine_launcher.sh",
+    "default_command": "export CP_NM_PROXY_HOST=${CP_EDGE_EXTERNAL_HOST} && export CP_NM_PROXY_PORT=${CP_EDGE_EXTERNAL_PORT} && bash /etc/nomachine/nomachine_launcher.sh",
     "endpoints": [ "{ \"name\": \"NoMachine\", \"nginx\": { \"port\": \"8888\" }, \"isDefault\": false }" ]
 }

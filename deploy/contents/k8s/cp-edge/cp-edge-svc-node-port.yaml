@@ -14,9 +14,14 @@ spec:
     targetPort: 8080
     name: cp-edge-port-https
   - protocol: TCP
+    nodePort: ${CP_EDGE_WEB_INTERNAL_PORT}
+    port: ${CP_EDGE_WEB_INTERNAL_PORT}
+    targetPort: 8181
+    name: cp-edge-port-web
+  - protocol: TCP
     nodePort: ${CP_EDGE_CONNECT_INTERNAL_PORT}
     port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
-    targetPort: 8081
+    targetPort: 8282
     name: cp-edge-port-connect
   type: NodePort
   selector:

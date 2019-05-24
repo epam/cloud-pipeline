@@ -157,8 +157,6 @@ print_ok "[Creating roles to the Kube nodes]"
 
 KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
 
-# TODO: allow to specify node name for different roles"
-
 # Allow to schedule API DB to the master
 CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-api-db to $CP_DB_KUBE_NODE_NAME"
@@ -669,8 +667,11 @@ if is_service_requested cp-edge; then
                             "${CP_EDGE_EXTERNAL_PORT}" \
                             "8080"
         expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_WEB_EXTERNAL_PORT}" \
+                            "8181"
+        expose_cluster_port "cp-edge" \
                             "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
-                            "8081"
+                            "8282"
         register_svc_custom_names_in_cluster "cp-edge" "$CP_EDGE_EXTERNAL_HOST"
 
         print_info "-> Waiting for EDGE to initialize"
@@ -689,9 +690,7 @@ if is_service_requested cp-edge; then
         echo $__edge_external_schema__
         kubectl label svc cp-edge $__edge_external_schema__
 
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge:" 
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSSH+ENDPOINTS: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nHTTP CONNECT:  $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_CONNECT_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
     fi
     echo
 fi
