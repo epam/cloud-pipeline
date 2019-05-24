@@ -266,8 +266,8 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
-    public List<InstanceType> getAllowedInstanceTypes(final Long regionId) {
-        return getAllInstanceTypes(defaultRegionIfNull(regionId)).stream()
+    public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final boolean spot) {
+        return getAllInstanceTypes(defaultRegionIfNull(regionId), spot).stream()
                 .filter(offer -> isInstanceTypeAllowed(offer.getName()))
                 .collect(toList());
     }
@@ -277,8 +277,8 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded for the specified region.
      */
-    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId) {
-        return getAllInstanceTypes(defaultRegionIfNull(regionId)).stream()
+    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final boolean spot) {
+        return getAllInstanceTypes(defaultRegionIfNull(regionId), spot).stream()
                 .filter(offer -> isToolInstanceTypeAllowed(offer.getName()))
                 .collect(toList());
     }
@@ -432,7 +432,7 @@ public class InstanceOfferManager {
      * Returns all instance types for all regions.
      */
     public List<InstanceType> getAllInstanceTypes() {
-        return getAllInstanceTypes(null);
+        return getAllInstanceTypes(null, false);
     }
 
     /**
@@ -440,9 +440,11 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
-    public List<InstanceType> getAllInstanceTypes(final Long regionId) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
         InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setTermType(CloudInstancePriceService.ON_DEMAND_TERM_TYPE);
+        requestVO.setTermType(spot
+                ? CloudInstancePriceService.ON_DEMAND_TERM_TYPE
+                : CloudInstancePriceService.SPOT_TERM_TYPE);
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
@@ -490,10 +492,12 @@ public class InstanceOfferManager {
      *
      * @param toolId If specified then allowed types will be bounded for the specified tool.
      * @param regionId If specified then allowed types will be loaded only for the specified region.
+     * @param spot if true allowed instances types will be filtered and only spot instance proposal will be shown
      */
-    public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId) {
+    public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
+                                                                        final boolean spot) {
         final ContextualPreferenceExternalResource resource = toolResource(toolId);
-        final List<InstanceType> instanceTypes = getAllInstanceTypes(defaultRegionIfNull(regionId));
+        final List<InstanceType> instanceTypes = getAllInstanceTypes(defaultRegionIfNull(regionId), spot);
         final List<InstanceType> allowedInstanceTypes = getAllowedInstanceTypes(instanceTypes, resource,
                 SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         final List<InstanceType> allowedInstanceDockerTypes = getAllowedInstanceTypes(instanceTypes, resource,

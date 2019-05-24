@@ -127,7 +127,7 @@ public class InstanceOfferManagerUnitTest {
         when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
-                instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null);
+                instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null, false);
 
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
@@ -151,7 +151,7 @@ public class InstanceOfferManagerUnitTest {
         when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
-                instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null);
+                instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null, false);
 
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
@@ -164,7 +164,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(any(), any()))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID);
+        instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID, false);
 
         ArgumentCaptor<InstanceOfferRequestVO> argument = ArgumentCaptor.forClass(InstanceOfferRequestVO.class);
         verify(instanceOfferDao).loadInstanceTypes(argument.capture());

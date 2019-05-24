@@ -70,7 +70,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public double getSpotPrice(final String instanceType, final AzureRegion region) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(LOW_PRIORITY_TERM_TYPE);
+        requestVO.setTermType(SPOT_TERM_TYPE);
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);

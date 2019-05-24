@@ -23,7 +23,7 @@ import java.util.List;
 
 public interface CloudInstancePriceService<T extends AbstractCloudRegion> extends CloudAwareService {
     String ON_DEMAND_TERM_TYPE = "OnDemand";
-    String LOW_PRIORITY_TERM_TYPE = "LowPriority";
+    String SPOT_TERM_TYPE = "Spot";
     String LINUX_OPERATING_SYSTEM = "Linux";
     String SHARED_TENANCY = "Shared";
     String HOURS_UNIT = "Hrs";
