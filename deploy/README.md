@@ -91,10 +91,11 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_VM_MONITOR_CC_USERS= \                      # Usernames that shall by additionaly notified (cc) when VM Monitor detects invalid VM state
 
                 # Pipectl options
-                -m \                                                # Install kuberneters master
-                --docker \                                          # Limit images to be pushed during deployment
-                -id \                                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
-                -s \                                                # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
+                -m|--install-kube-master \                          # Install kuberneters master
+                -d|--docker \                                       # Limit images to be pushed during deployment
+                -id|--deployment-id \                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
+                -s|--service \                                      # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
+                --keep-kubedm-proxies \                             # Allow (http/https/no)_proxy settings to be included in to kube-api manifest by kubeadm. If option is not set - variables will be dropped before the kubeadm init command and then restored
 
                 # Misc
                 -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME= \         # Name of the object storage, that is used to store system-level data (e.g. issues attachments)

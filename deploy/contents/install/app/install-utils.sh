@@ -452,6 +452,10 @@ function parse_options {
         export CP_REGISTER_EXTERNAL_NAMES_IN_CLUSTER_DNS=1
         shift # past argument
         ;;
+        --keep-kubedm-proxies)
+        export CP_KUBE_KEEP_KUBEADM_PROXIES=1
+        shift # past argument
+        ;;
         -d|--docker)
         CP_DOCKERS_TO_INIT="$CP_DOCKERS_TO_INIT $2"
         shift # past argument
