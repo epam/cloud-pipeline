@@ -235,8 +235,8 @@ public class AzurePriceListLoader {
         final int gpu = Integer.parseInt(capabilitiesByName.getOrDefault(GPU_CAPABILITY, "0"));
         return InstanceOffer.builder()
                 .termType(meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
-                        ? SPOT_TERM_TYPE
-                        : ON_DEMAND_TERM_TYPE
+                        ? PriceType.LOW_PRIORITY.getName()
+                        : PriceType.ON_DEMAND.getName()
                 )
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)

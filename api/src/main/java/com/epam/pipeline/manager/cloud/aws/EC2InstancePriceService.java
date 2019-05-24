@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.cloud.aws;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -41,6 +44,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv";
     private static final int COLUMNS_LINE_INDEX = 5;
 
+    private final InstanceOfferDao instanceOfferDao;
     private final EC2Helper ec2Helper;
 
     @Override
@@ -81,5 +85,17 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
             return offers.get(0).getPricePerUnit() / (DAYS_IN_MONTH * HOURS_IN_DAY) * instanceDisk;
         }
         return 0;
+    }
+
+    @Override
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+        InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setTermType(PriceType.ON_DEMAND.getName());
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(regionId);
+        return instanceOfferDao.loadInstanceTypes(requestVO);
     }
 }

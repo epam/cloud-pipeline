@@ -286,7 +286,7 @@ public class InstanceOfferManager {
     public double getPricePerHourForInstance(final String instanceType, final Long regionId) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(CloudInstancePriceService.ON_DEMAND_TERM_TYPE);
+        requestVO.setTermType(CloudInstancePriceService.PriceType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
@@ -441,16 +441,7 @@ public class InstanceOfferManager {
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
     public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
-        InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setTermType(spot
-                ? CloudInstancePriceService.ON_DEMAND_TERM_TYPE
-                : CloudInstancePriceService.SPOT_TERM_TYPE);
-        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
-        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
-        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
-        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
-        requestVO.setRegionId(regionId);
-        return instanceOfferDao.loadInstanceTypes(requestVO);
+        return cloudFacade.getAllInstanceTypes(regionId, spot);
     }
 
     public Observable<List<InstanceType>> getAllInstanceTypesObservable() {
