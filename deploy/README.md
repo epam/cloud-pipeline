@@ -59,6 +59,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Core API
                 -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
                 -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to aut register all users that passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions (default: false)
+                -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab
                 -env CP_GITLAB_SSO_TARGET_URL= \                    # Sets idp_sso_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SSO_TARGET_URL_TRAIL}"
