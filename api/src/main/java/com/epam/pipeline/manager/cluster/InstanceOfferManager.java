@@ -440,7 +440,7 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
         return cloudFacade.getAllInstanceTypes(regionId, spot);
     }
 

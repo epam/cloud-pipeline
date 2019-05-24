@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -124,7 +123,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
+        when(cloudFacade.getAllInstanceTypes(any(), any())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null, false);
@@ -148,7 +147,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
+        when(cloudFacade.getAllInstanceTypes(any(), any())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null, false);
@@ -160,16 +159,16 @@ public class InstanceOfferManagerUnitTest {
 
     @Test
     public void getAllowedInstanceAndPriceTypesShouldLoadInstanceTypesForSingleRegionIfItIsSpecified() {
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(Collections.emptyList());
+        when(cloudFacade.getAllInstanceTypes(any(), any())).thenReturn(Collections.emptyList());
         when(contextualPreferenceManager.search(any(), any()))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID, false);
 
-        ArgumentCaptor<InstanceOfferRequestVO> argument = ArgumentCaptor.forClass(InstanceOfferRequestVO.class);
-        verify(instanceOfferDao).loadInstanceTypes(argument.capture());
-        final InstanceOfferRequestVO request = argument.getValue();
-        assertThat(request.getRegionId(), is(REGION_ID));
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        verify(cloudFacade).getAllInstanceTypes(argument.capture(), any());
+        final Long regionId = argument.getValue();
+        assertThat(regionId, is(REGION_ID));
     }
 
     @Test

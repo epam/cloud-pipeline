@@ -88,7 +88,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
     }
 
     @Override
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
         InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setTermType(PriceType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);

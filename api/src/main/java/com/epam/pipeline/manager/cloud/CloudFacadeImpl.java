@@ -175,7 +175,7 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstancePriceService(region).getAllInstanceTypes(region.getId(), spot);
     }

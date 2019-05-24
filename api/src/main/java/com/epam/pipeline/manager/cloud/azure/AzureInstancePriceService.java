@@ -112,7 +112,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     }
 
     @Override
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
         InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setTermType(spot ? PriceType.LOW_PRIORITY.getName() : PriceType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
