@@ -75,14 +75,16 @@ task buildDoc(type: Tar) {
 task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
-                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar"]) {
+                          ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar",
+                          ":data-sharing-service:buildFast"]) {
     group = 'build'
 }
 
 task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
-                          ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build"]) {
+                          ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build",
+                          ":data-sharing-service:All"]) {
     group = 'build'
 }
 
@@ -145,7 +147,8 @@ task installDist() {
                 "$rootDir/dist/cloud-pipeline-docs.tar.gz",
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
-                "$rootDir/vm-monitor/build/libs/vm-monitor.jar"
+                "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
+                "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar"
         )
 
         distFiles.each {
