@@ -121,7 +121,7 @@ fi
 bkp_http_proxy="$http_proxy"
 bkp_https_proxy="$https_proxy"
 bkp_no_proxy="$no_proxy"
-if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" == "1" ]; then
+if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
   unset http_proxy https_proxy no_proxy
 fi
 

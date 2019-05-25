@@ -87,6 +87,7 @@ SYNC_GIT_PERIOD=60
 # cp-docker-comp
 CP_DOCKER_COMP_INTERNAL_HOST=cp-docker-comp.default.svc.cluster.local
 CP_DOCKER_COMP_INTERNAL_PORT=31082
+CP_DOCKER_COMP_WORKING_DIR=/opt/docker-comp/wd
 
 # cp-clair
 CP_CLAIR_INTERNAL_HOST=cp-clair.default.svc.cluster.local
