@@ -39,6 +39,8 @@ CP_PREF_CLUSTER_SSH_KEY_PATH=/etc/cp_ssh/deploy.pub
 CP_PREF_COMMIT_DEPLOY_KEY=/etc/cp_ssh/deploy.key
 CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION=3600
 CP_PREF_STORAGE_BACKUP_DURATION=20
+CP_PREF_TEMPLATES_DIRECTORY_EXT=/opt/api/ext/templates/pipe-templates
+CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT=/opt/api/ext/templates/folder-templates
 
 
 # cp-git config

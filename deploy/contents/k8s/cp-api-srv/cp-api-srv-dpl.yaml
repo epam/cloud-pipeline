@@ -35,6 +35,10 @@ spec:
               name: api-sso
             - mountPath: /opt/api/logs
               name: api-logs
+            - mountPath: "${CP_PREF_TEMPLATES_DIRECTORY_EXT}"
+              name: api-pipe-templates
+            - mountPath: "${CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT}"
+              name: api-folder-templates
             - mountPath: /opt/idp/pki
               name: idp-pki
             - mountPath: /opt/common/pki
@@ -75,6 +79,12 @@ spec:
         - name: api-logs
           hostPath:
             path: /opt/api/logs
+        - name: api-pipe-templates
+          hostPath:
+            path: /opt/api/templates/pipe-templates
+        - name: api-folder-templates
+          hostPath:
+            path: /opt/api/templates/folder-templates
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki
