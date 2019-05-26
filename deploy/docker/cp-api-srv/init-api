@@ -45,7 +45,7 @@ function update_config_json_templates {
 
     IFS="=" read -r param_key param_value <<< $(grep $templates_key < $properties_file)
     if [ -z "$param_key" ] || [ -z "$param_value" ] || [ ! -d "$param_value" ]; then
-        echo "$templates_key cannot be retireved from $properties_file or that location does not exist (\"$param_value\""
+        echo "$templates_key cannot be retrieved from $properties_file or that location does not exist (\"$param_value\""
         return 1
     fi
 
@@ -54,7 +54,7 @@ function update_config_json_templates {
     if [ "$external_storage" ]; then
         is_dir_empty "$external_storage"
         if [ $? -eq 0 ]; then
-            echo "External configuration for $templates_key template is set, by the $external_storage directory is empty or does not exist. External templates WILL NOT be applied"
+            echo "External configuration for $templates_key template is set, but the $external_storage directory is empty or does not exist. External templates WILL NOT be applied"
         else
             echo "Replacing $templates_key templates from $external_storage to $param_value"
             rm -rf $param_value/*
