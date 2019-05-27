@@ -410,28 +410,23 @@ if is_service_requested cp-api-srv; then
                             "$PSG_PASS" \
                             "$PSG_DB"
 
-        print_info "-> Creating self-signed SSL certificate for API Service (${CP_API_SRV_EXTERNAL_HOST}, ${CP_API_SRV_INTERNAL_HOST})"
-        generate_self_signed_key_pair   $CP_API_SRV_CERT_DIR/ssl-private-key.pem \
-                                        $CP_API_SRV_CERT_DIR/ssl-public-cert.pem \
-                                        $CP_API_SRV_EXTERNAL_HOST \
-                                        $CP_API_SRV_INTERNAL_HOST && \
-        openssl pkcs12 -export  -in $CP_API_SRV_CERT_DIR/ssl-public-cert.pem \
-                                -inkey $CP_API_SRV_CERT_DIR/ssl-private-key.pem \
-                                -out $CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12 \
-                                -name ssl \
-                                -password pass:changeit
 
-        print_info "-> Creating self-signed SSO certificate for API Service (${CP_API_SRV_EXTERNAL_HOST}, ${CP_API_SRV_INTERNAL_HOST})"
-        generate_self_signed_key_pair   force_self_sign \
-                                        $CP_API_SRV_CERT_DIR/sso-private-key.pem \
-                                        $CP_API_SRV_CERT_DIR/sso-public-cert.pem \
-                                        $CP_API_SRV_EXTERNAL_HOST \
-                                        $CP_API_SRV_INTERNAL_HOST && \
-        openssl pkcs12 -export  -in $CP_API_SRV_CERT_DIR/sso-public-cert.pem \
-                                -inkey $CP_API_SRV_CERT_DIR/sso-private-key.pem \
-                                -out $CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12 \
-                                -name sso \
-                                -password pass:changeit
+        generate_ssl_sso_certificates   "API" \
+                                        "${CP_API_SRV_CERT_DIR}" \
+                                        "${CP_API_SRV_EXTERNAL_HOST}" \
+                                        "${CP_API_SRV_INTERNAL_HOST}" \
+                                        "api"
+
+        configure_idp_metadata  "API" \
+                                "${CP_API_SRV_FED_META_DIR}/cp-api-srv-fed-meta.xml" \
+                                "${CP_IDP_EXTERNAL_HOST}" \
+                                "${CP_IDP_EXTERNAL_PORT}" \
+                                "${CP_IDP_INTERNAL_HOST}" \
+                                "${CP_IDP_INTERNAL_PORT}" \
+                                "${CP_API_SRV_EXTERNAL_HOST}" \
+                                "${CP_API_SRV_EXTERNAL_PORT}" \
+                                "${CP_API_SRV_CERT_DIR}" \
+                                "pipeline"
 
         print_info "-> Creating RSA key pair (JWT signing)"
         generate_rsa_key_pair   $CP_API_SRV_CERT_DIR/jwt.key.private \
