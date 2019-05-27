@@ -233,6 +233,11 @@ CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_N
 print_info "-> Assigning cloud-pipeline/cp-vm-monitor to $CP_VM_MONITOR_KUBE_NODE_NAME"
 kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-vm-monitor="true" --overwrite
 
+# Allow to schedule Share service to the master
+CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_VM_MONITOR_KUBE_NODE_NAME"
+kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
+
 echo
 
 ##########
@@ -962,7 +967,7 @@ if is_service_requested cp-search; then
     echo
 fi
 
-# Search
+# VM Monitor
 if is_service_requested cp-vm-monitor; then
     print_ok "[Starting VM Monitor service deployment]"
 
@@ -984,5 +989,64 @@ fi
 # WebDav
 
 # Share Service
+
+if is_service_requested cp-share-srv; then
+    print_ok "[Starting Share Service deployment]"
+
+    print_info "-> Deleting existing instance of Share Service"
+    delete_deployment_and_service   "cp-share-srv" \
+                                    "/opt/share-srv"
+    if is_install_requested; then
+        generate_ssl_sso_certificates   "Share" \
+                                        "${CP_SHARE_SRV_CERT_DIR}" \
+                                        "${CP_SHARE_SRV_EXTERNAL_HOST}" \
+                                        "${CP_SHARE_SRV_INTERNAL_HOST}" \
+                                        "share"
+
+        configure_idp_metadata  "Share" \
+                                "${CP_SHARE_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml" \
+                                "${CP_IDP_EXTERNAL_HOST}" \
+                                "${CP_IDP_EXTERNAL_PORT}" \
+                                "${CP_IDP_INTERNAL_HOST}" \
+                                "${CP_IDP_INTERNAL_PORT}" \
+                                "${CP_SHARE_SRV_EXTERNAL_HOST}" \
+                                "${CP_SHARE_SRV_EXTERNAL_PORT}" \
+                                "${CP_SHARE_SRV_CERT_DIR}" \
+                                "proxy"
+
+        print_info "-> Deploying Share Service service"
+
+        set_kube_service_external_ip CP_SHARE_SRV_SVC_EXTERNAL_IP_LIST \
+                                     CP_SHARE_SRV_NODE_IP \
+                                     CP_SHARE_SRV_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-share-srv"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-share-srv"
+            exit 1
+        fi
+
+        create_kube_resource $K8S_SPECS_HOME/cp-share-srv/cp-share-srv-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-share-srv/cp-share-srv-svc.yaml --svc
+        expose_cluster_port "cp-share-srv" \
+                            "${CP_SHARE_SRV_EXTERNAL_PORT}" \
+                            "8080"
+        register_svc_custom_names_in_cluster "cp-share-srv" "$CP_SHARE_SRV_EXTERNAL_HOST"
+
+        print_info "-> Waiting for Share Service to initialize"
+        wait_for_deployment "cp-share-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nShare Service: deployed"
+
+        print_info "-> Registering Share Service in API"
+        # Copy Share service metadata to API sso folder
+        cp "${CP_SHARE_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml" "${CP_API_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml"
+        api_register_share_service
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-share-srv: https://$CP_SHARE_SRV_EXTERNAL_HOST:$CP_SHARE_SRV_EXTERNAL_PORT/proxy/"
+    fi
+    echo
+fi
+
+
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY

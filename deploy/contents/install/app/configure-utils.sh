@@ -975,6 +975,21 @@ function api_register_clair {
     api_set_preference "security.tools.scan.enabled" "true" "true"
 }
 
+function api_register_share_service {
+    api_set_preference "data.sharing.base.api" "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/?id=%d" "false"
+
+    local share_service_configuration_preference="{}"
+read -r -d '' share_service_configuration_preference <<-EOF
+[{
+    "endpointId": "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}${CP_SHARE_SRV_SAML_ID_TRAIL:-/proxy}",
+    "metadataPath": "${CP_API_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml",
+    "external": "true"
+}]
+EOF
+    share_service_configuration_preference="$(escape_string "${share_service_configuration_preference}")"
+    api_set_preference "system.external.services.endpoints" "${share_service_configuration_preference}" "false"
+}
+
 function idp_register_app {
     local issuer="$1"
     local cert="$2"

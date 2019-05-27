@@ -127,5 +127,13 @@ CP_VM_MONITOR_RUN_ID_LABEL=Name
 CP_VM_MONITOR_TO_USER=pipe_admin
 CP_VM_MONITOR_CC_USERS=
 
+# cp-share-srv
+CP_SHARE_SRV_INTERNAL_HOST=cp-share-srv.default.svc.cluster.local
+CP_SHARE_SRV_INTERNAL_PORT=31084
+CP_SHARE_SRV_EXTERNAL_PORT=31084
+CP_SHARE_SRV_CERT_DIR=/opt/share-srv/pki
+CP_SHARE_SRV_FED_META_DIR=/opt/share-srv/sso
+# CP_SHARE_SRV_SAML_ID_TRAIL=
+
 # Other params, specified on command line
 #
