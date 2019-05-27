@@ -1,0 +1,33 @@
+{
+  "plugins": [
+    "transform-decorators-legacy",
+    [
+      "transform-runtime",
+      {
+        "polyfill": false,
+        "regenerator": true
+      }
+    ],
+    "external-helpers",
+    [
+      "import",
+      [
+        {
+          "libraryName": "antd",
+          "style": true
+        },
+        {
+          "libraryName": "ui-portal-boilerplate",
+          "libraryDirectory": "components"
+        }
+      ]
+    ]
+  ],
+  "presets": [
+    "es2015",
+    "flow",
+    "env",
+    "stage-0",
+    "react-app"
+  ]
+}

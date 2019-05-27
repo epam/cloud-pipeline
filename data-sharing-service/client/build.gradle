@@ -1,0 +1,52 @@
+
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    id "com.moowork.node" version "1.1.1"
+}
+
+task npmPrune(type: NpmTask) {
+    args = ['prune']
+}
+
+task clean(type: Delete) {
+    delete("$project.buildDir")
+}
+
+npmInstall.dependsOn npmPrune
+nodeSetup.dependsOn clean
+npmSetup.dependsOn clean
+
+task buildUI(type: NpmTask) {
+    group = 'build'
+    environment = ['PUBLIC_URL': '/proxy', 'VERSION': "$version"]
+    dependsOn npmInstall
+    doFirst {
+        delete fileTree("$rootDir/data-sharing-service/api/src/main/resources/static/") {
+            exclude ('config.json')
+        }
+    }
+    args = ['run', 'build']
+    doLast {
+        copy {
+            from "${project.buildDir}"
+            into "$rootDir/data-sharing-service/api/src/main/resources/static/"
+        }
+    }
+
+
+}
