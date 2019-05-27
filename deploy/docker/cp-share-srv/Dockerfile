@@ -29,7 +29,7 @@ RUN yum install -y \
 
 
 # SHARE distribution
-ARG CP_SHARE_DIST_URL=""
+ARG CP_API_DIST_URL=""
 ENV CP_SHARE_HOME="/opt/share-srv"
 
 RUN cd /tmp && \
