@@ -252,7 +252,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .ensure(button("Refresh"), visible, enabled)
             .ensure(buttonByIconClass("anticon-arrow-left"), visible, enabled)
             .ensure(labelWithType("RUNID"), visible)
-            .ensure(labelWithType("PIPELINE-INFO"), visible)
+            .ensure(labelWithType("pipeline-info"), visible)
             .ensure(tabWithName("General info"), visible, selectedTab)
             .ensure(tabWithName("Jobs"), visible)
             .ensure(tabWithName("Monitor"), visible)
