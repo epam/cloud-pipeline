@@ -148,7 +148,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                     nodeTab
                                                         .ensure(mainInfo(), have(textMatches(expectedTitle)))
                                                         .ensure(labelWithType("RUNID"), visible)
-                                                        .ensure(labelWithType("PIPELINE-INFO"), visible), ipHyperlink)
+                                                        .ensure(labelWithType("pipeline-info"), visible), ipHyperlink)
                                     );
                                 })
                 );
