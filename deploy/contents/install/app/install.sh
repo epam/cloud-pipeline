@@ -434,34 +434,6 @@ if is_service_requested cp-api-srv; then
                                 "stringify" \
                                 $CP_API_SRV_CERT_DIR/jwt.key.x509
 
-
-        print_info "-> Configuring SSO metadata for the API Service"
-        if [ -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
-            print_warn "SSO Metadata already exists at $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml, it will be reused"
-            CP_API_SRV_FED_META_EXISTS=1
-        else
-            print_info "-> Trying to configure SSO metadata using basic IdP (from https://$CP_IDP_INTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/metadata)"
-            mkdir -p $CP_API_SRV_FED_META_DIR
-            # Waiting a bit to allow IdP to initizalize
-            sleep 5
-            # Note: HOST header is substituted with the external address, to generate valid binding URLs in the metadata file
-            curl    "https://$CP_IDP_INTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/metadata" \
-                    -o $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml \
-                    -H "Host: $CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT" \
-                    -s \
-                    -k
-            if [ $? -eq 0 ] && [ -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
-                CP_API_SRV_FED_META_EXISTS=1
-                idp_register_app "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/" \
-                                 "$CP_API_SRV_CERT_DIR/sso-public-cert.pem"
-            fi
-        fi
-
-        if [ -z "$CP_API_SRV_FED_META_EXISTS" ]; then
-            print_warn "SSO Metadata was not provided explicitly and/or error occured while getting it from the basic IdP"
-            print_warn "API service will attempt to start without metadata, but may fail to initialize"
-        fi
-
         print_info "-> Deploying API Service"
         set_kube_service_external_ip CP_API_SRV_SVC_EXTERNAL_IP_LIST \
                                      CP_API_SRV_NODE_IP \
