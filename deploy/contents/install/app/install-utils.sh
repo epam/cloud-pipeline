@@ -561,7 +561,8 @@ function parse_options {
     set_service_host "CP_IDP_EXTERNAL_HOST" "CP_IDP_INTERNAL_HOST"  && \
     set_service_host "CP_DOCKER_EXTERNAL_HOST" "CP_DOCKER_INTERNAL_HOST" && \
     set_service_host "CP_EDGE_EXTERNAL_HOST" "CP_EDGE_INTERNAL_HOST"  && \
-    set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST"
+    set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST" && \
+    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST"
 
     if [ $? -ne 0 ]; then
         print_err "Unrecoverable error occured while setting services hosts, exiting"
@@ -1243,4 +1244,77 @@ function is_service_requested {
 function is_install_requested {
     [ "$CP_INSTALLER_COMMAND" = "install" ]
     return $?
+}
+
+
+function generate_ssl_sso_certificates {
+    local service_name="$1"
+    local certificate_path="$2"
+    local service_external_host="$3"
+    local service_internal_host="$4"
+    local certificate_name="$5"
+
+    print_info "-> Creating self-signed SSL certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
+    generate_self_signed_key_pair   ${certificate_path}/ssl-private-key.pem \
+                                    ${certificate_path}/ssl-public-cert.pem \
+                                    ${service_external_host} \
+                                    ${service_internal_host} && \
+    openssl pkcs12 -export  -in ${certificate_path}/ssl-public-cert.pem \
+                            -inkey ${certificate_path}/ssl-private-key.pem \
+                            -out ${certificate_path}/cp-${certificate_name}-srv-ssl.p12 \
+                            -name ssl \
+                            -password pass:changeit
+
+    print_info "-> Creating self-signed SSO certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
+    generate_self_signed_key_pair   force_self_sign \
+                                        ${certificate_path}/sso-private-key.pem \
+                                        ${certificate_path}/sso-public-cert.pem \
+                                        ${service_external_host} \
+                                        ${service_internal_host} && \
+    openssl pkcs12 -export  -in ${certificate_path}/sso-public-cert.pem \
+                                -inkey ${certificate_path}/sso-private-key.pem \
+                                -out ${certificate_path}/cp-${certificate_name}-srv-sso.p12 \
+                                -name sso \
+                                -password pass:changeit
+}
+
+function configure_idp_metadata {
+    local service_name="${1}"
+    local metadata_file="${2}"
+    local idp_external_host="${3}"
+    local idp_external_port="${4}"
+    local idp_internal_host="${5}"
+    local idp_internal_port="${6}"
+    local service_external_host="${7}"
+    local service_external_port="${8}"
+    local certificate_dir="${9}"
+    local context_path="${10}"
+
+    local metadata_exists=0
+    local metadata_dir=$(dirname "${metadata_file}")
+
+    print_info "-> Configuring SSO metadata for the ${service_name} Service"
+    if [ -f "${metadata_file}" ]; then
+        print_warn "SSO Metadata already exists at ${metadata_file}, it will be reused"
+        metadata_exists=1
+    else
+        print_info "-> Trying to configure SSO metadata using basic IdP (from https://${idp_internal_host}:${idp_internal_port}/metadata)"
+        mkdir -p "${metadata_dir}"
+        # Note: HOST header is substituted with the external address, to generate valid binding URLs in the metadata file
+        curl    "https://${idp_internal_host}:${idp_internal_port}/metadata" \
+                    -o "${metadata_file}" \
+                    -H "Host: ${idp_external_host}:${idp_external_port}" \
+                    -s \
+                    -k
+        if [ $? -eq 0 ] && [ -f "${metadata_file}" ]; then
+            metadata_exists=1
+            idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
+                                 "${certificate_dir}/sso-public-cert.pem"
+        fi
+    fi
+
+    if [ -z "$metadata_exists" ]; then
+        print_warn "SSO Metadata was not provided explicitly and/or error occurred while getting it from the basic IdP"
+        print_warn "${service_name} Service will attempt to start without metadata, but may fail to initialize"
+    fi
 }

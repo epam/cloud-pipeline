@@ -90,6 +90,10 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_VM_MONITOR_TO_USER= \                       # Username that shall by notified when VM Monitor detects invalid VM state
                 -env CP_VM_MONITOR_CC_USERS= \                      # Usernames that shall by additionaly notified (cc) when VM Monitor detects invalid VM state
 
+                # Share Service
+                -env CP_SHARE_SRV_SAML_ID_TRAIL = \                 # SAML partner ID will for Share Service be constructed as {CP_SHARE_SRV_EXTERNAL_HOST}:{CP_SHARE_SRV_EXTERNAL_PORT} and this parameter 
+                -env CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS = \            # SAML claims that shall be used as ROLEs while parsing user info receinved from IDP
+
                 # Pipectl options
                 -m|--install-kube-master \                          # Install kuberneters master
                 -d|--docker \                                       # Limit images to be pushed during deployment
