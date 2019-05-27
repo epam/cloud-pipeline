@@ -22,7 +22,7 @@
             "swap": [
                 {
                     "name": "swap_ratio",
-                    "path": "0.5"
+                    "path": "0.01"
                 },
                 {
                     "name": "swap_location",
