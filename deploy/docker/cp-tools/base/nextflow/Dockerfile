@@ -35,16 +35,17 @@ ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
 ENV CP_CAP_SGE="true"
 
 # Always use DinD's "container" mode to allow docker-based workflows
-ENV CP_CAP_DIND_CONAINER="true"
+ENV CP_CAP_DIND_CONTAINER="true"
 
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
 ENV INPUT_DIR="/common/input"
 
-# Install nextflow itlself into $NEXTFLOW_HOME
-RUN mkdir -p $NEXTFLOW_HOME && \
+# Install nextflow itlself into $NXF_HOME
+RUN mkdir -p $NXF_HOME && \
     cd $NXF_HOME_ROOT && \
-    curl -fsSL get.nextflow.io | bash
+    curl -fsSL get.nextflow.io | bash && \
+    mv nextflow "$NXF_HOME/nextflow"
 
 ADD default.config /etc/nextflow/default.config
 

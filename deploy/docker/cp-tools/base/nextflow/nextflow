@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-$NEXTFLOW_HOME/nextflow -c /etc/nextflow/default.config $@
+$NXF_HOME/nextflow -c /etc/nextflow/default.config $@
