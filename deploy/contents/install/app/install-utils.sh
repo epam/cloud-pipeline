@@ -1265,13 +1265,13 @@ function generate_ssl_sso_certificates {
                             -name ssl \
                             -password pass:changeit
 
-        print_info "-> Creating self-signed SSO certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
-        generate_self_signed_key_pair   force_self_sign \
+    print_info "-> Creating self-signed SSO certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
+    generate_self_signed_key_pair   force_self_sign \
                                         ${certificate_path}/sso-private-key.pem \
                                         ${certificate_path}/sso-public-cert.pem \
                                         ${service_external_host} \
                                         ${service_internal_host} && \
-        openssl pkcs12 -export  -in ${certificate_path}/sso-public-cert.pem \
+    openssl pkcs12 -export  -in ${certificate_path}/sso-public-cert.pem \
                                 -inkey ${certificate_path}/sso-private-key.pem \
                                 -out ${certificate_path}/cp-${certificate_name}-srv-sso.p12 \
                                 -name sso \
