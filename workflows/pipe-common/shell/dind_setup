@@ -41,7 +41,7 @@ if [ $IS_RPM_BASED -eq 0 ]; then
     _DIND_DEP_INSTALL_RESULT=$?
 else
     apt install -y -qq \
-                btrfs-progs \
+                btrfs-tools \
                 e2fsprogs \
                 iptables \
                 iproute2 \
