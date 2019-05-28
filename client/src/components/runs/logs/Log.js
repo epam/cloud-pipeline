@@ -38,6 +38,7 @@ import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
+  canPauseRun,
   canStopRun,
   runPipelineActions,
   terminateRun
@@ -1240,7 +1241,7 @@ export default class Logs extends localization.LocalizedReactComponent {
           !this.props.run.value.instance.spot) {
           switch (status.toLowerCase()) {
             case 'running':
-              if (this.props.run.value.podIP) {
+              if (canPauseRun(this.props.run.value)) {
                 PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
               }
               break;
