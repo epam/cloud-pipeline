@@ -29,6 +29,8 @@ import lombok.Data;
 @AllArgsConstructor
 public class AzureVirtualMachineStats {
 
+    public static final String NO_NET_INTERFACE_FOR_VM = "No Network interface were found for machine: %s";
+
     private PowerState powerState;
     private String name;
     private String privateIP;
@@ -44,7 +46,10 @@ public class AzureVirtualMachineStats {
         return new AzureVirtualMachineStats(
                 machine.powerState(),
                 machine.computerName(),
-                machine.listNetworkInterfaces().stream().findFirst().orElseThrow(() -> new AzureException(""))
+                machine.listNetworkInterfaces().stream()
+                        .findFirst()
+                        .orElseThrow(() -> new AzureException(
+                                String.format(NO_NET_INTERFACE_FOR_VM, machine.computerName())))
                         .primaryIPConfiguration().privateIPAddress());
     }
 }
