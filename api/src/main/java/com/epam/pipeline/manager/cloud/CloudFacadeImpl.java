@@ -176,8 +176,16 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
-        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstancePriceService(region).getAllInstanceTypes(region.getId(), spot);
+        if (regionId == null) {
+            return (List<InstanceType>) instancePriceServices.values()
+                    .stream()
+                    .map(priceService -> priceService.getAllInstanceTypes(regionId, spot))
+                    .flatMap(cloudInstanceTypes -> cloudInstanceTypes.stream())
+                    .collect(Collectors.toList());
+        } else {
+            final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+            return getInstancePriceService(region).getAllInstanceTypes(region.getId(), spot);
+        }
     }
 
     @Override
