@@ -28,7 +28,7 @@ import {
   PipelineRunCommitCheck,
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../models/pipelines/PipelineRunCommitCheck';
-import {stopRun, canStopRun, runPipelineActions, terminateRun} from './actions';
+import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
@@ -706,7 +706,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'resuming':
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
-          if (record.podIP) {
+          if (canPauseRun(record)) {
             return <a
               id={`run-${record.id}-pause-button`}
               onClick={(e) => this.showPauseConfirmDialog(e, record)}>PAUSE</a>;
