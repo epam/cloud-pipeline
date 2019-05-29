@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractSeveralPipelineRunningTest
         extends AbstractBfxPipelineTest
@@ -45,6 +47,7 @@ public abstract class AbstractSeveralPipelineRunningTest
     @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
     public void removeNodes() {
         open(C.ROOT_ADDRESS);
+        sleep(1, SECONDS);
         runIds.forEach(runId ->
             navigationMenu()
                     .clusterNodes()
@@ -55,6 +58,7 @@ public abstract class AbstractSeveralPipelineRunningTest
     @AfterClass(alwaysRun = true)
     public void stopRuns() {
         open(C.ROOT_ADDRESS);
+        sleep(1, SECONDS);
         System.out.printf("Stop runs with ids %s%n", Arrays.toString(runIds.toArray()));
         runIds.forEach(id -> {
             System.out.printf("Run with id %s is going to be stopped.%n", id);
