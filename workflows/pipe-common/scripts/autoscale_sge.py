@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 import subprocess
 import time
+import multiprocessing
 
 
 class ExecutionError(RuntimeError):
@@ -936,7 +937,8 @@ if __name__ == '__main__':
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
     price_type = os.environ['price_type']
-    instance_cores = int(os.environ['CLOUD_PIPELINE_NODE_CORES'])
+    instance_cores = int(os.environ['CLOUD_PIPELINE_NODE_CORES']) \
+        if 'CLOUD_PIPELINE_NODE_CORES' in os.environ else multiprocessing.cpu_count()
     max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
         if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
     log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
