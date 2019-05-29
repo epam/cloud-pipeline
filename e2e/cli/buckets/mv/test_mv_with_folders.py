@@ -26,7 +26,7 @@ class TestMoveWithFolders(object):
     home_dir = "test_cp_home_dir-681%s/" % get_test_prefix()
     checkout_dir = "mv-folders-checkout/"
     test_prefix = "%s-mv-folders-" % get_test_prefix()
-    output_folder = test_prefix + TestFiles.TEST_FOLDER_FOR_OUTPUT + get_test_prefix()
+    output_folder = test_prefix + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = test_prefix + TestFiles.TEST_FILE1
     test_file_with_other_extension = test_prefix + TestFiles.TEST_FILE_WITH_OTHER_EXTENSION
     test_file_2 = test_prefix + TestFiles.TEST_FILE2
