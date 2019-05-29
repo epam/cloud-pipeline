@@ -80,6 +80,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public MetadataSectionAO showMetadata() {
+        sleep(1, SECONDS);
         final SelenideElement displayButton = $(displayAttributes);
         displayButton.shouldBe(visible).hover();
         $(attributesMenu).should(appear);

@@ -296,6 +296,18 @@
         </classes>
     </test>
 
+    <test name="PauseResumeTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.PauseResumeTest"/>
+        </classes>
+    </test>
+
+    <test name="AutopauseTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.AutopauseTest"/>
+        </classes>
+    </test>
+
     <!-- SLOW TESTS BELOW -->
 
     <test name="ClusterNodeTest" >
@@ -349,18 +361,6 @@
     <test name="NotificationsTest">
         <classes>
             <class name="com.epam.pipeline.autotests.NotificationsTest"/>
-        </classes>
-    </test>
-
-    <test name="PauseResumeTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.PauseResumeTest"/>
-        </classes>
-    </test>
-
-    <test name="AutopauseTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.AutopauseTest"/>
         </classes>
     </test>
 
