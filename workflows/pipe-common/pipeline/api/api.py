@@ -810,3 +810,24 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to find storage by its id or name. "
                                "Error message: {}".format(str(e.message)))
+
+    def get_storage_download_url(self, storage_id, paths):
+        try:
+            data = {
+                'paths': paths
+            }
+            url = str(self.api_url) + self.DATA_STORAGE_URL + '/%s/generateUrl' % str(storage_id)
+            result = self.execute_request(url, method='post', data=json.dumps(data))
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to load generated download url for storage ID {}. "
+                               "Error message: {}".format(str(storage_id), str(e.message)))
+
+    def get_storage_upload_url(self, storage_id, paths):
+        try:
+            url = str(self.api_url) + self.DATA_STORAGE_URL + '/%s/generateUploadUrl' % str(storage_id)
+            result = self.execute_request(url, method='post', data=json.dumps(paths))
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to load generated upload url for storage ID {}. "
+                               "Error message: {}".format(str(storage_id), str(e.message)))
