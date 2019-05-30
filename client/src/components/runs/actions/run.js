@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {inject, observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {
@@ -25,12 +25,17 @@ import {
   message,
   Modal,
   Row,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
+import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
+import '../../../staticStyles/tooltip-nowrap.css';
+import AWSRegionTag from '../../special/AWSRegionTag';
+import awsRegions from '../../../models/cloudRegions/CloudRegions';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('instanceTypes')(...opts);
@@ -141,13 +146,21 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
     if (!confirm) {
       await launchFn();
     } else {
+      const {dataStorageAvailable} = stores;
+      let dataStorages;
+      if (dataStorageAvailable) {
+        await dataStorageAvailable.fetchIfNeededOrWait();
+        if (dataStorageAvailable.loaded) {
+          dataStorages = (dataStorageAvailable.value || []).map(d => d);
+        }
+      }
       let component;
       const ref = (element) => {
         component = element;
       };
       Modal.confirm({
         title: title || `Launch ${launchName}?`,
-        width: '33%',
+        width: '50%',
         content: (
           <RunSpotConfirmationWithPrice
             ref={ref}
@@ -162,7 +175,13 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             pipelineConfiguration={payload.configurationName}
             nodeCount={(+payload.nodeCount) || 0}
             cloudRegionId={payload.cloudRegionId}
-            availableInstanceTypes={availableInstanceTypes} />
+            availableInstanceTypes={availableInstanceTypes}
+            dataStorages={dataStorages}
+            limitMounts={
+              payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]
+                ? payload.params[LIMIT_MOUNTS_PARAMETER].value
+                : undefined
+            } />
         ),
         style: {
           wordWrap: 'break-word'
@@ -172,6 +191,21 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
           if (component) {
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
+            if (component.state.limitMounts !== component.props.limitMounts) {
+              const {limitMounts} = component.state;
+              if (limitMounts) {
+                if (!payload.params) {
+                  payload.params = {};
+                }
+                payload.params[LIMIT_MOUNTS_PARAMETER] = {
+                  type: 'string',
+                  required: false,
+                  value: limitMounts
+                };
+              } else if (payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]) {
+                delete payload.params[LIMIT_MOUNTS_PARAMETER];
+              }
+            }
           }
           if (!payload.instanceType) {
             message.error('You should select instance type');
@@ -200,11 +234,21 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
   });
 }
 
+function isUniqueInArray(element, index, array) {
+  return array.filter(e => e === element).length === 1;
+}
+
+function notUniqueInArray(element, index, array) {
+  return array.filter(e => e === element).length > 1;
+}
+
+@observer
 export class RunConfirmation extends React.Component {
 
   state = {
     isSpot: false,
-    instanceType: null
+    instanceType: null,
+    limitMounts: null
   };
 
   static propTypes = {
@@ -216,7 +260,10 @@ export class RunConfirmation extends React.Component {
     instanceType: PropTypes.string,
     instanceTypes: PropTypes.array,
     showInstanceTypeSelection: PropTypes.bool,
-    onChangeInstanceType: PropTypes.func
+    onChangeInstanceType: PropTypes.func,
+    dataStorages: PropTypes.array,
+    limitMounts: PropTypes.string,
+    onChangeLimitMounts: PropTypes.func
   };
 
   static defaultProps = {
@@ -227,6 +274,67 @@ export class RunConfirmation extends React.Component {
   get gpuEnabled () {
     const [currentInstanceType] = (this.props.instanceTypes || []).filter(i => i.name === this.state.instanceType);
     return currentInstanceType && currentInstanceType.hasOwnProperty('gpu') && +currentInstanceType.gpu > 0;
+  }
+
+  @computed
+  get initialSelectedDataStorageIndecis() {
+    return (this.props.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+      .split(',')
+      .map(d => +d);
+  }
+
+  @computed
+  get selectedDataStorageIndecis() {
+    return (this.state.limitMounts || this.dataStorages.map(d => `${d.id}`).join(','))
+      .split(',')
+      .map(d => +d);
+  }
+
+  @computed
+  get dataStorages() {
+    return (this.props.dataStorages || []).map(d => d);
+  }
+
+  @computed
+  get initialSelectedDataStorages() {
+    return this.dataStorages.filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
+  }
+
+  @computed
+  get conflicting() {
+    return this.initialSelectedDataStorages
+      .filter((d, i, a) =>
+        !!d.mountPoint &&
+        notUniqueInArray(d.mountPoint, i, a.map(aa => aa.mountPoint))
+      );
+  }
+
+  @computed
+  get notConflictingIndecis() {
+    return this.initialSelectedDataStorages
+      .filter((d, i, a) =>
+        !d.mountPoint ||
+        isUniqueInArray(d.mountPoint, i, a.map(aa => aa.mountPoint))
+      )
+      .map(d => +d.id);
+  }
+
+  @computed
+  get initialLimitMountsHaveConflicts() {
+    return this.dataStorages
+      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+      .map(d => d.mountPoint)
+      .filter(notUniqueInArray)
+      .length > 0;
+  }
+
+  @computed
+  get limitMountsHaveConflicts() {
+    return this.dataStorages
+      .filter(d => this.selectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+      .map(d => d.mountPoint)
+      .filter(notUniqueInArray)
+      .length > 0;
   }
 
   getInstanceTypes = () => {
@@ -265,6 +373,81 @@ export class RunConfirmation extends React.Component {
     }, () => {
       this.props.onChangeInstanceType && this.props.onChangeInstanceType(this.state.instanceType);
     });
+  };
+
+  getSelectStructure = () => {
+    const groups = [];
+    for (let i = 0; i < this.conflicting.length; i++) {
+      const dataStorage = this.conflicting[i];
+      if (dataStorage.mountPoint) {
+        let [group] = groups.filter(g => g.key === dataStorage.mountPoint);
+        if (!group) {
+          group = {
+            key: dataStorage.mountPoint,
+            storages: []
+          };
+          groups.push(group);
+        }
+        group.storages.push(dataStorage);
+      }
+    }
+    return groups.map(g => (
+      <Select.OptGroup key={g.key} label={g.key}>
+        {
+          g.storages.map(s => (
+            <Select.Option key={s.id} value={s.id.toString()} name={s.name} pathMask={s.pathMask}>
+              <Tooltip
+                overlayClassName="limit-mounts-warning"
+                title={s.pathMask}>
+                <div style={{height: 30, display: 'flex', flexDirection: 'column', position: 'relative'}}>
+                  <b style={{height: 20, lineHeight: '20px'}}>
+                    <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} /> {s.name}
+                  </b>
+                  <span style={{position: 'absolute', height: 12, lineHeight: '12px', top: 20, left: 5}}>
+                    {s.pathMask}
+                  </span>
+                </div>
+              </Tooltip>
+            </Select.Option>
+          ))
+        }
+      </Select.OptGroup>
+    ));
+  };
+
+  onSelect = (selectedConflictingIds) => {
+    const selectedIds = [...this.notConflictingIndecis, ...selectedConflictingIds];
+    if (selectedIds.length > 0) {
+      this.setState({
+        limitMounts: selectedIds.length === this.dataStorages.length ? undefined : selectedIds.join(',')
+      }, () => {
+        this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(this.state.limitMounts);
+      });
+    }
+  };
+
+  renderLimitMountsSelector = () => {
+    return (
+      <Provider awsRegions={awsRegions}>
+        <Select
+          style={{width: '100%'}}
+          mode="multiple"
+          onChange={this.onSelect}
+          notFoundContent="Mounts not found"
+          filterOption={
+            (input, option) =>
+              option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
+              option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
+          value={
+            this.selectedDataStorageIndecis
+              .filter(i => this.notConflictingIndecis.indexOf(+i) === -1)
+              .map(i => i.toString())
+          }
+        >
+          {this.getSelectStructure()}
+        </Select>
+      </Provider>
+    );
   };
 
   render () {
@@ -439,6 +622,28 @@ export class RunConfirmation extends React.Component {
               </div>
             } />
         }
+        {
+          this.initialLimitMountsHaveConflicts && (
+            <Alert
+              style={{margin: 2}}
+              type={this.limitMountsHaveConflicts ? 'warning' : 'success'}
+              showIcon
+              message={
+                <div>
+                  <Row style={{marginBottom: 5}}>
+                    There is a number of data storages, that are going to be mounted to the same location within the compute node. This may lead to unexpected behavior.
+                  </Row>
+                  <Row style={{marginBottom: 5, fontWeight: 'bold'}}>
+                    Please review the list of the mount points below and choose the data storage to be mounted:
+                  </Row>
+                  <Row style={{width: '100%'}}>
+                    {this.renderLimitMountsSelector()}
+                  </Row>
+                </div>
+              }
+            />
+          )
+        }
       </div>
     );
   }
@@ -450,7 +655,8 @@ export class RunConfirmation extends React.Component {
   updateState = (props) => {
     this.setState({
       isSpot: props.isSpot,
-      instanceType: props.instanceType
+      instanceType: props.instanceType,
+      limitMounts: props.limitMounts
     });
   };
 }
@@ -470,7 +676,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     availableInstanceTypes: PropTypes.array,
     hddSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     nodeCount: PropTypes.number,
-    cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    dataStorages: PropTypes.array,
+    limitMounts: PropTypes.string,
+    onChangeLimitMounts: PropTypes.func
   };
 
   static defaultProps = {
@@ -481,7 +690,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
 
   state = {
     isSpot: false,
-    instanceType: null
+    instanceType: null,
+    limitMounts: null
   };
 
   onChangeSpotType = (isSpot) => {
@@ -510,6 +720,14 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     });
   };
 
+  onChangeLimitMounts = (limitMounts) => {
+    this.setState({
+      limitMounts
+    }, async () => {
+      this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(limitMounts);
+    });
+  };
+
   render () {
     return (
       <div>
@@ -523,7 +741,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             showInstanceTypeSelection={!this.props.instanceType}
             onChangeInstanceType={this.onChangeInstanceType}
             instanceType={this.props.instanceType}
-            instanceTypes={this.props.availableInstanceTypes} />
+            instanceTypes={this.props.availableInstanceTypes}
+            dataStorages={this.props.dataStorages}
+            limitMounts={this.props.limitMounts}
+            onChangeLimitMounts={this.onChangeLimitMounts} />
         </Row>
         {
           this._estimatedPriceType &&
@@ -548,7 +769,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
   componentDidMount () {
     this.setState({
       isSpot: this.props.isSpot,
-      instanceType: this.props.instanceType
+      instanceType: this.props.instanceType,
+      limitMounts: this.props.limitMounts
     }, async () => {
       this._estimatedPriceType = new PipelineRunEstimatedPrice(
         this.props.pipelineId,
