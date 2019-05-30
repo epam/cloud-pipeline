@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -59,6 +60,8 @@ public class UserManagerTest extends AbstractSpringTest {
         message.setCopyUserIds(Collections.singletonList(user.getId()));
 
         notificationDao.createMonitoringNotification(message);
+        Assert.assertFalse(notificationDao.loadAllNotifications().isEmpty());
         userManager.deleteUser(user.getId());
+        Assert.assertTrue(notificationDao.loadAllNotifications().isEmpty());
     }
 }
