@@ -48,6 +48,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -407,6 +408,33 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 .flatMap(registry -> registry.getGroups().stream())
                 .forEach(group -> group.setPrivateGroup(toolGroupManager.isGroupPrivate(group)));
         return new DockerRegistryList(registries);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void checkDockerSecrets() {
+        final List<DockerRegistry> dockerRegistries = ListUtils.emptyIfNull(loadAllDockerRegistry());
+        if (CollectionUtils.isEmpty(dockerRegistries)) {
+            return;
+        }
+        final Set<String> secrets = kubernetesManager.listAllSecrets();
+        dockerRegistries
+                .stream()
+                .filter(registry -> registry.isPipelineAuth()
+                        && StringUtils.isNotBlank(registry.getPassword())
+                        && StringUtils.isNotBlank(registry.getUserName()))
+                .forEach(registry -> {
+                    final String secretName = kubernetesManager.getValidSecretName(registry.getPath());
+                    if (!secrets.contains(secretName)) {
+                        final DockerRegistrySecret secret = DockerRegistrySecret
+                                .builder()
+                                .userName(registry.getUserName())
+                                .password(registry.getPassword())
+                                .registryUrl(registry.getPath())
+                                .build();
+                        registry.setSecretName(kubernetesManager.createDockerRegistrySecret(secret));
+                        dockerRegistryDao.updateDockerRegistry(registry);
+                    }
+                });
     }
 
     private void validateAuthentication(DockerRegistry dockerRegistry) {

@@ -31,6 +31,7 @@ import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretList;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.Config;
@@ -53,9 +54,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Component
 public class KubernetesManager {
@@ -132,7 +136,7 @@ public class KubernetesManager {
     public String createDockerRegistrySecret(DockerRegistrySecret secret) {
         Secret dockerRegistrySecret;
         String encodedSecret = encodeDockerSecret(secret);
-        String secretName = getValidName(secret.getRegistryUrl());
+        String secretName = getValidSecretName(secret.getRegistryUrl());
         try (KubernetesClient client = getKubernetesClient()) {
             dockerRegistrySecret = client.secrets()
                     .createNew()
@@ -147,6 +151,19 @@ public class KubernetesManager {
         }
         Assert.notNull(dockerRegistrySecret, "Failed to create a secret for docker registry");
         return dockerRegistrySecret.getMetadata().getName();
+    }
+
+    public Set<String> listAllSecrets() {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final SecretList list = client.secrets().list();
+            if (Objects.isNull(list)) {
+                return Collections.emptySet();
+            }
+            return list.getItems()
+                    .stream()
+                    .map(secret -> secret.getMetadata().getName())
+                    .collect(Collectors.toSet());
+        }
     }
 
     public void deleteSecret(String secretName) {
@@ -385,7 +402,7 @@ public class KubernetesManager {
         return Base64.encodeBase64String(secretJson.getBytes());
     }
 
-    private String getValidName(String name) {
+    public String getValidSecretName(String name) {
         return name.toLowerCase().replaceAll("[^a-z0-9\\-]+", "-");
     }
 
