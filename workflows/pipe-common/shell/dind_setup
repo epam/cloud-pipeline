@@ -99,6 +99,22 @@ chmod +x /usr/local/bin/modprobe
 pipe_log_info "DIND fix installed: $DIND_COMMIT" "$DIND_SETUP_TASK"
 
 ######################################################
+# Setup docker daemon options
+######################################################
+DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
+mkdir -p "$DIND_DATA_ROOT"
+cat <<EOT > /etc/docker/daemon.json
+{
+  "data-root": "$DIND_DATA_ROOT",
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOT
+
+######################################################
 # Start dockerd
 ######################################################
 nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
