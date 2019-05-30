@@ -215,7 +215,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         assertFileSize(destinationFile, expectedFileSize);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = {"EPMCMBIBPC-458"})
     public void editFolderName() {
         navigateToLibrary()
