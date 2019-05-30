@@ -431,6 +431,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
                                 .registryUrl(registry.getPath())
                                 .build();
                         registry.setSecretName(kubernetesManager.createDockerRegistrySecret(secret));
+                        dockerRegistryDao.updateDockerRegistry(registry);
                     }
                 });
     }
