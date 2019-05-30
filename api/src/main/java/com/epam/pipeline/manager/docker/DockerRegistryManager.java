@@ -410,6 +410,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
         return new DockerRegistryList(registries);
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
     public void checkDockerSecrets() {
         final List<DockerRegistry> dockerRegistries = ListUtils.emptyIfNull(loadAllDockerRegistry());
         if (CollectionUtils.isEmpty(dockerRegistries)) {
