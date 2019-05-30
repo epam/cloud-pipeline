@@ -20,8 +20,8 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,8 +37,8 @@ public class UserAspect {
      * @param joinPoint
      * @param userId
      */
-    @Around(value = "execution(* com.epam.pipeline.manager.user.UserManager.deleteUser(..)) && args(userId)")
-    public void deleteAllUserNotification(JoinPoint joinPoint, Long userId) {
+    @Before(value = "execution(* com.epam.pipeline.manager.user.UserManager.deleteUser(..)) && args(userId)")
+    public void deleteAllUserNotification(final JoinPoint joinPoint, final Long userId) {
         monitoringNotificationDao.deleteNotificationsForUser(userId);
     }
 }
