@@ -24,6 +24,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Aspect
 @Component
@@ -38,6 +40,7 @@ public class UserAspect {
      * @param userId
      */
     @Before(value = "execution(* com.epam.pipeline.manager.user.UserManager.deleteUser(..)) && args(userId)")
+    @Transactional(propagation = Propagation.REQUIRED)
     public void deleteAllUserNotification(final JoinPoint joinPoint, final Long userId) {
         monitoringNotificationDao.deleteNotificationsForUser(userId);
     }
