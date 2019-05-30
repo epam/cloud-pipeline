@@ -22,17 +22,23 @@ import org.testng.ITestResult;
 import org.testng.SkipException;
 
 import java.lang.reflect.Method;
+import java.util.stream.Stream;
 
 public class ConditionalTestAnalyzer implements IInvokedMethodListener {
 
     @Override
     public void beforeInvocation(final IInvokedMethod method, final ITestResult testResult) {
         final Method resultMethod = testResult.getMethod().getConstructorOrMethod().getMethod();
-        if (resultMethod.isAnnotationPresent(CloudProviderOnly.class) &&
-                !resultMethod.getAnnotation(CloudProviderOnly.class).value().name().toLowerCase()
-                        .equals(C.CLOUD_PROVIDER)) {
-            throw new SkipException("These tests should be run in AWS only");
+        if (!resultMethod.isAnnotationPresent(CloudProviderOnly.class)) {
+            return;
         }
+        final Cloud[] values = resultMethod.getAnnotation(CloudProviderOnly.class).values();
+        Stream.of(values)
+            .filter(v -> v.name().toLowerCase().equals(C.CLOUD_PROVIDER))
+            .findFirst()
+            .<SkipException>orElseThrow(() -> {
+                throw new SkipException(String.format("This test is not supported by %s provider", C.CLOUD_PROVIDER));
+            });
     }
 
     @Override
