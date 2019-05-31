@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.util.StringUtils;
 
 @Getter
@@ -98,17 +99,17 @@ public class NotificationMessage {
 
         @Override
         public String convertToDatabaseColumn(List<Long> attribute) {
-            return attribute.stream()
+            return ListUtils.emptyIfNull(attribute).stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(","));
         }
 
         @Override
         public List<Long> convertToEntityAttribute(String dbData) {
-            return Arrays.stream(dbData.split(","))
-                    .filter(s -> !StringUtils.isEmpty(s))
-                    .map(Long::parseLong)
-                    .collect(Collectors.toList());
+            return StringUtils.isEmpty(dbData)
+                    ? Collections.emptyList()
+                    : Arrays.stream(dbData.split(",")).filter(s -> !StringUtils.isEmpty(s))
+                        .map(Long::parseLong).collect(Collectors.toList());
         }
     }
 }
