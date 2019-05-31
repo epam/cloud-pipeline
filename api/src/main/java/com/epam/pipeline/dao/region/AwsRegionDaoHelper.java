@@ -58,7 +58,10 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         awsRegion.setKmsKeyArn(rs.getString(CloudRegionParameters.KMS_KEY_ARN.name()));
         awsRegion.setProfile(rs.getString(CloudRegionParameters.PROFILE.name()));
         awsRegion.setTempCredentialsRole(rs.getString(CloudRegionParameters.TEMP_CREDENTIALS_ROLE.name()));
-        awsRegion.setBackupDuration(rs.getInt(CloudRegionParameters.BACKUP_DURATION.name()));
+        final int backupDuration = rs.getInt(CloudRegionParameters.BACKUP_DURATION.name());
+        if (!rs.wasNull()) {
+            awsRegion.setBackupDuration(backupDuration);
+        }
         awsRegion.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         awsRegion.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
         return awsRegion;

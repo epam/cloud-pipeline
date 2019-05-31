@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage.providers;
+package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.springframework.util.StringUtils;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -30,11 +31,13 @@ import java.util.regex.Pattern;
 final class NFSHelper {
 
     /**
-     * NFS path pattern for matching aws and paths.
+     * NFS path pattern for matching aws and google paths.
      * This pattern will match the following paths:
      * AWS: {efs-host-name}:/{bucket-name} (f.i. fs-12345678:/bucket1)
-     * */
-    private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:\\/?).*[^\\/]+");
+     * Google: {gcp-host-name}:/{root-path}/{bucket-name} (f.i. gcfs-12345678:/vol1/bucket1)
+    * */
+    private static final Pattern NFS_ROOT_PATTERN = Pattern.compile("(.+:.*\\/)[^\\/]*");
+
 
     /**
      * NFS path pattern for matching azure paths.
@@ -51,12 +54,14 @@ final class NFSHelper {
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
 
     private static final String SMB_SCHEME = "//";
+    private static final String PATH_SEPARATOR = "/";
 
     private NFSHelper() {
 
     }
 
     static String getNfsRootPath(String path) {
+        path = path.endsWith(PATH_SEPARATOR) ? path.substring(0, path.length() - 1) : path;
         Matcher matcher = NFS_ROOT_PATTERN.matcher(path);
         Matcher matcherWithHomeDir = NFS_PATTERN_WITH_HOME_DIR.matcher(path);
         Matcher azureNfsMatcher = NFS_AZURE_ROOT_PATTERN.matcher(path);
@@ -85,7 +90,7 @@ final class NFSHelper {
                     : new String[]{"username=" + account, "password=" + accountKey};
             return accountKey != null && account != null ? String.join(",", options) : defaultOptions;
         }
-        return defaultOptions;
+        return StringUtils.isEmpty(defaultOptions) ? "" : "-o " + defaultOptions;
     }
 
     static String formatNfsPath(String path, String protocol){

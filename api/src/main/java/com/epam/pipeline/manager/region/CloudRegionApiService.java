@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.region;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -45,12 +45,12 @@ public class CloudRegionApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public AbstractCloudRegion create(final CloudRegionVO region) {
+    public AbstractCloudRegion create(final AbstractCloudRegionDTO region) {
         return cloudRegionManager.create(region);
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public AbstractCloudRegion update(final Long id, final CloudRegionVO region) {
+    public AbstractCloudRegion update(final Long id, final AbstractCloudRegionDTO region) {
         return cloudRegionManager.update(id, region);
     }
 

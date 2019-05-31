@@ -123,7 +123,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--old_id", "-kid", type=str, required=True)
     parser.add_argument("--new_id", "-nid", type=str, required=True)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     old_id = args.old_id
     new_id = args.new_id
 

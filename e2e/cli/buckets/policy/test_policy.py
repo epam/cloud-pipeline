@@ -1,5 +1,3 @@
-import pytest
-import os
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +12,8 @@ import os
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from time import sleep
+import pytest
+import os
 
 from buckets.utils.cloud.azure_client import AzureClient
 from buckets.utils.cloud.utilities import assert_policy

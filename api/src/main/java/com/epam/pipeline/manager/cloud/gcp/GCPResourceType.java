@@ -14,7 +14,32 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.region;
+package com.epam.pipeline.manager.cloud.gcp;
 
-public class RegionLabels {
+public enum GCPResourceType {
+    CPU,
+    RAM,
+    EXTENDED_RAM {
+        @Override
+        public String alias() {
+            return super.alias().replace("_", "");
+        }
+    },
+    GPU,
+    DISK {
+        @Override
+        public long normalize(final long nanos) {
+            return nanos / HOURS_IN_MONTH;
+        }
+    };
+
+    private static final long HOURS_IN_MONTH = 24 * 30;
+
+    public String alias() {
+        return name().toLowerCase();
+    }
+
+    public long normalize(final long nanos) {
+        return nanos;
+    }
 }

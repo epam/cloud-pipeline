@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage.providers;
+package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -74,8 +75,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.formatNfsPath;
-import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.getNfsRootPath;
+import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
+import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getNfsRootPath;
 
 /**
  * A {@link StorageProvider}, that integrates with NFS file systems. For browsing the filesystem, mounts it to the host
@@ -84,7 +85,7 @@ import static com.epam.pipeline.manager.datastorage.providers.NFSHelper.getNfsRo
 @Service
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s -o %s %s %s";
+    private static final String NFS_MOUNT_CMD_PATTERN = "sudo mount -t %s %s %s %s";
 
     /**
      * -l is for "lazy" unmounting: Detach the filesystem from the filesystem hierarchy now, and cleanup all references
@@ -362,16 +363,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     private String getMountDirName(String nfsPath) {
-        String rootPath = getNfsRootPath(nfsPath);
-        int index = rootPath.indexOf(':');
-        if (index > 0) {
-            return rootPath.substring(0, index);
-        } else {
-            if (index == 0) {
-                throw new IllegalArgumentException("Invalid path");
-            }
-            return rootPath;
-        }
+        return getNfsRootPath(nfsPath).replace(":", "/");
     }
 
     @Override

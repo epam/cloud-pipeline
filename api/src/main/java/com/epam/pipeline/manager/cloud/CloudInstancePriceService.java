@@ -31,8 +31,9 @@ public interface CloudInstancePriceService<T extends AbstractCloudRegion> extend
     String GENERAL_PURPOSE_VOLUME_TYPE = "General Purpose";
     double HOURS_IN_DAY = 24;
     double DAYS_IN_MONTH = 30;
+    String CURRENCY = "USD";
 
     List<InstanceOffer> refreshPriceListForRegion(T region);
     double getSpotPrice(String instanceType, T region);
-    double getPriceForDisk(List<InstanceOffer> offers, int instanceDisk, String instanceType, T region);
+    double getPriceForDisk(List<InstanceOffer> offers, int instanceDisk, String instanceType, boolean spot, T region);
 }

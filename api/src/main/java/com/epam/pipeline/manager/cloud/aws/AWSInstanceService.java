@@ -27,9 +27,8 @@ import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
+import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
-import com.epam.pipeline.manager.cloud.commands.RunIdArgCommand;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -48,7 +47,7 @@ import java.util.function.Supplier;
 
 @Service
 @Slf4j
-public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
+public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
@@ -57,34 +56,31 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     private final PreferenceManager preferenceManager;
     private final InstanceOfferManager instanceOfferManager;
     private final CommonCloudInstanceService instanceService;
-    private final CmdExecutor cmdExecutor = new CmdExecutor();
+    private final ClusterCommandService commandService;
     private final String nodeUpScript;
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
+    private final CmdExecutor cmdExecutor = new CmdExecutor();
 
-    public AwsInstanceService(final EC2Helper ec2Helper,
+    public AWSInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
                               final InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
+                              final ClusterCommandService commandService,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.nodedown.script}") final String nodeDownScript,
                               @Value("${cluster.reassign.script}") final String nodeReassignScript,
-                              @Value("${cluster.node.terminate.script}") final String nodeTerminateScript,
-                              @Value("${kube.master.ip}") final String kubeMasterIP,
-                              @Value("${kube.kubeadm.token}") final String kubeToken) {
+                              @Value("${cluster.node.terminate.script}") final String nodeTerminateScript) {
         this.ec2Helper = ec2Helper;
         this.preferenceManager = preferenceManager;
         this.instanceOfferManager = instanceOfferManager;
         this.instanceService = instanceService;
+        this.commandService = commandService;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
     }
 
     @Override
@@ -92,13 +88,13 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                                    final Long runId,
                                    final RunInstance instance) {
         final String command = buildNodeUpCommand(region, runId, instance);
-        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, Collections.emptyMap());
+        return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars());
     }
 
     @Override
     public void scaleDownNode(final AwsRegion region, final Long runId) {
-        final String command = buildNodeDownCommand(runId);
-        instanceService.runNodeDownScript(cmdExecutor, command, Collections.emptyMap());
+        final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
+        instanceService.runNodeDownScript(cmdExecutor, command, buildScriptEnvVars());
     }
 
     //TODO: This code won't work for current scripts
@@ -107,13 +103,21 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
         String command = buildNodeUpDefaultCommand(region, nodeId);
         log.debug("Creating default free node. Command: {}.", command);
         //TODO: issue token for some default user???
-        executeCmd(command, Collections.emptyMap());
+        executeCmd(command, buildScriptEnvVars());
+    }
+
+    @Override
+    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
+        final String command = commandService.buildNodeReassignCommand(
+                nodeReassignScript, oldId, newId, getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars());
     }
 
     @Override
     public void terminateNode(final AwsRegion region, final String internalIp, final String nodeName) {
-        final String command = instanceService.buildTerminateNodeCommand(internalIp, nodeName, nodeTerminateScript);
-        instanceService.runTerminateNodeScript(command, cmdExecutor, Collections.emptyMap());
+        final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp, nodeName,
+                getProviderName());
+        instanceService.runTerminateNodeScript(command, cmdExecutor, buildScriptEnvVars());
     }
 
     @Override
@@ -184,12 +188,6 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
-        return instanceService.runNodeReassignScript(
-                oldId, newId, cmdExecutor, nodeReassignScript, Collections.emptyMap());
-    }
-
-    @Override
     public Map<String, String> buildContainerCloudEnvVars(final AwsRegion region) {
         final Map<String, String> envVars = new HashMap<>();
         envVars.put(SystemParams.CLOUD_REGION_PREFIX + region.getId(), region.getRegionCode());
@@ -211,29 +209,12 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
                         .build());
     }
 
-    private String buildNodeDownCommand(final Long runId) {
-        return RunIdArgCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeDownScript)
-                .runId(String.valueOf(runId))
-                .build()
-                .getCommand();
-    }
-
     private String buildNodeUpCommand(final AwsRegion region,
                                       final Long runId,
                                       final RunInstance instance) {
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(String.valueOf(runId))
-                .sshKey(region.getSshKeyName())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance, getProviderName())
+                               .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
@@ -275,16 +256,9 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
 
     private String buildNodeUpDefaultCommand(final AwsRegion region, final String nodeId) {
 
-        NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeId)
-                .sshKey(region.getSshKeyName())
-                .instanceType(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TYPE))
-                .instanceDisk(String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_HDD)))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .region(region.getRegionCode());
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                commandService.buildDefaultNodeUpCommand(nodeUpScript, region, nodeId, getProviderName())
+                               .sshKey(region.getSshKeyName());
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
@@ -312,4 +286,9 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
             log.error(e.getMessage(), e);
         }
     }
+
+    private Map<String, String> buildScriptEnvVars() {
+        return Collections.emptyMap();
+    }
+
 }

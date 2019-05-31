@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -238,6 +239,13 @@ public class DataStorageManager implements SecuredEntityManager {
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
+
+        if (dataStorageVO.getServiceType() == StorageServiceType.FILE_SHARE) {
+            Assert.notNull(dataStorageVO.getFileShareMountId(),
+                    messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
+                           "fileShareMountId"));
+        }
+
         assertDataStorageMountPoint(dataStorageVO);
 
         dataStorageVO.setName(dataStorageVO.getName().trim());

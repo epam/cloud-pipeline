@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..utils.listing import get_pipe_listing, get_aws_listing, compare_listing
 from common_utils.pipe_cli import *
 from ..utils.listing import get_pipe_listing, compare_listing, f
 from ..utils.assertions_utils import *
@@ -160,7 +159,7 @@ class TestRmFileFolder(object):
     def test_remove_from_wrong_scheme(self):
         try:
             error = pipe_storage_rm("s4://{}/test.txt".format(self.bucket_name), expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az".')
+            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_wrong_scheme, e.message))
 

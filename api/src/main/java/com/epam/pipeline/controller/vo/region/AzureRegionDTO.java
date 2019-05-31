@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,45 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class CloudRegionVO {
-    private Long id;
-    @JsonProperty(value = "regionId")
-    private String regionCode;
-    private String name;
-    @JsonProperty(value = "default")
-    private boolean isDefault;
-    private CloudProvider provider;
+public class AzureRegionDTO extends AbstractCloudRegionDTO {
 
-    private String corsRules;
-
-    //AWS Fields
-    private String policy;
-    private String kmsKeyId;
-    private String kmsKeyArn;
-    private String profile;
-    private String sshKeyName;
-    private String tempCredentialsRole;
-    private Integer backupDuration;
-    private boolean versioningEnabled;
-
-    //Azure Fields
+    private CloudProvider provider = CloudProvider.AZURE;
     private String storageAccount;
     private String storageAccountKey;
     private String resourceGroup;
+    private String corsRules;
     private AzurePolicy azurePolicy;
     private String subscription;
     private String authFile;

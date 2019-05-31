@@ -333,7 +333,7 @@ export default class EditToolFormParameters extends React.Component {
               ? (this.state.parameters[this.state.bucketBrowserParameter].type || '').toLowerCase() === 'output'
               : false
           }
-          bucketTypes={['AZ', 'S3', 'DTS', 'NFS']} />
+          bucketTypes={['AZ', 'S3', 'GS', 'DTS', 'NFS']} />
         <SystemParametersBrowser
           visible={this.state.systemParameterBrowserVisible}
           onCancel={this.closeSystemParameterBrowser}

@@ -420,6 +420,14 @@ public final class MessageConstants {
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
 
+    //GCP
+    public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
+    public static final String ERROR_GCP_IMP_ACC_REQUIRED = "error.gcp.impersonate.account";
+    public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
+
+    public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
+    public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+
     private MessageConstants() {
         // no-op
     }

@@ -1,5 +1,6 @@
 import os
 import re
+
 from abc import abstractmethod, ABCMeta
 
 import click
@@ -20,6 +21,32 @@ class StorageOperations:
     CP_SOURCE_TAG = 'CP_SOURCE'
     CP_OWNER_TAG = 'CP_OWNER'
     STORAGE_PATH = '%s://%s/%s'
+    __config__ = None
+
+    @classmethod
+    def get_proxy_config(cls, target_url=None):
+        if cls.__config__ is None:
+            cls.__config__ = Config.instance()
+        if cls.__config__.proxy is None:
+            return None
+        else:
+            return cls.__config__.resolve_proxy(target_url=target_url)
+
+    @classmethod
+    def init_wrapper(cls, wrapper, versioning=False):
+        delimiter = StorageOperations.PATH_SEPARATOR
+        prefix = StorageOperations.get_prefix(wrapper.path)
+        check_file = True
+        if prefix.endswith(delimiter):
+            prefix = prefix[:-1]
+            check_file = False
+        listing_manager = wrapper.get_list_manager(show_versions=versioning)
+        for item in listing_manager.list_items(prefix, show_all=True):
+            if prefix.endswith(item.name.rstrip(delimiter)) and (check_file or item.type == 'Folder'):
+                wrapper.exists_flag = True
+                wrapper.is_file_flag = item.type == 'File'
+                break
+        return wrapper
 
     @classmethod
     def get_prefix(cls, path, delimiter=PATH_SEPARATOR):
@@ -152,6 +179,18 @@ class StorageOperations:
             default_tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return default_tags
 
+    @classmethod
+    def get_items(cls, listing_manager, relative_path, delimiter=PATH_SEPARATOR):
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter)
+        for item in listing_manager.list_items(prefix, recursive=True, show_all=True):
+            if not StorageOperations.is_relative_path(item.name, prefix):
+                continue
+            if item.name == relative_path:
+                item_relative_path = os.path.basename(item.name)
+            else:
+                item_relative_path = StorageOperations.get_item_name(item.name, prefix + delimiter)
+            yield ('File', item.name, item_relative_path, item.size)
+
 
 class AbstractTransferManager:
     __metaclass__ = ABCMeta
@@ -193,6 +232,42 @@ class AbstractListingManager:
         :param show_all: Specifies if all items have to be listed.
         """
         pass
+
+    def get_items(self, relative_path):
+        """
+        Returns all files under the given relative path in forms of tuples with the following structure:
+        ('File', full_path, relative_path, size)
+
+        :param relative_path: Path to a folder or a file.
+        :return: Generator of file tuples.
+        """
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(StorageOperations.PATH_SEPARATOR)
+        for item in self.list_items(prefix, recursive=True, show_all=True):
+            if not StorageOperations.is_relative_path(item.name, prefix):
+                continue
+            if item.name == relative_path:
+                item_relative_path = os.path.basename(item.name)
+            else:
+                item_relative_path = StorageOperations.get_item_name(item.name, prefix + StorageOperations.PATH_SEPARATOR)
+            yield ('File', item.name, item_relative_path, item.size)
+
+    def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
+        prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
+        for item in self.list_items(prefix, show_all=True):
+            if prefix.endswith(item.name):
+                return True
+        return False
+
+    @abstractmethod
+    def get_file_tags(self, relative_path):
+        pass
+
+    def get_file_size(self, relative_path):
+        items = self.list_items(relative_path, show_all=True, recursive=True)
+        for item in items:
+            if item.name == relative_path:
+                return item.size
+        return None
 
 
 class AbstractDeleteManager:

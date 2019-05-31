@@ -64,7 +64,8 @@ public interface CloudFacade {
 
     List<InstanceOffer> refreshPriceListForRegion(Long regionId);
 
-    double getPriceForDisk(Long regionId, List<InstanceOffer> diskOffers, int instanceDisk, String instanceType);
+    double getPriceForDisk(Long regionId, List<InstanceOffer> diskOffers, int instanceDisk, String instanceType,
+                           boolean spot);
 
     double getSpotPrice(Long regionId, String instanceType);
 

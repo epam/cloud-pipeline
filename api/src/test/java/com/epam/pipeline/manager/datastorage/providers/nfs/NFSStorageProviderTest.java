@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.datastorage.providers;
+package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
@@ -22,7 +22,8 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.util.Optional;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
+import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
@@ -91,7 +92,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
 
-        CloudRegionVO awsRegion = new CloudRegionVO();
+        AWSRegionDTO awsRegion = new AWSRegionDTO();
         awsRegion.setName("region");
         awsRegion.setRegionCode("us-east-1");
         awsRegion.setProvider(CloudProvider.AWS);
@@ -102,7 +103,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         awsFileShareMount.setRegionId(regionManager.load(CloudProvider.AWS, "us-east-1").getId());
         fileShareMountManager.save(awsFileShareMount);
 
-        CloudRegionVO azureRegion = new CloudRegionVO();
+        AzureRegionDTO azureRegion = new AzureRegionDTO();
         azureRegion.setName("azure-centralus");
         azureRegion.setRegionCode("centralus");
         azureRegion.setProvider(CloudProvider.AZURE);

@@ -28,6 +28,7 @@ public class TerminateNodeCommand extends AbstractClusterCommand {
     private final String script;
     private final String internalIp;
     private final String nodeName;
+    private final String cloud;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -38,6 +39,8 @@ public class TerminateNodeCommand extends AbstractClusterCommand {
         commands.add(internalIp);
         commands.add(AbstractClusterCommand.NODE_NAME_PARAMETER);
         commands.add(nodeName);
+        commands.add(CLOUD_PARAMETER);
+        commands.add(cloud);
         return commands;
     }
 }

@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from time import sleep
 
 
 class CloudClient(object):
@@ -25,9 +26,20 @@ class CloudClient(object):
         pass
 
     @abstractmethod
+    def get_versions(self, bucket_name, key):
+        pass
+
+    @abstractmethod
     def wait_for_bucket_creation(self, bucket_name):
         pass
 
     @abstractmethod
     def wait_for_bucket_deletion(self, bucket_name):
         pass
+
+    def _wait_unless(self, is_ready, attempts=20, delay=3):
+        for attempt in range(attempts):
+            if is_ready():
+                return True
+            sleep(delay)
+        return False

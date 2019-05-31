@@ -152,7 +152,7 @@ def get_security_groups(aws_region):
     if not config:
         raise RuntimeError('Security group setting is required to run an instance')
     return config
-    
+
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
@@ -374,10 +374,10 @@ def get_well_known_hosts_string(aws_region):
         well_known_host = well_known_item['host']
         if not well_known_ip or not well_known_host:
             continue
-    
+
         entries.append(command_pattern.format(well_known_ip=well_known_ip, well_known_host=well_known_host))
         pipe_log('-> {}={}'.format(well_known_ip, well_known_host))
-    
+
     if len(entries) == 0:
         return ''
     return ' && '.join(entries)
@@ -880,7 +880,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     ins_key = args.ins_key
     run_id = args.run_id
     ins_type = args.ins_type
@@ -939,7 +939,7 @@ def main():
         else:
             ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
 
-            
+
 
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)

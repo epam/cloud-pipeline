@@ -75,7 +75,7 @@ public final class StorageProviderManager {
     }
 
     public void deleteBucket(AbstractDataStorage dataStorage) throws DataStorageException {
-        LOGGER.debug("Start the process of deleting of the %s bucket: %s",
+        LOGGER.debug("Start the process of deleting of the {} bucket: {}",
                 dataStorage.getType(), dataStorage.getPath());
         getStorageProvider(dataStorage).deleteStorage(dataStorage);
     }
