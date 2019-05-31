@@ -618,7 +618,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 super.elements(),
                 entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
                 entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
-                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security")))
+                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
+                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling")))
         );
 
         PreferencesAO(final PipelinesLibraryAO pipelinesLibraryAO) {
@@ -633,6 +634,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public SystemTabAO switchToSystem() {
             click(SYSTEM_TAB);
             return new SystemTabAO(parentAO);
+        }
+
+        public AutoscalingTabAO switchToAutoscaling() {
+            click(AUTOSCALING_TAB);
+            return new AutoscalingTabAO(parentAO);
         }
 
         public DockerSecurityAO switchToDockerSecurity() {
@@ -820,6 +826,43 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             private By getByDockerSecurityField(final String variable) {
+                return new By() {
+                    @Override
+                    public List<WebElement> findElements(final SearchContext context) {
+                        return $$(byClassName("preference-group__preference-row"))
+                                .stream()
+                                .filter(element -> exactText(variable).apply(element))
+                                .map(e -> e.find(".ant-input-sm"))
+                                .collect(toList());
+                    }
+                };
+            }
+        }
+
+        public class AutoscalingTabAO extends PreferencesAO {
+
+            private final By scaleDownTimeout = getByAutoscalingField("ge.autoscaling.scale.down.timeout");
+            private final By scaleUpTimeout = getByAutoscalingField("ge.autoscaling.scale.up.timeout");
+
+            AutoscalingTabAO(final PipelinesLibraryAO parentAO) {
+                super(parentAO);
+            }
+
+            public AutoscalingTabAO setScaleDownTimeout(final String value) {
+                click(scaleDownTimeout);
+                clear(scaleDownTimeout);
+                setValue(scaleDownTimeout, value);
+                return this;
+            }
+
+            public AutoscalingTabAO setScaleUpTimeout(final String value) {
+                click(scaleUpTimeout);
+                clear(scaleUpTimeout);
+                setValue(scaleUpTimeout, value);
+                return this;
+            }
+
+            private By getByAutoscalingField(final String variable) {
                 return new By() {
                     @Override
                     public List<WebElement> findElements(final SearchContext context) {
