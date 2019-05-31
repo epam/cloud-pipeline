@@ -17,7 +17,7 @@
 package com.epam.pipeline.event;
 
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -26,11 +26,11 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 
 @Component
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class StartupApplicationListener {
-    private DockerRegistryManager dockerRegistryManager;
+    private final DockerRegistryManager dockerRegistryManager;
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
