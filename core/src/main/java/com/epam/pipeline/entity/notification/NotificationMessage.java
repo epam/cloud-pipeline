@@ -106,10 +106,14 @@ public class NotificationMessage {
 
         @Override
         public List<Long> convertToEntityAttribute(String dbData) {
-            return StringUtils.isEmpty(dbData)
+            final String trimmedUserIds = dbData.trim();
+            return StringUtils.isEmpty(trimmedUserIds)
                     ? Collections.emptyList()
-                    : Arrays.stream(dbData.split(",")).filter(s -> !StringUtils.isEmpty(s))
-                        .map(Long::parseLong).collect(Collectors.toList());
+                    : Arrays.stream(trimmedUserIds.split(","))
+                        .filter(s -> !StringUtils.isEmpty(s))
+                        .map(String::trim)
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList());
         }
     }
 }
