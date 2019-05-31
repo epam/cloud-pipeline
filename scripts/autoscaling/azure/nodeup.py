@@ -424,6 +424,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
         error_message = client_error.__str__()
         if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
             pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            delete_all_by_run_id(run_id)
             sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
         else:
             raise client_error
