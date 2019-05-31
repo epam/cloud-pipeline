@@ -39,7 +39,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Getter
 @Setter
@@ -110,10 +110,10 @@ public class NotificationMessage {
             return StringUtils.isEmpty(trimmedUserIds)
                     ? Collections.emptyList()
                     : Arrays.stream(trimmedUserIds.split(","))
-                        .filter(s -> !StringUtils.isEmpty(s))
-                        .map(String::trim)
-                        .map(Long::parseLong)
-                        .collect(Collectors.toList());
+                    .map(String::trim)
+                    .filter(StringUtils::isNumeric)
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
         }
     }
 }
