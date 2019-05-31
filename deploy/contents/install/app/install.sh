@@ -943,7 +943,7 @@ if is_service_requested cp-vm-monitor; then
                                     "/opt/vm-monitor"
     if is_install_requested; then
         print_info "-> Deploying VM Monitor service"
-        create_kube_resource $K8S_SPECS_HOME/cp-vm-monitor/cp-vm-monitor-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-vm-monitor/cp-vm-monitor-dpl.yaml
 
         print_info "-> Waiting for VM Monitor service to initialize"
         wait_for_deployment "cp-vm-monitor"
