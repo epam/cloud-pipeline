@@ -374,7 +374,7 @@ public class FolderManager {
         }
         if (!CollectionUtils.isEmpty(folderToClone.getConfigurations())) {
             folderToClone.getConfigurations().forEach(runConfiguration -> {
-                runConfiguration.setParent(clonedFolder);
+                runConfiguration.setParent(new Folder(clonedFolder.getId()));
                 configurationManager.create(runConfigurationMapper.toRunConfigurationVO(runConfiguration));
             });
         }
