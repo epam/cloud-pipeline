@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-vm-monitor
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-vm-monitor: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-vm-monitor: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-vm-monitor
+          image: lifescience/cloud-pipeline:vm-monitor-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - name: vm-monitor-logs
+              mountPath: /opt/vm-monitor/logs
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f vm-monitor.jar); sleep 1"]
+      volumes:
+        - name: vm-monitor-logs
+          hostPath:
+            path: /opt/vm-monitor/logs
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
