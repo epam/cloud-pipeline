@@ -40,7 +40,6 @@ ENV CP_CAP_DIND_CONTAINER="true"
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
 ENV INPUT_DIR="/common/input"
-ENV SCRIPTS_DIR="/common/scripts"
 
 # Install nextflow itlself into $NXF_HOME
 RUN mkdir -p $NXF_HOME && \
