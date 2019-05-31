@@ -23,11 +23,7 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
-import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
-import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.enabled;
@@ -60,7 +56,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Listeners(value = ConditionalTestAnalyzer.class)
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
     private final String defaultConfigurationName = "default";
@@ -107,7 +102,6 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(combobox("Price type"), have(selectedValue("On-demand")));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1257")
     public void changeInstancePriceTypeToSpotInConfigurationFile() {
@@ -128,7 +122,6 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(combobox("Price type"), have(selectedValue("Spot")));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1263")
     public void validationOfDefaultPriceType() {
@@ -142,7 +135,6 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1241")
     public void validationOfRunPipelineUsingOnDemandInstance() {
