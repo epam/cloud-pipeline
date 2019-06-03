@@ -23,9 +23,10 @@ fi
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
+
+pip install --upgrade setuptools && \
 pip install -r /pipe-cli/requirements.txt && \
 pip install pywin32 && \
-pip install --upgrade setuptools && \
 cd /pipe-cli && \
 pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=boto3 \
@@ -47,7 +48,7 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
-            --additional-hooks-dir="/src/hooks" \
+            --additional-hooks-dir="/pipe-cli/hooks" \
             -y \
             --clean \
             --workpath /tmp \
