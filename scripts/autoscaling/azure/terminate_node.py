@@ -14,6 +14,7 @@
 
 import functools
 import os
+import re
 
 import pykube
 import argparse
@@ -24,10 +25,11 @@ from azure.mgmt.compute import ComputeManagementClient
 RUN_ID_LABEL = 'runid'
 CLOUD_REGION_LABEL = 'cloud_region'
 KUBE_CONFIG_PATH = '~/.kube/config'
-resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
+LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 
 res_client = get_client_from_auth_file(ResourceManagementClient)
 compute_client = get_client_from_auth_file(ComputeManagementClient)
+resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def resolve_azure_api(resource):
@@ -43,18 +45,25 @@ def resolve_azure_api(resource):
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1] == "virtualMachines":
+    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and str(r2.type).split('/')[-1] != "virtualMachines":
+    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
         return -1
     return 0
 
 
 def delete_cloud_node(node_name):
-    vm_info = compute_client.virtual_machines.get(resource_group_name, node_name)
-    if vm_info is not None and "Name" in vm_info.tags:
+    low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, node_name)
+    if low_priority_search:
+        # just because we set computer_name_prefix in nodeup script,
+        # we know that it is the same with scale set name, so let's extract it
+        scale_set_name = low_priority_search.group(1)
+        info = compute_client.virtual_machine_scale_sets.get(resource_group_name, scale_set_name)
+    else:
+        info = compute_client.virtual_machines.get(resource_group_name, node_name)
+    if info is not None and "Name" in info.tags:
         resources = []
-        for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + vm_info.tags["Name"] + "'"):
+        for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + info.tags["Name"] + "'"):
             resources.append(resource)
             # we need to sort resources to be sure that vm and nic will be deleted first, because it has attached resorces(disks and ip)
             resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))

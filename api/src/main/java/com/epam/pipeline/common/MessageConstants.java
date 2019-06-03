@@ -415,6 +415,8 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_STORAGE_ACC_REQUIRED = "error.azure.storage.account.required";
     public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
+    public static final String ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE = "error.azure.resource.is.not.vm.like";
+    public static final String ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS = "error.azure.scale.set.doesnt.contain.vm";
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
