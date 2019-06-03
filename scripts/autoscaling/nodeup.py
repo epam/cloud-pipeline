@@ -99,6 +99,7 @@ def main():
         utils.pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
 
         kube_provider = kubeprovider.KubeProvider()
+        kube_provider.delete_phantom_low_priority_kubernetes_node(ins_id)
         nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full, num_rep, time_rep)
         kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, region_id)
 
