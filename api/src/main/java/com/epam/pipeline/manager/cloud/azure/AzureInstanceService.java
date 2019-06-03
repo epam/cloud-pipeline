@@ -243,8 +243,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .kubeToken(kubeToken)
                 .region(region.getRegionCode());
 
-        final Boolean clusterSpotStrategy = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
-        if (BooleanUtils.isTrue(clusterSpotStrategy) || BooleanUtils.isTrue(instance.getSpot())) {
+        final Boolean clusterSpotStrategy = instance.getSpot() == null
+                ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
+                : instance.getSpot();
+
+        if (BooleanUtils.isTrue(clusterSpotStrategy)) {
             commandBuilder.isSpot(true);
         }
         return commandBuilder.build().getCommand();
