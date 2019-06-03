@@ -194,6 +194,7 @@ public enum Primitive {
     CLUSTER_TAB,
     SYSTEM_TAB,
     DOCKER_SECURITY_TAB,
+    AUTOSCALING_TAB,
     TABLE,
     EDIT_GROUP,
     DELETE_GROUP,

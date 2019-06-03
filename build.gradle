@@ -4,7 +4,7 @@ def buildNumber = hasProperty("buildNumber") ? buildNumber : ""
 def profile = hasProperty("profile") ? profile : ""
 
 allprojects {
-    version = new Version(major: 0, minor: 15, patch: 0, build: buildNumber)
+    version = new Version(major: 0, minor: 16, patch: 0, build: buildNumber)
 
     task printVersion {
         doFirst {
