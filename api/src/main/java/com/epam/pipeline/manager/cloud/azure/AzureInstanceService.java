@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -29,8 +30,6 @@ import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import com.microsoft.azure.management.compute.VirtualMachine;
-import com.microsoft.azure.management.network.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -146,25 +145,23 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public RunInstance describeInstance(final AzureRegion region, final String nodeLabel, final RunInstance instance) {
-        return describeInstance(region, nodeLabel, instance, () -> vmService.getRunningVMByRunId(region, nodeLabel));
+        return describeInstance(nodeLabel, instance, () -> vmService.getRunningVMByRunId(region, nodeLabel));
     }
 
     @Override
     public RunInstance describeAliveInstance(final AzureRegion region, final String nodeLabel,
                                              final RunInstance instance) {
-        return describeInstance(region, nodeLabel, instance, () -> vmService.getAliveVMByRunId(region, nodeLabel));
+        return describeInstance(nodeLabel, instance, () -> vmService.getAliveVMByRunId(region, nodeLabel));
     }
 
-    private RunInstance describeInstance(final AzureRegion region,
-                                         final String nodeLabel,
+    private RunInstance describeInstance(final String nodeLabel,
                                          final RunInstance instance,
-                                         final Supplier<VirtualMachine> supplier) {
+                                         final Supplier<AzureVirtualMachineStats> supplier) {
         try {
-            final VirtualMachine vm = supplier.get();
-            instance.setNodeId(vm.name());
-            final NetworkInterface networkInterface = vmService.getVMNetworkInterface(region.getAuthFile(), vm);
-            instance.setNodeName(vm.name());
-            instance.setNodeIP(networkInterface.primaryIPConfiguration().privateIPAddress());
+            final AzureVirtualMachineStats vm = supplier.get();
+            instance.setNodeId(vm.getName());
+            instance.setNodeName(vm.getName());
+            instance.setNodeIP(vm.getPrivateIP());
             return instance;
         } catch (AzureException e) {
             log.error("An error while getting instance description {}", nodeLabel);

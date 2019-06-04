@@ -43,7 +43,6 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +74,7 @@ public class AzurePriceListLoader {
     private static final String DISK_INDICATOR = "Disks";
     private static final String VIRTUAL_MACHINES_CATEGORY = "Virtual Machines";
     private static final String DISKS_CATEGORY = "Storage";
-    private static final String LOW_PRIORITY_VM_POSTFIX = "Low Priority";
+    private static final String LOW_PRIORITY_VM_POSTFIX = " Low Priority";
     private static final String DELIMITER = "/";
     private static final String AZURE_PRICING_FILTERS =
             "OfferDurableId eq '%s' and Currency eq '%s' and Locale eq '%s' and RegionInfo eq '%s'";
@@ -83,6 +82,7 @@ public class AzurePriceListLoader {
     private static final int CONNECT_TIMEOUT = 30;
     private static final String GENERAL_PURPOSE_FAMILY = "General purpose";
     private static final String GPU_FAMILY = "GPU instance";
+    public static final String EMPTY = "";
 
     private final AzurePricingClient azurePricingClient;
     private final String meterRegionName;
@@ -233,7 +233,10 @@ public class AzurePriceListLoader {
 
         final int gpu = Integer.parseInt(capabilitiesByName.getOrDefault(GPU_CAPABILITY, "0"));
         return InstanceOffer.builder()
-                .termType(ON_DEMAND_TERM_TYPE)
+                .termType(meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
+                        ? LOW_PRIORITY_TERM_TYPE
+                        : ON_DEMAND_TERM_TYPE
+                )
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)
                 .sku(meter.getMeterId())
@@ -289,11 +292,10 @@ public class AzurePriceListLoader {
     }
 
     private List<String> getVmSizes(final String rawMeterName) {
-        if (rawMeterName.endsWith(LOW_PRIORITY_VM_POSTFIX)) {
-            return Collections.emptyList();
-        }
         return Arrays.stream(rawMeterName.split(DELIMITER))
-                .map(vmSize -> vmSize.trim().replaceAll(" ", "_"))
+                .map(vmSize -> vmSize.trim()
+                        .replaceAll(LOW_PRIORITY_VM_POSTFIX, EMPTY)
+                        .replaceAll(" ", "_"))
                 .collect(Collectors.toList());
     }
 }
