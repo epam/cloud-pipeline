@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.preference;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -286,6 +287,10 @@ public class SystemPreferences {
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
+    public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
+            "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",

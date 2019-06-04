@@ -41,7 +41,8 @@ import java.util.concurrent.Executors;
 @ComponentScan(basePackages = {"com.epam.pipeline.dao",
         "com.epam.pipeline.manager",
         "com.epam.pipeline.security",
-        "com.epam.pipeline.aspect"})
+        "com.epam.pipeline.aspect",
+        "com.epam.pipeline.event"})
 public class AppConfiguration implements SchedulingConfigurer {
 
     private static final int MAX_LOG_PAYLOAD_LENGTH = 1000;

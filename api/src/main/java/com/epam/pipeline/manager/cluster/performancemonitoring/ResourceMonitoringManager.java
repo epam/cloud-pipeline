@@ -124,8 +124,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private void processOverloadedRuns(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = runs.stream()
                 .filter(r -> {
-                    log.debug("Pipeline with id: " + r.getId() + " has not node name.");
-                    return Objects.nonNull(r.getInstance()) && Objects.nonNull(r.getInstance().getNodeName());
+                    final boolean hasNodeName = Objects.nonNull(r.getInstance())
+                            && Objects.nonNull(r.getInstance().getNodeName());
+                    if (!hasNodeName) {
+                        log.debug("Pipeline with id: " + r.getId() + " has not node name.");
+                    }
+                    return hasNodeName;
                 })
                 .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);

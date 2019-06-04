@@ -128,6 +128,7 @@
   flex: 1;
   flex-direction: column;
   padding: 5px;
+  overflow: auto;
 }
 
 .wdl-graph-side-panel-content {
@@ -269,4 +270,13 @@
   to {
     opacity: 1;
   }
+}
+
+.search-item-type {
+  min-width: 40px;
+  padding: 0 2px;
+  margin-right: 5px;
+  display: inline-block;
+  font-size: x-small;
+  text-align: right;
 }

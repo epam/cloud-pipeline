@@ -36,7 +36,7 @@ public class NodePage implements AccessObject<NodePage> {
     }
 
     public static By labelWithType(final String type) {
-        return Combiners.confine(byAttribute("label", type), mainInfo(), "label with type " + type);
+        return Combiners.confine(byAttribute("data-label", type), mainInfo(), "label with type " + type);
     }
 
     public static By section(final String title) {

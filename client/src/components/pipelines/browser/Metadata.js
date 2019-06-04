@@ -657,7 +657,9 @@ export default class Metadata extends React.Component {
       : [];
 
     return (
-      <ContentMetadataPanel style={{flex: 1}} onPanelClose={onPanelClose}>
+      <ContentMetadataPanel
+        style={{flex: 1, overflow: 'auto'}}
+        onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {renderTable()}
           {renderConfigurationBrowser()}

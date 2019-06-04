@@ -57,6 +57,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     private String loadNotificationTimestampQuery;
     private String deleteNotificationTimestampsByRunIdQuery;
     private String deleteNotificationTimestampsByPipelineIdQuery;
+    private String deleteNotificationsByUserIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createMonitoringNotification(NotificationMessage notificationMessage) {
@@ -129,6 +130,11 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteNotificationTimestampsForPipeline(final Long pipelineId) {
         getJdbcTemplate().update(deleteNotificationTimestampsByPipelineIdQuery, pipelineId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteNotificationsForUser(final Long userId) {
+        getJdbcTemplate().update(deleteNotificationsByUserIdQuery, userId);
     }
 
     enum MonitoringNotificationParameters {
@@ -247,5 +253,10 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteNotificationTimestampsByPipelineIdQuery(String deleteNotificationTimestampsByPipelineIdQuery) {
         this.deleteNotificationTimestampsByPipelineIdQuery = deleteNotificationTimestampsByPipelineIdQuery;
+    }
+
+    @Required
+    public void setDeleteNotificationsByUserIdQuery(final String deleteNotificationsByUserIdQuery) {
+        this.deleteNotificationsByUserIdQuery = deleteNotificationsByUserIdQuery;
     }
 }

@@ -38,7 +38,8 @@ export default class DockerImageBrowser extends React.Component {
     group: null,
     tool: null,
     version: null,
-    selectedTool: null
+    selectedTool: null,
+    shorthandNotation: undefined
   };
 
   @observable _tags = null;
@@ -289,7 +290,9 @@ export default class DockerImageBrowser extends React.Component {
       this._tags = new LoadToolTags(tool.id);
       await this._tags.fetch();
       const options = this._tags.loaded ? (this._tags.value || []).map(t => t) : [];
-      let selectedTool = this.state.registry ? `${this.state.registry}/${tool.image}` : tool.image;
+      let selectedTool = this.state.registry && this.state.shorthandNotation !== this.state.registry
+        ? `${this.state.registry}/${tool.image}`
+        : tool.image;
       let version;
       if (options.length > 0) {
         const [tag] = options.filter(tag => tag === 'latest');
@@ -310,7 +313,9 @@ export default class DockerImageBrowser extends React.Component {
     const onSelectTag = (tool) => (tag) => {
       this.setState({
         version: tag,
-        selectedTool: this.state.registry ? `${this.state.registry}/${tool.image}:${tag}` : `${tool.image}:${tag}`,
+        selectedTool: this.state.registry && this.state.shorthandNotation !== this.state.registry
+          ? `${this.state.registry}/${tool.image}:${tag}`
+          : `${tool.image}:${tag}`,
         tool: parseToolName(tool)
       });
     };
@@ -414,26 +419,49 @@ export default class DockerImageBrowser extends React.Component {
           tool: null,
           version: null,
           selectedTool: image,
-          searchString: null
+          searchString: null,
+          shorthandNotation: undefined,
         });
       } else {
         const parts = image.split('/');
         let version;
-        let tool = parts[2];
+        let tool = parts.pop();
+        const group = parts.pop() || '';
+        let registry = parts.pop();
+        let shorthandNotation;
         if (tool) {
-          const toolParts = parts[2].split(':');
+          const toolParts = tool.split(':');
           if (toolParts.length === 2) {
             tool = toolParts[0];
             version = toolParts[1];
           }
         }
+        if (!registry && this.props.registries.length > 0) {
+          let registryCandidate;
+          for (let i = 0; i < this.props.registries.length; i++) {
+            const r = this.props.registries[i];
+            for (let j = 0; j < r.groups.length; j++) {
+              if (r.groups[j].name.toLowerCase() === group.toLowerCase()) {
+                registryCandidate = r.path;
+                for (let t = 0; t < r.groups[j].tools.length; t++) {
+                  if (r.groups[j].tools[t].image.toLowerCase() === tool.toLowerCase()) {
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          registry = registryCandidate;
+          shorthandNotation = registryCandidate;
+        }
         this.setState({
-          registry: parts[0],
-          group: parts[1],
+          registry,
+          group,
           tool,
           version,
           selectedTool: image,
-          searchString: null
+          searchString: null,
+          shorthandNotation
         }, this.updateTools);
       }
     }

@@ -29,7 +29,8 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel/SplitPanel';
 import Breadcrumbs from '../../special/Breadcrumbs';
-import {Alert, Button, Col, Dropdown, Icon, Input, Menu, message, Popover, Row, Select, Table} from 'antd';
+import GitRepositoryControl from '../../special/git-repository-control';
+import {Alert, Button, Col, Dropdown, Icon, Menu, message, Row, Select, Table} from 'antd';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import PipelineConfigurations from '../../../models/pipelines/PipelineConfigurations';
 import folders from '../../../models/folders/Folders';
@@ -526,8 +527,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           overlay={displayOptionsMenu}>
           <Button
             id="display-attributes"
+            style={{lineHeight: 1}}
             size="small">
-            <Icon type="appstore" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+            <Icon type="appstore" />
           </Button>
         </Dropdown>
       );
@@ -566,15 +568,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     if (this.props.pipeline.error) {
       return <Alert message={this.props.pipeline.error} type="error" />;
     }
-
-    const gitRepositoryPopoverContent = (
-      <Row className={styles.gitRepositoryPopover}>
-        <Input
-          id="pipeline-repository-input"
-          readOnly={true}
-          value={this.props.pipeline.value.repository} />
-      </Row>
-    );
 
     const pipelineTitleClassName = this.props.pipeline.value.locked ? styles.readonly : undefined;
 
@@ -618,25 +611,19 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                     <Button
                       id="edit-pipeline-button"
                       onClick={this.openEditPipelineDialog}
+                      style={{lineHeight: 1}}
                       size="small">
-                      <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+                      <Icon type="setting" />
                     </Button>
                   }
                   {
                     !this.props.listingMode
                       ? (
-                        <Popover
-                          title={<b>Git repository</b>}
-                          content={gitRepositoryPopoverContent}
-                          trigger="click"
-                          placement="bottomRight">
-                          <Button id="pipeline-repository-button" size="small">
-                            <span style={{lineHeight: 'inherit', verticalAlign: 'middle'}}>
-                              GIT REPOSITORY
-                            </span>
-                          </Button>
-                        </Popover>
-                      ) : undefined
+                        <GitRepositoryControl
+                          overlayClassName={styles.gitRepositoryPopover}
+                          https={this.props.pipeline.value.repository}
+                          ssh={this.props.pipeline.value.repositorySsh} />
+                        ) : undefined
                   }
             </Col>
           </Row>
@@ -644,7 +631,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
             {this.props.pipeline.value.description}
           </Row>
         </div>
-        <ContentIssuesMetadataPanel onPanelClose={onPanelClose}>
+        <ContentIssuesMetadataPanel
+          style={{flex: 1, overflow: 'auto'}}
+          onPanelClose={onPanelClose}>
           {versionsContent}
           {
             this.state.showIssuesPanel &&

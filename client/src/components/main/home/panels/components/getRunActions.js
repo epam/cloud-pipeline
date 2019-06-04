@@ -18,6 +18,7 @@ import React from 'react';
 import {Link} from 'react-router';
 import {Row} from 'antd';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
+import {canPauseRun} from '../../../../runs/actions';
 
 export default function (callbacks) {
   return function (run) {
@@ -68,12 +69,7 @@ export default function (callbacks) {
             });
           }
         }
-        if (run.initialized &&
-          run.podIP &&
-          run.instance &&
-          run.instance.spot !== undefined &&
-          !run.instance.spot &&
-          (run.nodeCount === 0 || run.nodeCount === undefined || run.nodeCount === null)) {
+        if (canPauseRun(run)) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
@@ -97,6 +93,12 @@ export default function (callbacks) {
             action: callbacks ? callbacks.resume : undefined
           });
         }
+        actions.push({
+          title: 'TERMINATE',
+          icon: 'close-circle-o',
+          style: {color: 'red'},
+          action: callbacks ? callbacks.terminate : undefined
+        });
         break;
       case 'PAUSING':
       case 'RESUMING':

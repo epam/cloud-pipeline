@@ -492,12 +492,14 @@ export class SplitPanel extends React.Component {
 export class ContentIssuesMetadataPanel extends localization.LocalizedReactComponent {
 
   static propTypes = {
-    onPanelClose: PropTypes.func
+    onPanelClose: PropTypes.func,
+    style: PropTypes.object,
   };
 
   render () {
     return (
       <SplitPanel
+        style={this.props.style}
         onPanelClose={this.props.onPanelClose}
         contentInfo={[
           {

@@ -23,12 +23,14 @@ fi
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
-
-pip install -r /src/requirements.txt && \
+pip install -r /pipe-cli/requirements.txt && \
 pip install pywin32 && \
 pip install --upgrade setuptools && \
-cd /src && \
-pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
+cd /pipe-cli && \
+pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
+            --hidden-import=boto3 \
+            --hidden-import=pytz \
+            --hidden-import=tkinter \
             --hidden-import=UserList \
             --hidden-import=UserString \
             --hidden-import=commands \
@@ -48,15 +50,15 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             -y \
             --clean \
             --workpath /tmp \
-            --distpath /src/dist/win64 \
-            /src/pipe.py && \
-cd /src/dist/win64 && \
+            --distpath /pipe-cli/dist/win64 \
+            pipe.py && \
+cd /pipe-cli/dist/win64 && \
 zip -r -q pipe.zip pipe
 EOL
 
 docker run -i --rm \
-           -v $PIPE_CLI_SOURCES_DIR:/src \
-           -v $PIPE_CLI_WIN_DIST_DIR:/src/dist/win64 \
+           -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
+           -v $PIPE_CLI_WIN_DIST_DIR:/pipe-cli/dist/win64 \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME

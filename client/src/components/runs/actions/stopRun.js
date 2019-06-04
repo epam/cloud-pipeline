@@ -15,14 +15,16 @@
  */
 
 import React from 'react';
+import ReactDOM from 'react-dom';
 import {computed, observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
-import {Alert, Checkbox, message, Modal, Row} from 'antd';
+import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
+import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import moment from 'moment';
 
 export function canStopRun (run) {
@@ -39,6 +41,19 @@ export function canCommitRun (run) {
     !(run.parentRunId && run.parentRunId > 0);
 }
 
+export function canPauseRun (run) {
+  // Checks only run state, not user permissions
+  const {instance, pipelineRunParameters, podIP, initialized} = run;
+  return canStopRun(run) && initialized &&
+    instance && instance.spot !== undefined && !instance.spot &&
+    podIP && !(run.nodeCount > 0) &&
+    !(run.parentRunId && run.parentRunId > 0) &&
+    (pipelineRunParameters || []).filter(r => {
+      return (r.name === 'CP_CAP_AUTOSCALE' && r.value === 'true') ||
+        (r.name === 'CP_CAP_SGE' && r.value === 'true');
+    }).length === 0;
+}
+
 export function stopRun (parent, callback) {
   if (!parent) {
     console.warn('"stopRun" function should be called with parent component passed to arguments:');
@@ -52,6 +67,19 @@ export function stopRun (parent, callback) {
   };
 }
 
+export function terminateRun (parent, callback) {
+  if (!parent) {
+    console.warn('"terminateRun" function should be called with parent component passed to arguments:');
+    console.warn('"terminateRun(parent)"');
+    console.warn('Parent component should be marked with @runPipelineActions');
+    throw new Error('"terminateRun" function should be called with parent component passed to arguments:');
+  }
+  const {localization, dockerRegistries} = parent.props;
+  return function (run) {
+    return terminateRunFn(run, callback, {localization, dockerRegistries});
+  };
+}
+
 async function stopPipeline (run) {
   const hide = message.loading('Terminating run...', 0);
   const request = new StopPipeline(run.id);
@@ -61,6 +89,14 @@ async function stopPipeline (run) {
       status: 'STOPPED'
     }
   );
+  hide();
+  return request.error;
+}
+
+async function terminatePipeline (run) {
+  const hide = message.loading('Terminating run...', 0);
+  const request = new TerminatePipeline(run.id);
+  await request.send({});
   hide();
   return request.error;
 }
@@ -130,12 +166,127 @@ function stopRunFn (run, callback, stores) {
 }
 
 @observer
+class TerminateRunDialog extends React.Component {
+  static propTypes = {
+    onInitialized: PropTypes.func
+  };
+  state = {
+    pending: false,
+    visible: false
+  };
+  @observable run;
+  @observable onClose;
+  @observable displayPromiseResolve;
+  onTerminateClicked = () => {
+    this.setState({
+      pending: true
+    }, async () => {
+      const error = await terminatePipeline(this.run);
+      if (error) {
+        message.error(error, 5);
+      }
+      this.setState({
+        visible: false
+      }, () => {
+        this.displayPromiseResolve && this.displayPromiseResolve(!error);
+      });
+    });
+  };
+  display = async (run) => {
+    this.run = run;
+    this.setState({
+      visible: true,
+      pending: false
+    });
+    return new Promise((resolve) => {
+      this.displayPromiseResolve = resolve;
+    });
+  };
+  hide = () => {
+    this.setState({
+      visible: false,
+      pending: false
+    }, () => {
+      this.displayPromiseResolve && this.displayPromiseResolve(true);
+    });
+  };
+  componentDidMount () {
+    this.props.onInitialized && this.props.onInitialized(this);
+  }
+  render () {
+    if (!this.run) {
+      return null;
+    }
+    return (
+      <Modal
+        footer={null}
+        closable={false}
+        title={null}
+        width="50%"
+        visible={this.state.visible}>
+        <div>
+          <Row style={{marginBottom: 10}} type="flex" align="middle">
+            <Icon
+              type="question-circle"
+              style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
+            <b style={{marginLeft: 10, fontSize: 14, color: 'rgba(0, 0, 0, 0.65)'}}>Terminate {this.run.podId}?</b>
+          </Row>
+          <Row type="flex" style={{marginBottom: 5, marginLeft: 55}}>
+            <Alert
+              type="info"
+              showIcon
+              message="Once a run is terminated - all local data will be deleted (that is not stored within shared data storages)" />
+          </Row>
+          <Row type="flex" justify="end" style={{marginTop: 10}}>
+            <Button
+              disabled={this.state.pending}
+              onClick={this.hide}>
+              CANCEL
+            </Button>
+            <Button
+              disabled={this.state.pending}
+              type="danger"
+              style={{marginLeft: 10}}
+              onClick={this.onTerminateClicked}>
+              TERMINATE
+            </Button>
+          </Row>
+        </div>
+      </Modal>
+    );
+  }
+}
+
+let terminateRunDialogInstance;
+
+const initializeTerminateRunDialog = (dialog) => {
+  terminateRunDialogInstance = dialog;
+};
+
+const terminateRunDialogContainer = document.createElement('div');
+document.body.appendChild(terminateRunDialogContainer);
+
+ReactDOM.render(
+  <TerminateRunDialog onInitialized={initializeTerminateRunDialog} />,
+  terminateRunDialogContainer
+);
+
+function terminateRunFn (run, callback) {
+  return new Promise(async (resolve) => {
+    const success = await terminateRunDialogInstance.display(run);
+    callback && callback();
+    resolve(success);
+  });
+}
+
+@observer
 class StopRunConfirmation extends React.Component {
 
   static propTypes = {
     runId: PropTypes.number,
     canCommitRun: PropTypes.bool,
-    dockerImage: PropTypes.string
+    dockerImage: PropTypes.string,
+    isTermination: PropTypes.bool
   };
 
   state = {
@@ -200,7 +351,7 @@ class StopRunConfirmation extends React.Component {
           <Alert
             type="info"
             showIcon
-            message="Once a run is stopped - all local data will be deleted (that is not stored within shared data storages)" />
+            message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
           this.props.canCommitRun &&

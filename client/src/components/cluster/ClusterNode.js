@@ -23,7 +23,8 @@ import ClusterNodeUsage from '../../models/cluster/ClusterNodeUsage';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
-import {renderNodeLabels, PIPELINE_INFO_LABEL} from './renderers';
+import {renderNodeLabels} from './renderers';
+import {PIPELINE_INFO_LABEL} from './node-roles';
 
 @inject(({}, {params}) => {
   return {

@@ -164,6 +164,7 @@ public class DetachedConfigurationsTest
                     .addOutputParameter(outputParameter, outputParameterValue)
                     .click(SAVE)
             );
+        library().clickRoot();
     }
 
     @BeforeClass
@@ -478,7 +479,9 @@ public class DetachedConfigurationsTest
                     .click(SAVE)
             )
             .configurationWithin(configuration1544, configuration ->
-                configuration.ensure(DISK, value(diskSize))
+                configuration
+                    .expandTabs(execEnvironmentTab, advancedTab)
+                    .ensure(DISK, value(diskSize))
                     .ensure(INSTANCE_TYPE, text(instanceType))
                     .ensure(PRICE_TYPE, text(priceType))
             );

@@ -8,9 +8,9 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    nodePort: 30080
-    port: 30080
-    targetPort: 30080
+    nodePort: ${CP_GITLAB_INTERNAL_PORT}
+    port: ${CP_GITLAB_INTERNAL_PORT}
+    targetPort: ${CP_GITLAB_INTERNAL_PORT}
     name: cp-git-port-http
   - protocol: TCP
     port: 22

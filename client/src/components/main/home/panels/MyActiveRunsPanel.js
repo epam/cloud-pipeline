@@ -30,7 +30,7 @@ import getRunActions from './components/getRunActions';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
-import {runPipelineActions, stopRun} from '../../../runs/actions';
+import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 
@@ -157,6 +157,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                 () => this.resumeRun(run)
               ),
               stop: stopRun(this, this.props.refresh),
+              terminate: terminateRun(this, this.props.refresh),
               run: this.reRun,
               openUrl: url => {
                 window.open(url, '_blank').focus();

@@ -8,11 +8,11 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 30091
+    port: ${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}
     targetPort: 9200
     name: cp-search-elk-elastic-port
   - protocol: TCP
-    port: 30092
+    port: ${CP_SEARCH_ELK_KIBANA_INTERNAL_PORT}
     targetPort: 5601
     name: cp-search-elk-elastic-kibana
   selector:

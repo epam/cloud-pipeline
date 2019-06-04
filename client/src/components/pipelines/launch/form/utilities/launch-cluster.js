@@ -16,9 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {InputNumber, Icon, Modal, Radio, Row} from 'antd';
+import {Checkbox, InputNumber, Icon, Modal, Radio, Row} from 'antd';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import {
+  LaunchClusterTooltip,
+  renderTooltip
+} from './launch-cluster-tooltips';
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
@@ -27,17 +31,30 @@ export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
 const NODE_COUNT_FORM_FIELD = 'node_count';
 const MAX_NODE_COUNT_FORM_FIELD = 'max_node_count';
 
+const PARAMETER_TITLE_WIDTH = 110;
+const PARAMETER_TITLE_RIGHT_MARGIN = 5;
+const LEFT_MARGIN = PARAMETER_TITLE_WIDTH + PARAMETER_TITLE_RIGHT_MARGIN;
+const PARAMETER_TITLE_STYLE = {
+  width: PARAMETER_TITLE_WIDTH,
+  marginRight: PARAMETER_TITLE_RIGHT_MARGIN
+};
+
 export const ClusterFormItemNames = {
   nodesCount: NODE_COUNT_FORM_FIELD,
   maxNodesCount: MAX_NODE_COUNT_FORM_FIELD
 };
 
+function booleanParameterIsSetToValue (parameters, parameter, value = true) {
+  return !!parameters && parameters[parameter] && `${parameters[parameter].value}` === `${value}`;
+}
+
 export function autoScaledClusterEnabled (parameters) {
-  const booleanParameterIsSetToValue = (parameter, value = true) => {
-    return !!parameters && parameters[parameter] && `${parameters[parameter].value}` === `${value}`;
-  };
-  return booleanParameterIsSetToValue(CP_CAP_SGE) &&
-    booleanParameterIsSetToValue(CP_CAP_AUTOSCALE);
+  return booleanParameterIsSetToValue(parameters, CP_CAP_SGE) &&
+    booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE);
+}
+
+export function gridEngineEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_SGE);
 }
 
 export const CLUSTER_TYPE = {
@@ -47,7 +64,8 @@ export const CLUSTER_TYPE = {
 };
 
 export function getSkippedSystemParametersList (controller) {
-  if (controller && controller.state && controller.state.launchCluster && controller.state.autoScaledCluster) {
+  if (controller && controller.state && controller.state.launchCluster &&
+    (controller.state.autoScaledCluster || controller.state.gridEngineEnabled)) {
     return [CP_CAP_SGE, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
@@ -61,7 +79,8 @@ export function setSingleNodeMode (controller, callback) {
   controller.setState({
     launchCluster: false,
     autoScaledCluster: false,
-    setDefaultNodesCount: false
+    setDefaultNodesCount: false,
+    gridEngineEnabled: false,
   }, callback);
 }
 
@@ -70,6 +89,7 @@ export function setFixedClusterMode (controller, callback) {
     launchCluster: true,
     autoScaledCluster: false,
     setDefaultNodesCount: false,
+    gridEngineEnabled: false,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -84,6 +104,7 @@ export function setAutoScaledMode (controller, callback) {
     autoScaledCluster: true,
     setDefaultNodesCount: false,
     nodesCount: undefined,
+    gridEngineEnabled: false,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -201,6 +222,7 @@ export class ConfigureClusterDialog extends React.Component {
     disabled: PropTypes.bool,
     launchCluster: PropTypes.bool,
     autoScaledCluster: PropTypes.bool,
+    gridEngineEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -212,6 +234,7 @@ export class ConfigureClusterDialog extends React.Component {
     launchCluster: false,
     autoScaledCluster: false,
     setDefaultNodesCount: false,
+    gridEngineEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -286,10 +309,16 @@ export class ConfigureClusterDialog extends React.Component {
     return null;
   };
 
+  onChangeEnableGridEngine = (e) => {
+    this.setState({
+      gridEngineEnabled: e.target.checked
+    })
+  };
+
   renderFixedClusterConfiguration = () => {
     return [
       <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
-        <span style={{marginRight: 5, width: 110}}>Child nodes:</span>
+        <span style={PARAMETER_TITLE_STYLE}>Child nodes:</span>
         <InputNumber
           min={1}
           max={this.launchMaxScheduledNumber}
@@ -298,7 +327,16 @@ export class ConfigureClusterDialog extends React.Component {
           value={this.state.nodesCount}
           onChange={this.onChangeNodeCount} />
       </Row>,
-      this.getValidationRow('nodesCount')
+      this.getValidationRow('nodesCount'),
+      <Row key="enable grid engine" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.gridEngineEnabled}
+          onChange={this.onChangeEnableGridEngine}>
+          Enable GridEngine
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.cluster.enableGridEngine)}
+      </Row>
     ].filter(r => !!r);
   };
 
@@ -323,7 +361,7 @@ export class ConfigureClusterDialog extends React.Component {
       if (this.state.setDefaultNodesCount) {
         return [
           <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
-            <span style={{marginRight: 5, width: 110}}>Default child nodes:</span>
+            <span style={PARAMETER_TITLE_STYLE}>Default child nodes:</span>
             <InputNumber
               min={1}
               max={this.launchMaxScheduledNumber}
@@ -331,6 +369,7 @@ export class ConfigureClusterDialog extends React.Component {
               style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
               value={this.state.nodesCount}
               onChange={this.onChangeNodeCount} />
+            {renderTooltip(LaunchClusterTooltip.autoScaledCluster.defaultNodesCount, {marginLeft: 5})}
             <a
               onClick={onUnsetChildNodes}
               style={{color: '#666', textDecoration: 'underline', marginLeft: 5}}>
@@ -341,12 +380,13 @@ export class ConfigureClusterDialog extends React.Component {
       } else {
         return [
           <Row key="nodes count" type="flex" align="middle" style={{marginTop: 5}}>
-            <span style={{marginLeft: 116, flex: 1}}>
+            <span style={{marginLeft: LEFT_MARGIN, flex: 1}}>
               <a
                 onClick={onSetUpChildNodesClicked}
                 style={{color: '#666', textDecoration: 'underline'}}>
                 Setup default child nodes count
               </a>
+              {renderTooltip(LaunchClusterTooltip.autoScaledCluster.defaultNodesCount, {marginLeft: 5})}
             </span>
           </Row>
         ];
@@ -354,7 +394,7 @@ export class ConfigureClusterDialog extends React.Component {
     };
     return [
       <Row key="max nodes count" type="flex" align="middle" style={{marginTop: 5}}>
-        <span style={{marginRight: 5, width: 110}}>Auto-scaled up to:</span>
+        <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
         <InputNumber
           min={this.state.setDefaultNodesCount ? 2 : 1}
           max={this.launchMaxScheduledNumber}
@@ -362,6 +402,7 @@ export class ConfigureClusterDialog extends React.Component {
           style={Object.assign({flex: 1}, this.getInputStyle('maxNodesCount'))}
           value={this.state.maxNodesCount}
           onChange={this.onChangeMaxNodeCount} />
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}
       </Row>,
       this.getValidationRow('maxNodesCount'),
       ...renderSetDefaultNodesCount(),
@@ -382,7 +423,8 @@ export class ConfigureClusterDialog extends React.Component {
         maxNodesCount: this.state.launchCluster && this.state.autoScaledCluster
           ? this.state.maxNodesCount : undefined,
         launchCluster: this.state.launchCluster,
-        autoScaledCluster: this.state.autoScaledCluster
+        autoScaledCluster: this.state.autoScaledCluster,
+        gridEngineEnabled: this.state.gridEngineEnabled
       });
     }
   };
@@ -396,14 +438,17 @@ export class ConfigureClusterDialog extends React.Component {
         visible={this.props.visible}
         width={566}>
         <div>
-          <Row type="flex" justify="space-around">
-            <Radio.Group
-              onChange={this.onChange}
-              value={this.selectedClusterType}>
-              <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
-              <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
-              <Radio.Button value={CLUSTER_TYPE.autoScaledCluster}>Auto-scaled cluster</Radio.Button>
-            </Radio.Group>
+          <Row type="flex">
+            <div style={{marginLeft: LEFT_MARGIN}}>
+              <Radio.Group
+                onChange={this.onChange}
+                value={this.selectedClusterType}>
+                <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
+                <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
+                <Radio.Button value={CLUSTER_TYPE.autoScaledCluster}>Auto-scaled cluster</Radio.Button>
+              </Radio.Group>
+              {renderTooltip(LaunchClusterTooltip.clusterMode, {marginLeft: 10})}
+            </div>
           </Row>
           {
             this.state.launchCluster && !this.state.autoScaledCluster &&
@@ -468,6 +513,7 @@ export class ConfigureClusterDialog extends React.Component {
       this.setState({
         launchCluster: nextProps.launchCluster,
         autoScaledCluster: nextProps.autoScaledCluster,
+        gridEngineEnabled: nextProps.gridEngineEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,

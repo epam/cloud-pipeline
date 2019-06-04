@@ -11,7 +11,7 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 30095
+    port: ${CP_HEAPSTER_INTERNAL_PORT}
     targetPort: 8082
     name: cp-heapster-port-http
   selector:

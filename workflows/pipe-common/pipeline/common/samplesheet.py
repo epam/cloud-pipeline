@@ -37,6 +37,8 @@ class SampleSheetParser:
             data_section_started = False
             read_header = False
             for row in reader:
+                if len(row) == 0:
+                    continue
                 if read_header:
                     for idx, field in enumerate(row):
                         for column in self.columns:
@@ -63,19 +65,22 @@ class SampleSheetParser:
                     continue
         return samples
 
-    def print_samples(self, print_delimiter=' ', print_headers=True):
+    def print_samples(self, print_delimiter=' ', print_headers=True, quote_result=False):
         samples = self.parse_sample_sheet()
         sample_text = print_delimiter.join(self.columns) + '\n' if print_headers else ''
         for sample in samples:
-            sample_text += self.format_sample_line(sample, print_delimiter) + '\n'
+            sample_text += self.format_sample_line(sample, print_delimiter, quote_result=quote_result) + '\n'
         
         print(sample_text)
 
-    def format_sample_line(self, sample, delimiter):
+    def format_sample_line(self, sample, delimiter, quote_result=False):
         sample_text = ''
         for column in self.columns:
             column_value = ''
             if column in sample:
                 column_value = sample[column]
-            sample_text += sample[column] + delimiter
+            if quote_result:
+                sample_text += '"{}"'.format(sample[column]) + delimiter
+            else:
+                sample_text += sample[column] + delimiter
         return sample_text

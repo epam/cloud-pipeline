@@ -100,6 +100,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToCluster()
                         .setClusterHddExtraMulti(defaultClusterHddExtraMulti)
                         .save()
+                        .sleep(1, SECONDS)
                         .click(OK)
         );
     }
@@ -147,7 +148,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                                                     nodeTab
                                                         .ensure(mainInfo(), have(textMatches(expectedTitle)))
                                                         .ensure(labelWithType("RUNID"), visible)
-                                                        .ensure(labelWithType("PIPELINE-INFO"), visible), ipHyperlink)
+                                                        .ensure(labelWithType("pipeline-info"), visible), ipHyperlink)
                                     );
                                 })
                 );
@@ -163,6 +164,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToCluster()
                         .setClusterHddExtraMulti("1")
                         .save()
+                        .sleep(1, SECONDS)
                         .click(OK));
 
         tools()
@@ -237,6 +239,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToCluster()
                         .setClusterHddExtraMulti("100")
                         .save()
+                        .sleep(1, SECONDS)
                         .click(OK));
 
         tools()

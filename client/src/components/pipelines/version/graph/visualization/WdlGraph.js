@@ -24,6 +24,7 @@ import pipeline from 'pipeline-builder';
 import 'pipeline-builder/dist/pipeline.css';
 import styles from './Graph.css';
 import LoadingView from '../../../../special/LoadingView';
+import highlightText from '../../../../special/highlightText';
 import {
   ResizablePanel,
   ResizeAnchors
@@ -1186,9 +1187,9 @@ export default class WdlGraph extends Graph {
           });
         }
         if (element.children[key].children && Object.keys(element.children[key].children).length) {
-          const childEls = this.getGraphFilteredElements(element.children[key].children);
+          const childEls = this.getGraphFilteredElements(element.children[key]);
           if (childEls.length) {
-            elements.concat(childEls);
+            elements.push(...childEls);
           }
         }
       }
@@ -1204,13 +1205,18 @@ export default class WdlGraph extends Graph {
       if (item.step && item.step.action &&
         item.step.action.data && item.step.action.data.expression) {
         expression = `(${item.step.action.data.expression})`;
+      } else {
+        expression = item.alias;
       }
     } else {
       expression = item.alias;
     }
     return (
       <AutoComplete.Option key={item.alias} value={item.alias} step={item.step}>
-        {item.type} {expression}
+        <span className={`${styles.searchItemType} ${styles[(item.type || '').toLowerCase()]}`}>
+          {highlightText(item.type, this.state.graphSearch)}
+        </span>
+        <b>{highlightText(expression, this.state.graphSearch)}</b>
       </AutoComplete.Option>
     );
   };
@@ -1222,17 +1228,28 @@ export default class WdlGraph extends Graph {
 
   renderGraphSearch = () => {
     const searchControl = (
-      <AutoComplete
-        dataSource={this.graphSearchDataSource}
-        value={this.state.graphSearch}
-        onChange={(graphSearch) => { this.setState({graphSearch}); }}
-        placeholder="Element type or name..."
-        optionLabelProp="value"
-        style={{minWidth: 300}}
-        onSelect={this.selectElement}
-      >
-        <Input.Search />
-      </AutoComplete>
+      <div>
+        <Row>
+          <AutoComplete
+            dataSource={this.graphSearchDataSource}
+            value={this.state.graphSearch}
+            onChange={(graphSearch) => { this.setState({graphSearch}); }}
+            placeholder="Element type or name..."
+            optionLabelProp="value"
+            style={{minWidth: 300}}
+            onSelect={this.selectElement}
+          >
+            <Input.Search />
+          </AutoComplete>
+        </Row>
+        {
+          this.state.graphSearch && this.graphSearchDataSource.length === 0 ?
+            <Row type="flex" justify="space-around" style={{color: '#999', marginTop: 5}}>
+              <i>Elements not found</i>
+            </Row>
+            : undefined
+        }
+      </div>
     );
     const onTooltipVisibleChange = (visible) => {
       this.setState({
@@ -1247,7 +1264,7 @@ export default class WdlGraph extends Graph {
         placement="right">
         <Popover
           content={searchControl}
-          placement="right"
+          placement="rightTop"
           trigger="click"
           onVisibleChange={this.handleSearchControlVisible}
           visible={this.state.searchControlVisible}>

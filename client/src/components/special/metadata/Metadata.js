@@ -79,6 +79,24 @@ const downloadUrlLoad = (params, dataStorageCache) => {
   }
 };
 
+const MetadataDisplayOptions = {
+  preview: {
+    maxLength: 100,
+    display: function (value) {
+      if (value && value.length > this.maxLength) {
+        return `${value.substring(0, this.maxLength)}...`;
+      }
+      return value;
+    }
+  },
+  edit: {
+    autosize: {
+      maxRows: 6,
+      minRows: undefined
+    }
+  }
+};
+
 @connect({
   dataStorageCache
 })
@@ -592,7 +610,10 @@ export default class Metadata extends localization.LocalizedReactComponent {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
-            <Input {...inputOptions('value')} type="textarea" autosize={true} />
+            <Input
+              {...inputOptions('value')}
+              type="textarea"
+              autosize={MetadataDisplayOptions.edit.autosize} />
           </td>
         </tr>
       );
@@ -602,7 +623,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           <td
             id={`value-column-${metadataItem.key}`}
             colSpan={6} onClick={this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)}>
-            {metadataItem.value}
+            {MetadataDisplayOptions.preview.display(metadataItem.value)}
           </td>
         </tr>
       );

@@ -28,7 +28,7 @@ import {
   PipelineRunCommitCheck,
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../models/pipelines/PipelineRunCommitCheck';
-import {stopRun, canStopRun, runPipelineActions} from './actions';
+import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
@@ -645,6 +645,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
     return stopRun(this, this.props.reloadTable)(run);
   };
 
+  showTerminateConfirmDialog = (event, run) => {
+    event.stopPropagation();
+    return terminateRun(this, this.props.reloadTable)(run);
+  };
+
   showPauseConfirmDialog = async (event, run) => {
     event.stopPropagation();
     const checkRequest = new PipelineRunCommitCheck(run.id);
@@ -701,7 +706,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'resuming':
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
-          if (record.podIP) {
+          if (canPauseRun(record)) {
             return <a
               id={`run-${record.id}-pause-button`}
               onClick={(e) => this.showPauseConfirmDialog(e, record)}>PAUSE</a>;
@@ -719,8 +724,15 @@ export default class RunTable extends localization.LocalizedReactComponent {
   renderStatusAction = (record) => {
     if (roleModel.executeAllowed(record)) {
       switch (record.status.toLowerCase()) {
-        case 'running':
         case 'paused':
+          if (roleModel.isOwner(record)) {
+            return <a
+              id={`run-${record.id}-terminate-button`}
+              style={{color: 'red'}}
+              onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
+          }
+          break;
+        case 'running':
         case 'pausing':
         case 'resuming':
           if (roleModel.isOwner(record) && canStopRun(record)) {

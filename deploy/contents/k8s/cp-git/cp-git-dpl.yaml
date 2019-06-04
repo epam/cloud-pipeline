@@ -21,13 +21,11 @@ spec:
           image: lifescience/cloud-pipeline:git-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
-            - containerPort: 30080
+            - containerPort: ${CP_GITLAB_INTERNAL_PORT}
           envFrom:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /etc/gitlab
-              name: git-config
             - mountPath: /var/log/gitlab
               name: git-logs
             - mountPath: /var/opt/gitlab
@@ -42,13 +40,10 @@ spec:
           # readinessProbe:
           #   httpGet:
           #     path: /
-          #     port: 30080
+          #     port: ${CP_GITLAB_INTERNAL_PORT}
           #   initialDelaySeconds: 5
           #   periodSeconds: 10
       volumes:
-        - name: git-config
-          hostPath:
-            path: /opt/gitlab/config
         - name: git-logs
           hostPath:
             path: /opt/gitlab/logs

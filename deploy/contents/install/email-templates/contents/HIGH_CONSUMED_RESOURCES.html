@@ -16,7 +16,27 @@
 <body>
     <p>Dear user,</p>
     <p>*** This is a system generated email, do not reply to this email ***</p>
-    <p>Looks like a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, can be stopped, due to high resource consuming: MEMORY load ${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("memoryRate"))% and DISK load ${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("diskRate"))%  is higher that limit: MEMORY limit is ${CP_DOLLAR}templateParameters.get("memoryThreshold")% and DISK limit is ${CP_DOLLAR}templateParameters.get("diskThreshold")%.</p>
+    <p>A job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, is under RAM/Disk pressure</p>
+    <p>This may lead to an accidental job/compute node termination, please review the job's state and make sure to use larger instance type/disk for the subsequent runs</p>
+    <br />
+    <p><b>Resources consumption:</b></p>
+    <table>
+        <tr>
+            <td><b>Resource type</b></td>
+            <td><b>Threshold</b></td>
+            <td><b>Current consumption</b></td>
+        </tr>
+        <tr>
+            <td>RAM</td>
+            <td>${CP_DOLLAR}templateParameters.get("memoryThreshold")%</td>
+            <td>${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("memoryRate"))%</td>
+        </tr>
+        <tr>
+            <td>Disk</td>
+            <td>${CP_DOLLAR}templateParameters.get("diskThreshold")%</td>
+            <td>${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("diskRate"))%</td>
+        </tr>
+    </table>
     <br />
     <p><b>Job details:</b></p>
     <table>

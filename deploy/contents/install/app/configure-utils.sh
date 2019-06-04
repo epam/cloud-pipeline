@@ -860,6 +860,9 @@ function api_setup_base_preferences {
     api_set_preference "system.resource.monitoring.stats.retention.period" "${CP_PREF_SYSTEM_RESOURCE_MONITORING_STATS_RETENTION_PERIOD:-5}" "false"    # How often we drop elastic indices (default: each 5 days)
     api_set_preference "system.idle.action" "${CP_PREF_SYSTEM_IDLE_ACTION:-"NOTIFY"}" "false"                               # Which action to perform if a run is idle for system.max.idle.timeout.minutes + system.idle.action.timeout.minutes (default: notify only)
     api_set_preference "system.idle.cpu.threshold" "${CP_PREF_SYSTEM_IDLE_CPU_THRESHOLD:-1}" "false"                        # %% of CPU utilization, which is considered idle (default: all runs with utilization below 1% are idle)
+    api_set_preference "system.memory.consume.threshold" "${CP_PREF_SYSTEM_MEMORY_CONSUME_THRESHOLD:-95}" "false"           # %% of memory utilization that is considered "HIGH" (default: runs with RAM utilization above 95% are under pressure)
+    api_set_preference "system.disk.consume.threshold" "${CP_PREF_SYSTEM_DISK_CONSUME_THRESHOLD:-95}" "false"               # %% of disk utilization that is considered "HIGH" (default: runs with Disk utilization above 95% are under pressure)
+    api_set_preference "system.monitoring.time.range" "${CP_PREF_SYSTEM_MONITORING_TIME_RANGE:-30}" "false"                 # Period of time (in seconds) used to calculate average of the RAM/Disk utilization (default: 30 seconds)
 
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
@@ -903,7 +906,7 @@ function api_setup_base_preferences {
     ## Set cluster.networks.config preference
     local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
     if [ -f "$cloud_config_network_file" ]; then
-        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES}' < "$cloud_config_network_file")")"
+        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE}' < "$cloud_config_network_file")")"
         
         # cluster.networks.config shall be visible, or otherwise node_up.py will NOT be able to get the information from the API Services
         api_set_preference "cluster.networks.config" "$cluster_networks_config_json" "true"
@@ -970,6 +973,21 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+}
+
+function api_register_share_service {
+    api_set_preference "data.sharing.base.api" "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/?id=%d" "false"
+
+    local share_service_configuration_preference="{}"
+read -r -d '' share_service_configuration_preference <<-EOF
+[{
+    "endpointId": "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}${CP_SHARE_SRV_SAML_ID_TRAIL:-/proxy}",
+    "metadataPath": "${CP_API_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml",
+    "external": "true"
+}]
+EOF
+    share_service_configuration_preference="$(escape_string "${share_service_configuration_preference}")"
+    api_set_preference "system.external.services.endpoints" "${share_service_configuration_preference}" "false"
 }
 
 function idp_register_app {

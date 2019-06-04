@@ -11,7 +11,7 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 30094
+    port: ${CP_HEAPSTER_ELK_INTERNAL_PORT}
     targetPort: 9200
     name: cp-heapster-elastic-port-http
   selector:

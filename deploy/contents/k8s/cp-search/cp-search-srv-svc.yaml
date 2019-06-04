@@ -8,7 +8,7 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 30093
+    port: ${CP_SEARCH_INTERNAL_PORT}
     targetPort: 8080
     name: cp-search-srv-port
   selector:

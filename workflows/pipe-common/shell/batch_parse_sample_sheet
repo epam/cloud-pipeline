@@ -13,6 +13,7 @@
 # limitations under the License.
 
 SAMPLE_SHEET_PATH="$1"
+QUOTE_VALUES="$2"
 
 # Check global variables
 if [ -z "$SAMPLE_SHEET_PATH" ]
@@ -21,5 +22,10 @@ then
 	exit 1
 fi
 
-CMD="from pipeline import SampleSheetParser; SampleSheetParser(\"$SAMPLE_SHEET_PATH\").print_samples(print_headers=False)"
+DO_QUOTE_VALUES="False"
+if [ "$QUOTE_VALUES" == "--quote" ]; then
+    export DO_QUOTE_VALUES="True"
+fi
+
+CMD="from pipeline import SampleSheetParser; SampleSheetParser(\"$SAMPLE_SHEET_PATH\").print_samples(print_headers=False,quote_result=$DO_QUOTE_VALUES)"
 $CP_PYTHON2_PATH -c "$CMD"

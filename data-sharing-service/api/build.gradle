@@ -1,0 +1,91 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+}
+
+plugins {
+    id "io.spring.dependency-management" version "1.0.5.RELEASE"
+    id 'org.springframework.boot' version "1.5.2.RELEASE"
+    id 'java'
+    id "checkstyle"
+    id "pmd"
+}
+
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    archiveName "data-sharing-service.jar"
+}
+
+dependencies {
+    // Spring Boot
+    compile("org.springframework.boot:spring-boot-starter")
+    compile("org.springframework.boot:spring-boot-starter-web")
+    configurations {
+        all*.exclude module : 'spring-boot-starter-logging'
+    }
+
+    // Spring Security
+    compile('org.springframework.boot:spring-boot-starter-security')
+    compile group: 'org.springframework.security.extensions', name: 'spring-security-saml2-core', version: '1.0.2.RELEASE'
+    compile 'com.auth0:java-jwt:3.1.0'
+
+    // Logging
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.11.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.11.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.11.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-jcl', version: '2.11.0'
+
+    // Jackson
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.8.7'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.8.7'
+
+    //Lombok
+    compileOnly "org.projectlombok:lombok:1.16.20"
+    testCompileOnly "org.projectlombok:lombok:1.16.20"
+
+    // Swagger
+    compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
+    compile group: 'io.springfox', name: 'springfox-swagger-ui', version: '2.6.1'
+
+    // Apache Commons
+    compile group: 'commons-io', name: "commons-io", version: "2.4"
+    compile group: 'org.apache.commons', name: "commons-lang3", version: "3.0"
+
+    // Retrofit
+    compile group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
+    compile group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'
+    compile group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.9.1'
+
+    // Testing
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile group: 'org.springframework.security', name: 'spring-security-test', version: '4.2.2.RELEASE'
+}
+
+build.mustRunAfter ':data-sharing-service:client:buildUI'
+bootRepackage.mustRunAfter ':data-sharing-service:client:buildUI'
