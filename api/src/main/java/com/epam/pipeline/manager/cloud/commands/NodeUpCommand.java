@@ -69,8 +69,11 @@ public class NodeUpCommand extends AbstractClusterCommand {
         if (isSpot) {
             commands.add("--is_spot");
             commands.add("True");
-            commands.add("--bid_price");
-            commands.add(bidPrice == null ? "" : String.valueOf(bidPrice));
+
+            if (bidPrice != null) {
+                commands.add("--bid_price");
+                commands.add(bidPrice);
+            }
         }
         return commands;
     }
