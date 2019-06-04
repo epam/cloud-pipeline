@@ -40,5 +40,5 @@ class AbstractInstanceProvider(object):
     def terminate_instance(self, ins_id):
         pass
 
-    def terminate_instance_by_ip(self, node_internal_ip):
+    def terminate_instance_by_ip(self, node_internal_ip, node_name):
         pass
