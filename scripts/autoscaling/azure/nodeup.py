@@ -426,7 +426,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
 def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script, ssh_pub_key, user):
 
-    pipe_log('Create VMScaleSet: {} with low priority instance'.format(scale_set_name))
+    pipe_log('Create VMScaleSet with low priority instance for run: {}'.format(run_id))
     resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
 
     image = compute_client.images.get(resource_group, image_name)
