@@ -96,9 +96,11 @@ function init_cloud_config {
     local azure_meta_url="-H Metadata:true \"http://169.254.169.254/metadata/instance?api-version=2017-12-01\""
     local aws_meta_url="http://169.254.169.254/latest/meta-data/"
     local aws_meta_url_dynamic="http://169.254.169.254/latest/dynamic/instance-identity/document"
+    local gcp_meta_url="-H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance"
 
     [ $(eval "curl -s $aws_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AWS
     [ $(eval "curl -s $azure_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AZURE
+    [ $(eval "curl -s $gcp_meta_url -o /dev/null -w \"%{http_code}\"") == "301" ] && CP_CLOUD_PLATFORM=$CP_GOOGLE
 
     if [ -z "$CP_CLOUD_PLATFORM" ]; then
         print_err "Current cloud provider cannot be detected"
@@ -120,8 +122,11 @@ function init_cloud_config {
         CP_CLOUD_EXTERNAL_HOST=$(curl -s -f $aws_meta_url/public-ipv4)
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
-        print_err "Metadata is NOT supported for $CP_GOOGLE, cannot auto initialize cloud config"
-        return 1
+        CP_CLOUD_REGION_ID=$(basename $(curl -s $gcp_meta_url/zone))
+        CP_CLOUD_INSTANCE_TYPE=$(basename $(curl -s $gcp_meta_url/machine-type))
+        #TODO: handle errors
+        CP_CLOUD_INTERNAL_HOST=$(curl -s $gcp_meta_url/network-interfaces/0/ip)
+        CP_CLOUD_EXTERNAL_HOST=$(curl -s $gcp_meta_url/network-interfaces/0/access-configs/0/external-ip)
     fi
 
     # Check cloud images manifest file and use it if exists
@@ -241,6 +246,38 @@ EOF
             print_err "Azure durable ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_AZURE_OFFER_DURABLE_ID=\" option"
             return 1
         fi
+    elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        if [ -f "$CP_CLOUD_CREDENTIALS_FILE" ]; then
+            print_info "GCP credentials json file is defined via CP_CLOUD_CREDENTIALS_FILE"
+        elif [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            print_info "Using application default GCP credentials json file defined via GOOGLE_APPLICATION_CREDENTIALS environment variable."
+            export CP_CLOUD_CREDENTIALS_FILE="$GOOGLE_APPLICATION_CREDENTIALS"
+        else
+            print_err "GCP credentials json file is defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the GCP credentials"
+            return 1
+        fi
+        if [ -z "$CP_CLUSTER_SSH_PUB" ]; then
+            print_err "Path to the SSH public key (used to access cloud nodes) is not defined, but it is required for the configuration. Please specify it using \"-env CP_CLUSTER_SSH_PUB=\" option"
+            return 1
+        fi
+        if [ -z "$CP_GCP_PROJECT" ]; then
+            print_warn "GCP project is not defined. Reading project from credentials file. You can specify deployment GCP project using \"-env CP_GCP_PROJECT=\" option"
+            export CP_GCP_PROJECT=$(cat "$CP_CLOUD_CREDENTIALS_FILE" | jq ".project_id")
+            if [ -z "$CP_GCP_PROJECT" ]; then
+                print_err "Failed to read GCP project from the credentials file. Please check that correct credentials file is specified using \"-env CP_CLOUD_CREDENTIALS_FILE=\" option or specify GCP project using \"-env CP_GCP_PROJECT\" option"
+                return 1
+            fi
+        fi
+        if [ -z "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE" ]; then
+            print_warn "Name of temporary credentials service account is  NOT set. \"pipe storage ...\" commands will NOT work correctly. Please specify it using \"-env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE=\" option"
+        fi
+        if [ -z "$CP_GCP_APPLICATION_NAME" ]; then
+            print_warn "GCP Application name is not specified, default value \"Cloud Pipeline\" will be used. You can specify it using \"-env CP_GCP_APPLICATION_NAME=\" option"
+            export CP_GCP_APPLICATION_NAME="Cloud Pipeline"
+        fi
+        if [ -z "$CP_GCP_CUSTOM_INSTANCE_TYPES" ]; then
+            print_warn "List of custom instance types for GCP is not provided. You will have to add GPU instance types manually."
+        fi
     else
         print_err "Unsupported Cloud Provider ($CP_CLOUD_PLATFORM)"
         return 1
@@ -256,8 +293,10 @@ EOF
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
-        print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
-        return 1
+        if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
+            print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
+            return 1
+        fi
     else
         export CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="$(escape_comma_separated_values "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS")"
     fi
