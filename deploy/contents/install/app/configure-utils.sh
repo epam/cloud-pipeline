@@ -715,7 +715,7 @@ read -r -d '' payload <<-EOF
 }
 EOF
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
-        local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE escape)"
+        local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE)"
 read -r -d '' payload <<-EOF
 {
     "regionId":"$region_name",
@@ -728,7 +728,7 @@ read -r -d '' payload <<-EOF
     "project": "$CP_GCP_PROJECT",
     "applicationName": "$CP_GCP_APPLICATION_NAME",
     "tempCredentialsRole": "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
-    "customInstanceTypes": "$gcp_custom_instance_types_json"
+    "customInstanceTypes": $gcp_custom_instance_types_json
 }
 EOF
     else
