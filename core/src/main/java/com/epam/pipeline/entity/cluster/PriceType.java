@@ -37,4 +37,11 @@ public enum PriceType {
     public String toString() {
         return literal;
     }
+
+    public static PriceType fromTermType(final String termType) {
+        if ("OnDemand" .equals(termType)) {
+            return ON_DEMAND;
+        }
+        return SPOT;
+    }
 }

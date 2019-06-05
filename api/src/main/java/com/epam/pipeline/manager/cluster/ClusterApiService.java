@@ -76,16 +76,16 @@ public class ClusterApiService {
         return cAdvisorMonitorManager.getStatsForNode(nodeName);
     }
 
-    public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
         return instanceOfferManager.getAllowedInstanceTypes(regionId, spot);
     }
 
-    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final boolean spot) {
+    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final Boolean spot) {
         return instanceOfferManager.getAllowedToolInstanceTypes(regionId, spot);
     }
 
     public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
-                                                                        final boolean spot) {
+                                                                        final Boolean spot) {
         return instanceOfferManager.getAllowedInstanceAndPriceTypes(toolId, regionId, spot);
     }
 }

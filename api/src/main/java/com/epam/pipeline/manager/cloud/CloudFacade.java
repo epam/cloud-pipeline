@@ -71,5 +71,5 @@ public interface CloudFacade {
 
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
 
-    List<InstanceType> getAllInstanceTypes(Long regionId, Boolean spot);
+    List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 }

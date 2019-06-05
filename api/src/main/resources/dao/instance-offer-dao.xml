@@ -39,7 +39,8 @@
                         memory_unit,
                         instance_family,
                         gpu,
-                        region)
+                        region,
+                        cloud_provider)
                     VALUES (
                         :SKU,
                         :TERM_TYPE,
@@ -57,7 +58,8 @@
                         :MEMORY_UNIT,
                         :INSTANCE_FAMILY,
                         :GPU,
-                        :REGION)
+                        :REGION,
+                        :CLOUD_PROVIDER)
                 ]]>
             </value>
         </constructor-arg>
@@ -96,7 +98,8 @@
                         i.memory_unit,
                         i.instance_family,
                         i.gpu,
-                        i.region
+                        i.region,
+                        i.cloud_provider
                     FROM
                         pipeline.instance_offer i
                     @WHERE@
@@ -107,8 +110,9 @@
         <constructor-arg name="loadInstanceTypesQuery">
             <value>
                 <![CDATA[
-                    SELECT DISTINCT ON (instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, region)
+                    SELECT DISTINCT ON (term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, region)
                         i.sku,
+                        i.term_type,
                         i.instance_type,
                         i.operating_system,
                         i.vcpu,
@@ -117,11 +121,12 @@
                         i.instance_family,
                         i.gpu,
                         i.region,
-                        i.price_per_unit
+                        i.price_per_unit,
+                        i.cloud_provider
                     FROM
                         pipeline.instance_offer i
                     @WHERE@
-                    ORDER BY instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, region, price_per_unit ASC;
+                    ORDER BY term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, region, price_per_unit ASC;
                 ]]>
             </value>
         </constructor-arg>
@@ -145,7 +150,8 @@
                         i.memory_unit,
                         i.instance_family,
                         i.gpu,
-                        i.region
+                        i.region,
+                        i.cloud_provider
                     FROM
                         pipeline.instance_offer i
                     LIMIT 1

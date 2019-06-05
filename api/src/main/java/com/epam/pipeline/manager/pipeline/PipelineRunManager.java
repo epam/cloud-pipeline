@@ -354,7 +354,7 @@ public class PipelineRunManager {
                                                        final PriceType priceType,
                                                        final Long regionId) {
         Assert.isTrue(!StringUtils.hasText(instanceType)
-                        || instanceOfferManager.isInstanceAllowed(instanceType, regionId),
+                        || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
@@ -368,7 +368,8 @@ public class PipelineRunManager {
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
         Assert.isTrue(!StringUtils.hasText(instanceType)
-                        || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource, regionId),
+                        || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
+                                                    regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));

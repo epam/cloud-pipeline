@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -57,6 +58,7 @@ public class AwsPriceListReader {
 
     private InstanceOffer parseRecord(CSVRecord record) {
         InstanceOffer offer = new InstanceOffer();
+        offer.setCloudProvider(CloudProvider.AWS);
         offer.setPriceListPublishDate(new Date());
         offer.setSku(record.get("sku"));
         offer.setTermType(record.get("termtype"));

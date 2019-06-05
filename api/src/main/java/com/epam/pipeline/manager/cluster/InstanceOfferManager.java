@@ -21,11 +21,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
-import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
-import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.entity.cluster.InstancePrice;
-import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.cluster.*;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
@@ -49,6 +45,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.mockito.internal.matchers.InstanceOf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +104,7 @@ public class InstanceOfferManager {
     /**
      * Map under the reference collects instance types grouped by the region ids.
      */
-    private final AtomicReference<Map<Long, Set<String>>> offeredInstanceTypesMap =
+    private final AtomicReference<Map<Long, Map<PriceType, Set<String>>>> offeredInstanceTypesMap =
             new AtomicReference<>(Collections.emptyMap());
 
     private final AntPathMatcher matcher = new AntPathMatcher();
@@ -149,8 +146,7 @@ public class InstanceOfferManager {
      * Updates offered instance types for all regions.
      */
     public void updateOfferedInstanceTypes(final List<InstanceType> instanceTypes) {
-        final Map<Long, Set<String>> offeredInstanceTypes = instanceTypes.stream()
-                .collect(groupingBy(InstanceType::getRegionId, mapping(InstanceType::getName, toSet())));
+        final Map<Long, Map<PriceType, Set<String>>>offeredInstanceTypes = groupInstanceTypes(instanceTypes);
         offeredInstanceTypesMap.set(offeredInstanceTypes);
     }
 
@@ -162,8 +158,7 @@ public class InstanceOfferManager {
      * Updates offered instance types for all regions.
      */
     public void updateOfferedInstanceTypesAccordingToInstanceOffers(final List<InstanceOffer> instanceOffers) {
-        final Map<Long, Set<String>> offeredInstanceTypes = instanceOffers.stream()
-                .collect(groupingBy(InstanceOffer::getRegionId, mapping(InstanceOffer::getInstanceType, toSet())));
+        final Map<Long, Map<PriceType, Set<String>>> offeredInstanceTypes = groupInstanceOffers(instanceOffers);
         offeredInstanceTypesMap.set(offeredInstanceTypes);
     }
 
@@ -219,7 +214,7 @@ public class InstanceOfferManager {
     public InstancePrice getInstanceEstimatedPrice(
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId),
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, spot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
@@ -266,8 +261,9 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
-    public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final boolean spot) {
-        return getAllInstanceTypes(defaultRegionIfNull(regionId), spot).stream()
+    public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
+        final boolean isSpot = isSpotRequest(spot);
+        return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
                 .filter(offer -> isInstanceTypeAllowed(offer.getName()))
                 .collect(toList());
     }
@@ -277,8 +273,9 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded for the specified region.
      */
-    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final boolean spot) {
-        return getAllInstanceTypes(defaultRegionIfNull(regionId), spot).stream()
+    public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final Boolean spot) {
+        final boolean isSpot = isSpotRequest(spot);
+        return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
                 .filter(offer -> isToolInstanceTypeAllowed(offer.getName()))
                 .collect(toList());
     }
@@ -308,9 +305,9 @@ public class InstanceOfferManager {
      * @param instanceType To be checked.
      * @param regionId If specified then instance types for the specified region will be used.
      */
-    public boolean isInstanceAllowed(final String instanceType, final Long regionId) {
+    public boolean isInstanceAllowed(final String instanceType, final Long regionId, final boolean spot) {
         return isInstanceTypeAllowed(instanceType, null, defaultRegionIfNull(regionId),
-                INSTANCE_TYPES_PREFERENCES);
+                INSTANCE_TYPES_PREFERENCES, spot);
     }
 
     /**
@@ -325,9 +322,10 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowed(final String instanceType,
                                          final ContextualPreferenceExternalResource toolResource,
-                                         final Long regionId) {
+                                         final Long regionId,
+                                         final boolean spot) {
         return isInstanceTypeAllowed(instanceType, toolResource, defaultRegionIfNull(regionId),
-                TOOL_INSTANCE_TYPES_PREFERENCES);
+                TOOL_INSTANCE_TYPES_PREFERENCES, spot);
     }
 
     /**
@@ -341,16 +339,31 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES);
+        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, false);
+    }
+
+    private Map<Long, Map<PriceType, Set<String>>> groupInstanceTypes(final List<InstanceType> instanceTypes) {
+        return instanceTypes.stream()
+                .collect(groupingBy(InstanceType::getRegionId,
+                        groupingBy(it -> PriceType.fromTermType(it.getTermType()),
+                                mapping(InstanceType::getName, toSet()))));
+    }
+
+    private Map<Long, Map<PriceType, Set<String>>> groupInstanceOffers(final List<InstanceOffer> instanceOffers) {
+        return instanceOffers.stream()
+                .collect(groupingBy(InstanceOffer::getRegionId,
+                        groupingBy(io -> PriceType.fromTermType(io.getTermType()),
+                                mapping(InstanceOffer::getInstanceType, toSet()))));
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType,
                                           final ContextualPreferenceExternalResource resource,
                                           final Long regionId,
-                                          final List<String> instanceTypesPreferences) {
+                                          final List<String> instanceTypesPreferences,
+                                          final boolean spot) {
         return !StringUtils.isEmpty(instanceType)
                 && isInstanceTypeMatchesAllowedPatterns(instanceType, resource, instanceTypesPreferences)
-                && isInstanceTypeOffered(instanceType, regionId);
+                && isInstanceTypeOffered(instanceType, regionId, spot);
     }
 
     private boolean isInstanceTypeMatchesAllowedPatterns(final String instanceType,
@@ -360,20 +373,21 @@ public class InstanceOfferManager {
                 .anyMatch(pattern -> matcher.match(pattern, instanceType));
     }
 
-    private boolean isInstanceTypeOffered(final String instanceType, final Long regionId) {
+    private boolean isInstanceTypeOffered(final String instanceType, final Long regionId, final boolean spot) {
         return regionId != null
-                ? isInstanceTypeOfferedInRegion(instanceType, regionId)
-                : isInstanceTypeOfferedInAnyRegion(instanceType);
+                ? isInstanceTypeOfferedInRegion(instanceType, regionId, spot)
+                : isInstanceTypeOfferedInAnyRegion(instanceType, spot);
     }
 
-    private boolean isInstanceTypeOfferedInRegion(final String instanceType, final Long regionId) {
-        return offeredInstanceTypesMap.get()
-                .getOrDefault(regionId, Collections.emptySet())
-                .contains(instanceType);
+    private boolean isInstanceTypeOfferedInRegion(final String instanceType, final Long regionId, final boolean spot) {
+        final Set<String> regionInstances = offeredInstanceTypesMap.get()
+                .getOrDefault(regionId, Collections.emptyMap()).get(spot ? PriceType.SPOT : PriceType.ON_DEMAND);
+        return regionInstances.contains(instanceType);
     }
 
-    private boolean isInstanceTypeOfferedInAnyRegion(final String instanceType) {
+    private boolean isInstanceTypeOfferedInAnyRegion(final String instanceType, final boolean spot) {
         return offeredInstanceTypesMap.get().values().stream()
+                .map(m -> m.get(spot ? PriceType.SPOT : PriceType.ON_DEMAND))
                 .flatMap(Set::stream)
                 .anyMatch(instanceType::equals);
     }
@@ -440,7 +454,7 @@ public class InstanceOfferManager {
      *
      * @param regionId If specified then instance types will be loaded only for the specified region.
      */
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
         return cloudFacade.getAllInstanceTypes(regionId, spot);
     }
 
@@ -486,9 +500,10 @@ public class InstanceOfferManager {
      * @param spot if true allowed instances types will be filtered and only spot instance proposal will be shown
      */
     public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
-                                                                        final boolean spot) {
+                                                                        final Boolean spot) {
+        final boolean isSpot = isSpotRequest(spot);
         final ContextualPreferenceExternalResource resource = toolResource(toolId);
-        final List<InstanceType> instanceTypes = getAllInstanceTypes(defaultRegionIfNull(regionId), spot);
+        final List<InstanceType> instanceTypes = getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot);
         final List<InstanceType> allowedInstanceTypes = getAllowedInstanceTypes(instanceTypes, resource,
                 SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         final List<InstanceType> allowedInstanceDockerTypes = getAllowedInstanceTypes(instanceTypes, resource,

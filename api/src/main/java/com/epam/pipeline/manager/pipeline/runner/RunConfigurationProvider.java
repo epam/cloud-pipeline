@@ -128,7 +128,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
         if (configuration.getInstanceType() != null) {
             final ContextualPreferenceExternalResource resource = retrieveResource(configuration);
             Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(configuration.getInstanceType(),
-                    resource, configuration.getCloudRegionId()),
+                    resource, configuration.getCloudRegionId(), configuration.getIsSpot()),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                             configuration.getInstanceType()));
         }

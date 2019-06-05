@@ -37,7 +37,7 @@ public interface CloudInstancePriceService<T extends AbstractCloudRegion> extend
     List<InstanceOffer> refreshPriceListForRegion(T region);
     double getSpotPrice(String instanceType, T region);
     double getPriceForDisk(List<InstanceOffer> offers, int instanceDisk, String instanceType, T region);
-    List<InstanceType> getAllInstanceTypes(Long id, Boolean spot);
+    List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 
     @Getter
     @AllArgsConstructor

@@ -95,6 +95,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
         requestVO.setProductFamily(INSTANCE_PRODUCT_FAMILY);
         requestVO.setRegionId(region.getId());
         requestVO.setInstanceType(instanceType);
+        requestVO.setCloudProvider(CloudProvider.AZURE.name());
         final List<InstanceOffer> vmOffers = instanceOfferDao.loadInstanceOffers(requestVO);
         if (vmOffers.size() != 1) {
             log.debug("Virtual machines count should be exactly 1, but found '{}' for instance type '{}'",
@@ -112,7 +113,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     }
 
     @Override
-    public List<InstanceType> getAllInstanceTypes(final Long regionId, final Boolean spot) {
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setTermType(spot ? PriceType.LOW_PRIORITY.getName() : PriceType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
@@ -120,6 +121,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
         requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
         requestVO.setRegionId(regionId);
+        requestVO.setCloudProvider(CloudProvider.AZURE.name());
         return instanceOfferDao.loadInstanceTypes(requestVO);
     }
 
