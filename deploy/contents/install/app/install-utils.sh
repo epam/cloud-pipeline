@@ -252,7 +252,6 @@ EOF
         elif [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
             print_info "Using application default GCP credentials json file defined via GOOGLE_APPLICATION_CREDENTIALS environment variable."
             export CP_CLOUD_CREDENTIALS_FILE="$GOOGLE_APPLICATION_CREDENTIALS"
-            pass
         else
             print_err "GCP credentials json file is defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the GCP credentials"
             return 1
@@ -274,6 +273,7 @@ EOF
         fi
         if [ -z "$CP_GCP_APPLICATION_NAME" ]; then
             print_warn "GCP Application name is not specified, default value \"Cloud Pipeline\" will be used. You can specify it using \"-env CP_GCP_APPLICATION_NAME=\" option"
+            export CP_GCP_APPLICATION_NAME="Cloud Pipeline"
         fi
         if [ -z "$CP_GCP_CUSTOM_INSTANCE_TYPES" ]; then
             print_warn "List of custom instance types for GCP is not provided. You will have to add GPU instance types manually."
