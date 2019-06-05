@@ -81,6 +81,9 @@ dependencies {
     implementation group: "com.microsoft.azure", name: "azure-mgmt-resources", version: "1.19.0"
     implementation group: "com.microsoft.azure", name: "azure", version: "1.19.0"
 
+    //GCP
+    implementation group: "com.google.apis", name: "google-api-services-compute", version: "v1-rev214-1.25.0"
+
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
