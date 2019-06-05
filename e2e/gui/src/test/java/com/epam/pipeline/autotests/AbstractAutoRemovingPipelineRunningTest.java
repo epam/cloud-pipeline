@@ -31,7 +31,7 @@ public abstract class AbstractAutoRemovingPipelineRunningTest
     private final String pipelineName = testPrefix().replaceAll("_", "-") +
             Math.abs(new Random().nextInt());
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void removePipeline() {
         open(C.ROOT_ADDRESS);
         navigationMenu()

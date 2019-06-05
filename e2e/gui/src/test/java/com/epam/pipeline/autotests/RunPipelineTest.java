@@ -58,7 +58,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     private final String pipeline306 = resourceName("epmcmbibpc-306");
     private final String pipeline312 = resourceName("epmcmbibpc-312");
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void removePipelines() {
         open(C.ROOT_ADDRESS);
         navigationMenu()

@@ -101,7 +101,7 @@ public class Launch_InputDataValidationTest extends AbstractAutoRemovingPipeline
                 .refresh();
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void cleanUp() {
         open(C.ROOT_ADDRESS);
         library()

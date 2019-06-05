@@ -37,13 +37,13 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
 
     private final String autoScaledSettingForm = "Auto-scaled cluster";
 
-    @AfterMethod(alwaysRun = true)
+    @AfterMethod(alwaysRun = true, enabled = false)
     @Override
     public void removePipeline() {
         super.removePipeline();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterMethod(alwaysRun = true, enabled = false)
     @Override
     public void removeNode() {
         super.removeNode();

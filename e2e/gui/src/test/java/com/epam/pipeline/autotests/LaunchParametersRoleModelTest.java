@@ -87,19 +87,19 @@ public class LaunchParametersRoleModelTest
     }
 
     @Override
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     void removeNode() {
         loginAsAdminAndPerform(super::removeNode);
     }
 
     @Override
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     void stopRun() {
         loginAsAdminAndPerform(super::stopRun);
     }
 
     @Override
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void removePipeline() {
         loginAsAdminAndPerform(super::removePipeline);
     }

@@ -44,7 +44,7 @@ public abstract class AbstractSeveralPipelineRunningTest
         return runId;
     }
 
-    @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"})
+    @AfterClass(alwaysRun = true, dependsOnMethods = {"stopRuns"}, enabled = false)
     public void removeNodes() {
         open(C.ROOT_ADDRESS);
         sleep(1, SECONDS);
@@ -55,7 +55,7 @@ public abstract class AbstractSeveralPipelineRunningTest
         );
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void stopRuns() {
         open(C.ROOT_ADDRESS);
         sleep(1, SECONDS);

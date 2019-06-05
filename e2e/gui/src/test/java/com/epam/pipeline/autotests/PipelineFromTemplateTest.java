@@ -26,13 +26,13 @@ import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 
 public class PipelineFromTemplateTest extends AbstractAutoRemovingPipelineRunningTest {
-    @AfterMethod(alwaysRun = true)
+    @AfterMethod(alwaysRun = true, enabled = false)
     @Override
     public void removePipeline() {
         super.removePipeline();
     }
 
-    @AfterMethod(alwaysRun = true)
+    @AfterMethod(alwaysRun = true, enabled = false)
     @Override
     public void removeNode() {
         super.removeNode();

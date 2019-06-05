@@ -39,7 +39,7 @@ public abstract class AbstractSinglePipelineRunningTest
         return runId;
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     void removeNode() {
         open(C.ROOT_ADDRESS);
         sleep(1, SECONDS);
@@ -47,7 +47,7 @@ public abstract class AbstractSinglePipelineRunningTest
                 .ifPresent(runId -> clusterMenu().waitForTheNode(runId).removeNodeIfPresent(runId));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     void stopRun() {
         open(C.ROOT_ADDRESS);
         sleep(1, SECONDS);

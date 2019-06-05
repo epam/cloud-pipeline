@@ -54,7 +54,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
     }
 
     @Override
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void removeNodes() {
         logoutIfNeededAndPerform(() -> {
             loginAs(admin);
@@ -63,7 +63,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
         });
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void tearDown() {
         logoutIfNeededAndPerform(() -> {
             loginAs(admin);

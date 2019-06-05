@@ -74,12 +74,12 @@ public class PipelineDockerCommitTest
                                 gr -> gr.enableTool(toolSelfName)));
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     public void removePipeline() {
         library().removePipeline(pipelineName);
     }
 
-    @AfterClass(alwaysRun = true)
+    @AfterClass(alwaysRun = true, enabled = false)
     @Override
     public void removeNodes() {
         sleep(3, MINUTES);
