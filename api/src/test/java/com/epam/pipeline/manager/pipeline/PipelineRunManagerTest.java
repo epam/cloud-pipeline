@@ -149,10 +149,13 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID))).thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID))).thenReturn(true);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(ANOTHER_REGION_ID))).thenReturn(false);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(ANOTHER_REGION_ID))).thenReturn(false);
+        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
+        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
+        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
+        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
+        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(ANOTHER_REGION_ID), eq(true))).thenReturn(false);
+        when(instanceOfferManager
+                .isToolInstanceAllowed(anyString(), any(), eq(ANOTHER_REGION_ID), eq(true))).thenReturn(false);
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any())).thenReturn(true);
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
@@ -292,17 +295,18 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     public void testLaunchPipelineValidatesToolInstanceType() {
         launchTool(INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
     }
 
     @Test
     @WithMockUser
     public void testLaunchPipelineFailsOnNotAllowedToolInstanceType() {
-        when(instanceOfferManager.isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID))).thenReturn(false);
+        when(instanceOfferManager
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true))).thenReturn(false);
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchTool(INSTANCE_TYPE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -310,8 +314,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     public void testLaunchPipelineDoesNotValidateToolInstanceTypeIfItIsNotSpecified() {
         launchTool(null);
 
-        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID));
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -321,7 +325,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchTool(INSTANCE_TYPE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ANOTHER_REGION_ID));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ANOTHER_REGION_ID), eq(true));
     }
 
     @Test
@@ -329,7 +333,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     public void testLaunchPipelineValidatesPipelineInstanceType() {
         launchPipeline(INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -339,17 +343,17 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ANOTHER_REGION_ID));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ANOTHER_REGION_ID), eq(true));
     }
 
     @Test
     @WithMockUser
     public void testLaunchPipelineFailsOnNotAllowedInstanceType() {
-        when(instanceOfferManager.isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID))).thenReturn(false);
+        when(instanceOfferManager.isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true))).thenReturn(false);
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -357,8 +361,8 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     public void testLaunchPipelineDoesNotValidatePipelineInstanceTypeIfItIsNotSpecified() {
         launchPipeline(null);
 
-        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID));
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID));
+        verify(instanceOfferManager, times(0)).isInstanceAllowed(any(), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(true));
     }
 
     @Test

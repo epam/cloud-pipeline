@@ -44,8 +44,8 @@ import io.reactivex.subjects.Subject;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.mockito.internal.matchers.InstanceOf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -339,7 +339,8 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, false);
+        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
+                || isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
 
     private Map<Long, Map<PriceType, Set<String>>> groupInstanceTypes(final List<InstanceType> instanceTypes) {
@@ -382,13 +383,13 @@ public class InstanceOfferManager {
     private boolean isInstanceTypeOfferedInRegion(final String instanceType, final Long regionId, final boolean spot) {
         final Set<String> regionInstances = offeredInstanceTypesMap.get()
                 .getOrDefault(regionId, Collections.emptyMap()).get(spot ? PriceType.SPOT : PriceType.ON_DEMAND);
-        return regionInstances.contains(instanceType);
+        return SetUtils.emptyIfNull(regionInstances).contains(instanceType);
     }
 
     private boolean isInstanceTypeOfferedInAnyRegion(final String instanceType, final boolean spot) {
         return offeredInstanceTypesMap.get().values().stream()
                 .map(m -> m.get(spot ? PriceType.SPOT : PriceType.ON_DEMAND))
-                .flatMap(Set::stream)
+                .flatMap(s -> SetUtils.emptyIfNull(s).stream())
                 .anyMatch(instanceType::equals);
     }
 

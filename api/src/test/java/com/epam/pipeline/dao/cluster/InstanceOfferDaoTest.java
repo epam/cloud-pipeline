@@ -20,6 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,6 +108,7 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
         offer.setMemory(MEMORY);
         offer.setInstanceType(instanceType);
         offer.setRegionId(regionId);
+        offer.setCloudProvider(CloudProvider.AWS);
         return offer;
     }
 
