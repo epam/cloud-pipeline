@@ -50,10 +50,10 @@ class GsClient(CloudClient):
             condition = rule['condition']
             rule_type = rule['action']['type']
             duration = condition['age']
-            if rule_type == 'Delete' and condition['isLive']:
+            if lts and rule_type == 'Delete' and condition['isLive']:
                 assert int(duration) == int(lts), \
                     "LTS assertion failed: expected %s but actual %s" % (lts, duration)
-            if rule_type == 'SetStorageClass':
+            if sts and rule_type == 'SetStorageClass':
                 assert int(duration) == int(sts), \
                     "STS assertion failed: expected %s but actual %s" % (sts, duration)
             if rule_type == 'Delete' and not condition['isLive']:
