@@ -41,7 +41,7 @@ public interface CloudInstancePriceService<T extends AbstractCloudRegion> extend
 
     @Getter
     @AllArgsConstructor
-    enum PriceType {
+    enum TermType {
         ON_DEMAND("OnDemand"),
         SPOT("Spot"),
         LOW_PRIORITY("LowPriority"),

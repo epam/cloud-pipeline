@@ -108,7 +108,7 @@ public class AzurePriceListLoaderTest {
 
         Map<String, InstanceOffer> expectedOffers = new HashMap<>();
         expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
-                .termType(CloudInstancePriceService.PriceType.ON_DEMAND.getName())
+                .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
                 .tenancy(CloudInstancePriceService.SHARED_TENANCY)
                 .productFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY)
                 .sku(ANY)

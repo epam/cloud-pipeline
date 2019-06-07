@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -147,7 +148,7 @@ public class InstanceOfferManager {
      */
     public void updateOfferedInstanceTypes(final List<InstanceType> instanceTypes) {
         final Map<Long, Map<PriceType, Set<String>>>offeredInstanceTypes = groupInstanceTypes(instanceTypes);
-        offeredInstanceTypesMap.set(offeredInstanceTypes);
+        offeredInstanceTypesMap.set(extendInstanceTypesForAws(offeredInstanceTypes));
     }
 
     public void updateOfferedInstanceTypes() {
@@ -159,7 +160,7 @@ public class InstanceOfferManager {
      */
     public void updateOfferedInstanceTypesAccordingToInstanceOffers(final List<InstanceOffer> instanceOffers) {
         final Map<Long, Map<PriceType, Set<String>>> offeredInstanceTypes = groupInstanceOffers(instanceOffers);
-        offeredInstanceTypesMap.set(offeredInstanceTypes);
+        offeredInstanceTypesMap.set(extendInstanceTypesForAws(offeredInstanceTypes));
     }
 
     public Date getPriceListPublishDate() {
@@ -283,7 +284,7 @@ public class InstanceOfferManager {
     public double getPricePerHourForInstance(final String instanceType, final Long regionId) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(CloudInstancePriceService.PriceType.ON_DEMAND.getName());
+        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
@@ -345,6 +346,8 @@ public class InstanceOfferManager {
 
     private Map<Long, Map<PriceType, Set<String>>> groupInstanceTypes(final List<InstanceType> instanceTypes) {
         return instanceTypes.stream()
+                .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
+                        .anyMatch(priceType -> it.getTermType().equalsIgnoreCase(priceType.getName())))
                 .collect(groupingBy(InstanceType::getRegionId,
                         groupingBy(it -> PriceType.fromTermType(it.getTermType()),
                                 mapping(InstanceType::getName, toSet()))));
@@ -352,9 +355,22 @@ public class InstanceOfferManager {
 
     private Map<Long, Map<PriceType, Set<String>>> groupInstanceOffers(final List<InstanceOffer> instanceOffers) {
         return instanceOffers.stream()
+                .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
+                        .anyMatch(priceType -> it.getTermType().equalsIgnoreCase(priceType.getName())))
                 .collect(groupingBy(InstanceOffer::getRegionId,
                         groupingBy(io -> PriceType.fromTermType(io.getTermType()),
                                 mapping(InstanceOffer::getInstanceType, toSet()))));
+    }
+
+    private Map<Long, Map<PriceType, Set<String>>> extendInstanceTypesForAws(
+            final Map<Long, Map<PriceType, Set<String>>> offeredInstanceTypes) {
+        offeredInstanceTypes.forEach((regionId, prices) -> {
+            final AbstractCloudRegion region = cloudRegionManager.load(regionId);
+            if (region.getProvider() == CloudProvider.AWS) {
+                prices.put(PriceType.SPOT, prices.get(PriceType.ON_DEMAND));
+            }
+        });
+        return offeredInstanceTypes;
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType,
@@ -447,7 +463,7 @@ public class InstanceOfferManager {
      * Returns all instance types for all regions.
      */
     public List<InstanceType> getAllInstanceTypes() {
-        return getAllInstanceTypes(null, false);
+        return ListUtils.sum(getAllInstanceTypes(null, false), getAllInstanceTypes(null, true));
     }
 
     /**

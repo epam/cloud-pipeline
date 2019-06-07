@@ -71,7 +71,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public double getSpotPrice(final String instanceType, final AzureRegion region) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(PriceType.LOW_PRIORITY.getName());
+        requestVO.setTermType(TermType.LOW_PRIORITY.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
@@ -88,7 +88,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     public double getPriceForDisk(final List<InstanceOffer> diskOffers, final int instanceDisk,
                                  final String instanceType, final AzureRegion region) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setTermType(PriceType.ON_DEMAND.getName());
+        requestVO.setTermType(TermType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(SHARED_TENANCY);
         requestVO.setUnit(HOURS_UNIT);
@@ -115,7 +115,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
     @Override
     public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setTermType(spot ? PriceType.LOW_PRIORITY.getName() : PriceType.ON_DEMAND.getName());
+        requestVO.setTermType(spot ? TermType.LOW_PRIORITY.getName() : TermType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);

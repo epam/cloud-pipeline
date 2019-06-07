@@ -39,9 +39,14 @@ public enum PriceType {
     }
 
     public static PriceType fromTermType(final String termType) {
-        if ("OnDemand" .equals(termType)) {
+        if (termType.equals(TermType.ON_DEMAND.getName())) {
             return ON_DEMAND;
+        } else if (termType.equals(TermType.LOW_PRIORITY.getName())
+                || termType.equals(TermType.SPOT.getName())
+                || termType.equals(TermType.PREEMPTIBLE.getName())) {
+            return SPOT;
+        } else {
+                throw new IllegalArgumentException("Wrong term type of instance: " + termType);
         }
-        return SPOT;
     }
 }
