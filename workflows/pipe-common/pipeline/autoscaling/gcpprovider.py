@@ -64,6 +64,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
+
+        if is_spot:
+            utils.pipe_log('Preemptible instance: ' + instance_name + ' will be launched')
+
         body = {
             'name': instance_name,
             'machineType': machine_type,
