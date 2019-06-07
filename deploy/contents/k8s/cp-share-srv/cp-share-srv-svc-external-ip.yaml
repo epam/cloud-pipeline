@@ -14,4 +14,4 @@ spec:
   externalIPs:
 ${CP_SHARE_SRV_SVC_EXTERNAL_IP_LIST}
   selector:
-    cloud-pipeline/cp-api-srv: "true"
+    cloud-pipeline/cp-share-srv: "true"
