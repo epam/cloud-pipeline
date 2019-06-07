@@ -43,7 +43,7 @@ if [ ! -f "$CP_SHARE_SRV_FED_META_DIR/cp-share-srv-fed-meta.xml" ]; then
     exit 1
 fi
 
-if [ ! -z "${CP_SHARE_SRV_SAML_ENDPOINT_ID}" ]; then
+if [ -z "${CP_SHARE_SRV_SAML_ENDPOINT_ID}" ]; then
     echo "Share Service SAML endpoint ID is not set explicitly. Building endpoint from HOST and PORT settings"
     export CP_SHARE_SRV_SAML_ENDPOINT_ID="https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}${CP_SHARE_SRV_SAML_ID_TRAIL:-/proxy}"
 fi
