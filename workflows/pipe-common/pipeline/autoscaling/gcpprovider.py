@@ -66,7 +66,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
 
         if is_spot:
-            utils.pipe_log('Preemptible instance: ' + instance_name + ' will be launched')
+            utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
 
         body = {
             'name': instance_name,
