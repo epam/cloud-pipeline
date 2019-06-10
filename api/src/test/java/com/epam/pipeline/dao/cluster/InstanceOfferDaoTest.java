@@ -18,8 +18,11 @@ package com.epam.pipeline.dao.cluster;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.After;
 import org.junit.Before;
@@ -39,8 +42,6 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
 
     private static final String INSTANCE_TYPE = "instanceType1";
     private static final String ANOTHER_INSTANCE_TYPE = "instanceType2";
-    private static final Long REGION_ID = 1L;
-    private static final Long ANOTHER_REGION_ID = 2L;
     private static final String SKU = "sku";
     private static final Date PUBLISH_DATE = new Date();
     private static final int CPU = 2;
@@ -49,13 +50,31 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
     @Autowired
     private InstanceOfferDao instanceOfferDao;
 
+    @Autowired
+    private CloudRegionDao cloudRegionDao;
+
+    private AbstractCloudRegion region;
+
     @Before
     public void setUp() throws Exception {
+
+        region = createRegion("region1");
+        final AbstractCloudRegion anotherRegion = createRegion("region2");
+
         final List<InstanceOffer> instanceOffers = new ArrayList<>();
-        instanceOffers.add(offer(REGION_ID, INSTANCE_TYPE));
-        instanceOffers.add(offer(ANOTHER_REGION_ID, INSTANCE_TYPE));
-        instanceOffers.add(offer(ANOTHER_REGION_ID, ANOTHER_INSTANCE_TYPE));
+        cloudRegionDao.create(region);
+        instanceOffers.add(offer(region.getId(), INSTANCE_TYPE));
+        instanceOffers.add(offer(anotherRegion.getId(), INSTANCE_TYPE));
+        instanceOffers.add(offer(anotherRegion.getId(), ANOTHER_INSTANCE_TYPE));
         instanceOfferDao.insertInstanceOffers(instanceOffers);
+    }
+
+    private AbstractCloudRegion createRegion(final String name) {
+        AwsRegion tmp = new AwsRegion();
+        tmp.setProvider(CloudProvider.AWS);
+        tmp.setName(name);
+        tmp.setRegionCode(name);
+        return cloudRegionDao.create(tmp);
     }
 
     @After
@@ -66,18 +85,18 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void loadInstanceTypesShouldReturnAvailableInstancesInSpecifiedRegion() {
-        final List<InstanceType> instanceTypes = instanceOfferDao.loadInstanceTypes(offerRequest(REGION_ID));
+        final List<InstanceType> instanceTypes = instanceOfferDao.loadInstanceTypes(offerRequest(region.getId()));
 
         assertThat(instanceTypes.size(), is(1));
         final InstanceType instanceType = instanceTypes.get(0);
         assertThat(instanceType.getName(), is(INSTANCE_TYPE));
-        assertThat(instanceType.getRegionId(), is(REGION_ID));
+        assertThat(instanceType.getRegionId(), is(region.getId()));
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void loadInstanceTypesShouldReturnNoInstancesIfRequiredInstancesAreNotAvailableInSpecifiedRegion() {
-        final List<InstanceType> instanceTypes = instanceOfferDao.loadInstanceTypes(offerRequest(REGION_ID,
+        final List<InstanceType> instanceTypes = instanceOfferDao.loadInstanceTypes(offerRequest(region.getId(),
                 ANOTHER_INSTANCE_TYPE));
 
         assertThat(instanceTypes.size(), is(0));
@@ -91,13 +110,10 @@ public class InstanceOfferDaoTest extends AbstractSpringTest  {
         assertThat(instanceTypes.size(), is(3));
         final InstanceType instanceType = instanceTypes.get(0);
         assertThat(instanceType.getName(), is(INSTANCE_TYPE));
-        assertThat(instanceType.getRegionId(), is(REGION_ID));
         final InstanceType instanceType1 = instanceTypes.get(1);
         assertThat(instanceType1.getName(), is(INSTANCE_TYPE));
-        assertThat(instanceType1.getRegionId(), is(ANOTHER_REGION_ID));
         final InstanceType instanceType2 = instanceTypes.get(2);
         assertThat(instanceType2.getName(), is(ANOTHER_INSTANCE_TYPE));
-        assertThat(instanceType2.getRegionId(), is(ANOTHER_REGION_ID));
     }
 
     private InstanceOffer offer(final Long regionId, final String instanceType) {

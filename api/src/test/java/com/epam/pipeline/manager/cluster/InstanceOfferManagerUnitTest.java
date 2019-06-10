@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -83,11 +84,14 @@ public class InstanceOfferManagerUnitTest {
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final String SPOT_AND_ON_DEMAND_TYPES = String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND);
-    private final InstanceType m4InstanceType = instanceType(M4_LARGE, REGION_ID);
-    private final InstanceType m5InstanceType = instanceType(M5_LARGE, REGION_ID);
-    private final InstanceType t2InstanceType = instanceType(T2_LARGE, REGION_ID);
-    private final InstanceType dv3InstanceType = instanceType(DV3, ANOTHER_REGION_ID);
+    private static final String TERM_TYPE = "OnDemand";
+
     private final AbstractCloudRegion defaultRegion = region(REGION_ID);
+    private final AbstractCloudRegion anotherRegion = region(ANOTHER_REGION_ID);
+    private final InstanceType m4InstanceType = instanceType(M4_LARGE, defaultRegion);
+    private final InstanceType m5InstanceType = instanceType(M5_LARGE, defaultRegion);
+    private final InstanceType t2InstanceType = instanceType(T2_LARGE, defaultRegion);
+    private final InstanceType dv3InstanceType = instanceType(DV3, anotherRegion);
 
     private final InstanceOfferDao instanceOfferDao = mock(InstanceOfferDao.class);
     private final PipelineVersionManager versionManager = mock(PipelineVersionManager.class);
@@ -103,9 +107,11 @@ public class InstanceOfferManagerUnitTest {
 
     @Before
     public void setUp() {
+        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
+        when(cloudRegionManager.load(defaultRegion.getId())).thenReturn(defaultRegion);
+        when(cloudRegionManager.load(anotherRegion.getId())).thenReturn(anotherRegion);
         instanceOfferManager.updateOfferedInstanceTypes(Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType,
                 dv3InstanceType));
-        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
     }
 
     @Test
@@ -316,17 +322,18 @@ public class InstanceOfferManagerUnitTest {
         verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(null));
     }
 
-    private InstanceType instanceType(final String name, final Long regionId) {
+    private InstanceType instanceType(final String name, final AbstractCloudRegion region) {
         final InstanceType instanceType = new InstanceType();
         instanceType.setName(name);
-        instanceType.setTermType("OnDemand");
-        instanceType.setRegionId(regionId);
+        instanceType.setTermType(TERM_TYPE);
+        instanceType.setRegionId(region.getId());
         return instanceType;
     }
 
     private AwsRegion region(final Long id) {
         final AwsRegion region = new AwsRegion();
         region.setId(id);
+        region.setProvider(CloudProvider.AWS);
         return region;
     }
 }

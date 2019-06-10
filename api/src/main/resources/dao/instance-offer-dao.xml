@@ -39,8 +39,7 @@
                         memory_unit,
                         instance_family,
                         gpu,
-                        region,
-                        cloud_provider)
+                        region)
                     VALUES (
                         :SKU,
                         :TERM_TYPE,
@@ -58,8 +57,7 @@
                         :MEMORY_UNIT,
                         :INSTANCE_FAMILY,
                         :GPU,
-                        :REGION,
-                        :CLOUD_PROVIDER)
+                        :REGION)
                 ]]>
             </value>
         </constructor-arg>
@@ -99,9 +97,10 @@
                         i.instance_family,
                         i.gpu,
                         i.region,
-                        i.cloud_provider
+                        r.cloud_provider
                     FROM
                         pipeline.instance_offer i
+                    INNER JOIN pipeline.cloud_region r ON r.region_id = i.region
                     @WHERE@
                     ORDER BY i.price_per_unit ASC
                 ]]>
@@ -122,9 +121,11 @@
                         i.gpu,
                         i.region,
                         i.price_per_unit,
-                        i.cloud_provider
+                        r.cloud_provider
                     FROM
                         pipeline.instance_offer i
+                    INNER JOIN pipeline.cloud_region r
+                    ON (r.region_id = i.region)
                     @WHERE@
                     ORDER BY term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, region, price_per_unit ASC;
                 ]]>
@@ -151,9 +152,10 @@
                         i.instance_family,
                         i.gpu,
                         i.region,
-                        i.cloud_provider
+                        r.cloud_provider
                     FROM
                         pipeline.instance_offer i
+                    INNER JOIN pipeline.cloud_region r ON r.region_id = i.region
                     LIMIT 1
                 ]]>
             </value>

@@ -220,8 +220,6 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
             params.addValue(INSTANCE_FAMILY.name(), instanceOffer.getInstanceFamily());
             params.addValue(GPU.name(), instanceOffer.getGpu());
             params.addValue(REGION.name(), instanceOffer.getRegionId());
-            params.addValue(CLOUD_PROVIDER.name(),
-                    instanceOffer.getCloudProvider() != null ? instanceOffer.getCloudProvider().name() : null);
             return params;
         }
 
