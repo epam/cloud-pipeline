@@ -78,6 +78,8 @@ public class InstanceOfferManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferManager.class);
 
+    private static final String EMPTY = "";
+
     @Autowired
     private InstanceOfferDao instanceOfferDao;
 
@@ -347,7 +349,8 @@ public class InstanceOfferManager {
     private Map<Long, Map<PriceType, Set<String>>> groupInstanceTypes(final List<InstanceType> instanceTypes) {
         return instanceTypes.stream()
                 .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
-                        .anyMatch(priceType -> it.getTermType().equalsIgnoreCase(priceType.getName())))
+                        .anyMatch(priceType -> StringUtils.defaultIfEmpty(it.getTermType(), EMPTY)
+                                .equalsIgnoreCase(priceType.getName())))
                 .collect(groupingBy(InstanceType::getRegionId,
                         groupingBy(it -> PriceType.fromTermType(it.getTermType()),
                                 mapping(InstanceType::getName, toSet()))));
@@ -356,7 +359,8 @@ public class InstanceOfferManager {
     private Map<Long, Map<PriceType, Set<String>>> groupInstanceOffers(final List<InstanceOffer> instanceOffers) {
         return instanceOffers.stream()
                 .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
-                        .anyMatch(priceType -> it.getTermType().equalsIgnoreCase(priceType.getName())))
+                        .anyMatch(priceType -> StringUtils.defaultIfEmpty(it.getTermType(), EMPTY)
+                                .equalsIgnoreCase(priceType.getName())))
                 .collect(groupingBy(InstanceOffer::getRegionId,
                         groupingBy(io -> PriceType.fromTermType(io.getTermType()),
                                 mapping(InstanceOffer::getInstanceType, toSet()))));
