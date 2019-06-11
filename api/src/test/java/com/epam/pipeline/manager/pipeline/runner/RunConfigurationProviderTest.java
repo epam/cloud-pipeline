@@ -61,9 +61,9 @@ public class RunConfigurationProviderTest {
 
     @Before
     public void setUp() {
-        when(instanceOfferManager.isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), any()))
+        when(instanceOfferManager.isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))
                 .thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), any()))
+        when(instanceOfferManager.isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))
                 .thenReturn(false);
 
         final Tool tool = new Tool();
@@ -82,7 +82,7 @@ public class RunConfigurationProviderTest {
 
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), eq(REGION_ID));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), eq(REGION_ID), eq(false));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class RunConfigurationProviderTest {
 
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
-        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID));
+        verify(instanceOfferManager, times(0)).isToolInstanceAllowed(any(), any(), eq(REGION_ID), eq(false));
     }
 
     @Test
@@ -109,7 +109,7 @@ public class RunConfigurationProviderTest {
 
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(any(), eq(TOOL_RESOURCE), eq(REGION_ID));
+        verify(instanceOfferManager).isToolInstanceAllowed(any(), eq(TOOL_RESOURCE), eq(REGION_ID), eq(false));
     }
 
     @Test
@@ -123,7 +123,8 @@ public class RunConfigurationProviderTest {
         assertThrows(IllegalArgumentException.class,
             () -> runConfigurationProvider.validateEntry(runConfigurationEntry));
 
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), eq(REGION_ID));
+        verify(instanceOfferManager)
+                .isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), eq(REGION_ID), eq(false));
     }
 
     @Test
@@ -136,6 +137,6 @@ public class RunConfigurationProviderTest {
 
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), eq(NO_REGION));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(ALLOWED_INSTANCE_TYPE), any(), eq(NO_REGION), eq(false));
     }
 }

@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
@@ -205,6 +206,7 @@ public class AzurePriceListLoader {
                         ResourceSkuCapabilities::value));
 
         return InstanceOffer.builder()
+                .cloudProvider(CloudProvider.AZURE)
                 .tenancy(SHARED_TENANCY)
                 .productFamily(STORAGE_PRODUCT_FAMILY)
                 .sku(diskSku.size())
@@ -234,9 +236,10 @@ public class AzurePriceListLoader {
 
         final int gpu = Integer.parseInt(capabilitiesByName.getOrDefault(GPU_CAPABILITY, "0"));
         return InstanceOffer.builder()
+                .cloudProvider(CloudProvider.AZURE)
                 .termType(meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
-                        ? LOW_PRIORITY_TERM_TYPE
-                        : ON_DEMAND_TERM_TYPE
+                        ? TermType.LOW_PRIORITY.getName()
+                        : TermType.ON_DEMAND.getName()
                 )
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)

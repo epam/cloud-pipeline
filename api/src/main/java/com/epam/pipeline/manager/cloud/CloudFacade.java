@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 
@@ -69,4 +70,6 @@ public interface CloudFacade {
     double getSpotPrice(Long regionId, String instanceType);
 
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
+
+    List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 }

@@ -42,7 +42,6 @@ public class AzurePriceListLoaderTest {
     private static final String LINUX_OS = "Linux";
     private static final String VIRTUAL_MACHINES_CATEGORY = "Virtual Machines";
     private static final String DISKS_CATEGORY = "Storage";
-    private static final String LOW_PRIORITY_VM_POSTFIX = "Low Priority";
     private static final String METER_REGION = "US East 2";
     private static final String DISK_UNIT = "1/Month";
     private static final String VM_METER_SUB_CATEGORY = "Dv2/DSv2 Series";
@@ -63,15 +62,6 @@ public class AzurePriceListLoaderTest {
                         .meterRates(Collections.singletonMap("0", PRICE))
                         .meterSubCategory(VM_METER_SUB_CATEGORY)
                         .meterName(VM_METER_NAME)
-                        .meterRegion(METER_REGION)
-                        .build(),
-                // should be filtered due to Low Priority
-                AzurePricingMeter.builder()
-                        .meterCategory(VIRTUAL_MACHINES_CATEGORY)
-                        .meterId(ANY)
-                        .meterRates(Collections.singletonMap("0", PRICE))
-                        .meterSubCategory(VM_METER_SUB_CATEGORY)
-                        .meterName(VM_METER_NAME + " " + LOW_PRIORITY_VM_POSTFIX)
                         .meterRegion(METER_REGION)
                         .build(),
                 AzurePricingMeter.builder()
@@ -118,7 +108,7 @@ public class AzurePriceListLoaderTest {
 
         Map<String, InstanceOffer> expectedOffers = new HashMap<>();
         expectedOffers.put(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY, InstanceOffer.builder()
-                .termType(CloudInstancePriceService.ON_DEMAND_TERM_TYPE)
+                .termType(CloudInstancePriceService.TermType.ON_DEMAND.getName())
                 .tenancy(CloudInstancePriceService.SHARED_TENANCY)
                 .productFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY)
                 .sku(ANY)

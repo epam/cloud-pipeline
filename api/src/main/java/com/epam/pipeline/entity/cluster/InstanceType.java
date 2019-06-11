@@ -30,6 +30,7 @@ import lombok.Setter;
 public class InstanceType {
     private String sku;
     private String name;
+    private String termType;
     private String operatingSystem;
     private int vCPU;
     private float memory;

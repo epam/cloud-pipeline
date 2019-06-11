@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.PermissionsHelper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -128,7 +129,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
         if (configuration.getInstanceType() != null) {
             final ContextualPreferenceExternalResource resource = retrieveResource(configuration);
             Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(configuration.getInstanceType(),
-                    resource, configuration.getCloudRegionId()),
+                    resource, configuration.getCloudRegionId(), BooleanUtils.isTrue(configuration.getIsSpot())),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                             configuration.getInstanceType()));
         }
