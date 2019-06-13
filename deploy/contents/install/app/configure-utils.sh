@@ -653,7 +653,7 @@ function api_register_region {
     local cors_rules="$(get_file_based_preference storage.cors.policy other $CP_CLOUD_PLATFORM escape)"
     if [ $? -ne 0 ] || [ -z "$cors_rules" ]; then
         print_err "CORS rules cannot be retrieved for $CP_CLOUD_PLATFORM cloud provider, you will have to specify them manually via GUI/API"
-        cors_rules=""
+        cors_rules="[]"
     fi
 
     if [ "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS" ]; then
@@ -715,6 +715,7 @@ read -r -d '' payload <<-EOF
 }
 EOF
     elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        api_setup_file_based_preferences "$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_GOOGLE/prerequisites"
         local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE)"
 read -r -d '' payload <<-EOF
 {
