@@ -22,7 +22,7 @@ events {
 http {
 
   server {
-    set $docker_external_host "${CP_DOCKER_EXTERNAL_HOST}"
+    set $docker_external_host "${CP_DOCKER_EXTERNAL_HOST}";
     set $realm_external_host "${CP_API_SRV_EXTERNAL_HOST}";
     set $realm_external_port "${CP_API_SRV_EXTERNAL_PORT}";
     set $realm_internal_host "${CP_API_SRV_INTERNAL_HOST}";
