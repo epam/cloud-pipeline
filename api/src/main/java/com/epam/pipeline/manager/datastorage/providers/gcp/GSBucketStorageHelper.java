@@ -488,7 +488,7 @@ public class GSBucketStorageHelper {
     private List<AbstractDataStorageItem> listItemsWithoutVersions(final Page<Blob> blobs) {
         final List<AbstractDataStorageItem> items = new ArrayList<>();
 
-        for (Blob blob : blobs.iterateAll()) {
+        for (Blob blob : blobs.getValues()) {
             if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
                 continue;
             }
@@ -503,7 +503,7 @@ public class GSBucketStorageHelper {
         final List<AbstractDataStorageItem> items = new ArrayList<>();
         final Map<String, List<Blob>> files = new HashMap<>();
 
-        for (Blob blob : blobs.iterateAll()) {
+        for (Blob blob : blobs.getValues()) {
             if (blob.getName().endsWith(ProviderUtils.FOLDER_TOKEN_FILE)) {
                 continue;
             }
