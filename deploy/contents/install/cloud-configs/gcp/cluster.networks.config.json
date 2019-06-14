@@ -3,7 +3,9 @@
     {
       "name": "${CP_CLOUD_REGION_ID}",
       "default": true,
-      "networks": {},
+      "networks": {
+        "${CP_PREF_CLUSTER_INSTANCE_NETWORK}" : "${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}"
+      },
       "proxies": [
         ${CP_PREF_CLUSTER_PROXIES}
       ],

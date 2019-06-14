@@ -596,6 +596,13 @@ function parse_options {
         return 1
     fi
 
+    if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        if [ -z "$CP_PREF_CLUSTER_INSTANCE_NETWORK" ] || [ -z "$CP_PREF_CLUSTER_INSTANCE_SUBNETWORK" ]; then
+            print_err "Network configuration for GCP cloud is required. Please specify a valid network using \"-env CP_PREF_CLUSTER_INSTANCE_NETWORK=\" and \"-env CP_PREF_CLUSTER_INSTANCE_SUBNETWORK=\""
+            return 1
+        fi
+    fi
+
     set_service_host "CP_API_SRV_EXTERNAL_HOST" "CP_API_SRV_INTERNAL_HOST" && \
     set_service_host "CP_IDP_EXTERNAL_HOST" "CP_IDP_INTERNAL_HOST"  && \
     set_service_host "CP_DOCKER_EXTERNAL_HOST" "CP_DOCKER_INTERNAL_HOST" && \
