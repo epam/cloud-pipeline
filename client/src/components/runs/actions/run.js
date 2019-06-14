@@ -38,7 +38,7 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
-export const submitsRun = (...opts) => inject('instanceTypes')(...opts);
+export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
 
 export function run (parent, callback) {
   if (!parent) {
@@ -108,10 +108,14 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         }
         return undefined;
       }).filter(p => p !== undefined);
-    } else if (stores && stores.instanceTypes) {
-      await stores.instanceTypes.fetchIfNeededOrWait();
-      if (stores.instanceTypes.loaded) {
-        availableInstanceTypes = (stores.instanceTypes.value || []).map(i => i);
+    } else if (stores && (stores.spotInstanceTypes || stores.onDemandInstanceTypes)) {
+      let storeName = 'onDemandInstanceTypes';
+      if (payload.isSpot) {
+        storeName = 'spotInstanceTypes';
+      }
+      await stores[storeName].fetchIfNeededOrWait();
+      if (stores[storeName].loaded) {
+        availableInstanceTypes = (stores[storeName].value || []).map(i => i);
       }
     }
     if (payload.pipelineId) {

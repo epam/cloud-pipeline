@@ -56,8 +56,15 @@ const Panels = {
   parameters: 'parameters'
 };
 
-@Form.create()
-@inject('toolInstanceTypes', 'runDefaultParameters')
+function onValuesChange (props, fields) {
+  if (fields && fields.is_spot !== undefined && fields.is_spot !== null &&
+    props.allowedInstanceTypes) {
+    props.allowedInstanceTypes.isSpot = fields.is_spot;
+  }
+}
+
+@Form.create({onValuesChange: onValuesChange})
+@inject('spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
 @inject(({allowedInstanceTypes}, props) => ({
   allowedInstanceTypes: allowedInstanceTypes.getAllowedTypes(props.toolId)
 }))
@@ -315,6 +322,12 @@ export default class EditToolForm extends React.Component {
 
   componentDidMount () {
     this.reset();
+    if (this.props.allowedInstanceTypes && this.props.parameters &&
+      this.props.parameters.is_spot !== undefined && this.props.parameters.is_spot !== null) {
+      const isSpot = this.getPriceTypeInitialValue();
+      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
+    }
+
     this.props.onInitialized && this.props.onInitialized(this);
   }
 
@@ -343,12 +356,19 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get instanceTypes () {
-    if (!this.props.toolInstanceTypes.loaded) {
+    const isSpot = this.props.form.getFieldValue('is_spot') !== undefined
+      ? this.props.form.getFieldValue('is_spot')
+      : this.getPriceTypeInitialValue();
+    let storeName = 'onDemandToolInstanceTypes';
+    if (isSpot) {
+      storeName = 'spotToolInstanceTypes';
+    }
+    if (!this.props[storeName].loaded) {
       return [];
     }
     const instanceTypes = [];
-    for (let i = 0; i < (this.props.toolInstanceTypes.value || []).length; i++) {
-      const instanceType = this.props.toolInstanceTypes.value[i];
+    for (let i = 0; i < (this.props[storeName].value || []).length; i++) {
+      const instanceType = this.props[storeName].value[i];
       if (instanceTypes.filter(t => t.name === instanceType.name).length === 0) {
         instanceTypes.push(instanceType);
       }

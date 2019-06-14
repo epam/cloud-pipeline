@@ -91,6 +91,10 @@ function onValuesChange (props, fields) {
   if (fields && fields.exec && fields.exec.cloudRegionId && props.allowedInstanceTypes) {
     props.allowedInstanceTypes.regionId = +fields.exec.cloudRegionId;
   }
+  if (fields && fields[ADVANCED] && fields[ADVANCED].is_spot !== undefined &&
+    fields[ADVANCED].is_spot !== null && props.allowedInstanceTypes) {
+    props.allowedInstanceTypes.isSpot = `${fields[ADVANCED].is_spot}` === 'true';
+  }
 }
 
 function getFormItemClassName (rootClass, key) {
@@ -3704,6 +3708,10 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   };
 
   componentDidMount () {
+    if (this.props.allowedInstanceTypes && this.props.parameters &&
+      this.props.parameters.is_spot !== undefined && this.props.parameters.is_spot !== null) {
+      this.props.allowedInstanceTypes.isSpot = `${this.props.parameters.is_spot}` === 'true';
+    }
     this.reset(true);
     this.evaluateEstimatedPrice({});
     this.prepare();
