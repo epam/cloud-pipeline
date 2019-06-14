@@ -371,7 +371,10 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             os.makedirs(folder)
         progress_callback = GsProgressPercentage.callback(source_key, size, quiet)
         bucket = self.client.bucket(source_wrapper.bucket.path)
-        blob = self._chunked_blob(bucket, source_key, progress_callback)
+        if StorageOperations.file_is_empty(size):
+            blob = bucket.blob(source_key)
+        else:
+            blob = self._chunked_blob(bucket, source_key, progress_callback)
         blob.download_to_filename(destination_key)
         if progress_callback is not None:
             progress_callback(size)
@@ -445,7 +448,10 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = self._chunked_blob(bucket, destination_key, progress_callback)
+        if StorageOperations.file_is_empty(size):
+            blob = bucket.blob(source_key)
+        else:
+            blob = self._chunked_blob(bucket, source_key, progress_callback)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
         if progress_callback is not None:

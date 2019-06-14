@@ -102,7 +102,7 @@ class StorageOperations:
 
     @classmethod
     def show_progress(cls, quiet, size):
-        return not quiet and size is not None
+        return not quiet and size is not None and size != 0
 
     @classmethod
     def get_local_file_size(cls, path):
@@ -190,6 +190,10 @@ class StorageOperations:
             else:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + delimiter)
             yield ('File', item.name, item_relative_path, item.size)
+
+    @classmethod
+    def file_is_empty(cls, size):
+        return not size or size == 0
 
 
 class AbstractTransferManager:
