@@ -1086,6 +1086,8 @@ function api_register_system_storage {
             export CP_API_SRV_SYSTEM_FOLDER_TYPE="S3"
         elif [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ]; then
             export CP_API_SRV_SYSTEM_FOLDER_TYPE="AZ"
+        elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+            export CP_API_SRV_SYSTEM_FOLDER_TYPE="GS"
         else
             print_err "Type of the system storage is not set (CP_API_SRV_SYSTEM_FOLDER_TYPE) and it is not possible to determine it from the environment"
             return 1
