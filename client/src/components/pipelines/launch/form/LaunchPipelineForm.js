@@ -3708,9 +3708,13 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   };
 
   componentDidMount () {
-    if (this.props.allowedInstanceTypes && this.props.parameters &&
-      this.props.parameters.is_spot !== undefined && this.props.parameters.is_spot !== null) {
-      this.props.allowedInstanceTypes.isSpot = `${this.props.parameters.is_spot}` === 'true';
+    if (this.props.allowedInstanceTypes) {
+      if (this.props.parameters && this.props.parameters.is_spot !== undefined &&
+        this.props.parameters.is_spot !== null) {
+        this.props.allowedInstanceTypes.isSpot = `${this.props.parameters.is_spot}` === 'true';
+      } else {
+        this.props.allowedInstanceTypes.isSpot = `${this.props.defaultPriceTypeIsSpot}` === 'true';
+      }
     }
     this.reset(true);
     this.evaluateEstimatedPrice({});

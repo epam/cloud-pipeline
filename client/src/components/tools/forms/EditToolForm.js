@@ -56,18 +56,8 @@ const Panels = {
   parameters: 'parameters'
 };
 
-function onValuesChange (props, fields) {
-  if (fields && fields.is_spot !== undefined && fields.is_spot !== null &&
-    props.allowedInstanceTypes) {
-    props.allowedInstanceTypes.isSpot = fields.is_spot;
-  }
-}
-
-@Form.create({onValuesChange: onValuesChange})
-@inject('spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
-@inject(({allowedInstanceTypes}, props) => ({
-  allowedInstanceTypes: allowedInstanceTypes.getAllowedTypes(props.toolId)
-}))
+@Form.create()
+@inject('allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -322,8 +312,7 @@ export default class EditToolForm extends React.Component {
 
   componentDidMount () {
     this.reset();
-    if (this.props.allowedInstanceTypes && this.props.parameters &&
-      this.props.parameters.is_spot !== undefined && this.props.parameters.is_spot !== null) {
+    if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
       this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
     }
@@ -336,6 +325,12 @@ export default class EditToolForm extends React.Component {
       this.reset(nextProps);
     }
   }
+
+  handleIsSpotChange = (isSpot) => {
+    if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
+      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
+    }
+  };
 
   removeLabel = (label) => {
     const labels = this.state.labels;
@@ -357,8 +352,8 @@ export default class EditToolForm extends React.Component {
   @computed
   get instanceTypes () {
     const isSpot = this.props.form.getFieldValue('is_spot') !== undefined
-      ? this.props.form.getFieldValue('is_spot')
-      : this.getPriceTypeInitialValue();
+      ? `${this.props.form.getFieldValue('is_spot')}` === 'true'
+      : `${this.getPriceTypeInitialValue()}` === 'true';
     let storeName = 'onDemandToolInstanceTypes';
     if (isSpot) {
       storeName = 'spotToolInstanceTypes';
@@ -748,7 +743,7 @@ export default class EditToolForm extends React.Component {
                   {
                     initialValue: this.getPriceTypeInitialValue()
                   })(
-                    <Select disabled={this.state.pending || this.props.readOnly}>
+                    <Select disabled={this.state.pending || this.props.readOnly} onChange={this.handleIsSpotChange}>
                       {
                         this.allowedPriceTypes
                           .map(t => <Select.Option key={`${t.isSpot}`}>{t.name}</Select.Option>)
