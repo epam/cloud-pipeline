@@ -16,10 +16,11 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Alert, Collapse, Icon, Row} from 'antd';
 import LoadingView from '../../special/LoadingView';
+import {getSpotTypeName} from '../../special/spot-instance-names';
 import connect from '../../../utils/connect';
 import configurations from '../../../models/configuration/Configurations';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -32,8 +33,10 @@ const PARAMETERS = 'parameters';
 const SYSTEM_PARAMETERS = 'systemParameters';
 
 @connect({configurations, pipelines})
-@inject(({configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
+@inject('cloudProviders')
+@inject(({cloudProviders, configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
   return {
+    cloudProviders,
     configuration: configurations.getConfiguration(params.configurationId),
     configurationsCache: configurations,
     entitiesTypes: new MetadataClassLoadAll(),
@@ -60,6 +63,16 @@ export default class PreviewConfiguration extends Component {
   selectedPipelineConfiguration = null;
   @observable
   selectedRootEntity = null;
+
+  @computed
+  get currentCloudProvider() {
+    if (this.selectedEntry && this.selectedEntry.configuration && this.props.cloudProviders.loaded) {
+      const [provider] = (this.props.cloudProviders.value || [])
+        .filter(p => p.id === this.selectedEntry.configuration.cloudProviderId);
+      return provider;
+    }
+    return null;
+  }
 
   getPanelHeader = (key) => {
     let title;
@@ -208,7 +221,7 @@ export default class PreviewConfiguration extends Component {
       </tr>,
       <tr key={'is_spot_value'} className={styles.valueRow}>
         <td id={'value-column-is_spot'} colSpan={6}>
-          {this.selectedEntry.configuration.is_spot ? 'Spot' : 'On-demand'}
+          {getSpotTypeName(this.selectedEntry.configuration.is_spot, this.currentCloudProvider)}
         </td>
       </tr>,
       this.getDivider('is_spot_divider', 6)

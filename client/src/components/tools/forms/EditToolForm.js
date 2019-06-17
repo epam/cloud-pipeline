@@ -31,6 +31,7 @@ import {
 } from 'antd';
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
 import CodeEditor from '../../special/CodeEditor';
+import {getSpotTypeName} from '../../special/spot-instance-names';
 import EditToolFormParameters from './EditToolFormParameters';
 import styles from '../Tools.css';
 import {names} from '../../../models/utils/ContextualPreference';
@@ -57,7 +58,7 @@ const Panels = {
 };
 
 @Form.create()
-@inject('allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
+@inject('awsRegions', 'allowedInstanceTypes', 'spotToolInstanceTypes', 'onDemandToolInstanceTypes', 'runDefaultParameters')
 @observer
 export default class EditToolForm extends React.Component {
   static propTypes = {
@@ -238,6 +239,23 @@ export default class EditToolForm extends React.Component {
     );
   };
 
+  getInstanceTypeValue = () => {
+    const name = this.props.form.getFieldValue('instanceType') || this.getInstanceTypeInitialValue();
+    const [instanceType] = this.allowedInstanceTypes.filter(i => i.name === name);
+    return instanceType;
+  };
+
+  getCloudProvider = () => {
+    const instanceType = this.getInstanceTypeValue();
+    if (this.props.awsRegions.loaded && instanceType) {
+      const [provider] = (this.props.awsRegions.value || [])
+        .filter(a => a.id === instanceType.regionId)
+        .map(a => a.provider);
+      return provider;
+    }
+    return null;
+  };
+
   getPriceTypeInitialValue = () => {
     return this.correctPriceTypeValue(
       this.props.configuration && this.props.configuration.is_spot !== undefined
@@ -413,7 +431,7 @@ export default class EditToolForm extends React.Component {
       const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
       priceTypes.push({
         isSpot,
-        name: isSpot ? 'Spot' : 'On-demand'
+        name: getSpotTypeName(isSpot, this.getCloudProvider())
       });
     }
     return priceTypes;

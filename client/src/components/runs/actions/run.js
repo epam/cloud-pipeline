@@ -35,6 +35,7 @@ import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/la
 import {LIMIT_MOUNTS_PARAMETER} from '../../pipelines/launch/form/LimitMountsInput';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
@@ -118,6 +119,9 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         availableInstanceTypes = (stores[storeName].value || []).map(i => i);
       }
     }
+    if (stores.awsRegions) {
+      await stores.awsRegions.fetchIfNeededOrWait();
+    }
     if (payload.pipelineId) {
       const {pipelines} = stores;
       await pipelines.fetchIfNeededOrWait();
@@ -179,6 +183,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             pipelineConfiguration={payload.configurationName}
             nodeCount={(+payload.nodeCount) || 0}
             cloudRegionId={payload.cloudRegionId}
+            cloudRegions={(stores.awsRegions.value || []).map(p => p)}
             availableInstanceTypes={availableInstanceTypes}
             dataStorages={dataStorages}
             limitMounts={
@@ -258,6 +263,8 @@ export class RunConfirmation extends React.Component {
   static propTypes = {
     warning: PropTypes.string,
     isSpot: PropTypes.bool,
+    cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    cloudRegions: PropTypes.array,
     isCluster: PropTypes.bool,
     onDemandSelectionAvailable: PropTypes.bool,
     onChangePriceType: PropTypes.func,
@@ -273,6 +280,12 @@ export class RunConfirmation extends React.Component {
   static defaultProps = {
     onDemandSelectionAvailable: true
   };
+
+  @computed
+  get currentCloudProvider () {
+    const [currentProvider] = (this.props.cloudRegions || []).filter(p => +p.id === +this.props.cloudRegionId);
+    return currentProvider ? currentProvider.provider : null;
+  }
 
   @computed
   get gpuEnabled () {
@@ -476,11 +489,11 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a SPOT instance.</b>
+                  <b>You are going to launch a job using a {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   <b>While this is much cheaper, this type of instance may be OCCASINALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
-                  Consider SPOT instance for batch jobs and short living runs.</b>
+                  Consider {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance for batch jobs and short living runs.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   To change this setting use <b>ADVANCED -> PRICE TYPE</b> option within a launch form.
@@ -489,7 +502,7 @@ export class RunConfirmation extends React.Component {
                   <Button
                     onClick={() => this.setOnDemand(true)}
                     type="primary"
-                    size="small">Set ON-DEMAND price type</Button>
+                    size="small">Set {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} price type</Button>
                 </Row>
               </div>
             } />
@@ -504,7 +517,7 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a ON-DEMAND instance.</b>
+                  <b>You are going to launch a job using a {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} instance.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   You will be able to PAUSE this run.
@@ -512,7 +525,7 @@ export class RunConfirmation extends React.Component {
                 <Row type="flex" justify="center" style={{marginBottom: 5}}>
                   <Button
                     onClick={() => this.setOnDemand(false)}
-                    size="small">Set SPOT price type</Button>
+                    size="small">Set {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} price type</Button>
                 </Row>
               </div>
             } />
@@ -525,7 +538,7 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
-                Note that clusters cannot be paused, even if on-demand price is selected
+                Note that clusters cannot be paused, even if {getSpotTypeName(false, this.currentCloudProvider).toLowerCase()} price is selected
               </Row>
             } />
         }
@@ -681,6 +694,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     hddSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     nodeCount: PropTypes.number,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    cloudRegions: PropTypes.array,
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
     onChangeLimitMounts: PropTypes.func
@@ -741,6 +755,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
+            cloudRegionId={this.props.cloudRegionId}
+            cloudRegions={this.props.cloudRegions}
             onDemandSelectionAvailable={this.props.onDemandSelectionAvailable}
             showInstanceTypeSelection={!this.props.instanceType}
             onChangeInstanceType={this.onChangeInstanceType}

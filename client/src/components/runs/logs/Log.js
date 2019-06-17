@@ -52,6 +52,7 @@ import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import parseQueryParameters from '../../../utils/queryParameters';
 import styles from './Log.css';
 import AdaptedLink from '../../special/AdaptedLink';
+import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
 import LogList from './LogList';
 import StatusIcon from '../../special/run-status-icon';
@@ -422,11 +423,9 @@ export default class Logs extends localization.LocalizedReactComponent {
             )
           });
         }
-        if (instance.spot !== undefined) {
-          details.push(
-            {key: 'Price type', value: `${instance.spot}` === 'true' ? 'Spot' : 'On-demand'}
-          );
-        }
+        details.push(
+          {key: 'Price type', value: getRunSpotTypeName({instance})}
+        );
         if (instance.nodeDisk) {
           details.push({key: 'Disk', value: `${instance.nodeDisk}Gb`});
         }
@@ -482,11 +481,9 @@ export default class Logs extends localization.LocalizedReactComponent {
         if (instance.nodeType) {
           details.push({key: 'Node type', value: `${instance.nodeType}`});
         }
-        if (instance.spot !== undefined) {
-          details.push(
-            {key: 'Price type', value: `${instance.spot}` === 'true' ? 'Spot' : 'On-demand'}
-          );
-        }
+        details.push(
+          {key: 'Price type', value: getRunSpotTypeName({instance})}
+        );
         if (instance.nodeDisk) {
           details.push({key: 'Disk', value: `${instance.nodeDisk} Gb`});
         }
