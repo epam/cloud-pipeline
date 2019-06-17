@@ -204,14 +204,18 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         destination_tags = self._destination_tags(source_wrapper, full_path, tags)
         destination_bucket = destination_wrapper.bucket.path
         sync_copy = size < TransferBetweenAzureBucketsManager._SYNC_COPY_SIZE_LIMIT
+        if not size or size == 0:
+            sync_copy = None
         progress_callback = AzureProgressPercentage.callback(full_path, size, quiet)
-        progress_callback(0, size)
+        if progress_callback:
+            progress_callback(0, size)
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
                                metadata=destination_tags,
                                requires_sync=sync_copy)
         if not sync_copy:
             self._wait_for_copying(destination_bucket, destination_path, full_path)
-        progress_callback(size, size)
+        if progress_callback:
+            progress_callback(size, size)
         if clean:
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
 
