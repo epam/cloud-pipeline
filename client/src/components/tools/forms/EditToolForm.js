@@ -315,6 +315,7 @@ export default class EditToolForm extends React.Component {
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
       this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
+      this.props.allowedInstanceTypes.toolId = this.props.toolId;
     }
 
     this.props.onInitialized && this.props.onInitialized(this);
