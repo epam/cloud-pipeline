@@ -18,11 +18,15 @@ import Remote from '../basic/Remote';
 
 class ToolInstanceTypes extends Remote {
 
-  constructor () {
+  constructor (isSpot) {
     super();
-    this.url = '/cluster/instance/loadAll?toolInstances=true';
+    if (isSpot !== undefined && isSpot !== null) {
+      this.url = `/cluster/instance/loadAll?toolInstances=true&spot=${!!isSpot}`;
+    } else {
+      this.url = '/cluster/instance/loadAll?toolInstances=true';
+    }
   }
 
 }
 
-export default new ToolInstanceTypes();
+export default ToolInstanceTypes;

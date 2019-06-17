@@ -347,7 +347,13 @@ export default class PersonalToolsPanel extends React.Component {
           }
           return result;
         };
-        const allowedInstanceTypesRequest = new AllowedInstanceTypes(tool.id);
+        const allowedInstanceTypesRequest = new AllowedInstanceTypes(
+          tool.id,
+          null,
+          parameterIsNotEmpty(versionSettingValue('is_spot'))
+            ? versionSettingValue('is_spot')
+            : this.props.preferences.useSpot
+        );
         await allowedInstanceTypesRequest.fetch();
         let availableInstanceTypes = [];
         let availablePriceTypes = [];

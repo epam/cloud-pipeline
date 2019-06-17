@@ -18,11 +18,15 @@ import Remote from '../basic/Remote';
 
 class InstanceTypes extends Remote {
 
-  constructor () {
+  constructor (isSpot) {
     super();
-    this.url = '/cluster/instance/loadAll';
+    if (isSpot !== undefined && isSpot !== null) {
+      this.url = `/cluster/instance/loadAll?spot=${!!isSpot}`;
+    } else {
+      this.url = '/cluster/instance/loadAll';
+    }
   }
 
 }
 
-export default new InstanceTypes();
+export default InstanceTypes;

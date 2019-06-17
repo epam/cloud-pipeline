@@ -23,7 +23,6 @@ import LoadingView from '../../special/LoadingView';
 import connect from '../../../utils/connect';
 import configurations from '../../../models/configuration/Configurations';
 import pipelines from '../../../models/pipelines/Pipelines';
-import instanceTypes from '../../../models/utils/InstanceTypes';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import styles from './PreviewConfiguration.css';
 
@@ -32,15 +31,16 @@ const ADVANCED = 'advanced';
 const PARAMETERS = 'parameters';
 const SYSTEM_PARAMETERS = 'systemParameters';
 
-@connect({configurations, pipelines, instanceTypes})
-@inject(({configurations, runDefaultParameters, pipelines}, params) => {
+@connect({configurations, pipelines})
+@inject(({configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
   return {
     configuration: configurations.getConfiguration(params.configurationId),
     configurationsCache: configurations,
     entitiesTypes: new MetadataClassLoadAll(),
     runDefaultParameters,
     pipelines,
-    instanceTypes
+    onDemandInstanceTypes,
+    spotInstanceTypes
   };
 })
 @observer
@@ -81,7 +81,8 @@ export default class PreviewConfiguration extends Component {
 
   renderExecEnvironmentSection = () => {
     const res = [];
-    if (!this.selectedEntry || this.props.instanceTypes.pending ||
+    if (!this.selectedEntry ||
+      this.props.onDemandInstanceTypes.pending || this.props.spotInstanceTypes.pending ||
       (this.selectedEntry.pipelineId && this.selectedPipeline && this.selectedPipeline.pending)) {
       return res;
     }
@@ -125,7 +126,9 @@ export default class PreviewConfiguration extends Component {
       this.getDivider('docker_image_divider', 6)
     );
     let instance = this.selectedEntry.configuration.instance_size;
-    const [instanceType] = this.props.instanceTypes.value.filter(i => i.name === instance);
+    const [instanceType] = (this.selectedEntry.configuration.is_spot
+      ? this.props.spotInstanceTypes.value
+      : this.props.onDemandInstanceTypes.value).filter(i => i.name === instance);
     if (instanceType) {
       instance = `${instanceType.name} (CPU: ${instanceType.vcpu}, RAM: ${instanceType.memory}`;
       if (instanceType.gpu > 0) {
@@ -496,17 +499,19 @@ export default class PreviewConfiguration extends Component {
   };
 
   render () {
-    if (this.props.configuration.pending || this.props.instanceTypes.pending ||
+    if (this.props.configuration.pending ||
+      this.props.onDemandInstanceTypes.pending || this.props.spotInstanceTypes.pending ||
       this.props.entitiesTypes.pending ||
       (this.selectedPipeline && this.selectedPipeline.pending)) {
       return <LoadingView />;
     }
-    if (this.props.configuration.error || this.props.instanceTypes.error ||
+    if (this.props.configuration.error || this.props.onDemandInstanceTypes.error || this.props.spotInstanceTypes.error ||
       this.props.entitiesTypes.error ||
       (this.selectedPipeline && this.selectedPipeline.error)) {
       const errors = [
         this.props.configuration.error || false,
-        this.props.instanceTypes.error || false,
+        this.props.onDemandInstanceTypes.error || false,
+        this.props.spotInstanceTypes.error || false,
         this.props.entitiesTypes.error || false,
         this.selectedPipeline.error || false
       ];
