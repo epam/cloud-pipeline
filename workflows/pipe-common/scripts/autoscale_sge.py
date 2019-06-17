@@ -373,9 +373,10 @@ class Clock:
 
 class GridEngineScaleUpHandler:
     _POLL_ATTEMPTS = 60
+    _POLL_DELAY = 10
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_type, instance_image, price_type, instance_cores, polling_timeout=10):
+                 instance_type, instance_image, price_type, instance_cores, polling_timeout, polling_delay=_POLL_DELAY):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -392,6 +393,7 @@ class GridEngineScaleUpHandler:
         :param price_type: Additional nodes price type.
         :param instance_cores:  Additional nodes cores number.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
+        :param polling_delay: Polling delay - in seconds.
         """
         self.executor = cmd_executor
         self.pipe = pipe
@@ -405,6 +407,7 @@ class GridEngineScaleUpHandler:
         self.price_type = price_type
         self.instance_cores = instance_cores
         self.polling_timeout = polling_timeout
+        self.polling_delay = polling_delay
 
     def scale_up(self):
         """
@@ -477,7 +480,8 @@ class GridEngineScaleUpHandler:
 
     def _await_pod_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s pod to initialize.' % run_id)
-        attempts = GridEngineScaleUpHandler._POLL_ATTEMPTS
+        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+            else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.pipe.load_run(run_id)
             if 'podIP' in run:
@@ -487,9 +491,8 @@ class GridEngineScaleUpHandler:
             Logger.info('Additional worker pod initialization hasn\'t finished yet. Only %s attempts remain left.'
                         % attempts)
             attempts -= 1
-            time.sleep(self.polling_timeout)
-        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' \
-                    % (run_id, GridEngineScaleUpHandler._POLL_ATTEMPTS * self.polling_timeout)
+            time.sleep(self.polling_delay)
+        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_delay)
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
 
@@ -499,7 +502,8 @@ class GridEngineScaleUpHandler:
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
-        attempts = GridEngineScaleUpHandler._POLL_ATTEMPTS
+        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+            else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.pipe.load_run(run_id)
             if run['initialized']:
@@ -508,9 +512,8 @@ class GridEngineScaleUpHandler:
             Logger.info('Additional worker with run_id=%s hasn\'t been initialized yet. Only %s attempts remain left.'
                         % (run_id, attempts))
             attempts -= 1
-            time.sleep(self.polling_timeout)
-        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' \
-                    % GridEngineScaleUpHandler._POLL_ATTEMPTS * self.polling_timeout
+            time.sleep(self.polling_delay)
+        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_delay
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
 
@@ -953,11 +956,14 @@ if __name__ == '__main__':
     pipe = PipelineAPI(api_url=pipeline_api, log_dir='/common/workdir/.pipe.log')
     scale_up_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.down.timeout', default_value=30))
+    scale_up_polling_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.polling.timeout',
+                                                        default_value=600))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
                                                 instance_type=instance_type, instance_image=instance_image,
-                                                price_type=price_type, instance_cores=instance_cores)
+                                                price_type=price_type, instance_cores=instance_cores,
+                                                polling_timeout=scale_up_polling_timeout)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile, instance_cores=instance_cores)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,

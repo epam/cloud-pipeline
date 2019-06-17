@@ -478,6 +478,9 @@ public class SystemPreferences {
     public static final IntPreference GE_AUTOSCALING_SCALE_DOWN_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.down.timeout", null,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
+    public static final IntPreference GE_AUTOSCALING_SCALE_UP_POLLING_TIMEOUT =
+            new IntPreference("ge.autoscaling.scale.up.polling.timeout", null,
+                    GRID_ENGINE_AUTOSCALING_GROUP, pass);
 
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
