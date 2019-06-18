@@ -63,7 +63,7 @@ def clean_test_data(path):
         else:
             shutil.rmtree(path)
     except Exception as e:
-        logging.error('Filed to delete data from ' % path, e)
+        logging.error('Filed to delete data from %s' % path, e)
 
 
 def create_test_folder(path):
