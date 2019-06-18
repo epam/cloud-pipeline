@@ -25,8 +25,11 @@ import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.InstanceList;
 import com.google.api.services.compute.model.NetworkInterface;
 
-import java.util.*;
 import java.math.BigInteger;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,6 +40,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -64,70 +70,45 @@ public class GCPMonitorServiceTest {
     }
 
     @Test
-    public void getProvider() {
+    public void shouldReturnValidProvider() {
         final VMMonitorService service = new GCPMonitorService(TAG);
-        Assertions.assertEquals(CloudProvider.GCP, service.provider());
+        assertEquals(CloudProvider.GCP, service.provider());
     }
 
     @Test
-    public void emptyProjectName() {
+    public void shouldThrowExceptionOnEmptyProjectName() {
         final GCPRegion gcpRegion = new GCPRegion();
         gcpRegion.setAuthFile(CREDENTIALS_PATH);
         gcpRegion.setRegionCode(REGION_CODE);
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> new GCPMonitorService(TAG).fetchRunningVms(gcpRegion));
     }
 
     @Test
-    public void emptyZoneId() {
+    public void shouldThrowExceptionOnEmptyZoneId() {
         final GCPRegion gcpRegion = new GCPRegion();
         gcpRegion.setAuthFile(CREDENTIALS_PATH);
         gcpRegion.setProject(PROJECT_NAME);
-        Assertions.assertThrows(IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> new GCPMonitorService(TAG).fetchRunningVms(gcpRegion));
     }
 
     @Test
-    public void emptyInstanceList() {
+    public void shouldReturnEmptyInstanceList() {
         final InstanceList list = new InstanceList();
         list.setItems(Collections.emptyList());
         final Compute mockedCompute = Mockito.mock(Compute.class);
         Mockito.doReturn(mockedCompute).when(service).getGCPCompute(Mockito.any());
         Mockito.doReturn(list).when(service).getGcpVmInstances(Mockito.any(), Mockito.any());
-        Assertions.assertEquals(0, service.fetchRunningVms(testGcpRegion).size());
+        assertEquals(0, service.fetchRunningVms(testGcpRegion).size());
     }
 
     @Test
-    public void notEmptyInstanceList() {
-        final List<VirtualMachine> expectedVMs = Arrays.asList(
-                        VirtualMachine.builder()
-                                      .instanceName(TEST_INSTANCE_NAME1)
-                                      .instanceId(TEST_INSTANCE_ID1)
-                                      .cloudProvider(CloudProvider.GCP)
-                                      .privateIp(TEST_INSTANCE_INTERNAL_IP1)
-                                      .build(),
-                        VirtualMachine.builder()
-                                      .instanceName(TEST_INSTANCE_NAME2)
-                                      .instanceId(TEST_INSTANCE_ID2)
-                                      .cloudProvider(CloudProvider.GCP)
-                                      .privateIp(TEST_INSTANCE_INTERNAL_IP2)
-                                      .build());
-
-        final List<NetworkInterface> networkInterfaces1 =
-            Collections.singletonList(new NetworkInterface().setNetworkIP(TEST_INSTANCE_INTERNAL_IP1));
-        final List<NetworkInterface> networkInterfaces2 =
-            Collections.singletonList(new NetworkInterface().setNetworkIP(TEST_INSTANCE_INTERNAL_IP2));
-        final List<Instance> instances = Arrays.asList(
-                        new Instance().setName(TEST_INSTANCE_NAME1)
-                                      .setId(new BigInteger(TEST_INSTANCE_ID1))
-                                      .setZone(REGION_CODE)
-                                      .setNetworkInterfaces(networkInterfaces1),
-                        new Instance().setName(TEST_INSTANCE_NAME2)
-                                      .setId(new BigInteger(TEST_INSTANCE_ID2))
-                                      .setZone(REGION_CODE)
-                                      .setNetworkInterfaces(networkInterfaces2));
+    public void shouldReturnNotEmptyInstanceList() {
+        final List<VirtualMachine> expectedVMs = createExpectedVmsList();
+        final List<Instance> receivedInstances = createReceivedInstancesList();
         final InstanceList receivedGcpInstances = new InstanceList();
-        receivedGcpInstances.setItems(instances);
+        receivedGcpInstances.setItems(receivedInstances);
 
         final Compute mockedCompute = Mockito.mock(Compute.class);
         Mockito.doReturn(mockedCompute).when(service).getGCPCompute(Mockito.any());
@@ -136,8 +117,40 @@ public class GCPMonitorServiceTest {
         final Map<String, VirtualMachine> actualVMs = virtualMachines.stream()
                  .collect(Collectors.toMap(VirtualMachine::getInstanceName, Function.identity()));
 
-        Assertions.assertEquals(expectedVMs.size(), virtualMachines.size());
+        assertEquals(expectedVMs.size(), virtualMachines.size());
         expectedVMs.forEach(vm -> Assertions.assertTrue(assertVMs(vm, actualVMs.get(vm.getInstanceName()))));
+    }
+
+    private List <VirtualMachine> createExpectedVmsList() {
+        return Arrays.asList(
+            VirtualMachine.builder()
+                          .instanceName(TEST_INSTANCE_NAME1)
+                          .instanceId(TEST_INSTANCE_ID1)
+                          .cloudProvider(CloudProvider.GCP)
+                          .privateIp(TEST_INSTANCE_INTERNAL_IP1)
+                          .build(),
+            VirtualMachine.builder()
+                          .instanceName(TEST_INSTANCE_NAME2)
+                          .instanceId(TEST_INSTANCE_ID2)
+                          .cloudProvider(CloudProvider.GCP)
+                          .privateIp(TEST_INSTANCE_INTERNAL_IP2)
+                          .build());
+    }
+
+    private List <Instance> createReceivedInstancesList() {
+        final List<NetworkInterface> networkInterfaces1 =
+            Collections.singletonList(new NetworkInterface().setNetworkIP(TEST_INSTANCE_INTERNAL_IP1));
+        final List<NetworkInterface> networkInterfaces2 =
+            Collections.singletonList(new NetworkInterface().setNetworkIP(TEST_INSTANCE_INTERNAL_IP2));
+        return Arrays.asList(
+            new Instance().setName(TEST_INSTANCE_NAME1)
+                          .setId(new BigInteger(TEST_INSTANCE_ID1))
+                          .setZone(REGION_CODE)
+                          .setNetworkInterfaces(networkInterfaces1),
+            new Instance().setName(TEST_INSTANCE_NAME2)
+                          .setId(new BigInteger(TEST_INSTANCE_ID2))
+                          .setZone(REGION_CODE)
+                          .setNetworkInterfaces(networkInterfaces2));
     }
 
     private static boolean assertVMs(final VirtualMachine expected, final VirtualMachine actual) {

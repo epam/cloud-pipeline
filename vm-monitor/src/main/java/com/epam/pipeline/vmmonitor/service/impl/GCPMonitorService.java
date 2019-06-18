@@ -33,7 +33,6 @@ import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.InstanceList;
 import com.google.api.services.compute.model.NetworkInterface;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -138,10 +137,10 @@ public class GCPMonitorService implements VMMonitorService<GCPRegion> {
                              .build();
     }
 
-    private String getInternalIP(Instance instance) {
-        final List<NetworkInterface> networkInterfaces = instance.getNetworkInterfaces();
-        return CollectionUtils.isNotEmpty(networkInterfaces)
-                ? networkInterfaces.get(0).getNetworkIP()
-                : null;
+    private String getInternalIP(final Instance instance) {
+        return ListUtils.emptyIfNull(instance.getNetworkInterfaces()).stream()
+                                                                     .findFirst()
+                                                                     .map(NetworkInterface::getNetworkIP)
+                                                                     .orElse(null);
     }
 }
