@@ -26,11 +26,17 @@ import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
+import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
+import com.epam.pipeline.manager.cloud.commands.NodeUpCommand;
+import com.epam.pipeline.manager.cloud.commands.RunIdArgCommand;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -49,47 +55,56 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private static final String AZURE_RESOURCE_GROUP = "AZURE_RESOURCE_GROUP";
     private final CommonCloudInstanceService instanceService;
     private final AzureVMService vmService;
+    private final ClusterCommandService commandService;
+    private final PreferenceManager preferenceManager;
     private final CloudRegionManager cloudRegionManager;
     private final ParallelExecutorService executorService;
-    private final ClusterCommandService commandService;
+    private final CmdExecutor cmdExecutor = new CmdExecutor();
     private final String nodeUpScript;
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
-    private final CmdExecutor cmdExecutor = new CmdExecutor();
+    private final String kubeMasterIP;
+    private final String kubeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
+                                final ClusterCommandService commandService,
+                                final PreferenceManager preferenceManager,
                                 final AzureVMService vmService,
                                 final CloudRegionManager regionManager,
                                 final ParallelExecutorService executorService,
-                                final ClusterCommandService commandService,
-                                @Value("${cluster.azure.nodeup.script}") final String nodeUpScript,
-                                @Value("${cluster.azure.nodedown.script}") final String nodeDownScript,
-                                @Value("${cluster.azure.reassign.script}") final String nodeReassignScript,
-                                @Value("${cluster.azure.node.terminate.script}") final String nodeTerminateScript) {
+                                @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
+                                @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
+                                @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
+                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
+                                @Value("${kube.master.ip}") final String kubeMasterIP,
+                                @Value("${kube.kubeadm.token}") final String kubeToken) {
         this.instanceService = instanceService;
+        this.commandService = commandService;
         this.cloudRegionManager = regionManager;
+        this.preferenceManager = preferenceManager;
         this.vmService = vmService;
         this.executorService = executorService;
-        this.commandService = commandService;
         this.nodeUpScript = nodeUpScript;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
+        this.kubeMasterIP = kubeMasterIP;
+        this.kubeToken = kubeToken;
     }
 
     @Override
-    public RunInstance scaleUpNode(final AzureRegion region, final Long runId, final RunInstance instance) {
-        final String command = commandService.buildNodeUpCommand(nodeUpScript, region, runId, instance,
-                getProviderName())
-                .sshKey(region.getSshPublicKeyPath()).build().getCommand();
+    public RunInstance scaleUpNode(final AzureRegion region,
+                                   final Long runId,
+                                   final RunInstance instance) {
+        final String command = buildNodeUpCommand(region, runId, instance);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, envVars);
     }
 
     @Override
     public void scaleDownNode(final AzureRegion region, final Long runId) {
-        final String command = commandService.buildNodeDownCommand(nodeDownScript, runId, getProviderName());
+        final String command = buildNodeDownCommand(runId);
         final Map<String, String> envVars = buildScriptAzureEnvVars(region);
         CompletableFuture.runAsync(() -> instanceService.runNodeDownScript(cmdExecutor, command, envVars),
                 executorService.getExecutorService());
@@ -103,10 +118,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
-        final String command = commandService.buildNodeReassignCommand(nodeReassignScript, oldId,
-                newId, getProviderName());
-        return instanceService.runNodeReassignScript(cmdExecutor, command,
-                oldId, newId, buildScriptAzureEnvVars(region));
+        final String command = commandService.buildNodeReassignCommand(
+                nodeReassignScript, oldId, newId, getProvider().name());
+        return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
+                buildScriptAzureEnvVars(region));
     }
 
     @Override
@@ -200,5 +215,38 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         envVars.put(AZURE_AUTH_LOCATION, region.getAuthFile());
         envVars.put(AZURE_RESOURCE_GROUP, region.getResourceGroup());
         return envVars;
+    }
+
+    private String buildNodeUpCommand(final AzureRegion region, final Long runId, final RunInstance instance) {
+
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
+                .executable(AbstractClusterCommand.EXECUTABLE)
+                .script(nodeUpScript)
+                .runId(String.valueOf(runId))
+                .sshKey(region.getSshPublicKeyPath())
+                .instanceImage(instance.getNodeImage())
+                .instanceType(instance.getNodeType())
+                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
+                .kubeIP(kubeMasterIP)
+                .kubeToken(kubeToken)
+                .region(region.getRegionCode());
+
+        final Boolean clusterSpotStrategy = instance.getSpot() == null
+                ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)
+                : instance.getSpot();
+
+        if (BooleanUtils.isTrue(clusterSpotStrategy)) {
+            commandBuilder.isSpot(true);
+        }
+        return commandBuilder.build().getCommand();
+    }
+
+    private String buildNodeDownCommand(final Long runId) {
+        return RunIdArgCommand.builder()
+                .executable(AbstractClusterCommand.EXECUTABLE)
+                .script(nodeDownScript)
+                .runId(String.valueOf(runId))
+                .build()
+                .getCommand();
     }
 }
