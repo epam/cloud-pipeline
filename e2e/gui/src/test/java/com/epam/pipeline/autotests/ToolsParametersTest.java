@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -53,7 +54,8 @@ public class ToolsParametersTest
                                 .save()
                                 .run(this)
                 )
-                .show(getRunId())
+                .showLog(getRunId());
+        new RunsMenuAO()
                 .clickEndpoint()
                 .screenshot("test501screenshot")
                 .assertPageTitleIs("502 Bad Gateway");
