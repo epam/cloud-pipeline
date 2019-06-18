@@ -59,7 +59,6 @@ import static com.epam.pipeline.manager.cloud.azure.AzurePricingClient.executeRe
 @Slf4j
 public class AzurePriceListLoader {
 
-    private static final String CURRENCY = "USD";
     private static final String LOCALE = "en-US";
     private static final String REGION_INFO = "US";
     private static final String API_VERSION = "2016-08-31-preview";

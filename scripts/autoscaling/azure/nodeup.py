@@ -898,7 +898,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     ins_key_path = args.ins_key
     run_id = args.run_id
     ins_type = args.ins_type

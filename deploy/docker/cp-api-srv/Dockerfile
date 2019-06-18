@@ -55,6 +55,9 @@ RUN pip install -I  azure-common==1.1.18 \
                     azure-mgmt-containerinstance==1.4.1 \
                     azure-cli-core==2.0.61
 
+# GCP - specific packages
+RUN pip install -I google-api-python-client
+
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_API_HOME="/opt/api"

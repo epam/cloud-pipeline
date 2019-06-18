@@ -32,7 +32,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class AwsRegion extends AbstractCloudRegion {
+public class AwsRegion extends AbstractCloudRegion implements VersioningAwareRegion {
 
     private CloudProvider provider = CloudProvider.AWS;
     private String corsRules;

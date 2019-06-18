@@ -62,6 +62,7 @@ class AzureRegionDaoHelper extends AbstractCloudRegionDaoHelper<AzureRegion, Azu
     public AzureRegion parseCloudRegion(final ResultSet rs) {
         final AzureRegion azureRegion = new AzureRegion();
         fillCommonCloudRegionFields(azureRegion, rs);
+        azureRegion.setCorsRules(rs.getString(CloudRegionParameters.CORS_RULES.name()));
         azureRegion.setStorageAccount(rs.getString(CloudRegionParameters.STORAGE_ACCOUNT.name()));
         azureRegion.setResourceGroup(rs.getString(CloudRegionParameters.RESOURCE_GROUP.name()));
         azureRegion.setAzurePolicy(parsePolicy(rs.getString(CloudRegionParameters.POLICY.name())));

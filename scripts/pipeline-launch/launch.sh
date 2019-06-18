@@ -1019,6 +1019,7 @@ do
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \
             [[ "$var" == "CP_ACCOUNT_KEY_"* ]] || \
+            [[ "$var" == "CP_CREDENTIALS_FILE_CONTENT_"* ]] || \
             [[ $SECURE_ENV_VARS == *"$var"* ]]; then
 		continue
 	fi

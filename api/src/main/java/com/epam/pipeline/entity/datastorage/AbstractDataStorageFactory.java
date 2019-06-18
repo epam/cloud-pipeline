@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.datastorage;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.CloudProvider;
 
@@ -78,10 +79,15 @@ public abstract class AbstractDataStorageFactory {
                     storage.setFileShareMountId(fileShareMountId);
                     return storage;
                 case AZ:
-                    AzureBlobStorage blobStorage = new AzureBlobStorage(id, name, path, policy, mountPoint);
+                    final AzureBlobStorage blobStorage = new AzureBlobStorage(id, name, path, policy, mountPoint);
                     blobStorage.setStoragePolicy(null);
                     blobStorage.setRegionId(regionId);
                     return blobStorage;
+                case GS:
+                    final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, policy,
+                            mountPoint);
+                    gsBucketStorage.setRegionId(regionId);
+                    return gsBucketStorage;
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);
             }

@@ -162,7 +162,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", "-kid", type=str, required=True)
     parser.add_argument("--ins_id", "-id", type=str, required=False)  # do we need?
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     run_id = args.run_id
     api = get_kube_api()
     try:

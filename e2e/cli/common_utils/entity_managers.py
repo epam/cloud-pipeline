@@ -151,3 +151,11 @@ class UtilsManager(API):
         if 'payload' in response_data and 'value' in response_data['payload']:
             return response_data['payload']['value']
         raise RuntimeError('Response is not valid while getting cloud pipeline {} preference'.format(preference))
+
+    @classmethod
+    def get_region(cls, region_id):
+        api = cls.instance()
+        response_data = api.call('cloud/region/' + str(region_id), None)
+        if 'payload' in response_data:
+            return response_data['payload']
+        raise RuntimeError('Failed to get region info for region ID %s' % str(region_id))

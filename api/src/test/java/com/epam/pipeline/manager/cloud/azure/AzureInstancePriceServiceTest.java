@@ -48,6 +48,7 @@ public class AzureInstancePriceServiceTest extends AbstractSpringTest {
     private static final float PRICE_FOR_P4_DISK = 1f;
     private static final float PRICE_FOR_P6_DISK = 0.5f;
     private static final float PRICE_FOR_E8_DISK = 0.0f;
+    private static final boolean SPOT = false;
 
     @MockBean
     private InstanceOfferDao instanceOfferDao;
@@ -92,13 +93,13 @@ public class AzureInstancePriceServiceTest extends AbstractSpringTest {
                         .build());
 
         double priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_64,
-                INSTANCE_TYPE, region);
+                INSTANCE_TYPE, SPOT, region);
         Assert.assertEquals(PRICE_FOR_P4_DISK, priceForDisk, 0.0);
         priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_32,
-                INSTANCE_TYPE, region);
+                INSTANCE_TYPE, SPOT, region);
         Assert.assertEquals(PRICE_FOR_P6_DISK, priceForDisk, 0.0);
         priceForDisk = azureInstancePriceService.getPriceForDisk(diskOffers, INSTANCE_DISK_FOR_128,
-                INSTANCE_TYPE, region);
+                INSTANCE_TYPE, SPOT, region);
         Assert.assertEquals(PRICE_FOR_E8_DISK, priceForDisk, 0.0);
     }
 }

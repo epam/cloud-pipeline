@@ -86,7 +86,7 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
 
     @Override
     public double getPriceForDisk(final List<InstanceOffer> diskOffers, final int instanceDisk,
-                                 final String instanceType, final AzureRegion region) {
+                                 final String instanceType, final boolean spot, final AzureRegion region) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setTermType(TermType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(LINUX_OPERATING_SYSTEM);

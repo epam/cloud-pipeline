@@ -111,7 +111,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--internal_ip", "-ip", type=str, required=True)
     parser.add_argument("--node_name", "-n", type=str, required=True)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     kube_api = get_kube_api()
     delete_kubernetes_node(kube_api, args.node_name)
 

@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cluster.AwsPriceListReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -66,7 +65,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
                 }
                 skipLines--;
             }
-            return new AwsPriceListReader(region.getId()).readPriceCsv(reader);
+            return new AWSPriceListReader(region.getId()).readPriceCsv(reader);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
@@ -80,7 +79,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
 
     @Override
     public double getPriceForDisk(final List<InstanceOffer> offers, final int instanceDisk,
-                                 final String instanceType, final AwsRegion region) {
+                                 final String instanceType, final boolean spot, final AwsRegion region) {
         if (offers.size() == 1) {
             return offers.get(0).getPricePerUnit() / (DAYS_IN_MONTH * HOURS_IN_DAY) * instanceDisk;
         }

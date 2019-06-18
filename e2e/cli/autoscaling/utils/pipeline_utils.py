@@ -23,6 +23,7 @@ from time import sleep
 
 from autoscaling.utils.aws_client import Ec2Client
 from autoscaling.utils.azure_client import AzureClient
+from autoscaling.utils.gcp_client import GCPClient
 from common_utils.entity_managers import UtilsManager
 
 IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
@@ -30,7 +31,8 @@ IP_PATTERN = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
 
 _clients = {
     Ec2Client.name: Ec2Client,
-    AzureClient.name: AzureClient
+    AzureClient.name: AzureClient,
+    GCPClient.name: GCPClient
 }
 
 
@@ -65,15 +67,12 @@ def view_cluster_for_node(node_name):
             process.stdout.readline()
             process.stdout.readline()  # skip the header
             line = process.stdout.readline()
-            default_namespace_count = 0
             while not line.startswith("+"):
                 splitted = filter(None, line.replace(" ", "").split("|"))
-                if len(splitted) > 2 and splitted[1] == "default":
-                    default_namespace_count += 1
+                if len(splitted) > 2 and splitted[1] == "default" and 'runid' in cluster_info and \
+                        cluster_info['runid'] in splitted[0]:
                     cluster_info["IsNodeJobRunning"] = splitted[0]
                 line = process.stdout.readline()
-            if default_namespace_count > 1:
-                return None
         line = process.stdout.readline()
     if len(cluster_info) == 0:
         return None
