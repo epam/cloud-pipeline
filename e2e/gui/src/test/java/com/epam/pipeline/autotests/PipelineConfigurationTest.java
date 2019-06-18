@@ -70,6 +70,8 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     private final String pipeline1257 = resourceName("epmcmbibpc-1257");
     private final String pipeline1263 = resourceName("epmcmbibpc-1263");
     private final String pipeline1500 = resourceName("epmcmbibpc-1500");
+    private final String spotPriceName = C.SPOT_PRICE_NAME;
+    private final String onDemandPriceName = "On-demand";
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -101,7 +103,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .saveAndCommitWithMessage("test: Set spot property of default configuration profile false")
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
-            .ensure(combobox("Price type"), have(selectedValue("On-demand")));
+            .ensure(combobox("Price type"), have(selectedValue(onDemandPriceName)));
     }
 
     @Test
@@ -121,7 +123,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .saveAndCommitWithMessage("test: Set spot property of default configuration profile true")
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
-            .ensure(combobox("Price type"), have(selectedValue("Spot")));
+            .ensure(combobox("Price type"), have(selectedValue(spotPriceName)));
     }
 
     @Test
@@ -134,7 +136,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
-            .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")));
+            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)));
     }
 
     @Test
@@ -147,12 +149,12 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
-            .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")))
+            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)))
             .click(combobox("Price type"))
-            .selectValue(combobox("Price type"), menuitem("On-demand"))
+            .selectValue(combobox("Price type"), menuitem(onDemandPriceName))
             .launch(this)
             .showLog(getLastRunId())
-            .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text("On-demand"))))
+            .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
             .click(taskWithName("InitializeNode"))
             .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible);
         if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
