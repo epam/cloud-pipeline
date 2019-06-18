@@ -84,7 +84,7 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":pipe-cli:build", ":pipe-cli:buildLinux", ":pipe-cli:buildWin", ":jwt-generator:shadowJar",
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
                           ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build",
-                          ":data-sharing-service:All"]) {
+                          ":data-sharing-service:buildAll"]) {
     group = 'build'
 }
 

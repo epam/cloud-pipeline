@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -52,7 +53,6 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
 
     private static final long BILLION = 1_000_000_000L;
     private static final int PRICES_PRECISION = 5;
-    static final String PREEMPTIBLE_TERM_TYPE = "Preemptible";
 
     private final PreferenceManager preferenceManager;
     private final InstanceOfferDao instanceOfferDao;
@@ -136,7 +136,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     public double getSpotPrice(final String instanceType, final GCPRegion region) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(PREEMPTIBLE_TERM_TYPE);
+        requestVO.setTermType(TermType.PREEMPTIBLE.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
@@ -157,12 +157,25 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
                                   final GCPRegion region) {
         return offers.stream()
                 .filter(offer -> spot
-                        ? offer.getTermType().equals(PREEMPTIBLE_TERM_TYPE)
-                        : offer.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE)
+                        ? offer.getTermType().equals(TermType.PREEMPTIBLE.getName())
+                        : offer.getTermType().equals(TermType.ON_DEMAND.getName())
                 )
                 .findFirst()
                 .map(offer -> offer.getPricePerUnit() * instanceDisk)
                 .orElse(0.0);
+    }
+
+    @Override
+    public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setTermType(spot ? TermType.ON_DEMAND.getName() : TermType.ON_DEMAND.getName());
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(regionId);
+        requestVO.setCloudProvider(CloudProvider.GCP.name());
+        return instanceOfferDao.loadInstanceTypes(requestVO);
     }
 
     @Override

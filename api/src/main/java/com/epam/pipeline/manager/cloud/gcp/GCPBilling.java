@@ -21,8 +21,8 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public enum GCPBilling {
-    ON_DEMAND("ondemand", CloudInstancePriceService.ON_DEMAND_TERM_TYPE),
-    PREEMPTIBLE("preemptible", GCPInstancePriceService.PREEMPTIBLE_TERM_TYPE);
+    ON_DEMAND("ondemand", CloudInstancePriceService.TermType.ON_DEMAND.getName()),
+    PREEMPTIBLE("preemptible", CloudInstancePriceService.TermType.PREEMPTIBLE.getName());
 
     private final String alias;
     private final String termType;

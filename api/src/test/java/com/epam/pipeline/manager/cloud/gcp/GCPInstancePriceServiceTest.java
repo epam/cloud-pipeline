@@ -220,7 +220,7 @@ public class GCPInstancePriceServiceTest {
 
         final Optional<InstanceOffer> optionalOffer = offers.stream()
                 .filter(it -> it.getInstanceType().equals(cpuMachine.getName()))
-                .filter(it -> it.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE))
+                .filter(it -> it.getTermType().equals(CloudInstancePriceService.TermType.ON_DEMAND.getName()))
                 .findFirst();
 
         assertTrue(optionalOffer.isPresent());
@@ -272,7 +272,7 @@ public class GCPInstancePriceServiceTest {
 
         final Optional<InstanceOffer> optionalOffer = offers.stream()
                 .filter(it -> it.getInstanceType().equals(cpuMachine.getName()))
-                .filter(it -> it.getTermType().equals(GCPInstancePriceService.PREEMPTIBLE_TERM_TYPE))
+                .filter(it -> it.getTermType().equals(CloudInstancePriceService.TermType.ON_DEMAND.getName()))
                 .findFirst();
 
         assertTrue(optionalOffer.isPresent());
@@ -298,7 +298,7 @@ public class GCPInstancePriceServiceTest {
 
         final Optional<InstanceOffer> optionalOffer = offers.stream()
                 .filter(it -> it.getInstanceType().equals(extendedMachine.getName()))
-                .filter(it -> it.getTermType().equals(CloudInstancePriceService.ON_DEMAND_TERM_TYPE))
+                .filter(it -> it.getTermType().equals(CloudInstancePriceService.TermType.ON_DEMAND.getName()))
                 .findFirst();
 
         assertTrue(optionalOffer.isPresent());

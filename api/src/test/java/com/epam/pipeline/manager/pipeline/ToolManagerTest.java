@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import java.util.*;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
@@ -112,10 +112,10 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactory);
 
-        CloudRegionVO regionVO = CloudRegionVO.builder()
-                .name(REGION_NAME)
-                .regionCode(REGION_CODE)
-                .provider(CloudProvider.AWS).build();
+        AWSRegionDTO regionVO = new AWSRegionDTO();
+        regionVO.setName(REGION_NAME);
+        regionVO.setRegionCode(REGION_CODE);
+        regionVO.setProvider(CloudProvider.AWS);
 
         final AbstractCloudRegion region = cloudRegionManager.create(regionVO);
         final AbstractCloudRegion anotherRegion = cloudRegionManager.create(regionVO);
