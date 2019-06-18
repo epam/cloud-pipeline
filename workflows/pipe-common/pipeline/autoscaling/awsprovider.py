@@ -179,7 +179,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             ins_id = None
         return ins_id
 
-    def terminate_instance_by_ip(self, node_internal_ip):
+    def terminate_instance_by_ip_or_name(self, node_internal_ip, node_name):
         instance_id = self.__get_aws_instance_id(node_internal_ip)
         if instance_id is not None:
             self.ec2.terminate_instances(InstanceIds=[instance_id])

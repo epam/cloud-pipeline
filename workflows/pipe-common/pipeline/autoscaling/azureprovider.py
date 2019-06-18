@@ -18,6 +18,7 @@ import os
 import sys
 import uuid
 from random import randint
+import re
 
 from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
@@ -29,11 +30,15 @@ from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE
 
 import utils
 
+VM_NAME_PREFIX = "az-"
+UUID_LENGHT = 16
+LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
+
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1] == "virtualMachines":
+    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and str(r2.type).split('/')[-1] != "virtualMachines":
+    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
         return -1
     return 0
 
@@ -53,10 +58,15 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             ins_key = utils.read_ssh_key(ins_key)
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
-            self.__create_public_ip_address(instance_name, run_id)
-            self.__create_nic(instance_name, run_id)
-            return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
-                                  ins_key, "pipeline", kms_encyr_key_id)
+
+            if not is_spot:
+                self.__create_public_ip_address(instance_name, run_id)
+                self.__create_nic(instance_name, run_id)
+                return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
+                                        ins_key, "pipeline", kms_encyr_key_id)
+            else:
+                return self.__create_low_priority_vm(instance_name, run_id, ins_type, ins_img, ins_hdd,
+                                                     user_data_script, ins_key, "pipeline")
         except Exception as e:
             self.__delete_all_by_run_id(run_id)
             raise RuntimeError(e)
@@ -68,47 +78,70 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
             if str(resource.type).split('/')[-1] == "virtualMachines":
                 vm_name = resource.name
-
-        if vm_name is not None:
-            private_ip = self.network_client.network_interfaces \
-                .get(self.resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
+                private_ip = self.network_client.network_interfaces \
+                    .get(self.resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
+                break
+            if str(resource.type).split('/')[-1] == "virtualMachineScaleSet":
+                scale_set_name = resource.name
+                vm_name, private_ip = self.__get_instance_name_and_private_ip_from_vmss(scale_set_name)
+                break
 
         return vm_name, private_ip
 
     def get_instance_names(self, ins_id):
-        public_ip = self.network_client.public_ip_addresses.get(
-            self.resource_group_name,
-            ins_id + '-ip'
-        )
-        nodename_full = public_ip.dns_settings.fqdn
-        nodename = nodename_full.split('.', 1)[0]
-        return nodename_full, nodename
+        return ins_id, ins_id
 
     def find_instance(self, run_id):
         for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
             if str(resource.type).split('/')[-1] == "virtualMachines":
                 return resource.name
-
+            elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+                instance_name, _ = self.__get_instance_name_and_private_ip_from_vmss(resource.name)
+                return instance_name
         return None
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         pass
 
     def terminate_instance(self, ins_id):
-        instance = self.compute_client.virtual_machines.get(self.resource_group_name, ins_id)
-        if 'Name' in instance.tags:
-            self.__delete_all_by_run_id(instance.tags['Name'])
+        low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, ins_id)
+        if low_priority_search:
+            res_name = low_priority_search.group(1)
+            service = self.compute_client.virtual_machine_scale_sets
         else:
-            self.compute_client.virtual_machines.delete(self.resource_group_name, ins_id).wait()
+            res_name = low_priority_search.group(1)
+            service = self.compute_client.virtual_machines
+        resource = service.get(self.resource_group_name, res_name)
+        if resource and 'Name' in resource.tags:
+            self.__delete_all_by_run_id(resource.tags['Name'])
+        else:
+            service.delete(self.resource_group_name, ins_id).wait()
 
-    def terminate_instance_by_ip(self, node_internal_ip):
-        nics = self.network_client.network_interfaces.list(resource_group_name=self.resource_group_name)
-        for nic in nics:
-            if nic.ip_configurations[0].private_ip_address == node_internal_ip:
-                if nic.tags and 'Name' in nic.tags:
-                    self.__delete_all_by_run_id(nic.tags['Name'])
-                else:
-                    raise RuntimeError("Cannot find instance with internal ip: {}".format(node_internal_ip))
+    def terminate_instance_by_ip_or_name(self, node_internal_ip, node_name):
+        low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, node_name)
+        if low_priority_search:
+            # just because we set computer_name_prefix in nodeup script,
+            # we know that it is the same with scale set name, so let's extract it
+            scale_set_name = low_priority_search.group(1)
+            info = self.compute_client.virtual_machine_scale_sets.get(self.resource_group_name, scale_set_name)
+        else:
+            info = self.compute_client.virtual_machines.get(self.resource_group_name, node_name)
+        if info is not None and "Name" in info.tags:
+            resources = []
+            for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + info.tags["Name"] + "'"):
+                resources.append(resource)
+                # we need to sort resources to be sure that vm and nic will be deleted first, because it has attached resorces(disks and ip)
+                resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+            for resource in resources:
+                self.resource_client.resources.delete(
+                    resource_group_name=resource.id.split('/')[4],
+                    resource_provider_namespace=resource.id.split('/')[6],
+                    parent_resource_path='',
+                    resource_type=str(resource.type).split('/')[-1],
+                    resource_name=resource.name,
+                    api_version=self.__resolve_azure_api(resource),
+                    parameters=resource
+                ).wait()
 
     def find_and_tag_instance(self, old_id, new_id):
         ins_id = None
@@ -121,6 +154,11 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 resource = self.compute_client.virtual_machines.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
                 self.compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
+            elif resource_type == "virtualMachineScaleSets":
+                resource = self.compute_client.virtual_machine_scale_sets.get(resource_group, resource.name)
+                resource.tags["Name"] = new_id
+                self.compute_client.virtual_machine_scale_sets.create_or_update(resource_group, resource.name, resource)
+                ins_id, _ = self.__get_instance_name_and_private_ip_from_vmss(resource.name)
             elif resource_type == "networkInterfaces":
                 resource = self.network_client.network_interfaces.get(resource_group, resource.name)
                 resource.tags["Name"] = new_id
@@ -157,34 +195,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         return creation_result.result()
 
     def __create_nic(self, instance_name, run_id):
-        allowed_networks = utils.get_networks_config(self.zone)
-        security_groups = utils.get_security_groups(self.zone)
-        if allowed_networks and len(allowed_networks) > 0:
-            az_num = randint(0, len(allowed_networks) - 1)
-            az_name = allowed_networks.items()[az_num][0]
-            subnet = AzureInstanceProvider.get_subnet_name_from_id(allowed_networks.items()[az_num][1])
-            resource_group, network = AzureInstanceProvider.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
-            utils.pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet, az_name))
-        else:
-            utils.pipe_log('- Networks list NOT found, trying to find network from region in the same resource group...')
-            resource_group, network, subnet = self.get_any_network_from_location(self.zone)
-            utils.pipe_log('- Network found, subnet {} in VNET {} will be used'.format(subnet, network))
-
-        if not resource_group or not network or not subnet:
-            raise RuntimeError("No networks with subnet found for location: {} in resourceGroup: {}".format(self.zone, self.resource_group_name))
-
-        subnet_info = self.network_client.subnets.get(resource_group, network, subnet)
 
         public_ip_address = self.network_client.public_ip_addresses.get(
             self.resource_group_name,
             instance_name + '-ip'
         )
 
-        if len(security_groups) != 1:
-            raise AssertionError("Please specify only one security group as: <resource_group>/<security_group_name>")
-
-        resource_group, secur_grp = AzureInstanceProvider.get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups')
-        security_group_info = self.network_client.network_security_groups.get(resource_group, secur_grp)
+        subnet_info = self.__get_subnet_info()
+        security_group_info = self.__get_security_group_info()
 
         nic_params = {
             'location': self.zone,
@@ -207,6 +225,33 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         )
 
         return creation_result.result()
+
+    def __get_security_group_info(self):
+        security_groups = utils.get_security_groups(self.zone)
+        if len(security_groups) != 1:
+            raise AssertionError("Please specify only one security group!")
+        resource_group, secur_grp = AzureInstanceProvider.get_res_grp_and_res_name_from_string(security_groups[0], 'networkSecurityGroups')
+        security_group_info = self.network_client.network_security_groups.get(resource_group, secur_grp)
+        return security_group_info
+
+    def __get_subnet_info(self):
+        allowed_networks = utils.get_networks_config(self.zone)
+        if allowed_networks and len(allowed_networks) > 0:
+            az_num = randint(0, len(allowed_networks) - 1)
+            az_name = allowed_networks.items()[az_num][0]
+            subnet_id = allowed_networks.items()[az_num][1]
+            resource_group, network = AzureInstanceProvider.get_res_grp_and_res_name_from_string(az_name, 'virtualNetworks')
+            subnet = AzureInstanceProvider.get_subnet_name_from_id(subnet_id)
+            utils.pipe_log('- Networks list found, subnet {} in VNET {} will be used'.format(subnet_id, az_name))
+        else:
+            utils.pipe_log('- Networks list NOT found, trying to find network from region in the same resource group...')
+            resource_group, network, subnet = self.get_any_network_from_location(self.zone)
+            utils.pipe_log('- Network found, subnet {} in VNET {} will be used'.format(subnet, network))
+        if not resource_group or not network or not subnet:
+            raise RuntimeError(
+                "No networks with subnet found for location: {} in resourceGroup: {}".format(self.zone, self.resource_group_name))
+        subnet_info = self.network_client.subnets.get(resource_group, network, subnet)
+        return subnet_info
 
     def __get_disk_type(self, instance_type):
         disk_type = None
@@ -232,51 +277,16 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             image_name
         )
 
+        storage_profile = self.__get_storage_profile(disk, image, instance_type)
+        storage_profile["dataDisks"][0]["name"] = instance_name + "-data"
+
         vm_parameters = {
             'location': self.zone,
-            'os_profile': {
-                'computer_name': instance_name,
-                'admin_username': user,
-                "linuxConfiguration": {
-                    "ssh": {
-                        "publicKeys": [
-                            {
-                                "path": "/home/" + user + "/.ssh/authorized_keys",
-                                "key_data": "{key} {user}".format(key=ssh_pub_key, user=user)
-                            }
-                        ]
-                    },
-                    "disablePasswordAuthentication": True,
-                },
-                "custom_data": base64.b64encode(user_data_script)
-            },
+            'os_profile': self.__get_os_profile(instance_name, ssh_pub_key, user, user_data_script, 'computer_name'),
             'hardware_profile': {
                 'vm_size': instance_type
             },
-            'storage_profile': {
-                'image_reference': {
-                    'id': image.id
-                },
-                "osDisk": {
-                    "caching": "ReadWrite",
-                    "managedDisk": {
-                        "storageAccountType": self.__get_disk_type(instance_type)
-                    },
-                    "name": instance_name + "-os_disk",
-                    "createOption": "FromImage"
-                },
-                "dataDisks": [
-                    {
-                        "name": instance_name + "-data",
-                        "diskSizeGB": disk,
-                        "lun": 63,
-                        "createOption": "Empty",
-                        "managedDisk": {
-                            "storageAccountType": self.__get_disk_type(instance_type)
-                        }
-                    }
-                ]
-            },
+            'storage_profile': storage_profile,
             'network_profile': {
                 'network_interfaces': [{
                     'id': nic.id
@@ -285,35 +295,91 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             'tags': AzureInstanceProvider.get_tags(run_id)
         }
 
-        if kms_encyr_key_id:
-            vault_id_key_url_secret = kms_encyr_key_id.split(";")
-            vm_parameters["storage_profile"]["dataDisks"][0]["encryptionSettings"] = {
-                "diskEncryptionKey": {
-                    "sourceVault": {
-                        "id": vault_id_key_url_secret[0]
-                    },
-                    "secretUrl": vault_id_key_url_secret[2]
-                },
-                "enabled": True,
-                "keyEncryptionKey": {
-                    "sourceVault": {
-                        "id": vault_id_key_url_secret[0]
-                    },
-                    "keyUrl": vault_id_key_url_secret[1]
-                }
-            }
+        self.__create_node_resource(self.compute_client.virtual_machines, instance_name, vm_parameters)
 
+        private_ip = self.network_client.network_interfaces.get(
+            self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
+
+        return instance_name, private_ip
+
+    def __create_low_priority_vm(self, scale_set_name, run_id, instance_type, instance_image,
+                                 disk, user_data_script, ssh_pub_key, user):
+
+        resource_group, image_name = AzureInstanceProvider.get_res_grp_and_res_name_from_string(instance_image, 'images')
+
+        image = self.compute_client.images.get(resource_group, image_name)
+        subnet_info = self.__get_subnet_info()
+        security_group_info = self.__get_security_group_info()
+
+        service = self.compute_client.virtual_machine_scale_sets
+
+        vmss_parameters = {
+            "location": self.zone,
+            "sku": {
+                "name": instance_type,
+                "capacity": "1"
+            },
+            "upgradePolicy": {
+                "mode": "Manual",
+                "automaticOSUpgrade": False
+            },
+            "properties": {
+                "virtualMachineProfile": {
+                    'priority': 'Low',
+                    'evictionPolicy': 'delete',
+                    'os_profile': self.__get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
+                    'storage_profile': self.__get_storage_profile(disk, image, instance_type),
+                    "network_profile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": scale_set_name + "-nic",
+                                "properties": {
+                                    "primary": True,
+                                    "networkSecurityGroup": {
+                                        "id": security_group_info.id
+                                    },
+                                    'dns_settings': {
+                                        'domain_name_label': scale_set_name
+                                    },
+                                    "ipConfigurations": [
+                                        {
+                                            "name": scale_set_name + "-ip",
+                                            "publicIPAddressConfiguration": {
+                                                "name": scale_set_name + "-publicip"
+                                            },
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": subnet_info.id
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            'tags': AzureInstanceProvider.get_tags(run_id)
+        }
+
+        self.__create_node_resource(service, scale_set_name, vmss_parameters)
+
+        return self.__get_instance_name_and_private_ip_from_vmss(scale_set_name)
+
+    def __create_node_resource(self, service, instance_name, node_parameters):
         try:
-            creation_result = self.compute_client.virtual_machines.create_or_update(
+            creation_result = service.create_or_update(
                 self.resource_group_name,
                 instance_name,
-                vm_parameters
+                node_parameters
             )
             creation_result.result()
 
-            start_result = self.compute_client.virtual_machines.start(self.resource_group_name, instance_name)
+            start_result = service.start(self.resource_group_name, instance_name)
             start_result.wait()
         except CloudError as client_error:
+            self.__delete_all_by_run_id(node_parameters['tags']['Name'])
             error_message = client_error.__str__()
             if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
                 utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
@@ -321,9 +387,61 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             else:
                 raise client_error
 
-        private_ip = self.network_client.network_interfaces \
-            .get(self.resource_group_name, instance_name + '-nic').ip_configurations[0].private_ip_address
+    def __get_os_profile(self, instance_name, ssh_pub_key, user, user_data_script, computer_name_parameter):
+        profile = {
+            computer_name_parameter: instance_name,
+            'admin_username': user,
+            "linuxConfiguration": {
+                "ssh": {
+                    "publicKeys": [
+                        {
+                            "path": "/home/" + user + "/.ssh/authorized_keys",
+                            "key_data": "{key}".format(key=ssh_pub_key)
+                        }
+                    ]
+                },
+                "disablePasswordAuthentication": True,
+            },
+            "custom_data": base64.b64encode(user_data_script)
+        }
+        return profile
 
+    def __get_storage_profile(self, disk, image, instance_type):
+        return {
+            'image_reference': {
+                'id': image.id
+            },
+            "osDisk": {
+                "caching": "ReadWrite",
+                "managedDisk": {
+                    "storageAccountType": self.__get_disk_type(instance_type)
+                },
+                "createOption": "FromImage"
+            },
+            "dataDisks": [
+                {
+                    "diskSizeGB": disk,
+                    "lun": 63,
+                    "createOption": "Empty",
+                    "managedDisk": {
+                        "storageAccountType": self.__get_disk_type(instance_type)
+                    }
+                }
+            ]
+        }
+
+    def __get_instance_name_and_private_ip_from_vmss(self, scale_set_name):
+        vm_vmss_id = None
+        for vm in self.compute_client.virtual_machine_scale_set_vms.list(self.resource_group_name, scale_set_name):
+            vm_vmss_id = vm.instance_id
+            break
+        instance_name = self.compute_client.virtual_machine_scale_set_vms \
+            .get_instance_view(self.resource_group_name, scale_set_name, vm_vmss_id) \
+            .additional_properties["computerName"]
+        private_ip = self.network_client.network_interfaces. \
+            get_virtual_machine_scale_set_ip_configuration(self.resource_group_name, scale_set_name, vm_vmss_id,
+                                                           scale_set_name + "-nic", scale_set_name + "-ip") \
+            .private_ip_address
         return instance_name, private_ip
 
     def __resolve_azure_api(self, resource):
@@ -343,8 +461,9 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1] == 'virtualMachines' else resources[0].name[0:19]
-        self.__detach_disks_and_nic(vm_name)
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].startswith('virtualMachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        if str(resources[0].type).split('/')[-1] == 'virtualMachines':
+            self.__detach_disks_and_nic(vm_name)
         for resource in resources:
             self.resource_client.resources.delete(
                 resource_group_name=resource.id.split('/')[4],

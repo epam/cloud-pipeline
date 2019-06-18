@@ -228,7 +228,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         self.__wait_for_operation(delete['name'])
 
-    def terminate_instance_by_ip(self, internal_ip):
+    def terminate_instance_by_ip_or_name(self, internal_ip, node_name):
         items = self.__filter_instances("")
         for instance in items:
             if instance['networkInterfaces'][0]['networkIP'] == internal_ip:

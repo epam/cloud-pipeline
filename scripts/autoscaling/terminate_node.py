@@ -32,7 +32,7 @@ def main():
     cloud_provider = autoscaling.create_cloud_provider(cloud, cloud_region)
 
     kube_provider.delete_kubernetes_node_by_name(args.node_name)
-    cloud_provider.terminate_instance_by_ip(args.internal_ip)
+    cloud_provider.terminate_instance_by_ip_or_name(args.internal_ip, args.node_name)
 
 
 if __name__ == '__main__':
