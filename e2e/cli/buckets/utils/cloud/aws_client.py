@@ -72,7 +72,7 @@ class S3Client(CloudClient):
             Bucket=bucket_name,
             WaiterConfig={
                 'Delay': 3,
-                'MaxAttempts': 20
+                'MaxAttempts': 40
             }
         )
 
