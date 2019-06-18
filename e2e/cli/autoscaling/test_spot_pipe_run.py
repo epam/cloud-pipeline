@@ -43,7 +43,7 @@ class TestSpotPipelineRun(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline %s deleted" % cls.pipeline_id)
-            wait_for_instance_termination(cls.run_id, 50)
+            wait_for_instance_termination(cls.run_id, 150)
 
     @pipe_test
     def test_spot_pipeline_runs_and_finishes_successfully(self):

@@ -72,7 +72,7 @@ class TestStopPipelineBeforeLabeling(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.run_id, 50)
+            wait_for_instance_termination(cls.run_id, 150)
 
     @pytest.mark.run(order=1)
     def test_node_should_have_label(self):

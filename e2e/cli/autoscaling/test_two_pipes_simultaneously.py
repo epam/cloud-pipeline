@@ -77,8 +77,8 @@ class TestTwoPipesRunSimultaneously(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.first_run_id, 50)
-            wait_for_instance_termination(cls.second_run_id, 50)
+            wait_for_instance_termination(cls.first_run_id, 150)
+            wait_for_instance_termination(cls.second_run_id, 150)
 
     def test_should_be_created_two_nodes(self):
         try:

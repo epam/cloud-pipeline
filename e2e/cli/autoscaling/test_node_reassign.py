@@ -78,8 +78,8 @@ class TestNodeReassign(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.first_run_id, 50)
-            wait_for_instance_termination(cls.second_run_id, 50)
+            wait_for_instance_termination(cls.first_run_id, 150)
+            wait_for_instance_termination(cls.second_run_id, 150)
 
     def test_node_ip_should_be_the_same(self):
         try:

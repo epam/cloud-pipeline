@@ -63,7 +63,7 @@ class TestTerminateNodeManually(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.run_id, 50)
+            wait_for_instance_termination(cls.run_id, 150)
 
     def test_node_should_be_terminated(self):
         try:

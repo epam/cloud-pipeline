@@ -66,7 +66,7 @@ class TestStartStopPipe(object):
         if not cls.state.failure:
             PipelineManager.delete(cls.pipeline_id)
             logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.latest_run_id, 50)
+            wait_for_instance_termination(cls.latest_run_id, 150)
 
     def test_created_only_one_node(self):
         try:
