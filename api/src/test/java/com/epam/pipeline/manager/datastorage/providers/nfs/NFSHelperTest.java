@@ -37,10 +37,10 @@ public class NFSHelperTest {
         AzureRegion azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, "account");
         AzureRegionCredentials credentials = ObjectCreatorUtils.getAzureCredentials("key");
         result = NFSHelper.getNFSMountOption(azureRegion, credentials, EMPTY_STRING);
-        Assert.assertEquals(",username=account,password=key", result);
+        Assert.assertEquals("-o ,username=account,password=key", result);
 
         result = NFSHelper.getNFSMountOption(azureRegion, credentials, "options");
-        Assert.assertEquals("options,username=account,password=key", result);
+        Assert.assertEquals("-o options,username=account,password=key", result);
 
         azureRegion = ObjectCreatorUtils.getDefaultAzureRegion(RESOURCE_GROUP, null);
         result = NFSHelper.getNFSMountOption(azureRegion, null, EMPTY_STRING);
