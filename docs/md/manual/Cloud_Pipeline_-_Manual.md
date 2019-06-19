@@ -43,7 +43,7 @@
     - [10.6. Tool security check](10_Manage_Tools/10.6._Tool_security_check.md)
     - [10.7. Tool version menu](10_Manage_Tools/10.7._Tool_version_menu.md)
 - [11. Manage Runs](11_Manage_Runs/11._Manage_Runs.md)
-    - [11.1. Pause/resume Runs](11_Manage_Runs/11.1._Pause_resume_Runs.md)
+    - [11.1. Manage runs lifecycles](11_Manage_Runs/11.1._Manage_runs_lifecycles.md)
     - [11.2. Auto-commit Docker image](11_Manage_Runs/11.2._Auto-commit_Docker_image.md)
     - [11.3. Sharing with other users or groups of users](11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md)
 - [12. Manage Settings](12_Manage_Settings/12._Manage_Settings.md)

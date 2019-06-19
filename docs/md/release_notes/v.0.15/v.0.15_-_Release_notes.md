@@ -19,13 +19,13 @@
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
 - [Notable Bug fixes](#notable-bug-fixes)
-  - [Incorrect behavior of the global search filter](#incorrect-behavior-of-the-global-search-filter)
-  - ["COMMITING..." status hangs](#%22commiting%22-status-hangs)
-  - [Instances of Metadata entity aren't correctly sorted](#instances-of-metadata-entity-arent-correctly-sorted)
-  - [Tool group cannot be deleted until all child tools are removed](#tool-group-cannot-be-deleted-until-all-child-tools-are-removed)
-  - [Missing region while estimating a run price](#missing-region-while-estimating-a-run-price)
-  - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
-  - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipelineuser-and-role-entities-for-metadata-api)
+    - [Incorrect behavior of the global search filter](#incorrect-behavior-of-the-global-search-filter)
+    - ["COMMITING..." status hangs](#%22commiting%22-status-hangs)
+    - [Instances of Metadata entity aren't correctly sorted](#instances-of-metadata-entity-arent-correctly-sorted)
+    - [Tool group cannot be deleted until all child tools are removed](#tool-group-cannot-be-deleted-until-all-child-tools-are-removed)
+    - [Missing region while estimating a run price](#missing-region-while-estimating-a-run-price)
+    - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
+    - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipelineuser-and-role-entities-for-metadata-api)
 
 ## Microsoft Azure Support
 
