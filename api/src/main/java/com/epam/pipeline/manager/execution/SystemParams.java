@@ -59,19 +59,20 @@ public enum SystemParams {
     GS_OAUTH_CLIENT_ID("google-client-id", "GS_CLIENT_ID", true),
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
     PARENT_ID("parent-id", "parent_id", false),
-    RESUMED_RUN("resumed-run", "RESUMED_RUN", false),
-    ENABLE_DOCKER_IN_DOCKER("dind-enabled", "CP_CAP_DIND");
+    RESUMED_RUN("resumed-run", "RESUMED_RUN", false);
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";
     public static final String CLOUD_ACCOUNT_KEY_PREFIX = "CP_ACCOUNT_KEY_";
     public static final String CLOUD_PROVIDER_PREFIX = "CP_CLOUD_PROVIDER_";
+    public static final String CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX = "CP_CREDENTIALS_FILE_CONTENT_";
 
     public static final Set<String> SECURED_PREFIXES = new HashSet<>();
 
     static {
         SECURED_PREFIXES.add(CLOUD_ACCOUNT_PREFIX);
         SECURED_PREFIXES.add(CLOUD_ACCOUNT_KEY_PREFIX);
+        SECURED_PREFIXES.add(CLOUD_CREDENTIALS_FILE_CONTENT_PREFIX);
     }
 
     private String optionName;

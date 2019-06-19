@@ -125,6 +125,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         case SearchItemTypes.azFile:
         case SearchItemTypes.s3File:
         case SearchItemTypes.NFSFile:
+        case SearchItemTypes.gsFile:
           if (item.parentId) {
             const path = item.id;
             const parentFolder = path.split('/').slice(0, path.split('/').length - 1).join('/');
@@ -139,6 +140,7 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
         case SearchItemTypes.azStorage:
         case SearchItemTypes.s3Bucket:
         case SearchItemTypes.NFSBucket:
+        case SearchItemTypes.gsStorage:
           this.props.router.push(`/storage/${item.id}`);
           this.closeDialog();
           break;

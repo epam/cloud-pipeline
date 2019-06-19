@@ -18,9 +18,12 @@ package com.epam.pipeline.manager.pipeline;
 
 import java.util.*;
 
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -28,6 +31,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -71,8 +75,9 @@ public class ToolManagerTest extends AbstractManagerTest {
     private static final String LAYER_REF = "layerRef";
     private static final String DIGEST = "layerDigest";
     private static final Long DOCKER_SIZE = 123456L;
-    private static final Long REGION_ID = 1L;
-    private static final Long ANOTHER_REGION_ID = 2L;
+    private static final String REGION_NAME = "region";
+    private static final String REGION_CODE = "us-east-1";
+    private static final String ON_DEMAND = "OnDemand";
 
     @Autowired
     private DockerRegistryDao registryDao;
@@ -86,6 +91,9 @@ public class ToolManagerTest extends AbstractManagerTest {
 
     @Autowired
     private InstanceOfferManager instanceOfferManager;
+
+    @Autowired
+    private CloudRegionManager cloudRegionManager;
 
     @Mock
     private DockerClient dockerClient;
@@ -103,6 +111,14 @@ public class ToolManagerTest extends AbstractManagerTest {
         MockitoAnnotations.initMocks(this);
 
         TestUtils.configureDockerClientMock(dockerClient, dockerClientFactory);
+
+        AWSRegionDTO regionVO = new AWSRegionDTO();
+        regionVO.setName(REGION_NAME);
+        regionVO.setRegionCode(REGION_CODE);
+        regionVO.setProvider(CloudProvider.AWS);
+
+        final AbstractCloudRegion region = cloudRegionManager.create(regionVO);
+        final AbstractCloudRegion anotherRegion = cloudRegionManager.create(regionVO);
 
         firstRegistry = new DockerRegistry();
         firstRegistry.setPath(TEST_REPO);
@@ -137,10 +153,12 @@ public class ToolManagerTest extends AbstractManagerTest {
 
         InstanceType instanceType = new InstanceType();
         instanceType.setName(TEST_ALLOWED_INSTANCE_TYPE);
-        instanceType.setRegionId(REGION_ID);
+        instanceType.setRegionId(region.getId());
+        instanceType.setTermType(ON_DEMAND);
         InstanceType anotherRegionInstanceType = new InstanceType();
         anotherRegionInstanceType.setName(TEST_ANOTHER_REGION_ALLOWED_INSTANCE_TYPE);
-        anotherRegionInstanceType.setRegionId(ANOTHER_REGION_ID);
+        anotherRegionInstanceType.setTermType(ON_DEMAND);
+        anotherRegionInstanceType.setRegionId(anotherRegion.getId());
         List<InstanceType> instanceTypes = Arrays.asList(instanceType, anotherRegionInstanceType);
         instanceOfferManager.updateOfferedInstanceTypes(instanceTypes);
     }

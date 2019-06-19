@@ -27,7 +27,7 @@ spec:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /opt/docker-comp/wd
+            - mountPath: ${CP_DOCKER_COMP_WORKING_DIR}
               name: docker-comp-wd
           lifecycle:
             preStop:
@@ -36,6 +36,6 @@ spec:
       volumes:
         - name: docker-comp-wd
           hostPath:
-            path: /opt/docker-comp/wd
+            path: ${CP_DOCKER_COMP_WORKING_DIR}
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

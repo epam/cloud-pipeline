@@ -58,7 +58,9 @@ export const SearchGroupTypes = {
       SearchItemTypes.s3File,
       SearchItemTypes.s3Bucket,
       SearchItemTypes.NFSFile,
-      SearchItemTypes.NFSBucket
+      SearchItemTypes.NFSBucket,
+      SearchItemTypes.gsFile,
+      SearchItemTypes.gsStorage
     ],
     icon: 'file',
     title: titleFn('Data', '')

@@ -298,7 +298,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             for item in page['DeleteMarkers']:
                 if 'IsLatest' in item and item['IsLatest']:
                     return item
-        raise RuntimeError('Latest version in the buckets is not a delete marker. Please specify "--version" parameter.')
+        raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
 
 
 class DeleteManager(StorageItemManager, AbstractDeleteManager):
@@ -499,6 +499,12 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         item.name = name
         item.path = name
         return item
+
+    def get_items(self, relative_path):
+        return S3BucketOperations.get_items(self.bucket, session=self.session)
+
+    def get_file_tags(self, relative_path):
+        return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(self.session, self.bucket), relative_path)
 
 
 class ObjectTaggingManager(StorageItemManager):

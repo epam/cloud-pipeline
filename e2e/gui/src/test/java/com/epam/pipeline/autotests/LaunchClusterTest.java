@@ -17,9 +17,11 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.Template;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.appears;
@@ -27,9 +29,11 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
+public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest implements Authorization {
 
     private final String autoScaledSettingForm = "Auto-scaled cluster";
 
@@ -43,6 +47,21 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest {
     @Override
     public void removeNode() {
         super.removeNode();
+    }
+
+    @BeforeClass
+    public void setPreferences() {
+        loginAsAdminAndPerform(() ->
+                navigationMenu()
+                        .settings()
+                        .switchToPreferences()
+                        .switchToAutoscaling()
+                        .setScaleDownTimeout("30")
+                        .setScaleUpTimeout("30")
+                        .save()
+                        .sleep(2, SECONDS)
+                        .click(OK)
+        );
     }
 
     @Test

@@ -159,7 +159,7 @@ class TestRmFileFolder(object):
     def test_remove_from_wrong_scheme(self):
         try:
             error = pipe_storage_rm("s4://{}/test.txt".format(self.bucket_name), expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az".')
+            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_rm_wrong_scheme, e.message))
 

@@ -327,7 +327,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Menu>
         </Row>
         <div
-          className={styles.fullHeightContainer}>
+          className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
           {
             React.Children.map(
               this.props.children,

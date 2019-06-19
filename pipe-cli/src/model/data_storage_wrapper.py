@@ -30,6 +30,7 @@ from ..config import ConfigNotFoundError
 from ..utilities.storage.s3 import S3BucketOperations
 from ..utilities.storage.local import LocalOperations
 from ..utilities.storage.azure import AzureListingManager, AzureDeleteManager, AzureBucketOperations
+from ..utilities.storage.gs import GsRestoreManager, GsListingManager, GsDeleteManager, GsBucketOperations
 from ..utilities.storage.common import StorageOperations
 from .data_storage_wrapper_type import WrapperType
 import shutil
@@ -54,6 +55,12 @@ class DataStorageWrapper(object):
         (WrapperType.LOCAL, WrapperType.AZURE): AzureBucketOperations.get_upload_manager,
         (WrapperType.FTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
+
+        (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
+        (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
+        (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -90,7 +97,8 @@ class DataStorageWrapper(object):
     def __get_storage_wrapper(cls, bucket, relative_path, *args, **kwargs):
         _suppliers = {
             WrapperType.S3: S3BucketWrapper.build_wrapper,
-            WrapperType.AZURE: AzureBucketWrapper.build_wrapper
+            WrapperType.AZURE: AzureBucketWrapper.build_wrapper,
+            WrapperType.GS: GsBucketWrapper.build_wrapper,
         }
         if bucket.type in _suppliers:
             supplier = _suppliers[bucket.type]
@@ -214,12 +222,31 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def exists(self):
         return self.exists_flag
 
+    def get_items(self):
+        return self.get_list_manager().get_items(self.path)
+
+    def is_empty(self, relative=None):
+        if not self.exists():
+            return True
+        if self.is_file():
+            return False
+        if relative:
+            delimiter = StorageOperations.PATH_SEPARATOR
+            path = self.path.rstrip(delimiter) + delimiter + relative
+        else:
+            path = self.path
+        return not self.get_list_manager().folder_exists(path)
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
     @abstractmethod
     def get_restore_manager(self):
         pass
 
     @abstractmethod
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         pass
 
     @abstractmethod
@@ -253,9 +280,6 @@ class S3BucketWrapper(CloudDataStorageWrapper):
             return not S3BucketOperations.path_exists(self, relative, session=self.session)
         return self.is_empty_flag
 
-    def get_items(self):
-        return S3BucketOperations.get_items(self, session=self.session)
-
     def get_file_download_uri(self, relative_path):
         download_url_model = None
         try:
@@ -278,7 +302,7 @@ class S3BucketWrapper(CloudDataStorageWrapper):
     def get_restore_manager(self):
         return S3BucketOperations.get_restore_manager(self)
 
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         return S3BucketOperations.get_list_manager(self, show_versions=show_versions)
 
     def get_delete_manager(self, versioning):
@@ -297,26 +321,11 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         wrapper = AzureBucketWrapper(root_bucket, relative_path)
         if init:
-            AzureBucketOperations.init_wrapper(wrapper)
+            StorageOperations.init_wrapper(wrapper, versioning=versioning)
         return wrapper
 
     def get_type(self):
         return WrapperType.AZURE
-
-    def is_empty(self, relative=None):
-        if not self.exists():
-            return True
-        if self.is_file():
-            return False
-        if relative:
-            delimiter = StorageOperations.PATH_SEPARATOR
-            path = self.path.rstrip(delimiter) + delimiter + relative
-        else:
-            path = self.path
-        return not self.get_list_manager().folder_exists(path)
-
-    def get_items(self):
-        return self.get_list_manager().get_items(self.path)
 
     def get_restore_manager(self):
         raise RuntimeError('Versioning is not supported by AZURE cloud provider')
@@ -335,6 +344,31 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
         if write or not self.service:
             self.service = AzureBucketOperations.get_blob_service(self.bucket, read, write)
         return self.service
+
+
+class GsBucketWrapper(CloudDataStorageWrapper):
+
+    @classmethod
+    def build_wrapper(cls, root_bucket, relative_path, init=True, *args, **kwargs):
+        wrapper = GsBucketWrapper(root_bucket, relative_path)
+        if init:
+            StorageOperations.init_wrapper(wrapper, *args, **kwargs)
+        return wrapper
+
+    def get_type(self):
+        return WrapperType.GS
+
+    def get_restore_manager(self):
+        return GsRestoreManager(self._storage_client(write=True, versioning=True), self)
+
+    def get_list_manager(self, show_versions=False):
+        return GsListingManager(self._storage_client(versioning=show_versions), self.bucket, show_versions)
+
+    def get_delete_manager(self, versioning):
+        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), self.bucket)
+
+    def _storage_client(self, read=True, write=False, versioning=False):
+        return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
 
 
 class LocalFileSystemWrapper(DataStorageWrapper):

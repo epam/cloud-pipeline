@@ -415,10 +415,20 @@ public final class MessageConstants {
     public static final String ERROR_AZURE_STORAGE_ACC_REQUIRED = "error.azure.storage.account.required";
     public static final String ERROR_AZURE_STORAGE_KEY_REQUIRED = "error.azure.storage.key.required";
     public static final String ERROR_AZURE_INSTANCE_NOT_FOUND = "error.azure.instance.not.found";
+    public static final String ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE = "error.azure.resource.is.not.vm.like";
+    public static final String ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS = "error.azure.scale.set.doesnt.contain.vm";
     public static final String ERROR_AZURE_INSTANCE_NOT_RUNNING = "error.azure.instance.not.running";
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
+
+    //GCP
+    public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";
+    public static final String ERROR_GCP_IMP_ACC_REQUIRED = "error.gcp.impersonate.account";
+    public static final String ERROR_GCP_SSH_KEY_REQUIRED = "error.gcp.ssh.key.required";
+
+    public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
+    public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
 
     private MessageConstants() {
         // no-op

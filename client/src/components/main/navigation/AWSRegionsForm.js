@@ -73,6 +73,20 @@ const preProcessJSON = (value, throwError = false) => {
   return value;
 };
 
+function toJSON (obj, defaultValue) {
+  try {
+    return JSON.stringify(obj || defaultValue, null, ' ');
+  } catch (___) {}
+  return '';
+}
+
+function fromJSON (obj, defaultValue) {
+  try {
+    return JSON.parse(obj);
+  } catch (___) {}
+  return defaultValue;
+}
+
 @inject('awsRegions', 'availableCloudRegions', 'cloudProviders')
 @observer
 export default class AWSRegionsForm extends React.Component {
@@ -164,7 +178,9 @@ export default class AWSRegionsForm extends React.Component {
 
   @computed
   get currentRegion () {
-    return this.regions.filter(r => r.id === this.state.currentRegionId)[0];
+    return this.regions
+      .filter(r => r.id === this.state.currentRegionId)
+      .map(r => ({...r, customInstanceTypes: toJSON(r.customInstanceTypes, [])}))[0];
   };
 
   @computed
@@ -238,6 +254,7 @@ export default class AWSRegionsForm extends React.Component {
   onSaveRegion = async (region) => {
     const fileShareMounts = region.fileShareMounts;
     region.fileShareMounts = undefined;
+    region.customInstanceTypes = fromJSON(region.customInstanceTypes, []);
     const hide = message.loading('Saving region properties...', -1);
     const request = new AWSRegionUpdate(this.state.currentRegionId);
     await request.send(region);
@@ -349,6 +366,7 @@ export default class AWSRegionsForm extends React.Component {
     region.provider = this.state.newRegion;
     const fileShareMounts = region.fileShareMounts;
     region.fileShareMounts = undefined;
+    region.customInstanceTypes = fromJSON(region.customInstanceTypes, []);
     const hide = message.loading('Creating region...', -1);
     const request = new AWSRegionCreate();
     await request.send(region);
@@ -615,6 +633,26 @@ class AWSRegionForm extends React.Component {
       'azureApiUrl',
       'priceOfferId',
       'fileShareMounts'
+    ],
+    GCP: [
+      'regionId',
+      'name',
+      'default',
+      'authFile',
+      'sshPublicKeyPath',
+      'project',
+      'applicationName',
+      'tempCredentialsRole',
+      'fileShareMounts',
+      'customInstanceTypes',
+      'corsRules',
+      'policy',
+      {
+        key: 'backupDuration',
+        visible: form => form.getFieldValue('versioningEnabled'),
+        required: form => form.getFieldValue('versioningEnabled')
+      },
+      'versioningEnabled',
     ]
   };
 
@@ -743,6 +781,9 @@ class AWSRegionForm extends React.Component {
       check('meterRegionName', checkStringValue) ||
       check('azureApiUrl', checkStringValue) ||
       check('priceOfferId', checkStringValue) ||
+      check('project', checkStringValue) ||
+      check('applicationName', checkStringValue) ||
+      check('customInstanceTypes', checkJSONValue) ||
       check('fileShareMounts', checkMounts);
   };
 
@@ -898,6 +939,7 @@ class AWSRegionForm extends React.Component {
 
   corsRulesEditor;
   policyEditor;
+  customInstanceTypesEditor;
 
   initializeCorsRulesEditor = (editor) => {
     this.corsRulesEditor = editor;
@@ -905,6 +947,10 @@ class AWSRegionForm extends React.Component {
 
   initializePolicyEditor = (editor) => {
     this.policyEditor = editor;
+  };
+
+  initializeCustomInstanceTypesEditor = (editor) => {
+    this.customInstanceTypesEditor = editor;
   };
 
   initializeCloudRegionFileShareMountsComponent = (component) => {
@@ -1263,6 +1309,7 @@ class AWSRegionForm extends React.Component {
                       return (
                         <Select.Option key={r} value={r}>
                           <AWSRegionTag
+                            provider={this.provider}
                             regionUID={r} style={{marginRight: 5}} />{r}
                         </Select.Option>
                       );
@@ -1448,6 +1495,40 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
+              label="Project"
+              required={this.providerSupportsField('project')}
+              {...this.formItemLayout}
+              className={this.getFieldClassName('project', 'edit-region-project-container')}>
+              {getFieldDecorator('project', {
+                initialValue: this.props.region.project,
+                rules: [{
+                  required: this.providerSupportsField('project'),
+                  message: 'Project is required'
+                }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Application name"
+              required={this.providerSupportsField('applicationName')}
+              {...this.formItemLayout}
+              className={this.getFieldClassName('applicationName', 'edit-region-application-name-container')}>
+              {getFieldDecorator('applicationName', {
+                initialValue: this.props.region.applicationName,
+                rules: [{
+                  required: this.providerSupportsField('applicationName'),
+                  message: 'Application name is required'
+                }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
               label="Temp Credentials Role"
               required={this.providerSupportsField('tempCredentialsRole')}
               {...this.formItemLayout}
@@ -1596,6 +1677,24 @@ class AWSRegionForm extends React.Component {
                   disabled={this.props.pending} />
               )}
             </Form.Item>
+            <Form.Item
+              label="Custom instance types"
+              hasFeedback
+              {...this.formItemLayout}
+              className={this.getFieldClassName('customInstanceTypes', 'edit-region-custom-instance-types-container')}>
+              {getFieldDecorator('customInstanceTypes', {
+                initialValue: this.props.region.customInstanceTypes,
+                rules: [{
+                  validator: this.jsonValidation
+                }]
+              })(
+                <CodeEditorFormItem
+                  ref={this.initializeCustomInstanceTypesEditor}
+                  editorClassName={styles.codeEditor}
+                  editorLanguage="application/json"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
             <Row type="flex">
               <Col
                 xs={24}
@@ -1692,6 +1791,9 @@ class AWSRegionForm extends React.Component {
     if (this.policyEditor) {
       this.policyEditor.reset();
     }
+    if (this.customInstanceTypesEditor) {
+      this.customInstanceTypesEditor.reset();
+    }
     this.onFormFieldChanged();
     this.fetchPermissions();
   };
@@ -1785,6 +1887,7 @@ const MountOptions = {
 
 const DefaultMountOptions = {
   AWS: MountOptions.NFS,
+  GCP: MountOptions.NFS,
   AZURE: MountOptions.SMB
 };
 

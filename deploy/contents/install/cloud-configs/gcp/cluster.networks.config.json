@@ -1,0 +1,26 @@
+{
+  "regions": [
+    {
+      "name": "${CP_CLOUD_REGION_ID}",
+      "default": true,
+      "networks": {
+        "${CP_PREF_CLUSTER_INSTANCE_NETWORK}" : "${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}"
+      },
+      "proxies": [
+        ${CP_PREF_CLUSTER_PROXIES}
+      ],
+      "amis": [
+        {
+          "instance_mask": "gpu-*",
+          "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU}",
+          "init_script": "/opt/api/scripts/init_multicloud.sh"
+        },
+        {
+          "instance_mask": "*",
+          "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE}",
+          "init_script": "/opt/api/scripts/init_multicloud.sh"
+        }
+      ]
+    }
+  ]
+}

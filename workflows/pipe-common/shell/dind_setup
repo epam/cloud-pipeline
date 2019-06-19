@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DIND_SETUP_TASK="SetupDinD"
+
+pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
+
+######################################################
+# Check if this is a RPM Linux distribution
+######################################################
+/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+IS_RPM_BASED=$?
+
+######################################################
+# Install DIND dependencies
+######################################################
+_DIND_DEP_INSTALL_RESULT=0
+if [ $IS_RPM_BASED -eq 0 ]; then
+    yum install -y -q \
+                btrfs-progs \
+                e2fsprogs \
+                iptables \
+                iproute \
+                xfsprogs \
+                xz \
+                pigz \
+                kmod
+    _DIND_DEP_INSTALL_RESULT=$?
+else
+    apt install -y -qq \
+                btrfs-tools \
+                e2fsprogs \
+                iptables \
+                iproute2 \
+                xfsprogs \
+                xz-utils \
+                pigz \
+                kmod
+    _DIND_DEP_INSTALL_RESULT=$?
+fi
+
+if [ $_DIND_DEP_INSTALL_RESULT -ne 0 ]; then
+    pipe_log_fail "Unable to install DIND dependencies, aborting" "$DIND_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
+
+######################################################
+# Install docker
+######################################################
+
+[ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
+export DOCKER_CHANNEL="stable"
+export DOCKER_VERSION="18.09.6"
+export DOCKER_ARCH="x86_64"
+
+wget -q -O docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}.tgz"
+
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Unable to install download docker distribution ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
+    exit 1
+fi
+
+tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/
+rm -f docker.tgz
+
+pipe_log_info "Docker installed: ${DOCKER_CHANNEL}/${DOCKER_ARCH}/docker-${DOCKER_VERSION}" "$DIND_SETUP_TASK"
+
+######################################################
+# Fix dockerd for DIND
+######################################################
+
+export DIND_COMMIT=37498f009d8bf25fbb6199e8ccd34bed84f2874b
+wget -q -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
+
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Unable to install download dind fix $DIND_COMMIT" "$DIND_SETUP_TASK"
+    exit 1
+fi
+
+chmod +x /usr/local/bin/dind
+\cp $COMMON_REPO_DIR/shell/dind_setup_modprobe /usr/local/bin/modprobe
+chmod +x /usr/local/bin/modprobe
+
+pipe_log_info "DIND fix installed: $DIND_COMMIT" "$DIND_SETUP_TASK"
+
+######################################################
+# Setup docker daemon options
+######################################################
+DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
+mkdir -p "$DIND_DATA_ROOT"
+mkdir -p "/etc/docker"
+cat <<EOT > /etc/docker/daemon.json
+{
+  "data-root": "$DIND_DATA_ROOT",
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOT
+
+######################################################
+# Start dockerd
+######################################################
+nohup dind_setup_entrypoint dockerd > /var/log/dockerd-entrypoint.log 2>&1 &
+
+pipe_log_success "Docker daemon started" "$DIND_SETUP_TASK"

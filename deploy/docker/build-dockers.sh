@@ -185,6 +185,20 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
+# VM Monitor
+CP_VM_MONITOR_DIST_NAME=${CP_VM_MONITOR_DIST_NAME:-"$CP_DIST_REPO_NAME:vm-monitor-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \
+                -t "$CP_VM_MONITOR_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_VM_MONITOR_DIST_NAME"
+
+# Share Service
+CP_SHARE_SRV_DIST_NAME=${CP_SHARE_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:share-srv-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \
+                -t "$CP_SHARE_SRV_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_SHARE_SRV_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
@@ -215,6 +229,9 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME
 
 # Cromwell
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/cromwell "$CP_DIST_REPO_NAME:tools-base-cromwell-${DOCKERS_VERSION}" "library/cromwell:latest"
+
+# Nextflow
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest"
 
 # Luigi
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:tools-base-luigi-${DOCKERS_VERSION}" "library/luigi:latest"

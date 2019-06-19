@@ -53,7 +53,7 @@ class Tool:
         self.endpoints = []
         self.registryId = registryId
         self.toolGroupId = toolGroupId
-        self.description = ''   
+        self.description = ''
         self.shortDescription = ''
         self.defaultCommand = ''
         self.tool_id = 0

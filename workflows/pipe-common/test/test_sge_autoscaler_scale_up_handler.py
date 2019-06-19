@@ -31,11 +31,12 @@ instance_disk = 'instance_disk'
 instance_type = 'instance_type'
 instance_image = 'instance_image'
 price_type = 'price_type'
+instance_cores = 4
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
                                             instance_type=instance_type, instance_image=instance_image,
-                                            price_type=price_type, polling_timeout=0)
+                                            price_type=price_type, instance_cores=instance_cores, polling_timeout=0)
 
 
 def setup_function():
@@ -80,3 +81,9 @@ def test_scale_up_add_host_to_storage():
     scale_up_handler.scale_up()
 
     assert [HOSTNAME] == host_storage.load_hosts()
+
+
+def test_scale_up_increase_parallel_environment_slots():
+    scale_up_handler.scale_up()
+
+    grid_engine.increase_parallel_environment_slots.assert_called_with(instance_cores)

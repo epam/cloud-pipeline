@@ -71,6 +71,14 @@ cat <<EOT > /etc/docker/daemon.json
 }
 EOT
 
+if [ "$http_proxy" ] || [ "$https_proxy" ]; then
+  mkdir -p /etc/systemd/system/docker.service.d
+cat > /etc/systemd/system/docker.service.d/http-proxy.conf << EOF
+  [Service]
+  Environment="http_proxy=$http_proxy" "https_proxy=$https_proxy" "no_proxy=$no_proxy"
+EOF
+fi
+
 #6.2 - Kube
 yum install -y \
             kubeadm-1.7.5-0.x86_64 \
@@ -107,10 +115,25 @@ if [ "$CP_KUBE_MASTER_ETCD_HOST_PATH" ]; then
   echo "Symlink created from $CP_KUBE_MASTER_ETCD_HOST_PATH to $CP_KUBE_MASTER_ETCD_DEFAULT_HOST_PATH"
 fi
 
+# Temporary disable http/https/no proxy settings, as kubeadm will put them into /etc/kubernetes/manifests/kube-apiserver.yaml
+# For 99% of the use-cases this is not desired as it breaks inter-node communication
+# After kubeadm is done - values will be restored (this can be controlled with --keep-kubedm-proxies option)
+bkp_http_proxy="$http_proxy"
+bkp_https_proxy="$https_proxy"
+bkp_no_proxy="$no_proxy"
+if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
+  unset http_proxy https_proxy no_proxy
+fi
+
 FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
 kubeadm init --pod-network-cidr="$FLANNEL_CIDR" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
 
 sleep 30
+
+export http_proxy="$bkp_http_proxy"
+export https_proxy="$bkp_https_proxy"
+export no_proxy="$bkp_no_proxy"
+unset bkp_http_proxy bkp_https_proxy bkp_no_proxy
 
 #10
 wget -q "https://raw.githubusercontent.com/coreos/flannel/a154d2f68edd511498c948e33c8cbde20a5901ee/Documentation/kube-flannel.yml" -O /opt/kube-flannel.yml
@@ -137,6 +160,6 @@ sleep 10
 # Allow services to bind to 80+ ports, as the default range is 30000-32767
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
 # kubelet monitors /etc/kubernetes/manifests folder, so kube-api pod will be recreated automatically
-sed '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
+sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
 
 sleep 30

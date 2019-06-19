@@ -24,6 +24,7 @@ import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
@@ -257,11 +258,9 @@ export default class PipelineRunPreview extends React.Component {
               )
             });
           }
-          if (instance.spot !== undefined) {
-            details.push(
-              {key: 'Price type', value: `${instance.spot}` === 'true' ? 'Spot' : 'On-demand'}
-            );
-          }
+          details.push(
+            {key: 'Price type', value: getRunSpotTypeName({instance})}
+          );
           if (instance.nodeDisk) {
             details.push({key: 'Disk', value: `${instance.nodeDisk}Gb`});
           }

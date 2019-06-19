@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
@@ -27,6 +26,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -46,8 +46,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -85,11 +84,14 @@ public class InstanceOfferManagerUnitTest {
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final String SPOT_AND_ON_DEMAND_TYPES = String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND);
-    private final InstanceType m4InstanceType = instanceType(M4_LARGE, REGION_ID);
-    private final InstanceType m5InstanceType = instanceType(M5_LARGE, REGION_ID);
-    private final InstanceType t2InstanceType = instanceType(T2_LARGE, REGION_ID);
-    private final InstanceType dv3InstanceType = instanceType(DV3, ANOTHER_REGION_ID);
+    private static final String TERM_TYPE = "OnDemand";
+
     private final AbstractCloudRegion defaultRegion = region(REGION_ID);
+    private final AbstractCloudRegion anotherRegion = region(ANOTHER_REGION_ID);
+    private final InstanceType m4InstanceType = instanceType(M4_LARGE, defaultRegion);
+    private final InstanceType m5InstanceType = instanceType(M5_LARGE, defaultRegion);
+    private final InstanceType t2InstanceType = instanceType(T2_LARGE, defaultRegion);
+    private final InstanceType dv3InstanceType = instanceType(DV3, anotherRegion);
 
     private final InstanceOfferDao instanceOfferDao = mock(InstanceOfferDao.class);
     private final PipelineVersionManager versionManager = mock(PipelineVersionManager.class);
@@ -105,9 +107,11 @@ public class InstanceOfferManagerUnitTest {
 
     @Before
     public void setUp() {
+        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
+        when(cloudRegionManager.load(defaultRegion.getId())).thenReturn(defaultRegion);
+        when(cloudRegionManager.load(anotherRegion.getId())).thenReturn(anotherRegion);
         instanceOfferManager.updateOfferedInstanceTypes(Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType,
                 dv3InstanceType));
-        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
     }
 
     @Test
@@ -124,10 +128,10 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
+        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
-                instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null);
+                instanceOfferManager.getAllowedInstanceAndPriceTypes(null, null, false);
 
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
@@ -148,10 +152,10 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(allInstanceTypes);
+        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
         final AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
-                instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null);
+                instanceOfferManager.getAllowedInstanceAndPriceTypes(TOOL_ID, null, false);
 
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), is(allowedInstanceTypes));
         assertThat(allowedInstanceAndPriceTypes.getAllowedInstanceDockerTypes(), is(allowedInstanceDockerTypes));
@@ -160,16 +164,16 @@ public class InstanceOfferManagerUnitTest {
 
     @Test
     public void getAllowedInstanceAndPriceTypesShouldLoadInstanceTypesForSingleRegionIfItIsSpecified() {
-        when(instanceOfferDao.loadInstanceTypes(any())).thenReturn(Collections.emptyList());
+        when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
         when(contextualPreferenceManager.search(any(), any()))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID);
+        instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID, false);
 
-        ArgumentCaptor<InstanceOfferRequestVO> argument = ArgumentCaptor.forClass(InstanceOfferRequestVO.class);
-        verify(instanceOfferDao).loadInstanceTypes(argument.capture());
-        final InstanceOfferRequestVO request = argument.getValue();
-        assertThat(request.getRegionId(), is(REGION_ID));
+        ArgumentCaptor<Long> argument = ArgumentCaptor.forClass(Long.class);
+        verify(cloudFacade).getAllInstanceTypes(argument.capture(), anyBoolean());
+        final Long regionId = argument.getValue();
+        assertThat(regionId, is(REGION_ID));
     }
 
     @Test
@@ -177,7 +181,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, REGION_ID));
+        assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -186,7 +190,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertFalse(instanceOfferManager.isInstanceAllowed(T2_LARGE, REGION_ID));
+        assertFalse(instanceOfferManager.isInstanceAllowed(T2_LARGE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -195,7 +199,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, S2_PATTERN));
 
-        assertFalse(instanceOfferManager.isInstanceAllowed(S2_LARGE, REGION_ID));
+        assertFalse(instanceOfferManager.isInstanceAllowed(S2_LARGE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -204,7 +208,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isInstanceAllowed(DV3, REGION_ID));
+        assertFalse(instanceOfferManager.isInstanceAllowed(DV3, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -213,7 +217,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertTrue(instanceOfferManager.isInstanceAllowed(DV3, ANOTHER_REGION_ID));
+        assertTrue(instanceOfferManager.isInstanceAllowed(DV3, ANOTHER_REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -222,8 +226,8 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isInstanceAllowed(DV3, null));
-        assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, null));
+        assertFalse(instanceOfferManager.isInstanceAllowed(DV3, null, false));
+        assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, null, false));
         verify(contextualPreferenceManager, times(2)).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -232,7 +236,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, REGION_ID));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -241,7 +245,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(T2_LARGE, TOOL_RESOURCE, REGION_ID));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(T2_LARGE, TOOL_RESOURCE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -250,7 +254,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, null, REGION_ID));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, null, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
@@ -259,7 +263,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, S2_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(S2_LARGE, TOOL_RESOURCE, REGION_ID));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(S2_LARGE, TOOL_RESOURCE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -268,7 +272,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, REGION_ID));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -277,7 +281,7 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, ANOTHER_REGION_ID));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, ANOTHER_REGION_ID, false));
         verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -286,8 +290,8 @@ public class InstanceOfferManagerUnitTest {
         when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, null));
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, null));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, null, false));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, null, false));
         verify(contextualPreferenceManager, times(2)).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
     }
 
@@ -318,16 +322,18 @@ public class InstanceOfferManagerUnitTest {
         verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(null));
     }
 
-    private InstanceType instanceType(final String name, final Long regionId) {
+    private InstanceType instanceType(final String name, final AbstractCloudRegion region) {
         final InstanceType instanceType = new InstanceType();
         instanceType.setName(name);
-        instanceType.setRegionId(regionId);
+        instanceType.setTermType(TERM_TYPE);
+        instanceType.setRegionId(region.getId());
         return instanceType;
     }
 
     private AwsRegion region(final Long id) {
         final AwsRegion region = new AwsRegion();
         region.setId(id);
+        region.setProvider(CloudProvider.AWS);
         return region;
     }
 }

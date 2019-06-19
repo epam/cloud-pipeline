@@ -86,6 +86,9 @@ if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
         create_kube_resource $K8S_SPECS_HOME/cp-dns-autoscale/cp-dns-autoscale-dpl.yaml
         print_info "-> Waiting for the DNS autoscaler to initialize"
         wait_for_deployment "dns-autoscaler"
+
+        print_info "-> Configuring Kube DNS well-known entries"
+        prepare_kube_dns "$CP_DNS_STATIC_ENTRIES"
     fi
 else
     print_info "Kube master installation skipped"
@@ -134,6 +137,7 @@ else
 fi
 echo
 
+
 ##########
 # Setup config for Kube
 ##########
@@ -153,64 +157,86 @@ print_ok "[Creating roles to the Kube nodes]"
 
 KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
 
-# TODO: allow to specify node name for different roles"
-
 # Allow to schedule API DB to the master
-print_info "-> Assigning cloud-pipeline/cp-api-db to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-api-db="true" --overwrite
+CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-api-db to $CP_DB_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DB_KUBE_NODE_NAME" cloud-pipeline/cp-api-db="true" --overwrite
 
 # Allow to schedule API Service to the master
-print_info "-> Assigning cloud-pipeline/cp-api-srv to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-api-srv="true" --overwrite
+CP_API_SRV_KUBE_NODE_NAME=${CP_API_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-api-srv to $CP_API_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_API_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-api-srv="true" --overwrite
 
 # Allow to schedule GitLab to the master
-print_info "-> Assigning cloud-pipeline/cp-git to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-git="true" --overwrite
+CP_GITLAB_KUBE_NODE_NAME=${CP_GITLAB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-git to $CP_GITLAB_KUBE_NODE_NAME"
+kubectl label nodes "$CP_GITLAB_KUBE_NODE_NAME" cloud-pipeline/cp-git="true" --overwrite
 
 # Allow to schedule GitLab to API sync job to the master
-print_info "-> Assigning cloud-pipeline/cp-git-sync to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-git-sync="true" --overwrite
+CP_SYNC_GIT_KUBE_NODE_NAME=${CP_SYNC_GIT_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-git-sync to $CP_SYNC_GIT_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SYNC_GIT_KUBE_NODE_NAME" cloud-pipeline/cp-git-sync="true" --overwrite
 
 # Allow to schedule basic IdP to the master
-print_info "-> Assigning cloud-pipeline/cp-idp to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-idp="true" --overwrite
+CP_IDP_KUBE_NODE_NAME=${CP_IDP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-idp to $CP_IDP_KUBE_NODE_NAME"
+kubectl label nodes "$CP_IDP_KUBE_NODE_NAME" cloud-pipeline/cp-idp="true" --overwrite
 
 # Allow to schedule EDGE to the master
-print_info "-> Assigning cloud-pipeline/cp-edge to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
+CP_EDGE_KUBE_NODE_NAME=${CP_EDGE_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-edge to $CP_EDGE_KUBE_NODE_NAME"
+kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/cp-edge="true" --overwrite
+kubectl label nodes "$CP_EDGE_KUBE_NODE_NAME" cloud-pipeline/role="EDGE" --overwrite
 
 # Allow to schedule notifier to the master
-print_info "-> Assigning cloud-pipeline/cp-notifier to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-notifier="true" --overwrite
+CP_NOTIFIER_KUBE_NODE_NAME=${CP_NOTIFIER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-notifier to $CP_NOTIFIER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_NOTIFIER_KUBE_NODE_NAME" cloud-pipeline/cp-notifier="true" --overwrite
 
 # Allow to schedule Docker registry to the master
-print_info "-> Assigning cloud-pipeline/cp-docker-registry to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-docker-registry="true" --overwrite
+CP_DOCKER_KUBE_NODE_NAME=${CP_DOCKER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-docker-registry to $CP_DOCKER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DOCKER_KUBE_NODE_NAME" cloud-pipeline/cp-docker-registry="true" --overwrite
 
 # Allow to schedule Docker comp scanner to the master
-print_info "-> Assigning cloud-pipeline/cp-docker-comp to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
+CP_DOCKER_COMP_KUBE_NODE_NAME=${CP_DOCKER_COMP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-docker-comp to $CP_DOCKER_COMP_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DOCKER_COMP_KUBE_NODE_NAME" cloud-pipeline/cp-docker-comp="true" --overwrite
 
 # Allow to schedule Clair scanner to the master
-print_info "-> Assigning cloud-pipeline/cp-clair to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-clair="true" --overwrite
+CP_CLAIR_KUBE_NODE_NAME=${CP_CLAIR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-clair to $CP_CLAIR_KUBE_NODE_NAME"
+kubectl label nodes "$CP_CLAIR_KUBE_NODE_NAME" cloud-pipeline/cp-clair="true" --overwrite
 
 # Allow to schedule Search ELK to the master
-print_info "-> Assigning cloud-pipeline/cp-search-elk to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-search-elk="true" --overwrite
+CP_SEARCH_ELK_KUBE_NODE_NAME=${CP_SEARCH_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-search-elk to $CP_SEARCH_ELK_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SEARCH_ELK_KUBE_NODE_NAME" cloud-pipeline/cp-search-elk="true" --overwrite
 
 # Allow to schedule Search service to the master
-print_info "-> Assigning cloud-pipeline/cp-search-srv to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
+CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
 # Allow to schedule Heapster ELK to the master
-print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-heapster-elk="true" --overwrite
+CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
+kubectl label nodes "$CP_HEAPSTER_ELK_KUBE_NODE_NAME" cloud-pipeline/cp-heapster-elk="true" --overwrite
 
 # Allow to schedule Heapster service to the master
-print_info "-> Assigning cloud-pipeline/cp-heapster to $KUBE_MASTER_NODE_NAME"
-kubectl label nodes "$KUBE_MASTER_NODE_NAME" cloud-pipeline/cp-heapster="true" --overwrite
+CP_HEAPSTER_KUBE_NODE_NAME=${CP_HEAPSTER_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-heapster to $CP_HEAPSTER_KUBE_NODE_NAME"
+kubectl label nodes "$CP_HEAPSTER_KUBE_NODE_NAME" cloud-pipeline/cp-heapster="true" --overwrite
+
+# Allow to schedule VM Monitor service to the master
+CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-vm-monitor to $CP_VM_MONITOR_KUBE_NODE_NAME"
+kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-vm-monitor="true" --overwrite
+
+# Allow to schedule Share service to the master
+CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_VM_MONITOR_KUBE_NODE_NAME"
+kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
 
 echo
 
@@ -299,8 +325,20 @@ if is_service_requested cp-idp; then
                                         $CP_IDP_INTERNAL_HOST
 
         print_info "-> Deploying IdP"
+        set_kube_service_external_ip CP_IDP_SVC_EXTERNAL_IP_LIST \
+                                     CP_IDP_NODE_IP \
+                                     CP_IDP_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-idp"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-idp"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-pod.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-idp/cp-idp-svc.yaml --svc
+        expose_cluster_port "cp-idp" \
+                            "${CP_IDP_EXTERNAL_PORT}" \
+                            "8080"
+        register_svc_custom_names_in_cluster "cp-idp" "$CP_IDP_EXTERNAL_HOST"
 
         print_info "-> Waiting for IdP to initialize"
         wait_for_deployment "cp-idp"
@@ -327,7 +365,7 @@ if is_service_requested cp-heapster; then
 
     print_info "-> Deleting existing instance of Heapster ELK service"
     delete_deployment_and_service   "cp-heapster-elk" \
-                                    "/opt/heapster-elk"    
+                                    "/opt/heapster-elk"
 
     print_info "-> Deleting existing instance of Heapster service"
     delete_deployment_and_service   "cp-heapster" \
@@ -372,28 +410,23 @@ if is_service_requested cp-api-srv; then
                             "$PSG_PASS" \
                             "$PSG_DB"
 
-        print_info "-> Creating self-signed SSL certificate for API Service (${CP_API_SRV_EXTERNAL_HOST}, ${CP_API_SRV_INTERNAL_HOST})"
-        generate_self_signed_key_pair   $CP_API_SRV_CERT_DIR/ssl-private-key.pem \
-                                        $CP_API_SRV_CERT_DIR/ssl-public-cert.pem \
-                                        $CP_API_SRV_EXTERNAL_HOST \
-                                        $CP_API_SRV_INTERNAL_HOST && \
-        openssl pkcs12 -export  -in $CP_API_SRV_CERT_DIR/ssl-public-cert.pem \
-                                -inkey $CP_API_SRV_CERT_DIR/ssl-private-key.pem \
-                                -out $CP_API_SRV_CERT_DIR/cp-api-srv-ssl.p12 \
-                                -name ssl \
-                                -password pass:changeit
 
-        print_info "-> Creating self-signed SSO certificate for API Service (${CP_API_SRV_EXTERNAL_HOST}, ${CP_API_SRV_INTERNAL_HOST})"
-        generate_self_signed_key_pair   force_self_sign \
-                                        $CP_API_SRV_CERT_DIR/sso-private-key.pem \
-                                        $CP_API_SRV_CERT_DIR/sso-public-cert.pem \
-                                        $CP_API_SRV_EXTERNAL_HOST \
-                                        $CP_API_SRV_INTERNAL_HOST && \
-        openssl pkcs12 -export  -in $CP_API_SRV_CERT_DIR/sso-public-cert.pem \
-                                -inkey $CP_API_SRV_CERT_DIR/sso-private-key.pem \
-                                -out $CP_API_SRV_CERT_DIR/cp-api-srv-sso.p12 \
-                                -name sso \
-                                -password pass:changeit
+        generate_ssl_sso_certificates   "API" \
+                                        "${CP_API_SRV_CERT_DIR}" \
+                                        "${CP_API_SRV_EXTERNAL_HOST}" \
+                                        "${CP_API_SRV_INTERNAL_HOST}" \
+                                        "api"
+
+        configure_idp_metadata  "API" \
+                                "${CP_API_SRV_FED_META_DIR}/cp-api-srv-fed-meta.xml" \
+                                "${CP_IDP_EXTERNAL_HOST}" \
+                                "${CP_IDP_EXTERNAL_PORT}" \
+                                "${CP_IDP_INTERNAL_HOST}" \
+                                "${CP_IDP_INTERNAL_PORT}" \
+                                "${CP_API_SRV_EXTERNAL_HOST}" \
+                                "${CP_API_SRV_EXTERNAL_PORT}" \
+                                "${CP_API_SRV_CERT_DIR}" \
+                                "pipeline"
 
         print_info "-> Creating RSA key pair (JWT signing)"
         generate_rsa_key_pair   $CP_API_SRV_CERT_DIR/jwt.key.private \
@@ -401,37 +434,21 @@ if is_service_requested cp-api-srv; then
                                 "stringify" \
                                 $CP_API_SRV_CERT_DIR/jwt.key.x509
 
-
-        print_info "-> Configuring SSO metadata for the API Service"
-        if [ -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
-            print_warn "SSO Metadata already exists at $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml, it will be reused"
-            CP_API_SRV_FED_META_EXISTS=1
-        else
-            print_info "-> Trying to configure SSO metadata using basic IdP (from https://$CP_IDP_INTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/metadata)"
-            mkdir -p $CP_API_SRV_FED_META_DIR
-            # Waiting a bit to allow IdP to initizalize
-            sleep 5
-            # Note: HOST header is substituted with the external address, to generate valid binding URLs in the metadata file
-            curl    "https://$CP_IDP_INTERNAL_HOST:$CP_IDP_EXTERNAL_PORT/metadata" \
-                    -o $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml \
-                    -H "Host: $CP_IDP_EXTERNAL_HOST:$CP_IDP_EXTERNAL_PORT" \
-                    -s \
-                    -k
-            if [ $? -eq 0 ] && [ -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
-                CP_API_SRV_FED_META_EXISTS=1
-                idp_register_app "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/" \
-                                 "$CP_API_SRV_CERT_DIR/sso-public-cert.pem"
-            fi
-        fi
-
-        if [ -z "$CP_API_SRV_FED_META_EXISTS" ]; then
-            print_warn "SSO Metadata was not provided explicitly and/or error occured while getting it from the basic IdP"
-            print_warn "API service will attempt to start without metadata, but may fail to initialize"
-        fi
-
         print_info "-> Deploying API Service"
+        set_kube_service_external_ip CP_API_SRV_SVC_EXTERNAL_IP_LIST \
+                                     CP_API_SRV_NODE_IP \
+                                     CP_API_SRV_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-api-srv"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-api-srv"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-api-srv/cp-api-srv-svc.yaml --svc
+        expose_cluster_port "cp-api-srv" \
+                            "${CP_API_SRV_EXTERNAL_PORT}" \
+                            "8080"
+        register_svc_custom_names_in_cluster "cp-api-srv" "$CP_API_SRV_EXTERNAL_HOST"
 
         print_info "-> Waiting for API Service to initialize"
         wait_for_deployment "cp-api-srv"
@@ -528,8 +545,20 @@ if is_service_requested cp-docker-registry; then
                                         $CP_DOCKER_INTERNAL_HOST
 
         print_info "-> Deploying Docker registry"
+        set_kube_service_external_ip CP_DOCKER_SVC_EXTERNAL_IP_LIST \
+                                     CP_DOCKER_NODE_IP \
+                                     CP_DOCKER_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-docker-registry"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-docker-registry"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-docker-registry/cp-docker-registry-svc.yaml --svc
+        expose_cluster_port "cp-docker-registry" \
+                            "${CP_DOCKER_EXTERNAL_PORT}" \
+                            "443"
+        register_svc_custom_names_in_cluster "cp-docker-registry" "$CP_DOCKER_EXTERNAL_HOST"
 
         print_info "-> Waiting for Docker registry to initialize"
         wait_for_deployment "cp-docker-registry"
@@ -596,8 +625,26 @@ if is_service_requested cp-edge; then
         print_ok "   EDGE_EXTERNAL:         $EDGE_EXTERNAL"
 
         print_info "-> Deploying EDGE"
+        set_kube_service_external_ip CP_EDGE_SVC_EXTERNAL_IP_LIST \
+                                     CP_EDGE_NODE_IP \
+                                     CP_EDGE_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-edge"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-edge"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml --svc
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_EXTERNAL_PORT}" \
+                            "8080"
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_WEB_EXTERNAL_PORT}" \
+                            "8181"
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
+                            "8282"
+        register_svc_custom_names_in_cluster "cp-edge" "$CP_EDGE_EXTERNAL_HOST"
 
         print_info "-> Waiting for EDGE to initialize"
         wait_for_deployment "cp-edge"
@@ -615,9 +662,7 @@ if is_service_requested cp-edge; then
         echo $__edge_external_schema__
         kubectl label svc cp-edge $__edge_external_schema__
 
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge:" 
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSSH+ENDPOINTS: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nHTTP CONNECT:  $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_CONNECT_EXTERNAL_PORT"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
     fi
     echo
 fi
@@ -652,8 +697,20 @@ if is_service_requested cp-git; then
                                         $CP_GITLAB_INTERNAL_HOST
 
         print_info "-> Deploying GitLab"
+        set_kube_service_external_ip CP_GITLAB_SVC_EXTERNAL_IP_LIST \
+                                     CP_GITLAB_NODE_IP \
+                                     CP_GITLAB_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-git"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-git"
+            exit 1
+        fi
         create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-git/cp-git-svc.yaml --svc
+        expose_cluster_port "cp-git" \
+                            "${CP_GITLAB_EXTERNAL_PORT}" \
+                            "${CP_GITLAB_INTERNAL_PORT}"
+        register_svc_custom_names_in_cluster "cp-git" "$CP_GITLAB_EXTERNAL_HOST"
 
         # For gitlab we are waiting for endpoint to be alive (return redirect to IdP) as kube readiness probe cannot handle redirects
         print_info "-> Waiting for GitLab to initialize"
@@ -877,8 +934,86 @@ if is_service_requested cp-search; then
     echo
 fi
 
+# VM Monitor
+if is_service_requested cp-vm-monitor; then
+    print_ok "[Starting VM Monitor service deployment]"
+
+    print_info "-> Deleting existing instance of VM Monitor service"
+    delete_deployment_and_service   "cp-vm-monitor" \
+                                    "/opt/vm-monitor"
+    if is_install_requested; then
+        print_info "-> Deploying VM Monitor service"
+        create_kube_resource $K8S_SPECS_HOME/cp-vm-monitor/cp-vm-monitor-dpl.yaml
+
+        print_info "-> Waiting for VM Monitor service to initialize"
+        wait_for_deployment "cp-vm-monitor"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-vm-monitor: deployed"
+    fi
+    echo
+fi
+
 # WebDav
 
 # Share Service
+
+if is_service_requested cp-share-srv; then
+    print_ok "[Starting Share Service deployment]"
+
+    print_info "-> Deleting existing instance of Share Service"
+    delete_deployment_and_service   "cp-share-srv" \
+                                    "/opt/share-srv"
+    if is_install_requested; then
+        generate_ssl_sso_certificates   "Share" \
+                                        "${CP_SHARE_SRV_CERT_DIR}" \
+                                        "${CP_SHARE_SRV_EXTERNAL_HOST}" \
+                                        "${CP_SHARE_SRV_INTERNAL_HOST}" \
+                                        "share"
+
+        configure_idp_metadata  "Share" \
+                                "${CP_SHARE_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml" \
+                                "${CP_IDP_EXTERNAL_HOST}" \
+                                "${CP_IDP_EXTERNAL_PORT}" \
+                                "${CP_IDP_INTERNAL_HOST}" \
+                                "${CP_IDP_INTERNAL_PORT}" \
+                                "${CP_SHARE_SRV_EXTERNAL_HOST}" \
+                                "${CP_SHARE_SRV_EXTERNAL_PORT}" \
+                                "${CP_SHARE_SRV_CERT_DIR}" \
+                                "proxy"
+
+        print_info "-> Deploying Share Service service"
+
+        set_kube_service_external_ip CP_SHARE_SRV_SVC_EXTERNAL_IP_LIST \
+                                     CP_SHARE_SRV_NODE_IP \
+                                     CP_SHARE_SRV_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-share-srv"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-share-srv"
+            exit 1
+        fi
+
+        create_kube_resource $K8S_SPECS_HOME/cp-share-srv/cp-share-srv-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-share-srv/cp-share-srv-svc.yaml --svc
+        expose_cluster_port "cp-share-srv" \
+                            "${CP_SHARE_SRV_EXTERNAL_PORT}" \
+                            "8080"
+        register_svc_custom_names_in_cluster "cp-share-srv" "$CP_SHARE_SRV_EXTERNAL_HOST"
+
+        print_info "-> Waiting for Share Service to initialize"
+        wait_for_deployment "cp-share-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nShare Service: deployed"
+
+        print_info "-> Registering Share Service in API"
+        # Copy Share service metadata to API sso folder
+        cp "${CP_SHARE_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml" "${CP_API_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml"
+        api_register_share_service
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-share-srv: https://$CP_SHARE_SRV_EXTERNAL_HOST:$CP_SHARE_SRV_EXTERNAL_PORT/proxy/"
+    fi
+    echo
+fi
+
+
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY

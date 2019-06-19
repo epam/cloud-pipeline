@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -34,12 +36,15 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
+import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -134,11 +139,17 @@ public interface CloudPipelineAPI {
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
 
+    @GET("user/find")
+    Call<Result<List<PipelineUser>>> loadUsersByPrefix(@Query("prefix") String prefix);
+
     @POST("datastorage/tempCredentials/")
     Call<Result<TemporaryCredentials>> generateTemporaryCredentials(@Body List<DataStorageAction> actions);
 
     @GET("cloud/region")
     Call<Result<List<AbstractCloudRegion>>> loadAllRegions();
+
+    @GET("aws/region")
+    Call<Result<List<AwsRegion>>> loadAwsRegions();
 
     @GET("cloud/region/{regionId}")
     Call<Result<AbstractCloudRegion>> loadRegion(@Path("regionId") Long regionId);
@@ -173,4 +184,12 @@ public interface CloudPipelineAPI {
     @GET("pipeline/{id}/repository")
     Call<Result<List<GitRepositoryEntry>>> loadRepositoryContent(@Path(ID) Long id, @Query(VERSION) String version,
                                                                  @Query(PATH) String path);
+
+    // Node methods
+    @POST("cluster/node/filter")
+    Call<Result<List<NodeInstance>>> findNodes(@Body FilterNodesVO filterNodesVO);
+
+    //Notification methods
+    @POST("notification/message")
+    Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 }

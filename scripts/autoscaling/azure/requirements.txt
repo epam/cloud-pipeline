@@ -1,7 +1,0 @@
-
-azure-common
-azure
-azure-mgmt-resource
-azure-mgmt-compute
-azure-mgmt-containerinstance
-azure-cli-core

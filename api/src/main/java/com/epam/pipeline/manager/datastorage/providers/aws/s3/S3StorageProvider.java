@@ -98,13 +98,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void deleteStorage(S3bucketDataStorage dataStorage) {
         getS3Helper(dataStorage).deleteS3Bucket(dataStorage.getPath());
-
     }
 
     @Override
     public void applyStoragePolicy(S3bucketDataStorage dataStorage) {
         final AwsRegion awsRegion = getAwsRegion(dataStorage);
-        final StoragePolicy storagePolicy = buildStoragePolicy(awsRegion, dataStorage.getStoragePolicy());
+        final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getPath(), storagePolicy);
         dataStorage.setStoragePolicy(storagePolicy);
     }
@@ -224,22 +223,5 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
-    }
-
-    private StoragePolicy buildStoragePolicy(final AwsRegion awsRegion,
-                                             final StoragePolicy storagePolicy) {
-        if (storagePolicy == null) {
-            StoragePolicy defaultPolicy = new StoragePolicy();
-            defaultPolicy.setVersioningEnabled(awsRegion.isVersioningEnabled());
-            defaultPolicy.setBackupDuration(awsRegion.getBackupDuration());
-            return defaultPolicy;
-        }
-        if (storagePolicy.getVersioningEnabled() == null) {
-            storagePolicy.setVersioningEnabled(awsRegion.isVersioningEnabled());
-        }
-        if (storagePolicy.getBackupDuration() == null) {
-            storagePolicy.setBackupDuration(awsRegion.getBackupDuration());
-        }
-        return storagePolicy;
     }
 }

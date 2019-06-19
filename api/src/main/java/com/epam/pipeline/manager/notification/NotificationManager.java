@@ -21,7 +21,6 @@ import static com.epam.pipeline.entity.notification.NotificationSettings.Notific
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +31,7 @@ import java.util.stream.Collectors;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -409,9 +409,9 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         message.setSubject(messageVO.getSubject());
         message.setBody(messageVO.getBody());
         message.setTemplateParameters(messageVO.getParameters());
-        final List<Long> copyUserIds = Optional.ofNullable(messageVO.getCopyUsers())
-                .orElseGet(Collections::emptyList)
+        final List<Long> copyUserIds = ListUtils.emptyIfNull(messageVO.getCopyUsers())
                 .stream()
+                .filter(StringUtils::isNotBlank)
                 .map(this::getUserByName)
                 .map(PipelineUser::getId)
                 .collect(Collectors.toList());

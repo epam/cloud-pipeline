@@ -20,10 +20,11 @@ import org.openqa.selenium.By;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selectors.byClassName;
+import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
-import static com.epam.pipeline.autotests.utils.Utils.click;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -31,7 +32,7 @@ public class NavigationMenuAO {
 
     public PipelinesLibraryAO library() {
         final By pipelinesPageSelector = byId("navigation-button-pipelines");
-        click(pipelinesPageSelector);
+        $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Library')]] and contains(@id, 'pipelines-library-content')]"))
                 .waitUntil(visible, 5000);
@@ -40,7 +41,7 @@ public class NavigationMenuAO {
 
     public RunsMenuAO runs() {
         final By runsPageSelector = byId("navigation-button-runs");
-        click(runsPageSelector);
+        $(runsPageSelector).shouldBe(visible).click();
         $(runsPageSelector).shouldBe(selectedMenuItem);
         $(byId("active-runs-button")).waitUntil(visible, 5000);
         return new RunsMenuAO();
@@ -48,7 +49,7 @@ public class NavigationMenuAO {
 
     public ToolsPage tools() {
         final By toolsPageSelector = byId("navigation-button-tools");
-        click(toolsPageSelector);
+        $(toolsPageSelector).shouldBe(visible).click();
         $(toolsPageSelector).shouldBe(selectedMenuItem);
         $(byId("current-registry-button")).waitUntil(visible, 5000);
         return new ToolsPage();
@@ -56,7 +57,7 @@ public class NavigationMenuAO {
 
     public ClusterMenuAO clusterNodes() {
         final By clusterPageSelector = byId("navigation-button-cluster");
-        click(clusterPageSelector);
+        $(clusterPageSelector).shouldBe(visible).click();
         $(clusterPageSelector).shouldBe(selectedMenuItem);
         $(byXpath("//*[.//*[text()[contains(.,'Cluster nodes')]] and contains(@id, 'root-content')]"))
                 .waitUntil(visible, 5000);
@@ -64,14 +65,14 @@ public class NavigationMenuAO {
     }
 
     public SettingsPageAO settings() {
-        click(byId("navigation-button-settings"));
+        $(byId("navigation-button-settings")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byClassName("ant-modal-content")).waitUntil(visible, 5000);
         return new SettingsPageAO(new PipelinesLibraryAO());
     }
 
     public GlobalSearchAO search() {
-        click(byId("navigation-button-search"));
+        $(byId("navigation-button-search")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byClassName("earch__search-container")).waitUntil(visible, 5000);
         return new GlobalSearchAO();

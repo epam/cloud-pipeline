@@ -27,6 +27,7 @@ class DataStorageItemModel(object):
         self.versions = []
         self.latest = False
         self.delete_marker = False
+        self.deleted = None
 
     @classmethod
     def load(cls, json):

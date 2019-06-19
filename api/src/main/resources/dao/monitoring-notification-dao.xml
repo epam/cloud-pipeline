@@ -66,6 +66,13 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteNotificationsByUserIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.notification_queue WHERE to_user_id = ?
+                ]]>
+            </value>
+        </property>
         <property name="loadAllMonitoringNotificationsQuery">
             <value>
                 <![CDATA[

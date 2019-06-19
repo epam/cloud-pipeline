@@ -1,4 +1,3 @@
-from buckets.utils.cloud.utilities import *
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +12,7 @@ from buckets.utils.cloud.utilities import *
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from buckets.utils.cloud.utilities import *
 from common_utils.pipe_cli import *
 
 
@@ -20,8 +20,8 @@ def assert_tags_listing(bucket, path, expected_tags, version=None, token=None):
     stdout, stderr = get_storage_tags(path, version=version, token=token)
     output = parse_tag_table(stdout)
     compare_tags('pipe storage', expected_tags, output)
-    aws_tags = list_object_tags(bucket, path[len(bucket) + 6:], version=version)
-    compare_tags('aws get-object-tagging', expected_tags, aws_tags)
+    actual_tags = list_object_tags(bucket, path[len(bucket) + 6:], version=version)
+    compare_tags('Getting object tags', expected_tags, actual_tags)
 
 
 def compare_tags(name, expected_tags, output):

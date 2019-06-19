@@ -31,7 +31,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -91,6 +91,7 @@ public class SystemPreferences {
     private static final String SYSTEM_GROUP = "System"; // important stuff, related to system as a whole
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
+    private static final String GCP_GROUP = "GCP";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -288,11 +289,8 @@ public class SystemPreferences {
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
         "launch.env.properties", null, new TypeReference<EnvVarsSettings>() {}, LAUNCH_GROUP,
         isNullOrValidJson(new TypeReference<EnvVarsSettings>() {}));
-    public static final BooleanPreference DOCKER_IN_DOCKER_ENABLED = new BooleanPreference(
-            "launch.dind.enable", true, LAUNCH_GROUP, pass);
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
-            "launch.dind.mounts", KubernetesConstants.DEFAULT_DOCKER_IN_DOCKER_MOUNTS,
-            new TypeReference<List<DockerMount>>() {},
+            "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
 
 
@@ -483,6 +481,13 @@ public class SystemPreferences {
             new IntPreference("ge.autoscaling.scale.down.timeout", null,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
 
+    //GCP
+    public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
+            "gcp.regions.list", null, new TypeReference<List<String>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
+            "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

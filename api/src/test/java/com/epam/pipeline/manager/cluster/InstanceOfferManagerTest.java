@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -72,6 +73,7 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
     private InstanceOffer makeInstanceOffer(String type) {
         InstanceOffer offer = new InstanceOffer();
         offer.setInstanceType(type);
+        offer.setTermType("OnDemand");
         offer.setVCPU(1);
         offer.setGpu(1);
         offer.setPricePerUnit(1);
@@ -79,6 +81,7 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
         offer.setSku("sku");
         offer.setPriceListPublishDate(new Date());
         offer.setRegionId(region.getId());
+        offer.setCloudProvider(CloudProvider.AWS);
         return offer;
     }
 
@@ -89,14 +92,14 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
         allowedTypesPreference.setValue(M5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(M5_INSTANCE_TYPE, region.getId()));
-        Assert.assertFalse(instanceOfferManager.isInstanceAllowed(X5_INSTANCE_TYPE, region.getId()));
+        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(M5_INSTANCE_TYPE, region.getId(), false));
+        Assert.assertFalse(instanceOfferManager.isInstanceAllowed(X5_INSTANCE_TYPE, region.getId(), false));
 
         allowedTypesPreference.setValue(M5_X5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(M5_INSTANCE_TYPE, region.getId()));
-        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(X5_INSTANCE_TYPE, region.getId()));
+        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(M5_INSTANCE_TYPE, region.getId(), false));
+        Assert.assertTrue(instanceOfferManager.isInstanceAllowed(X5_INSTANCE_TYPE, region.getId(), false));
     }
 
     @Test
@@ -107,13 +110,14 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
         allowedToolTypesPreference.setValue(M5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedToolTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId()));
-        Assert.assertFalse(instanceOfferManager.isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId()));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
+        Assert.assertFalse(instanceOfferManager
+                .isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
 
         allowedToolTypesPreference.setValue(M5_X5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedToolTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId()));
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId()));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
     }
 }

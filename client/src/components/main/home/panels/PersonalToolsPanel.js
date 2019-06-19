@@ -39,6 +39,7 @@ import {
   RunConfirmation
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
+import {LIMIT_MOUNTS_PARAMETER} from '../../../pipelines/launch/form/LimitMountsInput';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
@@ -52,7 +53,7 @@ const findGroupByName = (groups, name) => {
 
 @roleModel.authenticationInfo
 @submitsRun
-@inject('awsRegions', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
+@inject('awsRegions', 'dataStorageAvailable', 'dockerRegistries', 'preferences', 'authenticatedUserInfo')
 @runPipelineActions
 @observer
 export default class PersonalToolsPanel extends React.Component {
@@ -194,6 +195,16 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo.instanceType !== undefined) {
       payload.instanceType = this.state.runToolInfo.instanceType;
     }
+    if (this.state.runToolInfo.limitMounts !== undefined) {
+      if (!payload.params) {
+        payload.params = {};
+      }
+      if (this.state.runToolInfo.limitMounts.value) {
+        payload.params[LIMIT_MOUNTS_PARAMETER] = this.state.runToolInfo.limitMounts;
+      } else if (payload.params[LIMIT_MOUNTS_PARAMETER]) {
+        delete payload.params[LIMIT_MOUNTS_PARAMETER];
+      }
+    }
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null
@@ -225,7 +236,7 @@ export default class PersonalToolsPanel extends React.Component {
   };
 
   onRunToolClicked = async (tool) => {
-    const hide = message.loading('Fetching tool info...', -1);
+    const hide = message.loading('Fetching tool info...', 0);
     const toolRequest = new LoadTool(tool.id);
     await toolRequest.fetch();
     const toolTagRequest = new LoadToolScanTags(tool.id);
@@ -336,7 +347,13 @@ export default class PersonalToolsPanel extends React.Component {
           }
           return result;
         };
-        const allowedInstanceTypesRequest = new AllowedInstanceTypes(tool.id);
+        const allowedInstanceTypesRequest = new AllowedInstanceTypes(
+          tool.id,
+          null,
+          parameterIsNotEmpty(versionSettingValue('is_spot'))
+            ? versionSettingValue('is_spot')
+            : this.props.preferences.useSpot
+        );
         await allowedInstanceTypesRequest.fetch();
         let availableInstanceTypes = [];
         let availablePriceTypes = [];
@@ -559,6 +576,20 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  onChangeLimitMounts = (mounts) => {
+    if (this.state.runToolInfo) {
+      const runToolInfo = this.state.runToolInfo;
+      runToolInfo.limitMounts = {
+        type: 'string',
+        required: false,
+        value: mounts
+      };
+      this.setState({
+        runToolInfo
+      });
+    }
+  };
+
   render () {
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
@@ -583,6 +614,7 @@ export default class PersonalToolsPanel extends React.Component {
           }
           visible={!!this.state.runToolInfo}
           onCancel={this.cancelRunTool}
+          width="50%"
           footer={
             <Row type="flex" align="middle" justify="space-between">
               <Button onClick={() => {
@@ -617,6 +649,8 @@ export default class PersonalToolsPanel extends React.Component {
             this.state.runToolInfo &&
             (this.state.runToolInfo.payload.isSpot || !this.state.runToolInfo.payload.instanceType) &&
               <RunConfirmation
+                cloudRegions={this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : []}
+                cloudRegionId={this.state.runToolInfo.payload.cloudRegionId}
                 onChangePriceType={this.onChangePriceType}
                 onChangeInstanceType={this.onChangeInstanceType}
                 warning={this.state.runToolInfo.warning}
@@ -628,7 +662,19 @@ export default class PersonalToolsPanel extends React.Component {
                 instanceType={this.state.runToolInfo.payload.instanceType}
                 showInstanceTypeSelection={!this.state.runToolInfo.payload.instanceType}
                 instanceTypes={this.state.runToolInfo.availableInstanceTypes}
-                onDemandSelectionAvailable={this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0} />
+                onDemandSelectionAvailable={this.state.runToolInfo.availablePriceTypes.indexOf(false) >= 0}
+                dataStorages={
+                  this.props.dataStorageAvailable.loaded
+                    ? (this.props.dataStorageAvailable.value || []).map(d => d)
+                    : undefined
+                }
+                limitMounts={
+                  this.state.runToolInfo.payload.params &&
+                  this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER]
+                    ? this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER].value
+                    : undefined
+                }
+                onChangeLimitMounts={this.onChangeLimitMounts} />
           }
           {
             this.state.runToolInfo && this.state.runToolInfo.pricePerHour &&

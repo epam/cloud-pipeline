@@ -18,7 +18,7 @@ from buckets.utils.listing import *
 from common_utils.entity_managers import EntityManager
 from common_utils.pipe_cli import *
 
-ERROR_MESSAGE = "An error accrued in case "
+ERROR_MESSAGE = "An error occurred in case "
 
 
 class TestMkdirMvtodir(object):

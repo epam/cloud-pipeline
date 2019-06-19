@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.region;
 
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -54,32 +54,17 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     @Test
     public void createShouldSaveEntityInDao() {
-        cloudRegionManager.create(createRegionBuilder()
-                .regionCode(validRegionId())
-                .corsRules(EMPTY_CORS_RULES)
-                .policy(EMPTY_POLICY)
-                .kmsKeyId(KMS_KEY_ID)
-                .kmsKeyArn(KMS_KEY_ARN)
-                .isDefault(false)
-                .build());
-
+        final AWSRegionDTO regionVO = buildFilledRegionDTO();
+        cloudRegionManager.create(regionVO);
         verify(cloudRegionDao).create(any(), eq(credentials()));
     }
 
     @Test
     public void createShouldSaveRegionAsIsIfAllOptionalFieldsAreAlreadySet() {
-        final CloudRegionVO regionVO = createRegionBuilder()
-                .regionCode(validRegionId())
-                .corsRules(EMPTY_CORS_RULES)
-                .policy(EMPTY_POLICY)
-                .kmsKeyId(KMS_KEY_ID)
-                .kmsKeyArn(KMS_KEY_ARN)
-                .isDefault(false)
-                .build();
+        final AWSRegionDTO regionVO = buildFilledRegionDTO();
         final AwsRegion expectedRegion = cloudRegionMapper.toAwsRegion(regionVO);
 
         cloudRegionManager.create(regionVO);
-
         final ArgumentCaptor<AwsRegion> regionCaptor = ArgumentCaptor.forClass(AwsRegion.class);
         verify(cloudRegionDao).create(regionCaptor.capture(), eq(credentials()));
         final AwsRegion actualRegion = regionCaptor.getValue();
@@ -90,13 +75,21 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     @Test
     public void createShouldThrowIfSpecifiedPolicyIsInvalid() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().policy(INVALID_POLICY).build()));
+            () -> {
+                final AWSRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setPolicy(INVALID_POLICY);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void createShouldThrowIfSpecifiedCorsRulesAreInvalid() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().corsRules(INVALID_CORS_RULES).build()));
+            () -> {
+                final AWSRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setCorsRules(INVALID_CORS_RULES);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
@@ -119,15 +112,16 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
         doReturn(Optional.of(originalRegion)).when(cloudRegionDao).loadById(ID);
 
-        cloudRegionManager.update(ID, cloudRegionMapper.toAwsRegionVO(updatedRegion));
+        cloudRegionManager.update(ID, cloudRegionMapper.toAwsRegionDTO(updatedRegion));
 
         verify(cloudRegionDao).update(eq(updatedRegion), eq(credentials()));
     }
 
     @Test
     public void updateShouldChangeProfile() {
-        cloudRegionManager.update(ID, updateRegionBuilder().profile(ANOTHER_PROFILE).build());
-
+        final AWSRegionDTO awsRegionDTO = updateRegionDTO();
+        awsRegionDTO.setProfile(ANOTHER_PROFILE);
+        cloudRegionManager.update(ID, awsRegionDTO);
         final ArgumentCaptor<AwsRegion> regionCaptor = ArgumentCaptor.forClass(AwsRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
         final AwsRegion actualRegion = regionCaptor.getValue();
@@ -136,14 +130,14 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
 
     @Test
     public void loadCredentialsByIdShouldThrowForAwsRegion() {
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         assertThrows(() -> cloudRegionManager.loadCredentials(ID));
     }
 
     @Test
     public void loadCredentialsByRegionShouldThrowForAwsRegion() {
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         assertThrows(() -> cloudRegionManager.loadCredentials(commonRegion()));
     }
@@ -163,17 +157,19 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder createRegionBuilder() {
-        return updateRegionBuilder()
-                .regionCode(validRegionId())
-                .profile(PROFILE);
+    AWSRegionDTO createRegionDTO() {
+        AWSRegionDTO awsRegionDTO = updateRegionDTO();
+        awsRegionDTO.setRegionCode(validRegionId());
+        awsRegionDTO.setProfile(PROFILE);
+        return awsRegionDTO;
     }
 
     @Override
-    CloudRegionVO.CloudRegionVOBuilder updateRegionBuilder() {
-        return CloudRegionVO.builder()
-                .name(REGION_NAME)
-                .provider(CloudProvider.AWS);
+    AWSRegionDTO updateRegionDTO() {
+        AWSRegionDTO awsRegionDTO = new AWSRegionDTO();
+        awsRegionDTO.setName(REGION_NAME);
+        awsRegionDTO.setProvider(CloudProvider.AWS);
+        return awsRegionDTO;
     }
 
     @Override
@@ -207,5 +203,16 @@ public class AwsCloudRegionManagerTest extends AbstractCloudRegionManagerTest {
     @Override
     CloudProvider defaultProvider() {
         return CloudProvider.AWS;
+    }
+
+    private AWSRegionDTO buildFilledRegionDTO() {
+        final AWSRegionDTO regionVO = createRegionDTO();
+        regionVO.setRegionCode(validRegionId());
+        regionVO.setCorsRules(EMPTY_CORS_RULES);
+        regionVO.setPolicy(EMPTY_POLICY);
+        regionVO.setKmsKeyArn(KMS_KEY_ARN);
+        regionVO.setKmsKeyId(KMS_KEY_ID);
+        regionVO.setDefault(false);
+        return regionVO;
     }
 }

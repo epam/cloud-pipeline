@@ -200,6 +200,17 @@ echo "STORAGE_DRIVER=" >> /etc/sysconfig/docker-storage-setup
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 
+# Setup docker cli location for DinD
+docker_cli_bin="/bin/docker"
+if [ ! -f "$docker_cli_bin" ]; then
+  docker_cli_location="$(command -v docker)"
+  if [ "$docker_cli_location" ]; then
+    \cp $docker_cli_location $docker_cli_bin
+  else
+    echo 'docker executable not found via "command -v docker"'
+  fi
+fi
+
 # Load NFS module
 modprobe nfs
 modprobe nfsd
@@ -217,6 +228,7 @@ chmod +x /etc/rc.d/rc.local
 # Prepare to tag cloud-specific info
 ## Get instance metadata information
 cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
+gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
 
 if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
@@ -238,6 +250,13 @@ elif [[ $cloud == *"Microsoft"* ]]; then
         _CLOUD_INSTANCE_IMAGE_ID=""
     fi
     _CLOUD_PROVIDER=AZURE
+elif [[ $gcloud_header == *"Google"* ]]; then
+    _CLOUD_INSTANCE_AZ=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
+    _CLOUD_REGION=${_CLOUD_INSTANCE_AZ::-2}
+    _CLOUD_INSTANCE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/name)
+    _CLOUD_INSTANCE_TYPE=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
+    _CLOUD_INSTANCE_IMAGE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
+    _CLOUD_PROVIDER=GCP
 fi
 
 # Setup well-know hostnames

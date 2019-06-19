@@ -13,26 +13,20 @@
 # limitations under the License.
 
 import click
-import re
 import os
 from future.utils import iteritems
 import datetime
-import requests
 import sys
 import prettytable
-from botocore.exceptions import BotoCoreError
-from boto3.exceptions import Boto3Error
-from azure.common import AzureException
 
 from src.model.data_storage_wrapper import DataStorageWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
-from src.config import ConfigNotFoundError
 from src.utilities.patterns import PatternMatcher
 
-ALL_ERRORS = ConfigNotFoundError, requests.exceptions.RequestException, RuntimeError, ValueError, AzureException, \
-             Boto3Error, BotoCoreError
+ALL_ERRORS = Exception
+
 
 class DataStorageOperations(object):
     @classmethod
@@ -117,7 +111,7 @@ class DataStorageOperations(object):
             if version and hard_delete:
                 click.echo('"version" argument should\'t be combined with "hard-delete" option', err=True)
                 sys.exit(1)
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version or hard_delete)
+            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, versioning=version is not None or hard_delete)
             if source_wrapper is None or not source_wrapper.exists():
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
                 sys.exit(1)
@@ -153,6 +147,14 @@ class DataStorageOperations(object):
             if directory is None:
                 click.echo("Error: Directory with name '{}' not found! "
                            "Check if it exists and you have permission to read it".format(parent_folder), err=True)
+                sys.exit(1)
+        if region_id == 'default':
+            region_id = None
+        else:
+            try:
+                region_id = int(region_id)
+            except ValueError:
+                click.echo("Error: Given region id '{}' is not a number.".format(region_id))
                 sys.exit(1)
         try:
             DataStorage.save(name, path, description, sts_duration, lts_duration, versioning, backup_duration, type,
@@ -384,23 +386,28 @@ class DataStorageOperations(object):
                 labels = ''
                 if item.type is not None and item.type in WrapperType.cloud_types():
                     name = item.path
-                if item.changed is not None:
+                item_updated = item.deleted or item.changed
+                if item_updated is not None:
                     if bucket_model is None:
                         # need to wrap into datetime since bucket listing returns str
-                        item_datetime = datetime.datetime.strptime(item.changed, '%Y-%m-%d %H:%M:%S')
+                        item_datetime = datetime.datetime.strptime(item_updated, '%Y-%m-%d %H:%M:%S')
                     else:
-                        item_datetime = item.changed
+                        item_datetime = item_updated
                     changed = item_datetime.strftime('%Y-%m-%d %H:%M:%S')
-                if item.size is not None:
+                if item.size is not None and not item.deleted:
                     size = item.size
-                if item.labels is not None and len(item.labels) > 0:
+                if item.labels is not None and len(item.labels) > 0 and not item.deleted:
                     labels = ', '.join(map(lambda i: i.value, item.labels))
-                item_type = "-File" if item.delete_marker else item.type
+                item_type = "-File" if item.delete_marker or item.deleted else item.type
                 row = [item_type, labels, changed, size, name]
                 if show_versions:
                     row.append('')
                 items_table.add_row(row)
                 if show_versions and item.type == 'File':
+                    if item.deleted:
+                        # Additional synthetic delete version
+                        row = ['-File', '', item.deleted.strftime('%Y-%m-%d %H:%M:%S'), size, name, '- (latest)']
+                        items_table.add_row(row)
                     for version in item.versions:
                         version_type = "-File" if version.delete_marker else "+File"
                         version_label = "{} (latest)".format(version.version) if version.latest else version.version

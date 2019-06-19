@@ -20,13 +20,14 @@ import {Icon, Popover, Row} from 'antd';
 import moment from 'moment';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
+import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import styles from './CardsPanel.css';
 
 function renderTitle (run) {
   const podId = run.podId;
   let nodeType, priceType, nodeDisk, nodeCount;
   if (run.instance) {
-    priceType = run.instance.spot ? 'spot' : 'on-demand';
+    priceType = getRunSpotTypeName(run).toLowerCase();
     nodeType = run.instance.nodeType;
     nodeDisk = run.instance.nodeDisk ? `${run.instance.nodeDisk} Gb` : undefined;
   }

@@ -15,8 +15,11 @@
 import subprocess
 
 
-def execute_cmd_command_and_get_stdout_stderr(command, silent=False):
-    p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
+    if executable:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+    else:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     stdout, stderr = p.communicate()
     if not silent and stderr:
         print(stderr)
@@ -25,8 +28,11 @@ def execute_cmd_command_and_get_stdout_stderr(command, silent=False):
     return p.wait(), stdout, stderr
 
 
-def execute_cmd_command(command, silent=False):
-    p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+def execute_cmd_command(command, silent=False, executable=None):
+    if executable:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+    else:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     for line in p.stderr.readlines():
         if not silent:
             print(line)
@@ -36,8 +42,11 @@ def execute_cmd_command(command, silent=False):
     return p.wait()
 
 
-def get_cmd_command_output(command):
-    p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+def get_cmd_command_output(command, executable=None):
+    if executable:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE, executable=executable)
+    else:
+        p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
     output, error = p.communicate()
     exit_code = p.returncode
     if error: print(error)

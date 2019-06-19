@@ -45,20 +45,11 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
 
     @Override
     public void validateRegion(final AzureRegion region, final AzureRegionCredentials credentials) {
-        validateRegionId(region);
+        validateRegionCode(region.getRegionCode(), messageHelper);
         Assert.isTrue(StringUtils.isNotBlank(region.getStorageAccount()),
                 messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_ACC_REQUIRED));
         Assert.isTrue(StringUtils.isNotBlank(credentials.getStorageAccountKey()),
                 messageHelper.getMessage(MessageConstants.ERROR_AZURE_STORAGE_KEY_REQUIRED));
-    }
-
-    private void validateRegionId(final AzureRegion region) {
-        Assert.notNull(region.getRegionCode(),
-                messageHelper.getMessage(MessageConstants.ERROR_REGION_REGIONID_MISSING));
-        if (!loadAvailableRegions().contains(region.getRegionCode())) {
-            throw new IllegalArgumentException(messageHelper.getMessage(
-                    MessageConstants.ERROR_REGION_REGIONID_INVALID, region.getRegionCode()));
-        }
     }
 
     @Override

@@ -26,8 +26,6 @@ spec:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /etc/gitlab
-              name: git-config
             - mountPath: /var/log/gitlab
               name: git-logs
             - mountPath: /var/opt/gitlab
@@ -46,9 +44,6 @@ spec:
           #   initialDelaySeconds: 5
           #   periodSeconds: 10
       volumes:
-        - name: git-config
-          hostPath:
-            path: /opt/gitlab/config
         - name: git-logs
           hostPath:
             path: /opt/gitlab/logs

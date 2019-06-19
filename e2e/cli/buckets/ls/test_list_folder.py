@@ -189,7 +189,7 @@ class TestLsFolder(object):
     def test_list_with_wrong_scheme(self):
         try:
             error = pipe_storage_ls("s4://{}/".format(self.bucket_name), recursive=True, expected_status=1)[1]
-            assert_error_message_is_present(error, 'Supported schemes for datastorage are: "cp", "s3", "az".')
+            assert_error_message_is_present(error, 'Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format(self.epam_test_case_ls_wrong_scheme, e.message))
 

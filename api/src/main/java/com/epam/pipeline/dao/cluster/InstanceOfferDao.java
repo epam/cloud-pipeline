@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.cluster;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.region.CloudProvider;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -196,7 +197,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
-        REGION;
+        REGION,
+        CLOUD_PROVIDER;
 
         static MapSqlParameterSource getParameters(InstanceOffer instanceOffer) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -242,6 +244,10 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceOffer.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceOffer.setGpu(rs.getInt(GPU.name()));
                 instanceOffer.setRegionId(rs.getLong(REGION.name()));
+                String cloudProviderName = rs.getString(CLOUD_PROVIDER.name());
+                if (!rs.wasNull()) {
+                    instanceOffer.setCloudProvider(CloudProvider.valueOf(cloudProviderName));
+                }
                 return instanceOffer;
             };
         }
@@ -256,7 +262,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
-        REGION;
+        REGION,
+        TERM_TYPE;
 
         static RowMapper<InstanceType> getRowMapper() {
             return (rs, rowNum) -> {
@@ -270,6 +277,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceType.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceType.setGpu(rs.getInt(GPU.name()));
                 instanceType.setRegionId(rs.getLong(REGION.name()));
+                instanceType.setTermType(rs.getString(TERM_TYPE.name()));
                 return instanceType;
             };
         }

@@ -18,17 +18,34 @@ import Remote from '../basic/Remote';
 
 export default class AllowedInstanceTypes extends Remote {
 
+  _isSpot;
   _toolId;
   _regionId;
   _initialRegionId;
   _changed = false;
 
-  constructor (toolId, regionId) {
+  constructor (toolId, regionId, isSpot) {
     super();
     this._toolId = toolId;
     this._regionId = regionId;
+    this._isSpot = isSpot;
     this.initialize();
     this.fetchIfNeededOrWait();
+  }
+
+  get isSpot () {
+    return this._isSpot;
+  }
+
+  set isSpot (value) {
+    if (value !== undefined && value !== null && this._isSpot !== value) {
+      this._isSpot = value;
+      this.initialize();
+      this.invalidateCache();
+      this._loaded = false;
+      this.fetchIfNeededOrWait();
+      this._changed = true;
+    }
   }
 
   set toolId (value) {
@@ -87,6 +104,9 @@ export default class AllowedInstanceTypes extends Remote {
     }
     if (this._regionId) {
       params.push(`regionId=${this._regionId}`);
+    }
+    if (this._isSpot !== undefined && this._isSpot !== null) {
+      params.push(`spot=${this._isSpot ? 'true' : 'false'}`);
     }
     if (params.length) {
       this.url = `/cluster/instance/allowed?${params.join('&')}`;

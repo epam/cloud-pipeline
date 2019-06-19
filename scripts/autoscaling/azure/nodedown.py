@@ -21,6 +21,7 @@ import pykube
 from azure.common.client_factory import get_client_from_auth_file
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.compute import ComputeManagementClient
 
 
 RUN_ID_LABEL = 'runid'
@@ -28,13 +29,17 @@ CLOUD_REGION_LABEL = 'cloud_region'
 
 res_client = get_client_from_auth_file(ResourceManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
+compute_client = get_client_from_auth_file(ComputeManagementClient)
+resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def find_instance(run_id):
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
         if str(resource.type).split('/')[-1] == "virtualMachines":
             return resource.name
-
+        elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+            instance_name, _ = get_instance_name_and_private_ip_from_vmss(resource.name)
+            return instance_name
     return None
 
 
@@ -45,19 +50,24 @@ def run_id_filter(run_id):
            }
 
 
-def verify_regnode(resource_group_name, ins_id, api):
-    public_ip = network_client.public_ip_addresses.get(
-        resource_group_name,
-        ins_id + '-ip'
-    )
-    nodename_full = public_ip.dns_settings.fqdn
-    nodename = nodename_full.split('.', 1)[0]
+def get_instance_name_and_private_ip_from_vmss(scale_set_name):
+    vm_vmss_id = None
+    for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
+        vm_vmss_id = vm.instance_id
+        break
+    instance_name = compute_client.virtual_machine_scale_set_vms \
+        .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
+        .additional_properties["computerName"]
+    private_ip = network_client.network_interfaces. \
+        get_virtual_machine_scale_set_ip_configuration(resource_group_name, scale_set_name, vm_vmss_id,
+                                                       scale_set_name + "-nic", scale_set_name + "-ip") \
+        .private_ip_address
+    return instance_name, private_ip
 
-    if find_node(api, nodename):
-        return nodename
 
-    if find_node(api, nodename_full):
-        return nodename_full
+def verify_regnode(ins_id, api):
+    if find_node(api, ins_id):
+        return ins_id
 
     raise RuntimeError("Failed to find Node {}".format(ins_id))
 
@@ -123,9 +133,9 @@ def resolve_azure_api(resource):
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1] == "virtualMachines":
+    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and str(r2.type).split('/')[-1] != "virtualMachines":
+    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
         return -1
     return 0
 
@@ -135,7 +145,7 @@ def delete_resources_by_tag(run_id):
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
         resources.append(resource)
         # we need to sort resources to be sure that vm and nic will be deleted first, because it has attached resorces(disks and ip)
-        resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+    resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
     for resource in resources:
         res_client.resources.delete(
             resource_group_name=resource.id.split('/')[4],
@@ -152,12 +162,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_id", "-kid", type=str, required=True)
     parser.add_argument("--ins_id", "-id", type=str, required=False)  # do we need?
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     run_id = args.run_id
     api = get_kube_api()
-
-    resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
-
     try:
         ins_id = find_instance(run_id)
     except Exception:
@@ -167,7 +174,7 @@ def main():
         delete_resources_by_tag(run_id)
     else:
         try:
-            nodename = verify_regnode(resource_group_name, ins_id, api)
+            nodename = verify_regnode(ins_id, api)
         except Exception:
             nodename = None
 

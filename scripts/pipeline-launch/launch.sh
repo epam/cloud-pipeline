@@ -189,6 +189,22 @@ function cp_cap_publish {
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -220,7 +236,7 @@ function cp_cap_init {
 
             if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
             then
-                  $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py &
+                  nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py 1>/dev/null 2>$LOG_DIR/.nohup.sge.autoscale.log &
             fi
       fi
 }
@@ -292,6 +308,15 @@ function get_install_command_by_current_distr {
       local _RESULT_VAR="$1"
       local _TOOLS_TO_INSTALL="$2"
       local _INSTALL_COMMAND_TEXT=
+
+      # Handle some distro-specific package names
+      if [[ "$_TOOLS_TO_INSTALL" == *"ltdl"* ]]; then
+            local _ltdl_lib_name=
+            check_installed "apt-get" && _ltdl_lib_name="libltdl7"
+            check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
+
       check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
@@ -468,6 +493,8 @@ echo "------"
 echo
 
 ######################################################
+
+
 
 ######################################################
 echo "Init default variables if they are not set explicitly"
@@ -992,6 +1019,7 @@ do
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \
             [[ "$var" == "CP_ACCOUNT_KEY_"* ]] || \
+            [[ "$var" == "CP_CREDENTIALS_FILE_CONTENT_"* ]] || \
             [[ $SECURE_ENV_VARS == *"$var"* ]]; then
 		continue
 	fi
@@ -1116,9 +1144,36 @@ echo
 
 
 ######################################################
+# Setup native DinD
+######################################################
+
+echo "Setup DinD (native)"
+echo "-"
+
+# DinD container mode is set for all cluster nodes via cp_cap_publish
+# as the $CP_CAP_DIND_CONTAINER parameter will not be available for workers
+# Same approach as for SGE
+if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
+      _DIND_DEPS_INSTALL_COMMAND=
+      get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
+      eval "$_DIND_DEPS_INSTALL_COMMAND"
+      # Skipping registry certificate configuration for the "native" mode as is shall be inherited from the host node
+      docker_setup_credentials --skip-cert
+else
+    echo "DinD (native) configuration is not requested"
+fi
+
+######################################################
+
+
+
+######################################################
 echo Executing task
 echo "-"
 ######################################################
+
+# Check whether there are any capabilities init scripts available and execute them before main SCRIPT
+cp_cap_init
 
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
 SCRIPT="${SCRIPT/sleep infinity/sleep 10000d}"
@@ -1129,9 +1184,6 @@ if [ ! -d "$ANALYSIS_DIR" ]; then
 fi
 cd $ANALYSIS_DIR
 echo "CWD is now at $ANALYSIS_DIR"
-
-# Check whether there are any capabilities init scripts available and execute them before main SCRIPT
-cp_cap_init
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

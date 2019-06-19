@@ -1109,6 +1109,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     };
     return (
       <SplitPanel
+        style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}
         contentInfo={[{
           key: CONTENT_PANEL_KEY,

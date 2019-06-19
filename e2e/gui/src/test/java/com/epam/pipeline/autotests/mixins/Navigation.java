@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.autotests.mixins;
 
 import com.epam.pipeline.autotests.ao.ClusterMenuAO;
@@ -23,26 +24,23 @@ import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolsPage;
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
-import static com.epam.pipeline.autotests.utils.Utils.click;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public interface Navigation {
 
     default NavigationMenuAO navigationMenu() {
         final By pipelinesPageSelector = byId("navigation-button-pipelines");
-        click(pipelinesPageSelector);
+        $(pipelinesPageSelector).shouldBe(visible).click();
         $(pipelinesPageSelector).shouldBe(selectedMenuItem);
         return new NavigationMenuAO();
     }
 
     default NavigationHomeAO home() {
         final By homePageSelector = byId("navigation-button-home");
-        click(homePageSelector);
-        sleep(1, SECONDS);
+        $(homePageSelector).shouldBe(visible).click();
         $(homePageSelector).shouldBe(selectedMenuItem);
         return new NavigationHomeAO();
     }
@@ -53,21 +51,21 @@ public interface Navigation {
 
     default ToolsPage tools() {
         final By toolsPageSelector = byId("navigation-button-tools");
-        click(toolsPageSelector);
+        $(toolsPageSelector).shouldBe(visible).click();
         $(toolsPageSelector).shouldBe(selectedMenuItem);
         return new ToolsPage();
     }
 
     default ClusterMenuAO clusterMenu() {
         final By clusterPageSelector = byId("navigation-button-cluster");
-        click(clusterPageSelector);
+        $(clusterPageSelector).shouldBe(visible).click();
         $(clusterPageSelector).shouldBe(selectedMenuItem);
         return new ClusterMenuAO();
     }
 
     default RunsMenuAO runsMenu() {
         final By runsPageSelector = byId("navigation-button-runs");
-        click(runsPageSelector);
+        $(runsPageSelector).shouldBe(visible).click();
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
     }

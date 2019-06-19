@@ -45,6 +45,7 @@ public class PipelineEvent {
         NFS("NFS"),
         S3("S3"),
         AZ("AZ"),
+        GS("GS"),
         TOOL("tool"),
         FOLDER("folder"),
         TOOL_GROUP("tool_group"),

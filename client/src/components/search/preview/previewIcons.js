@@ -26,6 +26,8 @@ export const PreviewIcons = {
   [SearchItemTypes.s3File]: 'file',
   [SearchItemTypes.NFSBucket]: 'hdd',
   [SearchItemTypes.NFSFile]: 'file',
+  [SearchItemTypes.gsStorage]: 'hdd',
+  [SearchItemTypes.gsFile]: 'file',
   [SearchItemTypes.tool]: 'tool',
   [SearchItemTypes.toolGroup]: 'tool',
   [SearchItemTypes.dockerRegistry]: 'tool',

@@ -26,7 +26,6 @@ import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
-import com.epam.pipeline.autotests.utils.listener.Cloud;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -78,16 +77,6 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         launchTool(onDemand, enabled);
-
-        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            runsMenu()
-                    .activeRuns()
-                    .ensure(runWithId(getLastRunId()), visible)
-                    .waitForCompletion(getLastRunId())
-                    .completedRuns()
-                    .ensure(runWithId(getLastRunId()), visible);
-            return;
-        }
         launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()
@@ -107,17 +96,6 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
         relogin();
 
         launchTool(onDemand, enabled);
-
-        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
-            runsMenu()
-                    .activeRuns()
-                    .waitUntilResumeButtonAppear(getLastRunId())
-                    .validateStatus(getLastRunId(), LogAO.Status.PAUSED)
-                    .resume(getLastRunId(), getToolName())
-                    .waitUntilStopButtonAppear(getLastRunId())
-                    .stopRun(getLastRunId());
-            return;
-        }
         launchTool(defaultPriceType, hidden);
         runsMenu()
                 .activeRuns()

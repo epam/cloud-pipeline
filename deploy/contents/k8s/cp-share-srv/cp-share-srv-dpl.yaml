@@ -1,0 +1,64 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-share-srv
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-share-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-share-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-share-srv
+          image: lifescience/cloud-pipeline:share-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/share-srv/pki
+              name: share-pki
+            - mountPath: /opt/share-srv/sso
+              name: share-sso
+            - mountPath: /opt/share-srv/logs
+              name: share-logs
+            - mountPath: /opt/idp/pki
+              name: idp-pki
+            - mountPath: /opt/common/pki
+              name: common-pki
+              readOnly: true
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f data-sharing-service.jar); sleep 1"]
+      volumes:
+        - name: share-pki
+          hostPath:
+            path: /opt/share-srv/pki
+        - name: share-sso
+          hostPath:
+            path: /opt/share-srv/sso
+        - name: share-logs
+          hostPath:
+            path: /opt/share-srv/logs
+        - name: idp-pki
+          hostPath:
+            path: /opt/idp/pki
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

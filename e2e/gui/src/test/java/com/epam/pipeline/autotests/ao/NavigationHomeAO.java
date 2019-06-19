@@ -27,7 +27,7 @@ public class NavigationHomeAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public GlobalSearchAO globalSearch() {
-        actions().sendKeys(Keys.CONTROL + "F").perform();
+        actions().sendKeys(Keys.chord(Keys.CONTROL, "F")).perform();
         return new GlobalSearchAO();
     }
 

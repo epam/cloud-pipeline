@@ -151,10 +151,11 @@ public class DockerCommitTest
     public void commitDockerValidation() {
         logAO()
                 .waitForSshLink()
-                .ssh(shell ->
-                        shell.execute("cd /")
-                                .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
-                                .close()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
+                        .execute("cd /")
+                        .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
+                        .close()
                 );
 
         runsMenu()
@@ -272,6 +273,7 @@ public class DockerCommitTest
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
                                                 .execute(commandCD)
                                                 .execute(String.format(command, suffix, testFileName))))
                                 .waitForCommitButton()
