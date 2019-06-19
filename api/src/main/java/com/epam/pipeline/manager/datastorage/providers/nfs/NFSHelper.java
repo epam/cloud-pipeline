@@ -79,6 +79,7 @@ final class NFSHelper {
     static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
                                     final AbstractCloudRegionCredentials credentials,
                                     final String defaultOptions) {
+        String result = defaultOptions;
         if (cloudRegion != null && cloudRegion.getProvider() == CloudProvider.AZURE) {
             final AzureRegion azureRegion = (AzureRegion) cloudRegion;
             final String account = azureRegion.getStorageAccount();
@@ -88,9 +89,9 @@ final class NFSHelper {
             String[] options = defaultOptions != null
                     ? new String[]{defaultOptions, "username=" + account, "password=" + accountKey}
                     : new String[]{"username=" + account, "password=" + accountKey};
-            return accountKey != null && account != null ? String.join(",", options) : defaultOptions;
+            result = accountKey != null && account != null ? String.join(",", options) : defaultOptions;
         }
-        return StringUtils.isEmpty(defaultOptions) ? "" : "-o " + defaultOptions;
+        return StringUtils.isEmpty(result) ? "" : "-o " + result;
     }
 
     static String formatNfsPath(String path, String protocol){
