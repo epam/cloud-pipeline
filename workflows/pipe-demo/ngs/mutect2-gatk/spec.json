@@ -6,5 +6,6 @@
     "grant_role_permissions": "21",
     "parent_folder": "Pipelines",
     "az": "Standard_D4s_v3",
-    "aws": "m5.2xlarge"
+    "aws": "m5.2xlarge",
+    "gcp": "n1-standard-8"
 }
