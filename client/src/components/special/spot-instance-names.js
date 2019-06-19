@@ -23,6 +23,10 @@ const SpotTypeNames = {
     true: 'Low priority',
     false: 'On-demand'
   },
+  gcp: {
+    true: 'Preemptible',
+    false: 'On-demand'
+  },
   default: {
     true: 'Spot',
     false: 'On-demand'

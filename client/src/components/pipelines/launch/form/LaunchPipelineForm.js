@@ -1006,7 +1006,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   @computed
   get priceTypes () {
     if (!this.props.allowedInstanceTypes || !this.props.allowedInstanceTypes.loaded) {
-      return [];
+      return [true, false];
     }
     return (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || [])
       .map(v => {
