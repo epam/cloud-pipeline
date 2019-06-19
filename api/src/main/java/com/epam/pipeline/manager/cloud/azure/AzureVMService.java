@@ -64,6 +64,14 @@ public class AzureVMService {
     private static final String RESOURCE_DELIMITER = "/";
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
+    private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
+    private static final String SUCCEEDED = "Succeeded";
+
+    static {
+        SCALE_SET_FAILED_STATUS = new InstanceViewStatus();
+        SCALE_SET_FAILED_STATUS.withCode(VM_FAILED_STATE + "/preempted");
+        SCALE_SET_FAILED_STATUS.withMessage("Low priority instance was preempted");
+    }
 
     private final MessageHelper messageHelper;
 
@@ -154,20 +162,36 @@ public class AzureVMService {
     }
 
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
-        final Optional<VirtualMachine> virtualMachine = findVmByName(region, vmName);
-        if (!virtualMachine.isPresent()) {
+        final Optional<String> scaleSetName = getScaleSetName(vmName);
+        if(scaleSetName.isPresent()) {
+            Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName.get());
+            if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
+                PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
+                return scaleSetVMs.size() > 0
+                        ? findFailedStatus(scaleSetVMs.get(0).instanceView().statuses())
+                        : Optional.of(SCALE_SET_FAILED_STATUS);
+            }
             return Optional.empty();
-        }
+        } else {
+            final Optional<VirtualMachine> virtualMachine = findVmByName(region, vmName);
+            if (!virtualMachine.isPresent()) {
+                return Optional.empty();
+            }
 
-        final List<InstanceViewStatus> statuses = virtualMachine
-                .map(VirtualMachine::instanceView)
-                .map(VirtualMachineInstanceView::statuses)
-                .orElseGet(Collections::emptyList);
-        if (CollectionUtils.isEmpty(statuses)) {
-            log.debug("Virtual machine found, but status is not available");
-            return Optional.empty();
-        }
+            final List<InstanceViewStatus> statuses = virtualMachine
+                    .map(VirtualMachine::instanceView)
+                    .map(VirtualMachineInstanceView::statuses)
+                    .orElseGet(Collections::emptyList);
+            if (CollectionUtils.isEmpty(statuses)) {
+                log.debug("Virtual machine found, but status is not available");
+                return Optional.empty();
+            }
 
+            return findFailedStatus(statuses);
+        }
+    }
+
+    private Optional<InstanceViewStatus> findFailedStatus(final List<InstanceViewStatus> statuses) {
         return statuses.stream()
                 .filter(status -> status.code().startsWith(VM_FAILED_STATE))
                 .findFirst();
