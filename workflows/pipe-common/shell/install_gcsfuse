@@ -48,6 +48,7 @@ EOF
         yum update -y -q
         yum install -y -q gcsfuse
     else
+        apt-get install -y -qq gnupg lsb-release > /dev/null
         export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
         echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
         curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
