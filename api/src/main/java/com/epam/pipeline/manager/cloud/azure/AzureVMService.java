@@ -64,13 +64,15 @@ public class AzureVMService {
     private static final String RESOURCE_DELIMITER = "/";
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
-    private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
     private static final String SUCCEEDED = "Succeeded";
+    private static final String PREEMPTED = "preempted";
+    private static final String INSTANCE_WAS_PREEMPTED = "Low priority instance was preempted";
+    private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
 
     static {
         SCALE_SET_FAILED_STATUS = new InstanceViewStatus();
-        SCALE_SET_FAILED_STATUS.withCode(VM_FAILED_STATE + "/preempted");
-        SCALE_SET_FAILED_STATUS.withMessage("Low priority instance was preempted");
+        SCALE_SET_FAILED_STATUS.withCode(VM_FAILED_STATE + RESOURCE_DELIMITER + PREEMPTED);
+        SCALE_SET_FAILED_STATUS.withMessage(INSTANCE_WAS_PREEMPTED);
     }
 
     private final MessageHelper messageHelper;
@@ -170,7 +172,7 @@ public class AzureVMService {
 
     private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
                                                                         final String scaleSetName) {
-        Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
+        final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
         if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
             PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
             return scaleSetVMs.size() > 0
