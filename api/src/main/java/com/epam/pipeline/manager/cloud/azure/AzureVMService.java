@@ -85,7 +85,7 @@ public class AzureVMService {
     }
 
     private String getInstanceResourceName(final AzureRegion region, final String instanceId) {
-        return getVmResource(region, instanceId)
+        return searchVmResource(region, instanceId)
                 .map(Resource::tags)
                 .map(Map::entrySet)
                 .map(Set::stream)
@@ -97,7 +97,7 @@ public class AzureVMService {
                         MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, instanceId)));
     }
 
-    private Optional<? extends Resource> getVmResource(final AzureRegion region, final String instanceId) {
+    public Optional<? extends Resource> searchVmResource(final AzureRegion region, final String instanceId) {
         final Optional<String> scaleSetName = getScaleSetName(instanceId);
         if(scaleSetName.isPresent()) {
             return findVmScaleSetByName(region, scaleSetName.get());
