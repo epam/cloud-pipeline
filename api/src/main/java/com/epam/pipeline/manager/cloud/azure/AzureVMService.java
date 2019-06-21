@@ -64,6 +64,16 @@ public class AzureVMService {
     private static final String RESOURCE_DELIMITER = "/";
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
+    private static final String SUCCEEDED = "Succeeded";
+    private static final String PREEMPTED = "preempted";
+    private static final String INSTANCE_WAS_PREEMPTED = "Low priority instance was preempted";
+    private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
+
+    static {
+        SCALE_SET_FAILED_STATUS = new InstanceViewStatus();
+        SCALE_SET_FAILED_STATUS.withCode(VM_FAILED_STATE + RESOURCE_DELIMITER + PREEMPTED);
+        SCALE_SET_FAILED_STATUS.withMessage(INSTANCE_WAS_PREEMPTED);
+    }
 
     private final MessageHelper messageHelper;
 
@@ -75,6 +85,24 @@ public class AzureVMService {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
     }
 
+    public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
+        final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, tagValue);
+        final PowerState powerState = virtualMachine.getPowerState();
+        if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
+            throw new AzureException(messageHelper.getMessage(
+                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
+        }
+        return virtualMachine;
+    }
+
+    public AzureVirtualMachineStats getAliveVMByRunId(final AzureRegion region, final String tagValue) {
+        return getVMStatsByTag(region, tagValue);
+    }
+
+    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
+        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
+    }
+
     public void terminateInstance(final AzureRegion region, final String instanceId) {
         final Azure azure = buildClient(region.getAuthFile());
         final String instanceName = getInstanceResourceName(region, instanceId);
@@ -82,6 +110,18 @@ public class AzureVMService {
                 .sorted(this::resourcesTerminationOrder)
                 .map(GenericResource::id)
                 .forEach(resource -> azure.genericResources().deleteById(resource));
+    }
+
+    public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
+        final String interfaceId = vm.primaryNetworkInterfaceId();
+        return buildClient(authFile).networkInterfaces().getById(interfaceId);
+    }
+
+    public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
+        final Optional<String> scaleSetName = getScaleSetName(vmName);
+        return scaleSetName.isPresent()
+                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get())
+                : fetchFailingStatusFromVm(region, vmName);
     }
 
     private String getInstanceResourceName(final AzureRegion region, final String instanceId) {
@@ -125,35 +165,24 @@ public class AzureVMService {
         return items[items.length - 1];
     }
 
-    public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
-        final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, tagValue);
-        final PowerState powerState = virtualMachine.getPowerState();
-        if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
-            throw new AzureException(messageHelper.getMessage(
-                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
-        }
-        return virtualMachine;
-    }
-
-    public AzureVirtualMachineStats getAliveVMByRunId(final AzureRegion region, final String tagValue) {
-        return getVMStatsByTag(region, tagValue);
-    }
-
-    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
-        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
-    }
-
     private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final AzureRegion region,
                                                                   final String scaleSetName) {
         return findVmScaleSetByName(region.getAuthFile(), region.getResourceGroup(), scaleSetName);
     }
 
-    public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
-        final String interfaceId = vm.primaryNetworkInterfaceId();
-        return buildClient(authFile).networkInterfaces().getById(interfaceId);
+    private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
+                                                                        final String scaleSetName) {
+        final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
+        if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
+            PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
+            return scaleSetVMs.size() > 0
+                    ? findFailedStatus(scaleSetVMs.get(0).instanceView().statuses())
+                    : Optional.of(SCALE_SET_FAILED_STATUS);
+        }
+        return Optional.empty();
     }
 
-    public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
+    private Optional<InstanceViewStatus> fetchFailingStatusFromVm(final AzureRegion region, final String vmName) {
         final Optional<VirtualMachine> virtualMachine = findVmByName(region, vmName);
         if (!virtualMachine.isPresent()) {
             return Optional.empty();
@@ -168,6 +197,10 @@ public class AzureVMService {
             return Optional.empty();
         }
 
+        return findFailedStatus(statuses);
+    }
+
+    private Optional<InstanceViewStatus> findFailedStatus(final List<InstanceViewStatus> statuses) {
         return statuses.stream()
                 .filter(status -> status.code().startsWith(VM_FAILED_STATE))
                 .findFirst();
