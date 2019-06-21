@@ -100,6 +100,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 return instance_name
         return None
 
+    def find_nodes_with_run_id(self, run_id):
+        for resource in self.resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
+            if str(resource.type).split('/')[-1] == "virtualMachines":
+                return [resource.name]
+            elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+                return [resource.name + "000000", resource.name + "000001"]
+        return []
+
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         pass
 
@@ -435,6 +443,9 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         for vm in self.compute_client.virtual_machine_scale_set_vms.list(self.resource_group_name, scale_set_name):
             vm_vmss_id = vm.instance_id
             break
+        if vm_vmss_id == None:
+            raise RuntimeError('Failed to find instance in ScaleSet: {}. Seems that instance was preempted.'.format(scale_set_name))
+
         instance_name = self.compute_client.virtual_machine_scale_set_vms \
             .get_instance_view(self.resource_group_name, scale_set_name, vm_vmss_id) \
             .additional_properties["computerName"]
