@@ -194,7 +194,7 @@ public class PipelineRunManager {
         int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
-        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) < maxRunsNumber, messageHelper.getMessage(
+        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
         Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
@@ -264,7 +264,7 @@ public class PipelineRunManager {
         int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
-        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) < maxRunsNumber, messageHelper.getMessage(
+        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
         Pipeline pipeline = pipelineManager.load(pipelineId);
