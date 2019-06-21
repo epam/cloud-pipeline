@@ -36,9 +36,12 @@ class S3Client(CloudClient):
     def assert_policy(self, bucket_name, sts, lts, backup_duration):
         sleep(5)
         actual_policy = self.s3_get_bucket_lifecycle(bucket_name)
-        assert actual_policy['shortTermStorageDuration'] == sts, "STS assertion failed"
-        assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
-        assert actual_policy['backupDuration'] == backup_duration, "Backup Duration assertion failed"
+        if sts:
+            assert actual_policy['shortTermStorageDuration'] == sts, "STS assertion failed"
+        if lts:
+            assert actual_policy['longTermStorageDuration'] == lts, "LTS assertion failed"
+        if backup_duration:
+            assert actual_policy['backupDuration'] == backup_duration, "Backup Duration assertion failed"
 
     def get_modification_date(self, path):
         listing = self._get_listing(path)
@@ -73,7 +76,7 @@ class S3Client(CloudClient):
             Bucket=bucket_name,
             WaiterConfig={
                 'Delay': 3,
-                'MaxAttempts': 20
+                'MaxAttempts': 40
             }
         )
 

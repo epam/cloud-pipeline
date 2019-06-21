@@ -143,8 +143,8 @@ class TestTagging(object):
          2. error message
      """
     test_case_for_non_existing = [
-        ('cp://non_existing/{}'.format(test_file), 'data storage with id: \'non_existing\' was not found'),
-        ('cp://{}/non_existing'.format(bucket), 'path \'non_existing\' for bucket \'{}\' does not exist'.format(bucket))
+        ('cp://non_existing/{}'.format(test_file), "data storage with id: 'non_existing' was not found"),
+        ('cp://{}/non_existing'.format(bucket), "Storage path 'non_existing' for bucket '%s' does not exist" % bucket)
     ]
 
     @pytest.mark.parametrize("path,message", test_case_for_non_existing)
@@ -170,7 +170,7 @@ class TestTagging(object):
             set_storage_tags(path, [self.tag1])
 
             stderr = delete_storage_tags(path, [self.tag2[1]], expected_status=1)[1]
-            assert_error_message_is_present(stderr, 'Tag \'{}\' does not exist'.format(self.tag2[1]))
+            assert_error_message_is_present(stderr, "Tag '%s' does not exist" % self.tag2[1])
 
             assert_tags_listing(self.bucket, path, [self.tag1])
             pipe_storage_rm(path, args=self.rm_arguments())

@@ -25,13 +25,13 @@ class TestMoveWithFiles(object):
     other_bucket_name = "{}-other".format(bucket_name)
     empty_bucket_name = "{}-empty".format(bucket_name)
     current_directory = os.getcwd()
-    home_dir = "test_mv_home_dir-670/"
+    home_dir = "test_mv_home_dir-670%s/" % get_test_prefix()
     test_prefix = "mv-files-"
     output_folder = test_prefix + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = test_prefix + TestFiles.TEST_FILE1
     test_file_2 = test_prefix + TestFiles.TEST_FILE2
     test_folder = test_prefix + TestFiles.TEST_FOLDER
-    source_dir = test_prefix + "sources/"
+    source_dir = test_prefix + "sources%s/" % get_test_prefix()
     upload_folder_case = "EPMCMBIBPC-1999"
 
     @classmethod

@@ -81,6 +81,7 @@ def pipe_storage_rm(source, recursive=False, args=None, expected_status=0, token
 def create_data_storage(bucket_name, path=None, versioning=False, token=None, expected_status=0,
                         folder=None, sts="", lts="", backup_duration="", region_id="default"):
     provider = os.environ['CP_PROVIDER']
+    region_id = os.environ['CP_TEST_REGION_ID']
     path = path if path else bucket_name
     command = ['pipe', 'storage', 'create', '--name', bucket_name, '-c', '--path', path,
                "-d", "The test bucket for integration testing", "-sts", sts, "-lts", lts, "-t", provider,

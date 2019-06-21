@@ -72,12 +72,11 @@ class AzureClient(CloudClient):
             return -1
         return 0
 
-    @staticmethod
-    def resolve_azure_api(resource):
+    def resolve_azure_api(self, resource):
         """ This method retrieves the latest non-preview api version for
         the given resource (unless the preview version is the only available
         api version) """
-        provider = AzureClient.res_client.providers.get(resource.id.split('/')[6])
+        provider = self.res_client.providers.get(resource.id.split('/')[6])
         rt = next((t for t in provider.resource_types
                    if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
         if rt and 'api_versions' in rt.__dict__:

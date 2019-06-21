@@ -1,6 +1,6 @@
 pytest
 boto3
-google-api-python-client=1.7.9
+google-api-python-client==1.7.9
 azure-storage-blob==1.5.0
 google-cloud-storage==1.14.0
 tzlocal==1.5.1
