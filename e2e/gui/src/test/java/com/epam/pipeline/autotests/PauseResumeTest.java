@@ -164,7 +164,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                         .switchToCluster()
                         .setClusterHddExtraMulti("1")
                         .save()
-                        .sleep(1, SECONDS)
+                        .sleep(3, SECONDS)
                         .click(OK));
 
         tools()
