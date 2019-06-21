@@ -85,7 +85,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         log.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, numberOfRuns);
-        Assert.isTrue(numberOfRuns < maxRunsNumber, messageHelper.getMessage(
+        Assert.isTrue(numberOfRuns <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, numberOfRuns));
     }
 
