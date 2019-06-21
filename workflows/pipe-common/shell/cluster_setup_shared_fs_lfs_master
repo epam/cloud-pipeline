@@ -39,8 +39,10 @@ else
             yum --disablerepo="*" --enablerepo="lizardfs" -q update
         fi
 
-        yum -y -q install   epel-release \
-                            lizardfs-master
+        # epel-release shall be already available, before installing LFS. Otherwise it will fail with libJudy installation
+        # See: https://docs.lizardfs.com/adminguide/installation.html#installing-from-redhat-el-centos-packages
+        yum -y -q install epel-release && \
+        yum -y -q install lizardfs-master
         _LFS_INSTALL_RESULT=$?
     else
         apt-get install lsb-release gnupg -y -qq
