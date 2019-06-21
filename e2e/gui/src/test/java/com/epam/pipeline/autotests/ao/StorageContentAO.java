@@ -610,11 +610,13 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public SelectedElementsAO(String[] names) {
             Arrays.stream(names)
-                    .forEach(elementName ->
-                            $(tagName("tbody"))
-                                    .find(byText(elementName))
-                                    .closest("tr")
-                                    .find(className("ant-checkbox-wrapper")).should(visible).click());
+                    .forEach(elementName -> {
+                        sleep(1, SECONDS);
+                        $(tagName("tbody"))
+                                .find(byText(elementName))
+                                .closest("tr")
+                                .find(className("ant-checkbox-wrapper")).should(visible).click();
+                    });
         }
 
         public StorageContentAO removeAllSelected() {
