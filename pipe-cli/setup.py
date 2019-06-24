@@ -16,30 +16,17 @@
 from setuptools import setup, find_packages
 from src.version import __version__
 
+with open('requirements.txt') as requirements_file:
+    requirements = requirements_file.read().splitlines()
+
 setup(
     name='PipelineCLI',
     version=__version__,
     py_modules=['pipe'],
     packages=find_packages(),
+    data_files=[('requirements', ['requirements.txt'])],
     include_package_data=True,
-    install_requires=[
-        'click==6.7',
-        'PTable==0.9.2',
-        'requests==2.20.0',
-        'pytz==2018.3',
-        'tzlocal==1.5.1',
-        'mock==2.0.0',
-        'requests_mock==1.4.0',
-        'pytest==3.2.5',
-        'pytest-cov==2.5.1',
-        'boto3==1.6.9',
-        'botocore==1.9.9',
-        'future',
-        'PyJWT==1.6.1',
-        'pypac==0.8.1',
-        'beautifulsoup4==4.6.1',
-        'azure-storage-blob==1.5.0'
-    ],
+    install_requires=requirements,
     entry_points='''
         [console_scripts]
         pipe=pipe:cli
