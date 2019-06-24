@@ -475,13 +475,13 @@ public class SystemPreferences {
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
-            new IntPreference("ge.autoscaling.scale.up.timeout", null,
+            new IntPreference("ge.autoscaling.scale.up.timeout", 30,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
     public static final IntPreference GE_AUTOSCALING_SCALE_DOWN_TIMEOUT =
-            new IntPreference("ge.autoscaling.scale.down.timeout", null,
+            new IntPreference("ge.autoscaling.scale.down.timeout", 30,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_POLLING_TIMEOUT =
-            new IntPreference("ge.autoscaling.scale.up.polling.timeout", null,
+            new IntPreference("ge.autoscaling.scale.up.polling.timeout", 900,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
 
     //GCP
