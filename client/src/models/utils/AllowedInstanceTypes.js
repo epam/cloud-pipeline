@@ -42,7 +42,7 @@ export default class AllowedInstanceTypes extends Remote {
       this._isSpot = value;
       this.initialize();
       this.invalidateCache();
-      this._loaded = false;
+      this._loadRequired = true;
       this.fetchIfNeededOrWait();
       this._changed = true;
     }
@@ -53,7 +53,7 @@ export default class AllowedInstanceTypes extends Remote {
       this._toolId = value;
       this.initialize();
       this.invalidateCache();
-      this._loaded = false;
+      this._loadRequired = true;
       this.fetchIfNeededOrWait();
       this._changed = true;
     }
@@ -68,7 +68,7 @@ export default class AllowedInstanceTypes extends Remote {
       this._regionId = value;
       this.initialize();
       this.invalidateCache();
-      this._loaded = false;
+      this._loadRequired = true;
       this.fetchIfNeededOrWait();
       this._changed = true;
     }
