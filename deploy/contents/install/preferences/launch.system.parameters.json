@@ -80,7 +80,7 @@
     {
         "name": "INPUT_DIR",
         "type": "string",
-        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the S3 buckets automatically",
+        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
         "defaultValue": ""
     },
     {
