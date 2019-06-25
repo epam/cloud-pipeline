@@ -75,10 +75,13 @@ export default class AWSRegionTag extends React.Component {
 
   @computed
   get provider () {
-    if (this.region) {
-      return this.region.provider;
+    if (this.region && this.region.provider) {
+      return this.region.provider.toUpperCase();
     }
-    return this.props.provider;
+    if (this.props.provider) {
+      return this.props.provider.toUpperCase();
+    }
+    return null;
   }
 
   @computed
@@ -241,6 +244,17 @@ export default class AWSRegionTag extends React.Component {
     if (this.props.displayName && this.region) {
       parts.push(
         <span key="name" className={styles.title}>{this.region.name}</span>
+      );
+    }
+    if (this.provider) {
+      parts.push(
+        <span
+          key="provider"
+          className={styles.provider}
+          data-provider={this.provider}
+        >
+          {this.provider}
+        </span>
       );
     }
     if (parts.length > 0) {

@@ -19,6 +19,30 @@
   white-space: nowrap;
 }
 
+.provider {
+  margin-right: 2px;
+  border: none;
+  padding: 0 2px;
+  font-size: smaller;
+  line-height: 1em;
+  font-weight: normal;
+}
+
+.provider[data-provider="AWS"] {
+  color: white;
+  background-color: #bf7c00;
+}
+
+.provider[data-provider="AZURE"] {
+  color: white;
+  background-color: rgb(0, 92, 213);
+}
+
+.provider[data-provider="GCP"] {
+  color: white;
+  background-color: rgb(18, 168, 88);
+}
+
 .flag::before {
   content: "\00a0";
 }
