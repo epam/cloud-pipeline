@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+FROM library/ubuntu:18.04
 
 # Common applications
-RUN yum install -y wget \
+RUN apt install -y wget \
                    git \
                    curl \
-                   epel-release \
-                   java-1.8.0-openjdk \
+                   openjdk-8-jdk \
                    python \
                    which && \
-    yum clean all && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
