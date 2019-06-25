@@ -20,8 +20,7 @@ RUN apt update && \
                    git \
                    curl \
                    openjdk-8-jdk \
-                   python \
-                   which && \
+                   python && \
     curl https://bootstrap.pypa.io/get-pip.py | python -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
