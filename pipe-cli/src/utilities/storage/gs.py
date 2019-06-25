@@ -1,7 +1,6 @@
 import copy
 import os
 from datetime import datetime, timedelta
-from google.resumable_media.requests import Download, ChunkedDownload
 
 try:
     from urllib.parse import urlparse  # Python 3
@@ -50,14 +49,14 @@ class GsManager:
     def __init__(self, client):
         self.client = client
 
-    def _chunked_blob(self, bucket, blob_name, progress_callback):
+    def _progress_blob(self, bucket, blob_name, progress_callback):
         """
         The method is a workaround for the absence of support for the uploading and downloading callbacks
         in the official SDK.
 
-        See _ChunkedBlob documentation for more info.
+        See _ProgressBlob documentation for more info.
         """
-        return _ChunkedBlob(
+        return _ProgressBlob(
             name=blob_name,
             bucket=bucket,
             progress_callback=progress_callback
@@ -295,38 +294,52 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         return tags
 
 
-class _ChunkedBlob(Blob):
-    DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024  # 4 MB
+class ProgressStream:
+
+    def __init__(self, stream, progress_callback, progress_chunk_size):
+        """
+        Simple stream wrapper that supports progress callbacks.
+
+        Progress callbacks are time-consuming actions. To improve overall performance callbacks have to be called
+        only a limited number of times. The amount of transferred data to cause a new progress callback is specified
+        in progress_chunk_size parameter.
+
+        :param stream: Wrapping stream.
+        :param progress_callback: Progress callback.
+        :param progress_chunk_size: Required amount of transferred data from the previous progress callback
+         to cause a new callback.
+        """
+        self._stream = stream
+        self._progress_callback = progress_callback
+        self._progress_chunk_size = progress_chunk_size
+        self._bytes_transferred = 0
+        self._progress_chunk = 0
+
+    def write(self, data):
+        self._stream.write(data)
+        self._bytes_transferred += len(data)
+        current_chunk = self._bytes_transferred / self._progress_chunk_size
+        if current_chunk > self._progress_chunk:
+            self._progress_chunk = current_chunk
+            if self._progress_callback:
+                self._progress_callback(self._bytes_transferred)
+
+
+class _ProgressBlob(Blob):
+    DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
 
     def __init__(self, progress_callback=None, *args, **kwargs):
         """
         The class is a workaround for the absence of support for the uploading and downloading callbacks
         in the official SDK. There is no issues for support of such a feature. Nevertheless if the support for
-        uploading and downloading callbacks will be provided the usages of _ChunkedBlob class should be removed.
+        uploading and downloading callbacks will be provided the usages of _ProgressBlob class should be removed.
         """
-        super(_ChunkedBlob, self).__init__(chunk_size=_ChunkedBlob.DEFAULT_CHUNK_SIZE, *args, **kwargs)
+        super(_ProgressBlob, self).__init__(*args, **kwargs)
         self.progress_callback = progress_callback
 
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        if self.chunk_size is None:
-            download = Download(
-                download_url, stream=file_obj, headers=headers, start=start, end=end
-            )
-            download.consume(transport)
-        else:
-            download = ChunkedDownload(
-                download_url,
-                self.chunk_size,
-                file_obj,
-                headers=headers,
-                start=start if start else 0,
-                end=end,
-            )
-
-            while not download.finished:
-                if self.progress_callback:
-                    self.progress_callback(download.bytes_downloaded)
-                download.consume_next_chunk(transport)
+        stream = ProgressStream(file_obj, self.progress_callback, _ProgressBlob.DEFAULT_CHUNK_SIZE)
+        super(_ProgressBlob, self)._do_download(transport, stream, download_url, headers, start, end)
 
     def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
         upload, transport = self._initiate_resumable_upload(
@@ -374,7 +387,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         if StorageOperations.file_is_empty(size):
             blob = bucket.blob(source_key)
         else:
-            blob = self._chunked_blob(bucket, source_key, progress_callback)
+            blob = self._progress_blob(bucket, source_key, progress_callback)
         blob.download_to_filename(destination_key)
         if progress_callback is not None:
             progress_callback(size)
@@ -400,7 +413,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = self._chunked_blob(bucket, destination_key, progress_callback)
+        blob = self._progress_blob(bucket, destination_key, progress_callback)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
         if progress_callback is not None:
@@ -451,7 +464,7 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         if StorageOperations.file_is_empty(size):
             blob = bucket.blob(source_key)
         else:
-            blob = self._chunked_blob(bucket, source_key, progress_callback)
+            blob = self._progress_blob(bucket, source_key, progress_callback)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
         if progress_callback is not None:
