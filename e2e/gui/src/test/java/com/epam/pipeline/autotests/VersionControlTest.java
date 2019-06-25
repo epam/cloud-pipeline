@@ -58,7 +58,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     private final String backgroundColorOfDeletedFile = "#fff2ef";
     private final String backgroundColorOfRestoredFile = "#000000";
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @AfterClass(alwaysRun = true)
     public void removeStorages() {
         logoutIfNeededAndPerform(() -> {
@@ -73,7 +73,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
         });
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @BeforeClass(alwaysRun = true)
     public void createStorageAndUser() {
         navigationMenu()
@@ -89,7 +89,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .closeAll();
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test
     @TestCase({"EPMCMBIBPC-813"})
     public void validateShowFilesVersions() {
@@ -105,7 +105,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .assertFilesHaveVersions();
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"validateShowFilesVersions"})
     @TestCase({"EPMCMBIBPC-815"})
     public void deleteFileByNonAdminUser() {
@@ -139,7 +139,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"deleteFileByNonAdminUser"})
     @TestCase({"EPMCMBIBPC-816"})
     public void validateRestoreFile() {
@@ -159,7 +159,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName());
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"validateRestoreFile"})
     @TestCase({"EPMCMBIBPC-820"})
     public void checkFilesVersionsAfterUpdate() {
@@ -190,7 +190,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensure(EDIT, visible);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"checkFilesVersionsAfterUpdate"})
     @TestCase({"EPMCMBIBPC-888"})
     public void validateRestoreSpecifiedFileVersion() {
@@ -207,7 +207,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateHasSize(0);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"validateRestoreSpecifiedFileVersion"})
     @TestCase({"EPMCMBIBPC-841"})
     public void deleteFileThatHasDeleteMarker() {
@@ -235,7 +235,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(file.getName());
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"deleteFileThatHasDeleteMarker"})
     @TestCase({"EPMCMBIBPC-842"})
     public void validateDeleteEmptyFolder() {
@@ -257,7 +257,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(anotherFolderName);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"validateDeleteEmptyFolder"})
     @TestCase({"EPMCMBIBPC-844"})
     public void markToDeleteNotEmptyFolder() {
@@ -277,7 +277,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName());
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"markToDeleteNotEmptyFolder"})
     @TestCase({"EPMCMBIBPC-845"})
     public void validateDeleteNotEmptyFolder() {
@@ -294,7 +294,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(deletionFolderName);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"validateDeleteNotEmptyFolder"})
     @TestCase({"EPMCMBIBPC-854"})
     public void readPermissionTestForBucketWithVersions() {
@@ -321,7 +321,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateStorageIsNotPresent(readPermitsStorageName);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(dependsOnMethods = {"readPermissionTestForBucketWithVersions"})
     @TestCase({"EPMCMBIBPC-855"})
     public void editPermissionTestForBucketWithVersions() {
@@ -355,7 +355,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .ensureNotVisible(EDIT, DELETE);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1502"})
     public void deletingBucketAfterDisablingOfVersioning() {
@@ -383,7 +383,7 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateStorageIsNotPresent(storage1502);
     }
 
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     @Test(priority = 10)
     @TestCase({"EPMCMBIBPC-1540"})
     public void deleteOneOfSiblingsFiles() {
