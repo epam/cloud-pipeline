@@ -22,6 +22,8 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.google.api.services.compute.model.Instance;
+import com.google.api.services.compute.model.Operation;
+import com.google.api.services.compute.model.OperationList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -39,6 +41,9 @@ public class GCPVMService {
     private static final String LABEL_FILTER = "labels.%s=\"%s\"";
     private static final String STATUS_FILTER = "status=\"%s\"";
     private static final String OR = " OR ";
+    private static final String COMPUTE_OPERATIONS_FILTER = "targetLink eq .*%s";
+    private static final String COMPUTE_INSTANCES_PREEMPTED = "compute.instances.preempted";
+    private static final String COMPUTE_INSTANCE_DELETED = "delete";
 
 
     private final GCPClient gcpClient;
@@ -84,20 +89,39 @@ public class GCPVMService {
 
     public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region,
                                                                   final String instanceId) {
+        Optional<InstanceTerminationState> result = Optional.empty();
         try {
-            final Instance instance = getInstanceById(region, instanceId);
-            if (instance != null && instance.getStatus().equals(GCPInstanceStatus.TERMINATED.name())) {
-                return Optional.of(
-                        InstanceTerminationState.builder()
-                                .instanceId(instanceId)
-                                .stateCode(GCPInstanceStatus.TERMINATED.name())
-                                .stateMessage(instance.getStatusMessage()).build()
-                );
+            OperationList operationList = gcpClient.buildComputeClient(region)
+                    .zoneOperations()
+                    .list(region.getProject(), region.getRegionCode())
+                    .setFilter(String.format(COMPUTE_OPERATIONS_FILTER, instanceId)).execute();
+
+            if (!operationList.isEmpty()) {
+                for (final Operation item : operationList.getItems()) {
+                    if (item.getOperationType().equals(COMPUTE_INSTANCES_PREEMPTED)) {
+                        // need a break here because if instance was preempted we need to return exactly this status
+                        result = Optional.of(
+                                InstanceTerminationState.builder()
+                                        .instanceId(instanceId)
+                                        .stateCode(GCPInstanceStatus.PREEMPTED.name())
+                                        .stateMessage(item.getStatusMessage()).build()
+                        );
+                        break;
+                    } else if (item.getOperationType().equals(COMPUTE_INSTANCE_DELETED)) {
+                        result = Optional.of(
+                                InstanceTerminationState.builder()
+                                        .instanceId(instanceId)
+                                        .stateCode(GCPInstanceStatus.TERMINATED.name())
+                                        .stateMessage(item.getStatusMessage()).build()
+                        );
+                    }
+                }
             }
-            return Optional.empty();
+
+            return result;
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            return Optional.empty();
+            return result;
         }
     }
 
