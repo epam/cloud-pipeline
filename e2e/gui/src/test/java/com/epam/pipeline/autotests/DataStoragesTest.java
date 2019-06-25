@@ -589,7 +589,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
         this.storage = storage;
     }
 
-    void setPresetStorage(String presetStorage) {
+    public void setPresetStorage(String presetStorage) {
         this.presetStorage = presetStorage;
     }
 }
