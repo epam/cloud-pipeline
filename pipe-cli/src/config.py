@@ -41,7 +41,7 @@ def check_token(token, timezone, print_info=False):
         click.echo(click.style('No access token is provided', fg='red'), err=True)
         return
     try:
-        (header_decoded, payload_decoded, signature) = token.split('.')
+        payload_decoded = token.split('.')[1]
         # payload_decoded_correct_padding - is the same string with additional '=' symbols to make string length
         # be dividable by 4:
         payload_decoded_correct_padding = payload_decoded + b'=' * (4 - len(payload_decoded) % 4)
@@ -122,24 +122,23 @@ def check_token(token, timezone, print_info=False):
 
 
 def silent_print_config_info():
-    try:
-        config = Config.instance()
-        if config is not None:
-            click.echo()
-            config.validate(print_info=True)
-    except Exception:
-        pass
+    config = Config.instance(raise_config_not_found_exception=False)
+    if config is not None and config.initialized:
+        click.echo()
+        config.validate(print_info=True)
 
 
 class Config(object):
     """Provides a wrapper for a pipe command configuration"""
 
-    def __init__(self):
+    def __init__(self, raise_config_not_found_exception=True):
+        self.initialized = False
         self.api = os.environ.get('API')
         self.access_key = os.environ.get('API_TOKEN')
         self.tz = time_zone_param_type.LOCAL_ZONE
         self.proxy = None
         if self.api and self.access_key:
+            self.initialized = True
             return
 
         config_file = Config.config_path()
@@ -154,7 +153,9 @@ class Config(object):
                     self.tz = data['tz']
                 if 'proxy' in data:
                     self.proxy = data['proxy']
-        else:
+                if self.api and self.access_key:
+                    self.initialized = True
+        elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
 
     def validate(self, print_info=False):
@@ -169,10 +170,9 @@ class Config(object):
                 if quiet_flag_property_name is not None and quiet_flag_property_name in ctx.params:
                     skip_validation = bool(ctx.params[quiet_flag_property_name])
                 if not skip_validation:
-                    try:
-                        Config.instance().validate()
-                    except Exception:
-                        pass
+                    config = Config.instance(raise_config_not_found_exception=False)
+                    if config is not None and config.initialized:
+                        config.validate()
                 return ctx.invoke(f, *args, **kwargs)
             return update_wrapper(validate_access_token_wrapper, f)
         if _func is None:
@@ -220,8 +220,8 @@ class Config(object):
         return config_file
 
     @classmethod
-    def instance(cls):
-        return cls()
+    def instance(cls, raise_config_not_found_exception=True):
+        return cls(raise_config_not_found_exception)
 
     def timezone(self):
         if self.tz == 'utc':
