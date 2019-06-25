@@ -232,6 +232,7 @@ public class DockerCommitTest
                 .commit(commit ->
                         commit.setRegistry(registry)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(1, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))
