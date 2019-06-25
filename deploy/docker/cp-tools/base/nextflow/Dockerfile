@@ -15,7 +15,8 @@
 FROM library/ubuntu:18.04
 
 # Common applications
-RUN apt install -y wget \
+RUN apt update && \
+    apt install -y wget \
                    git \
                    curl \
                    openjdk-8-jdk \
