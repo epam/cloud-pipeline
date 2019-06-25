@@ -663,7 +663,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
       );
     }
     Modal.confirm({
-      title: `Do you want to pause ${this.renderPipelineName(run, true) || this.localizedString('pipeline')}?`,
+      title: (
+        <span>
+          Do you want to pause {this.renderPipelineName(run, true) || this.localizedString('pipeline')}?
+        </span>
+      ),
       content,
       style: {
         wordWrap: 'break-word'
@@ -678,7 +682,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
   showResumeConfirmDialog = (event, run) => {
     event.stopPropagation();
     Modal.confirm({
-      title: `Do you want to resume ${this.renderPipelineName(run, true) || this.localizedString('pipeline')}?`,
+      title: (
+        <span>
+          Do you want to resume {this.renderPipelineName(run, true) || this.localizedString('pipeline')}?
+        </span>
+      ),
       style: {
         wordWrap: 'break-word'
       },
