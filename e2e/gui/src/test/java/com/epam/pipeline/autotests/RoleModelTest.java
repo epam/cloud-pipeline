@@ -833,13 +833,14 @@ public class RoleModelTest
                 .ok();
     }
 
-    private PermissionTabAO.UserPermissionsTableAO getUserPipelinePermissions(Account user, String pipelineName) {
+    private PermissionTabAO.UserPermissionsTableAO getUserPipelinePermissions(final Account user,
+                                                                              final String pipelineName) {
         return getPipelinePermissionsTab(pipelineName)
                 .selectByName(getUserNameByAccountLogin(user.login))
                 .showPermissions();
     }
 
-    private PermissionTabAO getPipelinePermissionsTab(String pipelineName) {
+    private PermissionTabAO getPipelinePermissionsTab(final String pipelineName) {
         return navigationMenu()
                 .library()
                 .clickOnPipeline(pipelineName)
@@ -847,7 +848,7 @@ public class RoleModelTest
                 .clickOnPermissionsTab();
     }
 
-    private PermissionTabAO getFolderPermissionsTab(String folderName) {
+    private PermissionTabAO getFolderPermissionsTab(final String folderName) {
         return navigationMenu()
                 .library()
                 .clickOnFolder(folderName)
@@ -855,7 +856,7 @@ public class RoleModelTest
                 .clickOnPermissionsTab();
     }
 
-    private void addNewUserToBucketPermissions(Account user, String bucket) {
+    private void addNewUserToBucketPermissions(final Account user, final String bucket) {
         navigationMenu()
                 .library()
                 .selectStorage(bucket)
@@ -865,7 +866,7 @@ public class RoleModelTest
                 .closeAll();
     }
 
-    private void addNewUserToRegistryPermissions(Account account, String registryName) {
+    private void addNewUserToRegistryPermissions(final Account account, final String registryName) {
         tools()
                 .editRegistry(registryName, settings ->
                         settings.permissions()
@@ -874,7 +875,8 @@ public class RoleModelTest
                 );
     }
 
-    private void addNewUserToGroupPermissions(Account account, String registryName, String groupName) {
+    private void addNewUserToGroupPermissions(final Account account, final String registryName,
+                                              final String groupName) {
         tools()
                 .performWithin(registryName, groupName, group ->
                         group.editGroup(settings ->
@@ -884,7 +886,8 @@ public class RoleModelTest
                 );
     }
 
-    private void addNewUserToToolPermissions(Account account, String registryName, String groupName, String tool) {
+    private void addNewUserToToolPermissions(final Account account, final String registryName, final String groupName,
+                                             final String tool) {
         tools()
                 .performWithin(registryName, groupName, tool, t ->
                         t.permissions()
@@ -908,7 +911,7 @@ public class RoleModelTest
                 .launchTool(this, Utils.nameWithoutGroup(tool));
     }
 
-    private PipelineCodeTabAO getFirstVersionOfPipeline(String pipelineName) {
+    private PipelineCodeTabAO getFirstVersionOfPipeline(final String pipelineName) {
         return navigationMenu()
                 .library()
                 .clickOnPipeline(pipelineName)
@@ -917,7 +920,7 @@ public class RoleModelTest
                 .codeTab();
     }
 
-    private void assertToolsListsAreEqual(List<String> userTools, List<String> adminTools) {
+    private void assertToolsListsAreEqual(final List<String> userTools, final List<String> adminTools) {
         Collections.sort(userTools);
         Collections.sort(adminTools);
 
