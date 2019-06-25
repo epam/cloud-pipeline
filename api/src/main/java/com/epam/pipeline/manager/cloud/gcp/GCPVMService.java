@@ -87,11 +87,10 @@ public class GCPVMService {
         }
     }
 
-    public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region,
-                                                                  final String instanceId) {
+    public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region, final String instanceId) {
         Optional<InstanceTerminationState> result = Optional.empty();
         try {
-            OperationList operationList = gcpClient.buildComputeClient(region)
+            final OperationList operationList = gcpClient.buildComputeClient(region)
                     .zoneOperations()
                     .list(region.getProject(), region.getRegionCode())
                     .setFilter(String.format(COMPUTE_OPERATIONS_FILTER, instanceId)).execute();
