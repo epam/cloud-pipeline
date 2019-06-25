@@ -181,7 +181,7 @@ public class AzureStorageHelper {
         String folderPath = ProviderUtils.withoutLeadingDelimiter(ProviderUtils.withTrailingDelimiter(path.trim()));
         if (directoryExists(dataStorage, folderPath)) {
             throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, folderPath, dataStorage));
+                    MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, folderPath, dataStorage.getName()));
         }
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         folderPath += ProviderUtils.FOLDER_TOKEN_FILE;
