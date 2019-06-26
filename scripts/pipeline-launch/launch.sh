@@ -1168,6 +1168,23 @@ fi
 
 
 ######################################################
+# Setup "modules" support
+######################################################
+
+echo "Setup Environment Modules support"
+echo "-"
+
+if [ "$CP_CAP_MODULES" == "true" ]; then
+      modules_setup
+else
+    echo "Environment Modules support is not requested"
+fi
+
+######################################################
+
+
+
+######################################################
 echo Executing task
 echo "-"
 ######################################################
