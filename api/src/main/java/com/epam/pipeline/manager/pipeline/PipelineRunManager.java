@@ -1223,6 +1223,7 @@ public class PipelineRunManager {
             runInstance.setNodeImage(i.getNodeImage());
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
+            runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
         }).orElse(new RunInstance());
     }
