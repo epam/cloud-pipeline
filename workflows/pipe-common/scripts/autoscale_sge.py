@@ -492,7 +492,7 @@ class GridEngineScaleUpHandler:
                         % attempts)
             attempts -= 1
             time.sleep(self.polling_delay)
-        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_delay)
+        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
 
@@ -513,7 +513,7 @@ class GridEngineScaleUpHandler:
                         % (run_id, attempts))
             attempts -= 1
             time.sleep(self.polling_delay)
-        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_delay
+        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
 
