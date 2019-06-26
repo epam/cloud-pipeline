@@ -117,11 +117,6 @@ public class GCPVMService {
         }
     }
 
-    private Instance getInstanceById(GCPRegion region, String instanceId) throws IOException {
-        return gcpClient.buildComputeClient(region).instances()
-                .get(region.getProject(), region.getRegionCode(), instanceId).execute();
-    }
-
     private Instance findInstanceByTag(final GCPRegion region,
                                        final String key,
                                        final String value) throws IOException {

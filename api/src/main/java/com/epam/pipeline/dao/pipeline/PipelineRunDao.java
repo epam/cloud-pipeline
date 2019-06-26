@@ -676,7 +676,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(IS_SPOT.name(), instance.map(RunInstance::getSpot).orElse(null));
             params.addValue(NODE_CLOUD_REGION.name(), instance.map(RunInstance::getCloudRegionId).orElse(null));
             params.addValue(NODE_REAL_DISK.name(), instance.map(RunInstance::getEffectiveNodeDisk).orElse(null));
-            params.addValue(NODE_CLOUD_PROVIDER.name(), instance.map(i -> i.getCloudProvider().name()).orElse(null));
+            params.addValue(NODE_CLOUD_PROVIDER.name(),
+                    instance.flatMap(i -> Optional.ofNullable(i.getCloudProvider()).map(p -> p.name()))
+                            .orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
