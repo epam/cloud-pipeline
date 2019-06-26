@@ -286,15 +286,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       className: styles.treeItemName,
       render: (name, item) => {
         let nameComponent;
-        let subTitle;
-        if (item.type === ItemTypes.storage) {
-          subTitle = <AWSRegionTag regionId={item.regionId} />;
-        }
         const boldClassName = this.state.showDescription ? styles.objectNameBold : '';
         if (item.locked) {
-          nameComponent = <span><Icon type="lock" /> <span className={`object-name ${boldClassName}`}>{name}</span>{subTitle}</span>;
+          nameComponent = <span><Icon type="lock" /> <span className={`object-name ${boldClassName}`}>{name}</span></span>;
         } else {
-          nameComponent = <span><span className={`object-name ${boldClassName}`}>{name}</span>{subTitle}</span>;
+          nameComponent = <span><span className={`object-name ${boldClassName}`}>{name}</span></span>;
         }
         if (this.state.showDescription && (item.description || item.hasMetadata)) {
           nameComponent = (
@@ -322,6 +318,16 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
         return nameComponent;
+      }
+    },
+    {
+      key: 'region',
+      className: styles.treeItemRegion,
+      render: (item) => {
+        if (item.type === ItemTypes.storage) {
+          return <AWSRegionTag regionId={item.regionId} />;
+        }
+        return null;
       }
     },
     {

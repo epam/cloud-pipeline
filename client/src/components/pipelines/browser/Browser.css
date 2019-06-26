@@ -21,11 +21,17 @@ th.metadata-column-value {
 
 .tree-item-name {
   cursor: pointer;
+  width: 100px;
+  white-space: nowrap;
 }
 
 .tree-item-name-draft {
   cursor: pointer;
   color: #999;
+}
+
+.tree-item-region {
+
 }
 
 .tree-item-type {

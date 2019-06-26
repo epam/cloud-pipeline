@@ -2573,7 +2573,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                       key={`${region.id}`}
                       name={region.name}
                       value={`${region.id}`}>
-                      <AWSRegionTag regionUID={region.regionId} /> {region.name}
+                      <AWSRegionTag
+                        provider={region.provider}
+                        regionUID={region.regionId}
+                        style={{fontSize: 'larger'}}
+                      /> {region.name}
                     </Select.Option>
                   );
                 })

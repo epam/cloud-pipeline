@@ -405,7 +405,7 @@ export default class Logs extends localization.LocalizedReactComponent {
             value: (
               <span>
                 <AWSRegionTag
-                  style={{verticalAlign: 'top', marginRight: -3, marginLeft: -3}}
+                  style={{verticalAlign: 'top', marginLeft: -3, fontSize: 'larger'}}
                   regionId={instance.cloudRegionId} />
                 {instance.nodeType}
               </span>
@@ -418,7 +418,7 @@ export default class Logs extends localization.LocalizedReactComponent {
             key: 'Cloud Region',
             value: (
               <AWSRegionTag
-                style={{verticalAlign: 'top'}}
+                style={{verticalAlign: 'top', fontSize: 'larger'}}
                 regionId={instance.cloudRegionId} />
             )
           });
@@ -474,7 +474,7 @@ export default class Logs extends localization.LocalizedReactComponent {
               <AWSRegionTag
                 regionId={instance.cloudRegionId}
                 displayName
-                style={{marginLeft: -5, verticalAlign: 'top'}} />
+                style={{marginLeft: -5, verticalAlign: 'top', fontSize: 'larger'}} />
             )
           });
         }

@@ -73,14 +73,18 @@ export default class MyDataPanel extends React.Component {
   renderStorage = (storage, search) => {
     return [
       <Row
+        className={styles.storageName}
         key="title"
         type="flex"
         align="middle"
         style={{fontWeight: 'bold', fontSize: 'larger'}}>
-        <span className={styles.storageType} type={storage.type.toUpperCase()}>{storage.type.toUpperCase()}</span>
-        <span type="main" style={{marginLeft: 5}}>
+        {
+          storage.type.toUpperCase() === 'NFS' &&
+          <span className={styles.storageType} type={storage.type.toUpperCase()}>{storage.type.toUpperCase()}</span>
+        }
+        <span type="main">
+          <AWSRegionTag regionId={storage.regionId} />
           <span className="storage-name">{highlightText(storage.name, search)}</span>
-          <AWSRegionTag regionId={storage.regionId} size="small" />
         </span>
       </Row>,
       <Row key="path">

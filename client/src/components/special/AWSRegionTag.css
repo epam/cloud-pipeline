@@ -1,55 +1,22 @@
 .container {
   vertical-align: middle;
   white-space: nowrap;
-}
-
-.container.normal {
-
-}
-
-.container.small {
-  font-size: smaller;
-}
-
-.container.large {
-  font-size: larger;
+  display: inline;
+  align-items: center;
 }
 
 .title {
   white-space: nowrap;
 }
 
-.provider {
-  margin-right: 2px;
-  border: none;
-  padding: 0 2px;
-  font-size: smaller;
-  line-height: 1em;
-  font-weight: normal;
-}
-
-.provider[data-provider="AWS"] {
-  color: white;
-  background-color: #bf7c00;
-}
-
-.provider[data-provider="AZURE"] {
-  color: white;
-  background-color: rgb(0, 92, 213);
-}
-
-.provider[data-provider="GCP"] {
-  color: white;
-  background-color: rgb(18, 168, 88);
-}
-
+.provider::before,
 .flag::before {
   content: "\00a0";
 }
 
+.provider,
 .flag {
-  margin-left: 4px;
-  margin-right: 4px;
+  margin-right: 2px;
   background: no-repeat 50%;
   background-size: contain;
   position: relative;
@@ -58,3 +25,15 @@
   line-height: 1em;
 }
 
+.provider {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% auto;
+}
+
+.provider.dark,
+.flag.dark {
+  margin-right: 3px;
+  background-color: white;
+  box-shadow: 0 0 0 1px white;
+}

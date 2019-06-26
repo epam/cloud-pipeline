@@ -30,6 +30,7 @@ import {
 } from '../../models/pipelines/PipelineRunCommitCheck';
 import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
+import AWSRegionTag from '../special/AWSRegionTag';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
@@ -902,6 +903,19 @@ export default class RunTable extends localization.LocalizedReactComponent {
       },
       ...statusesFilter
     };
+    const regionColumn = {
+      dataIndex: 'instance',
+      key: 'instance',
+      className: styles.runRowInstance,
+      render: instance => instance && (
+        <AWSRegionTag
+          plainMode
+          style={{fontSize: 'larger'}}
+          provider={instance.cloudProvider}
+          regionId={instance.cloudRegionId}
+        />
+      ),
+    };
     const parentRunColumn = {
       title: 'Parent run',
       dataIndex: 'parentRunId',
@@ -1080,6 +1094,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
     return [
       runColumn,
+      regionColumn,
       parentRunColumn,
       pipelineColumn,
       dockerImageColumn,

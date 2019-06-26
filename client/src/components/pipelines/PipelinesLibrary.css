@@ -49,6 +49,7 @@
 
 .library-tree {
   font-size: 11pt;
+  width: 100%;
 }
 
 .library-tree li {
@@ -56,7 +57,13 @@
 }
 
 .tree-item-title {
+  width: 100%;
+  display: block;
+}
 
+.tree-item-title .region-flags {
+  right: 10px;
+  position: absolute;
 }
 
 .readonly {

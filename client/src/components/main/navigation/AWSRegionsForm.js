@@ -202,8 +202,12 @@ export default class AWSRegionsForm extends React.Component {
           }
           return (
             <span>
-              <AWSRegionTag regionUID={region.regionId} />
-              {highlightText(name, this.state.search)} ({region.provider})
+              <AWSRegionTag
+                showProvider
+                regionUID={region.regionId}
+                style={{fontSize: 'larger'}}
+              />
+              {highlightText(name, this.state.search)}
             </span>
           );
         }
@@ -1309,8 +1313,11 @@ class AWSRegionForm extends React.Component {
                       return (
                         <Select.Option key={r} value={r}>
                           <AWSRegionTag
+                            showProvider={false}
                             provider={this.provider}
-                            regionUID={r} style={{marginRight: 5}} />{r}
+                            regionUID={r}
+                            style={{marginRight: 5}}
+                          />{r}
                         </Select.Option>
                       );
                     })
