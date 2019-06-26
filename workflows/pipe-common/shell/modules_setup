@@ -81,11 +81,14 @@ cd modules*
 MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/modules}"
 MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/modulesfiles}"
 
-./configure --prefix=$MODULES_INSTALL_DIR --modulefilesdir=$MODULES_FILES_DIR && \
-make -j $(nrpoc) && \
-make install
+MODULES_BUILD_LOG=/var/log/modules_build.log
+./configure --prefix=$MODULES_INSTALL_DIR \
+            --modulefilesdir=$MODULES_FILES_DIR \
+            --enable-example-modulefiles=no > $MODULES_BUILD_LOG 2>&1 && \
+make -j $(nproc) >> $MODULES_BUILD_LOG 2>&1 && \
+make install >> $MODULES_BUILD_LOG 2>&1
 if [ $? -ne 0 ]; then
-    pipe_log_fail "Unable to install modules from sources, exiting" "$MODULES_INSTALL_TASK"
+    pipe_log_fail "Unable to install modules from sources, exiting. Build logs are available in $MODULES_BUILD_LOG" "$MODULES_INSTALL_TASK"
     exit 1
 fi
 
