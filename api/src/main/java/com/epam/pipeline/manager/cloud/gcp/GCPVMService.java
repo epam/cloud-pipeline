@@ -23,13 +23,14 @@ import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.google.api.services.compute.model.Instance;
 import com.google.api.services.compute.model.Operation;
-import com.google.api.services.compute.model.OperationList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -88,39 +89,31 @@ public class GCPVMService {
     }
 
     public Optional<InstanceTerminationState> getTerminationState(final GCPRegion region, final String instanceId) {
-        Optional<InstanceTerminationState> result = Optional.empty();
         try {
-            final OperationList operationList = gcpClient.buildComputeClient(region)
+            final List<Operation> operations = gcpClient.buildComputeClient(region)
                     .zoneOperations()
                     .list(region.getProject(), region.getRegionCode())
-                    .setFilter(String.format(COMPUTE_OPERATIONS_FILTER, instanceId)).execute();
+                    .setFilter(String.format(COMPUTE_OPERATIONS_FILTER, instanceId))
+                    .execute().getItems();
 
-            if (!operationList.isEmpty()) {
-                for (final Operation item : operationList.getItems()) {
-                    if (item.getOperationType().equals(COMPUTE_INSTANCES_PREEMPTED)) {
-                        // need a break here because if instance was preempted we need to return exactly this status
-                        result = Optional.of(
-                                InstanceTerminationState.builder()
-                                        .instanceId(instanceId)
-                                        .stateCode(GCPInstanceStatus.PREEMPTED.name())
-                                        .stateMessage(item.getStatusMessage()).build()
-                        );
-                        break;
-                    } else if (item.getOperationType().equals(COMPUTE_INSTANCE_DELETED)) {
-                        result = Optional.of(
-                                InstanceTerminationState.builder()
-                                        .instanceId(instanceId)
-                                        .stateCode(GCPInstanceStatus.TERMINATED.name())
-                                        .stateMessage(item.getStatusMessage()).build()
-                        );
-                    }
-                }
-            }
-
-            return result;
+            return CollectionUtils.emptyIfNull(operations)
+                    .stream()
+                    .map(Operation::getOperationType)
+                    .filter(op -> op.equals(COMPUTE_INSTANCE_DELETED) || op.equals(COMPUTE_INSTANCES_PREEMPTED))
+                    .distinct()
+                    // alphabetic comparator is enough because we lust need to put
+                    // compute.instances.preempted before delete
+                    .sorted()
+                    .findFirst()
+                    .map(op -> InstanceTerminationState.builder()
+                            .instanceId(instanceId)
+                            .stateCode(op.equals(COMPUTE_INSTANCES_PREEMPTED)
+                                    ? GCPInstanceStatus.PREEMPTED.name()
+                                    : GCPInstanceStatus.TERMINATED.name()
+                            ).build());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
-            return result;
+            return Optional.empty();
         }
     }
 
