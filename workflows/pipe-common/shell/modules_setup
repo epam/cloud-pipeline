@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Use the following environment variables to control the installation behavior"
+# CP_CAP_DISTR_MODULES_SOURCES - http location of the "modules" sources ditribution tarball
+# CP_CAP_MODULES_INSTALL_DIR - where to install "modules" (default: /usr/local/modules)
+# CP_CAP_MODULES_FILES_DIR - where are the modules files located (default: /usr/local/modules/modulesfiles)
+
+MODULES_INSTALL_TASK="InstallEnvironmentModules"
+
+######################################################
+# Check if this is a RPM Linux distribution
+######################################################
+/usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
+IS_RPM_BASED=$?
+
+######################################################
+# Install Environment Modules
+# https://modules.readthedocs.io/en/latest/module.html
+######################################################
+
+# Dependencies first
+pipe_log_info "--> Installing Environment Modules" "$MODULES_INSTALL_TASK"
+
+if [ ! -z $CP_CAP_DISTR_MODULES_DEPS ]; then
+    local_package_install $CP_CAP_DISTR_MODULES_DEPS
+    _MODULES_INSTALL_RESULT=$?
+else
+    if [[ "$IS_RPM_BASED" = 0 ]]; then
+        yum -y -q install tcl-devel
+        _MODULES_INSTALL_RESULT=$?
+    else
+        apt-get install tcl-dev -y -qq
+        _MODULES_INSTALL_RESULT=$?
+    fi
+fi
+
+if [ $_MODULES_INSTALL_RESULT -ne 0 ]; then
+    pipe_log_fail "Failed to install Environment Modules dependencies" "$MODULES_INSTALL_TASK"
+    exit 1
+fi
+
+# Grab the sources of modules
+MODULES_SOURCES_URL_S3="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/modules/sources/modules-4.2.4.tar.gz"
+MODULES_SOURCES_URL_GH="https://github.com/cea-hpc/modules/releases/download/v4.2.4/modules-4.2.4.tar.gz"
+MODULES_SOURCES_URL="${CP_CAP_DISTR_MODULES_SOURCES:-$MODULES_SOURCES_URL_S3}"
+
+mkdir -p /tmp/modules-tmp
+cd /tmp/modules-tmp
+
+wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
+if [ $? -ne 0 ]; then
+    pipe_log_info "Unable to get the modules sources from ${MODULES_SOURCES_URL}, trying GitHub" "$MODULES_INSTALL_TASK"
+    MODULES_SOURCES_URL="$MODULES_SOURCES_URL_GH"
+
+    wget -q "$MODULES_SOURCES_URL" -O modules.tar.gz
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Failed to download modules sources from ${MODULES_SOURCES_URL}, exiting" "$MODULES_INSTALL_TASK"
+        exit 1
+    fi
+fi
+
+tar -zxf modules.tar.gz
+rm -f modules.tar.gz
+cd modules*
+
+# Install modules
+MODULES_INSTALL_DIR="${CP_CAP_MODULES_INSTALL_DIR:-/usr/local/modules}"
+MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/modulesfiles}"
+
+./configure --prefix=$MODULES_INSTALL_DIR --modulefilesdir=$MODULES_FILES_DIR && \
+make -j $(nrpoc) && \
+make install
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Unable to install modules from sources, exiting" "$MODULES_INSTALL_TASK"
+    exit 1
+fi
+
+# Configure the modules setup
+ln -s $MODULES_INSTALL_DIR/init/profile.sh /etc/profile.d/modules.sh
+
+# Cleanup
+cd /
+rm -rf /tmp/modules-tmp
+
+pipe_log_info "--> Environment Modules installed" "$MODULES_INSTALL_TASK"
+pipe_log_success "Finished Environment Modules installation" "$MODULES_INSTALL_TASK"
