@@ -22,7 +22,7 @@ import java.util.Collection;
 
 public enum GCPInstanceStatus {
 
-    PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, TERMINATED;
+    PROVISIONING, STAGING, RUNNING, STOPPING, STOPPED, SUSPENDING, SUSPENDED, TERMINATED, PREEMPTED;
 
     public static Collection<GCPInstanceStatus> getWorkingStatuses() {
         return Arrays.asList(PROVISIONING, STAGING, RUNNING);
