@@ -58,12 +58,13 @@
 
 .tree-item-title {
   width: 100%;
-  display: block;
+  display: flex;
+  flex-direction: row;
 }
 
 .tree-item-title .region-flags {
-  right: 10px;
-  position: absolute;
+  flex: 1;
+  text-align: right;
 }
 
 .readonly {

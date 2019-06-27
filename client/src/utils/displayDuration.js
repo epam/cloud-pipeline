@@ -36,7 +36,7 @@ export default (start, end = undefined) => {
   if (hours > 0) {
     return plural(hours, 'hour');
   }
-  if (minutes > 1) {
+  if (minutes >= 1) {
     return `${minutes} min`;
   }
   return `${seconds} sec`;
