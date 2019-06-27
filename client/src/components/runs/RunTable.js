@@ -19,7 +19,18 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router';
-import {Alert, Checkbox, Icon, Input, message, Modal, Popover, Row, Table} from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Col,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Table
+} from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
 import PausePipeline from '../../models/pipelines/PausePipeline';
@@ -872,10 +883,21 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.nodeCount > 0) {
           clusterIcon = <Icon type="database" />;
         }
+        let instance;
+        if (run.instance) {
+          instance = (
+            <AWSRegionTag
+              plainMode
+              provider={run.instance.cloudProvider}
+              regionId={run.instance.cloudRegionId}
+            />
+          );
+        }
+        const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
-            <span>
+            <div style={{display: 'inline-table'}}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
               <Popover
                 mouseEnterDelay={1}
@@ -893,28 +915,38 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   </div>
                 }
                 trigger="hover">
-                {clusterIcon} <Icon type="export" /> {text}
+                {clusterIcon} <Icon type="export" /> {name}
+                {instance && <br />}
+                {
+                  instance &&
+                  <span style={{marginLeft: 18}}>
+                  {instance}
+                </span>
+                }
               </Popover>
-            </span>
+            </div>
           );
         } else {
-          return (<span><StatusIcon run={run} small /> {clusterIcon} {text}</span>);
+          return (
+            <div style={{display: 'inline-table'}}>
+              <StatusIcon
+                run={run}
+                small
+                additionalStyle={{marginRight: 5}}
+              />
+              {clusterIcon}{name}
+              {instance && <br />}
+              {
+                instance &&
+                <span style={{marginLeft: 18}}>
+                  {instance}
+                </span>
+              }
+            </div>
+          );
         }
       },
       ...statusesFilter
-    };
-    const regionColumn = {
-      dataIndex: 'instance',
-      key: 'instance',
-      className: styles.runRowInstance,
-      render: instance => instance && (
-        <AWSRegionTag
-          plainMode
-          style={{fontSize: 'larger'}}
-          provider={instance.cloudProvider}
-          regionId={instance.cloudRegionId}
-        />
-      ),
     };
     const parentRunColumn = {
       title: 'Parent run',
@@ -1094,7 +1126,6 @@ export default class RunTable extends localization.LocalizedReactComponent {
 
     return [
       runColumn,
-      regionColumn,
       parentRunColumn,
       pipelineColumn,
       dockerImageColumn,

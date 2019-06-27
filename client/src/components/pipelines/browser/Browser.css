@@ -452,7 +452,7 @@ tr.table-row-selected {
 .storage-region {
   margin-left: 2px;
   border-radius: 4px;
-  padding: 1px 3px;
+  padding: 1px 5px 2px;
   vertical-align: text-top;
   background-color: #555;
   color: white;

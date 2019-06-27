@@ -1349,9 +1349,12 @@ export default class DataStorage extends React.Component {
                     <AWSRegionTag
                       className={styles.storageRegion}
                       darkMode
-                      style={{marginLeft: 5, fontSize: 'medium'}}
                       displayName
-                      regionId={this.props.info.value.regionId} />
+                      flagStyle={{fontSize: 'smaller'}}
+                      providerStyle={{fontSize: 'smaller'}}
+                      regionId={this.props.info.value.regionId}
+                      style={{marginLeft: 5, fontSize: 'medium'}}
+                    />
                   </span>
                 }
               />

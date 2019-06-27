@@ -23,15 +23,16 @@ import './AWSRegionTagFlags.less';
 
 @inject('awsRegions')
 @observer
-export default class AWSRegionTag extends React.Component {
-
+class AWSRegionTag extends React.Component {
   static propTypes = {
     className: PropTypes.string,
     darkMode: PropTypes.bool,
     displayFlag: PropTypes.bool,
     displayName: PropTypes.bool,
+    flagStyle: PropTypes.object,
     plainMode: PropTypes.bool,
     provider: PropTypes.string,
+    providerStyle: PropTypes.object,
     regionId: PropTypes.number,
     regionUID: PropTypes.string,
     showProvider: PropTypes.oneOf([true, false, undefined]),
@@ -43,7 +44,7 @@ export default class AWSRegionTag extends React.Component {
     displayName: false,
     displayFlag: true,
     plainMode: false,
-    showProvider: undefined,
+    showProvider: undefined
   };
 
   @computed
@@ -101,7 +102,7 @@ export default class AWSRegionTag extends React.Component {
     if (this.zone) {
       const simpleZone = this.zone.toLowerCase().split('-')[0];
       let getGlobalFn = () => ({
-        zone: simpleZone.toUpperCase(),
+        zone: simpleZone,
         result: simpleZone
       });
       if (this.provider === 'AZURE' || this.zone.split('-').length === 1) {
@@ -161,7 +162,7 @@ export default class AWSRegionTag extends React.Component {
             return {
               region: zone,
               result: result.result,
-              zone,
+              zone
             };
           }
           return null;
@@ -237,13 +238,16 @@ export default class AWSRegionTag extends React.Component {
     const parts = [];
     if (this.provider && this.shouldDisplayProvider) {
       if (this.props.plainMode) {
-        parts.push(this.provider);
+        parts.push(this.provider.toLowerCase());
       } else {
         parts.push(
           <span
-            key="provider"
-            className={`${styles.provider} provider ${this.provider} ${this.props.darkMode && styles.dark}`}
+            className={
+              `${styles.provider} provider ${this.provider} ${this.props.darkMode && styles.dark}`
+            }
             data-provider={this.provider}
+            key="provider"
+            style={this.props.providerStyle}
           />
         );
       }
@@ -256,8 +260,10 @@ export default class AWSRegionTag extends React.Component {
         const flagClassName = `${styles.flag} flag ${info.result} ${info.zone.toLowerCase()}`;
         parts.push(
           <span
+            className={`${flagClassName} ${this.props.darkMode && styles.dark}`}
             key="flag"
-            className={`${flagClassName} ${this.props.darkMode && styles.dark}`}/>
+            style={this.props.flagStyle}
+          />
         );
       }
     }
@@ -268,23 +274,30 @@ export default class AWSRegionTag extends React.Component {
         }
       } else {
         parts.push(
-          <span key="name" className={styles.title}>{this.region.name}</span>
+          <span
+            className={styles.title}
+            key="name"
+          >
+            {this.region.name}
+          </span>
         );
       }
     }
     if (parts.length > 0) {
       if (this.props.plainMode) {
-        return <span>{parts.join(', ')}</span>;
+        return <span>{parts.join('/')}</span>;
       } else {
         return (
           <span
             style={this.props.style}
             className={`${styles.container} ${this.props.className || ''}`}>
-          {parts}
-        </span>
+            {parts}
+          </span>
         );
       }
     }
     return null;
   }
 }
+
+export default AWSRegionTag;
