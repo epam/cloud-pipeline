@@ -29,21 +29,27 @@ class DataStoragePage extends Remote {
     this.path = path;
     this.pageSize = pageSize;
     this.showVersion = showVersion;
-    if (this.path) {
-      this.url = `/datastorage/${this.id}/list/page?path=${this.path}&showVersion=${!!showVersion}&pageSize=${pageSize}${marker ? `&marker=${marker}` : ''}`;
-    } else {
-      this.url = `/datastorage/${this.id}/list/page?showVersion=${!!showVersion}&pageSize=${pageSize}${marker ? `&marker=${marker}` : ''}`;
-    }
+    this.marker = marker;
+    this.buildUrl();
   };
 
   async fetchPage (marker) {
-    if (this.path) {
-      this.url = `/datastorage/${this.id}/list/page?path=${this.path}&showVersion=${!!this.showVersion}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
-    } else {
-      this.url = `/datastorage/${this.id}/list/page?showVersion=${!!this.showVersion}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
-    }
+    this.marker = marker;
+    this.buildUrl();
     this._pending = true;
     await super.fetch();
+  }
+
+  buildUrl () {
+    const query = [
+      !!this.path && `path=${encodeURIComponent(this.path)}`,
+      `showVersion=${!!this.showVersion}`,
+      `pageSize=${this.pageSize}`,
+      !!this.marker && `marker=${encodeURIComponent(this.marker)}`
+    ]
+      .filter(Boolean)
+      .join('&');
+    this.url = `/datastorage/${this.id}/list/page${!!query && query.length > 0 ? '?' : ''}${query}`;
   }
 }
 
