@@ -160,7 +160,7 @@ class NtlmProxy(object):
         config.append("LM_PART:1")
         config.append("NT_PART:0")
         config.append("NTLM_FLAGS: 06820000")
-        config.append("NTLM_TO_BASIC:1")
+        config.append("NTLM_TO_BASIC:0")
         config.append("[DEBUG]")
         config.append("DEBUG:0")
         config.append("BIN_DEBUG:0")

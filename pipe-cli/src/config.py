@@ -21,7 +21,10 @@ import pytz
 import tzlocal
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
-from urlparse import urlparse
+try:
+    from urllib.parse import urlparse
+except ImportError:
+     from urlparse import urlparse
 
 from .utilities import time_zone_param_type
 
