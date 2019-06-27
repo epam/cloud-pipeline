@@ -133,7 +133,6 @@ function renderRegion (run) {
       <AWSRegionTag
         darkMode
         key="region"
-        className={styles.regionTag}
         style={{fontSize: 'medium'}}
         provider={cloudProvider}
         regionId={cloudRegionId}

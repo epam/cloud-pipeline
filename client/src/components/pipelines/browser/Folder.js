@@ -322,7 +322,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     },
     {
       key: 'region',
-      className: styles.treeItemRegion,
       render: (item) => {
         if (item.type === ItemTypes.storage) {
           return <AWSRegionTag regionId={item.regionId} />;
