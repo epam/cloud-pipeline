@@ -18,7 +18,10 @@ from time import sleep
 import click
 import socket
 from functools import update_wrapper
-from urlparse import urlparse
+try:
+    from urllib.parse import urlparse
+except ImportError:
+     from urlparse import urlparse
 
 from contextlib import closing
 

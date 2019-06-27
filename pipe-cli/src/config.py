@@ -69,8 +69,14 @@ class Config(object):
                 proxies = {}
                 if self.http_proxy:
                     proxies.update({'http': self.http_proxy})
+                    if not self.https_proxy:
+                        proxies.update({'https': self.http_proxy})
+                        return proxies
                 if self.https_proxy:
                     proxies.update({'https': self.https_proxy})
+                    if not self.http_proxy:
+                        proxies.update({'http': self.https_proxy})
+                        return proxies
                 return proxies
             return None
         elif self.proxy == PROXY_TYPE_PAC:
