@@ -23,6 +23,7 @@ import RunTable from './RunTable';
 import AdaptedLink from '../special/AdaptedLink';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
 import styles from './AllRuns.css';
+import queryParameters from '../../utils/queryParameters';
 import Filter from '../../utils/filter/filter';
 import Composer from '../../utils/filter/composer';
 import PipelineRunSearch from '../../models/pipelines/PipelineRunSearch';
@@ -33,14 +34,13 @@ import SaveFilterForm from './SaveFilterForm';
 
 const pageSize = 20;
 
-@inject(() => ({
+@inject(({routing}) => ({
   keywords: PipelineRunSearchKeywords,
   pipelines,
-  runFilter: new PipelineRunSearch()
+  query: decodeURIComponent(queryParameters(routing).search || '')
 }))
 @observer
-export default class RunsFilter extends React.Component {
-
+class RunsFilter extends React.Component {
   filter = new Filter();
   composer = new Composer();
 
@@ -55,18 +55,33 @@ export default class RunsFilter extends React.Component {
     savedFiltersDropDownVisible: false
   };
 
+  componentDidMount () {
+    if (this.props.query) {
+      const text = this.props.query;
+      const parseResult = this.filter.parse(text);
+      if (parseResult.error) {
+        this.setState({text, error: parseResult.error, filter: null, displayError: false});
+      } else {
+        this.setState({text, error: null, filter: parseResult, displayError: false}, () => {
+          this.onFilter();
+        });
+      }
+    }
+  }
+
   _filter = (page, filter) => {
     this.setState({loading: true}, async () => {
-      await this.props.runFilter.send({
+      const runFilter = new PipelineRunSearch();
+      await runFilter.send({
         filterExpression: filter,
         page,
         pageSize: pageSize,
         timezoneOffsetInMinutes: -(new Date()).getTimezoneOffset()
       });
-      if (this.props.runFilter.error) {
+      if (runFilter.error) {
         this.setState({
           runs: [],
-          error: this.props.runFilter.error,
+          error: runFilter.error,
           displayError: true,
           loading: false,
           appliedFilter: null,
@@ -77,8 +92,8 @@ export default class RunsFilter extends React.Component {
           error: null,
           displayError: false,
           loading: false,
-          runs: this.props.runFilter.value.elements,
-          total: this.props.runFilter.value.totalCount,
+          runs: runFilter.loaded ? runFilter.value.elements : [],
+          total: runFilter.loaded ? runFilter.value.totalCount : [],
           appliedFilter: this.state.filter.toStringExpression(),
           currentPage: page
         });
@@ -114,9 +129,21 @@ export default class RunsFilter extends React.Component {
     const autocomplete = this.autocomplete(text, position);
     const parseResult = this.filter.parse(text);
     if (parseResult.error) {
-      this.setState({text, error: parseResult.error, filter: null, displayError: false, autocomplete});
+      this.setState({
+        text,
+        error: parseResult.error,
+        filter: null,
+        displayError: false,
+        autocomplete
+      });
     } else {
-      this.setState({text, error: null, filter: parseResult, displayError: false, autocomplete}, () => {
+      this.setState({
+        text,
+        error: null,
+        filter: parseResult,
+        displayError: false,
+        autocomplete
+      }, () => {
         if (runFilter) {
           this.onFilter();
         }
@@ -129,7 +156,10 @@ export default class RunsFilter extends React.Component {
     if (!composerResult.error && this.keywords.length > 0) {
       const element = composerResult.findElementAtPosition(position);
       if (element && element.isProperty && !this.props.keywords.pending) {
-        const filter = this.keywords.filter(k => !k.regex && k.fieldName.toLowerCase().startsWith(element.text.toLowerCase()));
+        const filter = this.keywords
+          .filter(k => !k.regex &&
+            k.fieldName.toLowerCase().startsWith(element.text.toLowerCase())
+          );
         return {
           element,
           filter,
@@ -145,18 +175,34 @@ export default class RunsFilter extends React.Component {
       const key = this.state.autocomplete.hovered;
       const text = this.state.text;
       const replaced = text.substring(0, this.state.autocomplete.element.starts) +
-        this.state.autocomplete.filter[key].fieldName + text.substring(this.state.autocomplete.element.ends);
+        this.state.autocomplete.filter[key].fieldName +
+        text.substring(this.state.autocomplete.element.ends);
       if (this.filterInput) {
-        this.filterInput.updateEditor(replaced, this.state.autocomplete.element.starts + this.state.autocomplete.filter[key].fieldName.length);
+        this.filterInput.updateEditor(
+          replaced,
+          this.state.autocomplete.element.starts +
+          this.state.autocomplete.filter[key].fieldName.length
+        );
       }
       this.onEdit(replaced, undefined);
     } else {
       const parseResult = this.filter.parse(text);
       if (parseResult.error) {
-        this.setState({text, error: parseResult.error, filter: null, displayError: true, autocomplete: null});
+        this.setState({
+          text,
+          error: parseResult.error,
+          filter: null,
+          displayError: true,
+          autocomplete: null
+        });
       } else {
-        this.setState({text, error: null, filter: parseResult, displayError: false, autocomplete: null});
-        this.onFilter();
+        this.setState({
+          text,
+          error: null,
+          filter: parseResult,
+          displayError: false,
+          autocomplete: null
+        }, this.onFilter);
       }
     }
   };
@@ -192,14 +238,23 @@ export default class RunsFilter extends React.Component {
   };
 
   renderAutocomplete = () => {
-    if (this.state.autocomplete && this.state.autocomplete.filter && this.state.autocomplete.filter.length > 0) {
+    if (this.state.autocomplete &&
+      this.state.autocomplete.filter &&
+      this.state.autocomplete.filter.length > 0) {
       const onClick = ({key}) => {
-        if (this.state.autocomplete && this.state.autocomplete.filter && this.state.autocomplete.filter.length > key) {
+        if (this.state.autocomplete &&
+          this.state.autocomplete.filter &&
+          this.state.autocomplete.filter.length > key) {
           const text = this.state.text;
           const replaced = text.substring(0, this.state.autocomplete.element.starts) +
-            this.state.autocomplete.filter[key].fieldName + text.substring(this.state.autocomplete.element.ends);
+            this.state.autocomplete.filter[key].fieldName +
+            text.substring(this.state.autocomplete.element.ends);
           if (this.filterInput) {
-            this.filterInput.updateEditor(replaced, this.state.autocomplete.element.starts + this.state.autocomplete.filter[key].fieldName.length);
+            this.filterInput.updateEditor(
+              replaced,
+              this.state.autocomplete.element.starts +
+              this.state.autocomplete.filter[key].fieldName.length
+            );
           }
           this.onEdit(replaced, undefined);
         }
@@ -214,6 +269,23 @@ export default class RunsFilter extends React.Component {
           onClick={onClick}
           className={styles.autocompleteMenu}>
           {this.state.autocomplete.filter.map((f, index) => {
+            let fieldDescription;
+            if (f.fieldDescription) {
+              fieldDescription = (
+                <span style={{marginLeft: 5}}>
+                  -
+                  <i
+                    style={{
+                      color: '#777',
+                      fontSize: 'smaller',
+                      marginLeft: 2
+                    }}
+                  >
+                    {f.fieldDescription}
+                  </i>
+                </span>
+              );
+            }
             return (
               <Menu.Item
                 className={
@@ -222,11 +294,7 @@ export default class RunsFilter extends React.Component {
                 }
                 key={index}>
                 <div onMouseOver={() => onHover(index)}>
-                  {
-                    f.fieldDescription
-                      ? <span>{f.fieldName} - <i style={{fontSize: 'smaller', color: '#777'}}>{f.fieldDescription}</i></span>
-                      : <span>{f.fieldName}</span>
-                  }
+                  <span>{f.fieldName} - {fieldDescription}</span>
                 </div>
               </Menu.Item>
             );
@@ -397,7 +465,9 @@ export default class RunsFilter extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState) {
-    if (prevState.currentPage !== this.state.currentPage && !this.state.error && this.state.filter) {
+    if (prevState.currentPage !== this.state.currentPage &&
+      !this.state.error &&
+      this.state.filter) {
       this._filter(this.state.currentPage, this.state.filter);
     }
   }
@@ -414,7 +484,8 @@ export default class RunsFilter extends React.Component {
               <tr>
                 <td style={{position: 'relative'}}>
                   <FilterInput
-                    ref={input => this.filterInput = input}
+                    defaultValue={this.props.query}
+                    ref={(input) => { this.filterInput = input; }}
                     isError={!!this.state.error}
                     keywords={this.keywords}
                     onEdit={this.onEdit}
@@ -427,7 +498,11 @@ export default class RunsFilter extends React.Component {
                 <td style={{width: 70, textAlign: 'center', textTransform: 'uppercase'}}>
                   <Button
                     onClick={this.openSaveFilterForm}
-                    disabled={this.state.text === undefined || this.state.text === null || !this.state.text.length}
+                    disabled={
+                      this.state.text === undefined ||
+                      this.state.text === null ||
+                      !this.state.text.length
+                    }
                     id="save-filter-button">
                     SAVE
                   </Button>
@@ -452,8 +527,12 @@ export default class RunsFilter extends React.Component {
             useFilter={false}
             loading={this.state.loading}
             dataSource={this.state.runs}
-            handleTableChange={::this.handleTableChange}
-            pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
+            handleTableChange={this.handleTableChange}
+            pipelines={
+              this.props.pipelines.pending
+                ? []
+                : (this.props.pipelines.value || []).map(p => p)
+            }
             pagination={{total: this.state.total, pageSize, current: this.state.currentPage}}
             launchPipeline={this.launchPipeline}
             onSelect={this.onSelectRun}
@@ -469,3 +548,4 @@ export default class RunsFilter extends React.Component {
   }
 }
 
+export default RunsFilter;
