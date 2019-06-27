@@ -532,7 +532,7 @@ class S3BucketOperations(object):
     def get_proxy_config(cls):
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
-        if cls.__config__.proxy is None:
+        if not cls.__config__.is_proxy_enabled():
             return None
         else:
             return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))

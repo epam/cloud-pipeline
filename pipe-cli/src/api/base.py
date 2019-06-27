@@ -25,7 +25,7 @@ class API(object):
         self.__config__ = Config.instance()
         self.__headers__ = {'Content-Type': 'application/json',
                             'Authorization': 'Bearer {}'.format(self.__config__.access_key)}
-        if self.__config__.proxy is not None:
+        if self.__config__.is_proxy_enabled():
             self.__proxies__ = self.__config__.resolve_proxy()
         else:
             self.__proxies__ = None

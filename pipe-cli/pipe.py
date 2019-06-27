@@ -25,6 +25,7 @@ from src.api.user import User
 from src.config import Config, ConfigNotFoundError
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
+from src.ntlm_proxy import launch_ntlm_proxy_if_need
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
@@ -63,10 +64,32 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-def configure(auth_token, api, timezone, proxy):
+@click.option('-np', '--proxy-ntlm',
+              prompt='Use ntlm proxy',
+              help='Use ntlm proxy',
+              default=False,
+              required=False,
+              is_flag=True)
+@click.option('-npu', '--proxy-ntlm-user',
+              prompt='NTLM Proxy Username',
+              help='NTLM user name',
+              required=False,
+              default='')
+@click.option('-npp', '--proxy-ntlm-pass',
+              prompt='NTLM Proxy Password',
+              help='NTLM password',
+              default='',
+              required=False,
+              hide_input=True)
+@click.option('-npd', '--proxy-ntlm-domain',
+              prompt='NTLM Proxy Domain',
+              help='NTLM proxy domain',
+              required=False,
+              default='')
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_pass, proxy_ntlm_domain):
     """Configures CLI parameters
     """
-    Config.store(auth_token, api, timezone, proxy)
+    Config.store(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_pass, proxy_ntlm_domain)
 
 
 def echo_title(title, line=True):
@@ -83,6 +106,7 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions of a pipeline', is_flag=True)
+@launch_ntlm_proxy_if_need
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
     """
@@ -216,6 +240,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks', is_flag=True)
+@launch_ntlm_proxy_if_need
 def view_runs(run_id,
               status,
               date_from,
@@ -403,6 +428,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@launch_ntlm_proxy_if_need
 def view_cluster(node_name):
     """Lists cluster nodes
     """
@@ -570,6 +596,7 @@ def view_cluster_for_node(node_name):
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
 @click.option('-pn', '--parent-node', help='Parent instance id', type=int, required=False)
+@launch_ntlm_proxy_if_need
 def run(pipeline,
         config,
         parameters,
@@ -597,6 +624,7 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@launch_ntlm_proxy_if_need
 def stop(run_id, yes):
     """Stops a running pipeline
     """
@@ -606,6 +634,7 @@ def stop(run_id, yes):
 @cli.command(name='terminate-node')
 @click.argument('node-name', required=True, type=str)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@launch_ntlm_proxy_if_need
 def terminate_node(node_name, yes):
     """Terminates calculation node
     """
@@ -669,6 +698,7 @@ def storage():
               prompt='The name of the new bucket.')
 @click.option('-r', '--region_id', default='default', help='Cloud region id where storage shall be created. ',
               prompt='Cloud region id where storage shall be created.')
+@launch_ntlm_proxy_if_need
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
     """Creates a new datastorage
@@ -681,6 +711,7 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
 @click.option('-c', '--on_cloud', help='Delete bucket on a cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@launch_ntlm_proxy_if_need
 def delete(name, on_cloud, yes):
     """Deletes a datastorage
     """
@@ -699,6 +730,7 @@ def delete(name, on_cloud, yes):
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the bucket')
+@launch_ntlm_proxy_if_need
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
     """Update the policy of the given datastorage
     """
@@ -712,6 +744,7 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @storage.command(name='mvtodir')
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
+@launch_ntlm_proxy_if_need
 def mvtodir(name, directory):
     """Moves a datastorage to a new parent folder
     """
@@ -725,6 +758,7 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
+@launch_ntlm_proxy_if_need
 def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
     """
@@ -733,6 +767,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 
 @storage.command(name='mkdir')
 @click.argument('folders', required=True, nargs=-1)
+@launch_ntlm_proxy_if_need
 def storage_mk_dir(folders):
     """ Creates a directory in a datastorage
     """
@@ -749,6 +784,7 @@ def storage_mk_dir(folders):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
+@launch_ntlm_proxy_if_need
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
     """ Removes file or folder from a datastorage
     """
@@ -774,6 +810,7 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
+@launch_ntlm_proxy_if_need
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
     """ Moves file or folder from one datastorage to another one
     or between local filesystem and a datastorage (in both directions)
@@ -801,6 +838,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
+@launch_ntlm_proxy_if_need
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
     """ Copies files from one datastorage to another one
     or between local filesystem and a datastorage (in both directions)
@@ -812,6 +850,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('restore')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Restore specified version')
+@launch_ntlm_proxy_if_need
 def storage_restore_item(path, version):
     """ Restores file version in a datastorage.
     If version is not specified it will try to restore the latest non deleted version.
@@ -824,6 +863,7 @@ def storage_restore_item(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@launch_ntlm_proxy_if_need
 def storage_set_object_tags(path, tags, version):
     """ Sets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -836,6 +876,7 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@launch_ntlm_proxy_if_need
 def storage_get_object_tags(path, version):
     """ Gets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -847,6 +888,7 @@ def storage_get_object_tags(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@launch_ntlm_proxy_if_need
 def storage_delete_object_tags(path, tags, version):
     """ Sets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -863,6 +905,7 @@ def storage_delete_object_tags(path, tags, version):
     required=True,
     type=click.Choice(['pipeline', 'folder', 'data_storage'])
 )
+@launch_ntlm_proxy_if_need
 def view_acl(identifier, object_type):
     """ View object permissions
     """
@@ -882,6 +925,7 @@ def view_acl(identifier, object_type):
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
+@launch_ntlm_proxy_if_need
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     """ Set object permissions
     """
@@ -899,6 +943,7 @@ def tag():
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('data', required=True, nargs=-1)
+@launch_ntlm_proxy_if_need
 def set_tag(entity_class, entity_id, data):
     """ Sets tags for a specified object
     - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
@@ -912,6 +957,7 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@launch_ntlm_proxy_if_need
 def get_tag(entity_class, entity_id):
     """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:
     - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
@@ -924,6 +970,7 @@ def get_tag(entity_class, entity_id):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('keys', required=False, nargs=-1)
+@launch_ntlm_proxy_if_need
 def delete_tag(entity_class, entity_id, keys):
     """ Deletes specified tags for a specified object
     - Tags can be specified as single KEY=VALUE pair or a list of them
@@ -936,6 +983,7 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('user_name', required=True)
 @click.argument('entity_class', required=True)
 @click.argument('entity_name', required=True)
+@launch_ntlm_proxy_if_need
 def chown(user_name, entity_class, entity_name):
     """
     Changes current owner to specified.

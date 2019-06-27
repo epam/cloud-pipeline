@@ -27,7 +27,7 @@ class StorageOperations:
     def get_proxy_config(cls, target_url=None):
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
-        if cls.__config__.proxy is None:
+        if not cls.__config__.is_proxy_enabled():
             return None
         else:
             return cls.__config__.resolve_proxy(target_url=target_url)
