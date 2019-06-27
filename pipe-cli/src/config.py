@@ -21,7 +21,8 @@ import tzlocal
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
-from .utilities import time_zone_param_type, access_token_validation
+from .utilities import time_zone_param_type
+from .utilities.access_token_validation import check_token
 
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
@@ -72,7 +73,7 @@ class Config(object):
             raise ConfigNotFoundError()
 
     def validate(self, print_info=False):
-        access_token_validation.check_token(self.access_key, self.tz, print_info=print_info)
+        check_token(self.access_key, self.tz, print_info=print_info)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -116,7 +117,7 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy):
-        access_token_validation.check_token(access_key, timezone)
+        check_token(access_key, timezone)
         config = {'api': api, 'access_key': access_key, 'tz': timezone, 'proxy': proxy}
         config_file = cls.config_path()
 
