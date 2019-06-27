@@ -14,4 +14,4 @@
 # limitations under the License.
 
 
-__all__ = ['config', 'version', 'ntlm_proxy']
+__all__ = ['config', 'version', 'ntlm_proxy', 'ntlmaps']
