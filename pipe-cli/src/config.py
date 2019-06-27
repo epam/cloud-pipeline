@@ -13,17 +13,15 @@
 # limitations under the License.
 
 import click
-import base64
 from functools import update_wrapper
 import json
 import os
 import pytz
 import tzlocal
-from datetime import datetime, timedelta
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
-from .utilities import time_zone_param_type
+from .utilities import time_zone_param_type, access_token_validation
 
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
@@ -34,91 +32,6 @@ class ConfigNotFoundError(Exception):
     def __init__(self):
         super(ConfigNotFoundError, self).__init__('Unable to locate configuration or it is incomplete. '
                                                   'You can configure pipe by running "pipe configure"')
-
-
-def check_token(token, timezone, print_info=False):
-    if not token:
-        click.echo(click.style('No access token is provided', fg='red'), err=True)
-        return
-    try:
-        payload_decoded = token.split('.')[1]
-        # payload_decoded_correct_padding - is the same string with additional '=' symbols to make string length
-        # be dividable by 4:
-        payload_decoded_correct_padding = payload_decoded + b'=' * (4 - len(payload_decoded) % 4)
-        payload = json.loads(base64.b64decode(payload_decoded_correct_padding))
-        subject = None
-        issued_at = None
-        not_before = None
-        expiration = None
-        tz = tzlocal.get_localzone()
-        if timezone == 'utc':
-            tz = pytz.utc
-        if 'sub' in payload:
-            subject = payload['sub']
-        if 'iat' in payload:
-            issued_at = datetime.utcfromtimestamp(payload['iat'])
-        if 'nbf' in payload:
-            not_before = datetime.utcfromtimestamp(payload['nbf'])
-        if 'exp' in payload:
-            expiration = datetime.utcfromtimestamp(payload['exp'])
-        now = datetime.utcnow()
-
-        def print_date_time(naive_time):
-            return pytz.utc.localize(naive_time, is_dst=None).astimezone(tz).strftime('%Y-%m-%d %H:%M')
-
-        if print_info:
-            click.echo('Access token info:')
-            if subject is not None:
-                click.echo('Issued to: {}'.format(subject))
-            if issued_at is not None:
-                click.echo('Issued at: {}'.format(print_date_time(issued_at)))
-            if not_before is not None:
-                click.echo('Valid not before: {}'.format(print_date_time(not_before)))
-            if expiration is not None:
-                click.echo('Expires at: {}'.format(print_date_time(expiration)))
-        if not_before is not None and not_before > now:
-            click.echo(
-                click.style(
-                    'Access token is not valid yet: not before {}'.format(print_date_time(not_before)),
-                    fg='red'
-                ),
-                err=True
-            )
-        if expiration is not None:
-            last_week = expiration - timedelta(days=7)
-            if expiration < now:
-                click.echo(
-                    click.style(
-                        'Access token is expired: {}'.format(print_date_time(expiration)),
-                        fg='red'
-                    ),
-                    err=True
-                )
-            elif last_week < now:
-                delta = expiration - now
-                days = delta.days
-                hours = delta.seconds // 60
-                minutes = (delta.seconds // 3600) // 60
-
-                def plural(count, word):
-                    return '{} {}{}'.format(count, word, 's' if count != 1 else '')
-                expiration_period = plural(minutes, 'minute')
-                if days > 0:
-                    expiration_period = plural(days, 'day')
-                elif hours > 0:
-                    expiration_period = plural(hours, 'hour')
-                click.echo(
-                    click.style(
-                        'Access token will expire in {}: {}'.format(
-                            expiration_period,
-                            print_date_time(expiration)
-                        ),
-                        fg='yellow'
-                    ),
-                    err=True
-                )
-    except ALL_ERRORS as parse_error:
-        click.echo(click.style('Access token parse error: {}'.format(str(parse_error)), fg='red'), err=True)
 
 
 def silent_print_config_info():
@@ -159,7 +72,7 @@ class Config(object):
             raise ConfigNotFoundError()
 
     def validate(self, print_info=False):
-        check_token(self.access_key, self.tz, print_info=print_info)
+        access_token_validation.check_token(self.access_key, self.tz, print_info=print_info)
 
     @classmethod
     def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
@@ -203,7 +116,7 @@ class Config(object):
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy):
-        check_token(access_key, timezone)
+        access_token_validation.check_token(access_key, timezone)
         config = {'api': api, 'access_key': access_key, 'tz': timezone, 'proxy': proxy}
         config_file = cls.config_path()
 

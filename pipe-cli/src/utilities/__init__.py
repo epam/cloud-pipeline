@@ -15,4 +15,5 @@
 
 
 __all__ = ['date_utilities', 'time_zone_param_type', 'permissions_manager',
-           'bucket_operations_manager.py', 'acl_operations.py', 'datastorage_operations.py']
+           'bucket_operations_manager.py', 'acl_operations.py', 'datastorage_operations.py',
+           'access_token_validation.py']
