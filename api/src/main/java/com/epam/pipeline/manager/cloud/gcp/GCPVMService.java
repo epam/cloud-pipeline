@@ -45,6 +45,8 @@ public class GCPVMService {
     private static final String COMPUTE_OPERATIONS_FILTER = "targetLink eq .*%s";
     private static final String COMPUTE_INSTANCES_PREEMPTED = "compute.instances.preempted";
     private static final String COMPUTE_INSTANCE_DELETED = "delete";
+    private static final String INSTANCE_WAS_PREEMPTED = "Instance was preempted.";
+    private static final String INSTANCE_WAS_TERMINATED = "Instance was terminated.";
 
 
     private final GCPClient gcpClient;
@@ -110,6 +112,10 @@ public class GCPVMService {
                             .stateCode(op.equals(COMPUTE_INSTANCES_PREEMPTED)
                                     ? GCPInstanceStatus.PREEMPTED.name()
                                     : GCPInstanceStatus.TERMINATED.name()
+                            )
+                            .stateMessage(op.equals(COMPUTE_INSTANCES_PREEMPTED)
+                                    ? INSTANCE_WAS_PREEMPTED
+                                    : INSTANCE_WAS_TERMINATED
                             ).build());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
