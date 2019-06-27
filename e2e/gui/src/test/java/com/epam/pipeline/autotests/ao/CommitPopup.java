@@ -87,6 +87,7 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
 
     public CommitPopup setName(final String name) {
         clear(IMAGE_NAME);
+        sleep(2, SECONDS);
         return addToValue(IMAGE_NAME, name);
     }
 
