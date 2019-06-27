@@ -240,6 +240,7 @@ export default class PipelineRunPreview extends React.Component {
               value: (
                 <span>
                   <AWSRegionTag
+                    darkMode
                     style={{verticalAlign: 'top', marginRight: -3, marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
                   {instance.nodeType}
@@ -253,6 +254,7 @@ export default class PipelineRunPreview extends React.Component {
               key: 'Cloud Region',
               value: (
                 <AWSRegionTag
+                  darkMode
                   style={{verticalAlign: 'top'}}
                   regionId={instance.cloudRegionId} />
               )

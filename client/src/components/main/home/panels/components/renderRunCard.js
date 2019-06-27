@@ -21,6 +21,7 @@ import moment from 'moment';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
+import AWSRegionTag from '../../../../special/AWSRegionTag';
 import styles from './CardsPanel.css';
 
 function renderTitle (run) {
@@ -125,6 +126,22 @@ function renderEstimatedPrice (run) {
   );
 }
 
+function renderRegion (run) {
+  if (run.instance) {
+    const {cloudProvider, cloudRegionId} = run.instance;
+    return (
+      <AWSRegionTag
+        darkMode
+        key="region"
+        style={{fontSize: 'medium'}}
+        provider={cloudProvider}
+        regionId={cloudRegionId}
+      />
+    );
+  }
+  return null;
+}
+
 export default function renderRunCard (run) {
   return [
     <Row key="pipeline" style={{fontWeight: 'bold'}}>
@@ -138,6 +155,7 @@ export default function renderRunCard (run) {
     </Row>,
     <Row key="commit status">
       {renderCommitStatus(run)}
-    </Row>
+    </Row>,
+    renderRegion(run)
   ];
 }

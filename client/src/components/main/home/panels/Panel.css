@@ -130,3 +130,11 @@ div[type=actions-container-background] {
   color: white;
   white-space: nowrap;
 }
+
+.storage-name > span {
+  margin-left: 5px;
+}
+
+.storage-name > span:first-child {
+  margin-left: 0;
+}
