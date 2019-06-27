@@ -199,8 +199,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final int idleTimeout = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
 
         final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
-                .filter(e -> DateUtils.nowUTC().isAfter(e.getValue().getProlongedAtTime()
-                        .plus(idleTimeout, ChronoUnit.MINUTES)))
+                .filter(e -> {
+                    LocalDateTime prolongedAtTime = e.getValue().getProlongedAtTime();
+                    return prolongedAtTime == null || DateUtils.nowUTC().isAfter(prolongedAtTime
+                            .plus(idleTimeout, ChronoUnit.MINUTES));
+                })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         log.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
