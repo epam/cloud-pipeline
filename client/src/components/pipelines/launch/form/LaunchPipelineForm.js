@@ -2572,6 +2572,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                     <Select.Option
                       key={`${region.id}`}
                       name={region.name}
+                      title={region.name}
                       value={`${region.id}`}>
                       <AWSRegionTag
                         provider={region.provider}
