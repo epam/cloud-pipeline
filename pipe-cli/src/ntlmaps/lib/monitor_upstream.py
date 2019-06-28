@@ -18,7 +18,19 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import signal, httplib, time, socket, thread, os
+import signal
+try:
+    import http.client
+except ImportError:
+    import httplib
+import time
+import socket
+
+try:
+    import _thread as thread
+except ImportError:
+    import thread
+import os
 
 #--------------------------------------------------------------
 class monitorThread:

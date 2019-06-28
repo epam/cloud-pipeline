@@ -20,6 +20,7 @@
 #
 import getopt
 
+
 def parse_command_line(cmdline):
     """ Parse command line into a tuple (except for the configuration file)
         NOTE: Must only contain the command-line options
@@ -27,9 +28,10 @@ def parse_command_line(cmdline):
     opts, values = getopt.getopt(cmdline,
                                  '',
                                  ['config=', 'domain=', 'username=', 'password=',
-                                 'port='])
+                                  'port=', 'cmd=', 'proxy-port=', 'proxy-host='])
 
     options = {}
+    options.update({'cmd': False})
     for opt in opts:
         option, value = opt
         if option == '--domain':
@@ -42,5 +44,11 @@ def parse_command_line(cmdline):
             options['port'] = int(value)
         elif option == '--config':
             options['config_file'] = value
+        elif option == "--cmd":
+            options['cmd'] = bool(value)
+        elif option == "--proxy-port":
+            options['proxy-port'] = int(value)
+        elif option == "--proxy-host":
+            options['proxy-host'] = value
 
     return options

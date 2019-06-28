@@ -17,10 +17,15 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import socket, thread, sys
-# string, 
-import logger
-from utils import string
+import socket
+
+from src.ntlmaps.lib import logger
+
+try:
+    import _thread as thread
+except ImportError:
+    import thread
+import sys
 
 #-------------------------------------------------------------------------
 def arrange(conf):
@@ -32,7 +37,7 @@ def arrange(conf):
 
     # if we do not use proxy then we do not need its port
     if conf['GENERAL']['PARENT_PROXY']:
-        conf['GENERAL']['AVAILABLE_PROXY_LIST'] = string.split(conf['GENERAL']['PARENT_PROXY'])
+        conf['GENERAL']['AVAILABLE_PROXY_LIST'] = str(conf['GENERAL']['PARENT_PROXY']).split()
         conf['GENERAL']['PARENT_PROXY'] = conf['GENERAL']['AVAILABLE_PROXY_LIST'].pop()
         conf['GENERAL']['PARENT_PROXY_PORT'] = makeInt(conf['GENERAL']['PARENT_PROXY_PORT'], 'PARENT_PROXY_PORT')
         conf['GENERAL']['PARENT_PROXY_TIMEOUT'] = makeInt(conf['GENERAL']['PARENT_PROXY_TIMEOUT'], 'PARENT_PROXY_TIMEOUT')
@@ -42,7 +47,7 @@ def arrange(conf):
         if conf['GENERAL']['MAX_CONNECTION_BACKLOG'] == 'SOMAXCONN':
             conf['GENERAL']['MAX_CONNECTION_BACKLOG'] = socket.SOMAXCONN
         else:
-            print "ERROR: There is a problem with 'MAX_CONNECTION_BACKLOG' in the config (neither a number nor 'SOMAXCONN'?)"
+            print("ERROR: There is a problem with 'MAX_CONNECTION_BACKLOG' in the config (neither a number nor 'SOMAXCONN'?)")
             sys.exit(1)
 
     conf['GENERAL']['LISTEN_PORT'] = makeInt(conf['GENERAL']['LISTEN_PORT'], 'LISTEN_PORT')
@@ -53,11 +58,11 @@ def arrange(conf):
     try:
         externalIP = socket.gethostbyname_ex(hostname)[2]
     except socket.error: # socket.gaierror in Python 2.x
-        print "ERROR: Unable to get the IP address of this machine.  This is not a fatal problem, but may cause problems for you using this proxy in some scenarios."
+        print("ERROR: Unable to get the IP address of this machine.  This is not a fatal problem, but may cause problems for you using this proxy in some scenarios.")
         externalIP = []
     conf['GENERAL']['HOST_IP_LIST'] = externalIP + ['127.0.0.1']
 
-    conf['GENERAL']['FRIENDLY_IPS'] = conf['GENERAL']['HOST_IP_LIST'] + string.split(conf['GENERAL']['FRIENDLY_IPS'])
+    conf['GENERAL']['FRIENDLY_IPS'] = conf['GENERAL']['HOST_IP_LIST'] + str(conf['GENERAL']['FRIENDLY_IPS']).split()
 
     conf['GENERAL']['URL_LOG'] = makeInt(conf['GENERAL']['URL_LOG'], 'URL_LOG')
     url_logger = logger.Logger('url.log', conf['GENERAL']['URL_LOG'])
@@ -68,16 +73,16 @@ def arrange(conf):
 
     #-----------------------------------------------
     # NTLM_AUTH
-    if not conf['NTLM_AUTH'].has_key('NTLM_FLAGS'):
+    if 'NTLM_FLAGS' not in conf['NTLM_AUTH']:
         conf['NTLM_AUTH']['NTLM_FLAGS'] = ''
     #conf['NTLM']['FULL_NTLM'] = makeInt(conf['NTLM']['FULL_NTLM'], 'FULL_NTLM')
     conf['NTLM_AUTH']['LM_PART'] = makeInt(conf['NTLM_AUTH']['LM_PART'], 'LM_PART')
     conf['NTLM_AUTH']['NT_PART'] = makeInt(conf['NTLM_AUTH']['NT_PART'], 'NT_PART')
     conf['NTLM_AUTH']['NTLM_TO_BASIC'] = makeInt(conf['NTLM_AUTH']['NTLM_TO_BASIC'], 'NTLM_TO_BASIC')
     if not conf['NTLM_AUTH']['NT_DOMAIN']:
-        print "ERROR: NT DOMAIN must be set."
+        print("ERROR: NT DOMAIN must be set.")
         sys.exit(1)
-    if not conf['NTLM_AUTH'].has_key('PASSWORD'):
+    if 'PASSWORD' not in conf['NTLM_AUTH']:
         conf['NTLM_AUTH']['PASSWORD'] = ''
 
 
@@ -88,7 +93,7 @@ def arrange(conf):
     conf['DEBUG']['BIN_DEBUG'] = makeInt(conf['DEBUG']['BIN_DEBUG'], 'BIN_DEBUG')
 
     # screen activity
-    if conf['DEBUG'].has_key('SCR_DEBUG'):
+    if 'SCR_DEBUG' in conf['DEBUG']:
            conf['DEBUG']['SCR_DEBUG'] = int(conf['DEBUG']['SCR_DEBUG'])
     else:
         conf['DEBUG']['SCR_DEBUG'] = 0
@@ -99,6 +104,6 @@ def makeInt(string, errorDesc='an item'):
     try:
         ret = int(string)
     except ValueError:
-        print "ERROR: There is a problem with "+errorDesc+" in the config (is it not a number?)"
+        print("ERROR: There is a problem with "+errorDesc+" in the config (is it not a number?)")
         sys.exit(1)
     return ret

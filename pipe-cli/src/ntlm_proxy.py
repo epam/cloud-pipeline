@@ -99,8 +99,7 @@ class NtlmProxy(object):
         url = "%s://%s:%d" % (schema, LOCALHOST, port)
 
         config = self.build_config(port, original_proxy)
-        config_path = self.write_to_ntlm_config(config, schema)
-        ntlm_process = Process(target=self.run_ntlmaps, args=(config_path,))
+        ntlm_process = Process(target=self.run_ntlmaps, args=(config,))
         ntlm_process.daemon = True
         ntlm_process.start()
 
@@ -137,35 +136,19 @@ class NtlmProxy(object):
                 sys.exit(1)
             return port
 
-    def run_ntlmaps(self, config_path):
-        main(["--config", config_path])
+    def run_ntlmaps(self, config):
+        main(config)
 
     def build_config(self, port, original_proxy):
         parsed_proxy = urlparse(original_proxy)
         config = []
-        config.append('[GENERAL]')
-        config.append("LISTEN_PORT:%d" % port)
-        config.append("PARENT_PROXY:%s" % parsed_proxy.hostname)
-        config.append("PARENT_PROXY_PORT:%d" % parsed_proxy.port)
-        config.append("PARENT_PROXY_TIMEOUT:15")
-        config.append("ALLOW_EXTERNAL_CLIENTS:0")
-        config.append("FRIENDLY_IPS:")
-        config.append("URL_LOG:0")
-        config.append("MAX_CONNECTION_BACKLOG:5")
-        config.append("[NTLM_AUTH]")
-        config.append("NT_HOSTNAME:")
-        config.append("NT_DOMAIN:%s" % self.domain)
-        config.append("USER:%s" % self.username)
-        config.append("PASSWORD:%s" % self.password)
-        config.append("LM_PART:1")
-        config.append("NT_PART:0")
-        config.append("NTLM_FLAGS: 06820000")
-        config.append("NTLM_TO_BASIC:0")
-        config.append("[DEBUG]")
-        config.append("DEBUG:0")
-        config.append("BIN_DEBUG:0")
-        config.append("SCR_DEBUG:0")
-        config.append("AUTH_DEBUG:0")
+        config.append('--cmd=True')
+        config.append("--port=%d" % port)
+        config.append("--proxy-host=%s" % parsed_proxy.hostname)
+        config.append("--proxy-port=%d" % parsed_proxy.port)
+        config.append("--domain=%s" % self.domain)
+        config.append("--username=%s" % self.username)
+        config.append("--password=%s" % self.password)
         return config
 
     @staticmethod

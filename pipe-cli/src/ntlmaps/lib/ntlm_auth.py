@@ -17,8 +17,12 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import string, select, base64
-import ntlm_messages, utils, ntlm_procs
+import string
+import select
+import base64
+
+from src.ntlmaps.lib import ntlm_messages, utils, ntlm_procs
+
 
 class ntlm_auther:
     """
@@ -90,7 +94,8 @@ class ntlm_auther:
         while((not connection.rserver_all_got) and (not connection.rserver_socket_closed)):
             select.select([connection.rserver_socket.fileno()], [], [], 2.0)
             connection.run_rserver_loop()
-            if connection.config['DEBUG']['SCR_DEBUG']: print ' +',
+            if connection.config['DEBUG']['SCR_DEBUG']:
+                print(' +')
 
         if connection.rserver_head_obj:
             connection.logger.log('*** Got NTLM message 2 from remote server.\n')
@@ -182,7 +187,8 @@ class ntlm_auther:
         while((not connection.rserver_all_got) and (not connection.rserver_socket_closed)):
             select.select([connection.rserver_socket.fileno()], [], [], 2.0)
             connection.run_rserver_loop()
-            if connection.config['DEBUG']['SCR_DEBUG']: print '+',
+            if connection.config['DEBUG']['SCR_DEBUG']:
+                print('+')
 
         if connection.rserver_head_obj:
             connection.logger.log('*** Got NTLM message 2 from server.\n')
@@ -264,16 +270,16 @@ class ntlm_auther:
             env['UNICODE'] = 0
 
         # have to put these ones into [NTLM] section
-        env['DOMAIN'] = string.upper(connection.config['NTLM_AUTH']['NT_DOMAIN'])
+        env['DOMAIN'] = connection.config['NTLM_AUTH']['NT_DOMAIN'].upper()
 
         # Check if there is explicit NT_Hostname in config, if there is one then take it,
         # if there is no one then take gethostname() result.
         if connection.config['NTLM_AUTH']['NT_HOSTNAME']:
-            env['HOST'] = string.upper(connection.config['NTLM_AUTH']['NT_HOSTNAME'])
+            env['HOST'] = connection.config['NTLM_AUTH']['NT_HOSTNAME'].upper()
         else:
-            env['HOST'] = string.upper(connection.config['GENERAL']['HOST'])
+            env['HOST'] = connection.config['GENERAL']['HOST'].upper()
 
-        env['USER'] = string.upper(connection.config['NTLM_AUTH']['USER'])
+        env['USER'] = connection.config['NTLM_AUTH']['USER'].upper()
 
         connection.logger.log('*** NTLM Domain/Host/User: %s/%s/%s\n' % (env['DOMAIN'], env['HOST'], env['USER']))
 
@@ -293,7 +299,7 @@ class ntlm_auther:
             connection.logger.log('*** NTLM hashed passwords found.\n')
 
         # Test params
-        if connection.config['NTLM_AUTH'].has_key('NTLM_MODE'):
+        if 'NTLM_MODE' in connection.config['NTLM_AUTH']:
             env['NTLM_MODE'] = int(connection.config['NTLM_AUTH']['NTLM_MODE'])
         else:
             env['NTLM_MODE'] = 0

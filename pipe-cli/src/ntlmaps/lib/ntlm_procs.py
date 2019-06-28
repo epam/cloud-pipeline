@@ -18,12 +18,13 @@
 #
 
 import string
-import des, md4, utils
 
 #---------------------------------------------------------------------
 #takes a 21 byte array and treats it as 3 56-bit DES keys. The
 #8 byte plaintext is encrypted with each key and the resulting 24
 #bytes are stored in the result array
+from src.ntlmaps.lib import des, utils, md4
+
 
 def calc_resp(keys_str, plain_text):
     "keys_str - hashed password"
@@ -47,7 +48,7 @@ def create_LM_hashed_password(passwd):
 
     lm_pw = '\000' * 14
 
-    passwd = string.upper(passwd)
+    passwd = passwd.upper()
 
     if len(passwd) < 14:
         lm_pw = passwd + lm_pw[len(passwd) - 14:]

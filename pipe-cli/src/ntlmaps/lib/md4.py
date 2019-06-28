@@ -18,22 +18,21 @@
 #
 
 # MD4 validation data
+from src.ntlmaps.lib.U32 import U32
 
 md4_test= [
-      ('', 0x31d6cfe0d16ae931b73c59d7e0c089c0L),
-      ("a",   0xbde52cb31de33e46245e05fbdbd6fb24L),
-      ("abc",   0xa448017aaf21d8525fc10ae87aa6729dL),
-      ("message digest",   0xd9130a8164549fe818874806e1c7014bL),
-      ("abcdefghijklmnopqrstuvwxyz",   0xd79e1c308aa5bbcdeea8ed63df412da9L),
+      ('', 0x31d6cfe0d16ae931b73c59d7e0c089c0),
+      ("a",   0xbde52cb31de33e46245e05fbdbd6fb24),
+      ("abc",   0xa448017aaf21d8525fc10ae87aa6729d),
+      ("message digest",   0xd9130a8164549fe818874806e1c7014b),
+      ("abcdefghijklmnopqrstuvwxyz",   0xd79e1c308aa5bbcdeea8ed63df412da9),
       ("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
-       0x043f8582f241db351ce627e153e7f0e4L),
+       0x043f8582f241db351ce627e153e7f0e4),
       ("12345678901234567890123456789012345678901234567890123456789012345678901234567890",
-      0xe33b4ddc9c38f2199c3e7b164fcc0536L),
+      0xe33b4ddc9c38f2199c3e7b164fcc0536),
      ]
 
 #------------------------------------------------------------------------------
-from U32 import U32
-
 class MD4:
     A = None
     B = None
@@ -46,11 +45,11 @@ class MD4:
     def __init__(self):
 
 
-        self.A = U32(0x67452301L)
-        self.B = U32(0xefcdab89L)
-        self.C = U32(0x98badcfeL)
-        self.D = U32(0x10325476L)
-        self.count, self.len1, self.len2 = U32(0L), U32(0L), U32(0L)
+        self.A = U32(0x67452301)
+        self.B = U32(0xefcdab89)
+        self.C = U32(0x98badcfe)
+        self.D = U32(0x10325476)
+        self.count, self.len1, self.len2 = U32(0), U32(0), U32(0)
         self.buf = [0x00] * 64
 
     #-----------------------------------------------------
@@ -75,7 +74,7 @@ class MD4:
         dest.C = self.C
         dest.D = self.D
         dest.count = self.count
-        for i in range(self.count):
+        for i in range(int(self.count)):
             dest.buf[i] = self.buf[i]
 
         return dest
@@ -89,7 +88,7 @@ class MD4:
         #print (ilen)
 
         # --NON ASCII COMMENT ELIDED--
-        if (long(self.len1 + (ilen << 3)) < long(self.len1)):
+        if (int(self.len1 + (ilen << 3)) < int(self.len1)):
             self.len2 = self.len2 + U32(1)
 
         self.len1 = self.len1 + (ilen << 3)
@@ -99,8 +98,8 @@ class MD4:
 
         L = U32(0)
         bufpos = 0
-        while (long(ilen) > 0):
-            if (64 - long(self.count)) < long(ilen): L = U32(64 - long(self.count))
+        while (int(ilen) > 0):
+            if (64 - int(self.count)) < int(ilen): L = U32(64 - int(self.count))
             else: L = ilen
             for i in range(int(L)): self.buf[i + int(self.count)] = buf[i + bufpos]
             self.count = self.count + L
@@ -108,8 +107,8 @@ class MD4:
             bufpos = bufpos + int(L)
 
             #print self.count, L, ilen
-            if (long(self.count) == 64L):
-                self.count = U32(0L)
+            if (int(self.count) == 64):
+                self.count = U32(0)
                 X = []
                 i = 0
                 for j in range(16):
@@ -192,8 +191,8 @@ class MD4:
 
         oldlen1 = temp.len1
         oldlen2 = temp.len2
-        if (56 <= long(self.count)): padlen = U32(56 - long(self.count) + 64)
-        else: padlen = U32(56 - long(self.count))
+        if (56 <= int(self.count)): padlen = U32(56 - int(self.count) + 64)
+        else: padlen = U32(56 - int(self.count))
         #print int(padlen)
         temp.update(int_array2str(padding[:int(padlen)]))
         #print temp
@@ -237,8 +236,8 @@ def H(x, y, z): return ((x) ^ (y) ^ (z))
 def ROL(x, n): return (((x) << n) | ((x) >> (32-n)))
 
 def f1(a, b, c, d, k, s, X): return ROL(a + F(b, c, d) + X[k], s)
-def f2(a, b, c, d, k, s, X): return ROL(a + G(b, c, d) + X[k] + U32(0x5a827999L), s)
-def f3(a, b, c, d, k, s, X): return ROL(a + H(b, c, d) + X[k] + U32(0x6ed9eba1L), s)
+def f2(a, b, c, d, k, s, X): return ROL(a + G(b, c, d) + X[k] + U32(0x5a827999), s)
+def f3(a, b, c, d, k, s, X): return ROL(a + H(b, c, d) + X[k] + U32(0x6ed9eba1), s)
 
 def int_array2str(array):
         str = ''

@@ -17,7 +17,11 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import string, urlparse
+import string
+try:
+    from urllib.parse import urlparse
+except ImportError:
+     from urlparse import urlparse
 
 http_debug_file_name = 'http.debug'
 
@@ -54,16 +58,16 @@ def test_server_http_header(header_str):
 def extract_http_header_str(buffer):
     ""
     # let's remove possible leading newlines
-    t = string.lstrip(buffer)
+    t = buffer.lstrip()
 
     # searching for the RFC header's end
     delimiter = '\015\012\015\012'
-    header_end = string.find(t, delimiter)
+    header_end = t.find(delimiter)
 
     if header_end < 0:
         # may be it is defective header made by junkbuster
         delimiter = '\012\012'
-        header_end = string.find(t, delimiter)
+        header_end = t.find(delimiter)
 
     if header_end >=0:
         # we have found it, possibly
@@ -157,7 +161,7 @@ class HTTP_HEAD:
         for i in records[1:]:
             parts = string.split(string.strip(i), ':', 1)
             pname = string.lower(string.strip(parts[0]))
-            if not params.has_key(pname):
+            if pname not in params:
                 params[pname] = []
                 order_list.append(string.lower(pname))
             try:
@@ -196,7 +200,7 @@ class HTTP_HEAD:
     def get_param_values(self, param_name):
         ""
         param_name = string.lower(param_name)
-        if self.params.has_key(param_name):
+        if param_name in self.params:
             return self.params[param_name]
         else:
             return []
@@ -205,19 +209,20 @@ class HTTP_HEAD:
     def del_param(self, param_name):
         ""
         param_name = string.lower(param_name)
-        if self.params.has_key(param_name): del self.params[param_name]
+        if param_name in self.params:
+            del self.params[param_name]
 
     #-------------------------------
     def has_param(self, param_name):
         ""
         param_name = string.lower(param_name)
-        return self.params.has_key(param_name)
+        return param_name in self.params
 
     #-------------------------------
     def add_param_value(self, param_name, value):
         ""
         param_name = string.lower(param_name)
-        if not self.params.has_key(param_name):
+        if param_name not in self.params:
             self.params[param_name] = []
         if param_name not in self.order_list:
             self.order_list.append(param_name)
@@ -237,7 +242,7 @@ class HTTP_HEAD:
         res = string.join(self.fields, ' ') + '\n'
 
         for i in self.order_list:
-            if self.params.has_key(i):
+            if i in self.params:
                 if i == 'cookie':
                     for k in self.params[i]:
                         cookies = cookies + capitalize_value_name(i) + ': ' + k + '\n'
@@ -258,7 +263,7 @@ class HTTP_HEAD:
         res = string.join(self.fields, ' ') + '\015\012'
 
         for i in self.order_list:
-            if self.params.has_key(i):
+            if i in self.params:
                 if i == 'cookie':
                     for k in self.params[i]:
                         cookies = cookies + capitalize_value_name(i) + ': ' + k + '\015\012'

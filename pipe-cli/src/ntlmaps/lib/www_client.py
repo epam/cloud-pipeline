@@ -17,10 +17,17 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import string, socket, thread, select, time
-import logger, http_header, utils
-import ntlm_auth, basic_auth
-import proxy_client
+import string
+import socket
+try:
+    import _thread as thread
+except ImportError:
+    import thread
+import select
+import time
+
+from src.ntlmaps.lib import proxy_client
+
 
 class www_HTTP_Client(proxy_client.proxy_HTTP_Client):
 
@@ -52,7 +59,7 @@ class www_HTTP_Client(proxy_client.proxy_HTTP_Client):
     def fix_client_header(self):
         ""
         self.logger.log('*** Replacing values in client header...')
-        if self.config.has_key('CLIENT_HEADER'):
+        if 'CLIENT_HEADER' in self.config:
             for i in self.config['CLIENT_HEADER'].keys():
                 self.client_head_obj.del_param(i)
                 self.client_head_obj.add_param_value(i, self.config['CLIENT_HEADER'][i])

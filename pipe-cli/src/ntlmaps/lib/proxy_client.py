@@ -17,10 +17,20 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import string, socket, thread, select, time
-import logger, http_header, utils, ntlm_auth, basic_auth
+import string
+import socket
 
-class proxy_HTTP_Client:
+from src.ntlmaps.lib import ntlm_auth, basic_auth, http_header, logger
+
+try:
+    import _thread as thread
+except ImportError:
+    import thread
+import select
+import time
+
+
+class proxy_HTTP_Client(object):
 
     #-----------------------------------------------------------------------
     def __init__(self, client_socket, address, config):
@@ -82,7 +92,6 @@ class proxy_HTTP_Client:
     #-----------------------------------------------------------------------
     def run(self):
         ""
-        # if self.config['DEBUG']['SCR_DEBUG']: print 'Connected %s:%d ' % self.client_address
 
         while(not self.stop_request):
 
@@ -130,7 +139,7 @@ class proxy_HTTP_Client:
                 self.log_url()
 
                 if self.config['DEBUG']['SCR_DEBUG']: 
-                   print 'Connected %s:%d ' % self.client_address, self.client_head_obj.fields[1]
+                   print('Connected %s:%d ' % (self.client_address, self.client_head_obj.fields[1]))
 
                 self.send_client_header()
 
@@ -168,7 +177,7 @@ class proxy_HTTP_Client:
 
             self.check_stop_request()
 
-        if self.config['DEBUG']['SCR_DEBUG']: print 'Finished.\n'
+        if self.config['DEBUG']['SCR_DEBUG']: print('Finished.\n')
         #  % self.client_head_obj.fields[1]
         self.exit()
         # self.client_address
@@ -177,7 +186,7 @@ class proxy_HTTP_Client:
     def fix_client_header(self):
         ""
         self.logger.log('*** Replacing values in client header...')
-        if self.config.has_key('CLIENT_HEADER'):
+        if 'CLIENT_HEADER' in self.config:
             for i in self.config['CLIENT_HEADER'].keys():
                 self.client_head_obj.del_param(i)
                 self.client_head_obj.add_param_value(i, self.config['CLIENT_HEADER'][i])
@@ -254,7 +263,7 @@ class proxy_HTTP_Client:
         if socket_data:
             self.logger_bin_client.log(socket_data)
 
-        self.client_buffer = self.client_buffer + socket_data
+        self.client_buffer = self.client_buffer + str(socket_data)
 
         if not self.client_head_obj and not self.tunnel_mode:
             self.client_head_obj, rest = http_header.extract_client_header(self.client_buffer)
@@ -616,7 +625,7 @@ class proxy_HTTP_Client:
         msg = ''
         for i in auth:
             msg = msg + ", %s" % i
-            upper_auth.append(string.upper(i))
+            upper_auth.append(i.upper())
         self.logger.log('*** Authentication methods allowed: ' + msg[2:] + '\n')
 
         # NOTE that failed auth is detected now just after any failed atempt.
@@ -651,7 +660,7 @@ class proxy_HTTP_Client:
         msg = ''
         for i in auth:
             msg = msg + ", %s" % i
-            upper_auth.append(string.upper(i))
+            upper_auth.append(i.upper())
         self.logger.log('*** Authentication methods allowed: ' + msg[2:] + '\n')
 
         # NOTE that failed auth is detected now just after any failed atempt.

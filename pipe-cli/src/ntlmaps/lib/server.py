@@ -17,13 +17,21 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import socket, thread, sys, signal, getpass
-import proxy_client, www_client, monitor_upstream, ntlm_procs
+import socket
 
-#--------------------------------------------------------------
-class AuthProxyServer:
+from src.ntlmaps.lib import proxy_client, www_client, ntlm_procs, monitor_upstream
 
-    #--------------------------------------------------------------
+try:
+    import _thread as thread
+except ImportError:
+    import thread
+import sys
+import signal
+import getpass
+
+
+class AuthProxyServer(object):
+
     def __init__(self, config):
         self.config = config
         self.MyHost = ''
@@ -34,12 +42,12 @@ class AuthProxyServer:
         if not self.config['NTLM_AUTH']['NTLM_TO_BASIC']:
             if not self.config['NTLM_AUTH']['PASSWORD']:
                 tries = 3
-                print '------------------------'
+                print('------------------------')
                 while tries and (not self.config['NTLM_AUTH']['PASSWORD']):
                     tries = tries - 1
                     self.config['NTLM_AUTH']['PASSWORD'] = getpass.getpass('Your NT password to be used:')
             if not self.config['NTLM_AUTH']['PASSWORD']:
-                print 'Sorry. PASSWORD is required, bye.'
+                print('Sorry. PASSWORD is required, bye.')
                 sys.exit(1)
         else:
             # TODO: migrate this properly so placeholders aren't required
@@ -60,9 +68,9 @@ class AuthProxyServer:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind((self.MyHost, self.ListenPort))
         except socket.error:
-            print "ERROR: Could not create socket. Possibly port %s is still being used by another process." % self.config['GENERAL']['LISTEN_PORT']
+            print("ERROR: Could not create socket. Possibly port %s is still being used by another process." % self.config['GENERAL']['LISTEN_PORT'])
             sys.exit(1)
-        print 'Now listening at %s on port %s' % (self.config['GENERAL']['HOST'], self.config['GENERAL']['LISTEN_PORT'])
+        print('Now listening at %s on port %s' % (self.config['GENERAL']['HOST'], self.config['GENERAL']['LISTEN_PORT']))
 
         while(1):
             s.listen(self.config['GENERAL']['MAX_CONNECTION_BACKLOG'])
@@ -109,7 +117,7 @@ class AuthProxyServer:
                     self.config['GENERAL']['PARENT_PROXY'] = self.config['GENERAL']['AVAILABLE_PROXY_LIST'].pop()
                     self.monitor = monitor_upstream.monitorThread(self.config, signal.SIGINT)
                     self.monLock.release()
-                    print "Moving to proxy server: "+self.config['GENERAL']['PARENT_PROXY']
+                    print("Moving to proxy server: "+self.config['GENERAL']['PARENT_PROXY'])
                     old_monitor.alive = 0
                     thread.start_new_thread(self.monitor.run, ())
                     map(lambda x: x.exit(), old_monitor.threadsToKill)
@@ -117,9 +125,9 @@ class AuthProxyServer:
                     self.sigLock.release()
             else:
                 # SIGINT is only special if we are in upstream mode:
-                print 'Got SIGINT, exiting now...'
+                print('Got SIGINT, exiting now...')
                 sys.exit(1)
         else:
-            print 'Got SIGNAL '+str(signum)+', exiting now...'
+            print('Got SIGNAL '+str(signum)+', exiting now...')
             sys.exit(1)
         return

@@ -17,10 +17,12 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import ntlm_procs, utils
-import base64, string
+import base64
+import string
 
-#---------------------------------------------------------------------
+from src.ntlmaps.lib import utils
+
+
 class record:
 
     def __init__(self, data, offset=0):
