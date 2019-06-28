@@ -1311,7 +1311,7 @@ class AWSRegionForm extends React.Component {
                   {
                     (this.props.regionIds || []).map(r => {
                       return (
-                        <Select.Option key={r} value={r}>
+                        <Select.Option key={r} value={r} title={r}>
                           <AWSRegionTag
                             showProvider={false}
                             provider={this.provider}
@@ -2041,7 +2041,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             onChange={this.onChangeMountType}>
             {
               Object.keys(MountOptions)
-                .map(key => <Select.Option key={key} value={key}>{key}</Select.Option>)
+                .map(key => <Select.Option key={key} value={key} title={key}>{key}</Select.Option>)
             }
           </Select>
           <Button
