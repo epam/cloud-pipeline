@@ -105,6 +105,7 @@ public class PipelineDockerCommitTest
                         commit.setRegistry(registry)
                                 .setGroup(defaultGroup)
                                 .setName(toolSelfName)
+                                .sleep(1, SECONDS)
                                 .setVersion(toolVersion)
                                 .ok()
                 )
