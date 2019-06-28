@@ -26,7 +26,7 @@ except ImportError:
 from contextlib import closing
 
 from .config import Config
-from multiprocessing import Process
+from multiprocessing import Process, freeze_support
 
 from .ntlmaps.main import main
 
@@ -99,6 +99,7 @@ class NtlmProxy(object):
         url = "%s://%s:%d" % (schema, LOCALHOST, port)
 
         config = self.build_config(port, original_proxy)
+        freeze_support()
         ntlm_process = Process(target=self.run_ntlmaps, args=(config,))
         ntlm_process.daemon = True
         ntlm_process.start()
