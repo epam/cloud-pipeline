@@ -16,6 +16,7 @@ import click
 import requests
 import sys
 from prettytable import prettytable
+from multiprocessing import freeze_support
 
 from src.api.cluster import Cluster
 from src.api.pipeline import Pipeline
@@ -995,4 +996,5 @@ def chown(user_name, entity_class, entity_name):
 
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
+    freeze_support()
     cli(sys.argv[1:])

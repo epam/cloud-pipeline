@@ -122,9 +122,3 @@ def main(args):
     # let's run it
     serv = server.AuthProxyServer(config)
     serv.run()
-
-
-if __name__ == '__main__':
-    args = sys.argv
-    args = args[1:]
-    main(args)
