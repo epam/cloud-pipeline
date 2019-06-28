@@ -29,7 +29,7 @@
 
 ## Microsoft Azure Support
 
-One of the major `0.15` features is a support for the **[Microsoft Azure Cloud](https://azure.microsoft.com/en-us/)**
+One of the major **`v0.15`** features is a support for the **[Microsoft Azure Cloud](https://azure.microsoft.com/en-us/)**
 
 All the features, that were previously used for `AWS`, are now available in all the same manner, from all the same GUI/CLI, for `Azure`.
 
@@ -40,7 +40,7 @@ Another cool thing, is that now it is possible to have a single installation of 
 When a compute-intensive job is run - compute node may start starving for the resources.  
 CPU high load is typically a normal situation - it could result just to the SSH/metrics slowdown. But running low on memory and disk could crash the node, in such cases autoscaler will eventually terminate the cloud instance.
 
-In `0.15` version, the `Cloud Pipeline` platform could notify user on the fact of Memory/Disk high load.  
+In **`v0.15`** version, the `Cloud Pipeline` platform could notify user on the fact of Memory/Disk high load.  
 When memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).
 
 Such notifications could be configured at `HIGH_CONSUMED_RESOURCES` section of the `Email notifications`:  
@@ -100,7 +100,7 @@ Version `0.14` introduced an ability to launch `autoscaled` clusters. Besides th
 
 On the other hand - `fixed` cluster (i.e. those which contain a predefined number of compute nodes), required user to set the `CP_CAP_SGE` explicitly. Which is no a big deal, but may be tedious.
 
-In `0.15` Grid Engine can be configured within the `Cluster` (fixed size cluster) tab.
+In **`v0.15`** Grid Engine can be configured within the `Cluster` (fixed size cluster) tab.
 
 This is accomplished by using the `Enable GridEngine` checkbox. By default, this checkbox is unticked. If the user sets this ON - `CP_CAP_SGE` parameter is added automatically.
 
@@ -128,12 +128,11 @@ If (**1**) happens - job will sit in the `QUEUED` state, until a spare will be a
 But if (**2**) occurs - an error will be raised by the Cloud Provider, `Cloud Pipeline` treats this as an issue with the node creation. Autoscaler will then resubmit the node creation task for `cluster.nodeup.retry.count` times (default: 5) and then fail the job run.  
 This behavior confuses users, as (**2**) shall behave almost in the same manner as (**1**) - job shall be kept in the queue until there will be free space for a new node.
 
-In `0.15` (**2**) scenario works as described:
+In **`v0.15`** (**2**) scenario works as described:
 
 - If a certain limit is reached (e.g. number of `m4.large` instances exceeds the configured limit) - run will not fail, but will await for a spare node or limit increase
-- A warning will be highlighted in the job initialization log:
-
-![CP_v.0.15_ReleaseNotes](attachments/RN015_Resource_Limits_1.png)
+- A warning will be highlighted in the job initialization log:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Resource_Limits_1.png)
 
 ## Allow to terminate paused runs
 
@@ -153,7 +152,17 @@ This introduces a number of stale runs, that just sit there in the PAUSED state 
 To address those concerns - current version of `Cloud Pipeline` allows to terminate `PAUSED` run, without a prior `RESUME`. This operation can be performed by the `OWNER` of the run and the `ADMIN` users.
 Termination of the `PAUSED` run drops the underlying cloud instance and marks the run as `STOPPED`.
 
-From the GUI perspective - `TERMINATE` button is shown (instead of `STOP`), when a run is in the `PAUSED` state. Clicking it - performs the run termination, as described above.
+From the GUI perspective - `TERMINATE` button is shown (instead of `STOP`), when a run is in the `PAUSED` state:  
+
+- on the "Active runs" page  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TerminateButton_1.png)
+- on the "Run logs" page  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TerminateButton_2.png)
+- on the "Dashboard" page  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TerminateButton_3.png)
+
+Clicking it - performs the run termination, as described above.  
+See more information [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#stopterminate-run).
 
 ## Pre/Post-commit hooks implementation
 
@@ -180,10 +189,10 @@ Those hooks are valid only for the specific images and therefore shall be contai
 
 Two preferences are introduced:
 
-- `commit.pre.command.path`: specified a path to a script within a docker image, that will be executed in a currently running container, **BEFORE** `docker commit` occurs. (default: `/root/pre_commit.sh`).
+- `commit.pre.command.path`: specified a path to a script within a docker image, that will be executed in a currently running container, **BEFORE** `docker commit` occurs (default: `/root/pre_commit.sh`).
     - This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent `post` operation - only filesystem operations will be available.
     - **_Note_** that any changes done at this stage will affect the running container.
-- `commit.post.command.path`: specified a path to a script within a docker image, that will be executed in a committed image, **AFTER** `docker commit` occurs. (default: `/root/post_commit.sh`).
+- `commit.post.command.path`: specified a path to a script within a docker image, that will be executed in a committed image, **AFTER** `docker commit` occurs (default: `/root/post_commit.sh`).
     - This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.
 - If a corresponding pre/post script is not found in the docker image - it will not be executed.
 
@@ -202,9 +211,9 @@ To limit a possibility of producing such docker images (which will not be able t
 
 This feature is addresses the same issues as the previous **Notifications about high resources pressure** by making the compute-intensive jobs runs more reliable.
 
-In certain cases jobs may fail with unexpected errors if the compute node runs `Out Of Memory`.  
+In certain cases jobs may fail with unexpected errors if the compute node runs `Out Of Memory`.
 
-`0.15` provides an ability for admin users to configure a default `swap` file to the compute node being created.
+**`v0.15`** provides an ability for admin users to configure a default `swap` file to the compute node being created.
 This allow to avoid runs failures due to memory limits.
 
 The size and the location of the `swap` can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
@@ -225,7 +234,7 @@ From now on - all the system-level location will be granted `rwx` access for the
 
 ## Renewed WDL visualization
 
-`v0.15` offers an updated Web GUI viewer/editor for the WDL scripts. These improvements allow to focus on the WDL diagram and make it more readable and clear. Which very useful for large WDL scripts.
+**`v0.15`** offers an updated Web GUI viewer/editor for the WDL scripts. These improvements allow to focus on the WDL diagram and make it more readable and clear. Which very useful for large WDL scripts.
 
 - Auxiliary controls ("Save", "Revert changes", "Layout", "Fit to screen", "Show links", "Zoom out", "Zoom in", "Fullscreen") are moved to the left side of the `WDL GRAPH` into single menu:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_1.png)
@@ -233,7 +242,9 @@ From now on - all the system-level location will be granted `rwx` access for the
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_3.png)  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_4.png)
 - Workflow/Task editor is moved from the modal popup to the right floating menu `PROPERTIES`:  
-    ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_5.png) 
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_5.png)
+
+See more details [here](../../manual/06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
 
 ## "QUEUED" state of the run
 
@@ -246,6 +257,8 @@ During this phase of the lifecycle - a job is waiting in the queue for the avail
 
 This feature allows users to make a decision - whether to wait for run in a queue or stop it and resubmit.
 
+See more details [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-runs).
+
 ## Help tooltips for the run state icons
 
 With the runs' `QUEUED` state introduction - we now have a good number of possible job phases.
@@ -255,6 +268,8 @@ To make the phases meaning more clear - tooltips are provided when hovering a ru
 Tooltips contain a state name in bold (e.g. **Queued**) and a short description of the state and info on the next stage:  
 
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_TooltipsStatuses_1.png)
+
+See more details - [Active runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-runs) and [Completed runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#completed-runs).
 
 ## VM monitor service
 
