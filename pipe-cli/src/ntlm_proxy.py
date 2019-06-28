@@ -25,10 +25,10 @@ except ImportError:
 
 from contextlib import closing
 
-from src.config import Config
+from .config import Config
 from multiprocessing import Process
 
-from src.ntlmaps.main import main
+from .ntlmaps.main import main
 
 PROXY_NTLM_DEFAULT_PORT = 3218
 MAX_PORT_COUNT = 65536
