@@ -224,7 +224,7 @@ class KubeProvider(object):
 
             # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
             # delete node that opposite to ins_id
-            nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 128)]
+            nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]
             for node_to_delete in nodes_to_delete:
 
                 if node_to_delete == ins_id:
