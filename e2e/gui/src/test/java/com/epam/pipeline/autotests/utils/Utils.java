@@ -213,7 +213,8 @@ public class Utils {
     }
 
     private static String runNameToRunId(final String runName) {
-        return runName.substring(runName.lastIndexOf("-") + 1);
+        String[] splitRunName = runName.substring(0, runName.indexOf("\n")).split("-");
+        return splitRunName[splitRunName.length - 1];
     }
 
     public static void sleep(long duration, TimeUnit units) {

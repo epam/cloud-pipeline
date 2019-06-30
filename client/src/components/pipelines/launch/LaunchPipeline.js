@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {observable} from 'mobx';
 import {Alert, Card} from 'antd';
 import connect from '../../../utils/connect';
 import localization from '../../../utils/localization';
@@ -40,14 +40,10 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
-@inject('awsRegions')
-@inject(({allowedInstanceTypes, awsRegions, routing, pipelines, preferences}, {params}) => {
+@inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
   return {
-    allowedInstanceTypes: params.image
-      ? allowedInstanceTypes.getAllowedTypes(params.image)
-      : new AllowedInstanceTypes(),
-    awsRegions,
+    allowedInstanceTypes: allowedInstanceTypes,
     preferences,
     pipeline: params.id ? pipelines.getPipeline(params.id) : undefined,
     run: params.runId ? pipelineRun.run(params.runId, {refresh: true}) : undefined,
@@ -55,6 +51,7 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
     version: params.version,
     runId: params.runId,
     configurationName: params.configuration,
+    image: params.image,
     tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
@@ -63,25 +60,10 @@ import LaunchPipelineForm from './form/LaunchPipelineForm';
   };
 })
 @observer
-export default class LaunchPipeline extends localization.LocalizedReactComponent {
-
+class LaunchPipeline extends localization.LocalizedReactComponent {
   state = {launching: false, configName: null};
 
-  @computed
-  get awsRegions () {
-    if (this.props.awsRegions.loaded) {
-      return (this.props.awsRegions.value || []).map(r => r);
-    }
-    return [];
-  }
-
-  getAwsRegionId = (regionUID) => {
-    const [region] = this.awsRegions.filter(r => r.regionId === regionUID);
-    if (region) {
-      return region.id;
-    }
-    return null;
-  };
+  @observable allowedInstanceTypes;
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -123,7 +105,9 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
   }
 
   get currentConfiguration () {
-    if (!this.props.configurations || this.props.configurations.pending || this.props.configurations.error) {
+    if (!this.props.configurations ||
+      this.props.configurations.pending ||
+      this.props.configurations.error) {
       return undefined;
     }
     let configuration;
@@ -142,7 +126,9 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
   };
 
   getConfigurationParameters = () => {
-    if (!this.props.configurations || this.props.configurations.pending || this.props.configurations.error) {
+    if (!this.props.configurations ||
+      this.props.configurations.pending ||
+      this.props.configurations.error) {
       return undefined;
     }
     let configuration;
@@ -157,11 +143,17 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
     if (!configuration) {
       return undefined;
     }
-    return configuration.configuration;
+    return {
+      allowedInstanceTypes: this.props.allowedInstanceTypes,
+      ...configuration.configuration
+    };
   };
 
   getParameters = () => {
-    if (this.props.tool && !this.toolPending && !this.toolSettingsPending && !this.props.tool.error) {
+    if (this.props.tool &&
+      !this.toolPending &&
+      !this.toolSettingsPending &&
+      !this.props.tool.error) {
       const toolVersion = (this.props.toolVersion || 'latest').toLowerCase();
       const [versionSettings] = (this.props.toolSettings.value || [])
         .filter(v => (v.version || '').toLowerCase() === toolVersion);
@@ -187,11 +179,12 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
         parameter !== undefined &&
         `${parameter}`.trim().length > 0 &&
         (!additionalCriteria || additionalCriteria(parameter));
+      const image = `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
       return {
         cmd_template: versionSettingValue('cmd_template') || this.props.tool.value.defaultCommand,
         docker_image: this.props.toolVersion
-          ? `${this.props.tool.value.registry}/${this.props.tool.value.image}:${this.props.toolVersion}`
-          : `${this.props.tool.value.registry}/${this.props.tool.value.image}`,
+          ? `${image}:${this.props.toolVersion}`
+          : image,
         instance_disk: +versionSettingValue('instance_disk') || this.props.tool.value.disk,
         instance_size: versionSettingValue('instance_size') || this.props.tool.value.instanceType,
         is_spot: versionSettingValue('is_spot'),
@@ -204,13 +197,13 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
       const parameters = {
         cmd_template: this.props.run.value.cmdTemplate,
         docker_image: this.props.run.value.dockerImage,
-        is_spot: undefined
+        is_spot: this.props.preferences.useSpot
       };
       if (this.props.run.value.instance) {
         parameters.instance_size = this.props.run.value.instance.nodeType;
         parameters.instance_disk = this.props.run.value.instance.nodeDisk;
         parameters.is_spot = this.props.run.value.instance.spot;
-        parameters.cloudRegionId = this.getAwsRegionId(this.props.run.value.instance.cloudRegionId);
+        parameters.cloudRegionId = this.props.run.value.instance.cloudRegionId;
       }
       parameters.parameters = {};
       if (this.props.run.value.pipelineRunParameters) {
@@ -236,21 +229,25 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
     } else if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
     }
-    return {parameters: {}};
+    return {
+      allowedInstanceTypes: this.props.allowedInstanceTypes,
+      parameters: {}
+    };
   };
 
   getConfigurations = () => {
-    if (!!this.props.configurations && !this.props.configurations.pending && !this.props.configurations.error) {
+    if (!!this.props.configurations &&
+      !this.props.configurations.pending &&
+      !this.props.configurations.error) {
       return (this.props.configurations.value || []).map(c => c);
     }
     return [];
   };
 
   launch = async (payload) => {
-    const configurationName = this.currentConfiguration
+    payload.configurationName = this.currentConfiguration
       ? this.currentConfiguration.name
       : this.configurationName;
-    payload.configurationName = configurationName;
     if (await run(this)(payload)) {
       SessionStorageWrapper.navigateToActiveRuns(this.props.router);
     }
@@ -260,14 +257,28 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
     this.setState({configName: name});
   };
 
+  componentDidUpdate () {
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = this.props.image
+        ? this.props.allowedInstanceTypes.getAllowedTypes(this.props.image)
+        : new AllowedInstanceTypes();
+    } else if (parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
+    }
+  }
+
   render () {
     if (this.pipelinePending ||
       this.configurationsPending ||
       this.runPending ||
       this.toolPending ||
       this.toolSettingsPending ||
-      (!this.props.awsRegions.loaded && this.props.awsRegions.pending) ||
-      (!this.props.preferences.loaded && this.props.preferences.pending)) {
+      (!this.props.preferences.loaded && this.props.preferences.pending) ||
+      !this.allowedInstanceTypes) {
       return <LoadingView />;
     }
     if (this.props.pipeline && this.props.pipeline.error) {
@@ -280,15 +291,13 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
     if (this.props.run && this.props.run.error) {
       errors.push(this.props.run.error);
     }
-    if (this.props.awsRegions.error) {
-      errors.push(this.props.awsRegions.error);
-    }
     if (this.props.tool && this.props.tool.error) {
       errors.push(this.props.tool.error);
     }
     if (this.props.toolSettings && this.props.toolSettings.error) {
       errors.push(this.props.toolSettings.error);
     }
+    const parameters = this.getParameters();
     return (
       <Card
         bodyStyle={{padding: 0, margin: 0}}
@@ -302,9 +311,9 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
               : this.configurationName
           }
           pipeline={this.props.pipeline ? this.props.pipeline.value : undefined}
-          allowedInstanceTypes={this.props.allowedInstanceTypes}
+          allowedInstanceTypes={this.allowedInstanceTypes}
           version={this.props.version}
-          parameters={this.getParameters()}
+          parameters={parameters}
           configurations={this.getConfigurations()}
           errors={errors}
           onConfigurationChanged={this.onConfigurationChanged}
@@ -314,3 +323,5 @@ export default class LaunchPipeline extends localization.LocalizedReactComponent
     );
   }
 }
+
+export default LaunchPipeline;
