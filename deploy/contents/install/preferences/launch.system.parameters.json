@@ -18,6 +18,12 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_MODULES",
+        "type": "boolean",
+        "description": "Enables Environment Modules for a current run",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",

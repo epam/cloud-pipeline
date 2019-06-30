@@ -212,6 +212,7 @@ public class DockerCommitTest
                 .commit(commit ->
                         commit.setRegistry(registry)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(1, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))

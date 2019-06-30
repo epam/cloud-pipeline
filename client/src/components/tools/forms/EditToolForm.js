@@ -332,8 +332,8 @@ export default class EditToolForm extends React.Component {
     this.reset();
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
-      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
-      this.props.allowedInstanceTypes.toolId = this.props.toolId;
+      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
+      this.props.allowedInstanceTypes.setToolId(this.props.toolId);
     }
 
     this.props.onInitialized && this.props.onInitialized(this);
@@ -347,7 +347,7 @@ export default class EditToolForm extends React.Component {
 
   handleIsSpotChange = (isSpot) => {
     if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
-      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
+      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
     }
   };
 
