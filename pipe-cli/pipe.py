@@ -81,9 +81,9 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
     if proxy_ntlm and not proxy_ntlm_user:
         proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
     if proxy_ntlm and not proxy_ntlm_domain:
-        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
     if proxy_ntlm and not proxy_ntlm_pass:
-        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str)
+        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
 
     Config.store(auth_token, 
                  api, 
