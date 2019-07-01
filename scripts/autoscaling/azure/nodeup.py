@@ -591,10 +591,9 @@ def verify_run_id(run_id):
 
 
 # There is a strange behavior, when you create scale set with one node,
-# two node will be created at first and then one of it will be deleted
-# Some times this node can rich startup script before it will be terminated, so node will join a kube cluster
-# In order to get rid of this 'phantom' node this method will delete node with status NotReady
-# and name like computerNamePrefix + 000000
+# several node will be created at first and then only one of it will stay as running
+# Some times other nodes can rich startup script before it will be terminated, so nodes will join a kube cluster
+# In order to get rid of this 'phantom' nodes this method will delete nodes with name like computerNamePrefix + 000000
 def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
     low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, ins_id)
     if low_priority_search:
@@ -602,12 +601,14 @@ def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
 
         # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
         # delete node that opposite to ins_id
-        node_to_delete = scale_set_name + "000000" if ins_id == scale_set_name + "000001" else scale_set_name + "000001"
+        nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]
+        for node_to_delete in nodes_to_delete:
 
-        nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_to_delete})
-        for node in nodes.response['items']:
-            if any((condition['status'] == 'False' or condition['status'] == 'Unknown')
-                   and condition['type'] == "Ready" for condition in node["status"]["conditions"]):
+            if node_to_delete == ins_id:
+                continue
+
+            nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_to_delete})
+            for node in nodes.response['items']:
                 obj = {
                     "apiVersion": "v1",
                     "kind": "Node",
