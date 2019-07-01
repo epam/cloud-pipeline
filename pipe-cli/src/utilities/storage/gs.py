@@ -1,6 +1,7 @@
 import copy
 import os
 from datetime import datetime, timedelta
+from requests import RequestException
 
 try:
     from urllib.parse import urlparse  # Python 3
@@ -14,6 +15,8 @@ from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client, Blob
 from google.oauth2.credentials import Credentials
+from google.resumable_media import DataCorruption
+from google.resumable_media.requests import Download
 
 from src.api.data_storage import DataStorage
 from src.config import Config
@@ -49,7 +52,7 @@ class GsManager:
     def __init__(self, client):
         self.client = client
 
-    def _progress_blob(self, bucket, blob_name, progress_callback):
+    def _progress_blob(self, bucket, blob_name, progress_callback, size):
         """
         The method is a workaround for the absence of support for the uploading and downloading callbacks
         in the official SDK.
@@ -57,9 +60,10 @@ class GsManager:
         See _ProgressBlob documentation for more info.
         """
         return _ProgressBlob(
+            size=size,
+            progress_callback=progress_callback,
             name=blob_name,
-            bucket=bucket,
-            progress_callback=progress_callback
+            bucket=bucket
         )
 
 
@@ -298,7 +302,7 @@ class ProgressStream:
 
     def __init__(self, stream, progress_callback, progress_chunk_size):
         """
-        Simple stream wrapper that supports progress callbacks.
+        Simple write stream wrapper that supports progress callbacks.
 
         Progress callbacks are time-consuming actions. To improve overall performance callbacks have to be called
         only a limited number of times. The amount of transferred data to cause a new progress callback is specified
@@ -315,6 +319,10 @@ class ProgressStream:
         self._bytes_transferred = 0
         self._progress_chunk = 0
 
+    @property
+    def bytes_transferred(self):
+        return self._bytes_transferred
+
     def write(self, data):
         self._stream.write(data)
         self._bytes_transferred += len(data)
@@ -325,8 +333,48 @@ class ProgressStream:
                 self._progress_callback(self._bytes_transferred)
 
 
-class _ProgressBlob(Blob):
-    DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
+class _BufferedDownloadBlob(Blob):
+    def __init__(self, *args, **kwargs):
+        super(_BufferedDownloadBlob, self).__init__(*args, **kwargs)
+
+    def download_to_file(self, file_obj, client=None, start=None, end=None):
+        super(_BufferedDownloadBlob, self).download_to_file(file_obj, client, start, end)
+
+
+class _ResumableDownloadBlob(Blob):
+    DEFAULT_ATTEMPTS = 5
+
+    def __init__(self, size, attempts=DEFAULT_ATTEMPTS, *args, **kwargs):
+        """
+        Blob that can resume its download if any low-level error happens.
+
+        :param size: Total size of the downloading blob.
+        :param attempts: Maximum number of resumes before failure.
+        """
+        super(_ResumableDownloadBlob, self).__init__(*args, **kwargs)
+        self._size = size
+        self._attempts = attempts
+
+    def _do_download(self, transport, stream, download_url, headers, start=None, end=None):
+        remaining_attempts = self._attempts
+        while stream.bytes_transferred < self._size and remaining_attempts:
+            try:
+                download = Download(
+                    download_url, stream=stream, headers=headers,
+                    start=stream.bytes_transferred, end=end
+                )
+                download.consume(transport)
+            except RequestException:
+                remaining_attempts -= 1
+                if not remaining_attempts:
+                    raise RuntimeError('Resumable download has failed after %s resume attempts' % self._attempts)
+                # TODO 01.07.2019: Remove else branch before merge. It is required only for debugging purposes.
+                else:
+                    print('Resuming download from %s byte' % stream.bytes_transferred)
+
+
+class _ProgressBlob(_ResumableDownloadBlob):
+    PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
 
     def __init__(self, progress_callback=None, *args, **kwargs):
         """
@@ -335,10 +383,10 @@ class _ProgressBlob(Blob):
         uploading and downloading callbacks will be provided the usages of _ProgressBlob class should be removed.
         """
         super(_ProgressBlob, self).__init__(*args, **kwargs)
-        self.progress_callback = progress_callback
+        self._progress_callback = progress_callback
 
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        stream = ProgressStream(file_obj, self.progress_callback, _ProgressBlob.DEFAULT_CHUNK_SIZE)
+        stream = ProgressStream(file_obj, self._progress_callback, _ProgressBlob.PROGRESS_CHUNK_SIZE)
         super(_ProgressBlob, self)._do_download(transport, stream, download_url, headers, start, end)
 
     def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
@@ -353,14 +401,28 @@ class _ProgressBlob(Blob):
         )
 
         while not upload.finished:
-            if self.progress_callback:
-                self.progress_callback(upload._bytes_uploaded)
+            if self._progress_callback:
+                self._progress_callback(upload._bytes_uploaded)
             response = upload.transmit_next_chunk(transport)
 
         return response
 
 
 class GsDownloadManager(GsManager, AbstractTransferManager):
+    DEFAULT_BUFFERING_SIZE=1024 * 1024  # 1MB
+
+    def __init__(self, client, buffering=DEFAULT_BUFFERING_SIZE):
+        """
+        Google cloud storage download manager that uses custom buffering size for destination files.
+
+        See the corresponding issue for more information on why the buffering size should be altered:
+         https://github.com/epam/cloud-pipeline/issues/435.
+
+        :param client:
+        :param buffering:
+        """
+        GsManager.__init__(self, client)
+        self._buffering = buffering
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), skip_existing=False):
@@ -387,12 +449,20 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         if StorageOperations.file_is_empty(size):
             blob = bucket.blob(source_key)
         else:
-            blob = self._progress_blob(bucket, source_key, progress_callback)
-        blob.download_to_filename(destination_key)
+            blob = self._progress_blob(bucket, source_key, progress_callback, size)
+        self._download_to_file(blob, destination_key)
         if progress_callback is not None:
             progress_callback(size)
         if clean:
             blob.delete()
+
+    def _download_to_file(self, blob, destination_key):
+        try:
+            with open(destination_key, "wb", buffering=self._buffering) as file_obj:
+                blob.download_to_file(file_obj)
+        except DataCorruption:
+            os.remove(destination_key)
+            raise
 
 
 class GsUploadManager(GsManager, AbstractTransferManager):
@@ -413,7 +483,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                 return
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
-        blob = self._progress_blob(bucket, destination_key, progress_callback)
+        blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_filename(source_key)
         if progress_callback is not None:
@@ -464,7 +534,7 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         if StorageOperations.file_is_empty(size):
             blob = bucket.blob(source_key)
         else:
-            blob = self._progress_blob(bucket, source_key, progress_callback)
+            blob = self._progress_blob(bucket, source_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
         if progress_callback is not None:
