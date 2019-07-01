@@ -355,7 +355,7 @@ export class DataStorageEditDialog extends React.Component {
                         disabled={!!this.props.dataStorage || isReadOnly}
                       >
                         {this.awsRegions.map(region => {
-                          return <Select.Option key={region.id.toString()}>
+                          return <Select.Option key={region.id.toString()} title={region.name}>
                             <AWSRegionTag regionUID={region.regionId} /> {region.name}
                           </Select.Option>;
                         })}
