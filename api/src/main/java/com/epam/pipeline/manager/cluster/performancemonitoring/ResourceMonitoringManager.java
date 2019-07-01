@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -199,8 +200,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final int idleTimeout = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
 
         final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
-                .filter(e -> DateUtils.nowUTC().isAfter(e.getValue().getProlongedAtTime()
-                        .plus(idleTimeout, ChronoUnit.MINUTES)))
+                .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
+                        .map(timestamp -> DateUtils.nowUTC().isAfter(timestamp.plus(idleTimeout, ChronoUnit.MINUTES)))
+                        .orElse(Boolean.FALSE))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         log.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
