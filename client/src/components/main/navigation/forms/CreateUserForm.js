@@ -223,6 +223,7 @@ export default class CreateUserForm extends React.Component {
                         key={d.id}
                         value={`${d.id}`}
                         name={d.name}
+                        title={d.name}
                         pathMask={d.pathMask}>
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
