@@ -15,19 +15,33 @@
 import json
 import os
 import pytz
+import sys
 import tzlocal
 from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
-from .utilities import time_zone_param_type
+from .utilities import time_zone_param_type, network_utilities
+
+# Setup pipe executable path 
+# Both frozen and plain distributions: https://stackoverflow.com/a/42615559
+if getattr(sys, 'frozen', False):
+    PIPE_PATH = sys._MEIPASS
+else:
+    PIPE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
+
+PROXY_NTLM_APS_PATH = os.path.join(PIPE_PATH, "ntlmaps/ntlmaps")
 
 class ConfigNotFoundError(Exception):
     def __init__(self):
         super(ConfigNotFoundError, self).__init__('Unable to locate configuration or it is incomplete. '
                                                   'You can configure pipe by running "pipe configure"')
+
+class ProxyInvalidConfig(Exception):
+    def __init__(self, details):
+        super(ProxyInvalidConfig, self).__init__('Invalid proxy configuration is provided: {}'.format(details))
 
 
 class Config(object):
@@ -38,6 +52,11 @@ class Config(object):
         self.access_key = os.environ.get('API_TOKEN')
         self.tz = time_zone_param_type.LOCAL_ZONE
         self.proxy = None
+        self.proxy_ntlm = None
+        self.proxy_ntlm_user = None
+        self.proxy_ntlm_domain = None
+        self.proxy_ntlm_pass = None
+
         if self.api and self.access_key:
             return
 
@@ -53,6 +72,17 @@ class Config(object):
                     self.tz = data['tz']
                 if 'proxy' in data:
                     self.proxy = data['proxy']
+                if 'proxy_ntlm' in data:
+                    self.proxy_ntlm = data['proxy_ntlm']
+                if 'proxy_ntlm_user' in data:
+                    self.proxy_ntlm_user = data['proxy_ntlm_user']
+                if 'proxy_ntlm_domain' in data:
+                    self.proxy_ntlm_domain = data['proxy_ntlm_domain']
+                if 'proxy_ntlm_pass' in data:
+                    try:
+                        self.proxy_ntlm_pass = data['proxy_ntlm_pass']
+                    except:
+                        self.proxy_ntlm_pass = None
         else:
             raise ConfigNotFoundError()
 
@@ -72,14 +102,36 @@ class Config(object):
                 url_to_resolve = PROXY_PAC_DEFAULT_URL
 
             return proxy_resolver.get_proxy_for_requests(url_to_resolve)
+        elif self.proxy_ntlm:
+            ntlm_aps_proxy_url = network_utilities.start_ntlm_aps(PROXY_NTLM_APS_PATH,
+                                                                self.proxy_ntlm_domain,
+                                                                self.proxy_ntlm_user,
+                                                                self.proxy_ntlm_pass,
+                                                                self.proxy)
+            return {'http': ntlm_aps_proxy_url,
+                    'https': ntlm_aps_proxy_url,
+                    'ftp': ntlm_aps_proxy_url}
         else:
             return {'http': self.proxy,
                     'https': self.proxy,
                     'ftp': self.proxy}
 
     @classmethod
-    def store(cls, access_key, api, timezone, proxy):
-        config = {'api': api, 'access_key': access_key, 'tz': timezone, 'proxy': proxy}
+    def store(cls, access_key, api, timezone, proxy, 
+              proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
+
+        if proxy == PROXY_TYPE_PAC and proxy_ntlm:
+            raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
+                                     'Remove the NTLM parameters or change the PAC to the proxy URL')
+
+        config = {'api': api, 
+                  'access_key': access_key, 
+                  'tz': timezone, 
+                  'proxy': proxy, 
+                  'proxy_ntlm': proxy_ntlm, 
+                  'proxy_ntlm_user': proxy_ntlm_user, 
+                  'proxy_ntlm_domain': proxy_ntlm_domain,
+                  'proxy_ntlm_pass': proxy_ntlm_pass }
         config_file = cls.config_path()
 
         with open(config_file, 'w+') as config_file_stream:
