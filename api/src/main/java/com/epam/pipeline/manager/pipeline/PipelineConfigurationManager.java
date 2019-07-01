@@ -138,6 +138,7 @@ public class PipelineConfigurationManager {
         configuration.setMainClass(defaultConfig.getMainClass());
         configuration.setEnvironmentParams(defaultConfig.getEnvironmentParams());
         configuration.setPrettyUrl(runVO.getPrettyUrl());
+        configuration.setCloudRegionId(defaultConfig.getCloudRegionId());
         Map<String, PipeConfValueVO> runParameters = new LinkedHashMap<>();
 
         //filter and get parameters from user
