@@ -125,13 +125,13 @@ export default class EditSystemNotificationForm extends React.Component {
               ? this.props.notification.severity : 'INFO'}`
           })(
           <Select>
-            <Select.Option key="INFO" value="INFO" title={"Info"}>
+            <Select.Option key="INFO" value="INFO" title="Info">
               <Icon type="info-circle-o" className={styles.info} /> Info
             </Select.Option>
-            <Select.Option key="WARNING" value="WARNING" title={"Warning"}>
+            <Select.Option key="WARNING" value="WARNING" title="Warning">
               <Icon type="exclamation-circle-o" className={styles.warning} /> Warning
             </Select.Option>
-            <Select.Option key="CRITICAL" value="CRITICAL" title={"Critical"}>
+            <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
               <Icon type="close-circle-o" className={styles.critical} /> Critical
             </Select.Option>
           </Select>
