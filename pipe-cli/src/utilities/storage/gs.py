@@ -1,4 +1,6 @@
+import base64
 import copy
+import hashlib
 import os
 from datetime import datetime, timedelta
 from requests import RequestException
@@ -333,27 +335,41 @@ class ProgressStream:
                 self._progress_callback(self._bytes_transferred)
 
 
-class _BufferedDownloadBlob(Blob):
-    def __init__(self, *args, **kwargs):
-        super(_BufferedDownloadBlob, self).__init__(*args, **kwargs)
+class CheckSumStream(ProgressStream):
 
-    def download_to_file(self, file_obj, client=None, start=None, end=None):
-        super(_BufferedDownloadBlob, self).download_to_file(file_obj, client, start, end)
+    def __init__(self, stream, *args, **kwargs):
+        ProgressStream.__init__(self, stream, *args, **kwargs)
+        self._stream = stream
+        self._md5_hash = hashlib.md5()
+
+    def write(self, data):
+        ProgressStream.write(self, data)
+        self._md5_hash.update(data)
+
+    def validate_checksum(self, expected_md5_hash):
+        actual_md5_hash = base64.b64encode(self._md5_hash.digest())
+        actual_md5_hash = actual_md5_hash.decode(u'utf-8')
+        if actual_md5_hash != expected_md5_hash:
+            raise RuntimeError('Checksum mismatch after the resuming download.')
+        else:
+            # TODO 01.07.2019: Remove printing. It is required only for debugging purposes.
+            print('Checksum matches the expected after the resuming download.')
 
 
 class _ResumableDownloadBlob(Blob):
-    DEFAULT_ATTEMPTS = 5
+    DEFAULT_RESUME_ATTEMPTS = 5
 
-    def __init__(self, size, attempts=DEFAULT_ATTEMPTS, *args, **kwargs):
+    def __init__(self, size, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
         """
         Blob that can resume its download if any low-level error happens.
 
         :param size: Total size of the downloading blob.
-        :param attempts: Maximum number of resumes before failure.
+        :param attempts: Maximum number of download sequential resumes before failing. Defaults to
+        DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS environment variable.
         """
         super(_ResumableDownloadBlob, self).__init__(*args, **kwargs)
         self._size = size
-        self._attempts = attempts
+        self._attempts = os.environ.get('CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS') or attempts
 
     def _do_download(self, transport, stream, download_url, headers, start=None, end=None):
         remaining_attempts = self._attempts
@@ -364,13 +380,19 @@ class _ResumableDownloadBlob(Blob):
                     start=stream.bytes_transferred, end=end
                 )
                 download.consume(transport)
-            except RequestException:
+            except RequestException as e:
                 remaining_attempts -= 1
                 if not remaining_attempts:
-                    raise RuntimeError('Resumable download has failed after %s resume attempts' % self._attempts)
-                # TODO 01.07.2019: Remove else branch before merge. It is required only for debugging purposes.
+                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
+                                       'You can alter the number of allowed resumes using '
+                                       'CP_CLI_DOWNLOAD_BUFFERING_SIZE environment variable which defaults to'
+                                       '%s. Original error: %s.'
+                                       % (self._attempts, _ResumableDownloadBlob.DEFAULT_RESUME_ATTEMPTS, e.message))
                 else:
+                    # TODO 01.07.2019: Remove printing. It is required only for debugging purposes.
                     print('Resuming download from %s byte' % stream.bytes_transferred)
+        self.reload()
+        stream.validate_checksum(self.md5_hash)
 
 
 class _ProgressBlob(_ResumableDownloadBlob):
@@ -386,7 +408,8 @@ class _ProgressBlob(_ResumableDownloadBlob):
         self._progress_callback = progress_callback
 
     def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        stream = ProgressStream(file_obj, self._progress_callback, _ProgressBlob.PROGRESS_CHUNK_SIZE)
+        stream = CheckSumStream(file_obj, progress_callback=self._progress_callback,
+                                progress_chunk_size=_ProgressBlob.PROGRESS_CHUNK_SIZE)
         super(_ProgressBlob, self)._do_download(transport, stream, download_url, headers, start, end)
 
     def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
@@ -418,11 +441,12 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         See the corresponding issue for more information on why the buffering size should be altered:
          https://github.com/epam/cloud-pipeline/issues/435.
 
-        :param client:
-        :param buffering:
+        :param client: Google cloud storage client.
+        :param buffering: Buffering size for file system flushing. Defaults to DEFAULT_BUFFERING_SIZE and
+        can be overridden with CP_CLI_DOWNLOAD_BUFFERING_SIZE environment variable.
         """
         GsManager.__init__(self, client)
-        self._buffering = buffering
+        self._buffering = os.environ.get('CP_CLI_DOWNLOAD_BUFFERING_SIZE') or buffering
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), skip_existing=False):
