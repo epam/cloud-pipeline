@@ -30,6 +30,10 @@ from src.utilities.storage.common import AbstractRestoreManager, AbstractListing
     AbstractDeleteManager, AbstractTransferManager
 
 
+CP_CLI_DOWNLOAD_BUFFERING_SIZE = 'CP_CLI_DOWNLOAD_BUFFERING_SIZE'
+CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS = 'CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS'
+
+
 class GsProgressPercentage(ProgressPercentage):
 
     def __init__(self, filename, size):
@@ -47,6 +51,141 @@ class GsProgressPercentage(ProgressPercentage):
             return None
         progress = GsProgressPercentage(source_key, size)
         return lambda current: progress(current)
+
+
+class _OutputStreamMixin(object):
+
+    def __init__(self, stream):
+        self._stream = stream
+        self._bytes_transferred = 0
+
+    @property
+    def bytes_transferred(self):
+        return self._stream.bytes_transferred if hasattr(self._stream, 'bytes_transferred') else self._bytes_transferred
+
+
+class _ProgressOutputStream(_OutputStreamMixin):
+
+    def __init__(self, stream, progress_callback, progress_chunk_size):
+        """
+        Output stream wrapper that updates writing progress.
+
+        Progress callbacks are time-consuming actions. To improve overall performance callbacks have to be called
+        only a limited number of times. The amount of transferred data to cause a new progress callback is specified
+        in progress_chunk_size parameter.
+
+        :param stream: Wrapping stream.
+        :param progress_callback: Progress callback.
+        :param progress_chunk_size: Required amount of transferred data from the previous progress callback
+         to cause a new callback.
+        """
+        super(_ProgressOutputStream, self).__init__(stream)
+        self._progress_callback = progress_callback
+        self._progress_chunk_size = progress_chunk_size
+        self._progress_chunk = 0
+
+    def write(self, data):
+        self._stream.write(data)
+        self._bytes_transferred += len(data)
+        current_chunk = self._bytes_transferred / self._progress_chunk_size
+        if current_chunk > self._progress_chunk:
+            self._progress_chunk = current_chunk
+            if self._progress_callback:
+                self._progress_callback(self._bytes_transferred)
+
+
+class _CheckSumOutputStream(_OutputStreamMixin):
+
+    def __init__(self, stream):
+        """
+        Output stream wrapper that collects md5 hash for the writing data. Once all the data is written
+        the resulting checksum can be validated.
+
+        :param stream: Wrapping stream.
+        """
+        super(_CheckSumOutputStream, self).__init__(stream)
+        self._md5_hash = hashlib.md5()
+
+    def write(self, data):
+        self._stream.write(data)
+        self._md5_hash.update(data)
+
+    def validate_checksum(self, expected_md5_hash):
+        actual_md5_hash = base64.b64encode(self._md5_hash.digest())
+        actual_md5_hash = actual_md5_hash.decode(u'utf-8')
+        if actual_md5_hash != expected_md5_hash:
+            raise RuntimeError('Checksum mismatch after the resuming download.')
+
+
+class _ResumableDownloadProgressMixin(Blob):
+    """
+    Blob download mixin that checks downloading progress, validates downloading checksum and resumes the download in
+    case of any low-level error.
+    """
+
+    def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
+        stream = _CheckSumOutputStream(_ProgressOutputStream(file_obj, progress_callback=self._progress_callback,
+                                                             progress_chunk_size=self._progress_chunk_size))
+        remaining_attempts = self._attempts
+        while stream.bytes_transferred < self._size and remaining_attempts:
+            try:
+                download = Download(
+                    download_url, stream=stream, headers=headers,
+                    start=stream.bytes_transferred, end=end
+                )
+                download.consume(transport)
+            except RequestException as e:
+                remaining_attempts -= 1
+                if not remaining_attempts:
+                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
+                                       'You can alter the number of allowed resumes using %s environment variable. '
+                                       'Original error: %s.'
+                                       % (self._attempts, CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS, e.message))
+        self.reload()
+        stream.validate_checksum(self.md5_hash)
+
+
+class _UploadProgressMixin(Blob):
+
+    def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
+        upload, transport = self._initiate_resumable_upload(
+            client,
+            stream,
+            content_type,
+            size,
+            num_retries,
+            predefined_acl=predefined_acl,
+            chunk_size=self.chunk_size
+        )
+
+        response = None
+        while not upload.finished:
+            if self._progress_callback:
+                self._progress_callback(upload._bytes_uploaded)
+            response = upload.transmit_next_chunk(transport)
+
+        return response
+
+
+class _ProgressBlob(_ResumableDownloadProgressMixin, _UploadProgressMixin, Blob):
+    PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
+    DEFAULT_RESUME_ATTEMPTS = 5
+
+    def __init__(self, size, progress_callback, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
+        """
+        The class is a workaround for the absence of support for the uploading and downloading callbacks
+        in the official SDK. There are no issues for support of such a feature. Nevertheless if the support for
+        uploading and downloading callbacks will be provided the usage of _ProgressBlob class should be removed.
+
+        :param size: Total size of the downloading blob.
+        :param attempts: Maximum number of download sequential resumes before failing. Defaults to
+        DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS environment variable.
+        """
+        self._size = size
+        self._progress_callback = progress_callback
+        self._attempts = int(os.environ.get(CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS) or attempts)
+        self._progress_chunk_size = _ProgressBlob.PROGRESS_CHUNK_SIZE
+        super(_ProgressBlob, self).__init__(*args, **kwargs)
 
 
 class GsManager:
@@ -300,139 +439,8 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
         return tags
 
 
-class ProgressStream:
-
-    def __init__(self, stream, progress_callback, progress_chunk_size):
-        """
-        Simple write stream wrapper that supports progress callbacks.
-
-        Progress callbacks are time-consuming actions. To improve overall performance callbacks have to be called
-        only a limited number of times. The amount of transferred data to cause a new progress callback is specified
-        in progress_chunk_size parameter.
-
-        :param stream: Wrapping stream.
-        :param progress_callback: Progress callback.
-        :param progress_chunk_size: Required amount of transferred data from the previous progress callback
-         to cause a new callback.
-        """
-        self._stream = stream
-        self._progress_callback = progress_callback
-        self._progress_chunk_size = progress_chunk_size
-        self._bytes_transferred = 0
-        self._progress_chunk = 0
-
-    @property
-    def bytes_transferred(self):
-        return self._bytes_transferred
-
-    def write(self, data):
-        self._stream.write(data)
-        self._bytes_transferred += len(data)
-        current_chunk = self._bytes_transferred / self._progress_chunk_size
-        if current_chunk > self._progress_chunk:
-            self._progress_chunk = current_chunk
-            if self._progress_callback:
-                self._progress_callback(self._bytes_transferred)
-
-
-class CheckSumStream(ProgressStream):
-
-    def __init__(self, stream, *args, **kwargs):
-        ProgressStream.__init__(self, stream, *args, **kwargs)
-        self._stream = stream
-        self._md5_hash = hashlib.md5()
-
-    def write(self, data):
-        ProgressStream.write(self, data)
-        self._md5_hash.update(data)
-
-    def validate_checksum(self, expected_md5_hash):
-        actual_md5_hash = base64.b64encode(self._md5_hash.digest())
-        actual_md5_hash = actual_md5_hash.decode(u'utf-8')
-        if actual_md5_hash != expected_md5_hash:
-            raise RuntimeError('Checksum mismatch after the resuming download.')
-        else:
-            # TODO 01.07.2019: Remove printing. It is required only for debugging purposes.
-            print('Checksum matches the expected after the resuming download.')
-
-
-class _ResumableDownloadBlob(Blob):
-    DEFAULT_RESUME_ATTEMPTS = 5
-
-    def __init__(self, size, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
-        """
-        Blob that can resume its download if any low-level error happens.
-
-        :param size: Total size of the downloading blob.
-        :param attempts: Maximum number of download sequential resumes before failing. Defaults to
-        DEFAULT_RESUME_ATTEMPTS and can be overridden with CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS environment variable.
-        """
-        super(_ResumableDownloadBlob, self).__init__(*args, **kwargs)
-        self._size = size
-        self._attempts = os.environ.get('CP_CLI_RESUMABLE_DOWNLOAD_ATTEMPTS') or attempts
-
-    def _do_download(self, transport, stream, download_url, headers, start=None, end=None):
-        remaining_attempts = self._attempts
-        while stream.bytes_transferred < self._size and remaining_attempts:
-            try:
-                download = Download(
-                    download_url, stream=stream, headers=headers,
-                    start=stream.bytes_transferred, end=end
-                )
-                download.consume(transport)
-            except RequestException as e:
-                remaining_attempts -= 1
-                if not remaining_attempts:
-                    raise RuntimeError('Resumable download has failed after %s sequential resumes. '
-                                       'You can alter the number of allowed resumes using '
-                                       'CP_CLI_DOWNLOAD_BUFFERING_SIZE environment variable which defaults to'
-                                       '%s. Original error: %s.'
-                                       % (self._attempts, _ResumableDownloadBlob.DEFAULT_RESUME_ATTEMPTS, e.message))
-                else:
-                    # TODO 01.07.2019: Remove printing. It is required only for debugging purposes.
-                    print('Resuming download from %s byte' % stream.bytes_transferred)
-        self.reload()
-        stream.validate_checksum(self.md5_hash)
-
-
-class _ProgressBlob(_ResumableDownloadBlob):
-    PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
-
-    def __init__(self, progress_callback=None, *args, **kwargs):
-        """
-        The class is a workaround for the absence of support for the uploading and downloading callbacks
-        in the official SDK. There is no issues for support of such a feature. Nevertheless if the support for
-        uploading and downloading callbacks will be provided the usages of _ProgressBlob class should be removed.
-        """
-        super(_ProgressBlob, self).__init__(*args, **kwargs)
-        self._progress_callback = progress_callback
-
-    def _do_download(self, transport, file_obj, download_url, headers, start=None, end=None):
-        stream = CheckSumStream(file_obj, progress_callback=self._progress_callback,
-                                progress_chunk_size=_ProgressBlob.PROGRESS_CHUNK_SIZE)
-        super(_ProgressBlob, self)._do_download(transport, stream, download_url, headers, start, end)
-
-    def _do_resumable_upload(self, client, stream, content_type, size, num_retries, predefined_acl):
-        upload, transport = self._initiate_resumable_upload(
-            client,
-            stream,
-            content_type,
-            size,
-            num_retries,
-            predefined_acl=predefined_acl,
-            chunk_size=self.chunk_size
-        )
-
-        while not upload.finished:
-            if self._progress_callback:
-                self._progress_callback(upload._bytes_uploaded)
-            response = upload.transmit_next_chunk(transport)
-
-        return response
-
-
 class GsDownloadManager(GsManager, AbstractTransferManager):
-    DEFAULT_BUFFERING_SIZE=1024 * 1024  # 1MB
+    DEFAULT_BUFFERING_SIZE = 1024 * 1024  # 1MB
 
     def __init__(self, client, buffering=DEFAULT_BUFFERING_SIZE):
         """
@@ -446,7 +454,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         can be overridden with CP_CLI_DOWNLOAD_BUFFERING_SIZE environment variable.
         """
         GsManager.__init__(self, client)
-        self._buffering = os.environ.get('CP_CLI_DOWNLOAD_BUFFERING_SIZE') or buffering
+        self._buffering = int(os.environ.get(CP_CLI_DOWNLOAD_BUFFERING_SIZE) or buffering)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
                  size=None, tags=(), skip_existing=False):
