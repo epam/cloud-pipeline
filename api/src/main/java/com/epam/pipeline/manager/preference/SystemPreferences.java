@@ -367,6 +367,13 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+
+    /**
+     * Controls the period of resource monitoring task
+     */
+    public static final IntPreference SYSTEM_LIMIT_LOGS_BYTES = new IntPreference(
+            "system.logs.bytes.limit", 16*1024*1024, SYSTEM_GROUP, isGreaterThan(0));
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
