@@ -269,7 +269,7 @@ Tooltips contain a state name in bold (e.g. **Queued**) and a short description 
 
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_TooltipsStatuses_1.png)
 
-See more details - [Active runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-runs) and [Completed runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#completed-runs).
+See more details - [Active runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-runs), [Completed runs states](../../manual/11_Manage_Runs/11._Manage_Runs.md#completed-runs) and [Home page](../../manual/18_Home_page/18._Home_page.md#recently-completed-runs).
 
 ## VM monitor service
 
@@ -336,7 +336,7 @@ Both scenarios are flaky and almost impossible to reproduce. To provide more ins
 
 1. `kubelet` logs (from all compute nodes) are now written to the files (via `DaemonSet`)
 2. Log files are streamed to the storage, identified by `storage.system.storage.name` preference
-3. Administrators can find the corresponding node logs (e.g. by the `hostname` or `ip` that are attached to the run information) in that bucket under `logs/node/{hostname}`
+3. Administrators can find the corresponding node logs (e.g. by the `hostname` or `ip` that are attached to the run information) in that storage under `logs/node/{hostname}`
 
 ***
 
