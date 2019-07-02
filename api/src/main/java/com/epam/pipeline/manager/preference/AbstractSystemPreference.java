@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiPredicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -110,6 +112,54 @@ public abstract class AbstractSystemPreference<T> {
                 return null;
             }
             return Integer.parseInt(value);
+        }
+    }
+
+    public static class MemorySizePreference extends AbstractSystemPreference<Integer> {
+
+        static final String MEMORY_SIZE_PATTERN = "(\\d+)([k|m|g])";
+        static final Pattern SIZE_PATTERN = Pattern.compile(MEMORY_SIZE_PATTERN);
+
+        public MemorySizePreference(String key, Integer defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.INTEGER, dependencies);
+        }
+
+        @Override
+        public Integer parse(String value) {
+            if (StringUtils.isBlank(value)) {
+                return null;
+            }
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                Integer result = parseWithPostfix(value);
+                return result > 0 ? result : Integer.MAX_VALUE;
+            }
+        }
+
+        private Integer parseWithPostfix(final String value) {
+            final Matcher matcher = SIZE_PATTERN.matcher(value.trim());
+            if (matcher.matches()) {
+                final int number = Integer.parseInt(matcher.group(1));
+                final String prefix = matcher.group(2);
+                switch (prefix) {
+                    case "k":
+                        return getModuleByMaxInteger(number * 1204);
+                    case "m":
+                        return getModuleByMaxInteger(number * 1204 * 1024);
+                    case "g":
+                        return getModuleByMaxInteger(number * 1204 * 1024 * 1024);
+                    default:
+                        throw new IllegalArgumentException("Wrong memory size parameter: " + value);
+                }
+            } else {
+                throw new IllegalArgumentException("Wrong memory size parameter: " + value);
+            }
+        }
+
+        private Integer getModuleByMaxInteger(final int value) {
+            return value > 0 ? value : Integer.MAX_VALUE;
         }
     }
 
