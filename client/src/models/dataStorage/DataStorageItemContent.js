@@ -19,12 +19,19 @@ import Remote from '../basic/Remote';
 export default class DataStorageItemContent extends Remote {
   constructor (id, path, version) {
     super();
-    if (version) {
-      this.url = `/datastorage/${id}/content?path=${path}&version=${version}`;
-    } else {
-      this.url = `/datastorage/${id}/content?path=${path}`;
-    }
+    this.id = id;
     this.path = path;
     this.version = version;
+    this.buildUrl();
+  }
+
+  buildUrl () {
+    const query = [
+      !!this.path && `path=${encodeURIComponent(this.path)}`,
+      !!this.version && `version=${this.version}`
+    ]
+      .filter(Boolean)
+      .join('&');
+    this.url = `/datastorage/${this.id}/content${!!query && query.length > 0 ? '?' : ''}${query}`;
   }
 }

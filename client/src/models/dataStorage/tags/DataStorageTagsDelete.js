@@ -15,6 +15,7 @@
  */
 
 import RemotePost from '../../basic/RemotePost';
+import buildUrl from './url-builder';
 
 export default class DataStorageTagsDelete extends RemotePost {
 
@@ -28,10 +29,6 @@ export default class DataStorageTagsDelete extends RemotePost {
       credentials: 'include',
       method: 'DELETE'
     };
-    if (version) {
-      this.url = `/datastorage/${id}/tags?path=${path}&version=${version}`;
-    } else {
-      this.url = `/datastorage/${id}/tags?path=${path}`;
-    }
+    this.url = buildUrl(id, path, version);
   }
 }

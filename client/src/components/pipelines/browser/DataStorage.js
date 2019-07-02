@@ -373,7 +373,7 @@ export default class DataStorage extends React.Component {
     if (downloadUrlModalVisible && this.state.selectedItems) {
       this.generateDownloadUrls = new GenerateDownloadUrlsRequest(this.props.storageId);
       this.generateDownloadUrls.send({
-        paths: this.state.selectedItems.map(i => i.path)
+        paths: this.state.selectedItems.map(i => encodeURIComponent(i.path))
       });
     } else {
       this.generateDownloadUrls = null;

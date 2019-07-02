@@ -21,12 +21,22 @@ class GenerateDownloadUrl extends Remote {
 
   constructor (id, path, version) {
     super();
-    if (version) {
-      this.url = `/datastorage/${id}/generateUrl?path=${path}&version=${version}`;
-    } else {
-      this.url = `/datastorage/${id}/generateUrl?path=${path}`;
-    }
+    this.id = id;
+    this.path = path;
+    this.version = version;
+    this.buildUrl();
   };
+
+  buildUrl () {
+    const query = [
+      !!this.path && `path=${encodeURIComponent(this.path)}`,
+      !!this.version && `version=${this.version}`
+    ]
+      .filter(Boolean)
+      .join('&');
+    const queryStr = `${!!query && query.length > 0 ? '?' : ''}${query}`;
+    this.url = `/datastorage/${this.id}/generateUrl${queryStr}`;
+  }
 }
 
 export default GenerateDownloadUrl;
