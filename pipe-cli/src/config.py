@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import base64
+import click
 import json
 import os
 import pytz
@@ -134,7 +135,8 @@ class Config(object):
                                      'Remove the NTLM parameters or change the PAC to the proxy URL')
         if proxy_ntlm and not is_frozen():
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
-
+        if proxy_ntlm_pass:
+            click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
         config = {'api': api, 
                   'access_key': access_key, 
                   'tz': timezone, 
