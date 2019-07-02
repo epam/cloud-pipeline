@@ -21,7 +21,7 @@ import {Link} from 'react-router';
 import styles from './TaskLink.css';
 import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';
-import moment from 'moment';
+import displayDuration from '../../../../utils/displayDuration';
 
 export class TaskLink extends Component {
   static propTypes = {
@@ -38,24 +38,25 @@ export class TaskLink extends Component {
 
   @computed
   get runningFor () {
-    return moment.utc(this.props.task.started).fromNow(true);
+    return displayDuration(this.props.task.started);
   }
 
   @computed
   get startDelay () {
-    return `${moment.utc(this.props.task.started)
-      .diff(moment.utc(this.props.task.created), 'minutes', true).toFixed(2)} min`;
+    return displayDuration(
+      this.props.task.created || this.props.task.started,
+      this.props.task.started
+    );
   }
 
   @computed
   get waitingFor () {
-    return moment.utc(this.props.task.created).fromNow(true);
+    return displayDuration(this.props.task.created);
   }
 
   @computed
   get runningTime () {
-    return `${moment.utc(this.props.task.finished)
-      .diff(moment.utc(this.props.task.started), 'minutes', true).toFixed(2)} min`;
+    return displayDuration(this.props.task.started, this.props.task.finished);
   }
 
   render () {

@@ -215,14 +215,6 @@ fi
 modprobe nfs
 modprobe nfsd
 
-# Create user for cloud pipeline access
-useradd pipeline
-cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
-chown -R pipeline. /home/pipeline/.ssh
-chmod 700 .ssh
-usermod -a -G wheel pipeline
-echo 'pipeline ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/cloud-init
-
 chmod +x /etc/rc.d/rc.local
 
 # Prepare to tag cloud-specific info
@@ -237,6 +229,14 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
     _CLOUD_PROVIDER=AWS
+
+    # Create user for cloud pipeline access, this is required only for AWS. Other cloud providers will create appropriate user automatically
+    useradd pipeline
+    cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
+    chown -R pipeline. /home/pipeline/.ssh
+    chmod 700 .ssh
+    usermod -a -G wheel pipeline
+    echo 'pipeline ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/cloud-init
 elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_REGION=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/location?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')

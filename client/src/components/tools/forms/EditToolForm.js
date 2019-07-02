@@ -247,9 +247,9 @@ export default class EditToolForm extends React.Component {
 
   getCloudProvider = () => {
     const instanceType = this.getInstanceTypeValue();
-    if (this.props.awsRegions.loaded && instanceType) {
+    if (this.props.awsRegions.loaded) {
       const [provider] = (this.props.awsRegions.value || [])
-        .filter(a => a.id === instanceType.regionId)
+        .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
         .map(a => a.provider);
       return provider;
     }
@@ -332,8 +332,8 @@ export default class EditToolForm extends React.Component {
     this.reset();
     if (this.props.allowedInstanceTypes) {
       const isSpot = this.getPriceTypeInitialValue();
-      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
-      this.props.allowedInstanceTypes.toolId = this.props.toolId;
+      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
+      this.props.allowedInstanceTypes.setToolId(this.props.toolId);
     }
 
     this.props.onInitialized && this.props.onInitialized(this);
@@ -347,7 +347,7 @@ export default class EditToolForm extends React.Component {
 
   handleIsSpotChange = (isSpot) => {
     if (this.props.allowedInstanceTypes && isSpot !== undefined && isSpot !== null) {
-      this.props.allowedInstanceTypes.isSpot = `${isSpot}` === 'true';
+      this.props.allowedInstanceTypes.setIsSpot(`${isSpot}` === 'true');
     }
   };
 
@@ -423,18 +423,18 @@ export default class EditToolForm extends React.Component {
 
   @computed
   get allowedPriceTypes () {
-    if (!this.props.allowedInstanceTypes.loaded || !this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
-      return [];
+    let priceTypes = [true, false];
+    if (this.props.allowedInstanceTypes.loaded && this.props.allowedInstanceTypes.value[names.allowedPriceTypes]) {
+      priceTypes = [];
+      for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
+        const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
+        priceTypes.push(isSpot);
+      }
     }
-    const priceTypes = [];
-    for (let i = 0; i < (this.props.allowedInstanceTypes.value[names.allowedPriceTypes] || []).length; i++) {
-      const isSpot = this.props.allowedInstanceTypes.value[names.allowedPriceTypes][i].toLowerCase() === 'spot';
-      priceTypes.push({
-        isSpot,
-        name: getSpotTypeName(isSpot, this.getCloudProvider())
-      });
-    }
-    return priceTypes;
+    return priceTypes.map(isSpot => ({
+      isSpot,
+      name: getSpotTypeName(isSpot, this.getCloudProvider())
+    }));
   }
 
   @computed
@@ -744,6 +744,7 @@ export default class EditToolForm extends React.Component {
                                   .filter(t => t.instanceFamily === instanceFamily)
                                   .map(t =>
                                     <Select.Option
+                                      title={`${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
                                       key={t.sku}
                                       value={t.name}>
                                       {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})

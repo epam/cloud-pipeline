@@ -610,11 +610,13 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public SelectedElementsAO(String[] names) {
             Arrays.stream(names)
-                    .forEach(elementName ->
-                            $(tagName("tbody"))
-                                    .find(byText(elementName))
-                                    .closest("tr")
-                                    .find(className("ant-checkbox-wrapper")).should(visible).click());
+                    .forEach(elementName -> {
+                        sleep(1, SECONDS);
+                        $(tagName("tbody"))
+                                .find(byText(elementName))
+                                .closest("tr")
+                                .find(className("ant-checkbox-wrapper")).should(visible).click();
+                    });
         }
 
         public StorageContentAO removeAllSelected() {
@@ -721,7 +723,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             return ensure(PATH, disabled, visible)
                     .ensure(NAME, visible)
                     .ensure(DESCRIPTION, visible)
-                    .performIf(C.CLOUD_PROVIDER.equals(Cloud.AWS.name()), popup -> popup
+                    .performIf(C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.AWS.name())
+                            || C.CLOUD_PROVIDER.equalsIgnoreCase(Cloud.GCP.name()), popup -> popup
                             .ensure(STS_DURATION, visible)
                             .ensure(LTS_DURATION, visible)
                             .ensure(ENABLE_VERSIONING, visible))

@@ -9,7 +9,7 @@
             ],
             "amis": [
                 {
-                    "instance_mask": "N*",
+                    "instance_mask": "Standard_N*",
                     "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU}",
                     "init_script": "/opt/api/scripts/init_multicloud.sh"
                 },

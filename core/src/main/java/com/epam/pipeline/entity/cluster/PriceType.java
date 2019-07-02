@@ -46,7 +46,7 @@ public enum PriceType {
                 || termType.equals(TermType.PREEMPTIBLE.getName())) {
             return SPOT;
         } else {
-                throw new IllegalArgumentException("Wrong term type of instance: " + termType);
+            throw new IllegalArgumentException("Wrong term type of instance: " + termType);
         }
     }
 }

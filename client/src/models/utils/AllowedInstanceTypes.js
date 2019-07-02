@@ -15,86 +15,89 @@
  */
 
 import Remote from '../basic/Remote';
+import {action, computed, observable} from 'mobx';
+import defer from '../../utils/defer';
 
 export default class AllowedInstanceTypes extends Remote {
-
-  _isSpot;
-  _toolId;
-  _regionId;
-  _initialRegionId;
-  _changed = false;
+  @observable _isSpot;
+  @observable _toolId;
+  @observable _regionId;
+  @observable _changed = false;
 
   constructor (toolId, regionId, isSpot) {
     super();
     this._toolId = toolId;
     this._regionId = regionId;
     this._isSpot = isSpot;
-    this.initialize();
-    this.fetchIfNeededOrWait();
+    this.fetchOnChange();
   }
 
+  @computed
   get isSpot () {
     return this._isSpot;
   }
 
-  set isSpot (value) {
-    if (value !== undefined && value !== null && this._isSpot !== value) {
-      this._isSpot = value;
-      this.initialize();
-      this.invalidateCache();
-      this._loaded = false;
-      this.fetchIfNeededOrWait();
-      this._changed = true;
-    }
-  }
-
-  set toolId (value) {
-    if (value && this._toolId !== value) {
-      this._toolId = value;
-      this.initialize();
-      this.invalidateCache();
-      this._loaded = false;
-      this.fetchIfNeededOrWait();
-      this._changed = true;
-    }
-  }
-
-  get toolId () {
-    return this._toolId;
-  }
-
-  set regionId (value) {
-    if (value && this._regionId !== value) {
-      this._regionId = value;
-      this.initialize();
-      this.invalidateCache();
-      this._loaded = false;
-      this.fetchIfNeededOrWait();
-      this._changed = true;
-    }
-  }
-
-  set initialRegionId (value) {
-    if (this._initialRegionId !== value) {
-      this._initialRegionId = value;
-      this._regionId = value;
-      this.initialize();
-      this.invalidateCache();
-      this.fetchIfNeededOrWait();
-      this._changed = true;
-    }
-  }
-
+  @computed
   get regionId () {
     return this._regionId;
   }
 
+  @computed
+  get toolId () {
+    return this._toolId;
+  }
+
+  setParameters ({isSpot, regionId, toolId}) {
+    let spotChanged, regionChanged, toolChanged;
+    spotChanged = isSpot !== undefined && this._isSpot !== isSpot;
+    regionChanged = regionId && regionId !== this._regionId;
+    toolChanged = toolId && toolId !== this._toolId;
+    this._isSpot = isSpot;
+    this._regionId = regionId;
+    this._toolId = toolId;
+    if (spotChanged || regionChanged || toolChanged) {
+      this.fetchOnChange();
+    }
+    return spotChanged || regionChanged || toolChanged;
+  }
+
+  setIsSpot (value) {
+    if (value !== undefined && value !== null && this._isSpot !== value) {
+      this._isSpot = value;
+      this.fetchOnChange();
+    }
+  }
+
+  setRegionId (value) {
+    if (value && this._regionId !== value) {
+      this._regionId = value;
+      this.fetchOnChange();
+    }
+  }
+
+  setToolId (value) {
+    if (value && this._toolId !== value) {
+      this._toolId = value;
+      this.fetchOnChange();
+    }
+  }
+
+  @computed
   get changed () {
     return this._changed;
   }
 
+  @action
   handleChanged () {
     this._changed = false;
+  }
+
+  @action
+  fetchOnChange () {
+    this.initialize();
+    this.invalidateCache();
+    this._loadRequired = true;
+    this.fetch(true).then(() => { this._changed = true; });
   }
 
   initialize () {
@@ -136,11 +139,52 @@ export default class AllowedInstanceTypes extends Remote {
 
   _allowedTypesCache = new Map();
   getAllowedTypes (toolId, regionId) {
-    return this.constructor.getCache(this._allowedTypesCache, toolId, regionId, AllowedInstanceTypes);
+    return this.constructor.getCache(
+      this._allowedTypesCache,
+      toolId,
+      regionId,
+      AllowedInstanceTypes
+    );
   }
 
   invalidateAllowedTypes (toolId, regionId) {
     this.constructor.invalidateCache(this._allowedTypesCache, toolId, regionId);
   }
 
+  async fetch (force = false) {
+    this._loadRequired = false;
+    if (!this._fetchPromise || force) {
+      this._fetchPromise = new Promise(async (resolve) => {
+        const isSpot = this._isSpot;
+        const regionId = this._regionId;
+        const toolId = this._toolId;
+        this._pending = true;
+        const {prefix, fetchOptions} = this.constructor;
+        try {
+          await defer();
+          let headers = fetchOptions.headers;
+          if (!headers) {
+            headers = {};
+          }
+          fetchOptions.headers = headers;
+          const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          if (isSpot !== this._isSpot || regionId !== this._regionId || toolId !== this._toolId) {
+            resolve();
+            return;
+          } else {
+            this.update(data);
+          }
+        } catch (e) {
+          this.failed = true;
+          this.error = e.toString();
+        }
+
+        this._pending = false;
+        this._fetchPromise = null;
+        resolve();
+      });
+    }
+    return this._fetchPromise;
+  }
 }

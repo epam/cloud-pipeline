@@ -568,8 +568,8 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public String adjustStoragePath(final String name, final DataStorageType storageType) {
-        String prefix = preferenceManager.getPreference(SystemPreferences.STORAGE_OBJECT_PREFIX);
-        if (storageType != DataStorageType.S3 || StringUtils.isBlank(prefix)) {
+        final String prefix = preferenceManager.getPreference(SystemPreferences.STORAGE_OBJECT_PREFIX);
+        if (storageType == DataStorageType.NFS || StringUtils.isBlank(prefix)) {
             return name;
         }
         return prefix + name;

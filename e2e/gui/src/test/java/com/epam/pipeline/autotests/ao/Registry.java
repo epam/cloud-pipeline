@@ -25,7 +25,6 @@ import java.util.function.Function;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE_GROUP;
-import static com.epam.pipeline.autotests.ao.Primitive.CREATE_PERSONAL_GROUP;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT_REGISTRY;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUP;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUPS_LIST;
@@ -88,7 +87,6 @@ public class Registry implements AccessObject<Registry> {
     public Registry ensureGroupAreAvailable(List<String> groupNames) {
         click(GROUP);
         sleep(1, SECONDS);
-        get(GROUPS_LIST).findAll(By.className("ant-row-flex")).shouldHaveSize(1);
         groupNames.forEach(groupName ->  get(GROUPS_LIST).find(button(groupName)));
         return this;
     }

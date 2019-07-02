@@ -202,8 +202,12 @@ export default class AWSRegionsForm extends React.Component {
           }
           return (
             <span>
-              <AWSRegionTag regionUID={region.regionId} />
-              {highlightText(name, this.state.search)} ({region.provider})
+              <AWSRegionTag
+                showProvider
+                regionUID={region.regionId}
+                style={{fontSize: 'larger'}}
+              />
+              {highlightText(name, this.state.search)}
             </span>
           );
         }
@@ -1307,10 +1311,13 @@ class AWSRegionForm extends React.Component {
                   {
                     (this.props.regionIds || []).map(r => {
                       return (
-                        <Select.Option key={r} value={r}>
+                        <Select.Option key={r} value={r} title={r}>
                           <AWSRegionTag
+                            showProvider={false}
                             provider={this.provider}
-                            regionUID={r} style={{marginRight: 5}} />{r}
+                            regionUID={r}
+                            style={{marginRight: 5}}
+                          />{r}
                         </Select.Option>
                       );
                     })
@@ -2034,7 +2041,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             onChange={this.onChangeMountType}>
             {
               Object.keys(MountOptions)
-                .map(key => <Select.Option key={key} value={key}>{key}</Select.Option>)
+                .map(key => <Select.Option key={key} value={key} title={key}>{key}</Select.Option>)
             }
           </Select>
           <Button

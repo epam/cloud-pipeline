@@ -211,7 +211,9 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .sleep(1, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(3, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))
@@ -231,7 +233,9 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .sleep(2, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(3, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))

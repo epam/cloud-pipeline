@@ -194,7 +194,7 @@ public class PipelineRunManager {
         int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
-        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) < maxRunsNumber, messageHelper.getMessage(
+        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
         Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
@@ -264,7 +264,7 @@ public class PipelineRunManager {
         int maxRunsNumber = preferenceManager.getPreference(SystemPreferences.LAUNCH_MAX_SCHEDULED_NUMBER);
 
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
-        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) < maxRunsNumber, messageHelper.getMessage(
+        Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
 
         Pipeline pipeline = pipelineManager.load(pipelineId);
@@ -1168,6 +1168,7 @@ public class PipelineRunManager {
         Long runId = pipelineRunDao.createRunId();
         restartedRun.setId(runId);
         restartedRun.setStartDate(DateUtils.now());
+        restartedRun.setProlongedAtTime(DateUtils.nowUTC());
 
         Optional<Pipeline> pipeline = Optional.ofNullable(run.getPipelineId())
                 .map(pipelineId -> pipelineManager.load(pipelineId));
@@ -1223,6 +1224,7 @@ public class PipelineRunManager {
             runInstance.setNodeImage(i.getNodeImage());
             runInstance.setNodeType(i.getNodeType());
             runInstance.setSpot(i.getSpot());
+            runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
         }).orElse(new RunInstance());
     }

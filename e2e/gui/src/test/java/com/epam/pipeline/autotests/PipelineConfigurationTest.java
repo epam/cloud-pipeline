@@ -162,6 +162,12 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                     .ensure(logMessage(withActualRunId("Create VMScaleSet with low priority instance for run: run_id")),
                             not(visible));
             return;
+        } else if (Cloud.GCP.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
+            new LogAO()
+                    .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
+                    .ensure(logMessage(withActualRunId("Preemptible instance with run id: run_id will be launched")),
+                            not(visible));
+            return;
         }
         new LogAO()
             .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)

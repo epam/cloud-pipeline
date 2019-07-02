@@ -729,7 +729,7 @@ export default class UserManagementForm extends React.Component {
                   this.dataStorages.map(d => {
                     return (
                       <Select.Option
-                        key={d.id} value={`${d.id}`} name={d.name} pathMask={d.pathMask}>
+                        key={d.id} value={`${d.id}`} name={d.name} title={d.name} pathMask={d.pathMask}>
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );

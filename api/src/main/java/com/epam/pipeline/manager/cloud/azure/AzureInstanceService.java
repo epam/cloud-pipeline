@@ -150,7 +150,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public boolean instanceExists(final AzureRegion region, final String instanceId) {
-        return vmService.findVmByName(region, instanceId).isPresent();
+        return vmService.searchVmResource(region, instanceId).isPresent();
     }
 
     @Override
