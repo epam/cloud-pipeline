@@ -22,9 +22,14 @@ from pypac.resolver import ProxyResolver as PacProxyResolver
 
 from .utilities import time_zone_param_type, network_utilities
 
-# Setup pipe executable path 
+
+def is_frozen():
+    return getattr(sys, 'frozen', False)
+
+
+# Setup pipe executable path
 # Both frozen and plain distributions: https://stackoverflow.com/a/42615559
-if getattr(sys, 'frozen', False):
+if is_frozen():
     PIPE_PATH = sys._MEIPASS
 else:
     PIPE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -34,10 +39,12 @@ PROXY_PAC_DEFAULT_URL = "https://google.com"
 
 PROXY_NTLM_APS_PATH = os.path.join(PIPE_PATH, "ntlmaps/ntlmaps")
 
+
 class ConfigNotFoundError(Exception):
     def __init__(self):
         super(ConfigNotFoundError, self).__init__('Unable to locate configuration or it is incomplete. '
                                                   'You can configure pipe by running "pipe configure"')
+
 
 class ProxyInvalidConfig(Exception):
     def __init__(self, details):
@@ -103,11 +110,12 @@ class Config(object):
 
             return proxy_resolver.get_proxy_for_requests(url_to_resolve)
         elif self.proxy_ntlm:
-            ntlm_aps_proxy_url = network_utilities.start_ntlm_aps(PROXY_NTLM_APS_PATH,
-                                                                self.proxy_ntlm_domain,
-                                                                self.proxy_ntlm_user,
-                                                                self.proxy_ntlm_pass,
-                                                                self.proxy)
+            ntlm_proxy = network_utilities.NTLMProxy.get_proxy(PROXY_NTLM_APS_PATH,
+                                                               self.proxy_ntlm_domain,
+                                                               self.proxy_ntlm_user,
+                                                               self.proxy_ntlm_pass,
+                                                               self.proxy)
+            ntlm_aps_proxy_url = ntlm_proxy.get_ntlm_aps_local_url()
             return {'http': ntlm_aps_proxy_url,
                     'https': ntlm_aps_proxy_url,
                     'ftp': ntlm_aps_proxy_url}
@@ -123,6 +131,8 @@ class Config(object):
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
                                      'Remove the NTLM parameters or change the PAC to the proxy URL')
+        if proxy_ntlm and not is_frozen():
+            raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
 
         config = {'api': api, 
                   'access_key': access_key, 

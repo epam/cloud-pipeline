@@ -25,89 +25,98 @@ try:
 except ImportError:
     from urlparse import urlparse  # Python 2
 
-PROXY_NTLM_PID = None
-PROXY_NTLM_PORT = None
+
 PROXY_NTLM_PORT_DEFAULT = 10101
 
-def kill_ntlm_aps():
-    global PROXY_NTLM_PID
-    if PROXY_NTLM_PID:
-        try:
-            os.kill(PROXY_NTLM_PID, signal.SIGTERM)
-        except:
-            pass
 
-def get_ntlm_aps_local_url():
-    global PROXY_NTLM_PORT
-    if PROXY_NTLM_PORT:
-        return 'http://localhost:' + str(PROXY_NTLM_PORT)
-    else:
-        return None
+class NTLMProxy(object):
+    __instance = None
 
-def wait_for_ntlm_aps(port, attempts=10):
-    ntlm_aps_ready = False
-    while not ntlm_aps_ready and attempts != 0:
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
-            sock.settimeout(1)
-            ntlm_aps_ready = sock.connect_ex(('localhost',port)) == 0
-            attempts = attempts - 1
-            time.sleep(1)
-    return ntlm_aps_ready
-    
+    def __init__(self, proxy_url, proxy_host, proxy_port, port, ntlmaps_bin, domain, user, password):
+        if NTLMProxy.__instance is not None:
+            raise Exception("This class is a singleton!")
+        else:
+            NTLMProxy.__instance = self
+        self.proxy_url = proxy_url
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
+        self.port = port
 
-def start_ntlm_aps(ntlmaps_bin, domain, user, password, downstream_proxy, port=None):
-    global PROXY_NTLM_PID
-    global PROXY_NTLM_PORT
-
-    if PROXY_NTLM_PID:
-        return get_ntlm_aps_local_url()
-
-    if not port:
-        PROXY_NTLM_PORT = find_free_port(PROXY_NTLM_PORT_DEFAULT)
-
-    proxy_url = urlparse(downstream_proxy)
-    proxy_host = proxy_url.hostname
-    proxy_port = proxy_url.port
-
-    if not proxy_host or not proxy_port:
-        raise Exception('Cannot get proxy host or port from {}. Make sure it is sepcified in the format: http://HOST:PORT'.format(downstream_proxy))
-
-    ntlm_aps_cmd = [ ntlmaps_bin,
+        ntlm_aps_cmd = [ntlmaps_bin,
                         "--domain", domain,
                         "--username", user,
                         "--password", password,
-                        "--port", str(PROXY_NTLM_PORT),
+                        "--port", str(proxy_port),
                         "--downstream-proxy-host", proxy_host,
-                        "--downstream-proxy-port", str(proxy_port) ]
+                        "--downstream-proxy-port", str(proxy_port)]
 
-    with open(os.devnull, 'w') as dev_null:
-        ntlm_aps_proc = subprocess.Popen(ntlm_aps_cmd, stdout=dev_null, stderr=dev_null)
-        PROXY_NTLM_PID = ntlm_aps_proc.pid
-        
-    _ = atexit.register(kill_ntlm_aps)
+        with open(os.devnull, 'w') as dev_null:
+            ntlm_aps_proc = subprocess.Popen(ntlm_aps_cmd, stdout=dev_null, stderr=dev_null)
+            self.proxy_pid = ntlm_aps_proc.pid
 
-    if not wait_for_ntlm_aps(PROXY_NTLM_PORT):
-        raise Exception('Failed to connect to the NTLM APS instance on port ' + str(PROXY_NTLM_PORT))
+    def kill_ntlm_aps(self):
+        if self.proxy_pid:
+            try:
+                os.kill(self.proxy_pid, signal.SIGTERM)
+            except:
+                pass
 
-    return get_ntlm_aps_local_url()
-    
+    def get_ntlm_aps_local_url(self):
+        if self.port:
+            return 'http://localhost:' + str(self.port)
+        else:
+            return None
 
-def try_port(port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = False
-    try:
-        sock.bind(('0.0.0.0', port))
-        result = True
-    except:
-        result = False
-    sock.close()
-    return result
+    def wait_for_ntlm_aps(self, attempts=10):
+        ntlm_aps_ready = False
+        while not ntlm_aps_ready and attempts != 0:
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+                sock.settimeout(1)
+                ntlm_aps_ready = sock.connect_ex(('localhost', self.port)) == 0
+                attempts = attempts - 1
+                time.sleep(1)
+        return ntlm_aps_ready
 
-def find_free_port(start_from=10000, attempts=100):
-    port = start_from
-    while attempts != 0:
-        if try_port(port):
-            return port
-        attempts = attempts - 1
-        port = port + 1
-    raise Exception('Unable to find free port after {} attempts'.format(attempts))
+    @staticmethod
+    def try_port(port):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.bind(('0.0.0.0', port))
+            result = True
+        except:
+            result = False
+        sock.close()
+        return result
+
+    @staticmethod
+    def find_free_port(start_from=10000, attempts=100):
+        port = start_from
+        while attempts != 0:
+            if NTLMProxy.try_port(port):
+                return port
+            attempts = attempts - 1
+            port = port + 1
+        raise Exception('Unable to find free port after {} attempts'.format(attempts))
+
+    @staticmethod
+    def get_proxy(ntlmaps_bin, domain, user, password, downstream_proxy, port=None):
+        if NTLMProxy.__instance is not None:
+            return NTLMProxy.__instance
+
+        if not port:
+            port = NTLMProxy.find_free_port(PROXY_NTLM_PORT_DEFAULT)
+        proxy_url = urlparse(downstream_proxy)
+        proxy_host = proxy_url.hostname
+        proxy_port = proxy_url.port
+
+        if not proxy_host or not proxy_port:
+            raise Exception('Cannot get proxy host or port from {}. '
+                            'Make sure it is specified in the format: http://HOST:PORT'.format(downstream_proxy))
+
+        proxy_instance = NTLMProxy(proxy_url, proxy_host, proxy_port, port, ntlmaps_bin, domain, user, password)
+        _ = atexit.register(proxy_instance.kill_ntlm_aps)
+
+        if not proxy_instance.wait_for_ntlm_aps():
+            raise Exception('Failed to connect to the NTLM APS instance on port ' + str(port))
+
+        return proxy_instance
