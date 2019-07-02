@@ -24,6 +24,8 @@ from pypac.resolver import ProxyResolver as PacProxyResolver
 
 from .utilities import time_zone_param_type, network_utilities
 
+OWNER_ONLY_PERMISSION = 0o600
+
 
 def is_frozen():
     return getattr(sys, 'frozen', False)
@@ -147,7 +149,12 @@ class Config(object):
                   'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
                   }
         config_file = cls.config_path()
-
+        # create file
+        with open(config_file, 'w+'):
+            os.utime(config_file, None)
+        # set permissions
+        os.chmod(config_file, OWNER_ONLY_PERMISSION)
+        # save
         with open(config_file, 'w+') as config_file_stream:
             json.dump(config, config_file_stream)
 
