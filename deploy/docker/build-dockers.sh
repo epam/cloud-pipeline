@@ -118,7 +118,7 @@ fi
 # API
 CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
 
-CP_API_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz"
+CP_API_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/develop/cloud-pipeline.latest.tgz"
 if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
