@@ -46,7 +46,7 @@ class NTLMProxy(object):
                         "--domain", domain,
                         "--username", user,
                         "--password", password,
-                        "--port", str(proxy_port),
+                        "--port", str(port),
                         "--downstream-proxy-host", proxy_host,
                         "--downstream-proxy-port", str(proxy_port)]
 
