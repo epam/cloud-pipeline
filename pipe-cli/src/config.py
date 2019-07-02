@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import json
 import os
 import pytz
@@ -87,7 +88,7 @@ class Config(object):
                     self.proxy_ntlm_domain = data['proxy_ntlm_domain']
                 if 'proxy_ntlm_pass' in data:
                     try:
-                        self.proxy_ntlm_pass = data['proxy_ntlm_pass']
+                        self.proxy_ntlm_pass = Config.get_string_from_base64(base64.decode(data['proxy_ntlm_pass']))
                     except:
                         self.proxy_ntlm_pass = None
         else:
@@ -139,9 +140,10 @@ class Config(object):
                   'tz': timezone, 
                   'proxy': proxy, 
                   'proxy_ntlm': proxy_ntlm, 
-                  'proxy_ntlm_user': proxy_ntlm_user, 
+                  'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
-                  'proxy_ntlm_pass': proxy_ntlm_pass }
+                  'proxy_ntlm_pass': cls.get_string_from_base64(base64.encode(proxy_ntlm_pass))
+                  }
         config_file = cls.config_path()
 
         with open(config_file, 'w+') as config_file_stream:
@@ -155,6 +157,12 @@ class Config(object):
             os.makedirs(config_folder)
         config_file = os.path.join(config_folder, 'config.json')
         return config_file
+
+    @classmethod
+    def get_string_from_base64(cls, data):
+        if isinstance(data, bytes):
+            return data.decode(sys.getdefaultencoding())
+        return data
 
     @classmethod
     def instance(cls):
