@@ -33,10 +33,11 @@ dependencies {
         all*.exclude module : 'spring-boot-starter-logging'
     }
 
-    //SpringBoot
+    // SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-jdbc", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version: springBootVersion
 
     // Elasticsearch
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
@@ -46,8 +47,10 @@ dependencies {
     // DB
     // Pool
     implementation group: "com.mchange", name: "c3p0", version: c3p0Version
-    //Postgres
+    // Postgres
     implementation group: "org.postgresql", name: "postgresql", version: postgresqlVersion
+    implementation group: 'com.vladmihalcea', name: 'hibernate-types-52', version: '2.5.0'
+
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
@@ -82,7 +85,7 @@ dependencies {
     // Azure
     compile group: "com.microsoft.azure", name: "azure-storage-blob", version: azureSdkBlobVersion
 
-    //Tests
+    // Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion
     testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion

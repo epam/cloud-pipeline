@@ -15,25 +15,47 @@
  */
 package com.epam.pipeline.elasticsearchagent.model;
 
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Entity
+@Table(name = "pipeline_event", schema = "pipeline")
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class PipelineEvent {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    @Enumerated
+    @Column(name = "operation")
     private EventType eventType;
+    @Column(name = "stamp", columnDefinition = "timestamp with time zone")
     private LocalDateTime createdDate;
+    @Enumerated
     private ObjectType objectType;
     private Long objectId;
+    @Type(type = "jsonb")
+    @Column(columnDefinition = "jsonb")
     private String data;
 
     @RequiredArgsConstructor
