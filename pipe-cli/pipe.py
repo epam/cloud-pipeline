@@ -78,8 +78,8 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-@click.option('-nt', '--proxy-ntlm', 
-              help='Use NTLM authentication for the server, specified by the "--proxy"', 
+@click.option('-nt', '--proxy-ntlm',
+              help='Use NTLM authentication for the server, specified by the "--proxy"',
               is_flag=True)
 @click.option('-nu', '--proxy-ntlm-user',
               help='Username for the NTLM authentication against the server, specified by the "--proxy"',
@@ -100,9 +100,9 @@ def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, pro
     if proxy_ntlm and not proxy_ntlm_pass:
         proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
 
-    Config.store(auth_token, 
-                 api, 
-                 timezone, 
+    Config.store(auth_token,
+                 api,
+                 timezone,
                  proxy,
                  proxy_ntlm,
                  proxy_ntlm_user,

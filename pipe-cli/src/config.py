@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
 from functools import update_wrapper
 import base64
 import click
@@ -140,7 +139,6 @@ class Config(object):
             if not pac_file:
                 return None
             proxy_resolver = PacProxyResolver(pac_file)
-            
             url_to_resolve = target_url
             if not url_to_resolve and self.api:
                 url_to_resolve = self.api
