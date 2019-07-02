@@ -168,11 +168,15 @@ class Config(object):
 
     @classmethod
     def encode_password(cls, raw_password):
+        if not raw_password:
+            return raw_password
         data = base64.b64encode(raw_password.encode(sys.getdefaultencoding()))
         return cls.get_string_from_base64(data)
 
     @classmethod
     def decode_password(cls, encoded_password):
+        if not encoded_password:
+            return encoded_password
         decoded = base64.b64decode(encoded_password.encode(sys.getdefaultencoding()))
         return cls.get_string_from_base64(decoded)
 
