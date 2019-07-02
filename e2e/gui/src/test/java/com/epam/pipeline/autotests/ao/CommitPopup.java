@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
 import java.util.Map;
@@ -86,8 +87,8 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
     }
 
     public CommitPopup setName(final String name) {
-        clear(IMAGE_NAME);
-        sleep(2, SECONDS);
+        Utils.clearTextField(get(IMAGE_NAME));
+        sleep(1, SECONDS);
         return addToValue(IMAGE_NAME, name);
     }
 

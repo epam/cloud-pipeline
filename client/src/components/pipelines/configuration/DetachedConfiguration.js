@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -53,7 +53,6 @@ const DTS_ENVIRONMENT = 'DTS';
 @localization.localizedComponent
 @inject(({configurations, folders, pipelinesLibrary, preferences}, {onReloadTree, params}) => {
   return {
-    allowedInstanceTypes: new AllowedInstanceTypes(),
     onReloadTree,
     configurations: configurations.getConfiguration(params.id),
     pipelines,
@@ -67,6 +66,7 @@ const DTS_ENVIRONMENT = 'DTS';
 })
 @observer
 export default class DetachedConfiguration extends localization.LocalizedReactComponent {
+  @observable allowedInstanceTypes;
 
   state = {
     configurationsListCollapsed: false,
@@ -910,7 +910,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   render () {
-    if (!this.props.configurations.loaded && this.props.configurations.pending) {
+    if (
+      (!this.props.configurations.loaded && this.props.configurations.pending) ||
+      !this.allowedInstanceTypes
+      ){
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
@@ -979,7 +982,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               version={this.getSelectedPipelineVersion()}
               pipelineConfiguration={this.getSelectedPipelineVersionConfiguration()}
               pipelines={this.getPipelines()}
-              allowedInstanceTypes={this.props.allowedInstanceTypes}
+              allowedInstanceTypes={this.allowedInstanceTypes}
               parameters={this.getParameters()}
               configurations={this.getConfigurations()}
               onLaunch={this.onSaveConfiguration}
@@ -1018,6 +1021,16 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       prevProps.configurationId !== this.props.configurationId) {
       this.loadSelectedPipelineParameters();
       this.setState({overriddenConfiguration: null});
+    }
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
     }
   }
 }
