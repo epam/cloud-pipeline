@@ -27,6 +27,12 @@ from .utilities import time_zone_param_type, network_utilities
 from .utilities.access_token_validation import check_token
 
 
+OWNER_ONLY_PERMISSION = 0o600
+PROXY_TYPE_PAC = "pac"
+PROXY_PAC_DEFAULT_URL = "https://google.com"
+ALL_ERRORS = Exception
+
+
 def is_frozen():
     return getattr(sys, 'frozen', False)
 
@@ -36,20 +42,6 @@ def silent_print_config_info():
     if config is not None and config.initialized:
         click.echo()
         config.validate(print_info=True)
-
-
-# Setup pipe executable path
-# Both frozen and plain distributions: https://stackoverflow.com/a/42615559
-if is_frozen():
-    PIPE_PATH = sys._MEIPASS
-else:
-    PIPE_PATH = os.path.dirname(os.path.abspath(__file__))
-
-OWNER_ONLY_PERMISSION = 0o600
-PROXY_TYPE_PAC = "pac"
-PROXY_PAC_DEFAULT_URL = "https://google.com"
-ALL_ERRORS = Exception
-PROXY_NTLM_APS_PATH = os.path.join(PIPE_PATH, "ntlmaps/ntlmaps")
 
 
 class ConfigNotFoundError(Exception):
@@ -147,7 +139,7 @@ class Config(object):
 
             return proxy_resolver.get_proxy_for_requests(url_to_resolve)
         elif self.proxy_ntlm:
-            ntlm_proxy = network_utilities.NTLMProxy.get_proxy(PROXY_NTLM_APS_PATH,
+            ntlm_proxy = network_utilities.NTLMProxy.get_proxy(self.build_ntlm_module_path(),
                                                                self.proxy_ntlm_domain,
                                                                self.proxy_ntlm_user,
                                                                self.proxy_ntlm_pass,
@@ -160,6 +152,15 @@ class Config(object):
             return {'http': self.proxy,
                     'https': self.proxy,
                     'ftp': self.proxy}
+
+    def build_ntlm_module_path(self):
+        # Setup pipe executable path
+        # Both frozen and plain distributions: https://stackoverflow.com/a/42615559
+        if is_frozen():
+            pipe_path = sys._MEIPASS
+        else:
+            pipe_path = os.path.dirname(os.path.abspath(__file__))
+        return os.path.join(pipe_path, "ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
