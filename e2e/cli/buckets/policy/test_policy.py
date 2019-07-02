@@ -33,8 +33,9 @@ class TestPolicy(object):
     def setup_class(cls):
         region = UtilsManager.get_region(os.environ['CP_TEST_REGION_ID'])
         if not region or 'backupDuration' not in region:
-            raise RuntimeError('Failed to load default backup duration from region')
-        cls.default_backup_duration = region['backupDuration']
+            cls.default_backup_duration = None
+        else:
+            cls.default_backup_duration = region['backupDuration']
 
     def test_update_policy_with_enabled_fields(self):
         test_case = "1693"

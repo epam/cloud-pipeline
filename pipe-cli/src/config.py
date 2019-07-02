@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import click
+from functools import update_wrapper
 import base64
 import click
 import json
@@ -23,12 +25,18 @@ from pypac import api as PacAPI
 from pypac.resolver import ProxyResolver as PacProxyResolver
 
 from .utilities import time_zone_param_type, network_utilities
-
-OWNER_ONLY_PERMISSION = 0o600
+from .utilities.access_token_validation import check_token
 
 
 def is_frozen():
     return getattr(sys, 'frozen', False)
+
+
+def silent_print_config_info():
+    config = Config.instance(raise_config_not_found_exception=False)
+    if config is not None and config.initialized:
+        click.echo()
+        config.validate(print_info=True)
 
 
 # Setup pipe executable path
@@ -38,9 +46,10 @@ if is_frozen():
 else:
     PIPE_PATH = os.path.dirname(os.path.abspath(__file__))
 
+OWNER_ONLY_PERMISSION = 0o600
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
-
+ALL_ERRORS = Exception
 PROXY_NTLM_APS_PATH = os.path.join(PIPE_PATH, "ntlmaps/ntlmaps")
 
 
@@ -58,7 +67,8 @@ class ProxyInvalidConfig(Exception):
 class Config(object):
     """Provides a wrapper for a pipe command configuration"""
 
-    def __init__(self):
+    def __init__(self, raise_config_not_found_exception=True):
+        self.initialized = False
         self.api = os.environ.get('API')
         self.access_key = os.environ.get('API_TOKEN')
         self.tz = time_zone_param_type.LOCAL_ZONE
@@ -69,6 +79,7 @@ class Config(object):
         self.proxy_ntlm_pass = None
 
         if self.api and self.access_key:
+            self.initialized = True
             return
 
         config_file = Config.config_path()
@@ -94,8 +105,32 @@ class Config(object):
                         self.proxy_ntlm_pass = Config.decode_password(data['proxy_ntlm_pass'])
                     except:
                         self.proxy_ntlm_pass = None
-        else:
+                if self.api and self.access_key:
+                    self.initialized = True
+        elif raise_config_not_found_exception:
             raise ConfigNotFoundError()
+
+    def validate(self, print_info=False):
+        check_token(self.access_key, self.tz, print_info=print_info)
+
+    @classmethod
+    def validate_access_token(cls, _func=None, quiet_flag_property_name=None):
+        def decorator(f):
+            @click.pass_context
+            def validate_access_token_wrapper(ctx, *args, **kwargs):
+                skip_validation = False
+                if quiet_flag_property_name is not None and quiet_flag_property_name in ctx.params:
+                    skip_validation = bool(ctx.params[quiet_flag_property_name])
+                if not skip_validation:
+                    config = Config.instance(raise_config_not_found_exception=False)
+                    if config is not None and config.initialized:
+                        config.validate()
+                return ctx.invoke(f, *args, **kwargs)
+            return update_wrapper(validate_access_token_wrapper, f)
+        if _func is None:
+            return decorator
+        else:
+            return decorator(_func)
 
     def resolve_proxy(self, target_url=None):
         if not self.proxy:
@@ -129,9 +164,9 @@ class Config(object):
                     'ftp': self.proxy}
 
     @classmethod
-    def store(cls, access_key, api, timezone, proxy, 
+    def store(cls, access_key, api, timezone, proxy,
               proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
-
+        check_token(access_key, timezone)
         if proxy == PROXY_TYPE_PAC and proxy_ntlm:
             raise ProxyInvalidConfig('NTLM proxy authentication cannot be used for the PAC proxy type'
                                      'Remove the NTLM parameters or change the PAC to the proxy URL')
@@ -139,11 +174,11 @@ class Config(object):
             raise ProxyInvalidConfig('NTLM proxy authentication is supported only for prebuilt CLI binaries.')
         if proxy_ntlm_pass:
             click.secho('Warning: NTLM proxy user password will be stored unencrypted.', fg='yellow')
-        config = {'api': api, 
-                  'access_key': access_key, 
-                  'tz': timezone, 
-                  'proxy': proxy, 
-                  'proxy_ntlm': proxy_ntlm, 
+        config = {'api': api,
+                  'access_key': access_key,
+                  'tz': timezone,
+                  'proxy': proxy,
+                  'proxy_ntlm': proxy_ntlm,
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
                   'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
@@ -188,8 +223,8 @@ class Config(object):
         return cls.get_string_from_base64(decoded)
 
     @classmethod
-    def instance(cls):
-        return cls()
+    def instance(cls, raise_config_not_found_exception=True):
+        return cls(raise_config_not_found_exception)
 
     def timezone(self):
         if self.tz == 'utc':

@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ "$SKIP_DEPLOYMENT" ] || [ "$SKIP_DEPLOYMENT_AWS" ]; then
+    echo "SKIP_DEPLOYMENT or SKIP_DEPLOYMENT_AWS is set - skipping AWS deployment"
+    exit 0
+fi
+
 if [ -z "$PIPECTL_DIST_URL_PATH" ] || [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
     echo "PIPECTL_DIST_URL_PATH is not defined or file does not exist"
     exit 1

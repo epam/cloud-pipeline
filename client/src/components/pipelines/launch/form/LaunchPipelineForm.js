@@ -2518,14 +2518,16 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                 .filter((familyName, index, array) => array.indexOf(familyName) === index)
                 .map(instanceFamily => {
                   return (
-                    <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
+                    <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'} >
                       {
                         this.instanceTypes
                           .filter(t => t.instanceFamily === instanceFamily)
                           .map(t =>
                             <Select.Option
                               key={t.sku}
-                              value={t.name}>
+                              value={t.name}
+                              title={`${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
+                            >
                               {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}`: ''})
                             </Select.Option>
                           )
@@ -2585,6 +2587,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                     <Select.Option
                       key={`${region.id}`}
                       name={region.name}
+                      title={region.name}
                       value={`${region.id}`}>
                       <AWSRegionTag
                         provider={region.provider}

@@ -1168,6 +1168,7 @@ public class PipelineRunManager {
         Long runId = pipelineRunDao.createRunId();
         restartedRun.setId(runId);
         restartedRun.setStartDate(DateUtils.now());
+        restartedRun.setProlongedAtTime(DateUtils.nowUTC());
 
         Optional<Pipeline> pipeline = Optional.ofNullable(run.getPipelineId())
                 .map(pipelineId -> pipelineManager.load(pipelineId));

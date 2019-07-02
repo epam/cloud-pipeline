@@ -744,6 +744,7 @@ export default class EditToolForm extends React.Component {
                                   .filter(t => t.instanceFamily === instanceFamily)
                                   .map(t =>
                                     <Select.Option
+                                      title={`${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
                                       key={t.sku}
                                       value={t.name}>
                                       {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})

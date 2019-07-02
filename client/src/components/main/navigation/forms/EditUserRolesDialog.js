@@ -303,6 +303,7 @@ export default class EditUserRolesDialog extends React.Component {
                       <Select.Option
                         key={d.id}
                         value={`${d.id}`}
+                        title={d.name}
                         name={d.name}
                         pathMask={d.pathMask}>
                         <b>{d.name}</b> ({d.pathMask})
