@@ -1080,7 +1080,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         fireCloudInputs: {},
         fireCloudOutputs: {},
         fireCloudDefaultInputs: this.props.fireCloudMethod ? this.props.fireCloudMethod.methodInputs : null,
-        fireCloudDefaultOutputs: this.props.fireCloudMethod ? this.props.fireCloudMethod.methodOutputs : null
+        fireCloudDefaultOutputs: this.props.fireCloudMethod ? this.props.fireCloudMethod.methodOutputs : null,
+        startIdle: this.props.parameters.cmd_template.trim() === 'sleep infinity'
       });
     }
     this.setState(state);
@@ -2961,7 +2962,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                 (this.state.pipeline && this.props.detached)
               }
               onChange={(e) => this.setState({startIdle: e.target.checked})}
-              value={this.state.startIdle}>
+              value={this.state.startIdle}
+              checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
