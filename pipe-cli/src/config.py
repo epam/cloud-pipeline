@@ -89,7 +89,7 @@ class Config(object):
                     self.proxy_ntlm_domain = data['proxy_ntlm_domain']
                 if 'proxy_ntlm_pass' in data:
                     try:
-                        self.proxy_ntlm_pass = Config.get_string_from_base64(base64.decode(data['proxy_ntlm_pass']))
+                        self.proxy_ntlm_pass = Config.decode_password(data['proxy_ntlm_pass'])
                     except:
                         self.proxy_ntlm_pass = None
         else:
@@ -144,7 +144,7 @@ class Config(object):
                   'proxy_ntlm': proxy_ntlm, 
                   'proxy_ntlm_user': proxy_ntlm_user,
                   'proxy_ntlm_domain': proxy_ntlm_domain,
-                  'proxy_ntlm_pass': cls.get_string_from_base64(base64.encode(proxy_ntlm_pass))
+                  'proxy_ntlm_pass': cls.encode_password(proxy_ntlm_pass)
                   }
         config_file = cls.config_path()
 
@@ -165,6 +165,16 @@ class Config(object):
         if isinstance(data, bytes):
             return data.decode(sys.getdefaultencoding())
         return data
+
+    @classmethod
+    def encode_password(cls, raw_password):
+        data = base64.b64encode(raw_password.encode(sys.getdefaultencoding()))
+        return cls.get_string_from_base64(data)
+
+    @classmethod
+    def decode_password(cls, encoded_password):
+        decoded = base64.b64decode(encoded_password.encode(sys.getdefaultencoding()))
+        return cls.get_string_from_base64(decoded)
 
     @classmethod
     def instance(cls):
