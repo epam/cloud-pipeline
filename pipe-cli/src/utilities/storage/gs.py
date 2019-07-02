@@ -17,6 +17,7 @@ from google.auth import _helpers
 from google.auth.transport.requests import AuthorizedSession
 from google.cloud.storage import Client, Blob
 from google.oauth2.credentials import Credentials
+from google import resumable_media
 from google.resumable_media import DataCorruption
 from google.resumable_media.requests import Download
 
@@ -169,7 +170,7 @@ class _UploadProgressMixin(Blob):
 
 class _ProgressBlob(_ResumableDownloadProgressMixin, _UploadProgressMixin, Blob):
     PROGRESS_CHUNK_SIZE = 5 * 1024 * 1024  # 5 MB
-    DEFAULT_RESUME_ATTEMPTS = 5
+    DEFAULT_RESUME_ATTEMPTS = 100
 
     def __init__(self, size, progress_callback, attempts=DEFAULT_RESUME_ATTEMPTS, *args, **kwargs):
         """
@@ -490,11 +491,15 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
 
     def _download_to_file(self, blob, destination_key):
         try:
+            self._replace_default_download_chunk_size(self._buffering)
             with open(destination_key, "wb", buffering=self._buffering) as file_obj:
                 blob.download_to_file(file_obj)
         except DataCorruption:
             os.remove(destination_key)
             raise
+
+    def _replace_default_download_chunk_size(self, chunk_size):
+        resumable_media.requests.download._SINGLE_GET_CHUNK_SIZE = chunk_size
 
 
 class GsUploadManager(GsManager, AbstractTransferManager):
