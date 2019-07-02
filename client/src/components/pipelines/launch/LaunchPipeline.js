@@ -263,7 +263,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.allowedInstanceTypes = this.props.image
         ? this.props.allowedInstanceTypes.getAllowedTypes(this.props.image)
         : new AllowedInstanceTypes();
-    } else if (parameters) {
+    }
+    if (parameters) {
       this.allowedInstanceTypes.setParameters({
         isSpot: parameters.is_spot,
         regionId: parameters.cloudRegionId

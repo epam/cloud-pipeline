@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
 import {names} from '../../../../models/utils/ContextualPreference';
 import pipelines from '../../../../models/pipelines/Pipelines';
@@ -37,7 +37,6 @@ import styles from './PipelineConfiguration.css';
 })
 @inject(({pipelines, routing, preferences}, {onReloadTree, params}) => {
   return {
-    allowedInstanceTypes: new AllowedInstanceTypes(),
     onReloadTree,
     currentConfiguration: params.configuration,
     pipeline: pipelines.getPipeline(params.id),
@@ -52,6 +51,7 @@ import styles from './PipelineConfiguration.css';
 })
 @observer
 export default class PipelineConfiguration extends React.Component {
+  @observable allowedInstanceTypes;
 
   state = {
     createConfigurationForm: false,
@@ -383,8 +383,24 @@ export default class PipelineConfiguration extends React.Component {
     );
   };
 
+  componentDidUpdate() {
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
+    }
+  }
+
   render () {
-    if (!this.props.configurations.loaded && this.props.configurations.pending) {
+    if (
+      (!this.props.configurations.loaded && this.props.configurations.pending) ||
+      !this.allowedInstanceTypes
+    ) {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
@@ -414,7 +430,7 @@ export default class PipelineConfiguration extends React.Component {
             currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
             onSetConfigurationAsDefault={this.onSetAsDefaultClicked}
             pipeline={this.props.pipeline ? this.props.pipeline.value : undefined}
-            allowedInstanceTypes={this.props.allowedInstanceTypes}
+            allowedInstanceTypes={this.allowedInstanceTypes}
             toolInstanceTypes={names.allowedInstanceTypes}
             version={this.props.version}
             parameters={this.getParameters()}
