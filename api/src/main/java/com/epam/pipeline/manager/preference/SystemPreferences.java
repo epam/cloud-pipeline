@@ -39,7 +39,13 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.git.GitlabClient;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.preference.AbstractSystemPreference.*;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.BooleanPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.DoublePreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.MemorySizePreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +66,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.manager.preference.PreferenceValidators.*;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isMemorySize;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
  * A component class, that contains AbstractSystemPreference - a set of predefined preferences. It also provides
@@ -361,7 +371,7 @@ public class SystemPreferences {
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
 
     /**
-     * Controls the period of resource monitoring task
+     * Controls the amount of pod logs to be loaded
      */
     public static final MemorySizePreference SYSTEM_LIMIT_LOGS_BYTES = new MemorySizePreference(
             "system.logs.bytes.limit", 16 * 1024 * 1024, SYSTEM_GROUP, isMemorySize());

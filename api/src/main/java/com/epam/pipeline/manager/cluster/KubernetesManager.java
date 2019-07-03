@@ -79,6 +79,7 @@ public class KubernetesManager {
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String COLLAPSE = "< ... >";
     private static final int LENGTH_OF_STRING = 200;
+    public static final String NEW_LINE = "\n";
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -181,16 +182,25 @@ public class KubernetesManager {
         }
     }
 
-    public String getPodLogs(String podId, int limit) {
+    public String getPodLogs(final String podId, final int limit) {
         try (KubernetesClient client = getKubernetesClient()) {
             final String head = getHeadLogs(podId, limit, client);
 
-            // if all logs fit to size < limit / 2, just return it
             if (head.length() < limit / 2) {
+                // if all logs fit to size < limit / 2, just return it
                 return head;
+            } else if (head.length() < limit) {
+                // else we should load the tail and merge it with head
+                final String[] headLines = head.split(NEW_LINE);
+                final int avgLength = (int) Arrays.stream(headLines).mapToInt(String::length)
+                        .average().orElse(LENGTH_OF_STRING);
+                final String[] tailLines = getTailLog(podId, limit - (head.length()) / avgLength, client)
+                        .split(NEW_LINE);
+                return mergeWithTailLogs(headLines, tailLines);
+            } else {
+                // finally if head > then limit return only head
+                return head + NEW_LINE + COLLAPSE;
             }
-            // else we should load the tail and merge it with head
-            return mergeWithTailLogs(client, podId, head, limit);
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
@@ -288,22 +298,12 @@ public class KubernetesManager {
         }
     }
 
-    String mergeWithTailLogs(final KubernetesClient client, final String podId,
-                             final String head, final int limit) {
-        int restLimit = limit / 2 + (limit / 2 - head.length());
-        if (restLimit > 0) {
-            final String[] headLines = head.split("\n");
-            int avgLength = (int) Arrays.stream(headLines).mapToInt(String::length).average().orElse(LENGTH_OF_STRING);
-            final String[] tailLines = getTailLog(client, podId, restLimit, avgLength).split("\n");
-
-            String merged = Stream.of(headLines, new String[]{COLLAPSE}, tailLines)
-                    .flatMap(Arrays::stream)
-                    .distinct()
-                    .collect(Collectors.joining("\n"));
-            return merged.endsWith(COLLAPSE) ? merged.replaceAll("\n" + COLLAPSE, "") : merged;
-        } else {
-            return head + "\n" + COLLAPSE;
-        }
+    String mergeWithTailLogs(final String[] headLines, final String[] tailLines) {
+        final String merged = Stream.of(headLines, new String[]{COLLAPSE}, tailLines)
+                .flatMap(Arrays::stream)
+                .distinct()
+                .collect(Collectors.joining(NEW_LINE));
+        return merged.endsWith(COLLAPSE) ? merged.replaceAll(NEW_LINE + COLLAPSE, "") : merged;
     }
 
     String getHeadLogs(final String podId, final int limit, final KubernetesClient client) {
@@ -313,10 +313,10 @@ public class KubernetesManager {
                 .getLog();
     }
 
-    String getTailLog(final KubernetesClient client, final String podId, final int restLimit, final int avgLength) {
+    String getTailLog(final String podId, final int tailLines, final KubernetesClient client) {
         return client.pods().inNamespace(kubeNamespace)
                 .withName(podId)
-                .tailingLines(restLimit / avgLength).getLog();
+                .tailingLines(tailLines).getLog();
     }
 
     private void modifyNodeLabel(String nodeName, String labelName, Consumer<Map<String, String>> actionOnLabel) {

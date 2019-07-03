@@ -8,7 +8,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class KubernetesManagerTest {
@@ -19,12 +23,15 @@ public class KubernetesManagerTest {
     private static final String LOG3 = "Simple third log line" + NEW_LINE + "Simple fourth log line";
     private static final String COLLAPSED = "< ... >";
     private static final String POD_ID = "pod_id";
+    private static final int LIMIT_256 = 256;
+    private static final int LIMIT_64 = 64;
+    private static final int LIMIT_32 = 32;
 
     @Spy
     private KubernetesManager manager = new KubernetesManager();
 
     @Before
-    public void setup() {
+    public void setUp() {
         when(manager.getKubernetesClient()).thenReturn(new DefaultKubernetesClient());
     }
 
@@ -34,9 +41,9 @@ public class KubernetesManagerTest {
         doReturn(LOG)
                 .when(manager).getHeadLogs(eq(POD_ID), anyInt(), anyObject());
         doReturn(LOG)
-                .when(manager).getTailLog(anyObject(),eq(POD_ID), anyInt(), anyInt());
+                .when(manager).getTailLog(eq(POD_ID), anyInt(), anyObject());
 
-        String logs = manager.getPodLogs(POD_ID, 256);
+        String logs = manager.getPodLogs(POD_ID, LIMIT_256);
         Assert.assertEquals(LOG, logs);
     }
 
@@ -45,9 +52,9 @@ public class KubernetesManagerTest {
         doReturn(LOG)
                 .when(manager).getHeadLogs(eq(POD_ID), anyInt(), anyObject());
         doReturn(LOG2)
-                .when(manager).getTailLog(anyObject(),eq(POD_ID), anyInt(), anyInt());
+                .when(manager).getTailLog(eq(POD_ID), anyInt(), anyObject());
 
-        String logs = manager.getPodLogs(POD_ID, 64);
+        String logs = manager.getPodLogs(POD_ID, LIMIT_64);
         Assert.assertEquals(LOG + NEW_LINE + COLLAPSED + NEW_LINE + "Simple third log line", logs);
     }
 
@@ -56,9 +63,9 @@ public class KubernetesManagerTest {
         doReturn(LOG)
                 .when(manager).getHeadLogs(eq(POD_ID), anyInt(), anyObject());
         doReturn(LOG2)
-                .when(manager).getTailLog(anyObject(),eq(POD_ID), anyInt(), anyInt());
+                .when(manager).getTailLog(eq(POD_ID), anyInt(), anyObject());
 
-        String logs = manager.getPodLogs(POD_ID, 32);
+        String logs = manager.getPodLogs(POD_ID, LIMIT_32);
         Assert.assertEquals(LOG + NEW_LINE + COLLAPSED, logs);
     }
 
@@ -67,9 +74,9 @@ public class KubernetesManagerTest {
         doReturn(LOG)
                 .when(manager).getHeadLogs(eq(POD_ID), anyInt(), anyObject());
         doReturn(LOG3)
-                .when(manager).getTailLog(anyObject(),eq(POD_ID), anyInt(), anyInt());
+                .when(manager).getTailLog(eq(POD_ID), anyInt(), anyObject());
 
-        String logs = manager.getPodLogs(POD_ID, 64);
+        String logs = manager.getPodLogs(POD_ID, LIMIT_64);
         Assert.assertEquals(LOG + NEW_LINE + COLLAPSED + NEW_LINE + LOG3, logs);
     }
 }

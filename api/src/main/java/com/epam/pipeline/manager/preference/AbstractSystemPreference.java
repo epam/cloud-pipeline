@@ -117,8 +117,9 @@ public abstract class AbstractSystemPreference<T> {
 
     public static class MemorySizePreference extends AbstractSystemPreference<Integer> {
 
-        static final String MEMORY_SIZE_PATTERN = "(\\d+)([k|m|g])";
-        static final Pattern SIZE_PATTERN = Pattern.compile(MEMORY_SIZE_PATTERN);
+        public static final String MEMORY_SIZE_PATTERN = "(\\d+)([k|m|g])";
+        public static final Pattern SIZE_PATTERN = Pattern.compile(MEMORY_SIZE_PATTERN);
+        public static final int KILO = 1024;
 
         public MemorySizePreference(String key, Integer defaultValue, String group, BiPredicate<String,
                 Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
@@ -145,11 +146,11 @@ public abstract class AbstractSystemPreference<T> {
                 final String prefix = matcher.group(2);
                 switch (prefix) {
                     case "k":
-                        return getModuleByMaxInteger(number * 1204);
+                        return returnMaxIntegerIfOverfilled(number * KILO);
                     case "m":
-                        return getModuleByMaxInteger(number * 1204 * 1024);
+                        return returnMaxIntegerIfOverfilled(number * KILO * KILO);
                     case "g":
-                        return getModuleByMaxInteger(number * 1204 * 1024 * 1024);
+                        return returnMaxIntegerIfOverfilled(number * KILO * KILO * KILO);
                     default:
                         throw new IllegalArgumentException("Wrong memory size parameter: " + value);
                 }
@@ -158,7 +159,7 @@ public abstract class AbstractSystemPreference<T> {
             }
         }
 
-        private Integer getModuleByMaxInteger(final int value) {
+        private Integer returnMaxIntegerIfOverfilled(final int value) {
             return value > 0 ? value : Integer.MAX_VALUE;
         }
     }
