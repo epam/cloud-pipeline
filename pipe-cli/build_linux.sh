@@ -19,22 +19,45 @@ _BUILD_DOCKER_IMAGE="python:2.7-stretch"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
+###
+# Setup Pyinstaller
+###
+
 mkdir -p $PYINSTALLER_PATH
-
 cd $PYINSTALLER_PATH
-
 git clone --single-branch --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
 cd pyinstaller/bootloader/
-
 python2 ./waf all
 
-#echo "Runtime tmpdir: $PIPE_CLI_RUNTIME_TMP_DIR"
+###
+# Setup common dependencies
+###
+python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 
-python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt && \
+###
+# Build ntlm proxy
+###
+cd /tmp
+git clone https://github.com/sidoruka/ntlmaps.git && \
+cd ntlmaps && \
+git checkout 5f798a88369eddbe732364b98fbd445aacc809d0
+
+python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+        main.py -y \
+        --clean \
+        --distpath /tmp/ntlmaps/dist \
+        -p /tmp/ntlmaps/lib \
+        --add-data ./server.cfg:./ \
+        --name ntlmaps
+
+chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
+
+###
+# Build pipe
+###
 cd $PIPE_CLI_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
-                                --onefile \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
                                 --hidden-import=commands \
@@ -55,7 +78,9 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
-                                ${PIPE_CLI_SOURCES_DIR}/pipe.py
+                                --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
+                                ${PIPE_CLI_SOURCES_DIR}/pipe.py \
+                                --onefile
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null

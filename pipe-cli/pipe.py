@@ -78,10 +78,36 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-def configure(auth_token, api, timezone, proxy):
+@click.option('-nt', '--proxy-ntlm',
+              help='Use NTLM authentication for the server, specified by the "--proxy"',
+              is_flag=True)
+@click.option('-nu', '--proxy-ntlm-user',
+              help='Username for the NTLM authentication against the server, specified by the "--proxy"',
+              default=None)
+@click.option('-nd', '--proxy-ntlm-domain',
+              help='Domain name of the user, specified by the "--proxy-ntlm-user"',
+              default=None)
+@click.option('-np', '--proxy-ntlm-pass',
+              help='Password of the user, specified by the "--proxy-ntlm-user"',
+              default=None)
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
     """Configures CLI parameters
     """
-    Config.store(auth_token, api, timezone, proxy)
+    if proxy_ntlm and not proxy_ntlm_user:
+        proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
+    if proxy_ntlm and not proxy_ntlm_domain:
+        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
+    if proxy_ntlm and not proxy_ntlm_pass:
+        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+
+    Config.store(auth_token,
+                 api,
+                 timezone,
+                 proxy,
+                 proxy_ntlm,
+                 proxy_ntlm_user,
+                 proxy_ntlm_domain,
+                 proxy_ntlm_pass)
 
 
 def echo_title(title, line=True):
