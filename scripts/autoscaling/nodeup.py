@@ -78,6 +78,8 @@ def main():
                                               str(is_spot),
                                               str(bid_price)))
 
+    kube_provider = kubeprovider.KubeProvider()
+
     try:
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_img)
@@ -98,7 +100,6 @@ def main():
         nodename, nodename_full = cloud_provider.get_instance_names(ins_id)
         utils.pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
 
-        kube_provider = kubeprovider.KubeProvider()
         kube_provider.delete_phantom_low_priority_kubernetes_node(ins_id)
         nodename = kube_provider.verify_regnode(ins_id, nodename, nodename_full, num_rep, time_rep)
         kube_provider.label_node(nodename, run_id, cluster_name, cluster_role, region_id)
@@ -112,8 +113,10 @@ def main():
 
         utils.pipe_log('{} task finished'.format(utils.NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
-        ins_id = cloud_provider.find_instance(run_id)
-        cloud_provider.terminate_instance(ins_id)
+        nodes_to_delete = cloud_provider.find_nodes_with_run_id(run_id)
+        for node in nodes_to_delete:
+            kube_provider.delete_kubernetes_node_by_name(node)
+            cloud_provider.terminate_instance(node)
         utils.pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 

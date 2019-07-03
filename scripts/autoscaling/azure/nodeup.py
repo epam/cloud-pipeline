@@ -205,23 +205,18 @@ compute_client = get_client_from_auth_file(ComputeManagementClient)
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
+def run_instance(instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
                  ins_type, is_spot, kube_ip, kubeadm_token):
-    try:
-        ins_key = read_ssh_key(ssh_pub_key)
-        user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
-        instance_name = VM_NAME_PREFIX + uuid.uuid4().hex[0:UUID_LENGHT]
-        if not is_spot:
-            create_public_ip_address(instance_name, run_id)
-            create_nic(instance_name, run_id)
-            return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                             user_data_script, ins_key, user)
-        else:
-            return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                                          user_data_script, ins_key, user)
-    except Exception as e:
-        delete_all_by_run_id(run_id)
-        raise e
+    ins_key = read_ssh_key(ssh_pub_key)
+    user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+    if not is_spot:
+        create_public_ip_address(instance_name, run_id)
+        create_nic(instance_name, run_id)
+        return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
+                         user_data_script, ins_key, user)
+    else:
+        return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
+                                      user_data_script, ins_key, user)
 
 
 def read_ssh_key(ssh_pub_key):
@@ -516,6 +511,10 @@ def get_instance_name_and_private_ip_from_vmss(scale_set_name):
     for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
         vm_vmss_id = vm.instance_id
         break
+    if vm_vmss_id is None:
+        pipe_log('Failed to find instance in ScaleSet: {}. Seems that instance was preempted.'.format(scale_set_name))
+        raise RuntimeError('Failed to find instance in ScaleSet: {}. Seems that instance was preempted.'.format(scale_set_name))
+
     instance_name = compute_client.virtual_machine_scale_set_vms \
         .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
         .additional_properties["computerName"]
@@ -601,7 +600,7 @@ def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
 
         # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
         # delete node that opposite to ins_id
-        nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]
+        nodes_to_delete = generate_scale_set_vm_names(scale_set_name)
         for node_to_delete in nodes_to_delete:
 
             if node_to_delete == ins_id:
@@ -617,6 +616,32 @@ def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
                     }
                 }
                 pykube.Node(kube_api, obj).delete()
+
+
+def generate_scale_set_vm_names(scale_set_name):
+    nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]
+    return nodes_to_delete
+
+
+def delete_scale_set_nodes_from_kube(kube_api, scale_set_name):
+    nodes_to_delete = generate_scale_set_vm_names(scale_set_name)
+    for node_to_delete in nodes_to_delete:
+        delete_node_from_kube(kube_api, node_to_delete)
+
+
+def delete_node_from_kube(kube_api, ins_id):
+    nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': ins_id})
+    for node in nodes.response['items']:
+        if any((condition['status'] == 'False' or condition['status'] == 'Unknown')
+               and condition['type'] == "Ready" for condition in node["status"]["conditions"]):
+            obj = {
+                "apiVersion": "v1",
+                "kind": "Node",
+                "metadata": {
+                    "name": node["metadata"]["name"]
+                }
+            }
+            pykube.Node(kube_api, obj).delete()
 
 
 def find_node(nodename, nodename_full, api):
@@ -934,6 +959,14 @@ def main():
                                     ins_img))
 
     try:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+    except Exception as e:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
+    api.session.verify = False
+
+    resource_name = VM_NAME_PREFIX + uuid.uuid4().hex[0:UUID_LENGHT]
+
+    try:
 
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
@@ -946,15 +979,8 @@ def main():
         ins_id, ins_ip = verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path, "pipeline",
-                                          ins_type, is_spot, kube_ip, kubeadm_token)
-
-
-        try:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
-        except Exception as e:
-            api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
-        api.session.verify = False
+            ins_id, ins_ip = run_instance(resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
 
         delete_phantom_low_priority_kubernetes_node(api, ins_id)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
@@ -969,6 +995,7 @@ def main():
         pipe_log('{} task finished'.format(NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
         delete_all_by_run_id(run_id)
+        delete_scale_set_nodes_from_kube(kube_api=api, scale_set_name=resource_name)
         pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 

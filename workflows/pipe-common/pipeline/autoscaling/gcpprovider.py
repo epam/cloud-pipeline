@@ -228,6 +228,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         self.__wait_for_operation(delete['name'])
 
+    def find_nodes_with_run_id(self, run_id):
+        return [self.find_instance(run_id)]
+
     def terminate_instance_by_ip_or_name(self, internal_ip, node_name):
         items = self.__filter_instances("")
         for instance in items:
