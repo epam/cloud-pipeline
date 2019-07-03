@@ -11,7 +11,7 @@ export CP_AZURE_RESOURCE_GROUP=
 # Docker-specific parameters
 export CP_DOCKER_DIST_USER=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
 export CP_DOCKER_DIST_PASS=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
-export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
+export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/develop/cloud-pipeline.latest.tgz
 
 bash build.sh -aws eu-central-1,us-east-1 \                         # List of regions to build VM images in AWS. -im shall be set to "rebuild" to build images from scratch
               -az westeurope,centralus \                            # Same as -aws, but Azure environment

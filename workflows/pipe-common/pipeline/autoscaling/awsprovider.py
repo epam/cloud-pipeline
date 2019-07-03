@@ -130,6 +130,9 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('No existing instance found for RunID {}\n-'.format(run_id))
         return ins_id, ins_ip
 
+    def find_nodes_with_run_id(self, run_id):
+        return [self.find_instance(run_id)]
+
     def terminate_instance(self, instance_id):
         if not instance_id or len(instance_id) == 0:
             utils.pipe_log('[ERROR] None or empty string specified when calling terminate_instance, nothing will be done')

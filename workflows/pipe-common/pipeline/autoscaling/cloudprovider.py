@@ -42,3 +42,6 @@ class AbstractInstanceProvider(object):
 
     def terminate_instance_by_ip(self, node_internal_ip, node_name):
         pass
+
+    def find_nodes_with_run_id(self, run_id):
+        pass

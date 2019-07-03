@@ -45,20 +45,27 @@ class GsClient(CloudClient):
         sleep(5)
         bucket = self._get_client().bucket(bucket_name)
         bucket.reload()
+        actual_policy = {"backup_duration": None, "lts": None, "sts": None}
         for rule in bucket.lifecycle_rules:
             assert 'action' in rule and 'condition' in rule
             condition = rule['condition']
             rule_type = rule['action']['type']
             duration = condition['age']
-            if lts and rule_type == 'Delete' and condition['isLive']:
-                assert int(duration) == int(lts), \
-                    "LTS assertion failed: expected %s but actual %s" % (lts, duration)
-            if sts and rule_type == 'SetStorageClass':
-                assert int(duration) == int(sts), \
-                    "STS assertion failed: expected %s but actual %s" % (sts, duration)
+            if rule_type == 'Delete' and condition['isLive']:
+                actual_policy['lts'] = duration
+            if rule_type == 'SetStorageClass':
+                actual_policy['sts'] = duration
             if rule_type == 'Delete' and not condition['isLive']:
+                actual_policy['backup_duration'] = duration
                 assert int(duration) == int(backup_duration), \
                     "Backup Duration assertion failed: expected %s but actual %s" % (backup_duration, duration)
+        assert str(actual_policy['lts']) == str(lts), \
+            "LTS assertion failed: expected %s but actual %s" % (lts, actual_policy['lts'])
+        assert str(actual_policy['sts']) == str(sts), \
+            "STS assertion failed: expected %s but actual %s" % (sts, actual_policy['sts'])
+        assert str(actual_policy['backup_duration']) == str(backup_duration), \
+            "Backup Duration assertion failed: expected %s but actual %s" % (backup_duration,
+                                                                             actual_policy['backup_duration'])
 
     def get_modification_date(self, path):
         path_elements = path.replace('cp://', '').split('/')
