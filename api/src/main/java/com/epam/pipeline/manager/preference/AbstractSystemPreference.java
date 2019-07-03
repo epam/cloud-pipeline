@@ -27,8 +27,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -112,55 +110,6 @@ public abstract class AbstractSystemPreference<T> {
                 return null;
             }
             return Integer.parseInt(value);
-        }
-    }
-
-    public static class MemorySizePreference extends AbstractSystemPreference<Integer> {
-
-        public static final String MEMORY_SIZE_PATTERN = "(\\d+)([k|m|g])";
-        public static final Pattern SIZE_PATTERN = Pattern.compile(MEMORY_SIZE_PATTERN);
-        public static final int KILO = 1024;
-
-        public MemorySizePreference(String key, Integer defaultValue, String group, BiPredicate<String,
-                Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
-            super(key, defaultValue, group, validator, PreferenceType.INTEGER, dependencies);
-        }
-
-        @Override
-        public Integer parse(String value) {
-            if (StringUtils.isBlank(value)) {
-                return null;
-            }
-            try {
-                return Integer.parseInt(value);
-            } catch (NumberFormatException e) {
-                Integer result = parseWithPostfix(value);
-                return result > 0 ? result : Integer.MAX_VALUE;
-            }
-        }
-
-        private Integer parseWithPostfix(final String value) {
-            final Matcher matcher = SIZE_PATTERN.matcher(value.trim());
-            if (matcher.matches()) {
-                final int number = Integer.parseInt(matcher.group(1));
-                final String prefix = matcher.group(2);
-                switch (prefix) {
-                    case "k":
-                        return returnMaxIntegerIfOverfilled(number * KILO);
-                    case "m":
-                        return returnMaxIntegerIfOverfilled(number * KILO * KILO);
-                    case "g":
-                        return returnMaxIntegerIfOverfilled(number * KILO * KILO * KILO);
-                    default:
-                        throw new IllegalArgumentException("Wrong memory size parameter: " + value);
-                }
-            } else {
-                throw new IllegalArgumentException("Wrong memory size parameter: " + value);
-            }
-        }
-
-        private Integer returnMaxIntegerIfOverfilled(final int value) {
-            return value > 0 ? value : Integer.MAX_VALUE;
         }
     }
 

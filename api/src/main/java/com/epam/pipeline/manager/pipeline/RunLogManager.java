@@ -198,7 +198,7 @@ public class RunLogManager {
     }
 
     private List<RunLog> getPodLogs(PipelineRun run) {
-        int logLimit = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOGS_BYTES);
+        int logLimit = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
         String logText = StringUtils.isBlank(run.getPodIP()) ?
                 "Node initialization in progress." : kubernetesManager.getPodLogs(run.getPodId(), logLimit);
         RunLog log = new RunLog();

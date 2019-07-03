@@ -43,7 +43,6 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.BooleanPref
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.DoublePreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
-import com.epam.pipeline.manager.preference.AbstractSystemPreference.MemorySizePreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
@@ -68,7 +67,6 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
-import static com.epam.pipeline.manager.preference.PreferenceValidators.isMemorySize;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -373,8 +371,8 @@ public class SystemPreferences {
     /**
      * Controls the amount of pod logs to be loaded
      */
-    public static final MemorySizePreference SYSTEM_LIMIT_LOGS_BYTES = new MemorySizePreference(
-            "system.logs.bytes.limit", 16 * 1024 * 1024, SYSTEM_GROUP, isMemorySize());
+    public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
+            "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
 
     /**
      * Level of CPU load, below which a Run is considered `idle`

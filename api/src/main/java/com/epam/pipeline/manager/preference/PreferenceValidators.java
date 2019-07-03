@@ -44,9 +44,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
-import java.util.regex.Pattern;
 
-import static com.epam.pipeline.manager.preference.AbstractSystemPreference.*;
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
 
 
@@ -144,11 +142,6 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) > x;
-    }
-
-    public static BiPredicate<String, Map<String, Preference>> isMemorySize() {
-        return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) > 0
-                || Pattern.compile(MemorySizePreference.MEMORY_SIZE_PATTERN).matcher(pref).matches();
     }
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(float x) {
