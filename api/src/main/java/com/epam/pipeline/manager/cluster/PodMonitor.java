@@ -538,12 +538,13 @@ public class PodMonitor extends AbstractSchedulingManager {
 
     private boolean shouldRerunBatchRun(PipelineRun run, String stateReason) {
         boolean isSpot = run.getInstance().getSpot() != null && run.getInstance().getSpot();
-        return run.getStatus() != TaskStatus.STOPPED && isSpot && isBatchJob(run) &&
+        return run.getStatus() != TaskStatus.STOPPED && isSpot && isParentBatchJob(run) &&
                 isStateReasonForRestart(stateReason) && checkRetryRestartCount(run.getId());
     }
 
-    private boolean isBatchJob(PipelineRun run) {
+    private boolean isParentBatchJob(PipelineRun run) {
         return isNotClusterRun(run)
+                && run.getParentRunId() == null
                 && run.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.CLOUD_PLATFORM
                 && CollectionUtils.isEmpty(toolManager.loadByNameOrId(run.getDockerImage()).getEndpoints());
     }
