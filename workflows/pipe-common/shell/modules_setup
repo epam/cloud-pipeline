@@ -40,10 +40,10 @@ if [ ! -z $CP_CAP_DISTR_MODULES_DEPS ]; then
     _MODULES_INSTALL_RESULT=$?
 else
     if [[ "$IS_RPM_BASED" = 0 ]]; then
-        yum -y -q install tcl-devel
+        yum -y -q install tcl-devel less
         _MODULES_INSTALL_RESULT=$?
     else
-        apt-get install tcl-dev -y -qq
+        apt-get install tcl-dev less -y -qq
         _MODULES_INSTALL_RESULT=$?
     fi
 fi
