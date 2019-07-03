@@ -164,6 +164,13 @@ public class CloudFacadeImpl implements CloudFacade {
                     return envVars;
                 })
                 .flatMap(map -> map.entrySet().stream())
+                .filter(entry -> {
+                    if (entry.getValue() == null) {
+                        log.warn("Cloud environment variable {} is null.", entry.getKey());
+                        return false;
+                    }
+                    return true;
+                })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2));
     }
 
