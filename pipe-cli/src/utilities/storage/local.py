@@ -68,5 +68,7 @@ class TransferFromHttpOrFtpToLocal(object):
 
 
 class LocalOperations:
-    def get_transfer_from_http_or_ftp_manager(self, *_, **__):
+
+    @classmethod
+    def get_transfer_from_http_or_ftp_manager(cls, *_, **__):
         return TransferFromHttpOrFtpToLocal()
