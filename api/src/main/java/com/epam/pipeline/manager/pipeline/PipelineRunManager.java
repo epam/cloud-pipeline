@@ -321,7 +321,9 @@ public class PipelineRunManager {
 
         List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, parentRunId, entityIds, configurationId);
+        Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, parentRun.orElse(null), entityIds,
+                configurationId);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
         }
@@ -373,6 +375,23 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
         Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
+    }
+
+    private Optional<PipelineRun> resolveParentRun(final Long parentRunId, final PipelineConfiguration configuration) {
+        return resolveParentRunId(parentRunId, configuration).map(this::loadPipelineRun);
+    }
+
+    private Optional<Long> resolveParentRunId(final Long parentRunId, final PipelineConfiguration configuration) {
+        final Optional<Long> explicitParentRunId = Optional.ofNullable(parentRunId);
+        final Optional<Long> configurationParentRunId = Optional.ofNullable(configuration)
+                .map(PipelineConfiguration::getParameters)
+                .filter(MapUtils::isNotEmpty)
+                .map(map -> map.get(PipelineRun.PARENT_ID_PARAM))
+                .map(PipeConfValueVO::getValue)
+                .filter(NumberUtils::isDigits)
+                .map(Long::parseLong);
+        return explicitParentRunId.map(Optional::of)
+                .orElse(configurationParentRunId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -683,10 +702,12 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration,
-            Pipeline pipeline, Long parentRunId, List<Long> entityIds, Long configurationId) {
+            Pipeline pipeline, PipelineRun parentRun, List<Long> entityIds, Long configurationId) {
         validateRunParameters(configuration, pipeline);
 
-        RunInstance instance = configureRunInstance(configuration);
+        Optional<Long> parentRunId = Optional.ofNullable(parentRun).map(PipelineRun::getId);
+        Optional<RunInstance> parentInstance = Optional.ofNullable(parentRun).map(PipelineRun::getInstance);
+        RunInstance instance = configureRunInstance(configuration, parentInstance.orElse(null));
 
         PipelineRun run = new PipelineRun();
         Long runId = pipelineRunDao.createRunId();
@@ -706,11 +727,7 @@ public class PipelineRunManager {
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(DateUtils.now());
         run.setPodId(getRootPodIDFromPipeline(run));
-        if (parentRunId != null) {
-            run.setParentRunId(parentRunId);
-        } else {
-            setRunParentId(run, configuration.getParameters());
-        }
+        parentRunId.ifPresent(run::setParentRunId);
         run.convertParamsToString(configuration.getParameters());
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
@@ -927,20 +944,6 @@ public class PipelineRunManager {
         }
     }
 
-    private void setRunParentId(PipelineRun run, Map<String, PipeConfValueVO> parameters) {
-        if (run.getParentRunId() != null) {
-            return;
-        }
-        if (MapUtils.isEmpty(parameters)) {
-            return;
-        }
-        PipeConfValueVO parentValue = parameters.get(PipelineRun.PARENT_ID_PARAM);
-        if (parentValue == null || !NumberUtils.isDigits(parentValue.getValue())) {
-            return;
-        }
-        run.setParentRunId(Long.parseLong(parentValue.getValue()));
-    }
-
     private String determinateCmdTemplateForRun(PipelineConfiguration configuration) {
         if (StringUtils.isEmpty(configuration.getCmdTemplate())) {
             String defaultToolCommand = getToolForRun(configuration).getDefaultCommand();
@@ -995,7 +998,7 @@ public class PipelineRunManager {
         return String.format("%s-%s", podName, runId);
     }
 
-    private RunInstance configureRunInstance(PipelineConfiguration configuration) {
+    private RunInstance configureRunInstance(PipelineConfiguration configuration, RunInstance parentInstance) {
         RunInstance instance = new RunInstance();
         instance.setNodeDisk(Optional.ofNullable(configuration.getInstanceDisk())
                 .map(disk -> Integer.parseInt(configuration.getInstanceDisk()))
@@ -1004,9 +1007,13 @@ public class PipelineRunManager {
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
         instance.setNodeImage(configuration.getInstanceImage());
+        Optional<Long> parentRunRegionId = Optional.ofNullable(parentInstance)
+                .map(RunInstance::getCloudRegionId);
         AbstractCloudRegion cloudRegion = Optional.ofNullable(configuration.getCloudRegionId())
-                .map(id -> cloudRegionManager.load(id))
-                .orElse(cloudRegionManager.loadDefaultRegion());
+                .map(Optional::of)
+                .orElse(parentRunRegionId)
+                .map(cloudRegionManager::load)
+                .orElseGet(cloudRegionManager::loadDefaultRegion);
         instance.setCloudRegionId(cloudRegion.getId());
         instance.setCloudProvider(cloudRegion.getProvider());
         boolean defaultUseSpot = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
