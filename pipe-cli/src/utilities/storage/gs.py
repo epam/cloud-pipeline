@@ -569,9 +569,9 @@ class TransferFromHttpOrFtpToGsManager(GsManager, AbstractTransferManager):
         progress_callback = GsProgressPercentage.callback(relative_path, size, quiet)
         bucket = self.client.bucket(destination_wrapper.bucket.path)
         if StorageOperations.file_is_empty(size):
-            blob = bucket.blob(source_key)
+            blob = bucket.blob(destination_key)
         else:
-            blob = self._progress_blob(bucket, source_key, progress_callback, size)
+            blob = self._progress_blob(bucket, destination_key, progress_callback, size)
         blob.metadata = StorageOperations.generate_tags(tags, source_key)
         blob.upload_from_file(_SourceUrlIO(urlopen(source_key)))
         if progress_callback is not None:
