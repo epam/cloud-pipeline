@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ "$SKIP_DEPLOYMENT" ] || [ "$SKIP_DEPLOYMENT_AWS" ]; then
+if [ "$SKIP_DEPLOYMENT" == "true" ] || [ "$SKIP_DEPLOYMENT_AWS" == "true" ]; then
     echo "SKIP_DEPLOYMENT or SKIP_DEPLOYMENT_AWS is set - skipping AWS deployment"
     exit 0
 fi
