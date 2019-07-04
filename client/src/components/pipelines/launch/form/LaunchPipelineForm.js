@@ -638,9 +638,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
-				startIdle: this.props.parameters.cmd_template 
-					? this.props.parameters.cmd_template === 'sleep infinity' 
-					: false,
+				startIdle: this.props.parameters.cmd_template === 'sleep infinity',
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -680,9 +678,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     } else {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
-				startIdle: this.props.parameters.cmd_template 
-					? this.props.parameters.cmd_template === 'sleep infinity' 
-					: false,
+				startIdle: this.props.parameters.cmd_template === 'sleep infinity',
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
