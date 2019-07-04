@@ -308,7 +308,9 @@ public class PipelineRunManager {
     public PipelineRun launchPipeline(PipelineConfiguration configuration, Pipeline pipeline, String version,
             String instanceType, Long parentNodeId, String configurationName, String clusterId,
             Long parentRunId, List<Long> entityIds, Long configurationId, List<RunSid> runSids) {
-        validateInstanceAndPriceTypes(configuration, pipeline, instanceType);
+        Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
+        AbstractCloudRegion region = resolveCloudRegion(parentRun.orElse(null), configuration);
+        validateInstanceAndPriceTypes(configuration, pipeline, region, instanceType);
         String instanceDisk = configuration.getInstanceDisk();
         if (StringUtils.hasText(instanceDisk)) {
             Assert.isTrue(NumberUtils.isNumber(instanceDisk) &&
@@ -321,8 +323,7 @@ public class PipelineRunManager {
 
         List<String> endpoints = configuration.isEraseRunEndpoints() ? Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
-        Optional<PipelineRun> parentRun = resolveParentRun(parentRunId, configuration);
-        PipelineRun run = createPipelineRun(version, configuration, pipeline, parentRun.orElse(null), entityIds,
+        PipelineRun run = createPipelineRun(version, configuration, pipeline, region, parentRun.orElse(null), entityIds,
                 configurationId);
         if (parentNodeId != null && !parentNodeId.equals(run.getId())) {
             setParentInstance(run, parentNodeId);
@@ -338,17 +339,30 @@ public class PipelineRunManager {
         return run;
     }
 
+    private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
+                                                   final PipelineConfiguration configuration) {
+        final Optional<Long> configurationRegionId = Optional.ofNullable(configuration)
+                .map(PipelineConfiguration::getCloudRegionId);
+        final Optional<Long> parentRunRegionId = Optional.ofNullable(parentRun)
+                .map(PipelineRun::getInstance)
+                .map(RunInstance::getCloudRegionId);
+        return configurationRegionId.map(Optional::of)
+                .orElse(parentRunRegionId)
+                .map(cloudRegionManager::load)
+                .orElseGet(cloudRegionManager::loadDefaultRegion);
+    }
+
     private void validateInstanceAndPriceTypes(final PipelineConfiguration configuration,
                                                final Pipeline pipeline,
+                                               final AbstractCloudRegion region,
                                                final String instanceType) {
         final PriceType priceType = configuration.getIsSpot() != null && configuration.getIsSpot()
                 ? PriceType.SPOT
                 : PriceType.ON_DEMAND;
         if (pipeline != null) {
-            validatePipelineInstanceAndPriceTypes(instanceType, priceType, configuration.getCloudRegionId());
+            validatePipelineInstanceAndPriceTypes(instanceType, priceType, region.getId());
         } else {
-            validateToolInstanceAndPriceTypes(instanceType, priceType,  configuration.getCloudRegionId(),
-                    configuration.getDockerImage());
+            validateToolInstanceAndPriceTypes(instanceType, priceType,  region.getId(), configuration.getDockerImage());
         }
     }
 
@@ -382,16 +396,18 @@ public class PipelineRunManager {
     }
 
     private Optional<Long> resolveParentRunId(final Long parentRunId, final PipelineConfiguration configuration) {
-        final Optional<Long> explicitParentRunId = Optional.ofNullable(parentRunId);
-        final Optional<Long> configurationParentRunId = Optional.ofNullable(configuration)
+        return Optional.ofNullable(parentRunId).map(Optional::of)
+                .orElseGet(() -> resolveParentRunIdFromConfiguration(configuration));
+    }
+
+    private Optional<Long> resolveParentRunIdFromConfiguration(final PipelineConfiguration configuration) {
+        return Optional.ofNullable(configuration)
                 .map(PipelineConfiguration::getParameters)
                 .filter(MapUtils::isNotEmpty)
                 .map(map -> map.get(PipelineRun.PARENT_ID_PARAM))
                 .map(PipeConfValueVO::getValue)
                 .filter(NumberUtils::isDigits)
                 .map(Long::parseLong);
-        return explicitParentRunId.map(Optional::of)
-                .orElse(configurationParentRunId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -701,13 +717,12 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration,
-            Pipeline pipeline, PipelineRun parentRun, List<Long> entityIds, Long configurationId) {
+    public PipelineRun createPipelineRun(String version, PipelineConfiguration configuration, Pipeline pipeline,
+                                         AbstractCloudRegion region, PipelineRun parentRun, List<Long> entityIds,
+                                         Long configurationId) {
         validateRunParameters(configuration, pipeline);
 
-        Optional<Long> parentRunId = Optional.ofNullable(parentRun).map(PipelineRun::getId);
-        Optional<RunInstance> parentInstance = Optional.ofNullable(parentRun).map(PipelineRun::getInstance);
-        RunInstance instance = configureRunInstance(configuration, parentInstance.orElse(null));
+        RunInstance instance = configureRunInstance(configuration, region);
 
         PipelineRun run = new PipelineRun();
         Long runId = pipelineRunDao.createRunId();
@@ -727,7 +742,7 @@ public class PipelineRunManager {
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(DateUtils.now());
         run.setPodId(getRootPodIDFromPipeline(run));
-        parentRunId.ifPresent(run::setParentRunId);
+        Optional.ofNullable(parentRun).map(PipelineRun::getId).ifPresent(run::setParentRunId);
         run.convertParamsToString(configuration.getParameters());
         run.setTimeout(configuration.getTimeout());
         run.setDockerImage(configuration.getDockerImage());
@@ -998,7 +1013,7 @@ public class PipelineRunManager {
         return String.format("%s-%s", podName, runId);
     }
 
-    private RunInstance configureRunInstance(PipelineConfiguration configuration, RunInstance parentInstance) {
+    private RunInstance configureRunInstance(PipelineConfiguration configuration, AbstractCloudRegion region) {
         RunInstance instance = new RunInstance();
         instance.setNodeDisk(Optional.ofNullable(configuration.getInstanceDisk())
                 .map(disk -> Integer.parseInt(configuration.getInstanceDisk()))
@@ -1007,15 +1022,8 @@ public class PipelineRunManager {
                 .orElse(instance.getNodeDisk()));
         instance.setNodeType(configuration.getInstanceType());
         instance.setNodeImage(configuration.getInstanceImage());
-        Optional<Long> parentRunRegionId = Optional.ofNullable(parentInstance)
-                .map(RunInstance::getCloudRegionId);
-        AbstractCloudRegion cloudRegion = Optional.ofNullable(configuration.getCloudRegionId())
-                .map(Optional::of)
-                .orElse(parentRunRegionId)
-                .map(cloudRegionManager::load)
-                .orElseGet(cloudRegionManager::loadDefaultRegion);
-        instance.setCloudRegionId(cloudRegion.getId());
-        instance.setCloudProvider(cloudRegion.getProvider());
+        Optional.ofNullable(region).map(AbstractCloudRegion::getId).ifPresent(instance::setCloudRegionId);
+        Optional.ofNullable(region).map(AbstractCloudRegion::getProvider).ifPresent(instance::setCloudProvider);
         boolean defaultUseSpot = preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT);
         instance.setSpot(Optional.ofNullable(configuration.getIsSpot()).orElse(defaultUseSpot));
         return instance;
