@@ -376,7 +376,8 @@ class GridEngineScaleUpHandler:
     _POLL_DELAY = 10
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_type, instance_image, price_type, instance_cores, polling_timeout, polling_delay=_POLL_DELAY):
+                 instance_type, instance_image, price_type, region_id, instance_cores, polling_timeout,
+                 polling_delay=_POLL_DELAY):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -391,6 +392,7 @@ class GridEngineScaleUpHandler:
         :param instance_type: Additional nodes instance type.
         :param instance_image: Additional nodes docker image.
         :param price_type: Additional nodes price type.
+        :param region_id: Additional nodes Cloud Region id.
         :param instance_cores:  Additional nodes cores number.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
@@ -405,6 +407,7 @@ class GridEngineScaleUpHandler:
         self.instance_type = instance_type
         self.instance_image = instance_image
         self.price_type = price_type
+        self.region_id = region_id
         self.instance_cores = instance_cores
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
@@ -448,13 +451,14 @@ class GridEngineScaleUpHandler:
                            '--cmd-template "sleep infinity" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
+                           '--region-id %s ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional ' \
                            'CP_CAP_SGE false ' \
                            'CP_CAP_AUTOSCALE false ' \
                            'CP_CAP_AUTOSCALE_WORKERS 0' \
                            % (self.instance_disk, self.instance_type, self.instance_image, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type))
+                              self._pipe_cli_price_type(self.price_type), self.region_id)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
@@ -940,6 +944,7 @@ if __name__ == '__main__':
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
     price_type = os.environ['price_type']
+    region_id = os.environ['CLOUD_REGION_ID']
     instance_cores = int(os.environ['CLOUD_PIPELINE_NODE_CORES']) \
         if 'CLOUD_PIPELINE_NODE_CORES' in os.environ else multiprocessing.cpu_count()
     max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
@@ -962,8 +967,8 @@ if __name__ == '__main__':
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
                                                 instance_type=instance_type, instance_image=instance_image,
-                                                price_type=price_type, instance_cores=instance_cores,
-                                                polling_timeout=scale_up_polling_timeout)
+                                                price_type=price_type, region_id=region_id,
+                                                instance_cores=instance_cores, polling_timeout=scale_up_polling_timeout)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
                                                     default_hostfile=default_hostfile, instance_cores=instance_cores)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,
