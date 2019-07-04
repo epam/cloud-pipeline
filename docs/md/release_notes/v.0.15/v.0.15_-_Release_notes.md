@@ -29,7 +29,7 @@
 
 ## Microsoft Azure Support
 
-One of the major **`v0.15`** features is a support for the **[Microsoft Azure Cloud](https://azure.microsoft.com/en-us/)**
+One of the major **`v0.15`** features is a support for the **[Microsoft Azure Cloud](https://azure.microsoft.com/en-us/)**.
 
 All the features, that were previously used for `AWS`, are now available in all the same manner, from all the same GUI/CLI, for `Azure`.
 
@@ -93,6 +93,8 @@ To address this issue, SSH keys management was introduced:
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SSHKeysConfig_1.png)
 - Default selection is HTTP, which displays the same URI as previously (repository), but user is able to switch it to the SSH and get the reformatted address:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SSHKeysConfig_2.png)
+
+For more details see [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#details-controls).
 
 ## Allow to set the Grid Engine capability for the "fixed" cluster
 
@@ -196,6 +198,8 @@ Two preferences are introduced:
     - This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.
 - If a corresponding pre/post script is not found in the docker image - it will not be executed.
 
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#committing-features).
+
 ## Restricting manual installation of the nvidia tools
 
 It was uncovered that some of the GPU-enabled runs are not able to initialize due to an issue describe at [NVIDIA/nvidia-docker#825](https://github.com/NVIDIA/nvidia-docker/issues/825).
@@ -223,6 +227,8 @@ Options that can be used to configure `swap`:
 
 - `swap_ratio` - defines a swap file size. It is equal the node RAM multiplied by that ratio. If ratio is 0, a swap file will not be created (default: 0)
 - `swap_location` - defines a location of the swap file. If that option is not set - default location will be used (default: AWS will use `SSD/gp2` EBS, Azure will be [Temporary Storage](https://blogs.msdn.microsoft.com/mast/2013/12/06/understanding-the-temporary-drive-on-windows-azure-virtual-machines/))
+
+See an example [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#setup-swap-files-for-the-cloud-vms).
 
 ## Run's system paths shall be available for the general user account
 
@@ -338,6 +344,8 @@ Both scenarios are flaky and almost impossible to reproduce. To provide more ins
 2. Log files are streamed to the storage, identified by `storage.system.storage.name` preference
 3. Administrators can find the corresponding node logs (e.g. by the `hostname` or `ip` that are attached to the run information) in that storage under `logs/node/{hostname}`
 
+See an example [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
+
 ***
 
 ## Notable Bug fixes
@@ -348,7 +356,7 @@ Both scenarios are flaky and almost impossible to reproduce. To provide more ins
 
 When user was searching for an entry, that may belong to different classes (e.g. `issues` and `folders`) - user was not able to filter the results by the class
 
-### "COMMITING..." status hangs
+### "COMMITTING..." status hangs
 
 [#152](https://github.com/epam/cloud-pipeline/issues/152)
 
