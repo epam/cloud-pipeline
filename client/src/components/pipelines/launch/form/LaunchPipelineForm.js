@@ -638,7 +638,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
-        startIdle: false,
+				startIdle: this.props.parameters.cmd_template === 'sleep infinity',
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -678,7 +678,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     } else {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
-        startIdle: false,
+				startIdle: this.props.parameters.cmd_template === 'sleep infinity',
         isDts: this.isDts(),
         execEnvSelectValue,
         dtsId,
@@ -2961,7 +2961,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                 (this.state.pipeline && this.props.detached)
               }
               onChange={(e) => this.setState({startIdle: e.target.checked})}
-              value={this.state.startIdle}>
+              checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.startIdleHint)}
