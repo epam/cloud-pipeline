@@ -76,7 +76,6 @@ public class KubernetesManager {
     private static final String DEFAULT_SVC_SCHEME = "http";
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
-    private static final String TRUNCATED_SIGN = "< ... Log was truncated, it is too big ...>";
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -184,7 +183,9 @@ public class KubernetesManager {
             final String tail = client.pods().inNamespace(kubeNamespace)
                     .withName(podId)
                     .tailingLines(limit + 1).getLog();
-            return isLogTruncated(tail, limit) ? TRUNCATED_SIGN + NEW_LINE + tail: tail;
+            return isLogTruncated(tail, limit)
+                    ? messageHelper.getMessage(MessageConstants.LOG_WAS_TRUNCATED) + NEW_LINE + tail
+                    : tail;
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
