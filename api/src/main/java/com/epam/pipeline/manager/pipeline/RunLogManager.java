@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.LogsFormatter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +62,9 @@ public class RunLogManager {
 
     @Autowired
     private KubernetesManager kubernetesManager;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     private RunLogManager self;
 
@@ -193,8 +198,9 @@ public class RunLogManager {
     }
 
     private List<RunLog> getPodLogs(PipelineRun run) {
+        int logLimit = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
         String logText = StringUtils.isBlank(run.getPodIP()) ?
-                "Node initialization in progress." : kubernetesManager.getPodLogs(run.getPodId());
+                "Node initialization in progress." : kubernetesManager.getPodLogs(run.getPodId(), logLimit);
         RunLog log = new RunLog();
         log.setRunId(run.getId());
         log.setStatus(TaskStatus.RUNNING);
