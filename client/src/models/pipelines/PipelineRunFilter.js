@@ -17,9 +17,12 @@
 import Remote from '../basic/Remote';
 import {observable, computed} from 'mobx';
 
+const REFRESH_INTERVAL = 5000;
+
 class PipelineRunFilter extends Remote {
   static defaultValue = [];
   static auto = false;
+  refreshInterval;
 
   constructor (params, loadLinks = false) {
     super();
@@ -39,6 +42,19 @@ class PipelineRunFilter extends Remote {
     this.params = params;
     this.url = `/run/filter?loadLinks=${loadLinks}`;
   };
+
+  startRefreshInterval () {
+    if (!this.refreshInterval) {
+      this.refreshInterval = setInterval(() => this.fetch(), REFRESH_INTERVAL);
+    }
+  }
+
+  clearRefreshInterval () {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+      delete this.refreshInterval;
+    }
+  }
 
   @observable _total = 0;
   @computed

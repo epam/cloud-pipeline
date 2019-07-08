@@ -15,9 +15,8 @@
  */
 
 import React, {Component} from 'react';
-import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Row, Col, Spin, Input, Button, Icon, Checkbox} from 'antd';
+import {Row, Col, Spin, Input, Button, Checkbox} from 'antd';
 import {AutoSizer, List} from 'react-virtualized';
 import AU from 'ansi_up';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -41,8 +40,7 @@ const formatNumber = (number, mask) => (mask + '' + number).substring((number + 
   };
 })
 @observer
-export default class LogList extends Component {
-
+class LogList extends Component {
   ansiUp = new AU();
 
   state = {
@@ -485,3 +483,5 @@ export default class LogList extends Component {
     );
   }
 }
+
+export default LogList;

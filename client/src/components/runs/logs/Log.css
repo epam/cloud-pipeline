@@ -185,3 +185,57 @@
   border-radius: 3px;
   background-color: #fafafa;
 }
+
+.nested-runs {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nested-runs,
+.nested-runs-header {
+  vertical-align: top;
+}
+
+.nested-run {
+  margin-right: 5px;
+  display: inline-block;
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.75);
+  padding: 0 2px;
+}
+
+.all-nested-runs {
+  margin-right: 5px;
+  display: inline-block;
+  padding: 0 2px;
+}
+
+.nested-run > div,
+.nested-run > i,
+.nested-run > span,
+.nested-run > b {
+  margin-right: 2px;
+}
+
+.nested-run > span.details {
+  margin-right: 0;
+}
+
+.nested-run > span.details::after {
+  content: ', ';
+}
+
+.nested-run > span.details:last-child::after {
+  content: none;
+}
+
+.nested-run:hover {
+  background-color: #f0f0f0;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.nested-run:hover .run-id {
+  text-decoration: underline;
+}

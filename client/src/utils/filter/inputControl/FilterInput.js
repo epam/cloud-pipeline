@@ -57,6 +57,7 @@ export default class FilterInput extends React.Component {
 
   static propTypes = {
     className: PropTypes.string,
+    defaultValue: PropTypes.string,
     onEnter: PropTypes.func,
     onEdit: PropTypes.func,
     keywords: PropTypes.array,
@@ -146,7 +147,7 @@ export default class FilterInput extends React.Component {
       spellcheck: true,
       extraKeys: defaultExtraKeys
     });
-    this.updateEditor();
+    this.updateEditor(this.props.defaultValue, (this.props.defaultValue || '').length);
   };
 
   updateEditor = (code = undefined, position = undefined) => {
