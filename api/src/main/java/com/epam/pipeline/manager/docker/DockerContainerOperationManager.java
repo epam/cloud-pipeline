@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -36,6 +37,7 @@ import com.epam.pipeline.manager.execution.PipelineExecutor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -75,6 +77,7 @@ public class DockerContainerOperationManager {
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
+    private static final String PAUSE_RUN_TASK = "PausePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
 
@@ -107,6 +110,9 @@ public class DockerContainerOperationManager {
 
     @Autowired
     private CloudRegionManager regionManager;
+
+    @Autowired
+    private RunLogManager runLogManager;
 
     @Value("${commit.run.scripts.root.url}")
     private String commitScriptsDistributionsUrl;
@@ -251,6 +257,7 @@ public class DockerContainerOperationManager {
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
             failRunAndTerminateNode(run, e);
+            addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
         }
     }
@@ -309,6 +316,18 @@ public class DockerContainerOperationManager {
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
         nodesManager.terminateNode(run.getInstance().getNodeName());
+    }
+
+    private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
+        final RunLog runLog = RunLog.builder()
+                .date(DateUtils.now())
+                .runId(run.getId())
+                .instance(run.getPodId())
+                .status(run.getStatus())
+                .taskName(taskName)
+                .logText(logMessage)
+                .build();
+        runLogManager.saveLog(runLog);
     }
 }
 
