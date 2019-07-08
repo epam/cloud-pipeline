@@ -111,6 +111,7 @@ fi
 CP_WDL_TASK_CMD="pipe run   --cluster_role worker \
                             --cluster_role_type additional \
                             --job_name ${CP_WDL_TASK_JOB_NAME} \
+                            --region-id ${CLOUD_REGION_ID} \
                             --quiet \
                             --yes \
                             --sync \
