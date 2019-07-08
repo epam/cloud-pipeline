@@ -155,6 +155,10 @@ function parametersCheck (form, parameters, state) {
         formValue[parameter.name] = parameter.value;
       }
     }
+  } else {
+    // 'form' value was not initialized yet -
+    // so it wasn't modified
+    return false;
   }
   if (formSystemParams && formSystemParams.keys) {
     for (let i = 0; i < formSystemParams.keys.length; i++) {
