@@ -177,7 +177,7 @@ public class GSBucketStorageHelper {
         final String bucketName = dataStorage.getPath();
 
         if (StringUtils.isBlank(version) && totally) {
-            deleteAllVersions(bucketName, path, client);
+            deleteAllFileVersions(bucketName, path, client);
             return;
         }
 
@@ -528,6 +528,18 @@ public class GSBucketStorageHelper {
         dataStorageFile.setDeleteMarker(isDeleted);
         dataStorageFile.setVersion(String.valueOf(blob.getGeneration()));
         return dataStorageFile;
+    }
+
+    private void deleteAllFileVersions(final String bucketName, final String path, final Storage client) {
+        final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(true),
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(path));
+        blobs.iterateAll().forEach(blob -> {
+            if (blob.getName().equals(path)) {
+                deleteBlob(blob, client, true);
+            }
+        });
     }
 
     private void deleteAllVersions(final String bucketName, final String path, final Storage client) {
