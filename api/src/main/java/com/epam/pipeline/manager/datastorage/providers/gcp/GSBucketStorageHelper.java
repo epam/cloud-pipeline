@@ -90,6 +90,7 @@ public class GSBucketStorageHelper {
     private static final String EMPTY_PREFIX = "";
     private static final int REGION_ZONE_LENGTH = -2;
     private static final String LIFECYCLE_CONTENT_TYPE = "application/json";
+    private static final String LATEST_VERSION_DELETION_MARKER = "_d";
 
     private static final byte[] EMPTY_FILE_CONTENT = new byte[0];
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
@@ -181,6 +182,10 @@ public class GSBucketStorageHelper {
             return;
         }
 
+        if (latestVersionHasDeletedMarker(version)) {
+            restoreFileVersion(dataStorage, path, cleanupVersion(version));
+            return;
+        }
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
         deleteBlob(blob, client, StringUtils.isNotBlank(version));
     }
@@ -255,6 +260,7 @@ public class GSBucketStorageHelper {
 
     public DataStorageItemContent getFileContent(final GSBucketStorage storage, final String path, final String version,
                                                  final Long maxDownloadSize) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
 
@@ -289,6 +295,7 @@ public class GSBucketStorageHelper {
 
     public DataStorageStreamingContent getFileStream(final GSBucketStorage storage, final String path,
                                                      final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
 
@@ -300,6 +307,7 @@ public class GSBucketStorageHelper {
 
     public DataStorageDownloadFileUrl generateDownloadUrl(final GSBucketStorage storage, final String path,
                                                           final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
@@ -314,6 +322,7 @@ public class GSBucketStorageHelper {
 
     public Map<String, String> listMetadata(final GSBucketStorage storage, final String path,
                                             final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
@@ -323,6 +332,7 @@ public class GSBucketStorageHelper {
 
     public Map<String, String> updateMetadata(final GSBucketStorage storage, final String path,
                                               final Map<String, String> tags, final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
 
         final String bucketName = storage.getPath();
@@ -342,6 +352,7 @@ public class GSBucketStorageHelper {
 
     public Map<String, String> deleteMetadata(final GSBucketStorage storage, final String path,
                                               final Set<String> tagsToDelete, final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Map<String, String> existingTags = listMetadata(storage, path, version);
         tagsToDelete.forEach(tag -> Assert.isTrue(existingTags.containsKey(tag), messageHelper.getMessage(
                 MessageConstants.ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST, tag))
@@ -352,6 +363,7 @@ public class GSBucketStorageHelper {
     }
 
     public void restoreFileVersion(final GSBucketStorage storage, final String path, final String version) {
+        checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
         final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
@@ -516,11 +528,26 @@ public class GSBucketStorageHelper {
                     .stream()
                     .map(blob -> createDataStorageFileWithVersion(blob, false))
                     .collect(Collectors.toMap(DataStorageFile::getVersion, Function.identity()));
-            filesByVersion.put(latestVersionFile.getVersion(), latestVersionFile.copy(latestVersionFile));
+            putLatestVersion(latestVersionFile, filesByVersion);
             latestVersionFile.setVersions(filesByVersion);
             items.add(latestVersionFile);
         });
         return items;
+    }
+
+    private void putLatestVersion(final DataStorageFile latestVersionFile,
+                                  final Map<String, AbstractDataStorageItem> filesByVersion) {
+        if (latestVersionFile.getDeleteMarker()) {
+            // The GCP returns the same version ID for current version and deleted
+            // This way we should build a new fake version with deleted marker: <version ID>_d
+            final DataStorageFile notDeletedLatestVersion = latestVersionFile.copy(latestVersionFile);
+            notDeletedLatestVersion.setDeleteMarker(false);
+            filesByVersion.put(latestVersionFile.getVersion(), notDeletedLatestVersion);
+
+            latestVersionFile.setVersion(latestVersionFile.getVersion() + LATEST_VERSION_DELETION_MARKER);
+            latestVersionFile.setSize(0L);
+        }
+        filesByVersion.put(latestVersionFile.getVersion(), latestVersionFile.copy(latestVersionFile));
     }
 
     private DataStorageFile createDataStorageFileWithVersion(final Blob blob, final boolean isDeleted) {
@@ -644,5 +671,22 @@ public class GSBucketStorageHelper {
         final Page<Blob> blobs = client.list(bucketName, Storage.BlobListOption.prefix(folderPath));
         Assert.isTrue(Objects.isNull(blobs) || !blobs.iterateAll().iterator().hasNext(), messageHelper
                 .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, folderPath, bucketName));
+    }
+
+    private String cleanupVersion(final String version) {
+        if (latestVersionHasDeletedMarker(version)) {
+            return version.replace(LATEST_VERSION_DELETION_MARKER, StringUtils.EMPTY);
+        }
+        return version;
+    }
+
+    private void checkVersionHasNotDeletedMarker(final String version) {
+        if (latestVersionHasDeletedMarker(version)) {
+            throw new DataStorageException("Operation is not allowed for deleted version");
+        }
+    }
+
+    private boolean latestVersionHasDeletedMarker(final String version) {
+        return StringUtils.isNotBlank(version) && version.endsWith(LATEST_VERSION_DELETION_MARKER);
     }
 }
