@@ -121,7 +121,7 @@ public class DtsRunner implements ExecutionRunner<DtsRunConfigurationEntry> {
 
         Pipeline pipeline = entry.getPipelineId() == null ? null : pipelineManager.load(entry.getPipelineId());
         PipelineRun run = pipelineRunManager.createPipelineRun(
-                entry.getPipelineVersion(), configuration, pipeline, null, entitiesIds, configurationId);
+                entry.getPipelineVersion(), configuration, pipeline, null, null, entitiesIds, configurationId);
 
         run.setConfigName(entry.getConfigName());
         run.setDockerImage(toolManager.getExternalToolName(run.getDockerImage()));

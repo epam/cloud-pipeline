@@ -19,19 +19,26 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
+import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolExecutionDeniedException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.EntityManager;
@@ -65,13 +72,25 @@ import java.util.Map;
 import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @DirtiesContext //TODO: find a better workaround, this may make tests slower. Maybe, create a special package for
                 // integration tests, so they will be executed one after another and the context will remain?
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 @Transactional
+@SuppressWarnings("PMD.TooManyStaticImports")
 public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String PARAM_NAME_1 = "param-1";
     private static final String ENV_VAR_NAME = "TEST_ENV";
@@ -81,8 +100,12 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final String SPOT = PriceType.SPOT.getLiteral();
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final long REGION_ID = 1L;
-    private static final long ANOTHER_REGION_ID = 2L;
+    private static final long NOT_ALLOWED_REGION_ID = 2L;
+    private static final long NON_DEFAULT_REGION_ID = 3L;
     private static final String NOT_ALLOWED_MESSAGE = "not allowed";
+    private static final long PARENT_RUN_ID = 5L;
+    private static final String INSTANCE_DISK = "1";
+    private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
 
     @Autowired
     private PipelineRunManager pipelineRunManager;
@@ -119,6 +142,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private ToolVersionManager toolVersionManager;
 
     @Autowired
+    private PipelineRunDao pipelineRunDao;
+
+    @Autowired
     private PreferenceManager preferenceManager;
 
     private static final String TEST_IMAGE = "testImage";
@@ -135,13 +161,15 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         notScannedTool.setImage(TEST_IMAGE);
         notScannedTool.setDefaultCommand("sleep");
 
-        AwsRegion defaultAwsRegion = ObjectCreatorUtils.getDefaultAwsRegion();
-        defaultAwsRegion.setId(REGION_ID);
+        AwsRegion defaultAwsRegion = defaultRegion(REGION_ID);
         when(cloudRegionManager.load(eq(REGION_ID))).thenReturn(defaultAwsRegion);
+        when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultAwsRegion);
+        when(cloudRegionManager.load(eq(NOT_ALLOWED_REGION_ID))).thenReturn(nonDefaultRegion(NOT_ALLOWED_REGION_ID));
+        when(cloudRegionManager.load(eq(NON_DEFAULT_REGION_ID))).thenReturn(nonDefaultRegion(NON_DEFAULT_REGION_ID));
 
         configuration = new PipelineConfiguration();
         configuration.setDockerImage(TEST_IMAGE);
-        configuration.setInstanceDisk("1");
+        configuration.setInstanceDisk(INSTANCE_DISK);
         configuration.setIsSpot(true);
         configuration.setCloudRegionId(defaultAwsRegion.getId());
 
@@ -153,9 +181,12 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(ANOTHER_REGION_ID), eq(true))).thenReturn(false);
         when(instanceOfferManager
-                .isToolInstanceAllowed(anyString(), any(), eq(ANOTHER_REGION_ID), eq(true))).thenReturn(false);
+                .isInstanceAllowed(anyString(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
+        when(instanceOfferManager
+                .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
+        when(instanceOfferManager
+                .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any())).thenReturn(true);
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
@@ -171,9 +202,22 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         AwsRegion region = new AwsRegion();
         region.setRegionCode("us-east-1");
-        doReturn(region).when(cloudRegionManager).loadDefaultRegion();
         doNothing().when(entityManager).setManagers(any());
         doNothing().when(resourceMonitoringManager).monitorResourceUsage();
+
+        PipelineRun parentRun = new PipelineRun();
+        parentRun.setId(PARENT_RUN_ID);
+        RunInstance parentRunInstance = new RunInstance();
+        parentRunInstance.setCloudRegionId(NON_DEFAULT_REGION_ID);
+        parentRunInstance.setCloudProvider(CloudProvider.AWS);
+        parentRun.setInstance(parentRunInstance);
+        parentRun.setStatus(TaskStatus.RUNNING);
+        parentRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        parentRun.setStartDate(DateUtils.now());
+        parentRun.setPodId("podId");
+        parentRun.setOwner("owner");
+        parentRun.setLastChangeCommitTime(DateUtils.now());
+        pipelineRunDao.createPipelineRun(parentRun);
     }
 
     /**
@@ -321,11 +365,12 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineValidatesToolInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(ANOTHER_REGION_ID);
+        configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchTool(INSTANCE_TYPE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(ANOTHER_REGION_ID), eq(true));
+        verify(instanceOfferManager)
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(NOT_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
@@ -339,11 +384,11 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test
     @WithMockUser
     public void testLaunchPipelineValidatesPipelineInstanceTypeInTheSpecifiedRegion() {
-        configuration.setCloudRegionId(ANOTHER_REGION_ID);
+        configuration.setCloudRegionId(NOT_ALLOWED_REGION_ID);
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(ANOTHER_REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NOT_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
@@ -393,6 +438,50 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), any());
     }
 
+    @Test
+    @WithMockUser
+    public void runShouldUseCloudRegionFromConfiguration() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
+
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void workerRunShouldUseCloudRegionFromConfiguration() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
+
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void runShouldUseDefaultCloudRegionIfThereIsNoParentRunAndNoRegionConfiguration() {
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion(), INSTANCE_TYPE, null);
+
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(REGION_ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedExplicitlyIfThereIsNoRegionConfiguration() {
+        final PipelineRun pipelineRun = launchPipeline(configurationWithoutRegion(), INSTANCE_TYPE, PARENT_RUN_ID);
+
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
+    }
+
+    @Test
+    @WithMockUser
+    public void workerRunShouldUseParentRunCloudRegionWithParentRunIdPassedAsParameterIfThereIsNoRegionConfiguration() {
+        final PipelineConfiguration configurationWithParentId = configurationWithoutRegion();
+        final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(PARENT_RUN_ID_PARAMETER, new PipeConfValueVO(Long.toString(PARENT_RUN_ID)));
+        configurationWithParentId.setParameters(parameters);
+        final PipelineRun pipelineRun = launchPipeline(configurationWithParentId, new Pipeline(), INSTANCE_TYPE, null);
+
+        assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
+    }
+
     private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
             String expectedValue) {
         Assert.assertEquals(expectedValue, actualParameters.get(0).getResolvedValue());
@@ -400,15 +489,40 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     }
 
     private void launchTool(final String instanceType) {
-        launchPipeline(null, instanceType);
+        launchPipeline(configuration, null, instanceType, null);
     }
 
     private void launchPipeline(final String instanceType) {
-        launchPipeline(new Pipeline(), instanceType);
+        launchPipeline(configuration, new Pipeline(), instanceType, null);
     }
 
-    private void launchPipeline(final Pipeline pipeline, final String instanceType) {
-        pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null, null,
-                null, null, null);
+    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType,
+                                       final Long parentRunId) {
+        return launchPipeline(configuration, new Pipeline(), instanceType, parentRunId);
+    }
+
+    private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
+                                       final String instanceType, final Long parentRunId) {
+        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null, null, null,
+                parentRunId, null, null, null);
+    }
+
+    private AwsRegion defaultRegion(final long id) {
+        final AwsRegion defaultAwsRegion = ObjectCreatorUtils.getDefaultAwsRegion();
+        defaultAwsRegion.setId(id);
+        return defaultAwsRegion;
+    }
+
+    private AwsRegion nonDefaultRegion(final long id) {
+        final AwsRegion parentAwsRegion = defaultRegion(id);
+        parentAwsRegion.setDefault(false);
+        return parentAwsRegion;
+    }
+
+    private PipelineConfiguration configurationWithoutRegion() {
+        final PipelineConfiguration configurationWithoutRegion = new PipelineConfiguration();
+        configurationWithoutRegion.setDockerImage(TEST_IMAGE);
+        configurationWithoutRegion.setInstanceDisk(INSTANCE_DISK);
+        return configurationWithoutRegion;
     }
 }
