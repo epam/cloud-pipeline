@@ -177,16 +177,16 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                 configuration.getInstanceType(), Integer.valueOf(configuration.getInstanceDisk()), PRICE_PER_HOUR);
 
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(notScannedTool);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(true))).thenReturn(true);
-        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID), eq(false))).thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(true))).thenReturn(true);
-        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID), eq(false))).thenReturn(true);
+        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID))).thenReturn(true);
+        when(instanceOfferManager.isInstanceAllowed(anyString(), eq(REGION_ID))).thenReturn(true);
+        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID))).thenReturn(true);
+        when(instanceOfferManager.isToolInstanceAllowed(anyString(), any(), eq(REGION_ID))).thenReturn(true);
         when(instanceOfferManager
-                .isInstanceAllowed(anyString(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
+                .isInstanceAllowed(anyString(), eq(NOT_ALLOWED_REGION_ID))).thenReturn(false);
         when(instanceOfferManager
-                .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID), eq(true))).thenReturn(false);
+                .isToolInstanceAllowed(anyString(), any(), eq(NOT_ALLOWED_REGION_ID))).thenReturn(false);
         when(instanceOfferManager
-                .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID), eq(false))).thenReturn(true);
+                .isInstanceAllowed(anyString(), eq(NON_DEFAULT_REGION_ID))).thenReturn(true);
         when(instanceOfferManager.isPriceTypeAllowed(anyString(), any())).thenReturn(true);
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(BehaviorSubject.create());
         when(instanceOfferManager.getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong()))
@@ -369,7 +369,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchTool(INSTANCE_TYPE));
         verify(instanceOfferManager)
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(NOT_ALLOWED_REGION_ID), eq(true));
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), any(), eq(NOT_ALLOWED_REGION_ID));
     }
 
     @Test
@@ -387,7 +387,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         assertThrows(e -> e.getMessage().contains(NOT_ALLOWED_MESSAGE),
             () -> launchPipeline(INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NOT_ALLOWED_REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NOT_ALLOWED_REGION_ID));
     }
 
     @Test
