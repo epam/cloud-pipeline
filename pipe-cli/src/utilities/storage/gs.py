@@ -467,6 +467,8 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
             destination_key = os.path.join(destination_wrapper.path, relative_path)
         else:
             destination_key = destination_wrapper.path
+        if source_key.endswith(StorageOperations.PATH_SEPARATOR):
+            return
         if skip_existing:
             remote_size = source_wrapper.get_list_manager().get_file_size(source_key)
             local_size = StorageOperations.get_local_file_size(destination_key)
