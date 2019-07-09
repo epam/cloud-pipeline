@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# The script is a transfer wrapper provided by Cloud Pipeline.
+#
+# It checks transferring size of storage mount related operations. If the transferring file size exceeds the maximum
+# allowed value then the warning message will be shown.
+#
+# It takes the required transfer command (cp, mv) absolute path as a first argument and all its arguments as
+# the following arguments.
+#
+# It uses CP_ALLOWED_MOUNT_TRANSFER_SIZE to get a maximum allowed transfer size.
+#
+# See https://github.com/epam/cloud-pipeline/issues/500 for more information.
+
+function escape_slashes() {
+    _STRING="$1"
+    echo "${_STRING//\//\/}"
+}
+
+function get_size() {
+    _FILE_OR_DIRECTORY="$1"
+    echo $(du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
+}
+
+function resolve_symlinks() {
+    _FILE_OR_DIRECTORY="$1"
+    echo $(readlink -f "$_FILE_OR_DIRECTORY")
+}
+
+function storage_mounted_path() {
+    _FILE_OR_DIRECTORY="$1"
+    IFS=',' read -r -a _MOUNTED_PATHS <<< "$2"
+    for MOUNTED_PATH in "${_MOUNTED_PATHS[@]}"
+    do
+        if [[ "$_FILE_OR_DIRECTORY" == "$MOUNTED_PATH"* ]]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function allowed_transfer() {
+    _FORWARDING_ARGUMENTS="$1"
+    _ALLOWED_TRANSFER_SIZE="$2"
+    _MOUNTED_PATHS="$3"
+
+    if [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] || [[ -z "$_MOUNTED_PATHS" ]]
+    then
+        return 0
+    fi
+
+    _FORWARDING_ARGUMENTS=($_FORWARDING_ARGUMENTS)
+    ARGUMENTS_NUMBER="${#_FORWARDING_ARGUMENTS[@]}"
+    SOURCE_ARGUMENT_INDEX=$((ARGUMENTS_NUMBER - 2))
+    DESTINATION_ARGUMENT_INDEX=$((ARGUMENTS_NUMBER - 1))
+    SOURCE="${_FORWARDING_ARGUMENTS[SOURCE_ARGUMENT_INDEX]}"
+    DESTINATION="${_FORWARDING_ARGUMENTS[DESTINATION_ARGUMENT_INDEX]}"
+
+    if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
+    then
+        SOURCE_SIZE=$(get_size "$SOURCE")
+        if (( SOURCE_SIZE > _ALLOWED_TRANSFER_SIZE ))
+        then
+            RESOLVED_SOURCE=$(resolve_symlinks "$SOURCE")
+            RESOLVED_DESTINATION=$(resolve_symlinks "$DESTINATION")
+            if storage_mounted_path "$RESOLVED_SOURCE" "$_MOUNTED_PATHS" || storage_mounted_path "$RESOLVED_DESTINATION" "$_MOUNTED_PATHS"
+            then
+                return 1
+            fi
+        fi
+    fi
+    return 0
+}
+
+MOUNTED_PATHS="$1"
+MOUNT_ROOT="$2"
+UNDERLYING_TRANSFER_COMMAND="$3"
+shift 3 # removes first three arguments from the arguments list
+FORWARDING_ARGUMENTS="$@"
+
+ALLOWED_TRANSFER_SIZE="$CP_ALLOWED_MOUNT_TRANSFER_SIZE"
+
+if ! allowed_transfer "$FORWARDING_ARGUMENTS" "$ALLOWED_TRANSFER_SIZE" "$MOUNTED_PATHS"
+then
+    UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
+    ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
+    STORAGE_PREFIX=$(escape_slashes "cp://")
+    SUBSTITUTED_FORWARDING_ARGUMENTS=$(echo "$FORWARDING_ARGUMENTS" | sed "s/$ESCAPED_MOUNT_ROOT/$STORAGE_PREFIX/")
+    cat 1>&2 <<EOF
+
+                    CLOUD PIPELINE TRANSFER MANAGEMENT WARNING
+
+     You are going to transfer data using FUSE-mounted object storage.
+     Data transfer exceeds ${ALLOWED_TRANSFER_SIZE} Gb. Such operation may not work properly.
+     For such data volumes please use the \`pipe\` command interface:
+
+     pipe storage ${UNDERLYING_TRANSFER_COMMAND_NAME} ${SUBSTITUTED_FORWARDING_ARGUMENTS}
+
+     Please refer to the following GitHub issue for the details:
+     https://github.com/epam/cloud-pipeline/issues/500
+
+EOF
+fi
+
+"$UNDERLYING_TRANSFER_COMMAND" $FORWARDING_ARGUMENTS

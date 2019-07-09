@@ -416,6 +416,28 @@ function create_sys_dir {
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
+
+function initialise_restrictors {
+    RESTRICTING_COMMANDS="$1"
+    RESTRICTOR="$2"
+    RESTRICTORS_BIN="$3"
+    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$RESTRICTING_COMMANDS"
+    for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
+    do
+        COMMAND_PATH=$(command -v "$COMMAND")
+        if [[ "$?" == 0 ]]
+        then
+            COMMAND_WRAPPER_PATH="$RESTRICTORS_BIN/$COMMAND"
+            COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
+            if [[ "$?" == 0 ]]
+            then
+                echo "$COMMON_REPO_DIR/shell/$RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
+            fi
+        fi
+    done
+}
+
 ######################################################
 
 
@@ -475,7 +497,8 @@ if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
+     get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
+                                                                coreutils"
     eval "$_DEPS_INSTALL_COMMAND"
 fi
 
@@ -1070,33 +1093,36 @@ echo
 
 
 ######################################################
-echo "Create package manager restriction wrappers"
+echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
 CP_USR_BIN="/usr/cpbin"
 
 mkdir -p "$CP_USR_BIN"
-IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MANAGERS"
 
-for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
+initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
+
+# TODO 09.07.19: Retrieve all fuse mounts from "df -T".
+CP_RESTRICTING_FUSES="gcsfuse,goofys,s3fs,blobfuse"
+RESTRICTING_FUSES="${CP_RESTRICTING_FUSES//,/\|}" # Replace all commas with logical OR symbol
+MOUNTED_PATHS=""
+for fuse_process in $(ps aux | grep "$RESTRICTING_FUSES" | grep "$DATA_STORAGE_MOUNT_ROOT")
 do
-    MANAGER_PATH=$(command -v "$MANAGER")
-    if [[ "$?" == 0 ]]
-    then
-        MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
-        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
-        if [[ "$?" == 0 ]]
+    for process_column in $(echo ${fuse_process})
+    do
+        if [[ "$process_column" == "$DATA_STORAGE_MOUNT_ROOT/"* ]]
         then
-            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
-            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
+            MOUNTED_PATHS+="$process_column,"
         fi
-    fi
+    done
 done
+
+initialise_restrictors "cp,mv" "transfer_restrictor $MOUNTED_PATHS $DATA_STORAGE_MOUNT_ROOT" "$CP_USR_BIN"
 
 echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
 
-echo "Finished creating package manager restriction wrappers"
+echo "Finished creating restriction wrappers"
 
 echo "------"
 echo
