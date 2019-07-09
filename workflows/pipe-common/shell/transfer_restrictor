@@ -41,12 +41,12 @@ function resolve_symlinks() {
     echo $(readlink -f "$_FILE_OR_DIRECTORY")
 }
 
-function storage_mounted_path() {
-    _FILE_OR_DIRECTORY="$1"
-    IFS=',' read -r -a _MOUNTED_PATHS <<< "$2"
-    for MOUNTED_PATH in "${_MOUNTED_PATHS[@]}"
+function has_prefix() {
+    _STRING="$1"
+    _PREFIXES=($2)
+    for PREFIX in "${_PREFIXES[@]}"
     do
-        if [[ "$_FILE_OR_DIRECTORY" == "$MOUNTED_PATH"* ]]
+        if [[ "$_STRING" == "$PREFIX"* ]]
         then
             return 0
         fi
@@ -58,7 +58,6 @@ function allowed_transfer() {
     _FORWARDING_ARGUMENTS="$1"
     _ALLOWED_TRANSFER_SIZE="$2"
     _MOUNTED_PATHS="$3"
-
     if [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] || [[ -z "$_MOUNTED_PATHS" ]]
     then
         return 0
@@ -70,7 +69,6 @@ function allowed_transfer() {
     DESTINATION_ARGUMENT_INDEX=$((ARGUMENTS_NUMBER - 1))
     SOURCE="${_FORWARDING_ARGUMENTS[SOURCE_ARGUMENT_INDEX]}"
     DESTINATION="${_FORWARDING_ARGUMENTS[DESTINATION_ARGUMENT_INDEX]}"
-
     if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
     then
         SOURCE_SIZE=$(get_size "$SOURCE")
@@ -78,7 +76,8 @@ function allowed_transfer() {
         then
             RESOLVED_SOURCE=$(resolve_symlinks "$SOURCE")
             RESOLVED_DESTINATION=$(resolve_symlinks "$DESTINATION")
-            if storage_mounted_path "$RESOLVED_SOURCE" "$_MOUNTED_PATHS" || storage_mounted_path "$RESOLVED_DESTINATION" "$_MOUNTED_PATHS"
+            if has_prefix "$RESOLVED_SOURCE" "$_MOUNTED_PATHS" \
+                || has_prefix "$RESOLVED_DESTINATION" "$_MOUNTED_PATHS"
             then
                 return 1
             fi
@@ -113,6 +112,8 @@ then
 
      Please refer to the following GitHub issue for the details:
      https://github.com/epam/cloud-pipeline/issues/500
+
+     The operation is continued...
 
 EOF
 fi

@@ -416,7 +416,6 @@ function create_sys_dir {
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
-
 function initialise_restrictors {
     RESTRICTING_COMMANDS="$1"
     RESTRICTOR="$2"
@@ -436,6 +435,10 @@ function initialise_restrictors {
             fi
         fi
     done
+}
+
+function list_fuse_mounts() {
+    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }')
 }
 
 ######################################################
@@ -1103,22 +1106,11 @@ mkdir -p "$CP_USR_BIN"
 
 initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
-# TODO 09.07.19: Retrieve all fuse mounts from "df -T".
-CP_RESTRICTING_FUSES="gcsfuse,goofys,s3fs,blobfuse"
-RESTRICTING_FUSES="${CP_RESTRICTING_FUSES//,/\|}" # Replace all commas with logical OR symbol
-MOUNTED_PATHS=""
-for fuse_process in $(ps aux | grep "$RESTRICTING_FUSES" | grep "$DATA_STORAGE_MOUNT_ROOT")
-do
-    for process_column in $(echo ${fuse_process})
-    do
-        if [[ "$process_column" == "$DATA_STORAGE_MOUNT_ROOT/"* ]]
-        then
-            MOUNTED_PATHS+="$process_column,"
-        fi
-    done
-done
-
-initialise_restrictors "cp,mv" "transfer_restrictor $MOUNTED_PATHS $DATA_STORAGE_MOUNT_ROOT" "$CP_USR_BIN"
+if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
+then
+    MOUNTED_PATHS=$(list_fuse_mounts)
+    initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
+fi
 
 echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
 
