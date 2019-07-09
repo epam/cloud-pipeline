@@ -54,36 +54,85 @@ function has_prefix() {
     return 1
 }
 
+function resolve_sources_and_destination() {
+    _FORWARDING_ARGUMENTS=($1)
+    DESTINATION=""
+    SOURCES=()
+    for INDEX in "${!_FORWARDING_ARGUMENTS[@]}"
+    do
+        # TODO 09.07.19: Filter out all non-source or non-destination positional arguments.
+        ARGUMENT="${_FORWARDING_ARGUMENTS[INDEX]}"
+        if [[ "$ARGUMENT" == "-t" ]]
+        then
+            NEXT_INDEX=$((INDEX + 1))
+            NEXT_ARGUMENT="${_FORWARDING_ARGUMENTS[NEXT_INDEX]}"
+            DESTINATION=$(resolve_symlinks "$NEXT_ARGUMENT")
+        elif [[ "$ARGUMENT" != -* ]]
+        then
+            RESOLVED_ARGUMENT=$(resolve_symlinks "$ARGUMENT")
+            if [[ "$RESOLVED_ARGUMENT" != "$DESTINATION" ]]
+            then
+                SOURCES+=("$RESOLVED_ARGUMENT")
+            fi
+        fi
+    done
+    if (( "${#SOURCES[@]}" ))
+    then
+        if [[ -z "$DESTINATION" ]]
+        then
+            DESTINATION="${SOURCES[${#SOURCES[@]}-1]}"
+            unset "SOURCES[${#SOURCES[@]}-1]"
+        fi
+        echo "${SOURCES[@]} $DESTINATION"
+    fi
+}
+
 function allowed_transfer() {
-    _FORWARDING_ARGUMENTS="$1"
-    _ALLOWED_TRANSFER_SIZE="$2"
-    _MOUNTED_PATHS="$3"
-    if [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] || [[ -z "$_MOUNTED_PATHS" ]]
+    _SOURCES=($1)
+    _DESTINATION="$2"
+    _ALLOWED_TRANSFER_SIZE="$3"
+    _MOUNTED_PATHS="$4"
+    if [[ -z "$_SOURCES" ]] \
+    || [[ -z "$_DESTINATION" ]] \
+    || [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] \
+    || [[ -z "$_MOUNTED_PATHS" ]]
     then
         return 0
     fi
 
-    _FORWARDING_ARGUMENTS=($_FORWARDING_ARGUMENTS)
-    ARGUMENTS_NUMBER="${#_FORWARDING_ARGUMENTS[@]}"
-    SOURCE_ARGUMENT_INDEX=$((ARGUMENTS_NUMBER - 2))
-    DESTINATION_ARGUMENT_INDEX=$((ARGUMENTS_NUMBER - 1))
-    SOURCE="${_FORWARDING_ARGUMENTS[SOURCE_ARGUMENT_INDEX]}"
-    DESTINATION="${_FORWARDING_ARGUMENTS[DESTINATION_ARGUMENT_INDEX]}"
-    if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
-    then
-        SOURCE_SIZE=$(get_size "$SOURCE")
-        if (( SOURCE_SIZE > _ALLOWED_TRANSFER_SIZE ))
+    RESTRICTED_TRANSFER_SIZE=""
+    for SOURCE in "${_SOURCES[@]}"
+    do
+        if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
         then
-            RESOLVED_SOURCE=$(resolve_symlinks "$SOURCE")
-            RESOLVED_DESTINATION=$(resolve_symlinks "$DESTINATION")
-            if has_prefix "$RESOLVED_SOURCE" "$_MOUNTED_PATHS" \
-                || has_prefix "$RESOLVED_DESTINATION" "$_MOUNTED_PATHS"
+            SOURCE_SIZE=$(get_size "$SOURCE")
+            if (( SOURCE_SIZE > _ALLOWED_TRANSFER_SIZE ))
             then
-                return 1
+                RESTRICTED_TRANSFER_SIZE="$SOURCE_SIZE"
+                if has_prefix "$SOURCE" "$_MOUNTED_PATHS"
+                then
+                    return 1
+                fi
             fi
         fi
+    done
+
+    if [[ "$RESTRICTED_TRANSFER_SIZE" ]]
+    then
+        if has_prefix "$_DESTINATION" "$_MOUNTED_PATHS"
+        then
+            return 1
+        fi
     fi
+
     return 0
+}
+
+function replace_all() {
+    _STRING="$1"
+    _PATTERN="$2"
+    _REPLACEMENT="$3"
+    echo "$_STRING" | sed "s/$_PATTERN/$_REPLACEMENT/"
 }
 
 MOUNTED_PATHS="$1"
@@ -91,24 +140,36 @@ MOUNT_ROOT="$2"
 UNDERLYING_TRANSFER_COMMAND="$3"
 shift 3 # removes first three arguments from the arguments list
 FORWARDING_ARGUMENTS="$@"
-
 ALLOWED_TRANSFER_SIZE="$CP_ALLOWED_MOUNT_TRANSFER_SIZE"
 
-if ! allowed_transfer "$FORWARDING_ARGUMENTS" "$ALLOWED_TRANSFER_SIZE" "$MOUNTED_PATHS"
+SOURCES_AND_DESTINATION=($(resolve_sources_and_destination "$FORWARDING_ARGUMENTS"))
+if (( "${#SOURCES_AND_DESTINATION[@]}" ))
 then
-    UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
-    ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
-    STORAGE_PREFIX=$(escape_slashes "cp://")
-    SUBSTITUTED_FORWARDING_ARGUMENTS=$(echo "$FORWARDING_ARGUMENTS" | sed "s/$ESCAPED_MOUNT_ROOT/$STORAGE_PREFIX/")
-    cat 1>&2 <<EOF
+    DESTINATION="${SOURCES_AND_DESTINATION[${#SOURCES_AND_DESTINATION[@]}-1]}"
+    SOURCES=("${SOURCES_AND_DESTINATION[@]}")
+    unset "SOURCES[${#SOURCES[@]}-1]"
+
+    if ! allowed_transfer "$SOURCES" "$DESTINATION" "$ALLOWED_TRANSFER_SIZE" "$MOUNTED_PATHS"
+    then
+        UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
+        ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
+        STORAGE_PREFIX=$(escape_slashes "cp://")
+        SUBSTITUTED_DESTINATION=$(replace_all "$DESTINATION" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
+        OFFERED_COMMAND_REPLACEMENT=""
+        for SOURCE in "${SOURCES[@]}"
+        do
+            SUBSTITUTED_SOURCE=$(replace_all "$SOURCE" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
+            OFFERED_COMMAND_REPLACEMENT="$OFFERED_COMMAND_REPLACEMENT
+     pipe storage $UNDERLYING_TRANSFER_COMMAND_NAME $SUBSTITUTED_SOURCE $SUBSTITUTED_DESTINATION"
+        done
+        cat 1>&2 <<EOF
 
                     CLOUD PIPELINE TRANSFER MANAGEMENT WARNING
 
      You are going to transfer data using FUSE-mounted object storage.
      Data transfer exceeds ${ALLOWED_TRANSFER_SIZE} Gb. Such operation may not work properly.
      For such data volumes please use the \`pipe\` command interface:
-
-     pipe storage ${UNDERLYING_TRANSFER_COMMAND_NAME} ${SUBSTITUTED_FORWARDING_ARGUMENTS}
+     ${OFFERED_COMMAND_REPLACEMENT}
 
      Please refer to the following GitHub issue for the details:
      https://github.com/epam/cloud-pipeline/issues/500
@@ -116,6 +177,7 @@ then
      The operation is continued...
 
 EOF
+    fi
 fi
 
 "$UNDERLYING_TRANSFER_COMMAND" $FORWARDING_ARGUMENTS
