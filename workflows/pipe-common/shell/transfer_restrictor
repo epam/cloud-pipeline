@@ -29,39 +29,14 @@
 
 set -o pipefail
 
-function escape_slashes() {
-    _STRING="$1"
-    echo "${_STRING//\//\/}"
-}
-
-function get_size() {
-    _FILE_OR_DIRECTORY="$1"
-    _TIMEOUT="$2"
-    TOTAL_SIZE=$(timeout "$_TIMEOUT"s du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
-    if [[ "$?" != 0 ]]
-    then
-        # Assume that the directory size is pretty big if du command has been timed out.
-        let TOTAL_SIZE="(2**63)-1"
-    fi
-    echo "$TOTAL_SIZE"
-}
-
 function resolve_symlinks() {
     _FILE_OR_DIRECTORY="$1"
     echo $(readlink -f "$_FILE_OR_DIRECTORY")
 }
 
-function has_prefix() {
+function with_trailing_delimiter() {
     _STRING="$1"
-    _PREFIXES=($2)
-    for PREFIX in "${_PREFIXES[@]}"
-    do
-        if [[ "$_STRING" == "$PREFIX"* ]]
-        then
-            return 0
-        fi
-    done
-    return 1
+    echo "${_STRING%/}/"
 }
 
 function resolve_sources_and_destination() {
@@ -72,12 +47,12 @@ function resolve_sources_and_destination() {
     do
         # TODO 09.07.19: Filter out all non-source or non-destination positional arguments.
         ARGUMENT="${_FORWARDING_ARGUMENTS[INDEX]}"
-        if [[ "$ARGUMENT" == "-t" ]]
+        if [[ "$ARGUMENT" == "-t" ]] || [[ "$ARGUMENT" == "--target-directory" ]]
         then
             NEXT_INDEX=$((INDEX + 1))
             NEXT_ARGUMENT="${_FORWARDING_ARGUMENTS[NEXT_INDEX]}"
             DESTINATION=$(resolve_symlinks "$NEXT_ARGUMENT")
-            DESTINATION="${DESTINATION%/}/"
+            DESTINATION=$(with_trailing_delimiter "$DESTINATION")
         elif [[ "$ARGUMENT" != -* ]]
         then
             RESOLVED_ARGUMENT=$(resolve_symlinks "$ARGUMENT")
@@ -97,10 +72,35 @@ function resolve_sources_and_destination() {
         if (( "${#SOURCES[@]}" > 1 ))
         then
             # Add trailing delimiter if there are multiple sources.
-            DESTINATION="${DESTINATION%/}/"
+            DESTINATION=$(with_trailing_delimiter "$DESTINATION")
         fi
         echo "${SOURCES[@]} $DESTINATION"
     fi
+}
+
+function has_prefix() {
+    _STRING="$1"
+    _PREFIXES=($2)
+    for PREFIX in "${_PREFIXES[@]}"
+    do
+        if [[ "$_STRING" == "$PREFIX"* ]]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function get_size() {
+    _FILE_OR_DIRECTORY="$1"
+    _TIMEOUT="$2"
+    TOTAL_SIZE=$(timeout "$_TIMEOUT"s du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
+    if [[ "$?" != 0 ]]
+    then
+        # Assume that the directory size is pretty big if du command has been timed out.
+        let TOTAL_SIZE="(2**63)-1"
+    fi
+    echo "$TOTAL_SIZE"
 }
 
 function allowed_transfer() {
@@ -146,6 +146,24 @@ function allowed_transfer() {
     return 0
 }
 
+function escape_slashes() {
+    _STRING="$1"
+    echo "${_STRING//\//\/}"
+}
+
+function root_mount_path() {
+    _PATH="$1"
+    _MOUNTED_PATHS=($2)
+    for MOUNT_PATH in "${_MOUNTED_PATHS[@]}"
+    do
+        if [[ "$_PATH" == "$MOUNT_PATH" ]]
+        then
+            return 0
+        fi
+    done
+    return 1
+}
+
 function replace_all() {
     _STRING="$1"
     _PATTERN="$2"
@@ -167,17 +185,22 @@ then
     DESTINATION="${SOURCES_AND_DESTINATION[${#SOURCES_AND_DESTINATION[@]}-1]}"
     SOURCES=("${SOURCES_AND_DESTINATION[@]}")
     unset "SOURCES[${#SOURCES[@]}-1]"
+    SOURCES_STRING="${SOURCES[@]}"
 
-    if ! allowed_transfer "$SOURCES" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT"
+    if ! allowed_transfer "$SOURCES_STRING" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT"
     then
         UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
         ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
         STORAGE_PREFIX=$(escape_slashes "cp://")
+        if root_mount_path "$DESTINATION" "$MOUNTED_PATHS"
+        then
+            # Workaround for pipe cli issue: https://github.com/epam/cloud-pipeline/issues/510
+            DESTINATION=$(with_trailing_delimiter "$DESTINATION")
+        fi
         SUBSTITUTED_DESTINATION=$(replace_all "$DESTINATION" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
         if [[ -d "$SUBSTITUTED_DESTINATION" ]]
         then
-            # TODO 10.07.19: Extract trailing slash function.
-            SUBSTITUTED_DESTINATION="${SUBSTITUTED_DESTINATION%/}/"
+            SUBSTITUTED_DESTINATION=$(with_trailing_delimiter "$SUBSTITUTED_DESTINATION")
         fi
         OFFERED_COMMAND_REPLACEMENT=""
         for SOURCE in "${SOURCES[@]}"
