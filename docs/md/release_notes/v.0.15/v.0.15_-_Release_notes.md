@@ -18,6 +18,13 @@
 - [Web GUI caching](#web-gui-caching)
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
+- [Displaying information on the nested runs](#displaying-information-on-the-nested-runs-within-a-parent-log-form)
+- [pipe CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
+- [pipe configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
+- [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
+
+***
+
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Incorrect behavior of the global search filter](#incorrect-behavior-of-the-global-search-filter)
     - ["COMMITING..." status hangs](#commiting-status-hangs)
@@ -26,6 +33,9 @@
     - [Missing region while estimating a run price](#missing-region-while-estimating-a-run-price)
     - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
     - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipeline_user-and-role-entities-for-metadata-api)
+    - [Getting logs from Kubernetes may cause `OutOfMemory` error](#getting-logs-from-kubernetes-may-cause-outofmemory-error)
+
+***
 
 ## Microsoft Azure Support
 
@@ -346,6 +356,84 @@ Both scenarios are flaky and almost impossible to reproduce. To provide more ins
 
 See an example [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#console-output).
 
+## Displaying information on the nested runs within a parent log form
+
+Previously, if user launched a run, that has a number of children (e.g. a cluster run or any other case with the parent-id specified), he could view the children list only from "Runs" page.
+
+In **`v.0.15`** a convenient opportunity to view the list of children directly in the parent's run logs form is implemented:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_NestedRunsIcons_1.png)
+
+For each child-run in the list the following information is displayed:
+
+- State icons with help tooltips when hovering over them
+- Pipeline name and version/docker image and version
+- Run time duration
+
+Similar as a parent-run state, states for nested runs are automatically updated without page refreshing. So, you can watch for them in real time.
+
+If you click any of the children-runs, you will navigate to its log page.
+
+That feature is implemented for the comleted runs too:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_NestedRunsIcons_2.png)
+
+## pipe CLI warnings on the JWT expiration
+
+By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
+
+In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an information on the JWT token expiration:
+
+- When `pipe configure` command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_1.png)
+- When `--version` option is specified - `pipe` prints dates of issue and expiration for the currently used token:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_2.png)
+- When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
+
+## pipe configuration for using NTLM Authentication Proxy
+
+For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
+
+For that, several new options were added to `pipe configure` command:
+
+- `-nt` or `--proxy-ntlm` - flag that enable NTLM proxy support
+- `-nu` or `--proxy-ntlm-user` - username for NTLM proxy authorization
+- `-np` or `--proxy-ntlm-pass` - password for NTLM proxy authorization
+- `-nd` or `--proxy-ntlm-domain` - domain for NTLM proxy authorization
+
+If `--proxy-ntlm` is set, `pipe` will try to get the proxy value from the environment variables or `--proxy` option (`--proxy` option has a higher priority).  
+If `--proxy-ntlm-user` and `--proxy-ntlm-pass` options are not set - user will be prompted for username/password in an interactive manner.  
+
+Valid configuration examples:
+
+- User will be prompted for NTLM Proxy Username, Password and Domain:
+
+```bash
+pipe configure --proxy-ntlm
+...
+Username for the proxy NTLM authentication: user1
+Domain of the user1 user: ''
+Password of the user1 user:
+```
+
+- Use `http://myproxy:3128` as the "original" proxy address. User will not be prompted for NTLM credentials:
+
+```bash
+pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
+```
+
+## Environment Modules support for the Cloud Pipeline runs
+
+The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
+
+In current version, an ability to configure the `Modules` support for the compute jobs is introduced, if this is required by any use case.
+
+For using facilities of the `Environment Modules` package, two new system parameters were added to the Cloud Pipeline:
+
+- **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
+- **`CP_CAP_MODULES_FILES_DIR`** _(string)_ - sets the path to source `modulefiles`
+
+If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` system parameter. If that parameter is not set - default `modulefiles` location will be used.
+
 ***
 
 ## Notable Bug fixes
@@ -399,3 +487,10 @@ Web GUI interface was not providing an option to select a region when adding an 
 All authorized users were permitted to browse the metadata of `users` and `roles` entities. But those entries may contain a sensitive data, that shall not be shared across users.
 
 Now a general user may list only personal `user-level` metadata. Administrators may list both `users` and `roles` metadata across all entries.
+
+### Getting logs from Kubernetes may cause `OutOfMemory` error
+
+[#468](https://github.com/epam/cloud-pipeline/issues/468)
+
+For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause `OutOfMemory` error, since Kubernetes library tries to load it into a single String object.  
+In current version, a new system preference was introduced: **`system.logs.line.limit`**. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.
