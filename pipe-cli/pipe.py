@@ -856,6 +856,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
 @click.option('-sl', '--symlinks', required=False, default="follow",
+              type=click.Choice(['follow', 'filter', 'skip']),
               help="Describe symlinks processing strategy for local sources. Possible values: "
               "follow - follow symlinks (default); "
               "skip - do not follow symlinks; "

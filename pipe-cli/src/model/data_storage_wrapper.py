@@ -46,10 +46,6 @@ class AllowedSymlinkValues(object):
     SKIP = 'skip'
     FILTER = 'filter'
 
-    @staticmethod
-    def get_values():
-        return [AllowedSymlinkValues.FOLLOW, AllowedSymlinkValues.SKIP, AllowedSymlinkValues.FILTER]
-
 
 class DataStorageWrapper(object):
 

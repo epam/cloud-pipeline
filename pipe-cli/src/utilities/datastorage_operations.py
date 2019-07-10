@@ -33,8 +33,6 @@ class DataStorageOperations(object):
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, clean=False,
            skip_existing=False):
         try:
-            cls.validate_symlinks(symlinks)
-
             source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
             destination_wrapper = DataStorageWrapper.get_wrapper(destination)
             files_to_copy = []
@@ -434,11 +432,3 @@ class DataStorageOperations(object):
                 path = splitted[0]
                 size = long(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
-
-    @classmethod
-    def validate_symlinks(cls, symlinks_strategy):
-        allowed_values = AllowedSymlinkValues.get_values()
-        if symlinks_strategy and symlinks_strategy not in allowed_values:
-            click.echo("Incorrect symlink value '%s'. Possible values: %s" % (symlinks_strategy,
-                                                                              ', '.join(allowed_values)), err=True)
-            sys.exit(1)
