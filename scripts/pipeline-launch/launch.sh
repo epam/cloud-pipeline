@@ -417,28 +417,29 @@ function create_sys_dir {
 }
 
 function initialise_restrictors {
-    RESTRICTING_COMMANDS="$1"
-    RESTRICTOR="$2"
-    RESTRICTORS_BIN="$3"
-    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$RESTRICTING_COMMANDS"
+    local _RESTRICTING_COMMANDS="$1"
+    local _RESTRICTOR="$2"
+    local _RESTRICTORS_BIN="$3"
+    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$_RESTRICTING_COMMANDS"
     for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
     do
         COMMAND_PATH=$(command -v "$COMMAND")
         if [[ "$?" == 0 ]]
         then
-            COMMAND_WRAPPER_PATH="$RESTRICTORS_BIN/$COMMAND"
+            COMMAND_WRAPPER_PATH="$_RESTRICTORS_BIN/$COMMAND"
             COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
             if [[ "$?" == 0 ]]
             then
-                echo "$COMMON_REPO_DIR/shell/$RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                echo "$COMMON_REPO_DIR/shell/$_RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
                 chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
             fi
         fi
     done
 }
 
-function list_fuse_mounts() {
-    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }')
+function list_storage_mounts() {
+    local _MOUNT_ROOT="$1"
+    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
 ######################################################
@@ -1108,7 +1109,7 @@ initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restr
 
 if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
 then
-    MOUNTED_PATHS=$(list_fuse_mounts)
+    MOUNTED_PATHS=$(list_storage_mounts "$DATA_STORAGE_MOUNT_ROOT")
     initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
 fi
 
