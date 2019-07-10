@@ -428,16 +428,16 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             def list_items(path, parent, symlinks, visited_symlinks, root=False):
                 for item in os.listdir(path):
                     absolute_path = os.path.join(path, item)
+                    symlink_target = None
                     if os.path.islink(absolute_path) and symlinks != AllowedSymlinkValues.FOLLOW:
                         if symlinks == AllowedSymlinkValues.SKIP:
                             continue
                         if symlinks == AllowedSymlinkValues.FILTER:
                             symlink_target = os.readlink(absolute_path)
-                            if absolute_path.startswith(symlink_target):
-                                if symlink_target in visited_symlinks:
-                                    continue
-                                else:
-                                    visited_symlinks.add(symlink_target)
+                            if symlink_target in visited_symlinks:
+                                continue
+                            else:
+                                visited_symlinks.add(symlink_target)
                     relative_path = item
                     if not root and parent is not None:
                         relative_path = os.path.join(parent, item)
@@ -445,6 +445,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                         result.append((FILE, absolute_path, relative_path, os.path.getsize(absolute_path)))
                     elif os.path.isdir(absolute_path):
                         list_items(absolute_path, relative_path, symlinks, visited_symlinks)
+                    if symlink_target and os.path.islink(path) and symlink_target in visited_symlinks:
+                        visited_symlinks.remove(symlink_target)
             list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
             return result
 
