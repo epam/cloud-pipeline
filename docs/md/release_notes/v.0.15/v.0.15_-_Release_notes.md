@@ -427,12 +427,11 @@ The `Environment Modules` [package](http://modules.sourceforge.net/index.html) p
 
 In current version, an ability to configure the `Modules` support for the compute jobs is introduced, if this is required by any use case.
 
-For using facilities of the `Environment Modules` package, two new system parameters were added to the Cloud Pipeline:
+For using facilities of the `Environment Modules` package, a new system parameter was added to the Cloud Pipeline:
 
 - **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
-- **`CP_CAP_MODULES_FILES_DIR`** _(string)_ - sets the path to source `modulefiles`
 
-If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` system parameter. If that parameter is not set - default `modulefiles` location will be used.
+If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
 
 ***
 

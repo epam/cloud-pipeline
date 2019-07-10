@@ -1,2 +1,10 @@
-docs/md/manual/12_Manage_Settings/additional\ settings.md
-.gitignore
+/.gradle
+/.idea
+*.log
+api/src/main/resources/static/
+*.class
+*.project
+*.pyc
+.vscode/
+docs/site
+dist

@@ -57,6 +57,7 @@
     - [12.8. Change a set of roles/groups for a user](12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user.md)
     - [12.9. Change email notification](12_Manage_Settings/12.9._Change_email_notification.md)
     - [12.10. Manage system-level settings](12_Manage_Settings/12.10._Manage_system-level_settings.md)
+    - [12.11. Advanced features](12_Manage_Settings/12.11._Advanced_features.md)
 - [13. Permissions](13_Permissions/13._Permissions.md)
 - [14. Command-line interface (CLI)](14_CLI/14._Command-line_interface.md)
     - [14.1. Install and setup CLI](14_CLI/14.1._Install_and_setup_CLI.md)
