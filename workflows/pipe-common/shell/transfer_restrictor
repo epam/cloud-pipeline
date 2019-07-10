@@ -22,8 +22,10 @@
 # It takes the required transfer command (cp, mv) absolute path as a first argument and all its arguments as
 # the following arguments.
 #
-# It uses CP_ALLOWED_MOUNT_TRANSFER_SIZE to get a maximum allowed transfer size
-# and CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT to get a timeout for transfer size analysis.
+# It uses several environment variables to retrieve configurations:
+#  CP_ALLOWED_MOUNT_TRANSFER_SIZE to get a maximum allowed transfer size,
+#  CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT to get a timeout for transfer size analysis,
+#  CP_ALLOWED_MOUNT_TRANSFER_FILES to get a maximum allowed number of transferred files (AZURE only).
 #
 # See https://github.com/epam/cloud-pipeline/issues/500 for more information.
 
@@ -94,11 +96,30 @@ function has_prefix() {
 function get_size() {
     _FILE_OR_DIRECTORY="$1"
     _TIMEOUT="$2"
-    TOTAL_SIZE=$(timeout "$_TIMEOUT"s du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
-    if [[ "$?" != 0 ]]
+    _MAX_FILES="$3"
+    # Assume that the file or directory size is of infinite if its analysis has reached timeout or failed.
+    let INFINITE_SIZE="(2**63)-1"
+    if [[ "$CLOUD_PROVIDER" == "AZURE" ]]
     then
-        # Assume that the directory size is pretty big if du command has been timed out.
-        let TOTAL_SIZE="(2**63)-1"
+        # Workaround for azure blobfuse issue: https://github.com/Azure/azure-storage-fuse/issues/119
+        FILE_SIZES=($(timeout "$_TIMEOUT"s find "$_FILE_OR_DIRECTORY" -type f | head -n "$_MAX_FILES" | xargs ls -lU | awk '{ print $5 }'))
+        if [[ "$?" != 0 ]] || (( "${#FILE_SIZES[@]}" == "$_MAX_FILES" ))
+        then
+            let TOTAL_SIZE="$INFINITE_SIZE"
+        else
+            let TOTAL_SIZE="0"
+            for FILE_SIZE in "${FILE_SIZES[@]}"
+            do
+                let TOTAL_SIZE="$TOTAL_SIZE + $FILE_SIZE"
+            done
+            let TOTAL_SIZE="$TOTAL_SIZE / (1024 * 1024 * 1024)"
+        fi
+    else
+        TOTAL_SIZE=$(timeout "$_TIMEOUT"s du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
+        if [[ "$?" != 0 ]]
+        then
+            let TOTAL_SIZE="$INFINITE_SIZE"
+        fi
     fi
     echo "$TOTAL_SIZE"
 }
@@ -109,11 +130,13 @@ function allowed_transfer() {
     _MOUNTED_PATHS="$3"
     _ALLOWED_TRANSFER_SIZE="$4"
     _ALLOWED_TRANSFER_SIZE_TIMEOUT="$5"
+    _ALLOWED_TRANSFER_FILES="$6"
     if [[ -z "$_SOURCES" ]] \
     || [[ -z "$_DESTINATION" ]] \
     || [[ -z "$_MOUNTED_PATHS" ]] \
     || [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] \
-    || [[ -z "$_ALLOWED_TRANSFER_SIZE_TIMEOUT" ]]
+    || [[ -z "$_ALLOWED_TRANSFER_SIZE_TIMEOUT" ]] \
+    || [[ -z "$_ALLOWED_TRANSFER_FILES" ]]
     then
         return 0
     fi
@@ -123,7 +146,7 @@ function allowed_transfer() {
     do
         if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
         then
-            SOURCE_SIZE=$(get_size "$SOURCE" "$_ALLOWED_TRANSFER_SIZE_TIMEOUT")
+            SOURCE_SIZE=$(get_size "$SOURCE" "$_ALLOWED_TRANSFER_SIZE_TIMEOUT" "$_ALLOWED_TRANSFER_FILES")
             if (( SOURCE_SIZE > _ALLOWED_TRANSFER_SIZE ))
             then
                 RESTRICTED_TRANSFER_SIZE="$SOURCE_SIZE"
@@ -178,6 +201,7 @@ shift 3 # removes first three arguments from the arguments list
 FORWARDING_ARGUMENTS="$@"
 ALLOWED_TRANSFER_SIZE="$CP_ALLOWED_MOUNT_TRANSFER_SIZE"
 ALLOWED_TRANSFER_SIZE_TIMEOUT="${CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT:-5}"
+ALLOWED_TRANSFER_FILES="${CP_ALLOWED_MOUNT_TRANSFER_FILES:-100}"
 
 SOURCES_AND_DESTINATION=($(resolve_sources_and_destination "$FORWARDING_ARGUMENTS"))
 if (( "${#SOURCES_AND_DESTINATION[@]}" ))
@@ -187,7 +211,7 @@ then
     unset "SOURCES[${#SOURCES[@]}-1]"
     SOURCES_STRING="${SOURCES[@]}"
 
-    if ! allowed_transfer "$SOURCES_STRING" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT"
+    if ! allowed_transfer "$SOURCES_STRING" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT" "$ALLOWED_TRANSFER_FILES"
     then
         UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
         ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
