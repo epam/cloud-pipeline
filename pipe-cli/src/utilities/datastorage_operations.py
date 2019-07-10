@@ -30,10 +30,10 @@ ALL_ERRORS = Exception
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, clean=False,
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, clean=False,
            skip_existing=False):
         try:
-            source_wrapper = DataStorageWrapper.get_wrapper(source)
+            source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
             destination_wrapper = DataStorageWrapper.get_wrapper(destination)
             files_to_copy = []
 

@@ -855,13 +855,20 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
+@click.option('-sl', '--symlinks', required=False, default="follow",
+              type=click.Choice(['follow', 'filter', 'skip']),
+              help="Describe symlinks processing strategy for local sources. Possible values: "
+              "follow - follow symlinks (default); "
+              "skip - do not follow symlinks; "
+              "filter - follow symlinks but check for cyclic links")
 @Config.validate_access_token(quiet_flag_property_name='quiet')
-def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
+def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
+                      symlinks):
     """ Copies files from one datastorage to another one
     or between local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
 
 
 @storage.command('restore')
