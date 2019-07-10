@@ -11,6 +11,7 @@ nav:
   - v.0.13: 'release_notes/v.0.13/v.0.13_-_Release_notes.md'
   - v.0.14: 'release_notes/v.0.14/v.0.14_-_Release_notes.md'
   - v.0.15: 'release_notes/v.0.15/v.0.15_-_Release_notes.md'
+  - v.0.16: 'release_notes/v.0.16/v.0.16_-_Release_notes.md'
 - User guide:
   - Contents: 'manual/Cloud_Pipeline_-_Manual.md'
   - 1. Quick start: 'manual/01_Quick_start/1._Quick_start.md'
