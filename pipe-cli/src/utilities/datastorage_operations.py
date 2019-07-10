@@ -19,7 +19,7 @@ import datetime
 import sys
 import prettytable
 
-from src.model.data_storage_wrapper import DataStorageWrapper, AllowedSymlinkValues
+from src.model.data_storage_wrapper import DataStorageWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
