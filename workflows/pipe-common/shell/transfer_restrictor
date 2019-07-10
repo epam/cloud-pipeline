@@ -22,9 +22,12 @@
 # It takes the required transfer command (cp, mv) absolute path as a first argument and all its arguments as
 # the following arguments.
 #
-# It uses CP_ALLOWED_MOUNT_TRANSFER_SIZE to get a maximum allowed transfer size.
+# It uses CP_ALLOWED_MOUNT_TRANSFER_SIZE to get a maximum allowed transfer size
+# and CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT to get a timeout for transfer size analysis.
 #
 # See https://github.com/epam/cloud-pipeline/issues/500 for more information.
+
+set -o pipefail
 
 function escape_slashes() {
     _STRING="$1"
@@ -33,7 +36,14 @@ function escape_slashes() {
 
 function get_size() {
     _FILE_OR_DIRECTORY="$1"
-    echo $(du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
+    _TIMEOUT="$2"
+    TOTAL_SIZE=$(timeout "$_TIMEOUT"s du -sh --block-size=1G "$_FILE_OR_DIRECTORY" | awk '{print $1}')
+    if [[ "$?" != 0 ]]
+    then
+        # Assume that the directory size is pretty big if du command has been timed out.
+        let TOTAL_SIZE="(2**63)-1"
+    fi
+    echo "$TOTAL_SIZE"
 }
 
 function resolve_symlinks() {
@@ -67,10 +77,11 @@ function resolve_sources_and_destination() {
             NEXT_INDEX=$((INDEX + 1))
             NEXT_ARGUMENT="${_FORWARDING_ARGUMENTS[NEXT_INDEX]}"
             DESTINATION=$(resolve_symlinks "$NEXT_ARGUMENT")
+            DESTINATION="${DESTINATION%/}/"
         elif [[ "$ARGUMENT" != -* ]]
         then
             RESOLVED_ARGUMENT=$(resolve_symlinks "$ARGUMENT")
-            if [[ "$RESOLVED_ARGUMENT" != "$DESTINATION" ]]
+            if [[ "$RESOLVED_ARGUMENT" != "${DESTINATION%/}" ]]
             then
                 SOURCES+=("$RESOLVED_ARGUMENT")
             fi
@@ -83,6 +94,11 @@ function resolve_sources_and_destination() {
             DESTINATION="${SOURCES[${#SOURCES[@]}-1]}"
             unset "SOURCES[${#SOURCES[@]}-1]"
         fi
+        if (( "${#SOURCES[@]}" > 1 ))
+        then
+            # Add trailing delimiter if there are multiple sources.
+            DESTINATION="${DESTINATION%/}/"
+        fi
         echo "${SOURCES[@]} $DESTINATION"
     fi
 }
@@ -90,12 +106,14 @@ function resolve_sources_and_destination() {
 function allowed_transfer() {
     _SOURCES=($1)
     _DESTINATION="$2"
-    _ALLOWED_TRANSFER_SIZE="$3"
-    _MOUNTED_PATHS="$4"
+    _MOUNTED_PATHS="$3"
+    _ALLOWED_TRANSFER_SIZE="$4"
+    _ALLOWED_TRANSFER_SIZE_TIMEOUT="$5"
     if [[ -z "$_SOURCES" ]] \
     || [[ -z "$_DESTINATION" ]] \
+    || [[ -z "$_MOUNTED_PATHS" ]] \
     || [[ -z "$_ALLOWED_TRANSFER_SIZE" ]] \
-    || [[ -z "$_MOUNTED_PATHS" ]]
+    || [[ -z "$_ALLOWED_TRANSFER_SIZE_TIMEOUT" ]]
     then
         return 0
     fi
@@ -105,7 +123,7 @@ function allowed_transfer() {
     do
         if [[ -f "$SOURCE" ]] || [[ -d "$SOURCE" ]]
         then
-            SOURCE_SIZE=$(get_size "$SOURCE")
+            SOURCE_SIZE=$(get_size "$SOURCE" "$_ALLOWED_TRANSFER_SIZE_TIMEOUT")
             if (( SOURCE_SIZE > _ALLOWED_TRANSFER_SIZE ))
             then
                 RESTRICTED_TRANSFER_SIZE="$SOURCE_SIZE"
@@ -141,6 +159,7 @@ UNDERLYING_TRANSFER_COMMAND="$3"
 shift 3 # removes first three arguments from the arguments list
 FORWARDING_ARGUMENTS="$@"
 ALLOWED_TRANSFER_SIZE="$CP_ALLOWED_MOUNT_TRANSFER_SIZE"
+ALLOWED_TRANSFER_SIZE_TIMEOUT="${CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT:-5}"
 
 SOURCES_AND_DESTINATION=($(resolve_sources_and_destination "$FORWARDING_ARGUMENTS"))
 if (( "${#SOURCES_AND_DESTINATION[@]}" ))
@@ -149,25 +168,30 @@ then
     SOURCES=("${SOURCES_AND_DESTINATION[@]}")
     unset "SOURCES[${#SOURCES[@]}-1]"
 
-    if ! allowed_transfer "$SOURCES" "$DESTINATION" "$ALLOWED_TRANSFER_SIZE" "$MOUNTED_PATHS"
+    if ! allowed_transfer "$SOURCES" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT"
     then
         UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
         ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
         STORAGE_PREFIX=$(escape_slashes "cp://")
         SUBSTITUTED_DESTINATION=$(replace_all "$DESTINATION" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
+        if [[ -d "$SUBSTITUTED_DESTINATION" ]]
+        then
+            # TODO 10.07.19: Extract trailing slash function.
+            SUBSTITUTED_DESTINATION="${SUBSTITUTED_DESTINATION%/}/"
+        fi
         OFFERED_COMMAND_REPLACEMENT=""
         for SOURCE in "${SOURCES[@]}"
         do
             SUBSTITUTED_SOURCE=$(replace_all "$SOURCE" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
             OFFERED_COMMAND_REPLACEMENT="$OFFERED_COMMAND_REPLACEMENT
-     pipe storage $UNDERLYING_TRANSFER_COMMAND_NAME $SUBSTITUTED_SOURCE $SUBSTITUTED_DESTINATION"
+     pipe storage $UNDERLYING_TRANSFER_COMMAND_NAME -rf $SUBSTITUTED_SOURCE $SUBSTITUTED_DESTINATION"
         done
         cat 1>&2 <<EOF
 
                     CLOUD PIPELINE TRANSFER MANAGEMENT WARNING
 
-     You are going to transfer data using FUSE-mounted object storage.
-     Data transfer exceeds ${ALLOWED_TRANSFER_SIZE} Gb. Such operation may not work properly.
+     You are going to transfer data using FUSE-mounted object storage. Data transfer
+     exceeds ${ALLOWED_TRANSFER_SIZE} Gb or contains too many files. Such operation may not work properly.
      For such data volumes please use the \`pipe\` command interface:
      ${OFFERED_COMMAND_REPLACEMENT}
 
