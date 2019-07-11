@@ -295,7 +295,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -354,6 +354,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -488,6 +492,7 @@
 <li><a href="#notifications">Notifications</a></li>
 <li><a href="#tools">Tools</a></li>
 <li><a href="#pipelines">Pipelines</a></li>
+<li><a href="#projects">Projects</a></li>
 <li><a href="#recently-completed-runs">Recently completed runs</a></li>
 <li><a href="#active-runs">Active runs</a></li>
 <li><a href="#services">Services</a></li>
@@ -501,7 +506,7 @@
 <p>This widget lists recent comments/issues/posts that occured for the items that you own (e.g. models, pipelines, projects, folders, etc.).<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_01.png" /></p>
 <h3 id="data">Data</h3>
-<p>List of the data storages (S3 and EFS) that are available to you for <strong>READ/WRITE</strong> operations. These data storages are available from the Platform GUI. Click an item to navigate to the data storage contents.<br />
+<p>List of the data storages that are available to you for <strong>READ/WRITE</strong> operations. These data storages are available from the Platform GUI. Click an item to navigate to the data storage contents.<br />
 <strong><em>Note</em></strong>: personal Data storages (i.e. a user is an <strong>OWNER</strong> of this Storage) will be shown on top, <strong>WRITE</strong> - second priority, <strong>READ</strong> - third priority.<br />
 <strong><em>Note</em></strong>: data storages are tagged with region flag to visually distinguish storage locations.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_02.png" /></p>
@@ -513,25 +518,42 @@
 <strong><em>Note</em></strong>: group-level Tools will be shown on the top of the Tools list.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_04.png" /></p>
 <h3 id="pipelines">Pipelines</h3>
-<p>Pipelines that are available to you for <strong>READ/WRITE</strong> operations. This is the same list, as available in the <strong>Library</strong> hierarchy. Pipeline can be run right from this widget using a <strong>RUN</strong> button that appears when hovering an item with a mouse. Press the <strong>History</strong> control to view runs history of a chosen pipeline.<br />
+<p>Pipelines that are available to you for <strong>READ/WRITE</strong> operations. This is the same list, as available in the <strong>Library</strong> hierarchy.<br />
+Pipeline can be run right from this widget using a <strong>RUN</strong> button that appears when hovering an item with a mouse.<br />
+Press the <strong>HISTORY</strong> control to view runs history of a chosen pipeline.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_05.png" /></p>
+<h3 id="projects">Projects</h3>
+<p>Projects that are available to you. This is the same list, as available in the <strong>Library</strong> hierarchy. Projects could be opened from this widget.<br />
+Press the <strong>HISTORY</strong> control to view runs history of a chosen Project.<br />
+Press the <strong>DATA STORAGE</strong> control to open a data storage included into a chosen Project.<br />
+<img alt="CP_HomePage" src="../attachments/HomePage_19.png" /></p>
 <h3 id="recently-completed-runs">Recently completed runs</h3>
-<p>This widget lists your runs that were recently completed. Click a corresponding entry in this widget to navigate to the run details/logs page. Use the <strong>Rerun</strong> control to rerun selected item.<br />
-<img alt="CP_HomePage" src="../attachments/HomePage_06.png" /></p>
+<p>This widget lists your runs that were recently completed. Click a corresponding entry in this widget to navigate to the run details/logs page.<br />
+Use the <strong>Rerun</strong> control to rerun selected item.  </p>
+<p><img alt="CP_HomePage" src="../attachments/HomePage_06.png" /></p>
+<p>Help tooltips are provided when hovering a run state icon, e.g.:<br />
+<img alt="CP_HomePage" src="../attachments/HomePage_17.png" /></p>
 <h3 id="active-runs">Active runs</h3>
 <p>List of the jobs/tools that are currently in <strong>RUNNING</strong> or <strong>PAUSED</strong> state with some information about instance, elapsed time and estimated price, that is calculated based on the run duration and instance type. If this list is empty - start a new run from the <strong>Tools</strong> or <strong>Pipelines</strong> widgets. Hover a run item to view a list of available action.<br />
-Use <strong>STOP</strong>/<strong>PAUSE</strong>/<strong>RESUME</strong> actions to change the state of the run or use OPEN to navigate to the GUI of the interactive job. Select the <strong>LINKS</strong> button to view/navigate the run input/output parameters. Click a run item to navigate to the details and logs page. <strong><em>Note</em></strong>: only top 50 active runs will be shown, if more than 50 jobs/tools are running - use <strong>Explore all active runs</strong> link.<br />
-<img alt="CP_HomePage" src="../attachments/HomePage_07.png" /></p>
+Use <strong>STOP</strong>/<strong>PAUSE</strong>/<strong>RESUME</strong>/<strong>TERMINATE</strong> actions to change the state of the run or use OPEN to navigate to the GUI of the interactive job. Select the <strong>LINKS</strong> button to view/navigate the run input/output parameters. Click a run item to navigate to the details and logs page.  </p>
+<p><img alt="CP_HomePage" src="../attachments/HomePage_07.png" /><br />
+<strong><em>Note</em></strong>: only top 50 active runs will be shown, if more than 50 jobs/tools are running - use <strong>Explore all active runs</strong> link.</p>
+<p>Help tooltips are provided when hovering a run state icon, e.g.:<br />
+<img alt="CP_HomePage" src="../attachments/HomePage_16.png" /></p>
 <h3 id="services">Services</h3>
 <p>This widget lists direct links to the Interactive services, that are exposed by the launched Tools. Compared to the <strong>ACTIVE RUNS</strong> widget - this one does NOT show all the active jobs/tools, only links to the web/desktop GUI. If this list is empty - start a new run of an interactive compute stack from the <strong>Tools</strong> widget. Click an item within this widget to navigate to the corresponding service.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_08.png" /></p>
 <h2 id="adjust-home-page-view">Adjust Home page view</h2>
 <p>Dashboard view can be adjusted by clicking the Configure button.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_09.png" /></p>
-<p>In the opened window a user can adjust view of the <strong>Home tab</strong> by selecting widgets. Selected items will be displayed after you click <strong>OK</strong>.<br />
-<strong>Restore default layout</strong> control is used to restore default tab configuration.<br />
-<img alt="CP_HomePage" src="../attachments/HomePage_10.png" /><br />
-Also, user can remove widgets by clicking the <strong>"Delete"</strong> icon <img alt="CP_HomePage" src="../attachments/HomePage_11.png" /> on them.</p>
+<p>In the opened window a user can adjust view of the <strong>Home tab</strong> by selecting widgets. Selected items will be displayed after you click <strong>OK</strong>:<br />
+<img alt="CP_HomePage" src="../attachments/HomePage_10.png" /></p>
+<ul>
+<li><strong>Show only favourites</strong> checkbox allows to restrict displaying items in selected widgets and show only ones ticked by favourite mark ("star" icon in the left side of the items - <img alt="CP_HomePage" src="../attachments/HomePage_18.png" />).<br />
+This feature works only for <strong>DATA</strong>, <strong>PIPELINES</strong>, <strong>PROJECTS</strong> and <strong>TOOLS</strong> widgets.</li>
+<li><strong>Restore default layout</strong> control is used to restore default tab configuration.  </li>
+</ul>
+<p>Also, user can remove widgets by clicking the <strong>"Delete"</strong> icon <img alt="CP_HomePage" src="../attachments/HomePage_11.png" /> on them.</p>
 <h2 id="start-a-run-from-the-home-tab">Start a Run from the Home tab</h2>
 <blockquote>
 <p>User shall have <strong>EXECUTE</strong> rights to run selected Tool/pipeline.</p>

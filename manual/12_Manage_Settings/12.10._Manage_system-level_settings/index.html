@@ -295,7 +295,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -370,6 +370,10 @@
     
 
     </ul>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -493,11 +497,17 @@
 <li><a href="#base-urls">Base URLs</a></li>
 <li><a href="#cluster">Cluster</a></li>
 <li><a href="#commit">Commit</a></li>
+<li><a href="#dts">DTS</a></li>
+<li><a href="#data-sharing">Data sharing</a></li>
 <li><a href="#data-storage">Data Storage</a></li>
 <li><a href="#docker-security">Docker security</a></li>
+<li><a href="#firecloud">FireCloud</a></li>
+<li><a href="#gcp">GCP</a></li>
 <li><a href="#git">Git</a></li>
 <li><a href="#grid-engine-autoscaling">Grid engine autoscaling</a></li>
 <li><a href="#launch">Launch</a></li>
+<li><a href="#miscellaneous">Miscellaneous</a></li>
+<li><a href="#search">Search</a></li>
 <li><a href="#system">System</a></li>
 <li><a href="#user-interface">User Interface</a></li>
 </ul>
@@ -509,7 +519,7 @@
 <ol>
 <li>Hover to the <strong>Settings</strong> tab.</li>
 <li>Select the <strong>Preferences</strong> section.</li>
-<li>All system-level parameters are categorized into several groups.<br />
+<li>All system-level parameters are categorized into the several groups.<br />
 <img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_1.png" /></li>
 </ol>
 <h3 id="base-urls">Base URLs</h3>
@@ -529,6 +539,14 @@
 <tr>
 <td><strong><code>base.pipe.distributions.url</code></strong></td>
 <td>URL that is used to download pipeline scripts</td>
+</tr>
+<tr>
+<td><strong><code>base.dav.auth.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>base.api.host.external</code></strong></td>
+<td>REST API external endpoint</td>
 </tr>
 </tbody>
 </table>
@@ -551,32 +569,16 @@
 <td>If this property is true, pipeline scheduler will rely on Kubernetes order of pods, otherwise pipelines will be ordered according to their parent (batch) ID</td>
 </tr>
 <tr>
-<td><strong><code>cluster.networks.config</code></strong></td>
-<td>Config that contains information to start new nodes in AWS</td>
-</tr>
-<tr>
-<td><strong><code>cluster.instance.image</code></strong></td>
-<td>Default EC2 instance image</td>
-</tr>
-<tr>
-<td><strong><code>cluster.batch.retry.count</code></strong></td>
-<td>Count of automatically retries to relaunch a job, if one of the EC2 status codes from <strong><code>instance.restart.state.reasons</code></strong> returns, when a batch job fails</td>
-</tr>
-<tr>
-<td><strong><code>instance.offer.update.rate</code></strong></td>
-<td>How often instance cost is calculated (in milliseconds)</td>
-</tr>
-<tr>
 <td><strong><code>cluster.instance.type</code></strong></td>
-<td>Default EC2 instance type</td>
+<td>Default instance type</td>
 </tr>
 <tr>
 <td><strong><code>cluster.max.size</code></strong></td>
 <td>Maximal number of nodes to be launched simultaneously</td>
 </tr>
 <tr>
-<td><strong><code>cluster.autoscale.rate</code></strong></td>
-<td>How often autoscaler checks what tasks are executed on each node (in milliseconds)</td>
+<td><strong><code>cluster.instance.hdd_extra_multi</code></strong></td>
+<td>Disk extra multiplier. Allows to add extra space, during a launch, to the disk size selected through the GUI. The size of that extra space is calculated as <code>(Unarchived docker image size) * (Disk extra multiplier)</code></td>
 </tr>
 <tr>
 <td><strong><code>cluster.min.size</code></strong></td>
@@ -584,15 +586,31 @@
 </tr>
 <tr>
 <td><strong><code>cluster.allowed.instance.types</code></strong></td>
-<td>Allowed Amazon EC2 instance types. Can restrict available instance types for launching tools, pipelines, configurations</td>
+<td>Allowed instance types. Can restrict available instance types for launching tools, pipelines, configurations</td>
 </tr>
 <tr>
-<td><strong><code>cluster.allowed.instance.types.docker</code></strong></td>
-<td>Allowed Amazon EC2 instance types for docker images (tools). Can restrict available instance types for launching tools. Has a higher priority for a tool than <strong><code>cluster.allowed.instance.types</code></strong></td>
+<td><strong><code>cluster.enable.autoscaling</code></strong></td>
+<td>Enables/disables Kubernetes autoscaler service</td>
 </tr>
 <tr>
-<td><strong><code>cluster.allowed.price.types</code></strong></td>
-<td>Allowed price types. Can restrict available price types for launching tools, pipelines, configurations</td>
+<td><strong><code>instance.restart.state.reasons</code></strong></td>
+<td>Instance status codes, upon receipt of which an instance tries automatically to restart</td>
+</tr>
+<tr>
+<td><strong><code>cluster.networks.config</code></strong></td>
+<td>Config that contains information to start new nodes in Cloud Provider</td>
+</tr>
+<tr>
+<td><strong><code>cluster.batch.retry.count</code></strong></td>
+<td>Count of automatically retries to relaunch a job, if one of the instance status codes from <strong><code>instance.restart.state.reasons</code></strong> returns, when a batch job fails</td>
+</tr>
+<tr>
+<td><strong><code>instance.offer.update.rate</code></strong></td>
+<td>How often instance cost is calculated (in milliseconds)</td>
+</tr>
+<tr>
+<td><strong><code>cluster.autoscale.rate</code></strong></td>
+<td>How often autoscaler checks what tasks are executed on each node (in milliseconds)</td>
 </tr>
 <tr>
 <td><strong><code>cluster.nodeup.max.threads</code></strong></td>
@@ -603,16 +621,16 @@
 <td>The maximum price per hour that you are willing to pay for a Spot Instance. The default is the On-Demand price</td>
 </tr>
 <tr>
-<td><strong><code>cluster.enable.autoscaling</code></strong></td>
-<td>Enables/disables Kubernetes autoscaler service</td>
-</tr>
-<tr>
-<td><strong><code>instance.restart.state.reasons</code></strong></td>
-<td>EC2 status codes, upon receipt of which an instance tries automatically to restart</td>
+<td><strong><code>cloud.provider.default</code></strong></td>
+<td>Sets a default CLoud Provider</td>
 </tr>
 <tr>
 <td><strong><code>cluster.spot</code></strong></td>
 <td>If this is true, spot instances will be launched by default</td>
+</tr>
+<tr>
+<td><strong><code>cluster.docker.extra_multi</code></strong></td>
+<td>Docker image extra multiplier. Allows to get an approximate size of the unarchived docker image. That size is calculated as <code>(Archived docker image size) * (Docker image extra multiplier)</code></td>
 </tr>
 <tr>
 <td><strong><code>cluster.kill.not.matching.nodes</code></strong></td>
@@ -623,12 +641,20 @@
 <td>Default hard drive size for instance (in gigabytes)</td>
 </tr>
 <tr>
-<td><strong><code>cluster.ssh.key.name</code></strong></td>
-<td>Name of the key that is used to connect to the running node via SSH</td>
+<td><strong><code>cluster.allowed.price.types</code></strong></td>
+<td>Allowed price types. Can restrict available price types for launching tools, pipelines, configurations</td>
 </tr>
 <tr>
 <td><strong><code>cluster.spot.alloc.strategy</code></strong></td>
 <td>Parameter that sets the strategy of calculating the price limit for instance:<ul><li><strong>on-demand</strong> - maximal instance price equals the price of the on-demand instance of the same type;</li><li><strong>manual</strong> - uses value from the <strong><code>cluster.spot.bid.price</code></strong> parameter</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>cluster.allowed.instance.types.docker</code></strong></td>
+<td>Allowed instance types for docker images (tools). Can restrict available instance types for launching tools. Has a higher priority for a tool than <strong><code>cluster.allowed.instance.types</code></strong></td>
+</tr>
+<tr>
+<td><strong><code>cluster.spot.max.attempts</code></strong></td>
+<td></td>
 </tr>
 <tr>
 <td><strong><code>cluster.nodeup.retry.count</code></strong></td>
@@ -651,6 +677,10 @@
 </thead>
 <tbody>
 <tr>
+<td><strong><code>commit.pre.command.path</code></strong></td>
+<td>Specifies a path to a script within a docker image, that will be executed in a currently running container, before docker commit occurs</td>
+</tr>
+<tr>
 <td><strong><code>commit.username</code></strong></td>
 <td>Git username</td>
 </tr>
@@ -661,6 +691,54 @@
 <tr>
 <td><strong><code>commit.timeout</code></strong></td>
 <td>Commit will fail if exceeded (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>commit.post.command.path</code></strong></td>
+<td>Specifies a path to a script within a docker image, that will be executed in a committed image, after docker commit occurs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dts">DTS</h3>
+<p>These settings define DTS parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>dts.launch.cmd</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>dts.launch.script.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>dts.dist.url</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-sharing">Data Sharing</h3>
+<p>These settings define data sharing parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>data.sharing.base.api</code></strong></td>
+<td>Specifies a format of the generating URL to the data storage with enabled sharing</td>
+</tr>
+<tr>
+<td><strong><code>data.sharing.disclaimer</code></strong></td>
+<td>Allows to set a warning text for the "Share storage link" pop-up</td>
 </tr>
 </tbody>
 </table>
@@ -676,51 +754,31 @@
 <tbody>
 <tr>
 <td><strong><code>storage.temp.credentials.duration</code></strong></td>
-<td>Temporary credentials lifetime for AWS operations with S3 (in seconds)</td>
+<td>Temporary credentials lifetime for Cloud Provider's operations with data storages (in seconds)</td>
 </tr>
 <tr>
-<td><strong><code>storage.max.download.size</code></strong></td>
-<td>Chunk size to download (bytes)</td>
-</tr>
-<tr>
-<td><strong><code>storage.policy.backup.duration</code></strong></td>
-<td>Backup duration time (days)</td>
-</tr>
-<tr>
-<td><strong><code>storage.temp.credentials.role</code></strong></td>
-<td>This role will be used to allow bucket operations - it will be given temporary credentials</td>
+<td><strong><code>storage.transfer.pipeline.id</code></strong></td>
+<td>Pipeline ID that is used to automated data transfers from the external sites</td>
 </tr>
 <tr>
 <td><strong><code>storage.system.storage.name</code></strong></td>
 <td>Configures a system data storage for storing attachments from e.g. issues</td>
 </tr>
 <tr>
-<td><strong><code>storage.cors.policy</code></strong></td>
-<td>Set of bucket CORS policies</td>
-</tr>
-<tr>
 <td><strong><code>storage.mount.black.list</code></strong></td>
 <td>List of directories where Data Storages couldn't be mounted</td>
 </tr>
 <tr>
-<td><strong><code>storage.policy.backup.enabled</code></strong></td>
-<td>Allows backup by default</td>
+<td><strong><code>storage.transfer.pipeline.version</code></strong></td>
+<td>Pipeline version that is used to automated data transfers from the external sites</td>
 </tr>
 <tr>
-<td><strong><code>storage.security.key.id</code></strong></td>
-<td>Key that is used for bucket encryption</td>
-</tr>
-<tr>
-<td><strong><code>storage.policy</code></strong></td>
-<td>Set of data storage policies</td>
-</tr>
-<tr>
-<td><strong><code>storage.security.key.arn</code></strong></td>
-<td>Amazon Resource Name (ARN) of the AWS Key Management Service (AWS KMS)</td>
+<td><strong><code>storage.max.download.size</code></strong></td>
+<td>Chunk size to download (bytes)</td>
 </tr>
 <tr>
 <td><strong><code>storage.object.prefix</code></strong></td>
-<td>A mandatory prefix for the new creating S3-buckets</td>
+<td>A mandatory prefix for the new creating data storages</td>
 </tr>
 </tbody>
 </table>
@@ -739,12 +797,32 @@
 <td>If this is true, all registries will be scanned for Tools vulnerability</td>
 </tr>
 <tr>
-<td><strong><code>security.tools.scan.clair.read.timeout</code></strong></td>
-<td>Sets timeout for Clair response (in seconds)</td>
-</tr>
-<tr>
 <td><strong><code>security.tools.scan.clair.root.url</code></strong></td>
 <td>Clair root URL</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.docker.comp.scan.root.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>security.tools.jwt.token.expiration</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.clair.connect.timeout</code></strong></td>
+<td>Sets timeout for connection with Clair (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.policy.max.high.vulnerabilities</code></strong></td>
+<td>Denies running a Tool if the number of high vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.grace.hours</code></strong></td>
+<td>Allows users to run a new docker image (if it is not scanned yet) or an image with a lot of vulnerabilities during a specified period.<br />During this period user will be able to run a tool, but an appropriate message will be displayed. Period lasts from date/time since the docker version became vulnerable or since the docker image's push time (if this version was not scanned yet)</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.clair.read.timeout</code></strong></td>
+<td>Sets timeout for Clair response (in seconds)</td>
 </tr>
 <tr>
 <td><strong><code>security.tools.policy.deny.not.scanned</code></strong></td>
@@ -755,16 +833,8 @@
 <td>Enables/disables security scan</td>
 </tr>
 <tr>
-<td><strong><code>security.tools.scan.clair.connect.timeout</code></strong></td>
-<td>Sets timeout for connection with Clair (in seconds)</td>
-</tr>
-<tr>
 <td><strong><code>security.tools.policy.max.medium.vulnerabilities</code></strong></td>
 <td>Denies running a Tool if the number of medium vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
-</tr>
-<tr>
-<td><strong><code>security.tools.policy.max.high.vulnerabilities</code></strong></td>
-<td>Denies running a Tool if the number of high vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
 </tr>
 <tr>
 <td><strong><code>security.tools.policy.max.critical.vulnerabilities</code></strong></td>
@@ -774,14 +844,10 @@
 <td><strong><code>security.tools.scan.schedule.cron</code></strong></td>
 <td>Security scan schedule</td>
 </tr>
-<tr>
-<td><strong><code>security.tools.grace.hours</code></strong></td>
-<td>Allows users to run a new docker image (if it is not scanned yet) or an image with a lot of vulnerabilities during a specified period.<br />During this period user will be able to run a tool, but an appropriate message will be displayed. Period lasts from date/time since the docker version became vulnerable or since the docker image's push time (if this version was not scanned yet)</td>
-</tr>
 </tbody>
 </table>
-<h3 id="git">Git</h3>
-<p>These settings define git parameters:</p>
+<h3 id="firecloud">FireCloud</h3>
+<p>These settings define FireCloud parameters:</p>
 <table>
 <thead>
 <tr>
@@ -791,16 +857,108 @@
 </thead>
 <tbody>
 <tr>
-<td><strong><code>git.token</code></strong></td>
-<td>Token to access Git with pipelines</td>
+<td><strong><code>google.client.settings</code></strong></td>
+<td></td>
 </tr>
 <tr>
-<td><strong><code>git.user.id</code></strong></td>
-<td>User id to access Git with pipelines</td>
+<td><strong><code>firecloud.base.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.billing.project</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>google.client.id</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.launcher.cmd</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.instance.disk</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.launcher.tool</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>google.redirect.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.api.scopes</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.instance.type</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.enable.user.auth</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gcp">GCP</h3>
+<p>These settings define specific Google Cloud Platform parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>gcp.sku.mapping</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>gcp.regions.list</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="git">Git</h3>
+<p>These settings define Git parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>ui.git.cli.configure.template</code></strong></td>
+<td>Template for the message of the Git config that would be displayed for user in the "<strong>Git CLI</strong>" section of the System Settings</td>
 </tr>
 <tr>
 <td><strong><code>git.user.name</code></strong></td>
 <td>User name to access Git with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.external.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.repository.hook.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.token</code></strong></td>
+<td>Token to access Git with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.repository.indexing.enabled</code></strong></td>
+<td>Allows to enable the indexing of Git repository with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.user.id</code></strong></td>
+<td>User id to access Git with pipelines</td>
 </tr>
 <tr>
 <td><strong><code>git.host</code></strong></td>
@@ -825,6 +983,10 @@
 <tr>
 <td><strong><code>ge.autoscaling.scale.up.timeout</code></strong></td>
 <td>If some jobs are in waiting state longer than that timeout - auto-scaled cluster will start to attach new computation nodes to the cluster ("scale-up")</td>
+</tr>
+<tr>
+<td><strong><code>ge.autoscaling.scale.up.polling.timeout</code></strong></td>
+<td>Defines how many seconds GE autoscaler should wait for pod initialization and run initialization</td>
 </tr>
 </tbody>
 </table>
@@ -855,12 +1017,20 @@
 <td>Default Docker image</td>
 </tr>
 <tr>
-<td><strong><code>launch.task.status.update.rate</code></strong></td>
-<td>Sets task status update rate, on which application will query kubernetes cluster for running task status, ms. Pod Monitor</td>
-</tr>
-<tr>
 <td><strong><code>launch.cmd.template</code></strong></td>
 <td>Default cmd template</td>
+</tr>
+<tr>
+<td><strong><code>launch.dind.mounts</code></strong></td>
+<td>List of mounts that shall be added to k8s pod for Docker in Docker</td>
+</tr>
+<tr>
+<td><strong><code>launch.dind.enable</code></strong></td>
+<td>Enables Docker in Docker functionality</td>
+</tr>
+<tr>
+<td><strong><code>launch.task.status.update.rate</code></strong></td>
+<td>Sets task status update rate, on which application will query kubernetes cluster for running task status, ms. Pod Monitor</td>
 </tr>
 <tr>
 <td><strong><code>launch.system.parameters</code></strong></td>
@@ -868,46 +1038,129 @@
 </tr>
 </tbody>
 </table>
+<h3 id="miscellaneous">Miscellaneous</h3>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>misc.max.tool.icon.size.kb</code></strong></td>
+<td>Sets maximum size (in Kb) of the uploaded icon for the tool</td>
+</tr>
+</tbody>
+</table>
+<h3 id="search">Search</h3>
+<p>Settings in this tab contains Elasticsearch parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>search.elastic.scheme</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.allowed.users.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.denied.users.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.denied.groups.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.type.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.host</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.index.type.prefix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.port</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.search.fields</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.index.common.prefix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.allowed.groups.field</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h3 id="system">System</h3>
 <p>The settings in this tab contain parameters and actions that are performed depending on the system monitoring metrics:</p>
 <table>
-    <thead>
-        <tr class="header">
-            <th>Setting name</th>
-            <th>Description</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr class="odd">
-            <td><strong><code>system.idle.cpu.threshold</code></strong></td>
-            <td>Specifies percentage of the CPU utilization, below which action shall be taken</td>
-        </tr>
-        <tr class="even">
-            <td><strong><code>system.resource.monitoring.period</code></strong></td>
-            <td>Specifies period (in seconds) between the users' instances scanning to collect the monitoring metrics</td>
-        </tr>
-        <tr class="odd">
-            <td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
-            <td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user</td>
-        </tr>
-        <tr class="even">
-            <td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
-            <td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
-        </tr>
-        <tr class="odd">
-            <td><strong><code>system.idle.action</code></strong></td>
-            <td>Sets which action to perform on the instance, that showed low CPU utilization (that is below <strong><code>system.idle.cpu.threshold</code></strong>):
-            <br />
-            <ul>
-                <li><strong><em>NOTIFY</em></strong> - only send notification</li>
-                <li><strong><em>PAUSE</em></strong> - pause an instance if possible (e.g. instance is On-Demand, Spot instances are skipped)</li>
-                <li><strong><em>PAUSE_OR_STOP</em></strong> - pause an instance if it is On-Demand, stop an instance if it is Spot</li>
-                <li><strong><em>STOP</em></strong> - Stop an instance, disregarding price-type</li>
-            </ul></td>
-        </tr>
-    </tbody>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
+<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
+<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
+</tr>
+<tr>
+<td><strong><code>system.resource.monitoring.period</code></strong></td>
+<td>Specifies period (in seconds) between the users' instances scanning to collect the monitoring metrics</td>
+</tr>
+<tr>
+<td><strong><code>system.monitoring.time.range</code></strong></td>
+<td>Specifies time delay (in sec) after which the notification "HIGH_CONSUMED_RESOURCES" would be sent again, if the problem is still in place</td>
+</tr>
+<tr>
+<td><strong><code>system.disk.consume.threshold</code></strong></td>
+<td>Specifies disk threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.cpu.threshold</code></strong></td>
+<td>Specifies percentage of the CPU utilization, below which action shall be taken</td>
+</tr>
+<tr>
+<td><strong><code>system.resource.monitoring.stats.retention.period</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>system.memory.consume.threshold</code></strong></td>
+<td>Specifies memory threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.action</code></strong></td>
+<td>Sets which action to perform on the instance, that showed low CPU utilization (that is below <strong><code>system.idle.cpu.threshold</code></strong>):<br /><ul><li><strong><em>NOTIFY</em></strong> - only send notification</li><li><strong><em>PAUSE</em></strong> - pause an instance if possible (e.g. instance is On-Demand, Spot instances are skipped)</li><li><strong><em>PAUSE_OR_STOP</em></strong> - pause an instance if it is On-Demand, stop an instance if it is Spot</li><li><strong><em>STOP</em></strong> - Stop an instance, disregarding price-type</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>system.external.services.endpoints</code></strong></td>
+<td></td>
+</tr>
+</tbody>
 </table>
-
 <h3 id="user-interface">User Interface</h3>
 <p>Here different user interface settings can be found:</p>
 <table>
@@ -927,6 +1180,10 @@
 <td>CLI install templates for different operating systems</td>
 </tr>
 <tr>
+<td><strong><code>ui.pipe.drive.mapping</code></strong></td>
+<td></td>
+</tr>
+<tr>
 <td><strong><code>ui.project.indicator</code></strong></td>
 <td>These attributes define a Project folder</td>
 </tr>
@@ -944,9 +1201,9 @@
 <ol>
 <li>Hover to the <strong>Settings</strong> tab.</li>
 <li>Select the <strong>Preferences</strong> section.</li>
-<li>Choose one of the tabs with system level settings (e.g. <strong>Cluster</strong>).<br />
+<li>Choose one of the tabs with system level settings (e.g. <strong>Grid engine autoscaling</strong>).<br />
 <img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_2.png" /></li>
-<li>Press the "<strong>Eye</strong>" button near any setting. Now it will be visible to all users in the <strong>Preferences</strong> section.<br />
+<li>Press the "<strong>Eye</strong>" button near any setting. Now it will be visible to all users by using the API.<br />
 <strong><em>Note</em></strong>: press "<strong>Eye</strong>" button again to hide it from all users.<br />
 <img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_3.png" /></li>
 </ol>
@@ -965,7 +1222,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../13_Permissions/13._Permissions/" class="btn btn-neutral float-right" title="13. Permissions">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../12.11._Advanced_features/" class="btn btn-neutral float-right" title="12.11. Advanced features">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../12.9._Change_email_notification/" class="btn btn-neutral" title="12.9. Change email notification"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -997,7 +1254,7 @@
         <span><a href="../12.9._Change_email_notification/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../13_Permissions/13._Permissions/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../12.11._Advanced_features/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

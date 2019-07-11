@@ -178,7 +178,9 @@
         
             <li><a class="toctree-l5" href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a></li>
         
-            <li><a class="toctree-l5" href="#example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</a></li>
+            <li><a class="toctree-l5" href="#example-create-a-configuration-that-uses-system-parameter">Example: Create a configuration that uses system parameter</a></li>
+        
+            <li><a class="toctree-l5" href="#example-limit-mounted-storages">Example: Limit mounted storages</a></li>
         
         </ul>
     
@@ -315,7 +317,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -374,6 +376,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -506,10 +512,9 @@
 <li><a href="#check-the-results-of-pipeline-execution">Check the results of pipeline execution</a></li>
 </ul>
 </li>
-<li><a href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a><ul>
-<li><a href="#example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</a></li>
-</ul>
-</li>
+<li><a href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a></li>
+<li><a href="#example-create-a-configuration-that-uses-system-parameter">Example: Create a configuration that uses system parameter</a></li>
+<li><a href="#example-limit-mounted-storages">Example: Limit mounted storages</a></li>
 </ul>
 <blockquote>
 <p>To create a <strong>Pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and a role <strong>PIPELINE_MANAGER</strong>. To edit pipeline you need just <strong>WRITE</strong> permissions for a pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
@@ -559,8 +564,8 @@ Navigate to the <strong>Documents</strong> tab and:</p>
 <p>It is not optional because you need to create a pipeline that will be tailored to your specific needs. For that purpose, you need to extend basic pipeline templates/add new files.</p>
 <ol>
 <li>Navigate to the <strong>Code</strong> tab. Click on any file you want to edit.<br />
-<strong><em>Note</em></strong>: each pipeline version has a default code file: it named after a pipeline and has a respective extension.<br />
-<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_08.png" /></li>
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_08.png" /><br />
+<strong><em>Note</em></strong>: each pipeline version has a default code file: it named after a pipeline and has a respective extension.</li>
 <li>A new window with file contents will open. Click the <strong>Edit</strong> button and change the code file in the desired way.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_09.png" /></li>
 <li>When you are done, click the <strong>Save</strong> button.<br />
@@ -608,16 +613,17 @@ To add a new rule:</p>
 <li>Upload renamed the file to the bucket.</li>
 </ol>
 <h3 id="pipeline-input-data">Pipeline input data</h3>
-<p>This is where pipeline input data is stored. This path will be used in pipeline parameters later on.<br />
+<p>This is where pipeline input data is stored. About storages see <a href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">here</a>. This path will be used in pipeline parameters later on.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_19.png" /></p>
 <h3 id="pipeline-output-folder">Pipeline output folder</h3>
-<p>This is where pipeline output data will be stored after pipeline execution. This path will be used in pipeline parameters later on.<br />
+<p>This is where pipeline output data will be stored after pipeline execution. About storages see <a href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">here</a>. This path will be used in pipeline parameters later on.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_20.png" /></p>
 <h3 id="configure-the-main_file">Configure the main_file</h3>
 <p>The pipeline will consist of 2 files: <strong>main_file</strong> and <strong><code>config.json</code></strong>.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_21.png" /></p>
 <p>Let's extend the <strong>main_file</strong> so that it renames the input file and puts it into the <strong>$ANALYSIS_DIR</strong> folder on the node from which data will be uploaded to the bucket. To do that click the <strong>main_file</strong> name and click the <strong>Edit</strong> button. Then type all the pipeline instructions.<br />
-<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_22.png" /></p>
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_22.png" /><br />
+Click the <strong>Save</strong> button, input a commit message and click the <strong>Commit</strong> button.</p>
 <h3 id="configure-pipeline-inputoutput-parameters-via-gui">Configure pipeline input/output parameters via GUI</h3>
 <ol>
 <li>Click the <strong>Run</strong> button.<br />
@@ -631,7 +637,7 @@ To add a new rule:</p>
 <li>Leave all other parameters default and click the <strong>Launch</strong> button.</li>
 </ol>
 <h3 id="check-the-results-of-pipeline-execution">Check the results of pipeline execution</h3>
-<p>After pipeline finished its execution, you can find the renamed file in the output folder.<br />
+<p>After pipeline finished its execution, you can find the renamed file in the output folder:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_26.png" /></p>
 <h2 id="example-add-pipeline-configuration">Example: Add pipeline configuration</h2>
 <p>In this example, we will create a new pipeline configuration for the example pipeline and set it as default one. To add new pipeline configuration perform the following steps:</p>
@@ -652,73 +658,62 @@ To add a new rule:</p>
 <li>Navigate to the <strong>CODE</strong> tab. As you can see, <strong><code>config.json</code></strong> file now contains information about two configurations: "default" and "new-configuration". "new-configuration" is default one for pipeline execution.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_30.png" /></li>
 </ol>
-<h2 id="example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">Example: Create a configuration that uses Pipeline CLI for data uploading</h2>
-<p>To use Pipeline CLI instead of AWS CLI, the system parameter shall be added.</p>
+<h2 id="example-create-a-configuration-that-uses-system-parameter">Example: Create a configuration that uses system parameter</h2>
 <ol>
-<li>In the <strong>Configuration</strong> page navigate to the <strong>Advanced</strong> tab and press <strong>Add system parameter</strong> button.<br />
+<li>Select a pipeline</li>
+<li>Select a pipeline version</li>
+<li>Navigate to the <strong>CONFIGURATION</strong> tab</li>
+<li>In the <strong>CONFIGURATION</strong> tab expand the <strong>Advanced</strong> section, set "Start idle" checkbox and click the <strong>Add system parameter</strong> button:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_31.png" /></li>
-<li>Select the <strong>CP_USE_PIPE_FOR_CP</strong> option and click <strong>OK</strong>.<br />
-<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_32.png" /></li>
-<li>Save the configuration - now the configuration will use CP CLI to upload running results.</li>
-<li>To see the difference, click <strong>"Run"</strong> to launch it.</li>
-<li>Edit or add any parameters you want and click <strong>"Launch"</strong>.<br />
-<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_33.png" /></li>
-<li>In the <strong>Active Runs</strong> tab press the pipeline name.<br />
+<li>Click the <strong>CP_CAP_DIND_CONTAINER</strong> option and then click the <strong>OK</strong> button:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_32.png" /><br />
+    This option will enable docker engine for a run using a containerized approach.</li>
+<li>Added system parameter appears on the configuration page. Save the configuration - now it will use "Docker inside Docker" technology while running:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_33.png" /><br />
+    To see it, click the <strong>Run</strong> button in the upper-right corner to launch the configuration.<br />
+    Edit or add any parameters you want on the Launch page and click the <strong>Launch</strong> button in the upper-right corner:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_37.png" /><br />
+    Confirm the launch in the appeared pop-up.</li>
+<li>In the <strong>ACTIVE RUNS</strong> tab press the just-launched pipeline name.<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_34.png" /></li>
-<li>When pipeline finishes its execution, click the <strong>output</strong> link in the <strong>Parameters</strong> tab.<br />
+<li>Wait until the <strong>SSH</strong> hyperlink will appear in the upper-right corner, click it:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_35.png" /></li>
-<li>
-<p>On the opened page press the output file name and on the bottom-right you'll see a list of tags that was automatically set for the chosen file.<br />
+<li>On the opened tab specify the command <code>docker version</code> and then press "Enter" key:<br />
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_36.png" /><br />
-    This is a feature of uploading uses the CP CLI - files are automatically tagged with the following attributes:<br />
-<strong><em>Note</em></strong>: The exception is that the storage is based on NFS share. Files in such data storage don't have attributes at all.</p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>CP_OWNER</strong></td>
-<td>User ID</td>
-</tr>
-<tr>
-<td><strong>CP_SOURCE</strong></td>
-<td>Local path used to upload</td>
-</tr>
-<tr>
-<td><strong>CP_CALC_CONFIG</strong></td>
-<td>Instance type</td>
-</tr>
-<tr>
-<td><strong>CP_DOCKER_IMAGE</strong></td>
-<td>Tool that was used</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_CONFIGURATION</strong></td>
-<td>Pipeline configuration</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_ID</strong></td>
-<td>Pipeline ID</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_NAME</strong></td>
-<td>Pipeline name</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_VERSION</strong></td>
-<td>Pipeline version</td>
-</tr>
-<tr>
-<td><strong>CP_RUN_ID</strong></td>
-<td>Run ID</td>
-</tr>
-</tbody>
-</table>
-</li>
+    As you can see, DinD works correctly.</li>
+</ol>
+<h2 id="example-limit-mounted-storages">Example: Limit mounted storages</h2>
+<p>By default, all available to a user storages are mounted to the launched container during the run initialization. User could have access to them via <code>/cloud-data</code> or <code>~/cloud-data</code> folder using the interactive sessions (SSH/Web endpoints/Desktop) or pipeline runs.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: to a user only storages are available for which he has <strong>READ</strong> permission. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<p>To limit the number of data storages being mounted to a specific pipeline run:</p>
+<ol>
+<li>Select a pipeline</li>
+<li>Select a pipeline version</li>
+<li>Navigate to the <strong>CONFIGURATION</strong> tab</li>
+<li>In the <strong>CONFIGURATION</strong> tab expand the <strong>Advanced</strong> section, click the field next to the "Limit mounts" label:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_38.png" /></li>
+<li>In the pop-up select storages you want to mount during the run, e.g.:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_39.png" /><br />
+    Confirm your choise by click the <strong>OK</strong> button</li>
+<li>Selected storages will appear in the field next to the "Limit mounts" label:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_40.png" /></li>
+<li>Set "Start idle" checkbox and click the <strong>Save</strong> button:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_41.png" /></li>
+<li>Click the <strong>Run</strong> button in the upper-right corner to launch the configuration.  Edit or add any parameters you want on the Launch page and click the <strong>Launch</strong> button in the upper-right corner:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_42.png" /><br />
+    Confirm the launch in the appeared pop-up.</li>
+<li>In the <strong>ACTIVE RUNS</strong> tab press the just-launched pipeline name.<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_43.png" /></li>
+<li>At the <strong>Run logs</strong> page expand the "Parameters" section:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_44.png" /><br />
+    Here you can see IDs of the storages selected at step 5</li>
+<li>Wait until the <strong>SSH</strong> hyperlink will appear in the upper-right corner, click it.<br />
+    On the opened tab specify the command <code>ls cloud-data/</code> and then press "Enter" key:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_45.png" /><br />
+    Here you can see the list of the mounted storages that is equal to the list of the selected storages at step 5. Other storages were not mounted.<br />
+    Each mounted storage is available for the interactive/batch jobs using the path <code>/cloud-data/{storage_name}</code>.</li>
 </ol>
               
             </div>

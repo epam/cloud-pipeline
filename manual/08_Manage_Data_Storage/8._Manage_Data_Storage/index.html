@@ -311,7 +311,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -370,6 +370,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -485,7 +489,7 @@
             <div class="section">
               
                 <h1 id="8-manage-data-storage">8. Manage Data Storage</h1>
-<p><strong>Data storage</strong> represents S3 bucket and its contents.</p>
+<p><strong>Data storage</strong> is a Cloud Pipeline object that represents cloud storage and its content in a folder hierarchy.</p>
 <ul>
 <li><a href="#controls">Controls</a><ul>
 <li><a href="#select-page">Select page</a></li>
@@ -506,14 +510,14 @@
 <blockquote>
 <p>Permissions management for a storage is described <a href="../../13_Permissions/13._Permissions/">here</a>.</p>
 </blockquote>
-<p><strong>"Details"</strong> view lists contents of the bucket: files that may be organized into folders. Clicking on the inside folder will open its contents in the <strong>"Details"</strong> view.<br />
-<strong><em>Note</em></strong>: S3 bucket folders hierarchy will not be represented in the <strong>"Hierarchy"</strong> view panel.<br />
+<p><strong>"Details view"</strong> lists content of the storage: files that may be organized into folders. Clicking on the inside folder will open its content in the <strong>"Details view"</strong>.<br />
+<strong><em>Note</em></strong>: storage's folders hierarchy will not be represented in the <strong>"Hierarchy view"</strong> panel.<br />
 <strong><em>Note</em></strong>: you can move <strong>Storage</strong> to a new parent folder using drag and drop approach.</p>
-<p>In <strong>"Library tree view"</strong> and <strong>"Library details form"</strong> S3 buckets are tagged with region flag to visually distinguish storage locations.<br />
+<p>In <strong>"Library tree view"</strong> and <strong>"Details view"</strong> data storages are tagged with region flag to visually distinguish storage locations.<br />
 <img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_1.png" /></p>
 <p><strong>Figure 1</strong><br />
 <img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_2.png" /></p>
-<p>Another option for navigation in the bucket is to use <a href="https://en.wikipedia.org/wiki/Breadcrumb_(navigation)">"breadcrumbs"</a> control at the top of the <strong>"Details"</strong> view (see picture above, <strong>1</strong>):</p>
+<p>Another option for navigation in the storage is to use <a href="https://en.wikipedia.org/wiki/Breadcrumb_(navigation)">"breadcrumbs"</a> control at the top of the <strong>"Details"</strong> view (see picture above, <strong>1</strong>):</p>
 <ul>
 <li>Clicking an item will navigate to that folder.<br />
 <img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_3.png" /></li>
@@ -525,6 +529,9 @@
 <h3 id="select-page">Select page</h3>
 <p>Clicking this control (see picture <strong>Figure 1</strong> above, item <strong>2</strong>), the whole file and folders on the current page will be selected. It allows to perform bulk operations like deleting.</p>
 <h3 id="show-file-versions">Show file versions</h3>
+<blockquote>
+<p>This feature is available not for all Cloud Providers. Currently, it is supported by <strong>AWS</strong> and <strong>GCP</strong>.</p>
+</blockquote>
 <p>Tick this checkbox (see picture <strong>Figure 1</strong> above, item <strong>3</strong>) and the view of a page will changed: the all file versions will be displayed. You can expand each version's list by clicking "<strong>+</strong>" in desired line.<br />
 <strong><em>Note</em></strong>: the last version will be marked by "<strong>(latest)</strong>".</p>
 <h3 id="remove-all-selected">Remove all selected</h3>
@@ -540,11 +547,11 @@
 <h3 id="gear-icon">"Gear" icon</h3>
 <p>Allows to edit the path, alias, description of the storage, manage its STS and LTS and enable versions control (see picture <strong>Figure 1</strong> above, item <strong>5</strong>). The delete option is also here (if storage contains only metadata, it will be deleted anyway). See <a href="../8.1._Create_and_edit_storage/">8.1. Create and edit storage</a>.</p>
 <h3 id="refresh">Refresh</h3>
-<p>Allows updating representation of bucket's contents (see picture <strong>Figure 1</strong> above, item <strong>6</strong>).</p>
+<p>Allows updating representation of storage's contents (see picture <strong>Figure 1</strong> above, item <strong>6</strong>).</p>
 <h3 id="create">+ Create</h3>
 <p>You can also create new folders and files via this button (see picture <strong>Figure 1</strong> above, item <strong>7</strong>). See <a href="../8.3._Create_and_Edit_text_files/">8.3. Create and Edit text files</a>.</p>
 <h3 id="upload">Upload</h3>
-<p>This control allows uploading files to the bucket (see picture <strong>Figure 1</strong> above, item <strong>8</strong>). See <a href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>.</p>
+<p>This control allows uploading files to the storage (see picture <strong>Figure 1</strong> above, item <strong>8</strong>). See <a href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>.</p>
 <h3 id="each-line-controls">Each-line controls</h3>
 <p><img alt="CP_ManageDataStorage" src="../attachments/ManageDataStorage_7.png" /></p>
 <table>

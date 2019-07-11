@@ -315,7 +315,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -374,6 +374,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -544,11 +548,21 @@
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_01.png" /></p>
 <h3 id="active-run-states">Active run states</h3>
 <ul>
-<li>Rotating - a run is scheduled but is waiting for a calculation node to appear.</li>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_02.png" /> - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_03.png" /> - The pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_19.png" /> - <strong>Queued</strong> state ("sandglass" icon) - a run is waiting in the queue for the available compute node.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_20.png" /> - <strong>Initializing</strong> state ("rotating" icon) - a run is being initialized, at this stage a new compute node will be created or an existing node will be reused.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_02.png" /> - <strong>Pulling</strong> state ("download" icon) - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_03.png" /> - <strong>Running</strong> state (stable "play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
+<li><strong>Pausing</strong> state (blinking "pause" icon) - a run is being paused. At this moment compute node will be stopped (but persisted) and the docker image state will be kept as well.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_21.png" /> - <strong>Paused</strong> state (stable "pause" icon) - a run is paused. At this moment compute node is already stopped but keeps it's state. Such run may be resumed.</li>
+<li><strong>Resuming</strong> state (blinking "play" icon) - a paused run is being resumed. At this moment compute node is starting back from the stopped state.</li>
 </ul>
 <p><img alt="CP_ManageRuns" src="../attachments/ManageRuns_04.png" /></p>
+<p>Also, help tooltips are provided when hovering a run state icon, e.g.:</p>
+<ul>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_22.png" /></li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_23.png" /></li>
+</ul>
+<p>Tooltips contain a state name in bold (e.g. <strong>Queued</strong>) and a short description of the state and info on the next stage.</p>
 <h3 id="active-run-controls">Active run controls</h3>
 <table>
 <thead>
@@ -560,7 +574,11 @@
 <tbody>
 <tr>
 <td><strong>PAUSE/RESUME</strong></td>
-<td>Pauses/resumes a run. Available for <strong>on-demand</strong> instances only. Learn more about feature <a href="../11.1._Pause_resume_Runs/">here</a>.</td>
+<td>Pauses/resumes a run. Available for <strong>on-demand</strong> instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#pauseresume-run">here</a>.</td>
+</tr>
+<tr>
+<td><strong>TERMINATE</strong></td>
+<td>Terminates compute node of a paused run without its resuming. Available for <strong>on-demand</strong> instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#stopterminate-run">here</a>.</td>
 </tr>
 <tr>
 <td><strong>STOP</strong></td>
@@ -577,9 +595,13 @@
 <p><img alt="CP_ManageRuns" src="../attachments/ManageRuns_05.png" /></p>
 <h3 id="completed-run-states">Completed run states</h3>
 <ul>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_06.png" /> - successful pipeline execution.</li>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_07.png" /> - unsuccessful pipeline execution.</li>
-<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_08.png" /> - a pipeline manually stopped.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_06.png" /> - <strong>Success</strong> state ("OK" icon) - successful pipeline execution.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_07.png" /> - <strong>Failed</strong> state ("caution" icon) - unsuccessful pipeline execution.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_08.png" /> - <strong>Stopped</strong> state ("clock" icon) - a pipeline manually stopped.</li>
+</ul>
+<p>Help tooltips are also provided when hovering a completed run state icon, e.g.:</p>
+<ul>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_24.png" /></li>
 </ul>
 <h3 id="completed-run-controls">Completed run controls</h3>
 <table>
@@ -620,11 +642,19 @@
 <tbody>
 <tr>
 <td><strong>State icon</strong></td>
-<td>state of the run.</td>
+<td>state of the run. Help tooltips are provided when hovering a run state icon, e.g.:<br /><img alt="CP_ManageRuns" src="../attachments/ManageRuns_25.png" /></td>
 </tr>
 <tr>
 <td><strong>Run ID</strong></td>
 <td>unique ID of the run.</td>
+</tr>
+<tr>
+<td><strong>Endpoint</strong></td>
+<td>(<em>available only for tools runs</em>) endpoint hyperlink for the service launched in an interactive tool. For more details see <a href="../../15_Interactive_services/15._Interactive_services/">15. Interactive services</a>.</td>
+</tr>
+<tr>
+<td><strong>Share with</strong></td>
+<td>(<em>available only for tools runs</em>) list of users/groups with whom an interactive tool application is shared. For more details see <a href="../11.3._Sharing_with_other_users_or_groups_of_users/">11.3 Sharing with other users or groups of users</a>.</td>
 </tr>
 <tr>
 <td><strong>Owner</strong></td>
@@ -673,6 +703,33 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_15.png" /></p>
 <p><strong><em>Note</em></strong>: the Follow log control enables auto scrolling of the console output. It is useful for logs monitoring. Follow log is enabled by default, tick the box to turn it off.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_16.png" /></p>
+<p>Also, during a pipeline run an extended <strong><em>node-level</em></strong> logging is maintained:</p>
+<ul>
+<li><code>kubelet</code> logs (from all compute nodes) are written to the files</li>
+<li>Log files are streamed to the storage, identified by the <strong><code>storage.system.storage.name</code></strong> preference</li>
+</ul>
+<p>Users with the <strong>ROLE_ADMIN</strong> role can find the corresponding node logs (e.g. by the <code>hostname</code> or <code>ip</code> that are attached to the run information) in that storage by the path <code>logs/nodes/{hostname}</code>:</p>
+<ol>
+<li>Open the <strong>Run logs</strong> page of the run you want to see <code>kubelet</code> logs</li>
+<li>Select the <strong>InitializeNode</strong> task, find a node hostname in the console output:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_26.png" /><br />
+    Copy the found hostname's value.</li>
+<li>Check the storage path specified at the <strong><code>storage.system.storage.name</code></strong> preference:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_28.png" /><br />
+    Open in the Library that storage.</li>
+<li>Navigate in the opened storage to the path <code>logs/nodes/</code>:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_27.png" /></li>
+<li>Click the "breadcrumbs" control at the upper side of the page, enter <code>/</code> into the end of the path and after it paste the hostname value, copied at step 2:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_29.png" /><br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_30.png" /><br />
+    Press the <strong>Enter</strong> key.</li>
+<li>The folder with <code>kubelet</code> logs for the specified node will be opened:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_31.png" /><br />
+    You can open it and see the list of logs files, divided by the messages type:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_32.png" /><br />
+    You can view any of these files using Cloud Pipeline facilities or download them to your local machine:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_33.png" /></li>
+</ol>
 <h3 id="controls">Controls</h3>
 <p><strong><em>Note</em></strong>: Completed and active runs have different controls.<br />
 <strong>Example</strong>: controls of completed Luigi pipeline.</p>
@@ -687,16 +744,28 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 </thead>
 <tbody>
 <tr>
-<td><strong>Stop</strong></td>
-<td>Allows stopping a run.</td>
+<td><strong>PAUSE</strong></td>
+<td>Allows to pause a run. (<em>only for On-demand runs</em>)</td>
 </tr>
 <tr>
-<td><strong>Show timings</strong></td>
-<td>Each task will show it's duration if <strong>SHOW TIMINGS</strong> mode is ON (button in the right upper corner).</td>
+<td><strong>RESUME</strong></td>
+<td>Allows to resume a paused run. (<em>only for On-demand runs</em>)</td>
 </tr>
 <tr>
-<td><strong>Commit</strong></td>
-<td>To docker images running "sleep infinity" mode that has been changed via ssh. See <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">10.4. Edit a Tool</a>.</td>
+<td><strong>TERMINATE</strong></td>
+<td>Allows to terminate compute node of a paused run without resuming. (<em>only for On-demand runs</em>)</td>
+</tr>
+<tr>
+<td><strong>STOP</strong></td>
+<td>Allows to stop a run.</td>
+</tr>
+<tr>
+<td><strong>SHOW TIMINGS</strong>/<strong>HIDE TIMINGS</strong></td>
+<td>Allows to show/hide duration of each task.</td>
+</tr>
+<tr>
+<td><strong>COMMIT</strong></td>
+<td>Allows modifying an existing tool that has been changed via ssh. See <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">10.4. Edit a Tool</a>.</td>
 </tr>
 <tr>
 <td><strong>GRAPH VIEW</strong></td>
@@ -707,33 +776,34 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 <td>Allows to shh to the instance running "sleep infinity" mode. See <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure pipeline</a>.</td>
 </tr>
 <tr>
-<td><strong>Rerun</strong></td>
-<td>You can rerun via <strong>RERUN</strong> button.</td>
+<td><strong>RERUN</strong></td>
+<td>Allows to rerun completed runs.</td>
 </tr>
 <tr>
-<td><strong>Export logs</strong></td>
-<td>You can export logs via <strong>EXPORT LOGS</strong> button.</td>
+<td><strong>EXPORT LOGS</strong></td>
+<td>Allows to export logs.</td>
 </tr>
 </tbody>
 </table>
 <h2 id="automatically-rerun-if-a-spot-instance-is-terminated">Automatically rerun if a spot instance is terminated</h2>
-<p>In certain cases - AWS may terminate a node, that is used to run a job or an interactive tool. It may be in cases:</p>
+<p>In certain cases - Cloud Provider may terminate a node, that is used to run a job or an interactive tool. It may be in cases:</p>
 <ul>
 <li>Spot prices changed</li>
-<li>AWS experienced a hardware issue</li>
+<li>Cloud Provider experienced a hardware issue</li>
 </ul>
 <p>These cases aren't a Cloud Platform bug. In these cases:</p>
 <ol>
 <li>If a job fails due to server-related issue, special message is displayed, describing a reason for the hardware failure:<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_18.png" /></li>
 <li>
-<p>If a <strong>batch</strong> job fails due to server-related issue and AWS reports one of the following EC2 status codes:</p>
+<p>If a <strong>batch</strong> job fails due to server-related issue and Cloud Provider reports one of the following instance status codes:</p>
 <ul>
-<li>Server.SpotInstanceShutdown - AWS stopped a spot instance due to price changes,</li>
-<li>Server.SpotInstanceTermination - AWS terminated a spot instance due to price changes,</li>
-<li>Server.InternalError - AWS hardware issue, batch job will be restarted from scratch automatically.</li>
+<li>Server.SpotInstanceShutdown - a spot instance was stopped due to price changes,</li>
+<li>Server.SpotInstanceTermination - a spot instance was terminated due to price changes,</li>
+<li>Server.InternalError - Cloud Provider hardware issue,<br />
+batch job will be restarted from scratch automatically.</li>
 </ul>
-<p><strong>Note</strong>: this behavior will occur, only if administrator applied and configured it (for more information see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>.</p>
+<p><strong>Note</strong>: this behavior will occur, only if administrator applied and configured it (for more information see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>).</p>
 </li>
 </ol>
               
@@ -743,7 +813,7 @@ Clicking a task and its console output will be loaded in the right panel.<br />
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../11.1._Pause_resume_Runs/" class="btn btn-neutral float-right" title="11.1 Pause/resume Runs">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../11.1._Manage_runs_lifecycles/" class="btn btn-neutral float-right" title="11.1 Manage runs lifecycles">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../../10_Manage_Tools/10.7._Tool_version_menu/" class="btn btn-neutral" title="10.7 Tool version menu"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -775,7 +845,7 @@ Clicking a task and its console output will be loaded in the right panel.<br />
         <span><a href="../../10_Manage_Tools/10.7._Tool_version_menu/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../11.1._Pause_resume_Runs/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../11.1._Manage_runs_lifecycles/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

@@ -309,7 +309,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -368,6 +368,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -541,7 +545,7 @@
 <tr>
 <td></td>
 <td><strong>Node type (g)</strong></td>
-<td>An instance type in terms of Amazon: CPU, RAM and GPU (e.g. 4 CPU cores, 16 Gb RAM and 0 GPU cores).</td>
+<td>An instance type in terms of Cloud Provider with specifying amounts of CPU, RAM and GPU (e.g. 4 CPU cores, 16 Gb RAM and 0 GPU cores).</td>
 </tr>
 <tr>
 <td></td>
@@ -556,7 +560,7 @@
 <tr>
 <td></td>
 <td><strong>Cloud Region (j)</strong></td>
-<td>A specific region for a compute node placement.<br />Please note that a "default" region for all runs is "US East". If a non-default region is selected - certain CP features may be unavailable:<br /><ul><li>EFS storages usage from the another region (e.g. EU West region cannot use EFS storages from the "US East"). S3 buckets will be still available</li><li>If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.</li></ul></td>
+<td>A specific region for a compute node placement.<br />Please note, if a non-default region is selected - certain CP features may be unavailable:<br /><ul><li>FS mounts usage from the another region (e.g. "<em>EU West</em>" region cannot use FS mounts from the "<em>US East</em>"). Regular storages will be still available</li><li>If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.</li></ul></td>
 </tr>
 <tr>
 <td></td>
@@ -581,7 +585,7 @@
 <tr>
 <td></td>
 <td><strong>Limit mounts (m)</strong></td>
-<td>Restricts available storages for the tools or pipelines.</td>
+<td>Restricts available storages for the tools or pipelines. See <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</td>
 </tr>
 <tr>
 <td></td>

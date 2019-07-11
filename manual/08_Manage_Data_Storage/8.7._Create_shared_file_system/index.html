@@ -242,9 +242,9 @@
     
         <ul>
         
-            <li><a class="toctree-l5" href="#create-nfs-storage">Create NFS storage</a></li>
+            <li><a class="toctree-l5" href="#create-fs-mount">Create FS mount</a></li>
         
-            <li><a class="toctree-l5" href="#nfs-storage-features">NFS Storage features</a></li>
+            <li><a class="toctree-l5" href="#fs-storage-features">FS storage features</a></li>
         
         </ul>
     
@@ -309,7 +309,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -368,6 +368,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -484,48 +488,48 @@
               
                 <h1 id="87-create-shared-file-system">8.7. Create shared file system</h1>
 <ul>
-<li><a href="#create-nfs-storage">Create NFS storage</a></li>
-<li><a href="#nfs-storage-features">NFS Storage features</a></li>
+<li><a href="#create-fs-mount">Create FS mount</a></li>
+<li><a href="#fs-storage-features">FS storage features</a></li>
 </ul>
 <blockquote>
-<p>User shall have <strong>ROLE_ADMIN</strong> to mount NFS to the Cloud Pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+<p>User shall have <strong>ROLE_ADMIN</strong> to mount FS to the Cloud Pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
 </blockquote>
-<p>A shared file system is a data storage based on NFS. It has several advantages over S3 and local file system:</p>
+<p>A shared file system is a data storage based on network file system. It has several advantages over regular data storages and local file system:</p>
 <ul>
-<li>While S3 is a great option for a long-term storage, it cannot be used as a shared file system (FS) for high-performance computing jobs as it does not support FS-like interface.</li>
+<li>While regular data storage is a great option for a long-term storage, it cannot be used as a shared file system for high-performance computing jobs as it does not support network-like interface.</li>
 <li>A local disk cannot be shared across several nodes.</li>
 <li>A user needs to specify local disk size when scheduling a run. If a user specifies a size that is not enough to finish a job - it will fail. Cloud-based shared file system could be used to workaround this issue.</li>
 </ul>
-<h2 id="create-nfs-storage">Create NFS storage</h2>
+<h2 id="create-fs-mount">Create FS mount</h2>
 <ol>
-<li>Navigate to a desired folder and click <strong>+ Create → Storages → Create new NFS mount</strong>.<br />
+<li>Navigate to a desired folder and click <strong>+ Create → Storages → Create new FS mount</strong>.<br />
 <img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_1.png" /><br />
-<strong><em>Note</em></strong>: For NFS mounts - <strong>"Add existing"</strong> option is not available.</li>
+<strong><em>Note</em></strong>: For FS mounts - <strong>"Add existing"</strong> option is not available.</li>
 <li>Specify <strong>Storage path</strong> and other optional parameters.<br />
 <img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_2.png" /><br />
-<strong><em>Note</em></strong>: Storage path parameter contains NFS mount path <strong><code>nfs://fs-2a5ab373.efs.eu-central-1.amazonaws.com:/</code></strong> and the name of the NFS storage to be created <strong><code>NFSstorage</code></strong>.<br />
-<strong><em>Note</em></strong>: NFS storages are just subdirectories of the mounted NFS. One NFS can have multiple NFS storages.</li>
-<li>When deleted from GUI, NFS storage is unmounted from the Cloud Pipeline.</li>
+<strong><em>Note</em></strong>: Storage path parameter contains FS mount path and the name of the storage to be created.<br />
+<strong><em>Note</em></strong>: FS storages are just subdirectories of the mounted FS. One FS mount can have multiple FS storages.</li>
+<li>When deleted from GUI, FS storage is unmounted from the Cloud Pipeline.</li>
 </ol>
-<h2 id="nfs-storage-features">NFS Storage features</h2>
+<h2 id="fs-storage-features">FS storage features</h2>
 <ol>
-<li>For NFS mounts GUI doesn't display the following features typical for S3 storages:  <ul>
+<li>For FS storages GUI doesn't display the following features typical for regular data storages:  <ul>
 <li>STS</li>
 <li>LTS</li>
 <li>Versioning and Backup duration.<br />
 <img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_3.png" /></li>
 </ul>
 </li>
-<li>When a user selects <strong>Input/Common/Output</strong> path parameter for a pipeline run - it is impossible to set NFS storage:<ul>
-<li>NFS storages aren't displayed in the <strong>"Browse..."</strong> dialog for <strong>Input/Common/Output</strong> path parameters;</li>
-<li>Value of <strong>Input/Common/Output</strong> path parameters is validated so that user is not able to specify a path to NFS storage manually.<br />
+<li>When a user selects <strong>Input/Common/Output</strong> path parameter for a pipeline run - it is impossible to set FS storage:<ul>
+<li>FS storages aren't displayed in the <strong>"Browse..."</strong> dialog for <strong>Input/Common/Output</strong> path parameters;</li>
+<li>Value of <strong>Input/Common/Output</strong> path parameters is validated so that user is not able to specify a path to FS storage manually.<br />
 <img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_4.png" /></li>
 </ul>
 </li>
-<li>The content of files stored in NFS data storage could be previewed as well as in the S3 data storage.<br />
+<li>The content of files stored in FS data storage could be previewed as well as in regular data storages:<br />
 <img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_5.png" /></li>
-<li>Since NFS isn't an object storage like s3, it isn't possible to add metadata tags to files in the NFS storage.</li>
-<li>Use NFS storage between cluster nodes. If pipeline Tools contain NFS client, NFS storage(s) will be mounted automatically.</li>
+<li>Since FS isn't an object data storage, it isn't possible to add metadata tags to files in the FS storage.</li>
+<li>Use FS storage between cluster nodes. If pipeline Tools contain FS client, FS storage(s) will be mounted automatically.</li>
 </ol>
               
             </div>

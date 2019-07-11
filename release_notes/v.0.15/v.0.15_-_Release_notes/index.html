@@ -111,6 +111,14 @@
         
             <li><a class="toctree-l4" href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a></li>
         
+            <li><a class="toctree-l4" href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs within a parent log form</a></li>
+        
+            <li><a class="toctree-l4" href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a></li>
+        
+            <li><a class="toctree-l4" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
+        
+            <li><a class="toctree-l4" href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -343,7 +351,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -402,6 +410,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -518,7 +530,7 @@
 <li><a href="#notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</a></li>
 <li><a href="#limit-mounted-storages">Limit mounted storages</a></li>
 <li><a href="#personal-ssh-keys-configuration">Personal SSH keys configuration</a></li>
-<li><a href="#allow-to-set-the-grid-engine-capability-for-the-%22fixed%22-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a></li>
+<li><a href="#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a></li>
 <li><a href="#consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</a></li>
 <li><a href="#allow-to-terminate-paused-runs">Allow to terminate paused runs</a></li>
 <li><a href="#prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</a></li>
@@ -526,29 +538,40 @@
 <li><a href="#setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</a></li>
 <li><a href="#runs-system-paths-shall-be-available-for-the-general-user-account">Run's system paths shall be available for the general user account</a></li>
 <li><a href="#renewed-wdl-visualization">Renewed WDL visualization</a></li>
-<li><a href="#%22queued%22-state-of-the-run">"QUEUED" state of the run</a></li>
+<li><a href="#queued-state-of-the-run">"QUEUED" state of the run</a></li>
 <li><a href="#help-tooltips-for-the-run-state-icons">Help tooltips for the run state icons</a></li>
 <li><a href="#vm-monitor-service">VM monitor service</a></li>
 <li><a href="#web-gui-caching">Web GUI caching</a></li>
 <li><a href="#installation-via-pipectl">Installation via pipectl</a></li>
 <li><a href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a></li>
-<li><a href="#notable-bug-fixes">Notable Bug fixes</a></li>
+<li><a href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs</a></li>
+<li><a href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a></li>
+<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
+<li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
+</ul>
+<hr />
+<ul>
+<li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
 <li><a href="#incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</a></li>
-<li><a href="#%22commiting%22-status-hangs">"COMMITING..." status hangs</a></li>
+<li><a href="#commiting-status-hangs">"COMMITING..." status hangs</a></li>
 <li><a href="#instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</a></li>
 <li><a href="#tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</a></li>
 <li><a href="#missing-region-while-estimating-a-run-price">Missing region while estimating a run price</a></li>
 <li><a href="#cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</a></li>
-<li><a href="#acl-control-for-pipelineuser-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a></li>
+<li><a href="#acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a></li>
+<li><a href="#getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</a></li>
 </ul>
+</li>
+</ul>
+<hr />
 <h2 id="microsoft-azure-support">Microsoft Azure Support</h2>
-<p>One of the major <code>0.15</code> features is a support for the <strong><a href="https://azure.microsoft.com/en-us/">Microsoft Azure Cloud</a></strong></p>
+<p>One of the major <strong><code>v0.15</code></strong> features is a support for the <strong><a href="https://azure.microsoft.com/en-us/">Microsoft Azure Cloud</a></strong>.</p>
 <p>All the features, that were previously used for <code>AWS</code>, are now available in all the same manner, from all the same GUI/CLI, for <code>Azure</code>.</p>
 <p>Another cool thing, is that now it is possible to have a single installation of the <code>Cloud Pipeline</code>, which will manage both Cloud Providers (<code>AWS</code> and <code>Azure</code>). This provides a flexibility to launch jobs in the locations, closer to the data, with cheaper prices or better compute hardware for a specific task.</p>
 <h2 id="notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</h2>
 <p>When a compute-intensive job is run - compute node may start starving for the resources.<br />
 CPU high load is typically a normal situation - it could result just to the SSH/metrics slowdown. But running low on memory and disk could crash the node, in such cases autoscaler will eventually terminate the cloud instance.</p>
-<p>In <code>0.15</code> version, the <code>Cloud Pipeline</code> platform could notify user on the fact of Memory/Disk high load.<br />
+<p>In <strong><code>v0.15</code></strong> version, the <code>Cloud Pipeline</code> platform could notify user on the fact of Memory/Disk high load.<br />
 When memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
 <p>Such notifications could be configured at <code>HIGH_CONSUMED_RESOURCES</code> section of the <code>Email notifications</code>:  </p>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NotificationsResourcePressure_1.png" /></p>
@@ -558,27 +581,23 @@ When memory or disk consuming will be higher than a threshold value for a specif
 <li><strong><code>system.disk.consume.threshold</code></strong> - disk threshold (in %) above which the notification would be sent</li>
 <li><strong><code>system.monitoring.time.range</code></strong> - time delay (in sec) after which the notification would be sent again, if the problem is still in place.</li>
 </ul>
+<p>See more information about <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> and <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#system">System Preferences</a>.</p>
 <h2 id="limit-mounted-storages">Limit mounted storages</h2>
 <p>Previously, all available storages were mounted to the container during the run initialization. User could have access to them via <code>/cloud-data</code> or <code>~/cloud-data</code> folder using the interactive sessions (SSH/Web endpoints/Desktop) or <code>pipeline</code> runs.</p>
 <p>For certain reasons (e.g. takes too much time to mount all or a run is going to be shared with others), user may want to limit the number of data storages being mounted to a specific job run.</p>
 <p>Now, user can configure the list of the storages that will be mounted. This can be accomplished using the <code>Limit mount</code> field of the <code>Launch</code> form:</p>
 <ul>
 <li>By default, <code>All available storages</code> are mounted (i.e. the ones, that user has <code>ro</code> or <code>rw</code> permissions)</li>
-<li>To change the default behavior - click the drop-down list next to "Limit mounts" label:</li>
+<li>To change the default behavior - click the drop-down list next to "Limit mounts" label:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_1.png" /></li>
+<li>Select storages that shall be mounted:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_2.png" /></li>
+<li>Review that only a limited number of data storages is mounted:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_3.png" /></li>
+<li>Mounted storage is available for the interactive/batch jobs using the path <code>/cloud-data/{storage_name}</code>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_4.png" /></li>
 </ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_1.png" />  </p>
-<ul>
-<li>Select storages that shall be mounted:</li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_2.png" />  </p>
-<ul>
-<li>Review that only a limited number of data storages is mounted:</li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_3.png" />  </p>
-<ul>
-<li>Mounted storage is available for the interactive/batch jobs using the path <code>/cloud-data/{storage_name}</code>:</li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_4.png" /></p>
+<p>See an example <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</p>
 <h2 id="personal-ssh-keys-configuration">Personal SSH keys configuration</h2>
 <p>Previously, there were two options to communicate with the embedded gitlab repositories, that host pipelines code:</p>
 <ul>
@@ -586,56 +605,81 @@ When memory or disk consuming will be higher than a threshold value for a specif
 <li>From the cloud compute node: <code>git</code> command line interface, that is preconfigured to authenticate using https protocol and the auto-generated credentials</li>
 </ul>
 <p>Both options consider that https is used. It worked fine for 99% of the use cases. But for some of the applications - <code>ssh</code> protocol is required as this is the only way to achieve a passwordless authentication against the gitlab instance</p>
-<p>To address this issue, SSH keys management was introduced:
-- Users' ssh keys are generated by the <code>Git Sync</code> service
-- SSH key-pair is created and assigned to the <code>Cloud Pipeline</code> user and a public key is registered in the GitLab
-- Those SSH keys are now also configured for all the runs, launched by the user. So it is possible to perform a passwordless authentication, when working with the gitlab or other services, that will be implemented in the near future
-- HTTP/SSH selector is added to the <code>GIT REPOSITORY</code> popup of the <code>Cloud Pipeline</code> Web GUI
-- Default selection is HTTP, which displays the same URI as previously (repository), but user is able to switch it to the SSH and get the reformatted address</p>
+<p>To address this issue, SSH keys management was introduced:</p>
+<ul>
+<li>Users' ssh keys are generated by the <code>Git Sync</code> service</li>
+<li>SSH key-pair is created and assigned to the <code>Cloud Pipeline</code> user and a public key is registered in the GitLab</li>
+<li>Those SSH keys are now also configured for all the runs, launched by the user. So it is possible to perform a passwordless authentication, when working with the gitlab or other services, that will be implemented in the near future</li>
+<li>HTTPS/SSH selector is added to the <code>GIT REPOSITORY</code> popup of the <code>Cloud Pipeline</code> Web GUI:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSHKeysConfig_1.png" /></li>
+<li>Default selection is HTTP, which displays the same URI as previously (repository), but user is able to switch it to the SSH and get the reformatted address:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSHKeysConfig_2.png" /></li>
+</ul>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#details-controls">here</a>.</p>
 <h2 id="allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</h2>
 <p>Version <code>0.14</code> introduced an ability to launch <code>autoscaled</code> clusters. Besides the autoscaling itself - such cluster were configured to use <code>GridEngine</code> server by default, which is pretty handy.</p>
 <p>On the other hand - <code>fixed</code> cluster (i.e. those which contain a predefined number of compute nodes), required user to set the <code>CP_CAP_SGE</code> explicitly. Which is no a big deal, but may be tedious.</p>
-<p>In <code>0.15</code> Grid Engine can be configured within the <code>Cluster</code> (fixed size cluster) tab. </p>
+<p>In <strong><code>v0.15</code></strong> Grid Engine can be configured within the <code>Cluster</code> (fixed size cluster) tab.</p>
 <p>This is accomplished by using the <code>Enable GridEngine</code> checkbox. By default, this checkbox is unticked. If the user sets this ON - <code>CP_CAP_SGE</code> parameter is added automatically.</p>
-<p>Also a number of help icons is added to the <code>Cluster configuration</code> dialog to clarify the controls purpose:
-- Popup header (E.g. next to the tabs line) - displays information on different cluster modes
-- (Cluster) <code>Enable GridEngine checkbox</code> - displays information on the GridEngine usage
-- (Auto-scaled cluster) <code>Auto-scaled up</code> - displays information on the autoscaling logic
-- (Auto-scaled cluster) <code>Default child nodes</code> - displays information on the initial node pool size</p>
+<p>Also a number of help icons is added to the <code>Cluster configuration</code> dialog to clarify the controls purpose:</p>
+<ul>
+<li>Popup header (E.g. next to the tabs line) - displays information on different cluster modes</li>
+<li>(Cluster) <code>Enable GridEngine checkbox</code> - displays information on the GridEngine usage</li>
+<li>(Auto-scaled cluster) <code>Auto-scaled up</code> - displays information on the autoscaling logic</li>
+<li>(Auto-scaled cluster) <code>Default child nodes</code> - displays information on the initial node pool size</li>
+</ul>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GE_Autoconfig_1.png" /></p>
+<p>See more information about cluster launch <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>.</p>
 <h2 id="consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</h2>
 <p><code>Cloud Pipeline</code> supports queueing of the jobs, that cannot be scheduled to the existing or new compute nodes immediately.</p>
-<p>Queueing occurs if:
-- <code>cluster.max.size</code> limit  is reached (configurable via <code>Preferences</code>)
-- Cloud Provider limitations are reached (e.g. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html">AWS EC2 Limits</a>)</p>
-<p>If (1) happens - job will sit in the <code>QUEUED</code> state, until a spare will be available or stopped manually. This is the correct behavior.</p>
-<p>But if (2) occurs - an error will be raised by the Cloud Provider, <code>Cloud Pipeline</code> treats this as an issue with the node creation. 
-Autoscaler will then resubmit the node creation task for <code>cluster.nodeup.retry.count</code> times (default: 5) and then fail the job run.</p>
-<p>This behavior confuses users, as (2) shall behave almost in the same manner as (1) - job shall be kept in the queue until there will be free space for a new node.</p>
-<p>In <code>0.15</code> (2) scenario works as described:
-- If a certain limit is reached (e.g. number of <code>m4.large</code> instances exceeds the configured limit) - run will not fail, but will await for a spare node or limit increase
-- A warning will be highlighted in the job initialization log:</p>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Resource_Limits_1.png" /></p>
+<p>Queueing occurs if:</p>
+<ul>
+<li><code>cluster.max.size</code> limit  is reached (configurable via <code>Preferences</code>)</li>
+<li>Cloud Provider limitations are reached (e.g. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html">AWS EC2 Limits</a>)</li>
+</ul>
+<p>If (<strong>1</strong>) happens - job will sit in the <code>QUEUED</code> state, until a spare will be available or stopped manually. This is the correct behavior.<br />
+But if (<strong>2</strong>) occurs - an error will be raised by the Cloud Provider, <code>Cloud Pipeline</code> treats this as an issue with the node creation. Autoscaler will then resubmit the node creation task for <code>cluster.nodeup.retry.count</code> times (default: 5) and then fail the job run.<br />
+This behavior confuses users, as (<strong>2</strong>) shall behave almost in the same manner as (<strong>1</strong>) - job shall be kept in the queue until there will be free space for a new node.</p>
+<p>In <strong><code>v0.15</code></strong> (<strong>2</strong>) scenario works as described:</p>
+<ul>
+<li>If a certain limit is reached (e.g. number of <code>m4.large</code> instances exceeds the configured limit) - run will not fail, but will await for a spare node or limit increase</li>
+<li>A warning will be highlighted in the job initialization log:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Resource_Limits_1.png" /></li>
+</ul>
 <h2 id="allow-to-terminate-paused-runs">Allow to terminate paused runs</h2>
-<p>Some of the jobs, that were paused (either manually, or by the automated service), may be not needed anymore.
+<p>Some of the jobs, that were paused (either manually, or by the automated service), may be not needed anymore.<br />
 But when a run is paused - the user cannot terminate/stop it before resuming. I.e. one have to run <code>RESUME</code> operation, wait for it's completion and then <code>STOP</code> the run.</p>
 <p>While this is the expected behavior (at least designed in this manner) - it requires some extra steps to be performed, which may look like meaningless (why one shall resume a run, that is going to be stopped?).</p>
-<p>Another issue with such a behavior is that in certain "bad" conditions - paused runs are not able to resume and just fail, e.g.:
-- An underlying instance is terminated outside of the Cloud Pipeline
-- Docker image was removed from the registry
-- And other cases that are not yet uncovered</p>
+<p>Another issue with such a behavior is that in certain "bad" conditions - paused runs are not able to resume and just fail, e.g.:</p>
+<ul>
+<li>An underlying instance is terminated outside of the Cloud Pipeline</li>
+<li>Docker image was removed from the registry</li>
+<li>And other cases that are not yet uncovered</li>
+</ul>
 <p>This introduces a number of stale runs, that just sit there in the PAUSED state and nobody can remove them.</p>
 <p>To address those concerns - current version of <code>Cloud Pipeline</code> allows to terminate <code>PAUSED</code> run, without a prior <code>RESUME</code>. This operation can be performed by the <code>OWNER</code> of the run and the <code>ADMIN</code> users.
 Termination of the <code>PAUSED</code> run drops the underlying cloud instance and marks the run as <code>STOPPED</code>.</p>
-<p>From the GUI perspective - <code>TERMINATE</code> button is shown (instead of <code>STOP</code>), when a run is in the <code>PAUSED</code> state. Clicking it - performs the run termination, as described above.</p>
+<p>From the GUI perspective - <code>TERMINATE</code> button is shown (instead of <code>STOP</code>), when a run is in the <code>PAUSED</code> state:  </p>
+<ul>
+<li>on the "Active runs" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_1.png" /></li>
+<li>on the "Run logs" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_2.png" /></li>
+<li>on the "Dashboard" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_3.png" /></li>
+</ul>
+<p>Clicking it - performs the run termination, as described above.<br />
+See more information <a href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/#stopterminate-run">here</a>.</p>
 <h2 id="prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</h2>
-<p>In certain use-cases, extra steps shall be executed before/after running the commit command in the container.</p>
-<p>E.g. imagine the following scenario:
-1. User launches <code>RStudio</code>
-2. User installs packages and commits it as a new image
-3. User launches the new image
-4. The following error will be displayed in the R Console:</p>
-<pre><code>16 Jan 2019 21:17:15 [rsession-GRODE01] ERROR session hadabend; LOGGED FROM: rstudio::core::Error {anonymous}::rInit(const rstudio::r::session::RInitInfo&amp;) /home/ubuntu/rstudio/src/cpp/session/SessionMain.cpp:563
+<p>In certain use-cases, extra steps shall be executed before/after running the commit command in the container.<br />
+E.g. imagine the following scenario:</p>
+<ol>
+<li>User launches <code>RStudio</code></li>
+<li>User installs packages and commits it as a new image</li>
+<li>User launches the new image</li>
+<li>The following error will be displayed in the R Console:</li>
+</ol>
+<pre><code class="r">16 Jan 2019 21:17:15 [rsession-GRODE01] ERROR session hadabend; LOGGED FROM: rstudio::core::Error {anonymous}::rInit(const rstudio::r::session::RInitInfo&amp;) /home/ubuntu/rstudio/src/cpp/session/SessionMain.cpp:563
 </code></pre>
 
 <p>There is nothing bad about this message and states that previous RSession was terminated in a non-graceful manner.
@@ -645,87 +689,94 @@ RStudio will work correctly, but it may confuse the users.</p>
 <p>Those hooks are valid only for the specific images and therefore shall be contained within those images. <code>Cloud Pipeline</code> itself performs the calls to the hooks if they exist.</p>
 <p>Two preferences are introduced:</p>
 <ul>
-<li><code>commit.pre.command.path</code>: specified a path to a script within a docker image, that will be executed in a currently running container, <strong>BEFORE</strong> <code>docker commit</code> occurs. (default: <code>/root/pre_commit.sh</code>).</li>
-<li>This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent <code>post</code> operation - only filesystem operations will be available. </li>
-<li><em>Note</em> that any changes done at this stage will affect the running container.</li>
-<li><code>commit.post.command.path</code>: specified a path to a script within a docker image, that will be executed in a committed image, <strong>AFTER</strong> <code>docker commit</code> occurs. (default: <code>/root/post_commit.sh</code>). </li>
+<li><code>commit.pre.command.path</code>: specified a path to a script within a docker image, that will be executed in a currently running container, <strong>BEFORE</strong> <code>docker commit</code> occurs (default: <code>/root/pre_commit.sh</code>).<ul>
+<li>This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent <code>post</code> operation - only filesystem operations will be available.</li>
+<li><strong><em>Note</em></strong> that any changes done at this stage will affect the running container.</li>
+</ul>
+</li>
+<li><code>commit.post.command.path</code>: specified a path to a script within a docker image, that will be executed in a committed image, <strong>AFTER</strong> <code>docker commit</code> occurs (default: <code>/root/post_commit.sh</code>).<ul>
 <li>This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.</li>
+</ul>
+</li>
 <li>If a corresponding pre/post script is not found in the docker image - it will not be executed.</li>
 </ul>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#committing-features">here</a>.</p>
 <h2 id="restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</h2>
 <p>It was uncovered that some of the GPU-enabled runs are not able to initialize due to an issue describe at <a href="https://github.com/NVIDIA/nvidia-docker/issues/825">NVIDIA/nvidia-docker#825</a>.</p>
 <p>To limit a possibility of producing such docker images (which will not be able to start using GPU instance types) - a set of restrictions/notifications was implemented:</p>
 <ul>
-<li>A notification is now displayed (in the Web GUI), that warns a user about the risks of installing any of the <code>nvidia</code> packages manually. And that all <code>cuda-based</code> dockers shall be built using <code>nvidia/cuda</code> base images instead</li>
+<li>A notification is now displayed (in the Web GUI), that warns a user about the risks of installing any of the <code>nvidia</code> packages manually. And that all <code>cuda-based</code> dockers shall be built using <code>nvidia/cuda</code> base images instead:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_1.png" /></li>
+<li>Restrict users (to the reasonable extent) from installing those packages while running SSH/terminal session in the container. If user will try to install a <code>restricted</code> package - a warning will be shown (with an option to bypass it - for the advanced users):<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_2.png" /></li>
 </ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_1.png" /></p>
-<ul>
-<li>Restrict users (to the reasonable extent) from installing those packages while running SSH/terminal session in the container. If user will try to install a <code>restricted</code> package - a warning will be shown (with an option to bypass it - for the advanced users).</li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_2.png" /></p>
 <h2 id="setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</h2>
 <p>This feature is addresses the same issues as the previous <strong>Notifications about high resources pressure</strong> by making the compute-intensive jobs runs more reliable.</p>
-<p>In certain cases jobs may fail with unexpected errors if the compute node runs <code>Out Of Memory</code>.  </p>
-<p><code>0.15</code> provides an ability for admin users to configure a default <code>swap</code> file to the compute node being created.
+<p>In certain cases jobs may fail with unexpected errors if the compute node runs <code>Out Of Memory</code>.</p>
+<p><strong><code>v0.15</code></strong> provides an ability for admin users to configure a default <code>swap</code> file to the compute node being created.
 This allow to avoid runs failures due to memory limits.</p>
-<p>The size and the location of the <code>swap</code> can be configured via <code>cluster.networks.config</code> item of the  <code>Preferences</code>. It is accomplished by adding the similar <code>json</code> object to the platform's global or a region/cloud specific configuration:</p>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SwapFiles_1.png" /></p>
+<p>The size and the location of the <code>swap</code> can be configured via <code>cluster.networks.config</code> item of the <code>Preferences</code>. It is accomplished by adding the similar <code>json</code> object to the platform's global or a region/cloud specific configuration:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SwapFiles_1.png" /></p>
 <p>Options that can be used to configure <code>swap</code>:</p>
 <ul>
-<li><code>swap_ratio</code> - defines a swap file size. It is equal the node RAM multiplied by that ratio. If ratio is 0, a swap file will not be created. (default: 0)</li>
-<li><code>swap_location</code> - defines a location of the swap file. If that option is not set - default location will be used. (default: AWS will use <code>SSD/gp2</code> EBS, Azure will be <a href="https://blogs.msdn.microsoft.com/mast/2013/12/06/understanding-the-temporary-drive-on-windows-azure-virtual-machines/">Temporary Storage</a>)</li>
+<li><code>swap_ratio</code> - defines a swap file size. It is equal the node RAM multiplied by that ratio. If ratio is 0, a swap file will not be created (default: 0)</li>
+<li><code>swap_location</code> - defines a location of the swap file. If that option is not set - default location will be used (default: AWS will use <code>SSD/gp2</code> EBS, Azure will be <a href="https://blogs.msdn.microsoft.com/mast/2013/12/06/understanding-the-temporary-drive-on-windows-azure-virtual-machines/">Temporary Storage</a>)</li>
 </ul>
+<p>See an example <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#setup-swap-files-for-the-cloud-vms">here</a>.</p>
 <h2 id="runs-system-paths-shall-be-available-for-the-general-user-account">Run's system paths shall be available for the general user account</h2>
 <p>Previously, all the system-level directories (e.g. pipeline code location - <code>$SCRIPTS_DIR</code>, input/common data folders - <code>$INPUT_DATA</code>, etc.) were owned by the <code>root</code> user with <code>read-only</code> access to the general users.</p>
 <p>This was working fine for the <code>pipeline</code> runs, as they are executed on behalf of <code>root</code>. But for the interactive sessions (SSH/Web endpoints/Desktop) - such location were not writable.</p>
 <p>From now on - all the system-level location will be granted <code>rwx</code> access for the <code>OWNER</code> of the job (the user, who launched that run).</p>
 <h2 id="renewed-wdl-visualization">Renewed WDL visualization</h2>
-<p><code>v0.15</code> offers an updated Web GUI viewer/editor for the WDL scripts. These improvements allow to focus on the WDL diagram and make it more readable and clear. Which very useful for large WDL scripts.</p>
+<p><strong><code>v0.15</code></strong> offers an updated Web GUI viewer/editor for the WDL scripts. These improvements allow to focus on the WDL diagram and make it more readable and clear. Which very useful for large WDL scripts.</p>
 <ul>
-<li>Auxiliary controls ("Save", "Revert changes", "Layout", "Fit to screen", "Show links", "Zoom out", "Zoom in", "Fullscreen") are moved to the left side of the <code>WDL GRAPH</code> into single menu</li>
+<li>Auxiliary controls ("Save", "Revert changes", "Layout", "Fit to screen", "Show links", "Zoom out", "Zoom in", "Fullscreen") are moved to the left side of the <code>WDL GRAPH</code> into single menu:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_1.png" /></li>
+<li>WDL search capabilities are added. This feature allows to search for any task/variable/input/output within the script and focus/zoom to the found element. Search box is on the auxiliary controls menu and supports entry navigation (for cases when more than one item was found in the WDL):<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_3.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_4.png" /></li>
+<li>Workflow/Task editor is moved from the modal popup to the right floating menu <code>PROPERTIES</code>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_5.png" /></li>
 </ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_1.png" /></p>
-<ul>
-<li>WDL search capabilities are added. This feature allows to search for any task/variable/input/output within the script and focus/zoom to the found element. Search box is on the auxiliary controls menu and supports entry navigation (for cases when more than one item was found in the WDL)</li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_3.png" /></p>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_4.png" /></p>
-<ul>
-<li>Workflow/Task editor is moved from the modal popup to the right floating menu <code>PROPERTIES</code></li>
-</ul>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_5.png" /> </p>
+<p>See more details <a href="../../../manual/06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/">here</a>.</p>
 <h2 id="queued-state-of-the-run">"QUEUED" state of the run</h2>
 <p>Previously, user was not able to distinguish runs that are waiting in the queue and the runs that are being initialized (both were reporting the same state using the same icons).
 Now, a more clear run's state is provided - "QUEUED" state is introduced:</p>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_QueueStatus_1.png" />  </p>
 <p>During this phase of the lifecycle - a job is waiting in the queue for the available compute node. Typically this shall last for a couple of second and proceed to the initialization phase. But if this state lasts for a long time - it may mean that a cluster capacity is reached (limited by the administrator).</p>
 <p>This feature allows users to make a decision - whether to wait for run in a queue or stop it and resubmit.</p>
+<p>See more details <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-runs">here</a>.</p>
 <h2 id="help-tooltips-for-the-run-state-icons">Help tooltips for the run state icons</h2>
 <p>With the runs' <code>QUEUED</code> state introduction - we now have a good number of possible job phases.</p>
 <p>To make the phases meaning more clear - tooltips are provided when hovering a run state icon within all relevant forms, i.e.: <code>Dashboard</code>, <code>Runs</code> (<code>Active Runs</code>/<code>History</code>/etc.), <code>Run Log</code>.  </p>
 <p>Tooltips contain a state name in bold (e.g. <strong>Queued</strong>) and a short description of the state and info on the next stage:  </p>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TooltipsStatuses_1.png" /></p>
+<p>See more details - <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-runs">Active runs states</a>, <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#completed-runs">Completed runs states</a> and <a href="../../../manual/18_Home_page/18._Home_page/#recently-completed-runs">Home page</a>.</p>
 <h2 id="vm-monitor-service">VM monitor service</h2>
 <p>For various reasons cloud VM instances may "hang" and become invisible to <code>Cloud Pipeline</code> services. E.g. VM was created but some error occurred during joining k8s cluster or a communication to the Cloud Providers API is interrupted.</p>
 <p>In this case <code>Autoscaler</code> service will not be able to find such instance and it won't be shut down. This problem may lead to unmonitored useless resource consumption and billing.</p>
-<p>To address this issue - a separate <code>VM monitoring</code> service was implemented: 
-- Tracks all VM instances in the registered Cloud Regions
-- Determines whether instances is in "hang" state
-- Notifies a configurable set of users about a possible problem</p>
+<p>To address this issue - a separate <code>VM monitoring</code> service was implemented:</p>
+<ul>
+<li>Tracks all VM instances in the registered Cloud Regions</li>
+<li>Determines whether instances is in "hang" state</li>
+<li>Notifies a configurable set of users about a possible problem</li>
+</ul>
 <p>Notification recipients (administrators) may check the actual state of VM in Cloud Provider console and shut down VM manually.</p>
 <h2 id="web-gui-caching">Web GUI caching</h2>
 <p>Previously, <code>Cloud Pipeline</code> Web GUI was not using HTTP caching to optimize the page load time. Each time application was loaded - <code>~2Mb</code> of the app bundle was downloaded.</p>
 <p>This caused "non-optimal" experience for the end-users.</p>
-<p>Now the application bundle is split into chunks, which are identified by the <code>content-hash</code> in names:
-- If nothing is changed - no data will be downloaded
-- If some part of the app is changed - only certain chunks will be downloaded, not the whole bundle</p>
+<p>Now the application bundle is split into chunks, which are identified by the <code>content-hash</code> in names:</p>
+<ul>
+<li>If nothing is changed - no data will be downloaded</li>
+<li>If some part of the app is changed - only certain chunks will be downloaded, not the whole bundle</li>
+</ul>
 <p>Administrator may control cache period using the <code>static.resources.cache.sec.period</code> parameter in the <code>application.properties</code> of the Core API service.</p>
 <h2 id="installation-via-pipectl">Installation via pipectl</h2>
-<p>Previous versions of the <code>Cloud Pipeline</code> did not offer any automated approach for deploying the it's components/services.
+<p>Previous versions of the <code>Cloud Pipeline</code> did not offer any automated approach for deploying its components/services.
 All the deployment tasks were handed manually or by custom scripts.</p>
 <p>To simplify the deployment procedure and improve stability of the deployment - <code>pipectl</code> utility was introduced.</p>
 <p><code>pipectl</code> offers an automated approach to deploy and configure the <code>Cloud Pipeline</code> platform, as well as publish some demo pipelines and docker images for NGS/MD/MnS tasks.</p>
-<p>Brief description and example installation commands are available in the <a href="https://github.com/epam/cloud-pipeline/tree/develop/deploy">pipectl's home directory</a></p>
+<p>Brief description and example installation commands are available in the <a href="https://github.com/epam/cloud-pipeline/tree/develop/deploy">pipectl's home directory</a>.</p>
 <p>More sophisticated documentation on the installation procedure and resulting deployment architecture will be created further.</p>
 <h2 id="add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</h2>
 <p>When a <code>Cloud Pipeline</code> is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
@@ -742,19 +793,83 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <li>Run fails during initialization</li>
 <li>Console logs print the similar error message:</li>
 </ol>
-<pre><code>failed to open log file &quot;/var/log/pods/**.log&quot;: open /var/log/pods/**.log: no such file or directory
+<pre><code class="bash">failed to open log file &quot;/var/log/pods/**.log&quot;: open /var/log/pods/**.log: no such file or directory
 </code></pre>
 
-<p>Both scenarios are flaky and almost impossible to reproduce. To provide more insights into the situation - an extended <code>node-level</code> logging was implemented:
-1. <code>kubelet</code> logs (from all compute nodes) are now written to the files (via <code>DaemonSet</code>)
-2. Log files are streamed to the storage, identified by <code>storage.system.storage.name</code> preference
-3. Administrators can find the corresponding node logs (e.g. by the <code>hostname</code> or <code>ip</code> that are attached to the run information) in that bucket under <code>logs/node/{hostname}</code> </p>
+<p>Both scenarios are flaky and almost impossible to reproduce. To provide more insights into the situation - an extended <code>node-level</code> logging was implemented:</p>
+<ol>
+<li><code>kubelet</code> logs (from all compute nodes) are now written to the files (via <code>DaemonSet</code>)</li>
+<li>Log files are streamed to the storage, identified by <code>storage.system.storage.name</code> preference</li>
+<li>Administrators can find the corresponding node logs (e.g. by the <code>hostname</code> or <code>ip</code> that are attached to the run information) in that storage under <code>logs/node/{hostname}</code></li>
+</ol>
+<p>See an example <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#console-output">here</a>.</p>
+<h2 id="displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs within a parent log form</h2>
+<p>Previously, if user launched a run, that has a number of children (e.g. a cluster run or any other case with the parent-id specified), he could view the children list only from "Runs" page.</p>
+<p>In <strong><code>v.0.15</code></strong> a convenient opportunity to view the list of children directly in the parent's run logs form is implemented:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_1.png" /></p>
+<p>For each child-run in the list the following information is displayed:</p>
+<ul>
+<li>State icons with help tooltips when hovering over them</li>
+<li>Pipeline name and version/docker image and version</li>
+<li>Run time duration</li>
+</ul>
+<p>Similar as a parent-run state, states for nested runs are automatically updated without page refreshing. So, you can watch for them in real time.</p>
+<p>If you click any of the children-runs, you will navigate to its log page.</p>
+<p>That feature is implemented for the comleted runs too:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_2.png" /></p>
+<h2 id="pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</h2>
+<p>By default, when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date.</p>
+<p>In <strong><code>v.0.15</code></strong> extra <code>pipe</code> CLI warnings are introduced to provide users an information on the JWT token expiration:</p>
+<ul>
+<li>When <code>pipe configure</code> command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_1.png" /></li>
+<li>When <code>--version</code> option is specified - <code>pipe</code> prints dates of issue and expiration for the currently used token:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_2.png" /></li>
+<li>When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_3.png" /></li>
+</ul>
+<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</h2>
+<p>For some special customer needs, <code>pipe</code> configuration for using NTLM Authentication Proxy, when running in Linux, could be required.</p>
+<p>For that, several new options were added to <code>pipe configure</code> command:</p>
+<ul>
+<li><code>-nt</code> or <code>--proxy-ntlm</code> - flag that enable NTLM proxy support</li>
+<li><code>-nu</code> or <code>--proxy-ntlm-user</code> - username for NTLM proxy authorization</li>
+<li><code>-np</code> or <code>--proxy-ntlm-pass</code> - password for NTLM proxy authorization</li>
+<li><code>-nd</code> or <code>--proxy-ntlm-domain</code> - domain for NTLM proxy authorization</li>
+</ul>
+<p>If <code>--proxy-ntlm</code> is set, <code>pipe</code> will try to get the proxy value from the environment variables or <code>--proxy</code> option (<code>--proxy</code> option has a higher priority).<br />
+If <code>--proxy-ntlm-user</code> and <code>--proxy-ntlm-pass</code> options are not set - user will be prompted for username/password in an interactive manner.  </p>
+<p>Valid configuration examples:</p>
+<ul>
+<li>User will be prompted for NTLM Proxy Username, Password and Domain:</li>
+</ul>
+<pre><code class="bash">pipe configure --proxy-ntlm
+...
+Username for the proxy NTLM authentication: user1
+Domain of the user1 user: ''
+Password of the user1 user:
+</code></pre>
+
+<ul>
+<li>Use <code>http://myproxy:3128</code> as the "original" proxy address. User will not be prompted for NTLM credentials:</li>
+</ul>
+<pre><code class="bash">pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy &quot;http://myproxy:3128&quot;
+</code></pre>
+
+<h2 id="environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</h2>
+<p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
+<p>In current version, an ability to configure the <code>Modules</code> support for the compute jobs is introduced, if this is required by any use case.</p>
+<p>For using facilities of the <code>Environment Modules</code> package, a new system parameter was added to the Cloud Pipeline:</p>
+<ul>
+<li><strong><code>CP_CAP_MODULES</code></strong> <em>(boolean)</em> - enables installation and using the <code>Modules</code> for the current run (for all supported Linux distributions)</li>
+</ul>
+<p>If <code>CP_CAP_MODULES</code> system parameter is set - the <code>Modules</code> will be installed and made available. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default <code>modulefiles</code> location will be used.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/221">#221</a></p>
 <p>When user was searching for an entry, that may belong to different classes (e.g. <code>issues</code> and <code>folders</code>) - user was not able to filter the results by the class</p>
-<h3 id="commiting-status-hangs">"COMMITING..." status hangs</h3>
+<h3 id="committing-status-hangs">"COMMITTING..." status hangs</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/152">#152</a></p>
 <p>In certain cases, while committing pipeline with the stop flag enabled - the run's status hangs in <code>Committing...</code> state. Run state does not change even after the commit operation succeeds and a job is stopped.</p>
 <h3 id="instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</h3>
@@ -777,6 +892,10 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/265">#265</a></p>
 <p>All authorized users were permitted to browse the metadata of <code>users</code> and <code>roles</code> entities. But those entries may contain a sensitive data, that shall not be shared across users.</p>
 <p>Now a general user may list only personal <code>user-level</code> metadata. Administrators may list both <code>users</code> and <code>roles</code> metadata across all entries.</p>
+<h3 id="getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/468">#468</a></p>
+<p>For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause <code>OutOfMemory</code> error, since Kubernetes library tries to load it into a single String object.<br />
+In current version, a new system preference was introduced: <strong><code>system.logs.line.limit</code></strong>. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.</p>
               
             </div>
           </div>

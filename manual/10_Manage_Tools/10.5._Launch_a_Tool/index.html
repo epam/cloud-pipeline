@@ -313,7 +313,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -372,6 +372,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -503,8 +507,11 @@
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_01.png" /></li>
 <li>If you want to change settings, you shall click the arrow near the <strong>Run</strong> button → <strong>Custom settings</strong>.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_02.png" /></li>
-<li><strong>Launch tool</strong> page will be open.<br />
-<img alt="CP_LaunchTool" src="../attachments/LaunchTool_03.png" /></li>
+<li><strong>Launch tool</strong> page will be opened.<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_03.png" /><br />
+<strong><em>Note</em></strong>: if <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchTool_23.png" /><br />
+    This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</li>
 <li>Define the parameters in the <strong>Exec environment</strong>, <strong>Advanced</strong> and <strong>Parameters</strong> tabs.</li>
 <li>Click the <strong>Launch</strong> button in the top-right corner of the screen.</li>
 </ol>
@@ -520,7 +527,7 @@
 <li>Click the "<strong>Launch</strong>" button.</li>
 </ol>
 <h3 id="example-1">Example 1</h3>
-<p>In this example, we will run the "<strong>base-gui-centos-nomachine</strong>" Tool with custom settings: <strong>20 Gb</strong> hard drive, <strong>2 CPU</strong> cores, and <strong>8 Gb</strong> RAM. Pricing is calculated for a spot instance.<br />
+<p>In this example, we will run the "<strong>centos-nomachine</strong>" Tool with custom settings: <strong>20 Gb</strong> hard drive, <strong>2 CPU</strong> cores, and <strong>8 Gb</strong> RAM.<br />
 <strong><em>Note</em></strong>: "Start idle" box is ticked to allow <strong>SSH</strong> access to the running Tool. To learn more about interactive services see <a href="../../15_Interactive_services/15._Interactive_services/">15. Interactive services</a>.<br />
 Click the <strong>Launch</strong> button in the top-right corner of the screen when all parameters are set.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_06.png" /></p>

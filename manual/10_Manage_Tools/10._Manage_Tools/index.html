@@ -309,7 +309,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -368,6 +368,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -682,14 +686,22 @@ Every <strong>Tool</strong> object in the Cloud Pipeline is a representation o
 <img alt="CP_ManageTools" src="../attachments/ManageTools_17.png" /></p>
 <p>More about <strong>Security scan</strong> feature you could learn <a href="../10.6._Tool_security_check/">here</a>.</p>
 <h5 id="settings-tab">Settings tab</h5>
-<p>Navigate to this tab to see Tool attributes and execution defaults.</p>
+<p>Navigate to this tab to see Tool attributes and execution defaults:<br />
+<img alt="CP_ManageTools" src="../attachments/ManageTools_18.png" /></p>
 <ol>
-<li><strong>Endpoints</strong> - specify an endpoint for the service launched in a Tool.</li>
-<li><strong>Labels</strong> - tool labels to briefly describe the Tool.</li>
+<li><strong>Tool endpoints</strong> - specify an endpoint for the service launched in a Tool.</li>
+<li><strong>Tool attributes</strong> - tool labels to briefly describe the Tool.</li>
+<li><strong>Execution defaults</strong> - execution environment settings with which tool will be run by default:  <ul>
+<li><strong>Instance type</strong> - An instance type in terms of Cloud Provider with specifying amounts of CPU, RAM and GPU.</li>
+<li><strong>Price type</strong> - spot or on-demand type of instance.</li>
 <li><strong>Disk</strong> - instance disk size in Gb.</li>
-<li><strong>Instance type</strong> - EC2 instance type. Contains information about an amount of CPU and RAM (in Gb).</li>
-<li><strong>Default command</strong> - default command for Tool execution.<br />
-<img alt="CP_ManageTools" src="../attachments/ManageTools_18.png" /></li>
+<li><strong>Limit mounts</strong> - available storages for Tool execution.</li>
+<li><strong>Configure cluster</strong> - by clicking on this button cluster can be configured (for more details see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>).</li>
+<li><strong>Cmd template</strong> - default command for Tool execution.</li>
+</ul>
+</li>
+<li><strong>System parameters</strong> - system parameters that can be used during Tool execution.</li>
+<li><strong>Custom parameters</strong> - specific parameters that can be used during Tool execution.</li>
 </ol>
 <p>Navigate back to the <strong>Tools group</strong> page from the Tool description with the arrow button on the top-left corner.<br />
 <img alt="CP_ManageTools" src="../attachments/ManageTools_19.png" /></p>

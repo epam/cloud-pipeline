@@ -307,7 +307,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -366,6 +366,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -491,8 +495,8 @@ Uploading could be executed from the csv or tsv file. The structure of load f
 <thead>
 <tr>
 <th>(referenced_entity_type):ID</th>
-<th>membership:(referenced_entity_type):ID</th>
-<th>AttrubuteName</th>
+<th>membership:MembershipAttributeName:(referenced_entity_type):ID</th>
+<th>AttributeName</th>
 </tr>
 </thead>
 <tbody>
@@ -515,10 +519,10 @@ Uploading could be executed from the csv or tsv file. The structure of load f
 </table>
 <p>Examples: <a href="../attachments/UploadMetadata_example1.csv">wes-11-rep-samples.csv</a>, <a href="../attachments/UploadMetadata_example2.csv">wes-11-rep-set.csv</a></p>
 <ul>
-<li><strong>(referenced_entity_type):ID</strong> - here you set up what type of entity you are uploading and what is an ID of it, e.g. Sample:ID = FZ700059549.</li>
-<li><strong>membership:(referenced_entity_type):ID</strong> - this is a reference to an instance of another entity. If you have a sample owned by a participant, you can show this connection: Participant:Participant:ID = TY90000044343.<br />
+<li><strong>(referenced_entity_type):ID</strong> - here you set up what type of entity you are uploading and what is an ID of it, e.g. <em>Sample:ID = FZ700059549</em>.</li>
+<li><strong>membership:MembershipAttributeName:(referenced_entity_type):ID</strong> - this is a reference to an instance of another entity. If you have a sample owned by a participant, you can show this connection - <em>membership:Participants:Participant:ID = TY90000044343</em>.<br />
 <strong><em>Note</em></strong>: make sure, that the reference entity id already exists in the system.</li>
-<li><strong>AttrubuteName</strong> - any attribute name of an instance, e.g. RNA or DNA type, Blood or Tissue, etc.</li>
+<li><strong>AttributeName</strong> - any attribute name of an instance, e.g. RNA or DNA type, Blood or Tissue, etc.</li>
 </ul>
 <h2 id="upload-instances-of-an-entity">Upload instances of an entity</h2>
 <ol>
@@ -526,7 +530,9 @@ Uploading could be executed from the csv or tsv file. The structure of load f
 <li>The <strong>Uploading metadata</strong> window is open.</li>
 <li>Select the appropriate file.</li>
 <li>Confirm choice by clicking <strong>OK</strong>.<br />
-<strong><em>Note</em></strong>: if your file contains a link to the instance that doesn't exist, the whole metadata file won't be uploaded. For example, you set a link to a participant ID that doesn't exist in the file with samples.</li>
+<strong><em>Note</em></strong>: if your file contains a link to the instance that doesn't exist, the whole metadata file won't be uploaded. For example, you set a link to a participant ID that doesn't exist in the file with samples.<br />
+<strong><em>Note</em></strong>: while uploading the progress bar will be shown:<br />
+<img alt="CP_UploadMetadata" src="../attachments/UploadMetadata_2.png" /></li>
 <li>The new metadata is uploaded in the folder of a specific entity in the project.<br />
 <strong><em>Note</em></strong>: the instances will be uploaded to the entity with a name, related to the first column if exists (e.g. "Sample"). Otherwise, the new entity folder will be created.<br />
 <strong><em>Note</em></strong>: if the file contains instances already exist in the system, the attributes of it will be updated.</li>

@@ -313,7 +313,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -372,6 +372,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -545,7 +549,7 @@
 </tr>
 <tr>
 <td><strong>Git repository</strong></td>
-<td>"<strong>Git repository</strong>" control (<strong>3</strong>) shows a gitlab repository address where pipeline versions are stored, which could be copied and pasted into a browser address field.<br />Also a user can work directly with git from the console on the running node. To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission are also needed.<br />For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
+<td>"<strong>Git repository</strong>" control (<strong>3</strong>) shows a git repository address where pipeline versions are stored, which could be copied and pasted into a browser address field:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_20.png" /><br />If for your purposes <code>ssh</code> protocol is required, you may click the <strong>HTTPS/SSH</strong> selector and choose the <strong>SSH</strong> item:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_21.png" /><br />In that case, you will get a reformatted SSH address:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_22.png" /><br />Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see <a href="../../12_Manage_Settings/12._Manage_Settings/#git-cli">here</a>.<br />To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission are also needed. For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
 </tr>
 <tr>
 <td><strong>Release</strong></td>
@@ -579,7 +583,7 @@
 </tr>
 <tr>
 <td><strong>Git repository</strong></td>
-<td>Shows a git repository address where pipeline versions are stored, which could be copied and pasted in a browser line. Also a user can work directly with git from the console on the running node.<br />To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission are also needed. For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
+<td>Shows a git repository address where pipeline versions are stored, which could be copied and pasted in a browser line.<br />Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see <a href="../../12_Manage_Settings/12._Manage_Settings/#git-cli">here</a>.<br />To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission is also needed. For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
 </tr>
 </tbody>
 </table>
@@ -687,7 +691,7 @@ To create your own scenario the default template of the main file shall be edite
         </tr>
         <tr class="even">
             <td><strong>instance_size</strong></td>
-            <td>AWS EC2 instance size (e.g. "m4.xlarge") that specifies an amount of RAM in Gb and CPU cores number.</td>
+            <td>instance type in terms of the specific Cloud Provider that specifies an amount of RAM in Gb, CPU and GPU cores number (e.g. "m4.xlarge" for AWS EC2 instance).</td>
         </tr>
         <tr class="odd">
             <td><strong>instance_disk</strong></td>
@@ -759,7 +763,7 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td></td>
 <td><strong>Node type</strong></td>
-<td>An instance type in terms of Amazon: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).</td>
+<td>An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).</td>
 </tr>
 <tr>
 <td></td>
@@ -769,12 +773,12 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td></td>
 <td><strong>Configure cluster</strong> button</td>
-<td>On-click, pop-up window will be shown:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_07.png" /><br />Here you can configure cluster or auto-scaled cluster. Cluster is a collection of instances which are connected so that they can be used together on a task. In both cases, a number of additional worker nodes with some main node as cluster head are launching (total number of pipelines = "number of working nodes" + 1) having NFS network file system within one node. See <a href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">v.0.14 - 7.2. Launch Detached Configuration</a> for details.<br /><br />In case of using <strong>cluster</strong>, an exact count of worker nodes is directly defined by the user before launching the task and could not changing during the run.<br /><br />In case of using <strong>auto-scaled cluster</strong>, a max count of worker nodes is defined by the user before launching the task but really used count of worker nodes can change during the run depending on the jobs queue load.<br /><br />For configure cluster:<ul><li>in opened window click <strong>Cluster</strong> button</li><li>specify a number of child nodes (workers' count) and click <strong>Ok</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_08.png" /></ul><blockquote>When user selects <strong>Cluster</strong> option, information on total cluster resources is shown. Resources are calculated as <strong>(CPU/RAM/GPU)*(NUMBER_OF_WORKERS+1)</strong>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_09.png" /></blockquote><br />For configure <strong>auto-scaled cluster</strong>:<ul><li>in opened window click <strong>Auto-scaled cluster</strong> button</li><li>specify a number of child nodes (workers' count) in field <strong>Auto-scaled up to</strong> and click <strong>Ok</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_10.png" /><br /><strong><em>Note</em></strong>: that number is meaning total count of "auto-scaled" nodes - it is the max count of worker nodes that could be attached to the main node to work together as cluster. These nodes will be attached to the cluster only in case if some jobs are in waiting state longer than a specific time. Also these nodes will be dropped from the cluster in case when jobs queue is empty or all jobs are running and there are some idle nodes longer than a specific time.<br /><strong><em>Note</em></strong>: about timeout periods for scale-up and scale-down of auto-scaled cluster see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#grid-engine-autoscaling">here</a>.<li>also you may specify a number of "persistent" child nodes (workers' count) - click <strong>Setup default child nodes count</strong>, input <strong>Default child nodes</strong> number and click <strong>Ok</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_11.png" /><br />These default child nodes will be never "scaled-down" during the run regardless of jobs queue load. In the example above, total count of "auto-scaled" nodes - 3, and 1 of them is "persistent".<br /><strong><em>Note</em></strong>: total count of child nodes always must be greater than count of default ("persistent") child nodes.<li>if you don't want to use default ("persistent") child nodes in your auto-scaled cluster - click <strong>Reset</strong> button opposite the <strong>Default child nodes</strong> field.</li></ul><br /><blockquote>When user selects <strong>Auto-scaled cluster</strong>, information on total cluster resources is shown as interval - from the "min" configuration to "max" configuration:<br />"min" configuration resources are calculated as <strong>(CPU\/RAM\/GPU)*(NUMBER_OF_DEFAULT_WORKERS+1)</strong><br />"max" configuration resources are calculated as <strong>(CPU\/RAM\/GPU)*(TOTAL_NUMBER_OF_WORKERS+1)</strong><br /><br />E.g. for auto-scaled cluster with 2 child nodes and without default ("persistent") child nodes <em>(NUMBER_OF_DEFAULT_WORKERS = 0; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_12.png" /><br /><br />E.g. for auto-scaled cluster with 2 child nodes and 1 default ("persistent") child node <em>(NUMBER_OF_DEFAULT_WORKERS = 1; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_13.png" /></blockquote><strong><em>Note</em></strong>: if you don't want to use any cluster - click <strong>Single node</strong> button and then click <strong>Ok</strong> button.</td>
+<td>On-click, pop-up window will be shown:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_07.png" /><br />Here you can configure cluster or auto-scaled cluster. Cluster is a collection of instances which are connected so that they can be used together on a task. In both cases, a number of additional worker nodes with some main node as cluster head are launching (total number of pipelines = "number of working nodes" + 1). See <a href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">v.0.14 - 7.2. Launch Detached Configuration</a> for details.<br /><br />In case of using <strong>cluster</strong>, an exact count of worker nodes is directly defined by the user before launching the task and could not changing during the run.<br /><br />In case of using <strong>auto-scaled cluster</strong>, a max count of worker nodes is defined by the user before launching the task but really used count of worker nodes can change during the run depending on the jobs queue load.<br /><br />For configure cluster:<ul><li>in opened window click <strong>Cluster</strong> button</li><li>specify a number of child nodes (workers' count)</li><li>if you want to use <strong>GridEngine</strong> server for the cluster, set <strong>Enable GridEngine</strong> checkbox. Setting of that checkbox automatically adds <strong><code>CP_CAP_SGE</code></strong> system parameter with value <code>true</code>.<br /><strong><em>Note</em></strong>: you may set this and other system parameters manually - see example <a href="../6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-system-parameter">here</a>.</li><li>click <strong>OK</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_08.png" /></ul><blockquote>When user selects <strong>Cluster</strong> option, information on total cluster resources is shown. Resources are calculated as <strong>(CPU/RAM/GPU)*(NUMBER_OF_WORKERS+1)</strong>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_09.png" /></blockquote><br />For configure <strong>auto-scaled cluster</strong>:<ul><li>in opened window click <strong>Auto-scaled cluster</strong> button</li><li>specify a number of child nodes (workers' count) in field <strong>Auto-scaled up to</strong> and click <strong>OK</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_10.png" /><br /><strong><em>Note</em></strong>: that number is meaning total count of "auto-scaled" nodes - it is the max count of worker nodes that could be attached to the main node to work together as cluster. These nodes will be attached to the cluster only in case if some jobs are in waiting state longer than a specific time. Also these nodes will be dropped from the cluster in case when jobs queue is empty or all jobs are running and there are some idle nodes longer than a specific time.<br /><strong><em>Note</em></strong>: about timeout periods for scale-up and scale-down of auto-scaled cluster see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#grid-engine-autoscaling">here</a>.<li>also you may specify a number of "persistent" child nodes (workers' count) - click <strong>Setup default child nodes count</strong>, input <strong>Default child nodes</strong> number and click <strong>Ok</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_11.png" /><br />These default child nodes will be never "scaled-down" during the run regardless of jobs queue load. In the example above, total count of "auto-scaled" nodes - 3, and 1 of them is "persistent".<br /><strong><em>Note</em></strong>: total count of child nodes always must be greater than count of default ("persistent") child nodes.<li>if you don't want to use default ("persistent") child nodes in your auto-scaled cluster - click <strong>Reset</strong> button opposite the <strong>Default child nodes</strong> field.</li></ul><blockquote>When user selects <strong>Auto-scaled cluster</strong>, information on total cluster resources is shown as interval - from the "min" configuration to "max" configuration:<br />"min" configuration resources are calculated as <strong>(CPU/RAM/GPU)*(NUMBER_OF_DEFAULT_WORKERS+1)</strong><br />"max" configuration resources are calculated as <strong>(CPU/RAM/GPU)*(TOTAL_NUMBER_OF_WORKERS+1)</strong><br /><br />E.g. for auto-scaled cluster with 2 child nodes and without default ("persistent") child nodes <em>(NUMBER_OF_DEFAULT_WORKERS = 0; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_12.png" /><br /><br />E.g. for auto-scaled cluster with 2 child nodes and 1 default ("persistent") child node <em>(NUMBER_OF_DEFAULT_WORKERS = 1; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_13.png" /></blockquote><strong><em>Note</em></strong>: if you don't want to use any cluster - click <strong>Single node</strong> button and then click <strong>OK</strong> button.</td>
 </tr>
 <tr>
 <td></td>
 <td><strong>Cloud Region</strong></td>
-<td>A region, where computing nodes are located. This select allows to decrease time of data movement for huge data volumes by choosing the nearest region.<br /><br />Please note that a "default" region for all runs is "US East". If a non-default region is selected - certain CP features may be unavailable:<ul><li>EFS storages usage from the another region (e.g. EU West region cannot use EFS storages from the "US East"). S3 buckets will be still available</li><li>If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.</li></ul></td>
+<td>A specific region for a compute node placement.<br />Please note, if a non-default region is selected - certain CP features may be unavailable:<br /><ul><li>FS mounts usage from the another region (e.g. "<em>EU West</em>" region cannot use FS mounts from the "<em>US East</em>"). Regular storages will be still available</li><li>If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.</li></ul></td>
 </tr>
 <tr>
 <td><strong>Advanced</strong></td>
@@ -784,7 +788,7 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td></td>
 <td><strong>Price type</strong></td>
-<td>Choose <a href="https://aws.amazon.com/ec2/spot/">spot</a> or <a href="https://aws.amazon.com/ec2/pricing/on-demand/">on-demand</a> type of instance. You can look information about price types hovering "Info" icon and based on it make your choice.</td>
+<td>Choose Spot or On-demand type of instance. You can look information about price types hovering "Info" icon and based on it make your choice.</td>
 </tr>
 <tr>
 <td></td>
@@ -794,7 +798,7 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td></td>
 <td><strong>Limit mounts</strong></td>
-<td>Allow to specify storages that should be mounted.</td>
+<td>Allow to specify storages that should be mounted. See <a href="../6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</td>
 </tr>
 <tr>
 <td></td>
@@ -809,7 +813,7 @@ To create your own scenario the default template of the main file shall be edite
 <tr>
 <td><strong>Parameters</strong></td>
 <td></td>
-<td>This section lists pipeline specific parameters that can be used during a pipeline run. Pipeline parameters can be assigned the following types: <ul><li><strong>String</strong> - generic scalar value (e.g. Sample name).</li><li><strong>Path</strong> - path in a data storage hierarchy.</li><li><strong>Input</strong> - path in a data storage hierarchy. During pipeline initialization, this path will be used to download input data on the calculation node for processing from a storage.</li><li><strong>Output</strong> - path in a data storage hierarchy. During pipeline finalization, this path will be used to upload resulting data to a storage.</li><li><strong>Common</strong> - path in a data storage hierarchy. Similar to "Input" type, but this data will not be erased from a calculation node, when a pipeline is finished (this is useful for reference data, as it can be reused by further pipeline runs that share the same reference).</li></ul><strong><em>Note</em></strong>: You can use <strong>Project</strong> attribute values as parameters for the <strong>Run</strong>: <ol><li>Click an empty parameter value field.</li><li>Enter "<strong>project.</strong>"</li><li>In the drop-down list select the Project attribute value:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_14.png" /></li></ol></td>
+<td>This section lists pipeline specific parameters that can be used during a pipeline run. Pipeline parameters can be assigned the following types: <ul><li><strong>String</strong> - generic scalar value (e.g. Sample name).</li><li><strong>Boolean</strong> - boolean value.</li><li><strong>Path</strong> - path in a data storage hierarchy.</li><li><strong>Input</strong> - path in a data storage hierarchy. During pipeline initialization, this path will be used to download input data on the calculation node for processing from a storage.</li><li><strong>Output</strong> - path in a data storage hierarchy. During pipeline finalization, this path will be used to upload resulting data to a storage.</li><li><strong>Common</strong> - path in a data storage hierarchy. Similar to "Input" type, but this data will not be erased from a calculation node, when a pipeline is finished (this is useful for reference data, as it can be reused by further pipeline runs that share the same reference).</li></ul><strong><em>Note</em></strong>: You can use <strong>Project</strong> attribute values as parameters for the <strong>Run</strong>: <ol><li>Click an empty parameter value field.</li><li>Enter "<strong>project.</strong>"</li><li>In the drop-down list select the Project attribute value:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_14.png" /></li></ol></td>
 </tr>
 <tr>
 <td></td>
@@ -843,12 +847,11 @@ To create your own scenario the default template of the main file shall be edite
 <ul>
 <li><strong>Run</strong> - run name that consists of pipeline name and run id.</li>
 <li><strong>Parent-run</strong> - id of the run that executed current run (this field is non-empty only for runs that are executed by other runs).</li>
-<li><strong>Pipeline</strong> - pipeline name.</li>
-<li><strong>Version</strong> - pipeline version.</li>
+<li><strong>Pipeline</strong> - each record of that column contains two rows: in upper - pipeline name, in bottom - pipeline version.</li>
+<li><strong>Docker image</strong> - base docker image name.</li>
 <li><strong>Started</strong> - time pipeline started running.</li>
 <li><strong>Completed</strong> - time pipeline finished execution.</li>
-<li><strong>Elapsed time</strong> - pipeline running time.</li>
-<li><strong>Estimated price</strong> - estimated price of run, which is calculated based on the run duration and instance type.</li>
+<li><strong>Elapsed</strong> - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type.</li>
 <li><strong>Owner</strong> - user who launched run.</li>
 </ul>
 <p>You can filter runs by clicking the <strong>filter icon</strong>. By using the <strong>filter control</strong> you can choose whether display runs for current pipeline version or display runs for all pipeline versions.</p>
@@ -862,40 +865,49 @@ To create your own scenario the default template of the main file shall be edite
 </thead>
 <tbody>
 <tr>
-<td><strong>Pause (a)</strong></td>
+<td><strong>PAUSE (a)</strong></td>
 <td>To pause running pipeline press this control. This control is available only for on-demand instances.</td>
 </tr>
 <tr>
-<td><strong>Resume (b)</strong></td>
-<td>To resume pausing pipeline press this control. This control is available only for on-demand instances.</td>
-</tr>
-<tr>
-<td><strong>Stop (c)</strong></td>
+<td><strong>STOP (b)</strong></td>
 <td>To stop running pipeline press this control.</td>
 </tr>
 <tr>
-<td><strong>Rerun (d)</strong></td>
-<td>This control reruns completed pipeline's runs.</td>
+<td><strong>LOG (c)</strong></td>
+<td>"Log" control opens detailed information about the run. You'll be redirected to "<strong>Runs</strong>" space (see <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>).</td>
 </tr>
 <tr>
-<td><strong>Log (e)</strong></td>
-<td>"Log" control opens detailed information about the run. You'll be redirected to "<strong>Runs</strong>" space (see <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>).</td>
+<td><strong>RESUME (d)</strong></td>
+<td>To resume pausing pipeline press this control. This control is available only for on-demand instances.</td>
+</tr>
+<tr>
+<td><strong>TERMINATE (e)</strong></td>
+<td>To terminate node without waiting of the pipeline resuming. This control is available only for on-demand instances, which were paused.</td>
+</tr>
+<tr>
+<td><strong>RERUN (f)</strong></td>
+<td>This control reruns completed pipeline's runs.</td>
 </tr>
 </tbody>
 </table>
 <h4 id="pipeline-runs-states">Pipeline run's states</h4>
 <p>Icons at the left represent the current state of the pipeline runs:  </p>
 <ul>
-<li><strong>Rotating</strong> - a run is scheduled but is waiting for a calculation node to appear.</li>
-<li><strong>Download</strong> - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
-<li><strong>Play</strong> - The pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
-<li><strong>OK</strong> - successful pipeline execution.</li>
-<li><strong>Caution</strong> - unsuccessful pipeline execution.</li>
-<li><strong>Time</strong> - a pipeline manually stopped.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_28.png" /> - <strong>Queued</strong> state ("sandglass" icon) - a run is waiting in the queue for the available compute node.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_29.png" /> - <strong>Initializing</strong> state ("rotating" icon) - a run is being initialized.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_23.png" /> - <strong>Pulling</strong> state ("download" icon) - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_24.png" /> - <strong>Running</strong> state ("play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_30.png" /> - <strong>Paused</strong> state ("pause" icon) - a run is paused. At this moment compute node is already stopped but keeps it's state. Such run may be resumed.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_25.png" /> - <strong>Success</strong> state ("OK" icon) - successful pipeline execution.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_26.png" /> - <strong>Failed</strong> state ("caution" icon) - unsuccessful pipeline execution.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_27.png" /> - <strong>Stopped</strong> state ("clock" icon) - a pipeline manually stopped.</li>
 </ul>
 <p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_16.png" /></p>
+<p>Also, help tooltips are provided when hovering a run state icon, e.g.:<br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_32.png" /><br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_31.png" /></p>
 <h3 id="storage-rules">STORAGE RULES</h3>
-<p>This section displays a list of rules used to upload data to the output data storage, once pipeline finished. It helps to store only data you need and minimize the amount of interim data in S3 buckets.</p>
+<p>This section displays a list of rules used to upload data to the output data storage, once pipeline finished. It helps to store only data you need and minimize the amount of interim data in data storages.</p>
 <p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_17.png" /></p>
 <p>Info is organized into a table with the following columns:</p>
 <ul>
@@ -942,6 +954,14 @@ To create your own scenario the default template of the main file shall be edite
 </thead>
 <tbody>
 <tr>
+<td><strong>Save</strong></td>
+<td>saves changes.</td>
+</tr>
+<tr>
+<td><strong>Revert</strong></td>
+<td>reverts all changes to the last saving.</td>
+</tr>
+<tr>
 <td><strong>Layout</strong></td>
 <td>performs graph linearization, make it more readable.</td>
 </tr>
@@ -954,12 +974,20 @@ To create your own scenario the default template of the main file shall be edite
 <td>enables/disables workflow level links to the tasks. It is disabled by default, as for large workflows it overwhelms the visualization.</td>
 </tr>
 <tr>
-<td><strong>Revert</strong></td>
-<td>reverts all changes to the last saving.</td>
+<td><strong>Zoom out</strong></td>
+<td>zooms graph out.</td>
 </tr>
 <tr>
-<td><strong>Save</strong></td>
-<td>saves changes.</td>
+<td><strong>Zoom in</strong></td>
+<td>zooms graph in.</td>
+</tr>
+<tr>
+<td><strong>Search element</strong></td>
+<td>allows to find specific object at the graph.</td>
+</tr>
+<tr>
+<td><strong>Fullscreen</strong></td>
+<td>expands graph to the full screen.</td>
 </tr>
 </tbody>
 </table>

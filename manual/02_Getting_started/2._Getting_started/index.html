@@ -96,6 +96,8 @@
         
             <li><a class="toctree-l4" href="#thesaurus">Thesaurus</a></li>
         
+            <li><a class="toctree-l4" href="#supported-cloud-providers">Supported Cloud Providers</a></li>
+        
             <li><a class="toctree-l4" href="#supported-browsers">Supported Browsers</a></li>
         
             <li><a class="toctree-l4" href="#authentication">Authentication</a></li>
@@ -311,7 +313,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -370,6 +372,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -482,12 +488,13 @@
               
                 <h1 id="2-getting-started">2. Getting started</h1>
 <h2 id="thesaurus">Thesaurus</h2>
+<p><strong>Cloud Provider</strong> - supported cloud computing provider.</p>
 <p><strong>Objects</strong> - Cloud Pipeline (CP) entities such as Folder, Pipeline, Data Storage, Run configuration, Cluster node, Docker Registry, Tool group, Tool.</p>
 <p><strong>Folder</strong>, or <strong>directory</strong> - CP object. It is an entity similar to the directories in the file system. Folders are used to structure other CP objects.</p>
 <p><strong>Project</strong> - a special type of Folder. It might be used to organize data and metadata (see below) and simplify analysis runs for a large data set.</p>
 <p><strong>Pipeline</strong> - CP object. Represents a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.</p>
-<p><strong>Data Storage</strong> - CP object. It is an S3 bucket (see below) representation in a folder hierarchy.</p>
-<p><strong>NFS Storage</strong> - a data storage based on NFS (Network File System). It is a distributed file system that can be used by several nodes during High-performance computing jobs.</p>
+<p><strong>Data Storage</strong> - CP object. It is a cloud storage (e.g. S3 bucket for AWS or Blob Storage for MS Azure) representation in a folder hierarchy.</p>
+<p><strong>FS Mount</strong> - a data storage based on network FS (File System). It is a distributed file system that can be used by several nodes during High-performance computing jobs.</p>
 <p><strong>Docker Registry</strong> - CP object. It is a Docker registry representation in the CP. Docker registry stores docker images. For more details refer to <a href="https://docs.docker.com/registry/">https://docs.docker.com/registry/</a>.</p>
 <p><strong>Tool</strong> - CP object. It is a Docker image representation in CP.</p>
 <p><strong>Tool group</strong> - CP object. It allows organizing different Tools into groups.</p>
@@ -501,29 +508,35 @@
 <p><strong>Docker image</strong> - a stand-alone, executable package that includes everything needed to run a piece of software. Containerized software will always run the same, regardless of the environment.</p>
 <p><strong>Docker container</strong> - a runtime instance of docker image - what the image turns into when actually executed.</p>
 <p><strong>Run</strong> - Executed "Pipeline" or "Tool" object, contains log information and parameters of an execution process.</p>
-<p><strong>S3 bucket</strong>, or <strong>bucket</strong> - Amazon cloud data storage. For more details please refer to <a href="https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html">https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html</a>.</p>
-<p><strong>EC2 instance</strong>, or just <strong>instance</strong> - virtual computing environment. For more details refer to <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html</a>.</p>
+<p><strong>Instance</strong> - virtual computing environment (e.g. EC2 instance for AWS or Azure Virtual Machines for MS Azure).</p>
 <ul>
 <li>
 <p><strong>On-Demand Instances</strong> – "Stable" type of instances that can't be overbought while in use.</p>
 </li>
 <li>
-<p><strong>Spot Instances</strong> – EC2 instances, which has significantly lower costs. This type of instances are rented and can be overbought and shut down by Amazon. EC2 instances may have any type (number of CPU cores, processor type, amount of RAM and disk space, etc.) that describes optimization and available features for the instance.</p>
+<p><strong>Spot Instances</strong> – instances, which has significantly lower costs. This type of instances are rented and can be overbought and shut down by cloud provider. Instances may have any type (number of CPU cores, processor type, amount of RAM and disk space, etc.) that describes optimization and available features for the instance.</p>
 </li>
 </ul>
-<p><strong>Cluster node (Calculation node)</strong> - EC2 instance used for a "Run" object.</p>
+<p><strong>Cluster node (Calculation node)</strong> - instance used for a "Run" object.</p>
 <p><strong>Task</strong> - a discrete Pipeline step.</p>
 <p><strong>Attributes</strong> - data that provides information about other data. CP allows creating a custom metadata set of "key=values" (attributes) for its objects. It helps to maintain traceability and use this information for search queries.</p>
 <p><strong>Cloud Pipeline CLI</strong> - <a href="https://en.wikipedia.org/wiki/Command-line_interface">command line interface</a> to the CP. It allows interaction with CP via command line instead of GUI.</p>
-<p><strong>STS (Short-Term Storage)</strong> - S3 buckets (in case of Amazon) that are used for frequently accessed files.</p>
-<p><strong>LTS (Long-Term Storage)</strong> - Amazon Glacier archive (in case of Amazon) that is for infrequently accessed files. Access to data becomes more complicated but it's cheaper.</p>
+<p><strong>STS (Short-Term Storage)</strong> - data storage that is used for frequently accessed files.</p>
+<p><strong>LTS (Long-Term Storage)</strong> - data storage that is used for infrequently accessed files. Access to data becomes more complicated but it's cheaper.</p>
 <p><strong>Pipeline template</strong> - it is a template structure for creating a pipeline. Typically it includes source code folder structure with the executable script, doc file, and configuration file.</p>
 <p><strong>Token</strong> - authentication key to getting access to an application.</p>
 <p><strong>Endpoint</strong> - link to access a launched application.</p>
 <p><strong>Pipeline version</strong> - A particular version of pipeline source code, documentation and configuration.</p>
 <p><strong>Log</strong> - automatically produced and time-stamped documentation of events relevant to a particular system.</p>
 <p><strong>Cluster</strong> - a collection of instances which are connected so that they can be used together on a task.</p>
-<p><strong>Access Control List</strong> - a list of pairs of attributes: user id and permissions: read/write/execute.</p>
+<p><strong>Access Control List</strong> - a list of pairs of attributes - user id and permissions: read/write/execute.</p>
+<h2 id="supported-cloud-providers">Supported Cloud Providers</h2>
+<p>The following Cloud Providers are supported at the moment:</p>
+<ul>
+<li><strong>Amazon Web Services‎</strong> (<a href="https://aws.amazon.com/">AWS</a>)</li>
+<li><strong>Microsoft Azure services</strong> (<a href="https://azure.microsoft.com/en-us/overview/">MS Azure</a>)</li>
+<li><strong>Google Cloud Platform</strong> (<a href="https://cloud.google.com/">GCP</a>)</li>
+</ul>
 <h2 id="supported-browsers">Supported Browsers</h2>
 <p>The following web-browsers are supported at the moment:</p>
 <ul>

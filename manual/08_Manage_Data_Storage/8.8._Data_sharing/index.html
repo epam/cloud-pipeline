@@ -246,11 +246,11 @@
     
         <ul>
         
-            <li><a class="toctree-l5" href="#create-shared-s3-storage">Create shared s3 storage</a></li>
+            <li><a class="toctree-l5" href="#create-shared-storage">Create shared storage</a></li>
         
-            <li><a class="toctree-l5" href="#upload-data-to-shared-s3-storage">Upload data to shared s3 storage</a></li>
+            <li><a class="toctree-l5" href="#upload-data-to-shared-storage">Upload data to shared storage</a></li>
         
-            <li><a class="toctree-l5" href="#download-data-from-shared-s3-storage">Download data from shared s3 storage</a></li>
+            <li><a class="toctree-l5" href="#download-data-from-shared-storage">Download data from shared storage</a></li>
         
         </ul>
     
@@ -311,7 +311,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -370,6 +370,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -486,20 +490,20 @@
               
                 <h1 id="88-data-sharing">8.8. Data sharing</h1>
 <ul>
-<li><a href="#create-shared-s3-storage">Create shared s3 storage</a></li>
-<li><a href="#upload-data-to-shared-s3-storage">Upload data to shared s3 storage</a></li>
-<li><a href="#download-data-from-shared-s3-storage">Download data from shared s3 storage</a></li>
+<li><a href="#create-shared-storage">Create shared storage</a></li>
+<li><a href="#upload-data-to-shared-storage">Upload data to shared storage</a></li>
+<li><a href="#download-data-from-shared-storage">Download data from shared storage</a></li>
 </ul>
 <blockquote>
 <p>To create a <strong>Shared storage</strong> in a <strong>Folder</strong> you need to have <strong>READ</strong> and <strong>WRITE</strong> permissions for that folder and a <strong>STORAGE_MANAGER</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
 </blockquote>
-<p>Users can share s3 data storages within a Cloud Platform for enabling of getting data files by the external partners for processing.</p>
-<h2 id="create-shared-s3-storage">Create shared s3 storage</h2>
+<p>Users can share data storages within a Cloud Platform for enabling of getting data files by the external partners for processing.</p>
+<h2 id="create-shared-storage">Create shared storage</h2>
 <blockquote>
-<p>For the ability of getting data files by the external partners, users should be considered, that external partner has own CP account and R/W permissions for a bucket.</p>
+<p>For the ability of getting data files by the external partners, users should be considered, that external partner has own CP account and R/W permissions for a storage.</p>
 </blockquote>
 <ol>
-<li>Start creating a new object storage (for more details see <a href="../8.1._Create_and_edit_storage/#create-s3-storage">here</a>), fill <strong>Info</strong> items.</li>
+<li>Start creating a new object storage (for more details see <a href="../8.1._Create_and_edit_storage/#create-storage">here</a>), fill <strong>Info</strong> items.</li>
 <li>Set <strong>Enable sharing</strong>.</li>
 <li>Click <strong>Create</strong> button:<br />
 <img alt="CP_DataSharing" src="../attachments/DataSharing_01.png" /></li>
@@ -519,14 +523,14 @@
 <li>In the pop-up window generated URL will be appeared. It can be shared with the external collaborator.<br />
 <img alt="CP_DataSharing" src="../attachments/DataSharing_11.png" /></li>
 </ol>
-<h2 id="upload-data-to-shared-s3-storage">Upload data to shared s3 storage</h2>
-<p>Shared s3 storage's collaboration space can be used to exchange large data files (up to 5Tb per one file).</p>
+<h2 id="upload-data-to-shared-storage">Upload data to shared storage</h2>
+<p>Shared storage's collaboration space can be used to exchange large data files (up to 5Tb per one file).</p>
 <p>For storage <strong>owner</strong>:</p>
 <ol>
-<li>Uploading data to shared s3 storage is doing in the same way as on a regular. For more details see <a href="../8.2._Upload_Download_data/#upload-data">here</a>.</li>
+<li>Uploading data to shared storage is doing in the same way as on a regular. For more details see <a href="../8.2._Upload_Download_data/#upload-data">here</a>.</li>
 </ol>
 <p>For <strong>external partner</strong>:</p>
-<p><strong><em>Note</em></strong>: for uploading to shared bucket, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>WRITE</strong> permissions for a bucket.</p>
+<p><strong><em>Note</em></strong>: for uploading to shared storage, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>WRITE</strong> permissions for that storage.</p>
 <ol>
 <li>Open new browser window and insert URL, that you receive from the partner.</li>
 <li>In appeared login page enter user credentials and sign in.</li>
@@ -537,16 +541,16 @@
 <strong><em>Note</em></strong>: make sure size doesn't exceed 5 Tb.<br />
 <strong><em>Note</em></strong>: you can cancel upload process by clicking the <strong>"Cancel" </strong>button:<br />
 <img alt="CP_DataSharing" src="../attachments/DataSharing_14.png" /></li>
-<li>As a result, the file(s) will be uploaded to the shared s3 storage:
+<li>As a result, the file(s) will be uploaded to the shared storage:
     <img alt="CP_DataSharing" src="../attachments/DataSharing_15.png" /></li>
 </ol>
-<h2 id="download-data-from-shared-s3-storage">Download data from shared s3 storage</h2>
+<h2 id="download-data-from-shared-storage">Download data from shared storage</h2>
 <p>For storage <strong>owner</strong>:</p>
 <ol>
-<li>Downloading data from shared s3 storage is doing in the same way as from a regular. For more details see <a href="../8.2._Upload_Download_data/#download-data">here</a>.</li>
+<li>Downloading data from shared storage is doing in the same way as from a regular. For more details see <a href="../8.2._Upload_Download_data/#download-data">here</a>.</li>
 </ol>
 <p>For <strong>external partner</strong>:</p>
-<p><strong>Note</strong>: for downloading from shared bucket, user account shall be registered within CP users catalog and granted <strong>READ</strong> permission for a bucket.</p>
+<p><strong>Note</strong>: for downloading from shared storage, user account shall be registered within CP users catalog and granted <strong>READ</strong> permission for that storage.</p>
 <ol>
 <li>Open new browser window and insert URL, that you receive from the partner.</li>
 <li>In appeared login page enter user credentials and sign in.</li>

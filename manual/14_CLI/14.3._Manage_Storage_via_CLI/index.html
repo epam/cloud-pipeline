@@ -295,7 +295,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -354,6 +354,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -509,9 +513,10 @@
 <pre><code class="bash">pipe storage create [OPTIONS]
 </code></pre>
 
-<p>In the example below data storage "<strong>my-personal-storage1</strong>" for bucket "<strong>my-personal-bucket1</strong>" is created in the "<strong>ROOT</strong>" folder. <strong><code>-c</code></strong> flag is to create a bucket in the cloud.<br />
-<strong><em>Note</em></strong>: <strong>"Description"</strong>, <strong>"STS"</strong>, <strong>"LTS"</strong>, <strong>"Backup time"</strong> and <strong>"Type of the cloud for data storage"</strong> fields are left empty. That means that their values will be default.</p>
-<pre><code class="bash">pipe storage create -p my-personal-bucket1 -n my-personal-storage1 -c -f ROOT
+<p>In the example below data storage "<strong>test-personal-storage</strong>" for bucket "<strong>test-personal-bucket</strong>" is created in the folder with ID "297". <strong><code>-c</code></strong> flag is to create a bucket in the cloud.<br />
+<strong><em>Note</em></strong>: <strong>"Description"</strong>, <strong>"STS"</strong>, <strong>"LTS"</strong>, <strong>"Backup time"</strong> and <strong>"Type of the cloud for data storage"</strong> fields are left empty. That means that their values will be default.<br />
+<strong><em>Note</em></strong>: <strong>"Cloud Region ID"</strong> couldn't be left empty.</p>
+<pre><code class="bash">pipe storage create -p test-personal-bucket -n test-personal-storage -c -f &lt;folder_id&gt;
 </code></pre>
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_01.png" /></p>
@@ -519,8 +524,8 @@
 <pre><code class="bash">pipe storage delete [OPTIONS]
 </code></pre>
 
-<p>In the example below we delete the "<strong>my-personal-bucket1</strong>" storage.</p>
-<pre><code class="bash">pipe storage delete -n my-personal-bucket1
+<p>In the example below we delete the "<strong>test-personal-bucket</strong>" storage.</p>
+<pre><code class="bash">pipe storage delete -n test-personal-bucket
 </code></pre>
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_02.png" /></p>
@@ -540,7 +545,7 @@
 </code></pre>
 
 <p>Examples below demonstrate how to upload/download data and check the results:</p>
-<pre><code class="bash"># 1. Recursively copy a folder from a local system to S3 bucket (Upload the data).
+<pre><code class="bash"># 1. Recursively copy a folder from a local system to the data storage (Upload the data).
 pipe storage cp ~/data cp://input-data/ --recursive
 # Application will start uploading files and print progress
 # Output will be similiar to this:
@@ -552,18 +557,18 @@ pipe storage ls cp://input-data --recursive
 #  Type    Labels      Modified               Size    Name
 #  File    STANDARD    2017-10-24 17:39:37       3    1.fastq
 #  File    STANDARD    2017-10-24 17:39:39       4    2.fastq
-# 3. Recursively copy a folder from s3 bucket to the local system (Download the data).
+# 3. Recursively copy a folder from the data storage to the local system (Download the data).
 pipe storage cp cp://input-data/ ~/data --recursive
 </code></pre>
 
 <p><strong><em>Note</em></strong>: <strong><code>--recursive</code></strong> flag is not needed when you copy a single file.<br />
-<strong><em>Note</em></strong>: Earlier CLI could not accept remote paths other than <strong><code>cp://</code></strong>. For backward compatibility <strong><code>s3://</code></strong> path is also available now and is treated in the same manner as <strong><code>cp://</code></strong>.<br />
+<strong><em>Note</em></strong>: Earlier CLI could not accept remote paths other than <strong><code>cp://</code></strong>. For backward compatibility specific Cloud Provider's paths (e.g. <strong><code>s3://</code></strong> for AWS, <strong><code>az://</code></strong> for MS Azure) are also available now and treated in the same manner as <strong><code>cp://</code></strong>.<br />
 <strong><em>Note</em></strong>: Files uploaded via CLI will have the following attributes and values automatically set:</p>
 <ul>
 <li><strong>CP_OWNER</strong>. The value of the attribute will be set as a user ID.</li>
 <li><strong>CP_SOURCE</strong>. The value of the attribute will be set as a local path used to upload.</li>
 </ul>
-<p>The example below demonstrates automatic file tagging after data uploading to the bucket <strong><code>s3://my-personal-bucket2/</code></strong>:</p>
+<p>The example below demonstrates automatic file tagging after data uploading to the AWS bucket <strong><code>s3://my-personal-bucket2/</code></strong>:</p>
 <pre><code class="bash">pipe storage cp tagged-file s3://my-personal-bucket2/
 </code></pre>
 
@@ -573,6 +578,9 @@ pipe storage cp cp://input-data/ ~/data --recursive
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_05.png" /></p>
 <h2 id="control-file-versions">Control File versions</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported by <strong>AWS</strong> and <strong>GCP</strong>.</p>
+</blockquote>
 <h3 id="show-files-versions">Show files versions</h3>
 <p>Command to view storage contents:</p>
 <pre><code class="bash">pipe storage ls [OPTIONS] [PATH]

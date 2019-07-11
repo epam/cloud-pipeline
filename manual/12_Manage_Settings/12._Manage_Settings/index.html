@@ -295,7 +295,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -329,6 +329,8 @@
             <li><a class="toctree-l5" href="#email-notifications">Email notifications</a></li>
         
             <li><a class="toctree-l5" href="#preferences">Preferences</a></li>
+        
+            <li><a class="toctree-l5" href="#cloud-regions">Cloud Regions</a></li>
         
         </ul>
     
@@ -374,6 +376,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -489,36 +495,30 @@
             <div class="section">
               
                 <h1 id="12-manage-settings">12. Manage Settings</h1>
-<p>Settings consist of CLI, System events, User management tabs, email notifications and Preferences tabs.</p>
+<p>System Settings consist of <strong>CLI</strong>, <strong>System events</strong>, <strong>User management</strong>, <strong>Email notifications</strong>, <strong>Preferences</strong> and <strong>Cloud Regions</strong> tabs.<br />
+To open System Settings click the <strong>gear</strong> icon on the main menu in the left side of the Cloud Pipeline application:  </p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_0.png" /></p>
 <ul>
-<li><a href="#cli-tab">CLI tab</a></li>
-<li><a href="#system-events">System events</a><ul>
-<li><a href="#system-events-controls">Controls</a></li>
+<li><a href="#cli-tab">CLI tab</a><ul>
+<li><a href="#pipe-cli">Pipe CLI</a></li>
+<li><a href="#git-cli">Git CLI</a></li>
 </ul>
 </li>
+<li><a href="#system-events">System events</a></li>
 <li><a href="#user-management">User management</a><ul>
-<li><a href="#users">Users</a><ul>
-<li><a href="#users-tab-controls">Controls</a></li>
+<li><a href="#users">Users</a></li>
+<li><a href="#groups">Groups</a></li>
+<li><a href="#roles">Roles</a></li>
 </ul>
 </li>
-<li><a href="#groups">Groups</a><ul>
-<li><a href="#groups-tab-controls">Controls</a></li>
-</ul>
-</li>
-<li><a href="#roles">Roles</a><ul>
-<li><a href="#roles-tab-controls">Controls</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><a href="#email-notifications">Email notifications</a><ul>
-<li><a href="#email-notifications-tab-controls">Controls</a></li>
-</ul>
-</li>
+<li><a href="#email-notifications">Email notifications</a></li>
 <li><a href="#preferences">Preferences</a></li>
+<li><a href="#cloud-regions">Cloud Regions</a></li>
 </ul>
 <h2 id="cli-tab">CLI tab</h2>
-<p>"<strong>CLI</strong>" tab generates a <strong>CLI</strong> installation and configuration commands to set <strong>CLI</strong> for Cloud Pipeline. See <a href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup CLI</a>.</p>
+<p>"<strong>CLI</strong>" tab generates two types of CLI installation and configuration commands to set CLI for the Cloud Pipeline - <strong>Pipe CLI</strong> and <strong>Git CLI</strong>. You can select each of them by click the corresponding option in the "<strong>CLI</strong>" tab menu.</p>
+<h3 id="pipe-cli">Pipe CLI</h3>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_1.png" /></p>
 <table>
 <thead>
 <tr>
@@ -529,7 +529,7 @@
 <tbody>
 <tr>
 <td><strong>Operation system</strong></td>
-<td>Choose an operation system from drop-down list and the instruction how to install Cloud Pipeline CLI will appear in the window below.</td>
+<td>Choose an operation system from drop-down list and the instruction how to install the Cloud Pipeline CLI will appear in the window below.</td>
 </tr>
 <tr>
 <td><strong>Generate access key</strong></td>
@@ -541,7 +541,10 @@
 </tr>
 </tbody>
 </table>
-<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_1.png" /></p>
+<p>For more details see <a href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup CLI</a>.</p>
+<h3 id="git-cli">Git CLI</h3>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_10.png" /></p>
+<p>Here you can see instructions how to configure your Git client to work with the Cloud Pipeline.</p>
 <h2 id="system-events">System events</h2>
 <blockquote>
 <p>This tab is visible only for administrator.</p>
@@ -595,12 +598,7 @@ System events notifications are organized into a table. It represents the <stron
 <p>To grant or refuse permissions to a specific group of users (e.g. project team members), you can just create a user group and grant or refuse permissions to the specific set of objects to the whole group.<br />
 System roles is one of the principal tool for managing security access to the objects. Even if you have <strong>WRITE</strong> permission for a folder object, you might be not able to create a pipeline there, if you don't have <strong>PIPELINE_MANAGER</strong> role.<br />
 <strong><em>Note</em></strong>: About permissions, you can read more <a href="../../13_Permissions/13._Permissions/">here</a>.</p>
-<p><strong>User management</strong> consists of the 3 following tabs:</p>
-<ol>
-<li>Users</li>
-<li>Groups</li>
-<li>Roles.</li>
-</ol>
+<p><strong>User management</strong> consists of the 3 following tabs: <strong>Users</strong>, <strong>Groups</strong>, <strong>Roles</strong>.</p>
 <h3 id="users">Users</h3>
 <p>This table view displays a list of users and their additional information:</p>
 <ul>
@@ -685,27 +683,27 @@ Note that this tab displays groups created in CP only, not given by <strong>SS
 <td>basic user.</td>
 </tr>
 <tr>
-<td><strong>PIPELINE_MANAGER</strong></td>
+<td><strong>ROLE_PIPELINE_MANAGER</strong></td>
 <td>allows to create/delete <strong>Pipelines</strong> (given to each user by default).</td>
 </tr>
 <tr>
-<td><strong>FOLDER_MANAGER</strong></td>
+<td><strong>ROLE_FOLDER_MANAGER</strong></td>
 <td>allows to create/delete <strong>Folders</strong> (given to each user by default).</td>
 </tr>
 <tr>
-<td><strong>CONFIGURATION_MANAGER</strong></td>
+<td><strong>ROLE_CONFIGURATION_MANAGER</strong></td>
 <td>allows to create/delete <strong>Cluster Configurations</strong> (given to each user by default).</td>
 </tr>
 <tr>
-<td><strong>STORAGE_MANAGER</strong></td>
+<td><strong>ROLE_STORAGE_MANAGER</strong></td>
 <td>allows to create/delete <strong>Data Storages</strong>.</td>
 </tr>
 <tr>
-<td><strong>TOOL_GROUP_MANAGER</strong></td>
+<td><strong>ROLE_TOOL_GROUP_MANAGER</strong></td>
 <td>allows to create/delete <strong>Tool groups</strong>.</td>
 </tr>
 <tr>
-<td><strong>ENTITIES_MANAGER</strong> </td>
+<td><strong>ROLE_ENTITIES_MANAGER</strong> </td>
 <td>allows to create/delete <strong>Entities</strong>.</td>
 </tr>
 </tbody>
@@ -748,35 +746,43 @@ On the left you can see a list of the email notification templates.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>Keep admins informed</strong></td>
+<td><strong>Enabled</strong> checkbox</td>
+<td>If set, email distribution of the selected type will be enabled.</td>
+</tr>
+<tr>
+<td><strong>Keep admins informed</strong> checkbox</td>
 <td>If set, all emails with such type will be sent to all users with <strong>ROLE_ADMIN</strong> role.</td>
 </tr>
 <tr>
-<td><strong>Informed</strong> <strong>users</strong></td>
+<td><strong>Keep owners informed</strong> checkbox</td>
+<td>If set, all emails with such type will be sent to the <strong>OWNERS</strong> of the corresponding Cloud Pipeline objects.</td>
+</tr>
+<tr>
+<td><strong>Informed users</strong> text field</td>
 <td>Select users that will get such email types.</td>
 </tr>
 <tr>
-<td><strong>Threshold</strong></td>
+<td><strong>Threshold</strong> text field</td>
 <td>Amount of seconds that is required for the process to generate email.</td>
 </tr>
 <tr>
-<td><strong>Resend delay</strong></td>
+<td><strong>Resend delay</strong> text field</td>
 <td>Amount of seconds that is required for the process to generate a repeat email notification on that subject.</td>
 </tr>
 <tr>
-<td><strong>Subject</strong></td>
+<td><strong>Subject</strong> text field</td>
 <td>Email notification subject.</td>
 </tr>
 <tr>
-<td><strong>Body</strong></td>
+<td><strong>Body</strong> text field</td>
 <td>Body of the email notification.</td>
 </tr>
 <tr>
-<td><strong>Revert</strong></td>
+<td><strong>Revert</strong> button</td>
 <td>Return an email settings to the previous unsaved state.</td>
 </tr>
 <tr>
-<td><strong>Save</strong></td>
+<td><strong>Save</strong> button</td>
 <td>Saves current email notification settings.</td>
 </tr>
 </tbody>
@@ -794,8 +800,28 @@ On the left you can see a list of the email notification templates.</p>
 </thead>
 <tbody>
 <tr>
+<td><strong>HIGH_CONSUMED_RESOURCES</strong></td>
+<td>tells that memory or disk consuming is higher than a threshold value for a specific period of time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN</strong></td>
+<td>tells that the job is idle for a long time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN_PAUSED</strong></td>
+<td>tells that the job was paused because it was idle for a long time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN_STOPPED</strong></td>
+<td>tells that the job was stopped because it was idle for a long time</td>
+</tr>
+<tr>
 <td><strong>LONG_INIT</strong></td>
 <td>tells that the job is initializing for a long time</td>
+</tr>
+<tr>
+<td><strong>LONG_RUNNING</strong></td>
+<td>tells that the job is running for a long time</td>
 </tr>
 <tr>
 <td><strong>NEW_ISSUE</strong></td>
@@ -804,10 +830,6 @@ On the left you can see a list of the email notification templates.</p>
 <tr>
 <td><strong>NEW_ISSUE_COMMENT</strong></td>
 <td>tells that an issue was commented</td>
-</tr>
-<tr>
-<td><strong>LONG_RUNNING</strong></td>
-<td>tells that the job is running for a long time</td>
 </tr>
 <tr>
 <td><strong>PIPELINE_RUN_STATUS</strong></td>
@@ -822,6 +844,12 @@ On the left you can see a list of the email notification templates.</p>
 <p>The <strong>Preferences</strong> tab contains different global settings for the Cloud Pipeline. These settings determine default behavior of the Cloud Pipeline.
 On the left you can see a set of sections. Each section contains a list of global settings. See more information <a href="../12.10._Manage_system-level_settings/">here</a>.</p>
 <p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_9.png" /></p>
+<h2 id="cloud-regions">Cloud Regions</h2>
+<blockquote>
+<p>This tab is visible only for administrator.</p>
+</blockquote>
+<p>The <strong>Cloud Regions</strong> tab contains different settings for the specific Cloud Regions. You could manage regions, add or remove them from the Cloud Pipeline.</p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_11.png" /></p>
               
             </div>
           </div>

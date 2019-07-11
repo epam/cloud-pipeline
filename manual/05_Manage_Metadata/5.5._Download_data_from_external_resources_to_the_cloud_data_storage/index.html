@@ -311,7 +311,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -370,6 +370,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -515,13 +519,13 @@
     In this window fill fields:<br />
 <strong>a</strong>. Input data storage which will be use as a destination for downloading data. Click on <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_06.png" /> button. In opened pop-up window select required storage (on the left panel with folder-tree) (<strong>1</strong>). In selected storage set the checkbox opposite the folder name, where external data will be downloaded (<strong>2</strong>). Click "<strong>Ok</strong>" button (<strong>3</strong>):<br />
 <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_07.png" /><br />
-<strong><em>Note</em></strong>: you need to have <strong>READ</strong> and <strong>WRITE</strong> permissions for folder and S3 storage, that contain folder for downloading.<br />
+<strong><em>Note</em></strong>: you need to have <strong>READ</strong> and <strong>WRITE</strong> permissions for folder and data storage, that contain folder for downloading.<br />
 <strong>b</strong>. Select CSV/TSV columns (only from <strong>PATH</strong> columns), which shall be used to get external URLs (if several columns contain URLs - all can be used).<br />
 <strong>c</strong>. (<em>optionally</em>) Select whether to rename resulting path to some other value (can be specified as another column cell, e.g. sample name). For do that click on  button and select from dropdown list.<br />
 <strong>d</strong>. (<em>optionally</em>) Input max threads count, if needs to limit.<br />
 <strong>e</strong>. (<em>optionally</em>) Set if needs to create new folders within destination in case when several columns are selected for "<strong>Path fields</strong>" option (<strong>b</strong>). E.g. if two columns contain URLs and both are selected - then folders will be created for the corresponding column name and used for appropriate files storage.<br />
 <strong>f</strong>. (<em>optionally</em>) Set if needs to update external URL within a table to the new location of the files. If set - http/ftp URLs will be changed to data storage path. Such data structure can be then used for a processing by a pipeline:<ul>
-<li>URLs are changed to the S3-clickable hyperlinks (checkbox is set):  <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_08.png" />  </li>
+<li>URLs are changed to the clickable storage-hyperlinks (checkbox is set):  <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_08.png" />  </li>
 <li>URLs aren't changed and not-clickable hyperlinks (checkbox isn't set):  <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_09.png" /></li>
 </ul>
 </li>
@@ -529,7 +533,7 @@
 <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_10.png" /></li>
 <li>System pipeline (transfer job) will be started automatically:<br />
 <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_11.png" /></li>
-<li>Once the transfer job will be finished successfully, files will be located in the selected S3 storage:<br />
+<li>Once the transfer job will be finished successfully, files will be located into the selected data storage:<br />
 <img alt="CP_DownloadDataFromExternalResources" src="../attachments/DownloadDataFromExternalResources_12.png" /></li>
 </ol>
               

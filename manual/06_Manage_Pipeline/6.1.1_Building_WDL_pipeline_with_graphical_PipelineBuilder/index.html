@@ -182,6 +182,8 @@
         
             <li><a class="toctree-l5" href="#example-pipeline">Example Pipeline</a></li>
         
+            <li><a class="toctree-l5" href="#search-over-the-graph">Search over the Graph</a></li>
+        
         </ul>
     
 
@@ -313,7 +315,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -372,6 +374,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -492,6 +498,7 @@
 <li><a href="#creating-a-new-pipeline-with-a-pipeline-builder">Creating a new pipeline with a Pipeline Builder</a></li>
 <li><a href="#overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</a></li>
 <li><a href="#example-pipeline">Example Pipeline</a></li>
+<li><a href="#search-over-the-graph">Search over the Graph</a></li>
 </ul>
 <blockquote>
 <p>To create a new <strong>WDL pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permissions for that folder and the <strong>PIPELINE_MANAGER</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
@@ -511,28 +518,74 @@
 <li>Navigate to the <strong>GRAPH</strong> tab.<br />
     Default pipeline will be generated with a single task "<strong>HelloWorld_print</strong>".<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_04.png" /></li>
-<li>To add more tasks - click the <strong>ADD TASK</strong> button in the top right corner. The <strong>ADD SCATTER</strong> button allows adding <a href="https://github.com/openwdl/wdl/blob/master/versions/draft-2/SPEC.md#scatter">scatters</a>.<br />
-<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_05.png" /></li>
-<li>This will bring a task editor with the following fields:  <ul>
-<li><strong>Name</strong> - a name of a task (it will be used for visualizing in a workflow and logging).</li>
-<li><strong>Input</strong> - a list of parameters that a task can accept from upstream tasks.</li>
-<li><strong>Output</strong> - a list of parameters that a task will pass to the downstream tasks.</li>
-<li><strong>Command</strong> - a shell script that will be executed within a task.</li>
-<li><strong>Use another docker image</strong> - if ticked - docker image, that is used within a task, can be overridden (i.e. different tools/images can be used for each task of the workflow) See more info <a href="#overriding-docker-image-for-a-specific-task">below</a>.<br />
-The following picture presents an example of a basic task creating:<br />
+<li>Auxiliary controls ("Save", "Revert changes", "Layout", "Fit to screen", "Show links", "Zoom out", "Zoom in", "Search", "Fullscreen") are in the left side of the WDL GRAPH:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_29.png" /></li>
+<li>To add more tasks:  <ul>
+<li>click <strong>PROPERTIES</strong> in the top right corner to open "<strong>Properties</strong>" panel<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_14.png" /></li>
+<li>then click <strong>ADD TASK</strong> button<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_05.png" /><br />
+<strong><em>Note</em></strong>: The <strong>ADD SCATTER</strong> button allows adding <a href="https://github.com/openwdl/wdl/blob/master/versions/draft-2/SPEC.md#scatter">scatters</a>.</li>
+</ul>
+</li>
+<li>This will create a new task in the main workflow:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_15.png" /></li>
+<li>Click on the just-created task. It will become highlighted and the task editor will appear at "<strong>Properties</strong>" panel:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_16.png" /><br />
+    That panel contains the following controls:  <ul>
+<li><strong>Name</strong> (<strong>a</strong>) - a name of a task (it will be used for visualizing in a workflow and logging). If you want to change it - click on that field and input a new task name. Valid names are marked with green "OK" icon:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_17.png" /><br />
+invalid - with red "cross" icon:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_18.png" /></li>
+<li><strong>Inputs</strong> (collapsed header) (<strong>b</strong>) - a list of parameters that a task can accept from upstream tasks. To add parameter - click on <strong>ADD</strong> button. The header will be expanded automatically:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_19.png" /><br />
+In appeared fields input attributes of a new input parameter.</li>
+<li><strong>Outputs</strong> (collapsed header) (<strong>c</strong>) - a list of parameters that a task will pass to the downstream tasks. To add parameter - click on <strong>ADD</strong> button. The header will be expanded automatically:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_20.png" /><br />
+In appeared fields input attributes of a new output parameter.</li>
+<li><strong>Use another docker image</strong> (<strong>d</strong>) - if ticked - docker image, that is used within a task, can be overridden (i.e. different tools/images can be used for each task of the workflow). If you want to use another docker image - set that checkbox and then click upon an appeared field to select docker image:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_21.png" /><br />
+See more info <a href="#overriding-docker-image-for-a-specific-task">below</a>.</li>
+<li><strong>Use another compute node</strong> (<strong>e</strong>) - if ticked - instance type, that is used within a task, can be changed (e.g. more productive node can be used for the specific task). If you want to use another instance type - set that checkbox and then select instance from an appeared dropdown list:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_22.png" /></li>
+<li><strong>Command</strong> (<strong>f</strong>) - a shell script that will be executed within a task.</li>
+<li><strong>DELETE task</strong> button (<strong>g</strong>) - to delete a task.<br />
+Inputted changes are automatically being represented at the graph. The following picture presents an example of a basic task creating:<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_06.png" /></li>
 </ul>
 </li>
-<li>Click <strong>Add</strong> and then <strong>Save</strong> and <strong>Commit</strong>. The following visualization will be generated  - new "task1" with one output will appear.<br />
+<li>After input values of a new task, click <strong>Save</strong> and <strong>Commit</strong>. The visualization with a new "task1" with one output will be displayed.<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_07.png" />  </li>
-<li>To create a "real" workflow - create a second task with one input. Then <strong>Save</strong> and <strong>Commit</strong>.<br />
-<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_08.png" /></li>
-<li>
-<p>Link <em>task1 output</em> with <em>task2 input</em> with a mouse cursor (click "output1" and slide to "input1"). Then click <strong>Save</strong> and <strong>Commit</strong>.<br />
-<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_09.png" /></p>
-<p><strong><em>Note</em></strong>: "<strong>HelloWorld_print</strong>" task isn't linked to other tasks. When code generates from a graph, tasks without links to other tasks can be executed in any order (e.g. <em>task1 → HelloWorld_print → task2</em> or <em>HelloWorld_print → task1 → task2</em>, etc).</p>
-<p>If you want to delete task - click its name and then the <strong>Delete</strong> button.<br />
-<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_10.png" /></p>
+<li>To create a "real" workflow - create a second task with one input:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_08.png" /><br />
+    Then click <strong>Save</strong> and <strong>Commit</strong>.</li>
+<li>Link <em>task1 output</em> with <em>task2 input</em> with a mouse cursor (click "output1" and slide to "input1"). Then click <strong>Save</strong> and <strong>Commit</strong>.<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_09.png" /><br />
+<strong><em>Note</em></strong>: to remove link hover mouse pointer over it and then click on "cross" button:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_23.png" /><br />
+<strong><em>Note</em></strong>: "<strong>HelloWorld_print</strong>" task isn't linked to other tasks. When code generates from a graph, tasks without links to other tasks can be executed in any order (e.g. <em>task1 → HelloWorld_print → task2</em> or <em>HelloWorld_print → task1 → task2</em>, etc).<br />
+    If you want to delete a task - click upon it, open "Properties" panel and click <strong>DELETE task</strong> button in the bottom of the panel:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_10.png" /></li>
+<li>To add skatter:  <ul>
+<li>click <strong>PROPERTIES</strong> in the top right corner to open "<strong>Properties</strong>" panel<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_14.png" /></li>
+<li>then click <strong>ADD SCATTER</strong> button<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_24.png" /></li>
+</ul>
+</li>
+<li>This will create a new scatter in the main workflow:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_25.png" /></li>
+<li>Click on the just-created scatter. It will become highlighted and the scatter editor will appear at "<strong>Properties</strong>" panel:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_26.png" /><br />
+    That panel contains the following controls:  <ul>
+<li><strong>ADD TASK</strong> button (<strong>a</strong>) - to add a task into the scatter item. Creation of a task in the scatter is the same as described above. You can add inputs/outputs for that scatter task, links them with outputs/inputs of other tasks.</li>
+<li><strong>Inputs</strong> (collapsed header) (<strong>b</strong>) - a mandatory parameter of a <em>ScatterItem</em> type that a scatter can accept from upstream task. User couldn't remove it or change its type, only change its name. For that - click upon the header and specify a new name:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_27.png" />  </li>
+<li><strong>DELETE scatter</strong> button (<strong>c</strong>) - to delete a scatter.<br />
+Inputted changes are automatically being represented at the graph.
+The following picture presents an example with a scatter, that has a task, which output is linked to "HelloWorld_print" task's input:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_28.png" /></li>
+</ul>
 </li>
 </ol>
 <h2 id="overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</h2>
@@ -542,7 +595,7 @@ But if a specific step requires tools that are not packed into the same docker i
 <li>Open any task details and check the <strong>Use another docker</strong> image option.</li>
 <li>This will bring a docker image selector.<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_11.png" /></li>
-<li>Choose <strong>registry</strong>, <strong>Tool group</strong>. Select an image and its version. Then click the <strong>OK</strong> button.<br />
+<li>In an appeared pop-up choose <strong>Registry</strong>, <strong>Tool group</strong>. Select an image and its version. Then click <strong>OK</strong> button.<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_12.png" /></li>
 <li>Specified docker image will be used instead of the initial one. This means that a command specified for a task will be executed in another docker container.</li>
 </ol>
@@ -551,6 +604,17 @@ But if a specific step requires tools that are not packed into the same docker i
 <p>Workflow diagram:<br />
 <img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_13.png" /><br />
 <strong><em>Note</em></strong>: this workflow uses "overridden" docker image for the last task to show how it behaves (as described in <a href="#overriding-docker-image-for-a-specific-task">Overriding docker image for a specific task</a> section).</p>
+<h2 id="search-over-the-graph">Search over the Graph</h2>
+<p>To search some element over the Graph:</p>
+<ol>
+<li>Click the <strong>Search</strong> button in the auxiliary controls menu:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_30.png" /></li>
+<li>In the appeared field input the name or type of the element you want to find. Search results will appear immediately while typing:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_31.png" /></li>
+<li>In the list, click the element you want to find (e.g. <strong><em>task3</em></strong>)</li>
+<li>Found element will be highlighted and placed into the focus:<br />
+<img alt="CP_BuildingWDLpipeline" src="../attachments/BuildingWDLpipeline_32.png" /></li>
+</ol>
               
             </div>
           </div>

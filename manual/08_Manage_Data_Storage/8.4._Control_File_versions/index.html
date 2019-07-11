@@ -309,7 +309,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -368,6 +368,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -483,6 +487,9 @@
             <div class="section">
               
                 <h1 id="84-control-file-versions">8.4. Control File versions</h1>
+<blockquote>
+<p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported by <strong>AWS</strong> and <strong>GCP</strong>.</p>
+</blockquote>
 <ul>
 <li><a href="#versioned-files-management">Versioned files management</a><ul>
 <li><a href="#management-of-deleted-files">Management of deleted files</a></li>
@@ -582,7 +589,7 @@ If "<strong>Show files versions</strong>" is <strong>ON</strong> - you will have
 <li>Choose <strong>Backup duration</strong> in days. If not explicitly defined, the global default value will be applied (defined in service configuration).<br />
 <img alt="CP_ControlFileVersions" src="../attachments/ControlFileVersions_13.png" /></li>
 </ol>
-<p><strong>Note</strong>: setting such rule for a Data Storage (from GUI or CLI) will tell AWS to delete previous versions of an object that are older than a specified number of days. This configuration option will be available to users with <strong>ROLE_ADMIN</strong> or <strong>OWNER</strong> rights.</p>
+<p><strong>Note</strong>: setting such rule for a Data Storage (from GUI or CLI) will tell Cloud Provider to delete previous versions of an object that are older than a specified number of days. This configuration option will be available to users with <strong>ROLE_ADMIN</strong> or <strong>OWNER</strong> rights.</p>
               
             </div>
           </div>

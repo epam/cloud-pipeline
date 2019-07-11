@@ -295,7 +295,7 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../11_Manage_Runs/11.1._Pause_resume_Runs/">11.1 Pause/resume Runs</a>
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1 Manage runs lifecycles</a>
                 </li>
                 <li class="toctree-l3">
                     
@@ -354,6 +354,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
                 </li>
     </ul>
                 </li>
@@ -494,7 +498,7 @@
 <p>To edit object's attributes, you need to be an <strong>OWNER</strong> of the object. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.<br />
 You can also manage attributes via CLI. See <a href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes via CLI</a>.</p>
 </blockquote>
-<p>How to navigate to Attributes pane of different objects:</p>
+<p>How to navigate to Attributes panel of different objects:</p>
 <ul>
 <li><a href="../../04_Manage_Folder/4._Manage_Folder/#displays-icon">Folder</a></li>
 <li><a href="../../05_Manage_Metadata/5._Manage_Metadata/#show-attributeshide-attributes">Metadata</a></li>
@@ -507,85 +511,117 @@ You can also manage attributes via CLI. See <a href="../../14_CLI/14.2._View_an
 <p><strong><em>Note</em></strong>: if you were changing the data storage file's attributes, you could return to data storage's attribute by clicking <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_1.png" /> control.</p>
 <h2 id="add-attributes">Add attributes</h2>
 <ol>
-<li>Navigate to <strong>Attributes</strong> pane of a selected object.</li>
-<li>Click <strong>+ Add</strong> button.<br />
+<li>Navigate to the <strong>Attributes</strong> panel of a selected object.</li>
+<li>Click the <strong>+ Add</strong> button.<br />
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_2.png" /></li>
-<li>Enter attribute key and value.</li>
-<li>Click <strong>Add</strong>:<br />
+<li>Enter an attribute key and value.</li>
+<li>Click the <strong>Add</strong> button:<br />
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_3.png" /></li>
+<li>Added attribute will appear at the <strong>Attributes</strong> panel:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_7.png" /></li>
 </ol>
 <h2 id="edit-attributes">Edit attributes</h2>
 <ol>
-<li>Navigate to <strong>Attributes</strong> pane of a selected object.</li>
-<li>Click the attribute key or value field.<br />
+<li>Navigate to the <strong>Attributes</strong> panel of a selected object.</li>
+<li>Click the attribute key or value field:<br />
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_4.png" /></li>
-<li>Change attribute key or value.</li>
-<li>Press "<strong>Enter</strong>" keyboard button or just out of the active field.</li>
+<li>Change the attribute key or value:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_8.png" /></li>
+<li>Press the <strong>Enter</strong> key or just click out of the active field.</li>
+<li>Edited attribute will appear at the <strong>Attributes</strong> panel:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_9.png" /></li>
 </ol>
 <h2 id="delete-attributes">Delete attributes</h2>
 <ol>
-<li>Navigate to <strong>Attributes</strong> pane of a selected object.</li>
-<li>Click <strong>Trash</strong> icon to delete a particular attribute.<br />
-<strong><em>Note</em></strong>: click <strong>Remove all</strong> to delete all attributes.<br />
+<li>Navigate to the <strong>Attributes</strong> panel of a selected object.</li>
+<li>Click the <strong>Trash</strong> icon to delete a particular attribute.<br />
+<strong><em>Note</em></strong>: click the <strong>Remove all</strong> button to delete all attributes.<br />
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_5.png" /></li>
 </ol>
 <h2 id="automatic-tagging">Automatic tagging</h2>
 <p>In the Cloud Pipeline files are automatically tagged with the following attributes when uploading them to the data storage via CLI/GUI (see a CLI example <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#upload-and-download-data">14.3. Manage Storage via CLI</a>):</p>
-<ul>
-<li><strong>CP_OWNER</strong>. The value of the attribute will be set as a user ID.</li>
-<li><strong>CP_SOURCE</strong>. The value of the attribute will be set as a local path used to upload.<br />
-<strong><em>Note</em></strong>: this attribute is set only if a file is uploaded through CLI.</li>
-</ul>
-<p><img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_6.png" /></p>
-<p><strong><em>Note</em></strong>: The exception is that the storage is based on NFS share. Files in such data storage don't have attributes at all.</p>
-<p>Besides, files are automatically tagged with the following attributes when uploading them to the data storage as a result of a pipeline run:</p>
 <table>
 <thead>
 <tr>
-<th>Name</th>
+<th>Name in GUI</th>
+<th>Name in CLI</th>
 <th>Value</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>CP_CALC_CONFIG</strong></td>
-<td>Instance type</td>
+<td><strong>Owner</strong></td>
+<td><strong>CP_OWNER</strong></td>
+<td>The value of the attribute will be set as a user ID.</td>
 </tr>
 <tr>
-<td><strong>CP_DOCKER_IMAGE</strong></td>
-<td>Tool that was used</td>
+<td><strong>Source</strong></td>
+<td><strong>CP_SOURCE</strong></td>
+<td>The value of the attribute will be set as a local path used to upload.<br /><strong><em>Note</em></strong>: this attribute is set only if a file is uploaded through CLI.</td>
 </tr>
+</tbody>
+</table>
+<p><img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_6.png" /></p>
+<p><strong><em>Note</em></strong>: The exception is that the storage is based on FS share. Files in such data storage don't have attributes at all.</p>
+<p>Besides, files are automatically tagged with the following attributes when uploading them to the data storage as a result of a pipeline run:</p>
+<table>
+<thead>
 <tr>
-<td><strong>CP_JOB_CONFIGURATION</strong></td>
-<td>Pipeline configuration</td>
+<th>Name in GUI</th>
+<th>Name in CLI</th>
+<th>Value</th>
 </tr>
+</thead>
+<tbody>
 <tr>
-<td><strong>CP_JOB_ID</strong> </td>
-<td>Pipeline ID</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_NAME</strong></td>
-<td>Pipeline name</td>
-</tr>
-<tr>
-<td><strong>CP_JOB_VERSION</strong></td>
-<td>Pipeline version</td>
-</tr>
-<tr>
+<td><strong>Owner</strong></td>
 <td><strong>CP_OWNER</strong></td>
 <td>User ID</td>
 </tr>
 <tr>
+<td><strong>Source</strong></td>
+<td><strong>CP_SOURCE</strong></td>
+<td>Local path used to upload data</td>
+</tr>
+<tr>
+<td><strong>RunID</strong></td>
 <td><strong>CP_RUN_ID</strong></td>
 <td>Run ID</td>
 </tr>
 <tr>
-<td><strong>CP_SOURCE</strong></td>
-<td>Local path used to upload data</td>
+<td><strong>Pipeline</strong></td>
+<td><strong>CP_JOB_NAME</strong></td>
+<td>Pipeline name</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>CP_JOB_ID</strong> </td>
+<td>Pipeline ID</td>
+</tr>
+<tr>
+<td><strong>Pipeline version</strong></td>
+<td><strong>CP_JOB_VERSION</strong></td>
+<td>Pipeline version</td>
+</tr>
+<tr>
+<td><strong>Pipeline configuration</strong></td>
+<td><strong>CP_JOB_CONFIGURATION</strong></td>
+<td>Pipeline configuration</td>
+</tr>
+<tr>
+<td><strong>Docker image</strong></td>
+<td><strong>CP_DOCKER_IMAGE</strong></td>
+<td>Tool (docker image) that was used</td>
+</tr>
+<tr>
+<td><strong>Compute</strong></td>
+<td><strong>CP_CALC_CONFIG</strong></td>
+<td>Instance type</td>
 </tr>
 </tbody>
 </table>
-<p>How to make pipeline use a CP CLI see <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-pipeline-cli-for-data-uploading">here</a>.</p>
+<p>Example of the <strong>Attributes</strong> panel for the such file:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_10.png" /></p>
               
             </div>
           </div>
