@@ -151,8 +151,8 @@ function parametersCheck (form, parameters, state) {
         continue;
       }
       const parameter = formParams.params[key];
-      if (parameter && parameter.name && parameter.value) {
-        formValue[parameter.name] = parameter.value;
+      if (parameter && parameter.name) {
+        formValue[parameter.name] = parameter.value || '';
       }
     }
   } else {
@@ -167,8 +167,8 @@ function parametersCheck (form, parameters, state) {
         continue;
       }
       const parameter = formSystemParams.params[key];
-      if (parameter && parameter.name && parameter.value) {
-        formValue[parameter.name] = parameter.value;
+      if (parameter && parameter.name) {
+        formValue[parameter.name] = parameter.value || '';
       }
     }
   }
@@ -177,7 +177,7 @@ function parametersCheck (form, parameters, state) {
       LIMIT_MOUNTS_PARAMETER,
       ...getSkippedSystemParametersList({state})
     ].indexOf(key) === -1)
-    .map(key => ({key, value: parameters.parameters[key].value}))
+    .map(key => ({key, value: parameters.parameters[key].value || ''}))
     .reduce((r, c) => ({...r, [c.key]: c.value}), {});
   const check = (source, test) => {
     const sourceEntries = Object.entries(source);
