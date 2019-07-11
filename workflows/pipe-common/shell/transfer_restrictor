@@ -169,11 +169,6 @@ function allowed_transfer() {
     return 0
 }
 
-function escape_slashes() {
-    _STRING="$1"
-    echo "${_STRING//\//\/}"
-}
-
 function root_mount_path() {
     _PATH="$1"
     _MOUNTED_PATHS=($2)
@@ -191,14 +186,15 @@ function replace_all() {
     _STRING="$1"
     _PATTERN="$2"
     _REPLACEMENT="$3"
-    echo "$_STRING" | sed "s/$_PATTERN/$_REPLACEMENT/"
+    echo "$_STRING" | sed "s~$_PATTERN~$_REPLACEMENT~"
 }
 
 MOUNTED_PATHS="$1"
-MOUNT_ROOT="$2"
+MOUNT_ROOT="$2/"
 UNDERLYING_TRANSFER_COMMAND="$3"
 shift 3 # removes first three arguments from the arguments list
 FORWARDING_ARGUMENTS="$@"
+STORAGE_PREFIX="cp://"
 ALLOWED_TRANSFER_SIZE="$CP_ALLOWED_MOUNT_TRANSFER_SIZE"
 ALLOWED_TRANSFER_SIZE_TIMEOUT="${CP_ALLOWED_MOUNT_TRANSFER_SIZE_TIMEOUT:-5}"
 ALLOWED_TRANSFER_FILES="${CP_ALLOWED_MOUNT_TRANSFER_FILES:-100}"
@@ -214,14 +210,12 @@ then
     if ! allowed_transfer "$SOURCES_STRING" "$DESTINATION" "$MOUNTED_PATHS" "$ALLOWED_TRANSFER_SIZE" "$ALLOWED_TRANSFER_SIZE_TIMEOUT" "$ALLOWED_TRANSFER_FILES"
     then
         UNDERLYING_TRANSFER_COMMAND_NAME=$(basename "$UNDERLYING_TRANSFER_COMMAND")
-        ESCAPED_MOUNT_ROOT=$(escape_slashes "$MOUNT_ROOT/")
-        STORAGE_PREFIX=$(escape_slashes "cp://")
         if root_mount_path "$DESTINATION" "$MOUNTED_PATHS"
         then
             # Workaround for pipe cli issue: https://github.com/epam/cloud-pipeline/issues/510
             DESTINATION=$(with_trailing_delimiter "$DESTINATION")
         fi
-        SUBSTITUTED_DESTINATION=$(replace_all "$DESTINATION" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
+        SUBSTITUTED_DESTINATION=$(replace_all "$DESTINATION" "^$MOUNT_ROOT" "$STORAGE_PREFIX")
         if [[ -d "$SUBSTITUTED_DESTINATION" ]]
         then
             SUBSTITUTED_DESTINATION=$(with_trailing_delimiter "$SUBSTITUTED_DESTINATION")
@@ -229,7 +223,7 @@ then
         OFFERED_COMMAND_REPLACEMENT=""
         for SOURCE in "${SOURCES[@]}"
         do
-            SUBSTITUTED_SOURCE=$(replace_all "$SOURCE" "^$ESCAPED_MOUNT_ROOT" "$STORAGE_PREFIX")
+            SUBSTITUTED_SOURCE=$(replace_all "$SOURCE" "^$MOUNT_ROOT" "$STORAGE_PREFIX")
             OFFERED_COMMAND_REPLACEMENT="$OFFERED_COMMAND_REPLACEMENT
      pipe storage $UNDERLYING_TRANSFER_COMMAND_NAME -rf $SUBSTITUTED_SOURCE $SUBSTITUTED_DESTINATION"
         done
