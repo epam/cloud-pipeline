@@ -1408,7 +1408,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
-                readOnly={this.props.readOnly || !this.props.canExecute || readOnly}
+                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Value'}
                 parameterKey={key}
@@ -1418,7 +1418,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 showWithButton
               />
               : <Input
-                disabled={this.props.readOnly || !this.props.canExecute || readOnly}
+                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 placeholder="Value"
                 className={styles.parameterValue}
               />
@@ -1549,7 +1549,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
-                readOnly={this.props.readOnly || !this.props.canExecute || readOnly}
+                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 hideAutoComplete={!this.props.currentConfigurationIsDefault}
                 placeholder={'Path'}
                 parameterKey={key}
@@ -1563,7 +1563,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 }}
               />
               : <Input
-                disabled={this.props.readOnly || !this.props.canExecute || readOnly}
+                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 style={{width: '100%'}}
                 addonBefore={
                   <div
