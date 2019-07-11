@@ -229,7 +229,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(ADD_CONFIGURATION, visible, enabled)
                 .ensure(profileWithName(defaultConfigurationName), visible)
                 .editConfiguration(defaultConfigurationName, profile ->
-                        profile.ensure(SAVE, visible, enabled)
+                        profile.ensure(SAVE, visible)
                                .ensure(ESTIMATE_PRICE, visible)
                                .ensure(INSTANCE, expandedTab)
                                .ensure(EXEC_ENVIRONMENT, collapsedTab)

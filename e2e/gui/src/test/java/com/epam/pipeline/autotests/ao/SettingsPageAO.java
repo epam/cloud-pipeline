@@ -188,7 +188,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public CreateNotificationPopup ensureSeverityIs(String severity) {
-                ensure(SEVERITY_COMBOBOX, attribute("title", String.format("[object Object], %s", severity)));
+                ensure(SEVERITY_COMBOBOX, attribute("title", severity));
                 return this;
             }
 
