@@ -64,7 +64,7 @@ then
     echo "##   within Cloud Pipeline run container. This may lead to an unusable docker       ##"
     echo "##   image, if committed (i.e. image will not be able to start).                    ##"
     echo "##                                                                                  ##"
-    echo "##   Please refer to the following GitHub issue to for the details:                 ##"
+    echo "##   Please refer to the following GitHub issue for the details:                    ##"
     echo "##   https://github.com/epam/cloud-pipeline/issues/158                              ##"
     echo "##                                                                                  ##"
     echo "######################################################################################"
