@@ -416,6 +416,32 @@ function create_sys_dir {
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
+function initialise_restrictors {
+    local _RESTRICTING_COMMANDS="$1"
+    local _RESTRICTOR="$2"
+    local _RESTRICTORS_BIN="$3"
+    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$_RESTRICTING_COMMANDS"
+    for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
+    do
+        COMMAND_PATH=$(command -v "$COMMAND")
+        if [[ "$?" == 0 ]]
+        then
+            COMMAND_WRAPPER_PATH="$_RESTRICTORS_BIN/$COMMAND"
+            COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
+            if [[ "$?" == 0 ]]
+            then
+                echo "$COMMON_REPO_DIR/shell/$_RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
+            fi
+        fi
+    done
+}
+
+function list_storage_mounts() {
+    local _MOUNT_ROOT="$1"
+    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+}
+
 ######################################################
 
 
@@ -475,7 +501,8 @@ if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
+     get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
+                                                                coreutils"
     eval "$_DEPS_INSTALL_COMMAND"
 fi
 
@@ -1069,33 +1096,25 @@ echo
 
 
 ######################################################
-echo "Create package manager restriction wrappers"
+echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
 CP_USR_BIN="/usr/cpbin"
 
 mkdir -p "$CP_USR_BIN"
-IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MANAGERS"
 
-for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
-do
-    MANAGER_PATH=$(command -v "$MANAGER")
-    if [[ "$?" == 0 ]]
-    then
-        MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
-        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
-        if [[ "$?" == 0 ]]
-        then
-            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
-            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
-        fi
-    fi
-done
+initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
+
+if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
+then
+    MOUNTED_PATHS=$(list_storage_mounts "$DATA_STORAGE_MOUNT_ROOT")
+    initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
+fi
 
 echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
 
-echo "Finished creating package manager restriction wrappers"
+echo "Finished creating restriction wrappers"
 
 echo "------"
 echo
