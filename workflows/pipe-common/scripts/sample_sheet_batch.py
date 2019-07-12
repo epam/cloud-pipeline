@@ -139,7 +139,7 @@ def batch(cmd, sample_sheet):
     if nodes < 1:
         raise RuntimeError('Number of nodes should be greater than zero.')
     pipeline = EnvironmentParametersParser.get_env_value('PIPELINE_ID')
-    version = EnvironmentParametersParser.get_env_value('VERSION')
+    version = EnvironmentParametersParser.get_env_value('PIPELINE_VERSION')
     run_id = EnvironmentParametersParser.get_env_value('RUN_ID')
     fastq_dir = bucket.normalize_path(EnvironmentParametersParser.get_env_value('fastq_dir'))
     instance_size = EnvironmentParametersParser.get_env_value('instance_size')

@@ -184,7 +184,7 @@ class S3Bucket:
             command.append('"CP_JOB_NAME={}"'.format(env_vars['PIPELINE_NAME']))
         if 'VERSION' in env_vars:
             command.append("--tags")
-            command.append('"CP_JOB_VERSION={}"'.format(env_vars['VERSION']))
+            command.append('"CP_JOB_VERSION={}"'.format(env_vars['PIPELINE_VERSION']))
         if 'RUN_CONFIG_NAME' in env_vars:
             command.append("--tags")
             command.append('"CP_JOB_CONFIGURATION={}"'.format(env_vars['RUN_CONFIG_NAME']))

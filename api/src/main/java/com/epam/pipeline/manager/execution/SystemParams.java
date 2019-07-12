@@ -24,7 +24,7 @@ public enum SystemParams {
     API("api", "API"),
     API_EXTERNAL("api-external", "API_EXTERNAL"),
     DISTRIBUTION_URL("distribution-url", "DISTRIBUTION_URL"),
-    VERSION("version", "VERSION"),
+    PIPELINE_VERSION("pipeline-version", "PIPELINE_VERSION"),
     NAMESPACE("namespace", "NAMESPACE"),
     PARENT("parent", "PARENT"),
     PIPELINE_NAME("pipeline-name", "PIPELINE_NAME"),
