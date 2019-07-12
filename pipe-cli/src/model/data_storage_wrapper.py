@@ -41,6 +41,12 @@ FILE = 'File'
 FOLDER = 'Folder'
 
 
+class AllowedSymlinkValues(object):
+    FOLLOW = 'follow'
+    SKIP = 'skip'
+    FILTER = 'filter'
+
+
 class DataStorageWrapper(object):
 
     _transfer_manager_suppliers = {
@@ -71,10 +77,10 @@ class DataStorageWrapper(object):
         self.items = []
 
     @classmethod
-    def get_wrapper(cls, uri):
+    def get_wrapper(cls, uri, symlinks=None):
         parsed = urlparse(uri)
         if not parsed.scheme or not parsed.netloc:
-            return LocalFileSystemWrapper(uri)
+            return LocalFileSystemWrapper(uri, symlinks)
         if parsed.scheme.lower() == 'ftp' or parsed.scheme.lower() == 'ftps':
             return HttpSourceWrapper(uri) if os.getenv("ftp_proxy") \
                 else FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
@@ -373,12 +379,13 @@ class GsBucketWrapper(CloudDataStorageWrapper):
 
 class LocalFileSystemWrapper(DataStorageWrapper):
 
-    def __init__(self, path):
+    def __init__(self, path, symlinks=None):
         super(LocalFileSystemWrapper, self).__init__(path)
         if self.path == ".":
             self.path = "./"
         if self.path.startswith("~"):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
+        self.symlinks = symlinks
 
     def exists(self):
         return os.path.exists(self.path)
@@ -407,21 +414,36 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         self.path = os.path.abspath(self.path)
 
         if os.path.isfile(self.path):
+            if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
+                return []
             return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
         else:
             result = list()
+            visited_symlinks = set()
 
-            def list_items(path, parent, root=False):
+            def list_items(path, parent, symlinks, visited_symlinks, root=False):
                 for item in os.listdir(path):
                     absolute_path = os.path.join(path, item)
+                    symlink_target = None
+                    if os.path.islink(absolute_path) and symlinks != AllowedSymlinkValues.FOLLOW:
+                        if symlinks == AllowedSymlinkValues.SKIP:
+                            continue
+                        if symlinks == AllowedSymlinkValues.FILTER:
+                            symlink_target = os.readlink(absolute_path)
+                            if symlink_target in visited_symlinks:
+                                continue
+                            else:
+                                visited_symlinks.add(symlink_target)
                     relative_path = item
                     if not root and parent is not None:
                         relative_path = os.path.join(parent, item)
                     if os.path.isfile(absolute_path):
                         result.append((FILE, absolute_path, relative_path, os.path.getsize(absolute_path)))
                     elif os.path.isdir(absolute_path):
-                        list_items(absolute_path, relative_path)
-            list_items(self.path, leaf_path(self.path), root=True)
+                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
+                    if symlink_target and os.path.islink(path) and symlink_target in visited_symlinks:
+                        visited_symlinks.remove(symlink_target)
+            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
             return result
 
     def create_folder(self, relative_path):

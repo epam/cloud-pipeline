@@ -367,6 +367,13 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+
+    /**
+     * Controls the amount of pod logs to be loaded
+     */
+    public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
+            "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */

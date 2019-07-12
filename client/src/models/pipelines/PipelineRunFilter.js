@@ -44,8 +44,9 @@ class PipelineRunFilter extends Remote {
   };
 
   startRefreshInterval () {
-    this.clearRefreshInterval();
-    this.refreshInterval = setInterval(this.silentFetch, REFRESH_INTERVAL);
+    if (!this.refreshInterval) {
+      this.refreshInterval = setInterval(() => this.fetch(), REFRESH_INTERVAL);
+    }
   }
 
   clearRefreshInterval () {

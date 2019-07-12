@@ -65,6 +65,7 @@ public class PipelineExecutor {
     private static final String NGINX_ENDPOINT = "nginx";
     private static final long KUBE_TERMINATION_PERIOD = 30L;
     private static final String TRUE = "true";
+    public static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -143,6 +144,11 @@ public class PipelineExecutor {
                 .anyMatch(env -> KubernetesConstants.CP_CAP_DIND_NATIVE.equals(env.getName()) &&
                         TRUE.equals(env.getValue()));
         spec.setVolumes(getVolumes(isDockerInDockerEnabled));
+
+        if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
+            spec.setHostNetwork(true);
+        }
+
         spec.setContainers(Collections.singletonList(getContainer(
                 envVars, dockerImage, command, pullImage, isDockerInDockerEnabled)));
         return spec;

@@ -31,13 +31,14 @@ instance_disk = 'instance_disk'
 instance_type = 'instance_type'
 instance_image = 'instance_image'
 price_type = 'price_type'
+region_id = 1
 instance_cores = 4
 polling_timeout = 600
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
                                             instance_type=instance_type, instance_image=instance_image,
-                                            price_type=price_type, instance_cores=instance_cores,
+                                            price_type=price_type, region_id=region_id, instance_cores=instance_cores,
                                             polling_timeout=polling_timeout, polling_delay=0)
 
 

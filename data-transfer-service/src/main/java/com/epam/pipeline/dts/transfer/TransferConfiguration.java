@@ -62,12 +62,14 @@ public class TransferConfiguration {
 
     @Bean
     public PipelineCliProvider pipelineCliProvider(final CmdExecutorsProvider cmdExecutorsProvider,
-                                                   @Value("${pipe.executable}") final String pipelineCliExecutable,
-                                                   @Value("${pipe.cp.suffix:}") final String pipeCpSuffix,
-                                                   @Value("${grid.template}") final String qsubTemplate,
-                                                   @Value("${grid.upload}") final boolean isGridUploadEnabled,
-                                                   @Value("${upload.force}") final boolean forceUpload,
-                                                   @Value("${upload.retry}") final int retryCount) {
+                                                   @Value("${dts.transfer.pipe.executable}")
+                                                   final String pipelineCliExecutable,
+                                                   @Value("${dts.transfer.pipe.cp.suffix:}") final String pipeCpSuffix,
+                                                   @Value("${dts.transfer.grid.template}") final String qsubTemplate,
+                                                   @Value("${dts.transfer.grid.upload}")
+                                                       final boolean isGridUploadEnabled,
+                                                   @Value("${dts.transfer.upload.force}") final boolean forceUpload,
+                                                   @Value("${dts.transfer.upload.retry}") final int retryCount) {
         return new PipelineCliProviderImpl(cmdExecutorsProvider, pipelineCliExecutable, pipeCpSuffix, qsubTemplate,
                 isGridUploadEnabled, forceUpload, retryCount);
     }

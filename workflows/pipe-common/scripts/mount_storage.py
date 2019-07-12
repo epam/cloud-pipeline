@@ -422,7 +422,7 @@ class GCPMounter(StorageMounter):
         if not params:
             return ""
         return 'gcsfuse -o {permissions} --key-file {credentials} --temp-dir {tmp_dir} ' \
-               '--dir-mode {mask} --file-mode {mask} {path} {mount}'.format(**params)
+               '--dir-mode {mask} --file-mode {mask} --implicit-dirs {path} {mount}'.format(**params)
 
     def _get_credentials(self, storage):
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(storage.region_id))

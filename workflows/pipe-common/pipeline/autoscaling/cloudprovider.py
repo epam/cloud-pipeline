@@ -44,4 +44,5 @@ class AbstractInstanceProvider(object):
         pass
 
     def find_nodes_with_run_id(self, run_id):
-        pass
+        instance = self.find_instance(run_id)
+        return [instance] if instance is not None else []

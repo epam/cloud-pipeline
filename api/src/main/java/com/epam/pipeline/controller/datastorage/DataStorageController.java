@@ -68,7 +68,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -242,19 +242,16 @@ public class DataStorageController extends AbstractRestController {
             HttpServletRequest request) throws FileUploadException {
         MultipartFile file = consumeMultipartFile(request);
 
-        LinkedList<UploadFileMetadata> uploadedFiles = new LinkedList<>();
         UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()));
         fileMeta.setFileSize(file.getSize() / BYTES_IN_KB + " Kb");
         fileMeta.setFileType(file.getContentType());
         try {
-            fileMeta.setBytes(file.getBytes());
-            uploadedFiles.add(fileMeta);
+            dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), file.getBytes());
         } catch (IOException e) {
             throw new DataStorageException("Failed to upload file to datastorage.", e);
         }
-        dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), fileMeta.getBytes());
-        return uploadedFiles;
+        return Collections.singletonList(fileMeta);
     }
 
     @RequestMapping(value = "/datastorage/{id}/upload/stream", method= RequestMethod.POST)

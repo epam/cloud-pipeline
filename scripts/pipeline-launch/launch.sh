@@ -886,7 +886,7 @@ then
     mount_nfs_if_required "$parent_id"
     cluster_setup_client "$parent_id" "$SHARED_FOLDER"
     _SETUP_RESULT=$?
-elif [ -z "$cluster_role" ];
+elif [ -z "$cluster_role" ] || [ "$cluster_role" = "master" ];
 then 
       # If this is a common run (not a cluster - still publish scripts for CAPs)
       export cluster_role="master"
