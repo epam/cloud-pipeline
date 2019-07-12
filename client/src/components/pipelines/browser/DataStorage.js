@@ -35,7 +35,6 @@ import {
   Spin,
   Table
 } from 'antd';
-import dataStorageCache from '../../../models/dataStorage/DataStorageCache';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -77,7 +76,6 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
 const PAGE_SIZE = 40;
-
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
@@ -483,7 +481,7 @@ export default class DataStorage extends React.Component {
   };
 
   saveEditableFile = async(path, content) => {
-    const currentItemContent = dataStorageCache.getContent(
+    const currentItemContent = this.props.dataStorageCache.getContent(
       this.props.storageId,
       this.state.selectedFile.path,
       this.state.selectedFile.version
@@ -497,7 +495,7 @@ export default class DataStorage extends React.Component {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
-      currentItemContent.fetch();
+			await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
