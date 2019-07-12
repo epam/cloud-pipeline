@@ -47,7 +47,7 @@ public class EnvVarsBuilderTest {
     private static final String MAIN_FILE = "MAIN_FILE";
     private static final String MAIN_FILE_VALUE = "mainf";
 
-    private static final String VERSION = "VERSION";
+    private static final String VERSION = "pipeline-version";
     private static final String VERSION_VALUE = "version";
 
     private static final String PIPELINE_ID = "PIPELINE_ID_VALUE";
