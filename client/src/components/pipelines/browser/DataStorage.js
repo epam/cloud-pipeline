@@ -492,7 +492,6 @@ export default class DataStorage extends React.Component {
     const hide = message.loading('Uploading changes...');
 
     await request.send(content);
-
     hide();
     if (request.error) {
       message.error(request.error, 5);
@@ -502,7 +501,6 @@ export default class DataStorage extends React.Component {
       this.closeEditFileForm();
       await this.refreshList();
     }
-
   };
 
   openDeleteModal = (items) => {
