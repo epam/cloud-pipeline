@@ -35,6 +35,7 @@ import {
   Spin,
   Table
 } from 'antd';
+import dataStorageCache from '../../../models/dataStorage/DataStorageCache';
 import LoadingView from '../../special/LoadingView';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import DataStorageRequest from '../../../models/dataStorage/DataStoragePage';
@@ -80,11 +81,12 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
-@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences}, {params, onReloadTree}) => {
+@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
     onReloadTree,
+    dataStorageCache,
     storageId: params.id,
     path: queryParameters.path,
     showVersions: showVersions,
@@ -481,17 +483,26 @@ export default class DataStorage extends React.Component {
   };
 
   saveEditableFile = async(path, content) => {
+    const currentItemContent = dataStorageCache.getContent(
+      this.props.storageId,
+      this.state.selectedFile.path,
+      this.state.selectedFile.version
+    );
     const request = new DataStorageItemUpdateContent(this.props.storageId, path);
     const hide = message.loading('Uploading changes...');
+
     await request.send(content);
+
     hide();
     if (request.error) {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
+      currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
+
   };
 
   openDeleteModal = (items) => {
