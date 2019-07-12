@@ -147,7 +147,7 @@ import org.mockito.junit.MockitoRule;
     private Map<SystemParams, String> matchSystemParams() {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
         systemParamsWithValue.put(SystemParams.API, API_HOST);
-        systemParamsWithValue.put(SystemParams.VERSION, TEST_VERSION);
+        systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, TEST_VERSION);
         systemParamsWithValue.put(SystemParams.NAMESPACE, KUBE_NAMESPACE);
         systemParamsWithValue.put(SystemParams.PARENT, POD_ID);
         systemParamsWithValue.put(SystemParams.PIPELINE_NAME, PIPELINE_NAME);

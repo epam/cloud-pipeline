@@ -84,7 +84,7 @@ public class EnvVarsBuilderTest {
     public static Map<SystemParams, String> matchSystemParams() {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
 
-        systemParamsWithValue.put(SystemParams.VERSION, VERSION_VALUE);
+        systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, VERSION_VALUE);
         systemParamsWithValue.put(SystemParams.PIPELINE_ID, PIPELINE_ID_VALUE);
 
         return systemParamsWithValue;

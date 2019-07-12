@@ -196,10 +196,10 @@ public class PipelineLauncher {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
 
         if (run.getPipelineId() == null || run.getVersion() == null) {
-            systemParamsWithValue.put(SystemParams.VERSION, EMPTY_PARAMETER);
+            systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, EMPTY_PARAMETER);
             systemParamsWithValue.put(SystemParams.PIPELINE_ID, EMPTY_PARAMETER);
         } else {
-            systemParamsWithValue.put(SystemParams.VERSION, run.getVersion());
+            systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, run.getVersion());
             systemParamsWithValue.put(SystemParams.PIPELINE_ID, String.valueOf(run.getPipelineId()));
         }
 
