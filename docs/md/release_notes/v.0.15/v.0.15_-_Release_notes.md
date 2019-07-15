@@ -19,8 +19,8 @@
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
 - [Displaying information on the nested runs](#displaying-information-on-the-nested-runs-within-a-parent-log-form)
-- [pipe CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
-- [pipe configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
+- [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
+- [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
 
 ***
@@ -376,7 +376,9 @@ If you click any of the children-runs, you will navigate to its log page.
 That feature is implemented for the comleted runs too:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_NestedRunsIcons_2.png)
 
-## pipe CLI warnings on the JWT expiration
+More information about nested runs displaying see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-cluster-runs) and [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#general-information).
+
+## `pipe` CLI warnings on the JWT expiration
 
 By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
 
@@ -389,7 +391,9 @@ In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an inf
 - When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
 
-## pipe configuration for using NTLM Authentication Proxy
+See more information about `pipe` CLI installation [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## `pipe` configuration for using NTLM Authentication Proxy
 
 For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
 
@@ -421,6 +425,8 @@ Password of the user1 user:
 pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
 ```
 
+See more information about `pipe` CLI installation and configure [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md).
+
 ## Environment Modules support for the Cloud Pipeline runs
 
 The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
@@ -432,6 +438,8 @@ For using facilities of the `Environment Modules` package, a new system paramete
 - **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
 
 If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
+
+See an example [here](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
 
 ***
 
