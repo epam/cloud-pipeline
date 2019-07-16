@@ -22,7 +22,6 @@ git checkout ${GIT_BRANCH}
 pip install -r /home/cloud-pipeline/e2e/cli/requirements.txt
 pip install -r /home/cloud-pipeline/pipe-cli/requirements.txt
 pip install awscli
-pip install azure-mgmt-compute
 
 mkdir -p /home/pipe
 wget --no-check-certificate ${PIPE_CLI_DOWNLOAD_URL} -O /home/pipe/pipe
@@ -32,4 +31,11 @@ export PATH=$PATH:/home/pipe/
 export PYTHONPATH=$PYTHONPATH:/home/cloud-pipeline/pipe-cli:/home/cloud-pipeline/e2e/cli
 
 ${RUN_TESTS_CMD}
+RUN_1=$?
 ${RUN_METADATA_TESTS_CMD}
+RUN_2=$?
+
+if [[ $RUN_1 -ne 0 || -z $RUN_METADATA_TESTS_CMD && $RUN_2 -ne 0 ]];
+then
+    exit 1
+fi
