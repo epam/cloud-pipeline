@@ -347,7 +347,9 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
 
     const doUpload = (file) => {
-      const maximumFileSize = this.props.preferences.getPreferenceValue('misc.max.tool.icon.size.kb');
+      const MAX_FILE_SIZE_KB = 50;
+      const maximumFileSize = this.props.preferences.getPreferenceValue('misc.max.tool.icon.size.kb')
+      ? this.props.preferences.getPreferenceValue('misc.max.tool.icon.size.kb') : MAX_FILE_SIZE_KB;
       if (file.type.toLowerCase().indexOf('png') === -1) {
         message.error('Only PNG image files are supported', 5);
         return false;
@@ -373,7 +375,9 @@ export default class Tool extends localization.LocalizedReactComponent {
         } else {
           try {
             const json = JSON.parse(request.response);
-            if (json.status === 'ERROR') {
+            if (json.status === 'ERROR' && json.message.includes('Icon uploaded is too large:')) {
+              message.error(`Maximum file size is ${maximumFileSize}kb`, 5);
+            } else {
               message.error(json.message, 5);
             }
           } catch (__) {}
