@@ -208,7 +208,7 @@ export default class PersonalToolsPanel extends React.Component {
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null
-      });
+      }, this.props.refresh);
     }
   };
 
