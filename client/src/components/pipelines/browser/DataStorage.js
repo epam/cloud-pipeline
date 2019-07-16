@@ -76,6 +76,7 @@ import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
 
 const PAGE_SIZE = 40;
+
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
