@@ -32,7 +32,7 @@ class TestTerminateNodeDuringPipelineWork(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='/home/results/tests.log', level=logging.INFO,
+        logging.basicConfig(filename=get_log_filename(), level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         pipeline_name = "terminate_node_during_pipe_works_test"
         cls.pipeline_id = PipelineManager.create(pipeline_name)

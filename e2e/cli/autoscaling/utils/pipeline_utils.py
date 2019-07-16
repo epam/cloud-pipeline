@@ -375,3 +375,9 @@ def pipe_test(instance_method):
             pytest.fail("Test case %s failed.\n%s" % (self.test_case, e.message))
 
     return test_method_wrapper
+
+
+def get_log_filename():
+    if 'RESULTS_DIR' in os.environ:
+        return '%s/tests.log' % os.environ['RESULTS_DIR']
+    return 'tests.log'
