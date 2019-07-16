@@ -29,7 +29,7 @@ class TestTerminateNodeByTimeout(object):
 
     @classmethod
     def setup_class(cls):
-        logging.basicConfig(filename='tests.log', level=logging.INFO,
+        logging.basicConfig(filename='/home/results/tests.log', level=logging.INFO,
                             format='%(levelname)s %(asctime)s %(module)s:%(message)s')
         pipeline_name = "instance_kill_by_timeout_test"
         cls.pipeline_id = PipelineManager.create(pipeline_name)
