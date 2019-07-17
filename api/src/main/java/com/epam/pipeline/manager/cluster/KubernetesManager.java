@@ -179,7 +179,7 @@ public class KubernetesManager {
     }
 
     public String getPodLogs(final String podId, final int limit) {
-        try (final KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             final String tail = client.pods().inNamespace(kubeNamespace)
                     .withName(podId)
                     .tailingLines(limit + 1).getLog();

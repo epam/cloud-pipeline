@@ -268,7 +268,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadActiveServices(final PagingRunFilterVO filter, final PipelineUser user) {
         final MapSqlParameterSource params = getPagingParameters(filter);
-        final String query = wherePattern.matcher(loadActiveServicesQuery).replaceFirst(makeRunSidsCondition(user, params));
+        final String query = wherePattern.matcher(loadActiveServicesQuery)
+                .replaceFirst(makeRunSidsCondition(user, params));
         final List<PipelineRun> services = getNamedParameterJdbcTemplate()
                 .query(query, params, PipelineRunParameters.getRowMapper());
         if (CollectionUtils.isEmpty(services)) {
