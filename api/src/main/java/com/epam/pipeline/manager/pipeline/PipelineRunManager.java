@@ -417,7 +417,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
         setParent(pipelineRun);
         checkCommitRunStatus(pipelineRun);
-        if (permissionManager.isOwnerOrAdmin(pipelineRun.getOwner())) {
+        if (permissionManager.isRunSshAllowed(pipelineRun)) {
             pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(id));
         }
         pipelineRun.setPipelineRunParameters(

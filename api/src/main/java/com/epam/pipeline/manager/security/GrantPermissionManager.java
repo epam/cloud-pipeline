@@ -46,6 +46,8 @@ import com.epam.pipeline.entity.pipeline.RepositoryTool;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
@@ -53,6 +55,7 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -112,6 +115,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -410,14 +414,34 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
-    public boolean isRunOwnerOrAdmin(Long runId) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        return isOwnerOrAdmin(pipelineRun.getOwner());
+    public boolean isRunSshAllowed(Long runId) {
+        return isRunSshAllowed(runManager.loadPipelineRun(runId));
+    }
+
+    public boolean isRunSshAllowed(PipelineRun pipelineRun) {
+        if (isOwnerOrAdmin(pipelineRun.getOwner())) {
+            return true;
+        }
+        final List<RunSid> sshSharedSids = ListUtils.emptyIfNull(pipelineRun.getRunSids())
+                .stream()
+                .filter(sid -> RunAccessType.SSH.equals(sid.getAccessType()))
+                .collect(toList());
+        if (CollectionUtils.isEmpty(sshSharedSids)) {
+            return false;
+        }
+        final PipelineUser currentUser = authManager.getCurrentUser();
+        if (currentUser == null) {
+            return false;
+        }
+        return isSharedWithPrincipal(sshSharedSids, currentUser) || isSharedWithGroup(sshSharedSids, currentUser);
     }
 
     public boolean runPermission(Long runId, String permissionName) {
         PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
         if (permissionsHelper.isOwner(pipelineRun)) {
+            return true;
+        }
+        if (isRunSshAllowed(pipelineRun)) {
             return true;
         }
         AbstractSecuredEntity parent = pipelineRun.getParent();
@@ -1159,6 +1183,20 @@ public class GrantPermissionManager {
             LOGGER.error(String.format("An error occurred during event update for entity %s with ID %d",
                     entity.getAclClass(), entity.getId()), e);
         }
+    }
+
+    private boolean isSharedWithGroup(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
+        final Set<String> userClaims = new HashSet<>();
+        userClaims.addAll(ListUtils.emptyIfNull(currentUser.getRoles()).stream().map(Role::getName)
+                .collect(toList()));
+        userClaims.addAll(ListUtils.emptyIfNull(currentUser.getGroups()));
+        return sshSharedSids.stream().anyMatch(sid -> Boolean.FALSE.equals(sid.getIsPrincipal()) &&
+                userClaims.contains(sid.getName()));
+    }
+
+    private boolean isSharedWithPrincipal(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
+        return sshSharedSids.stream().anyMatch(sid -> Boolean.TRUE.equals(sid.getIsPrincipal()) &&
+                sid.getName().equalsIgnoreCase(currentUser.getUserName()));
     }
 
     @Data
