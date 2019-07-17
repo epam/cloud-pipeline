@@ -1275,11 +1275,13 @@
                     INSERT INTO pipeline.run_user (
                         run_id,
                         name,
-                        is_principal)
+                        is_principal,
+                        access_type)
                     VALUES (
                         :RUN_ID,
                         :NAME,
-                        :IS_PRINCIPAL)
+                        :IS_PRINCIPAL,
+                        :ACCESS_TYPE)
                 ]]>
             </value>
         </property>
@@ -1289,11 +1291,27 @@
                     SELECT
                         run_id,
                         name,
-                        is_principal
+                        is_principal,
+                        access_type
                     FROM
                         pipeline.run_user
                     WHERE
                         run_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunSidsQueryForList">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        name,
+                        is_principal,
+                        access_type
+                    FROM
+                        pipeline.run_user
+                    WHERE
+                        run_id IN (:list)
                 ]]>
             </value>
         </property>

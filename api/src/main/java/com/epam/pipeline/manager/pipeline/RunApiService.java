@@ -189,7 +189,7 @@ public class RunApiService {
         return runManager.countPipelineRuns(filter);
     }
 
-    @PreAuthorize("@grantPermissionManager.isRunOwnerOrAdmin(#runId)")
+    @PreAuthorize("@grantPermissionManager.isRunSshAllowed(#runId)")
     public String buildSshUrl(Long runId) {
         return utilsManager.buildSshUrl(runId);
     }
@@ -224,6 +224,7 @@ public class RunApiService {
         return runManager.resumeRun(runId);
     }
 
+    @AclMaskPage
     public PagedResult<List<PipelineRun>> loadActiveServices(PagingRunFilterVO filterVO) {
         return runManager.loadActiveServices(filterVO);
     }
