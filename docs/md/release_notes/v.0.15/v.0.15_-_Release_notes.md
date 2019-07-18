@@ -22,6 +22,7 @@
 - [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
+- [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
 
 ***
 
@@ -332,13 +333,13 @@ More sophisticated documentation on the installation procedure and resulting dep
 When a `Cloud Pipeline` is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
 I.e. the following behavior was observed couple of times over the last year:
 
-_Scenario 1_
+### _Scenario 1_
 
 1. Run is launched and initialized fine
 2. During processing execution - run fails
 3. Console logs print nothing, compute node is fine and is attached to the cluster
 
-_Scenario 2_
+### _Scenario 2_
 
 1. Run is launched, compute node is up
 2. Run fails during initialization
@@ -441,6 +442,27 @@ If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed an
 
 See an example [here](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
 
+## Sharing SSH access to running instances with other user(s)/group(s)
+
+As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users), for certain use cases it is beneficial to be able to share applications with other users/groups.  
+
+**`v0.15`** introduces a feature that allows to share SSH-sessions for such shared runs:
+
+1. User can share a run with others:
+    - "Share with: ..." parameter, within a run log form, can be used for this  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
+    - Specific users or whole groups can be set for sharing  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
+    - Once this is set - other users will be able to access run's endpoints
+    - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
+2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
+To open shared instance application user should click the service name.  
+To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
+
+For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
+
 ***
 
 ## Notable Bug fixes
@@ -462,6 +484,7 @@ In certain cases, while committing pipeline with the stop flag enabled - the run
 [#150](https://github.com/epam/cloud-pipeline/issues/150)
 
 Metadata entities (i.e. project-related metadata) sorting was faulty:
+
 1. Sort direction indicator (Web GUI) was displaying an inverted direction
 2. Entities were not sorted correctly
 
