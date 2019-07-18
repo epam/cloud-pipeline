@@ -1,1 +1,1 @@
-Spotify snakemake pipeline engine
+Snakemake pipeline engine
