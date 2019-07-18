@@ -19,9 +19,10 @@
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
 - [Displaying information on the nested runs](#displaying-information-on-the-nested-runs-within-a-parent-log-form)
-- [pipe CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
-- [pipe configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
+- [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
+- [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
+- [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
 
 ***
 
@@ -332,13 +333,13 @@ More sophisticated documentation on the installation procedure and resulting dep
 When a `Cloud Pipeline` is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
 I.e. the following behavior was observed couple of times over the last year:
 
-_Scenario 1_
+### _Scenario 1_
 
 1. Run is launched and initialized fine
 2. During processing execution - run fails
 3. Console logs print nothing, compute node is fine and is attached to the cluster
 
-_Scenario 2_
+### _Scenario 2_
 
 1. Run is launched, compute node is up
 2. Run fails during initialization
@@ -376,7 +377,9 @@ If you click any of the children-runs, you will navigate to its log page.
 That feature is implemented for the comleted runs too:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_NestedRunsIcons_2.png)
 
-## pipe CLI warnings on the JWT expiration
+More information about nested runs displaying see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-cluster-runs) and [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#general-information).
+
+## `pipe` CLI warnings on the JWT expiration
 
 By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
 
@@ -389,7 +392,9 @@ In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an inf
 - When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
 
-## pipe configuration for using NTLM Authentication Proxy
+See more information about `pipe` CLI installation [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## `pipe` configuration for using NTLM Authentication Proxy
 
 For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
 
@@ -421,6 +426,8 @@ Password of the user1 user:
 pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
 ```
 
+See more information about `pipe` CLI installation and configure [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md).
+
 ## Environment Modules support for the Cloud Pipeline runs
 
 The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
@@ -432,6 +439,29 @@ For using facilities of the `Environment Modules` package, a new system paramete
 - **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
 
 If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
+
+See an example [here](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
+
+## Sharing SSH access to running instances with other user(s)/group(s)
+
+As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users), for certain use cases it is beneficial to be able to share applications with other users/groups.  
+
+**`v0.15`** introduces a feature that allows to share SSH-sessions for such shared runs:
+
+1. User can share a run with others:
+    - "Share with: ..." parameter, within a run log form, can be used for this  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
+    - Specific users or whole groups can be set for sharing  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
+    - Once this is set - other users will be able to access run's endpoints
+    - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
+2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
+To open shared instance application user should click the service name.  
+To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
+    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
+
+For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
 
 ***
 
@@ -454,6 +484,7 @@ In certain cases, while committing pipeline with the stop flag enabled - the run
 [#150](https://github.com/epam/cloud-pipeline/issues/150)
 
 Metadata entities (i.e. project-related metadata) sorting was faulty:
+
 1. Sort direction indicator (Web GUI) was displaying an inverted direction
 2. Entities were not sorted correctly
 
