@@ -233,6 +233,9 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/cromwell "$CP_DIST_REPO_NAM
 # Nextflow
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest"
 
+# Snakemake
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/snakemake "$CP_DIST_REPO_NAME:tools-base-snakemake-${DOCKERS_VERSION}" "library/snakemake:latest"
+
 # Luigi
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:tools-base-luigi-${DOCKERS_VERSION}" "library/luigi:latest"
 
