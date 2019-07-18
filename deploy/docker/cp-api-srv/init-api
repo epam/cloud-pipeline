@@ -71,6 +71,32 @@ function update_config_json_templates {
     echo
 }
 
+function sign_pipe_win_distribution() {
+    local jar_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+    local output_dir="$6"
+    unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
+    unzip pipe.zip
+    rm -f pipe.zip
+    local sign_command="osslsigncode sign \
+                                     -pkcs12 \"$cert_path\" \
+                                     -n \"$cert_desc\" \
+                                     -i \"$cert_url\" \
+                                     -in pipe/pipe.exe \
+                                     -out signed-pipe.exe"
+    if [ "$cert_pass" ]; then
+        sign_command="$sign_command -pass $cert_pass"
+    fi
+    $sign_command
+    cp signed-pipe.exe pipe/pipe.exe
+    rm -f signed-pipe.exe
+    zip -r "$output_dir/pipe.zip" pipe
+    rm -rf pipe
+}
+
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -148,6 +174,17 @@ fi
 # Create static distribution directory
 export CP_API_SRV_STATIC_DIR="${CP_API_SRV_STATIC_DIR:-$CP_API_HOME/static}"
 mkdir -p $CP_API_SRV_STATIC_DIR
+
+# Sign and export pipe win distribution
+export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}"
+export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
+
+win_code_sign_cert_path="$CP_COMMON_CERT_DIR/win-code-sign-cert.pfx"
+if [ -f "$win_code_sign_cert_path" ]; then
+    echo "Signing Windows CLI with Code Signing Certificate"
+    sign_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+        "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
+fi
 
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
