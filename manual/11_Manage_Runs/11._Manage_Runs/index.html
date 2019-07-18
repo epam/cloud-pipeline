@@ -498,11 +498,13 @@
 <li><a href="#active-runs">ACTIVE RUNS</a><ul>
 <li><a href="#active-run-states">Active run states</a></li>
 <li><a href="#active-run-controls">Active run controls</a></li>
+<li><a href="#active-cluster-runs">Active cluster runs</a></li>
 </ul>
 </li>
 <li><a href="#completed-runs">COMPLETED RUNS</a><ul>
 <li><a href="#completed-run-states">Completed run states</a></li>
 <li><a href="#completed-run-controls">Completed run controls</a></li>
+<li><a href="#completed-cluster-runs">Completed cluster runs</a></li>
 </ul>
 </li>
 <li><a href="#run-information-page">Run information page</a><ul>
@@ -590,6 +592,18 @@
 </tr>
 </tbody>
 </table>
+<h3 id="active-cluster-runs">Active cluster runs</h3>
+<p>Cluster is a collection of instances which are connected so that they can be used together on a task.<br />
+If launched run uses a cluster or an auto-scaled cluster (see sections <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>), it has a certain designation:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_34.png" /></p>
+<p>By default, only master-run is displaying at the table. To view nested runs (child-runs) click the <strong>Expand</strong> control in front of the muster-run ID:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_35.png" /></p>
+<p>So, you can view an information about each child-run and its state, also you can stop specific nested run without stopping a parent run. You can open <strong>Run logs</strong> page (see <a href="#run-information-page">below</a>) for any of the cluster runs by click it or <strong>LOG</strong> button next to run ID.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: you can't pause cluster runs even with <em>"On-demand"</em> price type.<br />
+<strong><em>Note</em></strong>: stopping a parent run will stop execution of all nested runs too.</p>
+</blockquote>
+<p>For runs with the <strong>auto-scaled cluster</strong> not all of the child-runs appear in the list immediately after parent run was launched, "scale-up" runs will appear only of necessity.</p>
 <h2 id="completed-runs">COMPLETED RUNS</h2>
 <p>This tab displays a list of all pipelines runs that are already finished.</p>
 <p><img alt="CP_ManageRuns" src="../attachments/ManageRuns_05.png" /></p>
@@ -626,6 +640,9 @@
 </tr>
 </tbody>
 </table>
+<h3 id="completed-cluster-runs">Completed cluster runs</h3>
+<p>If completed run used a cluster or an auto-scaled cluster (see sections <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>), it has a certain designation. Displaying of such runs on the <strong>COMPLETED RUNS</strong> tab is similar to the active cluster runs. You can view an information about each child-run and its state, also you can rerun specific nested run without a parent run. You can open <strong>Run logs</strong> page (see <a href="#run-information-page">below</a>) for any of the cluster runs by click it or <strong>LOG</strong> button next to run ID:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_36.png" /></p>
 <h2 id="run-information-page">Run information page</h2>
 <p>Click a row within a run list, <strong>"Run information"</strong> page will appear.<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_09.png" /></p>
@@ -680,8 +697,24 @@
 <td><strong>Estimated price</strong></td>
 <td>price of a run according to a run duration and selected instance type.</td>
 </tr>
+<tr>
+<td><strong>Nested runs</strong></td>
+<td>the child-runs list in cases when a run has a number of children (e.g. a cluster run or any other case with the parent-id specified)</td>
+</tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>Nested runs</strong> list is displaying only for master runs.
+It is the list with short informations about cluster child-runs:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../../../release_notes/v.0.15/attachments/RN015_NestedRunsIcons_1.png" /><br />
+Each child-run record contains:</p>
+<ul>
+<li>State icons with help tooltips when hovering over them</li>
+<li>Pipeline name and version or docker image and version</li>
+<li>Run time duration</li>
+</ul>
+<p>Similar as a parent-run state, states for nested runs are automatically updated without page refreshing. To open any child-run log page - click its name in the list.  </p>
+</blockquote>
 <h3 id="instance">Instance</h3>
 <p>The "<strong>Instance</strong>" section lists calculation node and execution environment details that were assigned to the run when it was launched.<br />
 <strong><em>Note</em></strong>: node IP is presented as a hyperlink. Clicking it will navigate to the node details, where technical information and resources utilization is available.<br />

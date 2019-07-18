@@ -316,7 +316,7 @@
         
             <li><a class="toctree-l5" href="#sharing-a-run-with-users-groups">Sharing a run with users group(s)</a></li>
         
-            <li><a class="toctree-l5" href="#work-with-a-sharing-running-instance-for-not-owners">Work with a sharing running instance (for not owners)</a></li>
+            <li><a class="toctree-l5" href="#work-with-a-sharing-running-instance-for-not-ownersadmins">Work with a sharing running instance (for not owners/admins)</a></li>
         
         </ul>
     
@@ -495,66 +495,79 @@
 <li><a href="#overview">Overview</a></li>
 <li><a href="#sharing-a-run-with-users">Sharing a run with user(s)</a></li>
 <li><a href="#sharing-a-run-with-users-groups">Sharing a run with users group(s)</a></li>
-<li><a href="#work-with-a-sharing-running-instance-for-not-owners">Work with a sharing running instance (for not owners)</a></li>
+<li><a href="#work-with-a-sharing-running-instance-for-not-ownersadmins">Work with a sharing running instance (for not owners/admins)</a></li>
 </ul>
 <h2 id="overview">Overview</h2>
 <p>For certain use cases it is beneficial to be able to share applications with other users/groups. Cloud platform allows ability when runs environments will be accessed for several users, not only for the user, who launched the run (<strong>OWNER</strong>).<br />
-Please note that sharing of a run - allows to share only the interactive tools endpoints (e.g. <em>rstudio</em>, <em>jupyter</em>, <em>nomachine</em>, etc.). SSH sessions cannot be shared.</p>
+Sharing of a run - allows to share as the interactive tools endpoints (e.g. <em>rstudio</em>, <em>jupyter</em>, <em>nomachine</em>, etc.) and SSH sessions too.</p>
 <h2 id="sharing-a-run-with-users">Sharing a run with user(s)</h2>
-<p>In this example we will share a run with other user(s).<br />
-<strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>EXECUTE</strong> for the pipeline/tool. User must be an <strong>OWNER</strong> of the running instance.<br />
-<strong><em>Note</em></strong>: in the example we will share a run of the rstudio Tool, that running with "friendly" URL (for more information about launching Tools see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>.</p>
+<p>In this example we will share a run with other user(s).  </p>
+<blockquote>
+<p><strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>EXECUTE</strong> for the pipeline/tool. User must be an <strong>OWNER</strong> of the running instance.</p>
+</blockquote>
+<p><strong><em>Note</em></strong>: in the example we will share a run of the RStudio tool (for more information about launching Tools see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>).</p>
 <ol>
 <li>Open run logs of the instance:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_01.png" /></li>
-<li>Click on the link opposite the label "<strong>Share with</strong>":<br />
+<li>Click the link near the label "<strong>Share with</strong>":<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_02.png" /></li>
-<li>In opened pop-up window click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_03.png" /> button.</li>
-<li>In appeared window enter user name, for whom you want to share running instance. Confirm selected user by clicking "<strong>Ok</strong>" button:<br />
+<li>In the opened pop-up window click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_03.png" /> button.</li>
+<li>In the appeared window enter user name, for whom you want to share running instance. Confirm selected user by clicking the <strong>OK</strong> button:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_04.png" /></li>
-<li>If necessary, add more users. When finished, click "<strong>Ok</strong>" button:<br />
+<li>If necessary, add more users.<br />
+    If you want to give a SSH-access to the instance - set the <strong>Enable SSH connection</strong> checkbox. If this checkbox is not set, only the interactive tools endpoints will be shared.<br />
+    When finished, click the <strong>Ok</strong> button:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_05.png" /></li>
-<li>In run logs, users names, for which you shared running instance, will be appeared opposite the label "<strong>Share with</strong>":<br />
+<li>In the run logs, users names for whom you shared running instance will appear near the label <strong>Share with</strong>:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_06.png" /></li>
-<li>Copy the link opposite the label "<strong>Endpoint</strong>", send it to user(s), for whom (which) you shared the instance:<br />
+<li>Copy the link near the label <strong>Endpoint</strong>, send it to users, for whom you shared the instance:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_07.png" /></li>
 </ol>
 <h2 id="sharing-a-run-with-users-groups">Sharing a run with users group(s)</h2>
-<p>In this example we will share a run with other users group(s).<br />
-<strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>EXECUTE</strong> for the pipeline/tool. User must be an <strong>OWNER</strong> of the running instance.<br />
-<strong><em>Note</em></strong>: in the example we will share a run of the rstudio Tool, that running with "friendly" URL (for more information about launching Tools see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>.</p>
+<p>In this example we will share a run with other users group(s).  </p>
+<blockquote>
+<p><strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted <strong>READ</strong> &amp; <strong>EXECUTE</strong> for the pipeline/tool. User must be an <strong>OWNER</strong> of the running instance.</p>
+</blockquote>
+<p><strong><em>Note</em></strong>: in the example we will share a run of the RStudio tool (for more information about launching Tools see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>).</p>
 <ol>
 <li>Open run logs of the instance:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_01.png" /></li>
-<li>Click on the link opposite the label "<strong>Share with</strong>":<br />
+<li>Click the link near the label <strong>Share with</strong>:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_02.png" /></li>
-<li>In opened pop-up window click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_08.png" /> button.</li>
-<li>In appeared window enter users group name, for whom you want to share running instance. Confirm selected users group by clicking "<strong>OK</strong>" button:<br />
+<li>In the opened pop-up window click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_08.png" /> button.</li>
+<li>In the appeared window enter user group's name, for which you want to share running instance. Confirm selected user group by click the <strong>OK</strong> button:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_09.png" /></li>
-<li>If necessary, add more groups. When finished, click "<strong>OK</strong>" button:<br />
+<li>If necessary, add more groups.<br />
+    If you want to give a SSH-access to the instance - set the <strong>Enable SSH connection</strong> checkbox. If this checkbox is not set, only the interactive tools endpoints will be shared.<br />
+    When finished, click the <strong>OK</strong> button:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_10.png" /></li>
-<li>In run logs, users groups names, for which you shared running instance, will be appeared opposite the label "<strong>Share with</strong>":<br />
-<img alt="CP_SharingRuns" src="../attachments/SharingRuns_06.png" /></li>
-<li>Copy the link opposite the label "<strong>Endpoint</strong>", send it to users, for which group(s) you shared the instance:<br />
+<li>In the run logs, user group names, for which you shared running instance, will appear near the label <strong>Share with</strong>:<br />
+<img alt="CP_SharingRuns" src="../attachments/SharingRuns_15.png" /></li>
+<li>Copy the link near the label <strong>Endpoint</strong>, send it to users, for which group(s) you shared the instance:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_07.png" /></li>
 </ol>
-<h2 id="work-with-a-sharing-running-instance-for-not-owners">Work with a sharing running instance (for not owners)</h2>
-<p>A current user can be accessed to a service, without running own jobs, if that service was shared for a current user.<br />
+<h2 id="work-with-a-sharing-running-instance-for-not-ownersadmins">Work with a sharing running instance (for not owners/admins)</h2>
+<p>A current user can be accessed to a service, without running own jobs, if that service was shared for a current user or his group(s).<br />
 <strong><em>Note</em></strong>: for do that, user account shall be registered within CP users catalog and granted "sharing" permission for the instance.</p>
 <h3 id="way-1">Way 1</h3>
 <ol>
-<li>Log in at CP. Open new tab in browser and input the link of sharing running instance, that you received.</li>
-<li>The GUI of the Tool, of that running instance was shared, will be displayed. For example, described above, it will be the RStudio GUI:<br />
+<li>Log in at the Cloud Pipeline. Open a new tab in a browser and input the link of the sharing running instance, that you received.</li>
+<li>The GUI of the Tool, of that running instance was shared, will be displayed. For example described above, it will be the RStudio GUI:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_11.png" /></li>
 </ol>
 <h3 id="way-2">Way 2</h3>
 <ol>
-<li>On home Dashboard click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_12.png" /> button.</li>
-<li>In opened pop-up window enable check-box "<strong>Services</strong>" and click "<strong>OK</strong>" button:<br />
+<li>On the <strong>Home dashboard</strong> click <img alt="CP_SharingRuns" src="../attachments/SharingRuns_12.png" /> button.</li>
+<li>In the opened popup enable the checkbox <strong>SERVICES</strong> and click the <strong>OK</strong> button:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_13.png" /></li>
-<li>On appeared "<strong>Services</strong>" widget at the <strong>Home dashboard</strong> page "shared" service will be displayed:<br />
+<li>On the appeared <strong>SERVICES</strong> widget at the <strong>Home dashboard</strong> page accessible "shared" services will be displayed:<br />
 <img alt="CP_SharingRuns" src="../attachments/SharingRuns_14.png" /></li>
-<li>Click on it. The GUI of the Tool, of that running instance was shared, will be displayed.</li>
+<li>Click it. The GUI of the Tool of the running shared instance will be displayed.<br />
+<img alt="CP_SharingRuns" src="../attachments/SharingRuns_16.png" /></li>
+<li>If <strong>Enable SSH connection</strong> checkbox was set for a current user or his group(s) at the sharing configure form, a current user can get a SSH-access to the running instance. For that - hover over service "card" and click the <strong>SSH</strong> hyperlink:<br />
+<img alt="CP_SharingRuns" src="../attachments/SharingRuns_17.png" /><br />
+    A new page with the <strong>Terminal access</strong> to the shared instance will appear:<br />
+<img alt="CP_SharingRuns" src="../attachments/SharingRuns_18.png" /></li>
 </ol>
               
             </div>

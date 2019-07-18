@@ -414,6 +414,8 @@
         
             <li><a class="toctree-l5" href="#using-terminal-access">Using Terminal access</a></li>
         
+            <li><a class="toctree-l5" href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a></li>
+        
         </ul>
     
 
@@ -518,6 +520,81 @@ This can be useful when:</p>
 <strong><em>Note</em></strong>: If an <strong>unauthorized user</strong> will load a direct link, <strong>"Permission denied"</strong> error will be returned.<br />
 <img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_5.png" /></li>
 </ol>
+<h2 id="example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</h2>
+<blockquote>
+<p>Configure of <strong>Environment Modules</strong> using is available only for users with <strong>ADMIN</strong> role.</p>
+</blockquote>
+<p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
+<p>In the example below, we will use <code>Modules</code> to switch between two versions of <strong>Java Development Kit</strong>.</p>
+<ol>
+<li>At the beginning we will create a storage for all <code>JDK</code> versions files and <code>modulefiles</code>. For that: open the <strong>Library</strong>, click <strong>Create +</strong> → <strong>Storages</strong> → <strong>Create new object storage</strong></li>
+<li>While creating - specify a storage name and mount point, e.g. <code>/opt/software</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_6.png" /><br />
+    Click the <strong>Create</strong> button.</li>
+<li>Open the created storage and create two folders in it:<ul>
+<li><strong>app</strong> - here we will upload <code>JDK</code> files</li>
+<li><strong>modulefiles</strong> - here we will create <code>modulefiles</code> for each <code>JDK</code> version<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_7.png" /></li>
+</ul>
+</li>
+<li>Open the <strong>modulefiles</strong> folder, create the <strong>jdk</strong> folder in it.</li>
+<li>Open the <strong>jdk</strong> folder, create <code>modulefile</code> for the <code>JDK ver. 9.0.4</code> - name it <strong>9.0.4</strong>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_8.png" /></li>
+<li>Click the file name, click the <strong>Fullscreen</strong> button at the file content panel:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_9.png" /></li>
+<li>At the popup click the <strong>EDIT</strong> button and input the <code>modulefile</code> content, e.g. for the <code>JDK ver. 9.0.4</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_10.png" /><br />
+    Save it.</li>
+<li>Repeat steps 5-7 for the <code>JDK ver. 11.0.2</code>. At the end you will have two <code>modulefiles</code> in the <strong>jdk</strong> folder:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_11.png" /></li>
+<li>Open <strong>System Settings</strong> popup, click the <strong>Preferences</strong> tab, select <strong>Launch</strong> section.<br />
+    Into the <strong><code>launch.env.properties</code></strong> field add a new variable - <code>CP_CAP_MODULES_FILES_DIR</code>. That variable specify path to the source <code>modulefiles</code>.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_12.png" /><br />
+    As you can see - during the run, when the storage created at step 2 will be mounted to the node in the specified mount-point (<code>/opt/software</code>), created above <code>JDK</code> <code>modulefiles</code> will be available in the <strong>modulefiles</strong> folder created at step 3 - by the path <code>/opt/software/modulefiles</code>.<br />
+    Save and close the <strong>Settings</strong> popup.</li>
+<li>Go to the <strong>Tool</strong> page, open the tool page you want to use the <code>Environment Modules</code> with and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_2.png" /></li>
+<li>At the <strong>Launch</strong> page expand <strong>Advanced</strong> section.</li>
+<li>In the <strong>Limit mounts</strong> field select the storage created at step 2 (see more details <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>).</li>
+<li>Click the <strong>Add system parameter</strong> button</li>
+<li>In the popup select the <strong><code>CP_CAP_MODULES</code></strong> item and click the <strong>OK</strong> button:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_13.png" /><br />
+<code>CP_CAP_MODULES</code> parameter enables installation and using the <code>Modules</code> for the current run. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (that was set at step 9). If <code>CP_CAP_MODULES_FILES_DIR</code> is not set - default <code>modulefiles</code> location will be used.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_14.png" /></li>
+<li>Launch the tool.</li>
+<li>Open <strong>Run logs</strong> page, wait until <strong>InstallEnvironmentModules</strong> task will appear and check that the <code>Modules</code> was installed successfully:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_15.png" /></li>
+<li>Wait until <strong>SSH</strong> hyperlink will appear in the right upper corner. Click it.</li>
+<li>In the terminal run the command <code>module use</code> to check the ource path to the <code>modulefiles</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_16.png" /></li>
+<li>Now, we will install <code>JDK</code>. For the <code>ver. 9.0.4</code> run the following commands:  </li>
+</ol>
+<pre><code class="bash"># Download &quot;jdk 9.0.4&quot; archive
+wget https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz
+# Extract archive content
+tar -zxf openjdk-9.0.4_linux-x64_bin.tar.gz
+# Copy &quot;jdk 9.0.4&quot; files into the mounted data storage
+cp -r jdk-9.0.4 /opt/software/app/jdk-9.0.4
+</code></pre>
+
+<p>For the <code>ver. 11.0.2</code> run the following commands:  </p>
+<pre><code class="bash"># Download &quot;jdk 11.0.2&quot; archive
+wget https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+# Extract archive content
+tar -zxf openjdk-11.0.2_linux-x64_bin.tar.gz
+# Copy &quot;jdk 11.0.2&quot; files into the mounted data storage
+cp -r jdk-11.0.2 /opt/software/app/jdk-11.0.2
+</code></pre>
+
+<p>Now, you can check the facilities of the <code>Environment Modules</code> package.<br />
+Load the available <code>modulefiles</code> list:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_17.png" /><br />
+Load the <code>JDK ver. 11.0.2</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_18.png" /><br />
+Switch to the <code>JDK ver. 9.0.4</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_20.png" /><br />
+Unload all <code>JDK</code> versions:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_19.png" />  </p>
               
             </div>
           </div>

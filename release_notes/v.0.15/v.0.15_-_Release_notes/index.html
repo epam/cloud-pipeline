@@ -119,6 +119,8 @@
         
             <li><a class="toctree-l4" href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</a></li>
         
+            <li><a class="toctree-l4" href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -545,9 +547,10 @@
 <li><a href="#installation-via-pipectl">Installation via pipectl</a></li>
 <li><a href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a></li>
 <li><a href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs</a></li>
-<li><a href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a></li>
-<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
+<li><a href="#pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</a></li>
+<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 <li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
+<li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
 </ul>
 <hr />
 <ul>
@@ -781,13 +784,13 @@ All the deployment tasks were handed manually or by custom scripts.</p>
 <h2 id="add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</h2>
 <p>When a <code>Cloud Pipeline</code> is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
 I.e. the following behavior was observed couple of times over the last year:</p>
-<p><em>Scenario 1</em></p>
+<h3 id="scenario-1"><em>Scenario 1</em></h3>
 <ol>
 <li>Run is launched and initialized fine</li>
 <li>During processing execution - run fails</li>
 <li>Console logs print nothing, compute node is fine and is attached to the cluster</li>
 </ol>
-<p><em>Scenario 2</em></p>
+<h3 id="scenario-2"><em>Scenario 2</em></h3>
 <ol>
 <li>Run is launched, compute node is up</li>
 <li>Run fails during initialization</li>
@@ -817,7 +820,8 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <p>If you click any of the children-runs, you will navigate to its log page.</p>
 <p>That feature is implemented for the comleted runs too:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_2.png" /></p>
-<h2 id="pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</h2>
+<p>More information about nested runs displaying see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-cluster-runs">here</a> and <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#general-information">here</a>.</p>
+<h2 id="pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</h2>
 <p>By default, when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date.</p>
 <p>In <strong><code>v.0.15</code></strong> extra <code>pipe</code> CLI warnings are introduced to provide users an information on the JWT token expiration:</p>
 <ul>
@@ -828,7 +832,8 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <li>When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_3.png" /></li>
 </ul>
-<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</h2>
+<p>See more information about <code>pipe</code> CLI installation <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#how-to-install-and-setup-pipe-cli">here</a>.</p>
+<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h2>
 <p>For some special customer needs, <code>pipe</code> configuration for using NTLM Authentication Proxy, when running in Linux, could be required.</p>
 <p>For that, several new options were added to <code>pipe configure</code> command:</p>
 <ul>
@@ -856,6 +861,7 @@ Password of the user1 user:
 <pre><code class="bash">pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy &quot;http://myproxy:3128&quot;
 </code></pre>
 
+<p>See more information about <code>pipe</code> CLI installation and configure <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">here</a>.</p>
 <h2 id="environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</h2>
 <p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
 <p>In current version, an ability to configure the <code>Modules</code> support for the compute jobs is introduced, if this is required by any use case.</p>
@@ -864,6 +870,27 @@ Password of the user1 user:
 <li><strong><code>CP_CAP_MODULES</code></strong> <em>(boolean)</em> - enables installation and using the <code>Modules</code> for the current run (for all supported Linux distributions)</li>
 </ul>
 <p>If <code>CP_CAP_MODULES</code> system parameter is set - the <code>Modules</code> will be installed and made available. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default <code>modulefiles</code> location will be used.</p>
+<p>See an example <a href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/#example-using-of-environment-modules-for-the-cloud-pipeline-runs">here</a>.</p>
+<h2 id="sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</h2>
+<p>As was introduced in <a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users">Release Notes v.0.13</a>, for certain use cases it is beneficial to be able to share applications with other users/groups.  </p>
+<p><strong><code>v0.15</code></strong> introduces a feature that allows to share SSH-sessions for such shared runs:</p>
+<ol>
+<li>User can share a run with others:<ul>
+<li>"Share with: ..." parameter, within a run log form, can be used for this<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_1.png" /></li>
+<li>Specific users or whole groups can be set for sharing<br />
+<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_2.png" /></li>
+<li>Once this is set - other users will be able to access run's endpoints</li>
+<li>Also you can share SSH access to the running instance via setting "<strong>Enable SSH connection</strong>" checkbox<br />
+<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_3.png" /></li>
+</ul>
+</li>
+<li><strong>SERVICES</strong> widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.<br />
+To open shared instance application user should click the service name.<br />
+To get SSH-access to the shared instance user should hover over service "card" and click the <strong>SSH</strong> hyperlink<br />
+<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
+</ol>
+<p>For more information about runs sharing see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users or groups of users</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
@@ -874,9 +901,11 @@ Password of the user1 user:
 <p>In certain cases, while committing pipeline with the stop flag enabled - the run's status hangs in <code>Committing...</code> state. Run state does not change even after the commit operation succeeds and a job is stopped.</p>
 <h3 id="instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/150">#150</a></p>
-<p>Metadata entities (i.e. project-related metadata) sorting was faulty:
-1. Sort direction indicator (Web GUI) was displaying an inverted direction
-2. Entities were not sorted correctly</p>
+<p>Metadata entities (i.e. project-related metadata) sorting was faulty:</p>
+<ol>
+<li>Sort direction indicator (Web GUI) was displaying an inverted direction</li>
+<li>Entities were not sorted correctly</li>
+</ol>
 <h3 id="tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/144">#144</a></p>
 <p>If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.</p>
