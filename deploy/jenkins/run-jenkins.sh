@@ -23,7 +23,9 @@ function create_jenkins_job {
     # sed is used to "html-style" escape script, e.g. &quot; / &lt; / etc..
     export BUILD_COMMAND="$(cat script.sh | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g')"
 
-    JOB_CONFIG_XML="$(envsubst '${BUILD_COMMAND} ${JENKINS_JOB_TOKEN} ${JENKINS_AWS_DEPLOY_JOB_NAME} ${JENKINS_AZ_DEPLOY_JOB_NAME}' < config.xml)"
+    JOB_CONFIG_XML="$(envsubst '${BUILD_COMMAND} ${JENKINS_JOB_TOKEN} ${JENKINS_AWS_DEPLOY_JOB_NAME} ${JENKINS_AZ_DEPLOY_JOB_NAME}
+    ${JENKINS_AWS_GUI_TEST_JOB_NAME} ${JENKINS_AZURE_GUI_TEST_JOB_NAME} ${JENKINS_GCP_GUI_TEST_JOB_NAME}
+    ${CP_E2E_SCHEDULE} ${CP_DEFAULT_RECEPIENT_EMAILS} ${JENKINS_HOST} ${JENKINS_PORT}' < config.xml)"
     cat <<< "$JOB_CONFIG_XML" > config.xml
 
     curl -s -XPOST "http://${JENKINS_HOST}:${JENKINS_PORT}/createItem?name=cloud-pipeline-${job_dir}" \
@@ -79,6 +81,9 @@ echo "Creating jenkins jobs"
 create_jenkins_job build-pipectl
 create_jenkins_job deploy-dev-aws
 create_jenkins_job deploy-dev-az
+create_jenkins_job gui-dev-test-aws
+create_jenkins_job gui-dev-test-azure
+create_jenkins_job gui-dev-test-gcp
 
 echo "Building sqs trigger docker image from $SELF_PATH/jenkins-sqs-trigger"
 
