@@ -13,9 +13,14 @@
     - [Worker nodes fail due to mismatch of the regions with the parent run](#worker-nodes-fail-due-to-mismatch-of-the-regions-with-the-parent-run)
     - [Worker nodes shall not be restarted automatically](#worker-nodes-shall-not-be-restarted-automatically)
     - [Uploaded storage file content is downloaded back to client](#uploaded-storage-file-content-is-downloaded-back-to-client)
+    - [GUI improperly works with detached configurations in a non-default region](#gui-improperly-works-with-detached-configurations-in-a-non-default-region)
     - [Detached configuration doesn't respect region setting](#detached-configuration-doesnt-respect-region-setting)
+    - [Incorrect behavior of the "Transfer to the cloud" form in case when a subfolder has own metadata](#incorrect-behavior-of-the-transfer-to-the-cloud-form-in-case-when-a-subfolder-has-own-metadata)
     - [Incorrect displaying of the "Start idle" checkbox](#incorrect-displaying-of-the-start-idle-checkbox)
     - [Limit check of the maximum cluster size is incorrect](#limit-check-of-the-maximum-cluster-size-is-incorrect)
+    - [Fixed cluster with SGE and DIND capabilities fails to start](#fixed-cluster-with-sge-and-dind-capabilities-fails-to-start)
+    - [Azure: `pipe` CLI cannot transfer empty files between storages](#azure-pipe-cli-cannot-transfer-empty-files-between-storages)
+    - [Azure: runs with enabled GE autoscaling doesn't stop](#azure-runs-with-enabled-ge-autoscaling-doesnt-stop)
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
 
@@ -121,12 +126,24 @@ Now, automatically **child** reruns for the described cases with the `batch job`
 
 Cloud Pipeline clients use specific POST API method to upload local files to the cloud storages. Previously, this method not only uploaded files to the cloud storage but also mistakenly returned uploaded file content back to the client. It led to a significant upload time increase.
 
+### GUI improperly works with detached configurations in a non-default region
+
+[#476](https://github.com/epam/cloud-pipeline/issues/476)
+
+Saved instance type of a non-default region in a detached configuration wasn't displayed in case when such configuration was reopened (instance type field was displayed as empty in that cases).
+
 ### Detached configuration doesn't respect region setting
 
 [#458](https://github.com/epam/cloud-pipeline/issues/458)
 
 Region setting was not applied when pipeline is launched using detached configuration.  
 Now, cloud region ID is merged into the detached configuration settings.
+
+### Incorrect behavior of the "Transfer to the cloud" form in case when a subfolder has own metadata
+
+[#434](https://github.com/epam/cloud-pipeline/issues/434)
+
+Previously, when you tried to download files from external resources using metadata (see [here](../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage.md)) and in that metadata's folder there was any subfolder with its own metadata - on the "Transfer to the Cloud" form attributes (columns) of **both** metadata files were mistakenly displaying.
 
 ### Incorrect displaying of the "Start idle" checkbox
 
@@ -140,6 +157,24 @@ If for the configuration form with several tabs user was setting the **Start idl
 
 Maximum allowed number of runs (size of the cluster) created at once is limited by system preference **`launch.max.scheduled.number`**. This check used strictly "less" check rather then "less or equal" to allow or deny cluster launch.  
 Now, the "less or equal" check is used.
+
+### Fixed cluster with SGE and DIND capabilities fails to start
+
+[#392](https://github.com/epam/cloud-pipeline/issues/392)
+
+Previously, fixed cluster with both **`CP_CAP_SGE`** and **`CP_CAP_DIND_CONTAINER`** options enabled with more than one worker failed to start. Some of the workers failed on either `SGEWorkerSetup` or `SetupDind` task with different errors. Scripts were executed in the same one shared analysis directory. So, some workers could delete files downloaded by other workers.
+
+### Azure: `pipe` CLI cannot transfer empty files between storages
+
+[#386](https://github.com/epam/cloud-pipeline/issues/386)
+
+Previously, empty files couldn't be transferred within a single `Azure` storage or between two `Azure` storages using `pipe` CLI, it throwed an error. So for example, a folder that contained empty files couldn't be copied correctly.
+
+### Azure: runs with enabled GE autoscaling doesn't stop
+
+[#377](https://github.com/epam/cloud-pipeline/issues/377)
+
+All `Azure` runs with enabled GE autoscaling were stuck after the `launch.sh` script has finished its execution. Daemon GE autoscaler process kept container alive. It was caused by the run process `stdout` and `stderr` aren't handled the same way for different Cloud Provider. So background processes launched from `launch.sh` directly could prevent `Azure` run finalization.
 
 ### Incorrect behavior while download files from external resources into several folders
 
