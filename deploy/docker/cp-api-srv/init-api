@@ -145,6 +145,10 @@ if [ -f "$ca_cert_path" ]; then
     /update-trust $ca_cert_path "cp-ca"
 fi
 
+# Create static distribution directory
+export CP_API_SRV_STATIC_DIR="${CP_API_SRV_STATIC_DIR:-$CP_API_HOME/static}"
+mkdir -p $CP_API_SRV_STATIC_DIR
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
