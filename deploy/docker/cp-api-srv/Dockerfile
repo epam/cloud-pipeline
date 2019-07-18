@@ -14,7 +14,9 @@
 
 # docker build . \
 #   -t lifescience/cloud-pipeline:api-srv-latest \
-#   --build-arg CP_API_DIST_URL="https://..."
+#   --build-arg CP_API_DIST_URL="https://..." \
+#   --build-arg OPENSSL_DIST_URL="https://..." \
+#   --build-arg OSSLSIGNCODE_DIST_URL="https://..."
 
 FROM centos:7
 
@@ -24,8 +26,8 @@ RUN yum install -y \
                 curl \
                 java-1.8.0-openjdk \
                 python \
+                zip \
                 unzip \
-                openssl \
                 git \
                 nfs-utils \
                 sudo \
@@ -33,6 +35,19 @@ RUN yum install -y \
                 samba-client \
                 cifs-utils \
                 gettext
+
+ARG OPENSSL_DIST_URL=""
+RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
+    tar -xzf openssl.tgz -C /opt/ && \
+    rm -f openssl.tgz
+
+ENV LD_LIBRARY_PATH=/opt/openssl/lib:$LD_LIBRARY_PATH
+ENV PATH=/opt/openssl/bin:$PATH
+
+ARG OSSLSIGNCODE_DIST_URL=""
+RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
+    tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
+    rm -f osslsigncode.tgz
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I  requests==2.21.0 \

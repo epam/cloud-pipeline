@@ -123,9 +123,24 @@ if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
+
+OPENSSL_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/openssl/openssl-1.1.1c.tar.gz"
+if [ -z "$OPENSSL_DIST_URL" ]; then
+    echo "OPENSSL_DIST_URL is not set, trying to use default public distribution $OPENSSL_DIST_URL_DEFAULT"
+    OPENSSL_DIST_URL="$OPENSSL_DIST_URL_DEFAULT"
+fi
+
+OSSLSIGNCODE_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/osslsigncode/osslsigncode-2.0.tar.gz"
+if [ -z "$OSSLSIGNCODE_DIST_URL" ]; then
+    echo "OSSLSIGNCODE_DIST_URL is not set, trying to use default public distribution $OSSLSIGNCODE_DIST_URL_DEFAULT"
+    OSSLSIGNCODE_DIST_URL="$OSSLSIGNCODE_DIST_URL_DEFAULT"
+fi
+
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" \
+                --build-arg OPENSSL_DIST_URL="$OPENSSL_DIST_URL" \
+                --build-arg OSSLSIGNCODE_DIST_URL="$OSSLSIGNCODE_DIST_URL" && \
 docker push "$CP_API_DIST_NAME"
 
 # Basic IdP
