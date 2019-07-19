@@ -31,9 +31,9 @@
     <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
     <authToken>${JENKINS_JOB_TOKEN}</authToken>
     <triggers>
-    <hudson.triggers.TimerTrigger>
-        <spec>${CP_E2E_SCHEDULE}</spec>
-    </hudson.triggers.TimerTrigger>
+        <hudson.triggers.TimerTrigger>
+            <spec>${CP_E2E_SCHEDULE}</spec>
+        </hudson.triggers.TimerTrigger>
     </triggers>
     <concurrentBuild>false</concurrentBuild>
     <builders>
@@ -42,38 +42,38 @@
         </hudson.tasks.Shell>
     </builders>
     <publishers>
-    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.61">
-        <recipientList>${CP_DEFAULT_RECEPIENT_EMAILS}</recipientList>
-        <configuredTriggers>
-            <hudson.plugins.emailext.plugins.trigger.AlwaysTrigger>
-                <email>
-                    <subject>$PROJECT_DEFAULT_SUBJECT</subject>
-                    <body>$PROJECT_DEFAULT_CONTENT</body>
-                    <recipientProviders>
-                        <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
-                    </recipientProviders>
-                    <attachmentsPattern></attachmentsPattern>
-                    <attachBuildLog>true</attachBuildLog>
-                    <compressBuildLog>false</compressBuildLog>
-                    <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
-                    <contentType>project</contentType>
-                </email>
-            </hudson.plugins.emailext.plugins.trigger.AlwaysTrigger>
-        </configuredTriggers>
-        <contentType>default</contentType>
-        <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
-        <defaultContent>$DEFAULT_CONTENT
-            &lt;a href=&quot;http://${JENKINS_HOST}:${JENKINS_PORT}/view/job/${JENKINS_AZURE_GUI_TEST_JOB_NAME}/ws/e2e/gui/build/reports/tests/test/index.html&quot;&gt;&lt;p&gt;See index.html report&lt;/a&gt;
-        </defaultContent>
-        <attachmentsPattern></attachmentsPattern>
-        <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
-        <postsendScript>$DEFAULT_POSTSEND_SCRIPT</postsendScript>
-        <attachBuildLog>true</attachBuildLog>
-        <compressBuildLog>false</compressBuildLog>
-        <replyTo>${DEFAULT_REPLYTO}</replyTo>
-        <saveOutput>false</saveOutput>
-        <disabled>false</disabled>
-    </hudson.plugins.emailext.ExtendedEmailPublisher>
+        <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.61">
+            <recipientList>${CP_DEFAULT_RECIPIENT_EMAILS}</recipientList>
+            <configuredTriggers>
+                <hudson.plugins.emailext.plugins.trigger.AlwaysTrigger>
+                    <email>
+                        <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+                        <body>$PROJECT_DEFAULT_CONTENT</body>
+                        <recipientProviders>
+                            <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+                        </recipientProviders>
+                        <attachmentsPattern></attachmentsPattern>
+                        <attachBuildLog>true</attachBuildLog>
+                        <compressBuildLog>false</compressBuildLog>
+                        <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+                        <contentType>project</contentType>
+                    </email>
+                </hudson.plugins.emailext.plugins.trigger.AlwaysTrigger>
+            </configuredTriggers>
+            <contentType>default</contentType>
+            <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
+            <defaultContent>$DEFAULT_CONTENT
+                &lt;a href=&quot;http://${JENKINS_HOST}:${JENKINS_PORT}/view/job/${JENKINS_AZURE_GUI_TEST_JOB_NAME}/ws/e2e/gui/build/reports/tests/test/index.html&quot;&gt;&lt;p&gt;See index.html report&lt;/a&gt;
+            </defaultContent>
+            <attachmentsPattern></attachmentsPattern>
+            <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
+            <postsendScript>$DEFAULT_POSTSEND_SCRIPT</postsendScript>
+            <attachBuildLog>true</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo>${DEFAULT_REPLYTO}</replyTo>
+            <saveOutput>false</saveOutput>
+            <disabled>false</disabled>
+        </hudson.plugins.emailext.ExtendedEmailPublisher>
     </publishers>
     <buildWrappers/>
 </project>
