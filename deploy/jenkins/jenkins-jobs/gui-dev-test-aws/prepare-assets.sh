@@ -14,7 +14,6 @@
 # limitations under the License.
 
 cd $WORKSPACE/cloud-pipeline/e2e/gui
-echo $(ls $WORKSPACE/cloud-pipeline/e2e/gui)
 echo "e2e.ui.default.timeout=${AWS_E2E_DEFAULT_TIMEOUT}" > default.conf
 echo "e2e.ui.commit.appearing.timeout=${AWS_E2E_COMMIT_APPEARING_TIMEOUT}" >> default.conf
 echo "e2e.ui.ssh.appearing.timeout=${AWS_E2E_SSH_APPEARING_TIMEOUT}" >> default.conf
@@ -50,7 +49,6 @@ echo "e2e.ui.nfs.prefix=${AWS_E2E_NFS_PREFIX}" >> default.conf
 echo "e2e.ui.default.instance.price.type=${AWS_E2E_DEFAULT_INSTANCE_PRICE_TYPE}" >> default.conf
 echo "e2e.ui.cloud.provider=${AWS_E2E_CLOUD_PROVIDER}" >> default.conf
 echo "e2e.ui.spot.price.name=${AWS_E2E_SPOT_PRICE_NAME}" >> default.conf
-df -h
 
 docker run  -i \
             --rm \
@@ -60,4 +58,4 @@ docker run  -i \
             -p 6902:6902 \
             -v /dev/shm:/dev/shm \
             consol/ubuntu-xfce-vnc \
-            bash -c "df -h && mkdir -p /headless/Downloads && cd /headless/e2e/gui && bash install.sh && ./gradlew clean test"
+            bash -c "mkdir -p /headless/Downloads && cd /headless/e2e/gui && bash install.sh && ./gradlew clean test"
