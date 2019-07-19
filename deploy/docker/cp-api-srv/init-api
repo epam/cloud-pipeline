@@ -71,7 +71,39 @@ function update_config_json_templates {
     echo
 }
 
-function sign_pipe_win_distribution() {
+function sign_win_executable() {
+    local exec_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+
+    local signed_exec_path="signed-$(basename "$exec_path")"
+    local sign_command="osslsigncode sign \
+                                     -pkcs12 \"$cert_path\" \
+                                     -n \"$cert_desc\" \
+                                     -i \"$cert_url\" \
+                                     -in \"$exec_path\" \
+                                     -out \"$signed_exec_path\""
+    if [ "$cert_pass" ]; then
+        sign_command="$sign_command -pass \"$cert_pass\""
+    fi
+    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
+    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    local ORIGINAL_PATH="$PATH"
+    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
+    export PATH="/opt/openssl/bin:$PATH"
+    eval $sign_command
+    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
+    export PATH="$ORIGINAL_PATH"
+    if [ -f "$signed_exec_path" ]; then
+        mv -f "$signed_exec_path" "$exec_path"
+    else
+        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
+    fi
+}
+
+function sign_and_publish_pipe_win_distribution() {
     local jar_path="$1"
     local cert_path="$2"
     local cert_pass="$3"
@@ -81,32 +113,9 @@ function sign_pipe_win_distribution() {
     unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
     unzip -qq pipe.zip
     rm -f pipe.zip
-    local sign_command="osslsigncode sign \
-                                     -pkcs12 \"$cert_path\" \
-                                     -n \"$cert_desc\" \
-                                     -i \"$cert_url\" \
-                                     -in pipe/pipe.exe \
-                                     -out signed-pipe.exe"
-    if [ "$cert_pass" ]; then
-        sign_command="$sign_command -pass \"$cert_pass\""
-    fi
-
-    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
-    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-    local ORIGINAL_PATH="$PATH"
-    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
-    export PATH="/opt/openssl/bin:$PATH"
-    eval $sign_command
-    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
-    export PATH="$ORIGINAL_PATH"
-
-    if [ -f "signed-pipe.exe" ]; then
-        cp -f signed-pipe.exe pipe/pipe.exe
-        rm -f signed-pipe.exe
-        zip -q -r "$output_dir/pipe.zip" pipe
-    else
-        echo "Windows CLI signing has failed. Unsigned CLI distribution will be used"
-    fi
+    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    zip -q -r "$output_dir/pipe.zip" pipe
     rm -rf pipe
 }
 
@@ -195,7 +204,7 @@ export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.
 win_code_sign_cert_path="$CP_COMMON_CERT_DIR/win-code-sign-cert.pfx"
 if [ -f "$win_code_sign_cert_path" ]; then
     echo "Signing Windows CLI with Code Signing Certificate"
-    sign_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+    sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
         "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
 
