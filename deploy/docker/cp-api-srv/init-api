@@ -79,7 +79,7 @@ function sign_pipe_win_distribution() {
     local cert_url="$5"
     local output_dir="$6"
     unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
-    unzip pipe.zip
+    unzip -qq pipe.zip
     rm -f pipe.zip
     local sign_command="osslsigncode sign \
                                      -pkcs12 \"$cert_path\" \
@@ -88,12 +88,16 @@ function sign_pipe_win_distribution() {
                                      -in pipe/pipe.exe \
                                      -out signed-pipe.exe"
     if [ "$cert_pass" ]; then
-        sign_command="$sign_command -pass $cert_pass"
+        sign_command="$sign_command -pass \"$cert_pass\""
     fi
-    $sign_command
-    cp signed-pipe.exe pipe/pipe.exe
-    rm -f signed-pipe.exe
-    zip -r "$output_dir/pipe.zip" pipe
+    eval $sign_command
+    if [ -f "signed-pipe.exe" ]; then
+        cp -f signed-pipe.exe pipe/pipe.exe
+        rm -f signed-pipe.exe
+        zip -q -r "$output_dir/pipe.zip" pipe
+    else
+        echo "Windows CLI signing has failed. Unsigned CLI distribution will be used"
+    fi
     rm -rf pipe
 }
 
