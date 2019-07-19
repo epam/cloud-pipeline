@@ -90,7 +90,16 @@ function sign_pipe_win_distribution() {
     if [ "$cert_pass" ]; then
         sign_command="$sign_command -pass \"$cert_pass\""
     fi
+
+    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
+    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    local ORIGINAL_PATH="$PATH"
+    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
+    export PATH="/opt/openssl/bin:$PATH"
     eval $sign_command
+    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
+    export PATH="$ORIGINAL_PATH"
+
     if [ -f "signed-pipe.exe" ]; then
         cp -f signed-pipe.exe pipe/pipe.exe
         rm -f signed-pipe.exe

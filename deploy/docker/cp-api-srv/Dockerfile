@@ -28,6 +28,7 @@ RUN yum install -y \
                 python \
                 zip \
                 unzip \
+                openssl \
                 git \
                 nfs-utils \
                 sudo \
@@ -36,13 +37,13 @@ RUN yum install -y \
                 cifs-utils \
                 gettext
 
+# Prebuild version of openssl v1.1.x which is required by osslsigncode.
+# As long as its compatibility is proven for osslsigncode tool only
+# openssl v1.0.x installed with package manager will be used by default.
 ARG OPENSSL_DIST_URL=""
 RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
     tar -xzf openssl.tgz -C /opt/ && \
     rm -f openssl.tgz
-
-ENV LD_LIBRARY_PATH=/opt/openssl/lib:$LD_LIBRARY_PATH
-ENV PATH=/opt/openssl/bin:$PATH
 
 ARG OSSLSIGNCODE_DIST_URL=""
 RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
