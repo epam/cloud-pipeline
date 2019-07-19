@@ -60,4 +60,4 @@ docker run  -i \
             -p 6902:6902 \
             -v /dev/shm:/dev/shm \
             consol/ubuntu-xfce-vnc \
-            bash -c "df -h && mkdir -p /headless/Downloads && cd /headless/e2e/gui && pwd && ls && bash ./install.sh && ./gradlew clean test"
+            bash -c "df -h && mkdir -p /headless/Downloads && cd /headless/e2e/gui && sleep infinity"
