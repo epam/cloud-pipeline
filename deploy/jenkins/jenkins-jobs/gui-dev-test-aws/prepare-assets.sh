@@ -14,7 +14,7 @@
 # limitations under the License.
 
 cd $WORKSPACE/cloud-pipeline/e2e/gui
-export USER_HOME_DIR="/headless"
+echo $(ls $WORKSPACE/cloud-pipeline/e2e/gui)
 echo "e2e.ui.default.timeout=${AWS_E2E_DEFAULT_TIMEOUT}" > default.conf
 echo "e2e.ui.commit.appearing.timeout=${AWS_E2E_COMMIT_APPEARING_TIMEOUT}" >> default.conf
 echo "e2e.ui.ssh.appearing.timeout=${AWS_E2E_SSH_APPEARING_TIMEOUT}" >> default.conf
@@ -60,4 +60,4 @@ docker run  -i \
             -p 6902:6902 \
             -v /dev/shm:/dev/shm \
             consol/ubuntu-xfce-vnc \
-            bash -c "df -h && mkdir -p /$USER_HOME_DIR/Downloads && cd /$USER_HOME_DIR/e2e/gui && bash install.sh && ./gradlew clean test"
+            bash -c "df -h && mkdir -p /headless/Downloads && cd /headless/e2e/gui && bash install.sh && ./gradlew clean test"
