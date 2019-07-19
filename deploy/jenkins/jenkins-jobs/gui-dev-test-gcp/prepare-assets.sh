@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd $WORKSPACE/e2e/gui
+cd $WORKSPACE/cloud-pipeline/e2e/gui
 export USER_HOME_DIR="/headless"
 echo "e2e.ui.default.timeout=${GCP_E2E_DEFAULT_TIMEOUT}" > default.conf
 echo "e2e.ui.commit.appearing.timeout=${GCP_E2E_COMMIT_APPEARING_TIMEOUT}" >> default.conf
@@ -52,4 +52,12 @@ echo "e2e.ui.cloud.provider=${GCP_E2E_CLOUD_PROVIDER}" >> default.conf
 echo "e2e.ui.spot.price.name=${GCP_E2E_SPOT_PRICE_NAME}" >> default.conf
 df -h
 
-docker run -i --rm -v $WORKSPACE/e2e/gui:/headless/e2e/gui --user 0:0 -p 7902:7902 -p 8902:8902 -v /dev/shm:/dev/shm consol/ubuntu-xfce-vnc bash -c "df -h && mkdir -p /$USER_HOME_DIR/Downloads && cd /$USER_HOME_DIR/e2e/gui && bash install.sh && ./gradlew clean test"
+docker run  -i \
+            --rm \
+            -v $WORKSPACE/cloud-pipeline/e2e/gui:/headless/e2e/gui \
+            --user 0:0 \
+            -p 7902:7902 \
+            -p 8902:8902 \
+            -v /dev/shm:/dev/shm \
+            consol/ubuntu-xfce-vnc \
+            bash -c "df -h && mkdir -p /$USER_HOME_DIR/Downloads && cd /$USER_HOME_DIR/e2e/gui && bash install.sh && ./gradlew clean test"

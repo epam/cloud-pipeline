@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd $WORKSPACE/e2e/gui
+cd $WORKSPACE/cloud-pipeline/e2e/gui
 export USER_HOME_DIR="/headless"
 echo "e2e.ui.default.timeout=${AWS_E2E_DEFAULT_TIMEOUT}" > default.conf
 echo "e2e.ui.commit.appearing.timeout=${AWS_E2E_COMMIT_APPEARING_TIMEOUT}" >> default.conf
@@ -54,7 +54,7 @@ df -h
 
 docker run  -i \
             --rm \
-            -v $WORKSPACE/e2e/gui:/headless/e2e/gui \
+            -v $WORKSPACE/cloud-pipeline/e2e/gui:/headless/e2e/gui \
             --user 0:0 \
             -p 5902:5902 \
             -p 6902:6902 \
