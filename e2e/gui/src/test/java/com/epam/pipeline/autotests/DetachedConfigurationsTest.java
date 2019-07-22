@@ -458,7 +458,7 @@ public class DetachedConfigurationsTest
             .configurationWithin(configuration1601, configuration -> configuration.expandTabs(parametersTab)
                 .addStringParameter(parameterName, parameterValue)
                 .also(ensureParameterExists(FIRST_PARAMETER_INDEX, parameterName, parameterValue))
-                .resetChanges()
+                .deleteParameter(parameterName)
             );
     }
 

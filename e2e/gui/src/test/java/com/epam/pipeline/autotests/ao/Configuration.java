@@ -284,10 +284,16 @@ public class Configuration implements AccessObject<Configuration> {
         return this;
     }
 
+    public Configuration deleteParameter(final String name) {
+        final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);
+        getParameterByIndex(parameter.index()).deleteParameter();
+        return this;
+    }
+
     public Configuration resetChanges() {
         click(SAVE);
         sleep(2, SECONDS);
-        $(button("No")).shouldBe(visible).click();
+        $(button("Yes")).shouldBe(visible).click();
         return this;
     }
 
