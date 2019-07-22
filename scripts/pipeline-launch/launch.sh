@@ -1051,7 +1051,7 @@ do
 	fi
       _var_value="\"${!var}\""
       if [[ "$var" == "PATH" ]]; then
-            _var_value="\"${!var}:\$$var\""
+            _var_value="\"${!var}:\${$var}\""
       fi
 	echo "export $var=$_var_value" >> $CP_ENV_FILE_TO_SOURCE
 done
@@ -1112,7 +1112,7 @@ then
     initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
 fi
 
-echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
+echo "export PATH=\"$CP_USR_BIN:\${PATH}\"" >> "$CP_ENV_FILE_TO_SOURCE"
 
 echo "Finished creating restriction wrappers"
 
