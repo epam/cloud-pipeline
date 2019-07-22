@@ -123,6 +123,7 @@ if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
+
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
