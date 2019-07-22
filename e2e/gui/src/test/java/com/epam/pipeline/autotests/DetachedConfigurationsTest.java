@@ -163,6 +163,7 @@ public class DetachedConfigurationsTest
                     .addInputParameter(inputParameter, inputParameterValue)
                     .addOutputParameter(outputParameter, outputParameterValue)
                     .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611)
             );
         library().clickRoot();
     }
