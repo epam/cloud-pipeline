@@ -458,6 +458,7 @@ public class DetachedConfigurationsTest
             .configurationWithin(configuration1601, configuration -> configuration.expandTabs(parametersTab)
                 .addStringParameter(parameterName, parameterValue)
                 .also(ensureParameterExists(FIRST_PARAMETER_INDEX, parameterName, parameterValue))
+                .click(SAVE)
             );
     }
 
@@ -560,25 +561,24 @@ public class DetachedConfigurationsTest
         refresh();
         library()
             .createConfiguration(runWithParametersConfiguration)
-            .configurationWithin(runWithParametersConfiguration, configuration -> {
-                configuration.selectPipeline(pipeline1)
-                    .click(SAVE)
-                    .addProfile(secondConfigurationProfile)
-                    .selectPipeline(pipeline1, pipelineCustomProfile)
-                    .click(SAVE)
-                    .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX)
-                    .validateParameter(stringParameterName, "")
-                    .setValue(stringParameterValue2)
-                    .validateParameter(stringParameterName, stringParameterValue2)
-                    .close()
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX + 1)
-                    .validateParameter(pathParameterName, "")
-                    .setValue(pathParameterValue2)
-                    .validateParameter(pathParameterName, pathParameterValue2)
-                    .ensure(PARAMETER_NAME, disabled);
-                configuration.click(SAVE);
-                }
+            .configurationWithin(runWithParametersConfiguration, configuration ->
+                    configuration.selectPipeline(pipeline1)
+                            .click(SAVE)
+                            .addProfile(secondConfigurationProfile)
+                            .selectPipeline(pipeline1, pipelineCustomProfile)
+                            .click(SAVE)
+                            .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
+                            .getParameterByIndex(FIRST_PARAMETER_INDEX)
+                            .validateParameter(stringParameterName, "")
+                            .setValue(stringParameterValue2)
+                            .validateParameter(stringParameterName, stringParameterValue2)
+                            .close()
+                            .getParameterByIndex(FIRST_PARAMETER_INDEX + 1)
+                            .validateParameter(pathParameterName, "")
+                            .setValue(pathParameterValue2)
+                            .validateParameter(pathParameterName, pathParameterValue2)
+                            .ensure(PARAMETER_NAME, disabled)
+                            .click(SAVE)
             );
     }
 
