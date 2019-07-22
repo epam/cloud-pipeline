@@ -287,7 +287,7 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration resetChanges() {
         click(SAVE);
         sleep(2, SECONDS);
-        $(button("No")).shouldBe(visible).click();
+        $(button("Yes")).shouldBe(visible).click();
         return this;
     }
 
