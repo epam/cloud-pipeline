@@ -79,28 +79,31 @@ function sign_win_executable() {
     local cert_url="$5"
 
     local signed_exec_path="signed-$(basename "$exec_path")"
-    local sign_command="osslsigncode sign \
-                                     -pkcs12 \"$cert_path\" \
-                                     -n \"$cert_desc\" \
-                                     -i \"$cert_url\" \
-                                     -in \"$exec_path\" \
-                                     -out \"$signed_exec_path\""
     if [ "$cert_pass" ]; then
-        sign_command="$sign_command -pass \"$cert_pass\""
+        local sign_with_pass_opt="-pass \"$cert_pass\""
     fi
+    
     # osslsigncode requires openssl v1.1.x which is not available in the system by default.
     local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
     local ORIGINAL_PATH="$PATH"
     export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
     export PATH="/opt/openssl/bin:$PATH"
-    eval $sign_command
+    
+    osslsigncode sign \
+                -pkcs12 "$cert_path" \
+                -n "$cert_desc" \
+                -i "$cert_url" \
+                -in "$exec_path" \
+                -out "$signed_exec_path" $sign_with_pass_opt
+
+    if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
+        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
+    else
+        mv -f "$signed_exec_path" "$exec_path"
+    fi
+
     export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
     export PATH="$ORIGINAL_PATH"
-    if [ -f "$signed_exec_path" ]; then
-        mv -f "$signed_exec_path" "$exec_path"
-    else
-        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
-    fi
 }
 
 function sign_and_publish_pipe_win_distribution() {
@@ -201,7 +204,7 @@ mkdir -p $CP_API_SRV_STATIC_DIR
 export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}"
 export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
 
-win_code_sign_cert_path="$CP_COMMON_CERT_DIR/win-code-sign-cert.pfx"
+win_code_sign_cert_path="$CP_API_SRV_CERT_DIR/win-code-sign-cert.pfx"
 if [ -f "$win_code_sign_cert_path" ]; then
     echo "Signing Windows CLI with Code Signing Certificate"
     sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \

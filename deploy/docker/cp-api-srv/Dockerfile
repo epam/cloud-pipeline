@@ -40,12 +40,12 @@ RUN yum install -y \
 # Prebuild version of openssl v1.1.x which is required by osslsigncode.
 # As long as its compatibility is proven for osslsigncode tool only
 # openssl v1.0.x installed with package manager will be used by default.
-ARG OPENSSL_DIST_URL=""
+ARG OPENSSL_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/openssl/openssl-1.1.1c.tar.gz"
 RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
     tar -xzf openssl.tgz -C /opt/ && \
     rm -f openssl.tgz
 
-ARG OSSLSIGNCODE_DIST_URL=""
+ARG OSSLSIGNCODE_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/osslsigncode/osslsigncode-2.0.tar.gz"
 RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
     tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
     rm -f osslsigncode.tgz
