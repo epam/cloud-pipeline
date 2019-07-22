@@ -284,6 +284,12 @@ public class Configuration implements AccessObject<Configuration> {
         return this;
     }
 
+    public Configuration resetChanges() {
+        click(SAVE);
+        click(button("NO"));
+        return this;
+    }
+
     private List<String> getParameters() {
         if (isNull(parameters)) {
             parameters = SelenideElements.of(parameterName())
