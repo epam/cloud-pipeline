@@ -289,7 +289,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public Configuration resetChanges() {
-        click(SAVE);
+        new NavigationMenuAO().library();
         sleep(2, SECONDS);
         $(button("Yes")).shouldBe(visible).click();
         return this;

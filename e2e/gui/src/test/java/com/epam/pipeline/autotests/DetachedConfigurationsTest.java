@@ -514,7 +514,7 @@ public class DetachedConfigurationsTest
                             .click(OK)
                     )
                     .ensure(IMAGE, valueContains(String.format("%s/%s:test", defaultRegistryUrl, testingTool)))
-                    .click(SAVE)
+                    .resetChanges()
             );
     }
 
