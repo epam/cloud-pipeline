@@ -71,6 +71,57 @@ function update_config_json_templates {
     echo
 }
 
+function sign_win_executable() {
+    local exec_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+
+    local signed_exec_path="signed-$(basename "$exec_path")"
+    if [ "$cert_pass" ]; then
+        local sign_with_pass_opt="-pass \"$cert_pass\""
+    fi
+    
+    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
+    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    local ORIGINAL_PATH="$PATH"
+    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
+    export PATH="/opt/openssl/bin:$PATH"
+    
+    osslsigncode sign \
+                -pkcs12 "$cert_path" \
+                -n "$cert_desc" \
+                -i "$cert_url" \
+                -in "$exec_path" \
+                -out "$signed_exec_path" $sign_with_pass_opt
+
+    if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
+        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
+    else
+        mv -f "$signed_exec_path" "$exec_path"
+    fi
+
+    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
+    export PATH="$ORIGINAL_PATH"
+}
+
+function sign_and_publish_pipe_win_distribution() {
+    local jar_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+    local output_dir="$6"
+    unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
+    unzip -qq pipe.zip
+    rm -f pipe.zip
+    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    zip -q -r "$output_dir/pipe.zip" pipe
+    rm -rf pipe
+}
+
 # Validate SSO and SSL certificates
 if [ -z "$CP_API_SRV_CERT_DIR" ]; then
     export CP_API_SRV_CERT_DIR="/opt/api/pki"
@@ -143,6 +194,21 @@ ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
 if [ -f "$ca_cert_path" ]; then
     echo "Importing CA cert into global java keystore"
     /update-trust $ca_cert_path "cp-ca"
+fi
+
+# Create static distribution directory
+export CP_API_SRV_STATIC_DIR="${CP_API_SRV_STATIC_DIR:-$CP_API_HOME/static}"
+mkdir -p $CP_API_SRV_STATIC_DIR
+
+# Sign and export pipe win distribution
+export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}"
+export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
+
+win_code_sign_cert_path="$CP_API_SRV_CERT_DIR/win-code-sign-cert.pfx"
+if [ -f "$win_code_sign_cert_path" ]; then
+    echo "Signing Windows CLI with Code Signing Certificate"
+    sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+        "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
 fi
 
 echo "Importing API SSL cert into global java keystore"
