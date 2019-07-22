@@ -562,24 +562,26 @@ public class DetachedConfigurationsTest
         refresh();
         library()
             .createConfiguration(runWithParametersConfiguration)
-            .configurationWithin(runWithParametersConfiguration, configuration ->
-                    configuration.selectPipeline(pipeline1)
-                            .click(SAVE)
-                            .addProfile(secondConfigurationProfile)
-                            .selectPipeline(pipeline1, pipelineCustomProfile)
-                            .click(SAVE)
-                            .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                            .getParameterByIndex(ParameterFieldAO.parameterByName(stringParameterName).index())
-                            .validateParameter(stringParameterName, "")
-                            .setValue(stringParameterValue2)
-                            .validateParameter(stringParameterName, stringParameterValue2)
-                            .close()
-                            .getParameterByIndex(ParameterFieldAO.parameterByName(pathParameterName).index())
-                            .validateParameter(pathParameterName, "")
-                            .setValue(pathParameterValue2)
-                            .validateParameter(pathParameterName, pathParameterValue2)
-                            .ensure(PARAMETER_NAME, disabled)
-                            .click(SAVE)
+            .configurationWithin(runWithParametersConfiguration, configuration -> {
+                        configuration.selectPipeline(pipeline1)
+                                .click(SAVE)
+                                .addProfile(secondConfigurationProfile)
+                                .selectPipeline(pipeline1, pipelineCustomProfile)
+                                .click(SAVE)
+                                .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
+                                .getParameterByIndex(ParameterFieldAO.parameterByName(stringParameterName).index())
+                                .validateParameter(stringParameterName, "")
+                                .setValue(stringParameterValue2)
+                                .validateParameter(stringParameterName, stringParameterValue2)
+                                .close()
+                                .getParameterByIndex(ParameterFieldAO.parameterByName(pathParameterName).index())
+                                .validateParameter(pathParameterName, "")
+                                .setValue(pathParameterValue2)
+                                .validateParameter(pathParameterName, pathParameterValue2)
+                                .ensure(PARAMETER_NAME, disabled);
+                        configuration
+                                .click(SAVE);
+                    }
             );
     }
 
