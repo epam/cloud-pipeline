@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.Configuration;
+import com.epam.pipeline.autotests.ao.ParameterFieldAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -40,7 +41,6 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
-import static com.epam.pipeline.autotests.ao.Configuration.FIRST_PARAMETER_INDEX;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Configuration.priceType;
 import static com.epam.pipeline.autotests.ao.Configuration.startIdle;
@@ -457,7 +457,7 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1601)
             .configurationWithin(configuration1601, configuration -> configuration.expandTabs(parametersTab)
                 .addStringParameter(parameterName, parameterValue)
-                .also(ensureParameterExists(FIRST_PARAMETER_INDEX, parameterName, parameterValue))
+                .also(ensureParameterExists(parameterName, parameterValue))
                 .deleteParameter(parameterName)
             );
     }
@@ -514,6 +514,7 @@ public class DetachedConfigurationsTest
                             .click(OK)
                     )
                     .ensure(IMAGE, valueContains(String.format("%s/%s:test", defaultRegistryUrl, testingTool)))
+                    .click(SAVE)
             );
     }
 
@@ -568,12 +569,12 @@ public class DetachedConfigurationsTest
                             .selectPipeline(pipeline1, pipelineCustomProfile)
                             .click(SAVE)
                             .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                            .getParameterByIndex(FIRST_PARAMETER_INDEX)
+                            .getParameterByIndex(ParameterFieldAO.parameterByName(stringParameterName).index())
                             .validateParameter(stringParameterName, "")
                             .setValue(stringParameterValue2)
                             .validateParameter(stringParameterName, stringParameterValue2)
                             .close()
-                            .getParameterByIndex(FIRST_PARAMETER_INDEX + 1)
+                            .getParameterByIndex(ParameterFieldAO.parameterByName(pathParameterName).index())
                             .validateParameter(pathParameterName, "")
                             .setValue(pathParameterValue2)
                             .validateParameter(pathParameterName, pathParameterValue2)
@@ -593,7 +594,6 @@ public class DetachedConfigurationsTest
                 profile.expandTab(PARAMETERS)
                     .ensure(parameterByName(stringParameterName).valueInput, value(""))
                     .ensure(parameterByName(pathParameterName).valueInput, value(""))
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX)
             );
     }
 
@@ -719,10 +719,10 @@ public class DetachedConfigurationsTest
             .ensure(configurationWithName(mainConfiguration), not(visible));
     }
 
-    private Consumer<Configuration> ensureParameterExists(final int index,
-                                                          final String parameterName,
+    private Consumer<Configuration> ensureParameterExists(final String parameterName,
                                                           final String parameterValue) {
-        return configuration -> configuration.getParameterByIndex(index)
+        return configuration -> configuration
+                .getParameterByIndex(ParameterFieldAO.parameterByName(parameterName).index())
                 .validateParameter(parameterName, parameterValue);
     }
 

@@ -62,8 +62,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Configuration implements AccessObject<Configuration> {
 
-    public static final int FIRST_PARAMETER_INDEX = 1;
-
     private final Map<Primitive, SelenideElement> elements;
     private final Profile profile = new Profile(this);
     private List<String> parameters;
