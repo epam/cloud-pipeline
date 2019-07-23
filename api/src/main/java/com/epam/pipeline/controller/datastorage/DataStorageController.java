@@ -46,6 +46,7 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
@@ -642,4 +643,16 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getStoragePermission(page, pageSize, filterMask));
     }
 
+    @PostMapping(value = "/datastorage/sizes")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns full size specified by path.",
+            notes = "Returns full size specified by path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<ImmutablePair<String, Long>>> getDataSizes(@RequestBody final List<String> paths) {
+        return Result.success(dataStorageApiService.getDataSizes(paths));
+    }
 }

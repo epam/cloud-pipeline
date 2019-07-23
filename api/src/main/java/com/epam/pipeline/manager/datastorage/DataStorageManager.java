@@ -60,6 +60,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -575,6 +576,34 @@ public class DataStorageManager implements SecuredEntityManager {
         return prefix + name;
     }
 
+    public List<ImmutablePair<String, Long>> getDataSizes(final List<String> paths) {
+        return paths
+                .stream()
+                .map(path -> new ImmutablePair<>(path, getDataSize(path)))
+                .collect(Collectors.toList());
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private Long getDataSize(final String path) {
+        try {
+            Assert.state(StringUtils.isNotBlank(path), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+            final String[] pathParts = path.split(ProviderUtils.DELIMITER);
+            final String bucketName = pathParts[2];
+            final String relativePath = StringUtils.removeStart(path.substring(5),
+                    bucketName + ProviderUtils.DELIMITER);
+
+            final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
+            Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
+                    String.format("The specified path %s has incorrect state. Expected path mask: %s",
+                            path, dataStorage.getPathMask()));
+            return storageProviderManager.getDataSize(dataStorage, relativePath);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    String.format("An error occurred during processing path %s: %s", path, e.getMessage()), e);
+        }
+    }
+
     private void assertDataStorageMountPoint(DataStorageVO dataStorageVO) {
         // if mount point is empty we don't need to check anything
         if (StringUtils.isBlank(dataStorageVO.getMountPoint())) {
@@ -801,5 +830,4 @@ public class DataStorageManager implements SecuredEntityManager {
                         values.stream().findFirst().map(v -> v.getClass().getSimpleName()).orElse("CLASS"),
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
     }
-
 }

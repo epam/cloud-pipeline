@@ -187,6 +187,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
         return null;
     }
 
+    @Override
+    public Long getDataSize(final AzureBlobStorage dataStorage, final String path) {
+        return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path);
+    }
+
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);

@@ -60,6 +60,7 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -160,7 +161,7 @@ public class AzureStorageHelper {
         unwrap(getBlobUrl(dataStorage, path)
                 .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
                         StringUtils.isBlank(owner) ? null
-                                : new Metadata(Collections.singletonMap("CP_OWNER", owner)),
+                                : new Metadata(Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, owner)),
                         null, null));
         return getDataStorageFile(dataStorage, path);
     }
@@ -338,6 +339,14 @@ public class AzureStorageHelper {
         }
     }
 
+    public Long getDataSize(final AzureBlobStorage dataStorage, final String path) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final List<BlobItem> items = rawList(AbstractListingIterator.flat(getContainerURL(dataStorage), requestPath))
+                .collect(Collectors.toList());
+        return ProviderUtils.getSizeByPath(items, requestPath,
+                item -> item.properties().contentLength(), BlobItem::name);
+    }
+
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {
         validateDirectory(dataStorage, path, true);
         while (true) {
@@ -419,6 +428,16 @@ public class AzureStorageHelper {
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(segment -> files(segment.blobItems(), null)))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(Function.identity());
+    }
+
+    private Stream<BlobItem> rawList(final FlatIterator iterator) {
+        return iterator.stream()
+                .map(response -> Optional.of(response.body())
+                        .map(ListBlobsFlatSegmentResponse::segment)
+                        .map(segment -> ListUtils.emptyIfNull(segment.blobItems()).stream()))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .flatMap(Function.identity());

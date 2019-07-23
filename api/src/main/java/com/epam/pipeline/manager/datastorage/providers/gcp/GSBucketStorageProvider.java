@@ -183,6 +183,11 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
         return null;
     }
 
+    @Override
+    public Long getDataSize(final GSBucketStorage dataStorage, final String path) {
+        return getHelper(dataStorage).getDataSize(dataStorage, path);
+    }
+
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
         final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
         return new GSBucketStorageHelper(messageHelper, gcpRegion, gcpClient);

@@ -169,4 +169,8 @@ public final class StorageProviderManager {
     public String buildFullStoragePath(AbstractDataStorage dataStorage, String name) {
         return getStorageProvider(dataStorage).buildFullStoragePath(dataStorage, name);
     }
+
+    public Long getDataSize(final AbstractDataStorage dataStorage, final String path) {
+        return getStorageProvider(dataStorage).getDataSize(dataStorage, path);
+    }
 }

@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PostFilter;
@@ -315,5 +316,9 @@ public class DataStorageApiService {
                 .orElse(AclPermission.WRITE.getMask() | AclPermission.READ.getMask());
         return grantPermissionManager
                 .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask);
+    }
+
+    public List<ImmutablePair<String, Long>> getDataSizes(final List<String> paths) {
+        return dataStorageManager.getDataSizes(paths);
     }
 }

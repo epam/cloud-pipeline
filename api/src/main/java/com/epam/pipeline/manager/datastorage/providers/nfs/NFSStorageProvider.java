@@ -524,4 +524,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public String getDefaultMountOptions(NFSDataStorage dataStorage) {
         return shareMountManager.load(dataStorage.getFileShareMountId()).getMountOptions();
     }
+
+    @Override
+    public Long getDataSize(final NFSDataStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
+    }
 }

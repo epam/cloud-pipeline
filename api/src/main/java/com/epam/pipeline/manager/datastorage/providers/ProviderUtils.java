@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.datastorage.providers;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.function.Function;
+
 public final class ProviderUtils {
 
     public static final String DELIMITER = "/";
@@ -44,5 +46,27 @@ public final class ProviderUtils {
 
     public static String withoutTrailingDelimiter(final String path) {
         return StringUtils.isNotBlank(path) && path.endsWith(DELIMITER) ? path.substring(0, path.length() - 1) : path;
+    }
+
+    public static <T> Long getSizeByPath(final Iterable<T> items, final String requestPath,
+                                         final Function<T, Long> getSize, final Function<T, String> getName) {
+        final boolean rootOrFolder = isRootOrFolder(requestPath);
+
+        Long folderSize = 0L;
+        for (final T item : items) {
+            if (rootOrFolder) {
+                folderSize += getSize.apply(item);
+            } else if (getName.apply(item).equals(requestPath)) {
+                return getSize.apply(item);
+            } else if (getName.apply(item).startsWith(requestPath + ProviderUtils.DELIMITER)) {
+                folderSize += getSize.apply(item);
+            }
+        }
+
+        return folderSize;
+    }
+
+    public static boolean isRootOrFolder(final String requestPath) {
+        return StringUtils.isBlank(requestPath) || requestPath.endsWith(DELIMITER);
     }
 }

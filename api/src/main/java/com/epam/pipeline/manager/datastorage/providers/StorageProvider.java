@@ -105,4 +105,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
         }
         return storagePolicy;
     }
+
+    Long getDataSize(T dataStorage, String path);
 }

@@ -216,6 +216,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return "--dir-mode 0774 --file-mode 0774 -o rw -o allow_other -f --gid 0";
     }
 
+    @Override
+    public Long getDataSize(final S3bucketDataStorage dataStorage, final String path) {
+        return getS3Helper(dataStorage).getDataSize(dataStorage, path);
+    }
+
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
         AwsRegion region = getAwsRegion(dataStorage);
         return new RegionAwareS3Helper(region, messageHelper);

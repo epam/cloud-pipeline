@@ -407,6 +407,15 @@ public class GSBucketStorageHelper {
         client.update(bucketInfoBuilder.build());
     }
 
+    public Long getDataSize(final GSBucketStorage dataStorage, final String path) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+
+        final Storage client = gcpClient.buildStorageClient(region);
+        final Page<Blob> blobs = client.list(dataStorage.getPath(), Storage.BlobListOption.prefix(requestPath));
+
+        return ProviderUtils.getSizeByPath(blobs.iterateAll(), requestPath, BlobInfo::getSize, BlobInfo::getName);
+    }
+
     private List<Cors> buildCors() {
         if (StringUtils.isBlank(region.getCorsRules())) {
             return null;
