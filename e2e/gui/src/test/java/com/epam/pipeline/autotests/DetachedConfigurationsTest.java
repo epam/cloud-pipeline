@@ -239,7 +239,7 @@ public class DetachedConfigurationsTest
                         .also(confirmConfigurationChange())
                 )
                 .ensure(DISK, value(defaultDisk))
-                .click(SAVE)
+                .resetChanges()
         );
     }
 
