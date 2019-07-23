@@ -258,6 +258,11 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:18.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 
+### -- Vanilla + noVNC
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-16.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:16.04" --build-arg BASE_IMAGE="library/ubuntu:16.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:18.04" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}" "library/ubuntu-novnc:latest" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+
 ### -- CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-cuda9-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:16-cuda9" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda10-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18-cuda10" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04"
