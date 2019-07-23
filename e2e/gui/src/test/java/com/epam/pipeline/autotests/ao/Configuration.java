@@ -62,8 +62,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Configuration implements AccessObject<Configuration> {
 
-    public static final int FIRST_PARAMETER_INDEX = 1;
-
     private final Map<Primitive, SelenideElement> elements;
     private final Profile profile = new Profile(this);
     private List<String> parameters;
@@ -281,6 +279,19 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration addToParameter(final String name, final String value) {
         final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);
         getParameterByIndex(parameter.index()).addToValue(value);
+        return this;
+    }
+
+    public Configuration deleteParameter(final String name) {
+        final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);
+        getParameterByIndex(parameter.index()).deleteParameter();
+        return this;
+    }
+
+    public Configuration resetChanges() {
+        new NavigationMenuAO().library();
+        sleep(2, SECONDS);
+        $(button("Yes")).shouldBe(visible).click();
         return this;
     }
 
