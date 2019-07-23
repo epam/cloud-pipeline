@@ -482,7 +482,7 @@ fi
 configure_package_manager
 
 # First check whether all packages upgrade required
-if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]
+if [ "${CP_UPGRADE_PACKAGES,,}" == 'true' ] || [ "${CP_UPGRADE_PACKAGES,,}" == 'yes' ]
 then
       echo "Packages upgrade requested. Performing upgrade"
       upgrade_installed_packages
@@ -952,7 +952,7 @@ echo "-"
 LOCALIZATION_TASK_NAME="InputData"
 INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
 
-upload_inputs ${INPUT_ENV_FILE} ${LOCALIZATION_TASK_NAME}
+upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
 
 if [ $? -ne 0 ];
 then
@@ -961,7 +961,7 @@ then
 fi
 echo
 
-source ${INPUT_ENV_FILE}
+[ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
 
 echo "------"
 echo
