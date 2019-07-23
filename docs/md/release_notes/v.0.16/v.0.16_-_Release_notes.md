@@ -36,7 +36,7 @@ This provides an even greater level of a flexibility to launch different jobs in
 
 ## Displaying Cloud Provider's icon for the storage/compute resources
 
-As were presented in **[v0.15](../v.0.15/v.0.15_-_Release_notes.md#microsoft-azure-support)**, Cloud Pipeline can manage multi Cloud Providers in a single installation.
+As presented in **[v0.15](../v.0.15/v.0.15_-_Release_notes.md#microsoft-azure-support)**, Cloud Pipeline can manage multi Cloud Providers in a single installation.
 
 In the current version, useful icon-hints with the information about using Cloud Provider are introduced.  
 If a specific platform deployment has a number of Cloud Providers registered (e.g. `AWS`+`Azure`, `GCP`+`Azure`) - corresponding icons/text information are displaying next to the cloud resource.
@@ -57,6 +57,8 @@ Such cloud resources are:
         ![CP_v.0.16_ReleaseNotes](attachments/RN016_CloudProviderIcons_6.png)
 
 > **_Note_**: this feature is not available for deployments with a **_single_** Cloud Provider.
+
+Examples of displaying Cloud Region icons/info see in sections [6. Manage Pipeline](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md), [7. Manage Detached configuration](../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration.md), [8. Manage Data Storage](../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage.md) and [18. Home page](../../manual/18_Home_page/18._Home_page.md).
 
 ## Configurable timeout of GE Autoscale waiting for a worker node up
 
