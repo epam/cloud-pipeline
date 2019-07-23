@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.Configuration;
-import com.epam.pipeline.autotests.ao.ParameterFieldAO;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -575,12 +574,12 @@ public class DetachedConfigurationsTest
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                                .getParameterByIndex(ParameterFieldAO.parameterByName(stringParameterName).index())
+                                .getParameterByIndex(parameterByName(stringParameterName).index())
                                 .validateParameter(stringParameterName, "")
                                 .setValue(stringParameterValue2)
                                 .validateParameter(stringParameterName, stringParameterValue2)
                                 .close()
-                                .getParameterByIndex(ParameterFieldAO.parameterByName(pathParameterName).index())
+                                .getParameterByIndex(parameterByName(pathParameterName).index())
                                 .validateParameter(pathParameterName, "")
                                 .setValue(pathParameterValue2)
                                 .validateParameter(pathParameterName, pathParameterValue2)
@@ -730,7 +729,7 @@ public class DetachedConfigurationsTest
     private Consumer<Configuration> ensureParameterExists(final String parameterName,
                                                           final String parameterValue) {
         return configuration -> configuration
-                .getParameterByIndex(ParameterFieldAO.parameterByName(parameterName).index())
+                .getParameterByIndex(parameterByName(parameterName).index())
                 .validateParameter(parameterName, parameterValue);
     }
 
