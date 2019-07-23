@@ -239,6 +239,7 @@ public class DetachedConfigurationsTest
                         .also(confirmConfigurationChange())
                 )
                 .ensure(DISK, value(defaultDisk))
+                .click(SAVE)
         );
     }
 
@@ -246,8 +247,10 @@ public class DetachedConfigurationsTest
     @TestCase({"EPMCMBIBPC-1149"})
     public void groupAdditionValidation() {
         library().configurationWithin(mainConfiguration, configuration ->
-            configuration.selectPipeline(pipeline1, pipelineCustomProfile)
+            configuration
+                    .selectPipeline(pipeline1, pipelineCustomProfile)
                     .ensure(DISK, value(customDisk))
+                    .click(SAVE)
         );
     }
 
