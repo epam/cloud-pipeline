@@ -248,6 +248,7 @@ public class DetachedConfigurationsTest
     public void groupAdditionValidation() {
         library().configurationWithin(mainConfiguration, configuration ->
             configuration
+                    .expandTabs(execEnvironmentTab, advancedTab)
                     .selectPipeline(pipeline1, pipelineCustomProfile)
                     .ensure(DISK, value(customDisk))
                     .click(SAVE)
