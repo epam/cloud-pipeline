@@ -273,8 +273,9 @@ public class DetachedConfigurationsTest
     public void configurationSavingValidation() {
         library()
             .configurationWithin(mainConfiguration, configuration ->
-                configuration.selectPipeline(pipeline1, pipelineDefaultProfile)
-                    .click(SAVE)
+                configuration.expandTabs(execEnvironmentTab, advancedTab)
+                        .selectPipeline(pipeline1, pipelineDefaultProfile)
+                        .click(SAVE)
             )
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.expandTabs(execEnvironmentTab, advancedTab)
