@@ -244,18 +244,6 @@ public class DetachedConfigurationsTest
     }
 
     @Test(priority = 1, dependsOnMethods = {"pipelineAdditionValidation"})
-    @TestCase({"EPMCMBIBPC-1149"})
-    public void groupAdditionValidation() {
-        library().configurationWithin(mainConfiguration, configuration ->
-            configuration
-                    .expandTabs(execEnvironmentTab, advancedTab)
-                    .selectPipeline(pipeline1, pipelineCustomProfile)
-                    .ensure(DISK, value(customDisk))
-                    .click(SAVE)
-        );
-    }
-
-    @Test(priority = 1, dependsOnMethods = {"groupAdditionValidation"})
     @TestCase({"EPMCMBIBPC-1113"})
     public void exitWithoutSavingValidation() {
         library().configurationWithin(mainConfiguration, configuration ->
@@ -269,6 +257,18 @@ public class DetachedConfigurationsTest
     }
 
     @Test(priority = 1, dependsOnMethods = {"exitWithoutSavingValidation"})
+    @TestCase({"EPMCMBIBPC-1149"})
+    public void groupAdditionValidation() {
+        library().configurationWithin(mainConfiguration, configuration ->
+                configuration
+                        .expandTabs(execEnvironmentTab, advancedTab)
+                        .selectPipeline(pipeline1, pipelineCustomProfile)
+                        .ensure(DISK, value(customDisk))
+                        .click(SAVE)
+        );
+    }
+
+    @Test(priority = 1, dependsOnMethods = {"groupAdditionValidation"})
     @TestCase({"EPMCMBIBPC-1114"})
     public void configurationSavingValidation() {
         library()
