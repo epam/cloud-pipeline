@@ -589,32 +589,28 @@ public class DataStorageManager implements SecuredEntityManager {
     public List<PathDescription> getDataSizes(final List<String> paths) {
         final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
         final Map<String, PathDescription> container = new ConcurrentHashMap<>();
-        paths.forEach(path -> runDataSizeComputation(path, timeout, container));
-        return new ArrayList<>(container.values());
-    }
-
-    private void runDataSizeComputation(final String path, final Long timeout,
-                                        final Map<String, PathDescription> container) {
         try {
             CompletableFuture.runAsync(
-                    () -> {
-                        final PathDescription pathDescription = PathDescription.builder()
-                                .path(path)
-                                .completed(false)
-                                .size(-1L)
-                                .build();
-                        container.put(path, pathDescription);
-                        computeDataSize(path, container);
-                    }, dataStoragePathExecutor)
+                    () -> paths.forEach(path -> computeDataSize(path, container)),
+                    dataStoragePathExecutor)
                     .get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOGGER.error(e.getMessage(), e);
         }
+
+        return new ArrayList<>(container.values());
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void computeDataSize(final String path, final Map<String, PathDescription> container) {
         try {
+            final PathDescription pathDescription = PathDescription.builder()
+                    .path(path)
+                    .completed(false)
+                    .size(-1L)
+                    .build();
+            container.put(path, pathDescription);
+
             Assert.state(StringUtils.isNotBlank(path), messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
             final URI pathUri = new URI(path);
@@ -628,7 +624,6 @@ public class DataStorageManager implements SecuredEntityManager {
                     String.format("The specified path %s has incorrect state. Expected path mask: %s",
                             path, dataStorage.getPathMask()));
 
-            final PathDescription pathDescription = container.get(path);
             pathDescription.setDataStorageId(dataStorage.getId());
             pathDescription.setSize(0L);
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
