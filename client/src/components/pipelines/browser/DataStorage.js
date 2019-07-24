@@ -391,8 +391,15 @@ export default class DataStorage extends React.Component {
     this.setState({renameItem: item});
   };
 
-  closeRenameItemDialog = () => {
-    this.setState({renameItem: null});
+  closeRenameItemDialog = (clearSelection = false) => {
+    if (clearSelection) {
+      this.setState({
+        renameItem: null,
+        selectedFile: null,
+      });
+    } else {
+      this.setState({renameItem: null});
+    }
   };
 
   renameItem = async ({name}) => {
@@ -413,7 +420,10 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      this.closeRenameItemDialog();
+      const {renameItem, selectedFile} = this.state;
+      this.closeRenameItemDialog(
+        renameItem && selectedFile && renameItem.path === selectedFile.path
+      );
       await this.refreshList();
     }
   };
@@ -1115,7 +1125,7 @@ export default class DataStorage extends React.Component {
     const [selectedFile] = this.tableData
       .filter(file => file.name === this.state.selectedFile.name);
 
-    return !selectedFile.size > 0;
+    return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
   };
 
   render () {
@@ -1585,7 +1595,7 @@ export default class DataStorage extends React.Component {
           }
           name={this.state.renameItem ? this.state.renameItem.name : null}
           visible={!!this.state.renameItem}
-          onCancel={this.closeRenameItemDialog}
+          onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
         <Modal
           visible={!!this.state.itemsToDelete}
