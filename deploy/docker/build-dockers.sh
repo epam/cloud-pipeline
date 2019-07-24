@@ -308,9 +308,12 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME
 RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
 
 # Spyder with noVNC
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder/noVNC "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-py37-${DOCKERS_VERSION}" "library/spyder-novnc:3.7" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder/noVNC "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-${DOCKERS_VERSION}" "library/spyder-novnc:latest" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-py37-${DOCKERS_VERSION}" "library/spyder-novnc:3.7" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-${DOCKERS_VERSION}" "library/spyder-novnc:latest" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
 
+# Spyder with nomachine
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-py37-${DOCKERS_VERSION}" "library/spyder-nomachine:3.7" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-${DOCKERS_VERSION}" "library/spyder-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
 
 
 ########################
