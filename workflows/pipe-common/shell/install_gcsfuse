@@ -51,7 +51,7 @@ EOF
         apt-get install -y -qq gnupg lsb-release > /dev/null
         export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
         echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
-        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
         apt-get update -qq -y > /dev/null
         apt-get install -y -qq gcsfuse > /dev/null
     fi
