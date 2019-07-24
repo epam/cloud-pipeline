@@ -525,7 +525,7 @@ export default class DataStorage extends React.Component {
     if (this.showVersions) {
       if (item.isVersion) {
         const removeItem = () => this.removeItems([item], true, true);
-        let content = `Are you sure you want to delete selected version of the ${item.type.toLowerCase()} '${item.name}' from bucket?`;
+        let content = `Are you sure you want to delete selected version of the ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         Modal.confirm({
           title: `Remove ${item.type.toLowerCase()}'s version`,
           content: content,
@@ -538,7 +538,7 @@ export default class DataStorage extends React.Component {
         });
       } else if (item.deleteMarker) {
         const removeItem = () => this.removeItems([item], true, true);
-        let content = `Are you sure you want to delete ${item.type.toLowerCase()} '${item.name}' from bucket?`;
+        let content = `Are you sure you want to delete ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         if (item.type.toLowerCase() === 'folder') {
           content = (
             <div>
@@ -1600,7 +1600,7 @@ export default class DataStorage extends React.Component {
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
-          title="Do you want to delete item(s) from bucket or set 'Deletion' marker?"
+          title="Do you want to delete item(s) from object storage or set 'Deletion' marker?"
           footer={
             <Row type="flex" justify="space-between">
               <Col span={8}>
@@ -1627,7 +1627,7 @@ export default class DataStorage extends React.Component {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
                       this.afterDataStorageEdit();
-                    })}>Delete from bucket</Button>
+                    })}>Delete from object storage</Button>
                 </Row>
               </Col>
             </Row>
