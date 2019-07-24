@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
@@ -292,6 +293,13 @@ public class Configuration implements AccessObject<Configuration> {
         new NavigationMenuAO().library();
         sleep(2, SECONDS);
         $(button("Yes")).shouldBe(visible).click();
+        return this;
+    }
+
+    public Configuration saveIfNeeded() {
+        if (get(SAVE).is(enabled)) {
+            click(SAVE);
+        }
         return this;
     }
 
