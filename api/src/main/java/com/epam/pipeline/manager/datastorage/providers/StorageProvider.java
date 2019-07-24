@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 
@@ -106,5 +107,5 @@ public interface StorageProvider<T extends AbstractDataStorage> {
         return storagePolicy;
     }
 
-    Long getDataSize(T dataStorage, String path);
+    PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
 }

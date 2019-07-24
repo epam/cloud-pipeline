@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -170,7 +171,8 @@ public final class StorageProviderManager {
         return getStorageProvider(dataStorage).buildFullStoragePath(dataStorage, name);
     }
 
-    public Long getDataSize(final AbstractDataStorage dataStorage, final String path) {
-        return getStorageProvider(dataStorage).getDataSize(dataStorage, path);
+    public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.datastorage.providers;
 
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.function.Function;
@@ -48,22 +49,24 @@ public final class ProviderUtils {
         return StringUtils.isNotBlank(path) && path.endsWith(DELIMITER) ? path.substring(0, path.length() - 1) : path;
     }
 
-    public static <T> Long getSizeByPath(final Iterable<T> items, final String requestPath,
-                                         final Function<T, Long> getSize, final Function<T, String> getName) {
+    public static <T> PathDescription getSizeByPath(final Iterable<T> items, final String requestPath,
+                                                    final Function<T, Long> getSize, final Function<T, String> getName,
+                                                    final PathDescription pathDescription) {
         final boolean rootOrFolder = isRootOrFolder(requestPath);
 
-        Long folderSize = 0L;
         for (final T item : items) {
             if (rootOrFolder) {
-                folderSize += getSize.apply(item);
+                pathDescription.increaseSize(getSize.apply(item));
             } else if (getName.apply(item).equals(requestPath)) {
-                return getSize.apply(item);
+                pathDescription.setSize(getSize.apply(item));
+                pathDescription.setCompleted(true);
+                return pathDescription;
             } else if (getName.apply(item).startsWith(requestPath + ProviderUtils.DELIMITER)) {
-                folderSize += getSize.apply(item);
+                pathDescription.increaseSize(getSize.apply(item));
             }
         }
 
-        return folderSize;
+        return pathDescription;
     }
 
     public static boolean isRootOrFolder(final String requestPath) {

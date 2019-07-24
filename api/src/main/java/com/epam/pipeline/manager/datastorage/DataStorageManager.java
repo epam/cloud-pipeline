@@ -82,6 +82,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -587,24 +588,32 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<PathDescription> getDataSizes(final List<String> paths) {
         final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
-        return paths.stream()
-                .map(path -> runDataSizeComputation(path, timeout))
-                .collect(Collectors.toList());
+        final Map<String, PathDescription> container = new ConcurrentHashMap<>();
+        paths.forEach(path -> runDataSizeComputation(path, timeout, container));
+        return new ArrayList<>(container.values());
     }
 
-    private PathDescription runDataSizeComputation(final String path, final Long timeout) {
-
+    private void runDataSizeComputation(final String path, final Long timeout,
+                                        final Map<String, PathDescription> container) {
         try {
-            return CompletableFuture.supplyAsync(() -> getDataSize(path), dataStoragePathExecutor)
+            CompletableFuture.runAsync(
+                    () -> {
+                        final PathDescription pathDescription = PathDescription.builder()
+                                .path(path)
+                                .completed(false)
+                                .size(-1L)
+                                .build();
+                        container.put(path, pathDescription);
+                        computeDataSize(path, container);
+                    }, dataStoragePathExecutor)
                     .get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             LOGGER.error(e.getMessage(), e);
         }
-        return PathDescription.builder().path(path).build();
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private PathDescription getDataSize(final String path) {
+    private void computeDataSize(final String path, final Map<String, PathDescription> container) {
         try {
             Assert.state(StringUtils.isNotBlank(path), messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
@@ -618,11 +627,11 @@ public class DataStorageManager implements SecuredEntityManager {
             Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
                     String.format("The specified path %s has incorrect state. Expected path mask: %s",
                             path, dataStorage.getPathMask()));
-            return PathDescription.builder()
-                    .path(path)
-                    .size(storageProviderManager.getDataSize(dataStorage, relativePath))
-                    .dataStorageId(dataStorage.getId())
-                    .build();
+
+            final PathDescription pathDescription = container.get(path);
+            pathDescription.setDataStorageId(dataStorage.getId());
+            pathDescription.setSize(0L);
+            storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
             throw new IllegalArgumentException(
                     String.format("An error occurred during processing path '%s'. %s", path, e.getMessage()), e);

@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -407,13 +408,17 @@ public class GSBucketStorageHelper {
         client.update(bucketInfoBuilder.build());
     }
 
-    public Long getDataSize(final GSBucketStorage dataStorage, final String path) {
+    public PathDescription getDataSize(final GSBucketStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
         final String requestPath = Optional.ofNullable(path).orElse("");
-
         final Storage client = gcpClient.buildStorageClient(region);
         final Page<Blob> blobs = client.list(dataStorage.getPath(), Storage.BlobListOption.prefix(requestPath));
 
-        return ProviderUtils.getSizeByPath(blobs.iterateAll(), requestPath, BlobInfo::getSize, BlobInfo::getName);
+        ProviderUtils.getSizeByPath(blobs.iterateAll(), requestPath, BlobInfo::getSize, BlobInfo::getName,
+                pathDescription);
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private List<Cors> buildCors() {

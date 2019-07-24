@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -339,12 +340,17 @@ public class AzureStorageHelper {
         }
     }
 
-    public Long getDataSize(final AzureBlobStorage dataStorage, final String path) {
+    public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
         final String requestPath = Optional.ofNullable(path).orElse("");
         final List<BlobItem> items = rawList(AbstractListingIterator.flat(getContainerURL(dataStorage), requestPath))
                 .collect(Collectors.toList());
-        return ProviderUtils.getSizeByPath(items, requestPath,
-                item -> item.properties().contentLength(), BlobItem::name);
+
+        ProviderUtils.getSizeByPath(items, requestPath, item -> item.properties().contentLength(),
+                BlobItem::name, pathDescription);
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {

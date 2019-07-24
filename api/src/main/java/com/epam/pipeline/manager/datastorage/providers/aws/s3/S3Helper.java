@@ -74,6 +74,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -604,29 +605,22 @@ public class S3Helper {
         return client.doesBucketExistV2(bucket);
     }
 
-    public Long getDataSize(final S3bucketDataStorage dataStorage, final String path) {
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
         final String requestPath = Optional.ofNullable(path).orElse("");
         final AmazonS3 client = getDefaultS3Client();
-        final boolean rootOrFolder = ProviderUtils.isRootOrFolder(requestPath);
 
         ObjectListing listing = client.listObjects(dataStorage.getPath(), requestPath);
-        long folderSize = 0L;
         boolean hasNextPageMarker = true;
-        while (hasNextPageMarker) {
-            for (final S3ObjectSummary summary : listing.getObjectSummaries()) {
-                if (rootOrFolder) {
-                    folderSize += summary.getSize();
-                } else if (summary.getKey().equals(requestPath)) {
-                    return summary.getSize();
-                } else if (summary.getKey().startsWith(requestPath + ProviderUtils.DELIMITER)) {
-                    folderSize += summary.getSize();
-                }
-            }
+        while (hasNextPageMarker && !pathDescription.getCompleted()) {
+            ProviderUtils.getSizeByPath(listing.getObjectSummaries(), requestPath,
+                    S3ObjectSummary::getSize, S3ObjectSummary::getKey, pathDescription);
             hasNextPageMarker = listing.isTruncated();
             listing = client.listNextBatchOfObjects(listing);
         }
 
-        return folderSize;
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {

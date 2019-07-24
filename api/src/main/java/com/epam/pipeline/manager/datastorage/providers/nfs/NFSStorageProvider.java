@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
@@ -526,7 +527,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public Long getDataSize(final NFSDataStorage dataStorage, final String path) {
+    public PathDescription getDataSize(final NFSDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
         throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
     }
 }

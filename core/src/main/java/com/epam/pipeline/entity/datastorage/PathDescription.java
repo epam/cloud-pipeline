@@ -32,4 +32,9 @@ public class PathDescription {
     private String path;
     private Long size;
     private Long dataStorageId;
+    private Boolean completed;
+
+    public void increaseSize(final Long size) {
+        this.size += size;
+    }
 }

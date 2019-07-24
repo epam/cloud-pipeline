@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -217,8 +218,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public Long getDataSize(final S3bucketDataStorage dataStorage, final String path) {
-        return getS3Helper(dataStorage).getDataSize(dataStorage, path);
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getS3Helper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
