@@ -21,7 +21,8 @@ FROM $BASE_IMAGE
 RUN apt update && \
     apt install -y  bzip2 \
                     vim \
-                    nano
+                    nano \
+                    acl
 
 # Install anaconda
 ENV ANACONDA_HOME=/opt/local/anaconda3
