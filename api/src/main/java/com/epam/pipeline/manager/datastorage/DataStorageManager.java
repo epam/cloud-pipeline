@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -60,7 +61,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,6 +71,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -576,31 +577,36 @@ public class DataStorageManager implements SecuredEntityManager {
         return prefix + name;
     }
 
-    public List<ImmutablePair<String, Long>> getDataSizes(final List<String> paths) {
+    public List<PathDescription> getDataSizes(final List<String> paths) {
         return paths
                 .stream()
-                .map(path -> new ImmutablePair<>(path, getDataSize(path)))
+                .map(this::getDataSize)
                 .collect(Collectors.toList());
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private Long getDataSize(final String path) {
+    private PathDescription getDataSize(final String path) {
         try {
             Assert.state(StringUtils.isNotBlank(path), messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
-            final String[] pathParts = path.split(ProviderUtils.DELIMITER);
-            final String bucketName = pathParts[2];
-            final String relativePath = StringUtils.removeStart(path.substring(5),
-                    bucketName + ProviderUtils.DELIMITER);
+            final URI pathUri = new URI(path);
+            final String bucketName = pathUri.getHost();
+            Assert.state(StringUtils.isNotBlank(bucketName), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_NAME_IS_EMPTY));
+            final String relativePath = ProviderUtils.withoutLeadingDelimiter(pathUri.getPath());
 
             final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
             Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
                     String.format("The specified path %s has incorrect state. Expected path mask: %s",
                             path, dataStorage.getPathMask()));
-            return storageProviderManager.getDataSize(dataStorage, relativePath);
+            return PathDescription.builder()
+                    .path(path)
+                    .size(storageProviderManager.getDataSize(dataStorage, relativePath))
+                    .dataStorageId(dataStorage.getId())
+                    .build();
         } catch (Exception e) {
             throw new IllegalArgumentException(
-                    String.format("An error occurred during processing path %s: %s", path, e.getMessage()), e);
+                    String.format("An error occurred during processing path '%s'. %s", path, e.getMessage()), e);
         }
     }
 
