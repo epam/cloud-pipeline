@@ -95,6 +95,11 @@ public class AppConfiguration implements SchedulingConfigurer {
         return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun"));
     }
 
+    @Bean
+    public Executor dataStoragePathExecutor() {
+        return getSingleThreadExecutor("PathExecutor");
+    }
+
     private Executor getThreadPoolTaskExecutor(String name) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(pausePoolSize);

@@ -81,6 +81,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 
@@ -122,6 +127,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private Executor dataStoragePathExecutor;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -578,10 +586,21 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<PathDescription> getDataSizes(final List<String> paths) {
-        return paths
-                .stream()
-                .map(this::getDataSize)
+        final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
+        return paths.stream()
+                .map(path -> runDataSizeComputation(path, timeout))
                 .collect(Collectors.toList());
+    }
+
+    private PathDescription runDataSizeComputation(final String path, final Long timeout) {
+
+        try {
+            return CompletableFuture.supplyAsync(() -> getDataSize(path), dataStoragePathExecutor)
+                    .get(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+        return PathDescription.builder().path(path).build();
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
