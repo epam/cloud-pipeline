@@ -29,7 +29,7 @@ ENV ANACONDA_HOME=/opt/local/anaconda3
 ENV SPYDER_LAUNCHER_HOME=/opt/local/spyder/
 ARG ANACONDA_VERSION="3-5.3.1"
 
-ADD spyder.sh icon.png anaconda_install.sh $SPYDER_LAUNCHER_HOME/
+ADD spyder.sh spyder.png anaconda_install.sh $SPYDER_LAUNCHER_HOME/
 ADD create_spyder_launcher.sh /caps/create_spyder_launcher.sh
 
 RUN mkdir -p $ANACONDA_HOME

@@ -18,7 +18,7 @@
 cat >/home/${OWNER}/Desktop/Spyder.desktop <<EOL
 [Desktop Entry]
 Type=Application
-Icon=$SPYDER_LAUNCHER_HOME/icon.png
+Icon=$SPYDER_LAUNCHER_HOME/spyder.png
 Name=Spyder
 Terminal=false
 Exec=$SPYDER_LAUNCHER_HOME/spyder.sh

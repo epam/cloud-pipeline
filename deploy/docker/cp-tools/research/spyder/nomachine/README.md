@@ -28,7 +28,7 @@ This will launch a new `Spyder` run with the default parameters
 * Once a tool is launched - await 5-7 minutes for the instance initialization (`Spyder` run will be marked in yellow)
 * Hover run id with a mouse - `Spyder` GUI endpoint URL will be shown (or click `Spyder` run and endpoint URL will be shown within a run details form)
 * Click `Endpoint URL` - noMachine configuration file will be downloaded (cloud-service-RUNNO.nxs)
-* Double click it and noMachine will load and start connection to the Julia instance
+* Double click it and noMachine will load and start connection to the `Spyder` instance
 ```
 Note: for the first time – NoMachine client may ask, whether to trust a cloud instance – click Yes button
 ```
