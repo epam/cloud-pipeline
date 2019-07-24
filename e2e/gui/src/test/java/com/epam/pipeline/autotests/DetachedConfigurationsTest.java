@@ -298,7 +298,7 @@ public class DetachedConfigurationsTest
                     .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                     .ensure(PRICE_TYPE, text(defaultPriceType))
                     .ensure(DISK, value(customDisk))
-                    .click(SAVE)
+                    .resetChanges()
             );
     }
 
@@ -697,7 +697,7 @@ public class DetachedConfigurationsTest
                     .selectProfile(defaultConfigurationProfile)
                     .expandTab(INSTANCE)
                     .selectValue(PRICE_TYPE, defaultPriceType)
-                    .click(SAVE)
+                    .saveIfNeeded()
                     .selectProfile(secondConfigurationProfile)
                     .expandTabs(execEnvironmentTab, advancedTab)
                     .selectPipeline(pipeline1)
