@@ -80,6 +80,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
+import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
 
 const FormItem = Form.Item;
@@ -3985,7 +3986,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (prevProps.defaultPriceTypeIsSpot !== this.props.defaultPriceTypeIsSpot) {
       this.evaluateEstimatedPrice({});
     }
-    if (prevProps.pipeline !== this.props.pipeline ||
+    if (!pipelinesEquals(prevProps.pipeline, this.props.pipeline) ||
       prevProps.version !== this.props.version ||
       prevProps.pipelineConfiguration !== this.props.pipelineConfiguration) {
       this.evaluateEstimatedPrice({});
