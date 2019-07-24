@@ -56,12 +56,15 @@ public final class ProviderUtils {
 
         for (final T item : items) {
             if (rootOrFolder) {
+                // if required path is definitely folder lists all files without filtering
                 pathDescription.increaseSize(getSize.apply(item));
             } else if (getName.apply(item).equals(requestPath)) {
+                // a file with exact match has been found => required path is path to file
                 pathDescription.setSize(getSize.apply(item));
                 pathDescription.setCompleted(true);
                 return pathDescription;
             } else if (getName.apply(item).startsWith(requestPath + ProviderUtils.DELIMITER)) {
+                // if required path is folder but '/' at the end was not specified
                 pathDescription.increaseSize(getSize.apply(item));
             }
         }
