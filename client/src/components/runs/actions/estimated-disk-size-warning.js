@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {
   Alert,
   Button,
+  Icon,
   Row
 } from 'antd';
 import displaySize from '../../../utils/displaySize';
@@ -32,6 +33,10 @@ const TB = 1024 * GB;
 
 const MAXIMUM = 16 * TB;
 
+function filterUnique (element, index, array) {
+  return array.indexOf(element) === index;
+}
+
 function getPaths (parameters) {
   const types = [
     'input',
@@ -41,7 +46,8 @@ function getPaths (parameters) {
     .filter(v => types.indexOf(v.type) >= 0)
     .map(v => v.value)
     .reduce((paths, value) => ([...paths, ...value.split(',')]), [])
-    .map(v => v.trim());
+    .map(v => v.trim())
+    .filter(filterUnique);
 }
 
 @inject((stores, {parameters}) => {
@@ -100,8 +106,25 @@ class EstimatedDiskSizeWarning extends React.Component {
 
   render () {
     const {sizeRequest} = this.props;
-    if (!sizeRequest || (sizeRequest.pending && !sizeRequest.loaded)) {
+    if (!sizeRequest) {
       return null;
+    }
+    if (sizeRequest.pending && !sizeRequest.loaded) {
+      return (
+        <Alert
+          type="info"
+          showIcon
+          style={{margin: 2}}
+          message={(
+            <div>
+              <p>
+                <Icon type="loading" />
+                <span>Estimating required disk size...</span>
+              </p>
+            </div>
+          )}
+        />
+      );
     }
     if (sizeRequest.error) {
       return (
