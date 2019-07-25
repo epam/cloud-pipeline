@@ -348,7 +348,7 @@ export default class BucketBrowser extends React.Component {
         dataIndex: 'size',
         key: 'size',
         title: 'Size',
-        render: displaySize,
+        render: size => displaySize(size),
         className: styles.selectableCell,
         onCellClick: (item) => this.didSelectDataStorageItem(item)
       },
