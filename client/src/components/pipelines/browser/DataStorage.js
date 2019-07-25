@@ -955,7 +955,7 @@ export default class DataStorage extends React.Component {
       key: 'size',
       title: 'Size',
       className: styles.sizeCell,
-      render: displaySize,
+      render: size => displaySize(size),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const changedColumn = {
