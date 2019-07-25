@@ -5,6 +5,8 @@ theme:
 docs_dir: 'md/'
 extra_css:
   - 'css/extra.css'
+extra_javascript:
+  - 'css/extra.js'
 nav:
 - Introduction: 'index.md'
 - Release notes:
