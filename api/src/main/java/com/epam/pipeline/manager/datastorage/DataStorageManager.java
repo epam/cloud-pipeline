@@ -628,8 +628,7 @@ public class DataStorageManager implements SecuredEntityManager {
             pathDescription.setSize(0L);
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    String.format("An error occurred during processing path '%s'. %s", path, e.getMessage()), e);
+            LOGGER.debug("An error occurred during processing path {}. {}", path, e.getMessage());
         }
     }
 
