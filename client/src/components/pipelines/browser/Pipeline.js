@@ -122,7 +122,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     {
       dataIndex: 'description',
       key: 'description',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNameWrap}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },

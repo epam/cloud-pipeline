@@ -29,6 +29,11 @@ th.metadata-column-value {
   white-space: nowrap;
 }
 
+.tree-item-name-wrap {
+  width: initial;
+  white-space: normal;
+}
+
 .tree-item-name-draft {
   cursor: pointer;
   color: #999;
