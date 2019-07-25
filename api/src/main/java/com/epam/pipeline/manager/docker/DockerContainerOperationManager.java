@@ -78,6 +78,7 @@ public class DockerContainerOperationManager {
     private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
     private static final String EMPTY = "";
     private static final String PAUSE_RUN_TASK = "PausePipelineRun";
+    private static final String RESUME_RUN_TASK = "ResumePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
 
@@ -256,8 +257,8 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
-            failRunAndTerminateNode(run, e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
+            failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
         }
     }
@@ -282,6 +283,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.RUNNING);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
+            addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
