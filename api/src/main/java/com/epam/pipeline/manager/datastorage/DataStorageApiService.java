@@ -32,12 +32,14 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
+import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -315,5 +317,10 @@ public class DataStorageApiService {
                 .orElse(AclPermission.WRITE.getMask() | AclPermission.READ.getMask());
         return grantPermissionManager
                 .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask);
+    }
+
+    @PostAuthorize(AclExpressions.STORAGE_PATHS_WRITE)
+    public List<PathDescription> getDataSizes(final List<String> paths) {
+        return dataStorageManager.getDataSizes(paths);
     }
 }

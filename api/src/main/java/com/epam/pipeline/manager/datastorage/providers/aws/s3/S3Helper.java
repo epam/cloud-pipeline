@@ -74,7 +74,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -601,6 +603,24 @@ public class S3Helper {
     public boolean checkBucket(String bucket) {
         AmazonS3 client = getDefaultS3Client();
         return client.doesBucketExistV2(bucket);
+    }
+
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final AmazonS3 client = getDefaultS3Client();
+
+        ObjectListing listing = client.listObjects(dataStorage.getPath(), requestPath);
+        boolean hasNextPageMarker = true;
+        while (hasNextPageMarker && !pathDescription.getCompleted()) {
+            ProviderUtils.getSizeByPath(listing.getObjectSummaries(), requestPath,
+                    S3ObjectSummary::getSize, S3ObjectSummary::getKey, pathDescription);
+            hasNextPageMarker = listing.isTruncated();
+            listing = client.listNextBatchOfObjects(listing);
+        }
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {

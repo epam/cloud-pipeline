@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -70,6 +71,7 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,6 +81,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 
@@ -120,6 +128,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private Executor dataStoragePathExecutor;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -575,6 +586,53 @@ public class DataStorageManager implements SecuredEntityManager {
         return prefix + name;
     }
 
+    public List<PathDescription> getDataSizes(final List<String> paths) {
+        final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
+        final Map<String, PathDescription> container = new ConcurrentHashMap<>();
+        try {
+            CompletableFuture.runAsync(
+                    () -> paths.forEach(path -> computeDataSize(path, container)),
+                    dataStoragePathExecutor)
+                    .get(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+
+        return new ArrayList<>(container.values());
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void computeDataSize(final String path, final Map<String, PathDescription> container) {
+        try {
+            final PathDescription pathDescription = PathDescription.builder()
+                    .path(path)
+                    .completed(false)
+                    .size(-1L)
+                    .build();
+            container.put(path, pathDescription);
+
+            Assert.state(StringUtils.isNotBlank(path), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+            final URI pathUri = new URI(path);
+            final String bucketName = pathUri.getHost();
+            Assert.state(StringUtils.isNotBlank(bucketName), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_NAME_IS_EMPTY));
+            final String relativePath = ProviderUtils.withoutLeadingDelimiter(pathUri.getPath());
+
+            final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
+            Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
+                    String.format("The specified path %s has incorrect state. Expected path mask: %s",
+                            path, dataStorage.getPathMask()));
+
+            pathDescription.setDataStorageId(dataStorage.getId());
+            pathDescription.setSize(0L);
+            storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    String.format("An error occurred during processing path '%s'. %s", path, e.getMessage()), e);
+        }
+    }
+
     private void assertDataStorageMountPoint(DataStorageVO dataStorageVO) {
         // if mount point is empty we don't need to check anything
         if (StringUtils.isBlank(dataStorageVO.getMountPoint())) {
@@ -801,5 +859,4 @@ public class DataStorageManager implements SecuredEntityManager {
                         values.stream().findFirst().map(v -> v.getClass().getSimpleName()).orElse("CLASS"),
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
     }
-
 }
