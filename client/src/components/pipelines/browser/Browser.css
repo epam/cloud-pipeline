@@ -23,6 +23,10 @@ th.metadata-column-value {
   cursor: pointer;
 }
 
+.tree-item-no-wrap {
+  white-space: nowrap;
+}
+
 .tree-item-name-draft {
   cursor: pointer;
   color: #999;
