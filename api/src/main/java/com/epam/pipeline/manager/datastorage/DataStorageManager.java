@@ -57,8 +57,8 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -78,6 +78,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,6 +88,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -587,11 +589,15 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public List<PathDescription> getDataSizes(final List<String> paths) {
+        if (CollectionUtils.isEmpty(paths)) {
+            return Collections.emptyList();
+        }
         final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
         final Map<String, PathDescription> container = new ConcurrentHashMap<>();
         try {
             CompletableFuture.runAsync(
-                    () -> paths.forEach(path -> computeDataSize(path, container)),
+                    () -> getRootPaths(paths)
+                            .forEach(path -> computeDataSize(path, container)),
                     dataStoragePathExecutor)
                     .get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -599,6 +605,15 @@ public class DataStorageManager implements SecuredEntityManager {
         }
 
         return new ArrayList<>(container.values());
+    }
+
+    private Collection<String> getRootPaths(final List<String> paths) {
+        final Set<String> initialPaths = new HashSet<>(paths);
+        final List<String> childPaths = initialPaths.stream()
+                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) && p.startsWith(path)))
+                .flatMap(Function.identity())
+                .collect(Collectors.toList());
+        return CollectionUtils.subtract(initialPaths, childPaths);
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
