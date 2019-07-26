@@ -88,8 +88,9 @@ public class CommitPopup extends PopupAO<CommitPopup, ConfirmationPopupAO<LogAO>
 
     public CommitPopup setName(final String name) {
         Utils.clearTextField(get(IMAGE_NAME));
-        sleep(1, SECONDS);
-        return addToValue(IMAGE_NAME, name);
+        sleep(3, SECONDS);
+        Utils.sendKeysByChars(get(IMAGE_NAME), name);
+        return this;
     }
 
     @Override
