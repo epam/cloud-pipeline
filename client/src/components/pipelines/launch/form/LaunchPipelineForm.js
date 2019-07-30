@@ -82,6 +82,11 @@ import {
 } from './utilities/launch-form-sections';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
+import {
+  SubmitButton,
+  getInputPaths,
+  getOutputPaths
+} from '../../../runs/actions';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -300,10 +305,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   prevParameters = {};
 
   @observable modified = false;
+  @observable inputPaths = [];
+  @observable outputPaths = [];
+  @observable dockerImage = null;
   @observable cmdTemplateValue;
 
   @action
-  formFieldsChanged = () => {
+  formFieldsChanged = async () => {
     this.modified = checkModifiedState(
       this.props,
       this.state,
@@ -315,6 +323,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
+    const {form, parameters} = this.props;
+    this.inputPaths = getInputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.outputPaths = getOutputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
+      this.getDefaultValue('docker_image');
   };
 
   @observable
@@ -3234,19 +3253,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           overlay={dropDownMenu}
           placement="bottomRight"
           trigger={['click']}>
-          <Button
+          <SubmitButton
             size="small"
-            id="run-configuration-button" type="primary" style={{marginRight: 10}}>
+            id="run-configuration-button" type="primary" style={{marginRight: 10}}
+            inputs={this.inputPaths}
+            outputs={this.outputPaths}
+            dockerImage={this.dockerImage}>
             Run <Icon type="down" />
-          </Button>
+          </SubmitButton>
         </Dropdown>
       );
     } else {
       return (
-        <Button
+        <SubmitButton
           size="small"
           id="run-configuration-button"
           type="primary"
+          inputs={this.inputPaths}
+          outputs={this.outputPaths}
+          dockerImage={this.dockerImage}
           onClick={() => {
             if (this.validateFireCloudConnections()) {
               if (this.state.currentProjectId && this.state.rootEntityId) {
@@ -3259,7 +3284,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }}
           style={{marginRight: 10}}>
           Run
-        </Button>
+        </SubmitButton>
       );
     }
   };
@@ -3652,13 +3677,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
-              <Button
+              <SubmitButton
                 id="launch-pipeline-button"
+                inputs={this.inputPaths}
+                outputs={this.outputPaths}
+                dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
                 style={{verticalAlign: 'middle'}}>
                 Launch
-              </Button>
+              </SubmitButton>
             </FormItem>
           </td>
         );
