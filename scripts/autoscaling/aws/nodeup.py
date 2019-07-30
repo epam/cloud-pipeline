@@ -743,6 +743,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     while rep <= num_rep:
         current_request = ec2.describe_spot_instance_requests(SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
         status = current_request['Status']['Code']
+        last_status = status
         if status == 'fulfilled':
             ins_id = current_request['InstanceId']
             instance = None
@@ -784,7 +785,6 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
 
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
-        last_status = status
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
         rep = increment_or_fail(num_rep, rep,
                                 'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
