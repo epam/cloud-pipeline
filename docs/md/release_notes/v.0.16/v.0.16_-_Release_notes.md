@@ -9,6 +9,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Setting of the tool icon size](#setting-of-the-tool-icon-size)
     - [`NPE` while building cloud-specific environment variables for run](#npe-while-building-cloud-specific-environment-variables-for-run)
     - [Worker nodes fail due to mismatch of the regions with the parent run](#worker-nodes-fail-due-to-mismatch-of-the-regions-with-the-parent-run)
     - [Worker nodes shall not be restarted automatically](#worker-nodes-shall-not-be-restarted-automatically)
@@ -100,6 +101,12 @@ To avoid of that behavior, in **`v0.16`** a new option was added to `pipe storag
 ***
 
 ## Notable Bug fixes
+
+### Setting of the tool icon size
+
+[#493](https://github.com/epam/cloud-pipeline/issues/493)
+
+Previously, setting of any value for the maximum tool's icon size via the sytem-level preference **`misc.max.tool.icon.size.kb`** didn't lead to anything - restriction for the size while trying to change an icon was remaining the same - 50 Kb.
 
 ### `NPE` while building cloud-specific environment variables for run
 
