@@ -103,8 +103,7 @@ import org.mockito.junit.MockitoRule;
                 {
                     PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] [sys-params]",
                     PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
-                        + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION + " "
-                        + "--namespace " + KUBE_NAMESPACE
+                        + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION + " --namespace " + KUBE_NAMESPACE
                         + " --parent " + POD_ID + " --pipeline-name " + PIPELINE_NAME + " --run-date " + RUN_DATE
                         + " --run-time " + RUN_TIME + " --run-id " + RUN_ID + " --pipeline-id " + PIPELINE_ID
                         + " --autoscaling-enabled "

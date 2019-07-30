@@ -265,27 +265,22 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void resumeRun(final PipelineRun run, final List<String> endpoints) {
+    public void resumeRun(PipelineRun run, List<String> endpoints) {
         try {
             final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
             final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
                     run.getInstance().getNodeId());
 
             if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
-                        startInstanceResult.getMessage());
-                addRunLog(run, msg, RESUME_RUN_TASK);
-                LOGGER.warn(msg);
-                run.setStatus(TaskStatus.PAUSED);
-                runManager.updatePipelineStatus(run);
+                rollbackRunToPausedState(run, startInstanceResult);
                 return;
             }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
-            final String cmd = String.format(PipelineLauncher.LAUNCH_TEMPLATE, launchScriptUrl,
+            String cmd = String.format(PipelineLauncher.LAUNCH_TEMPLATE, launchScriptUrl,
                     launchScriptUrl, "", "", run.getActualCmd());
-            final List<EnvVar> envVars = Collections.singletonList(
+            List<EnvVar> envVars = Collections.singletonList(
                     new EnvVar(SystemParams.RESUMED_RUN.getEnvName(), "true", null));
             executor.launchRootPod(cmd, run, envVars, endpoints,
                     run.getPodId(), run.getId().toString(), null, null, false);
@@ -298,6 +293,16 @@ public class DockerContainerOperationManager {
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
+    }
+
+    private void rollbackRunToPausedState(final PipelineRun run,
+                                          final CloudInstanceOperationResult startInstanceResult) {
+        final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
+                startInstanceResult.getMessage());
+        addRunLog(run, msg, RESUME_RUN_TASK);
+        LOGGER.warn(msg);
+        run.setStatus(TaskStatus.PAUSED);
+        runManager.updatePipelineStatus(run);
     }
 
     private Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {

@@ -71,7 +71,7 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     /**
      * Starts previously stopped cloud instance
      * @param instanceId
-     * @return
+     * @return CloudInstanceOperationResult object as result of operation. This object contains status and massage.
      */
     CloudInstanceOperationResult startInstance(T region, String instanceId);
 
