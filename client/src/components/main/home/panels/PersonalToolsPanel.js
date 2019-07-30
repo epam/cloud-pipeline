@@ -507,6 +507,17 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  getToolActions = (tool) => {
+    if (roleModel.executeAllowed(tool)) {
+      return [{
+        title: 'RUN',
+        icon: 'play-circle-o',
+        action: this.onRunToolClicked
+      }];
+    }
+    return [];
+  };
+
   onChange = (e) => {
     this.setState({
       search: e.target.value
@@ -534,11 +545,7 @@ export default class PersonalToolsPanel extends React.Component {
             search && search.length
               ? `No personal tools found for '${search}'`
               : 'There are no personal tools'}
-          actions={[{
-            title: 'RUN',
-            icon: 'play-circle-o',
-            action: this.onRunToolClicked
-          }]}
+          actions={this.getToolActions}
           childRenderer={this.renderTool}>
           {this.tools}
         </CardsPanel>
