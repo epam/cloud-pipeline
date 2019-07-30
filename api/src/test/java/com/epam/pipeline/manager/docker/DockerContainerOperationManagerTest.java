@@ -11,6 +11,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -43,6 +44,12 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
 
     @Mock
     private RunLogManager logManager;
+
+    @Before
+    public void setUp() {
+        Mockito.doNothing().when(runManager.updatePipelineStatus(Mockito.any()));
+        Mockito.doNothing().when(logManager.saveLog(Mockito.any()));
+    }
 
     @Test
     public void resumeRunRestorePausedStatusIfFail() {

@@ -61,7 +61,9 @@ public class GCPVMService {
             log.error(e.getMessage(), e);
             throw new GCPException(e);
         }
-        return CloudInstanceOperationResult.builder().status(CloudInstanceOperationResult.Status.OK).build();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final GCPRegion region, final String instanceId) {

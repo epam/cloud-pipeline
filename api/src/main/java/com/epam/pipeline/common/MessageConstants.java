@@ -138,6 +138,8 @@ public final class MessageConstants {
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
     public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
+    public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
+    public static final String INFO_INSTANCE_STARTED = "info.instance.started";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
@@ -429,7 +431,6 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
-    public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
 
     private MessageConstants() {
         // no-op

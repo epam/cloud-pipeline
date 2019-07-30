@@ -80,7 +80,9 @@ public class AzureVMService {
 
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
-        return CloudInstanceOperationResult.builder().status(CloudInstanceOperationResult.Status.OK).build();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final AzureRegion region, final String instanceId) {

@@ -35,6 +35,8 @@ import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -77,6 +79,7 @@ public class EC2Helper {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
 
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     public AmazonEC2 getEC2Client(String awsRegion) {
         AmazonEC2ClientBuilder builder = AmazonEC2ClientBuilder.standard();
@@ -136,12 +139,13 @@ public class EC2Helper {
             waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
         } catch (AmazonServiceException e) {
             if (e.getErrorCode().equals(INSUFFICIENT_INSTANCE_CAPACITY)) {
-                return CloudInstanceOperationResult.builder().status(CloudInstanceOperationResult.Status.ERROR)
-                        .message(e.getErrorCode()).build();
+                return CloudInstanceOperationResult.fail(e.getErrorCode());
             }
             throw e;
         }
-        return CloudInstanceOperationResult.builder().status(CloudInstanceOperationResult.Status.OK).build();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public Optional<StateReason> getInstanceStateReason(String instanceId, String awsRegion) {
