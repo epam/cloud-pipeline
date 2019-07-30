@@ -81,7 +81,7 @@ function getPaths (formParameters, defaultParameters, types) {
 }
 
 export function getInputPaths (formParameters, defaultParameters) {
-  return getPaths(formParameters, defaultParameters, ['input', 'common', 'path']);
+  return getPaths(formParameters, defaultParameters, ['input', 'common']);
 }
 
 export function getOutputPaths (formParameters, defaultParameters) {
