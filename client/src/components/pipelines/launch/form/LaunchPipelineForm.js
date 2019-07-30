@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import {
   Alert,
   Button,
@@ -73,6 +73,11 @@ import {
   gridEngineEnabled
 } from './utilities/launch-cluster';
 import {names} from '../../../../models/utils/ContextualPreference';
+import {
+  SubmitButton,
+  getInputPaths,
+  getOutputPaths
+} from '../../../runs/actions';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -87,12 +92,6 @@ const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
-function onValuesChange (props, fields) {
-  if (fields && fields.exec && fields.exec.cloudRegionId && props.allowedInstanceTypes) {
-    props.allowedInstanceTypes.regionId = +fields.exec.cloudRegionId;
-  }
-}
-
 function getFormItemClassName (rootClass, key) {
   if (key) {
     return `${rootClass} ${key.replace(/\./g, '_')}`;
@@ -100,8 +99,14 @@ function getFormItemClassName (rootClass, key) {
   return rootClass;
 }
 
-@Form.create({onValuesChange: onValuesChange})
-@inject('runDefaultParameters', 'googleApi', 'awsRegions', 'dtsList', 'preferences', 'dockerRegistries')
+@inject(
+  'runDefaultParameters',
+  'googleApi',
+  'awsRegions',
+  'dtsList',
+  'preferences',
+  'dockerRegistries'
+)
 @inject((stores, params) => {
   if (params.allowedInstanceTypes && params.parameters && params.parameters.cloudRegionId) {
     params.allowedInstanceTypes.initialRegionId = params.parameters.cloudRegionId;
@@ -110,7 +115,7 @@ function getFormItemClassName (rootClass, key) {
 })
 @localization.localizedComponent
 @observer
-export default class LaunchPipelineForm extends localization.LocalizedReactComponent {
+class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   isDts = (props = this.props) => {
     if (!this.props.detached) {
@@ -159,7 +164,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       snapshot: PropTypes.string,
       configuration: PropTypes.string,
       configurationSnapshot: PropTypes.string
-    })
+    }),
+    onInitialized: PropTypes.func
   };
 
   static defaultProps = {
@@ -282,6 +288,25 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   };
 
   prevParameters = {};
+
+  @observable inputPaths = [];
+  @observable outputPaths = [];
+  @observable dockerImage = null;
+
+  @action
+  formFieldsChanged = async () => {
+    const {form, parameters} = this.props;
+    this.inputPaths = getInputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.outputPaths = getOutputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
+      this.getDefaultValue('docker_image');
+  };
 
   @observable
   _fireCloudConfigurations = null;
@@ -501,7 +526,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.form.validateFields((err, values) => {
+    this.props.form.validateFields(async (err, values) => {
       if (!err && this.validateFireCloudConnections()) {
         let payload;
         if (this.props.editConfigurationMode) {
@@ -510,7 +535,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          this.props.onLaunch(payload);
+          await this.props.onLaunch(payload);
+          this.formFieldsChanged();
         }
       } else {
         const openedPanels = this.state.openedPanels;
@@ -658,7 +684,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         fireCloudOutputs: {},
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {}
-      });
+      }, this.formFieldsChanged);
     } else {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -707,7 +733,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         fireCloudInputsErrors: {},
         fireCloudOutputsErrors: {},
         autoPause: true
-      });
+      }, this.formFieldsChanged);
     }
   };
 
@@ -1496,7 +1522,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   };
 
   closePipelineBrowser = () => {
-    this.setState({pipelineBrowserVisible: false});
+    this.setState({pipelineBrowserVisible: false}, this.formFieldsChanged);
   };
 
   selectPipelineConfirm = async (pipeline, isFireCloud = false) => {
@@ -1637,6 +1663,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       }
     }
     this.closePipelineBrowser();
+    this.formFieldsChanged();
   };
 
   openMetadataBrowser = () => {
@@ -2025,10 +2052,12 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       parameters = this.buildDefaultParameters(isSystemParametersSection);
       this.rebuildParameters[sectionName] = false;
     } else {
-      parameters = this.getSectionValue(sectionName) || this.buildDefaultParameters(isSystemParametersSection);
+      parameters = this.getSectionValue(sectionName) ||
+        this.buildDefaultParameters(isSystemParametersSection);
     }
 
-    const keysFormItem = this.props.isDetachedConfiguration && this.props.selectedPipelineParametersIsLoading
+    const keysFormItem = this.props.isDetachedConfiguration &&
+    this.props.selectedPipelineParametersIsLoading
       ? null
       : (
         <FormItem
@@ -2064,9 +2093,12 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     const addParameterButtonFn = () => {
       if (isSystemParametersSection) {
         const notToShowSystemParametersFn = (section, isSystem) => {
-          const sectionValue = this.getSectionValue(section) || this.buildDefaultParameters(isSystem);
+          const sectionValue = this.getSectionValue(section) ||
+            this.buildDefaultParameters(isSystem);
           return sectionValue && sectionValue.params && sectionValue.keys
-            ? sectionValue.keys.map(key => sectionValue.params[key]).filter(param => !!param).map(p => p.name)
+            ? sectionValue.keys
+              .map(key => sectionValue.params[key])
+              .filter(param => !!param).map(p => p.name)
             : [];
         };
         return (
@@ -2113,7 +2145,9 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                 disabled={(this.props.readOnly && !this.props.canExecute) ||
                 (!!this.state.pipeline && this.props.detached)}
                 id="add-parameter-button"
-                onClick={() => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)}>
+                onClick={
+                  () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)
+                }>
                 Add parameter
               </Button>
               {
@@ -2127,7 +2161,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                         <Icon type="down" />
                       </Button>
                     </Dropdown>
-                ) : undefined
+                  ) : undefined
               }
             </Button.Group>
           </Row>
@@ -2136,7 +2170,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
     };
 
     const renderRootEntity = () => {
-      return this.props.currentConfigurationIsDefault && this.state.currentMetadataEntity.length > 0 && (
+      return this.props.currentConfigurationIsDefault &&
+        this.state.currentMetadataEntity.length > 0 && (
         <FormItem
           key="root_entity_type_select"
           className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
@@ -2289,16 +2324,25 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                           message: 'Name can contain only letters, digits and \'_\'.'
                         },
                         {
-                          validator: this.validateParameterName(sectionName, key, isSystemParametersSection)
+                          validator: this.validateParameterName(
+                            sectionName,
+                            key,
+                            isSystemParametersSection
+                          )
                         }],
                       initialValue: name
-                    })(
+                    }
+                  )(
                     <Input
                       disabled={(this.props.readOnly && !this.props.canExecute) ||
                       required || isSystemParametersSection ||
                       (!!this.state.pipeline && this.props.detached)}
                       placeholder="Name"
-                      className={isSystemParametersSection ? styles.systemParameterName : styles.parameterName} />
+                      className={
+                        isSystemParametersSection
+                          ? styles.systemParameterName
+                          : styles.parameterName
+                      } />
                   )}
                 </FormItem>
               </Col>
@@ -2309,7 +2353,11 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
               </Col>
               <Col
                 span={3}
-                className={systemParameterValueIsBlocked ? styles.hiddenItem : styles.removeParameter}>
+                className={
+                  systemParameterValueIsBlocked
+                    ? styles.hiddenItem
+                    : styles.removeParameter
+                }>
                 {
                   !required &&
                   !(this.props.readOnly && !this.props.canExecute) &&
@@ -2321,7 +2369,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                         type="minus-circle-o"
                         onClick={() => this.removeParameter(sectionName, key)}
                       />
-                  )
+                    )
                     : undefined
                 }
                 {
@@ -2343,7 +2391,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
       !this.isFireCloudSelected ? keysFormItem : undefined,
       ...currentParameters,
-      !this.isFireCloudSelected ? addParameterButtonFn(): undefined
+      !this.isFireCloudSelected ? addParameterButtonFn() : undefined
     ];
   };
 
@@ -2577,7 +2625,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
   closeConfigureClusterDialog = () => {
     this.setState({
       configureClusterDialogVisible: false
-    });
+    }, this.formFieldsChanged);
   };
 
   onChangeClusterConfiguration = (configuration) => {
@@ -2926,8 +2974,8 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached)
               }
-              onChange={(e) => this.setState({startIdle: e.target.checked})}
-              value={this.state.startIdle}>
+              onChange={(e) => this.setState({startIdle: e.target.checked}, this.formFieldsChanged)}
+              checked={this.state.startIdle}>
               Start idle
             </Checkbox>
             {hints.renderHint(this.localizedString, hints.startIdleHint)}
@@ -3017,19 +3065,25 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           overlay={dropDownMenu}
           placement="bottomRight"
           trigger={['click']}>
-          <Button
+          <SubmitButton
             size="small"
-            id="run-configuration-button" type="primary" style={{marginRight: 10}}>
+            id="run-configuration-button" type="primary" style={{marginRight: 10}}
+            inputs={this.inputPaths}
+            outputs={this.outputPaths}
+            dockerImage={this.dockerImage}>
             Run <Icon type="down" />
-          </Button>
+          </SubmitButton>
         </Dropdown>
       );
     } else {
       return (
-        <Button
+        <SubmitButton
           size="small"
           id="run-configuration-button"
           type="primary"
+          inputs={this.inputPaths}
+          outputs={this.outputPaths}
+          dockerImage={this.dockerImage}
           onClick={() => {
             if (this.validateFireCloudConnections()) {
               if (this.state.currentProjectId && this.state.rootEntityId) {
@@ -3042,7 +3096,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
           }}
           style={{marginRight: 10}}>
           Run
-        </Button>
+        </SubmitButton>
       );
     }
   };
@@ -3258,7 +3312,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         const onChange = (e) => {
           const values = this.state[stateKey];
           values[conn.name] = e.target.value;
-          this.setState({[stateKey]: values});
+          this.setState({[stateKey]: values}, this.formFieldsChanged);
         };
         let value = defaultConnections[conn.name];
         if (this.state[stateKey][conn.name] !== undefined) {
@@ -3420,13 +3474,16 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
-              <Button
+              <SubmitButton
                 id="launch-pipeline-button"
+                inputs={this.inputPaths}
+                outputs={this.outputPaths}
+                dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
                 style={{verticalAlign: 'middle'}}>
                 Launch
-              </Button>
+              </SubmitButton>
             </FormItem>
           </td>
         );
@@ -3713,6 +3770,7 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
         this.loadFireCloudConfigurations();
       }
     }
+    this.props.onInitialized && this.props.onInitialized(this);
   }
 
   componentDidUpdate (prevProps, prevState) {
@@ -3829,5 +3887,39 @@ export default class LaunchPipelineForm extends localization.LocalizedReactCompo
       });
     }
   }
+}
 
+export default class extends React.Component {
+  launchForm;
+
+  onInitialized = (form) => {
+    this.launchForm = form;
+  };
+
+  onValuesChange = (props, fields) => {
+    if (fields && fields.exec && fields.exec.cloudRegionId && props.allowedInstanceTypes) {
+      props.allowedInstanceTypes.regionId = +fields.exec.cloudRegionId;
+    }
+  };
+
+  onFieldsChange = (props, fields) => {
+    if (this.launchForm &&
+      this.launchForm.formFieldsChanged &&
+      Object.values(fields).filter(v => !v.dirty).length > 0) {
+      this.launchForm.formFieldsChanged();
+    }
+  };
+
+  launchPipelineForm = Form.create({
+    onValuesChange: this.onValuesChange,
+    onFieldsChange: this.onFieldsChange
+  })(LaunchPipelineForm);
+
+  render () {
+    const LaunchForm = this.launchPipelineForm;
+    const props = this.props;
+    return (
+      <LaunchForm {...props} onInitialized={this.onInitialized} />
+    );
+  }
 }
