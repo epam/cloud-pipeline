@@ -233,7 +233,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
-            if (run.isNonPause()) {
+            if (run.isNonPause() || isClusterRun(run)) {
                 continue;
             }
             Double metric = cpuMetrics.get(entry.getKey());
@@ -318,5 +318,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_PAUSED);
+    }
+
+    private boolean isClusterRun(final PipelineRun run) {
+        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
     }
 }
