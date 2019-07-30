@@ -32,7 +32,7 @@
     <authToken>${JENKINS_JOB_TOKEN}</authToken>
     <triggers>
         <hudson.triggers.TimerTrigger>
-            <spec>${CP_E2E_SCHEDULE}</spec>
+            <spec>$CP_E2E_SCHEDULE</spec>
         </hudson.triggers.TimerTrigger>
     </triggers>
     <concurrentBuild>false</concurrentBuild>
@@ -62,8 +62,7 @@
             </configuredTriggers>
             <contentType>default</contentType>
             <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
-            <defaultContent>$DEFAULT_CONTENT
-                &lt;a href=&quot;http://${JENKINS_HOST}:${JENKINS_PORT}/view/job/${JENKINS_GCP_GUI_TEST_JOB_NAME}/ws/e2e/gui/build/reports/tests/test/index.html&quot;&gt;&lt;p&gt;See index.html report&lt;/a&gt;
+            <defaultContent>$DEFAULT_CONTENT &lt;a href=&quot;http://${JENKINS_HOST}:${JENKINS_PORT}/view/job/${JENKINS_GCP_GUI_TEST_JOB_NAME}/ws/e2e/gui/build/reports/tests/test/index.html&quot;&gt;&lt;p&gt;See index.html report&lt;/a&gt;
             </defaultContent>
             <attachmentsPattern></attachmentsPattern>
             <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
