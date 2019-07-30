@@ -55,7 +55,7 @@ def print_version(ctx, param, value):
     help='Show the version and exit'
 )
 def cli():
-    """pipe is command line interface to Bfx Pipeline engine
+    """pipe is a command line interface to the Cloud Pipeline engine.
     It allows run pipelines as well as viewing runs and cluster state
     """
     pass
@@ -976,11 +976,13 @@ def tag():
 @click.argument('data', required=True, nargs=-1)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
-    """ Sets tags for a specified object
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
-    - identifier - define name or id of an object of a specified class
-    - Tags can be specified as single KEY=VALUE pair or a list of them
-    - If a specific tag key already exists for an object - it will be overwritten
+    """ Sets tags for a specified object.
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration
+    - ENTITY_ID: defines name or id of an object of a specified class
+    - DATA: defines a list of tags to set. Can be specified as a single "KEY"="VALUE" pair or a list of them.
+    If a specific tag key already exists for an object - it will be overwritten
     """
     MetadataOperations.set_metadata(entity_class, entity_id, data)
 
@@ -990,9 +992,11 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_id', required=True)
 @Config.validate_access_token
 def get_tag(entity_class, entity_id):
-    """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
-    - identifier - define name or id of an object of a specified class
+    """ Lists all tags for a specific object or list of objects.
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration
+    - ENTITY_ID: defines name or id of an object of a specified class
     """
     MetadataOperations.get_metadata(entity_class, entity_id)
 
@@ -1003,9 +1007,12 @@ def get_tag(entity_class, entity_id):
 @click.argument('keys', required=False, nargs=-1)
 @Config.validate_access_token
 def delete_tag(entity_class, entity_id, keys):
-    """ Deletes specified tags for a specified object
-    - Tags can be specified as single KEY=VALUE pair or a list of them
-    - If a specific tag key already exists for an object - it will be overwritten
+    """ Deletes specified tags for a specified object.\n
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration
+    - ENTITY_ID: defines name or id of an object of a specified class
+    - KEYS: defines a list of attribute keys to delete
     """
     MetadataOperations.delete_metadata(entity_class, entity_id, keys)
 
@@ -1016,12 +1023,12 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('entity_name', required=True)
 @Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
-    """
-    Changes current owner to specified.
-     - user_name: desired object owner
-     - entity_class: name of the object class. Possible values: PIPELINE, FOLDER, DATA_STORAGE, DOCKER_REGISTRY, TOOL,
-     TOOL_GROUP, CONFIGURATION, METADATA_ENTITY
-     - entity_name: name or id of the object
+    """ Changes current owner to specified.
+    - USER_NAME: desired object owner
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration
+    - ENTITY_NAME: defines name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
 
