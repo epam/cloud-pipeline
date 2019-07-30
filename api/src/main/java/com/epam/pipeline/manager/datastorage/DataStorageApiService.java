@@ -319,7 +319,7 @@ public class DataStorageApiService {
                 .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask);
     }
 
-    @PostAuthorize(AclExpressions.STORAGE_PATHS_WRITE)
+    @PostAuthorize(AclExpressions.STORAGE_PATHS_READ)
     public List<PathDescription> getDataSizes(final List<String> paths) {
         return dataStorageManager.getDataSizes(paths);
     }
