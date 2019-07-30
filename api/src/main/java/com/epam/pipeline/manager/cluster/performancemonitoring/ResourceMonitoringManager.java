@@ -269,7 +269,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                                  action));
             switch (action) {
                 case PAUSE:
-                    if (run.getInstance().getSpot()) {
+                    if (run.getInstance().getSpot() || isClusterRun(run)) {
                         performNotify(run, cpuUsageRate, pipelinesToNotify);
                     } else {
                         performPause(run, cpuUsageRate);
@@ -277,7 +277,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
                     break;
                 case PAUSE_OR_STOP:
-                    if (run.getInstance().getSpot()) {
+                    if (run.getInstance().getSpot() || isClusterRun(run)) {
                         performStop(run, cpuUsageRate);
                     } else {
                         performPause(run, cpuUsageRate);
@@ -312,5 +312,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_PAUSED);
+    }
+
+    private boolean isClusterRun(final PipelineRun run) {
+        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
     }
 }
