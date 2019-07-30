@@ -227,7 +227,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
-            if (run.isNonPause()) {
+            if (run.isNonPause() || isClusterRun(run)) {
                 continue;
             }
             Double metric = cpuMetrics.get(entry.getKey());
@@ -269,7 +269,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                                  action));
             switch (action) {
                 case PAUSE:
-                    if (run.getInstance().getSpot() || isClusterRun(run)) {
+                    if (run.getInstance().getSpot()) {
                         performNotify(run, cpuUsageRate, pipelinesToNotify);
                     } else {
                         performPause(run, cpuUsageRate);
@@ -277,7 +277,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
                     break;
                 case PAUSE_OR_STOP:
-                    if (run.getInstance().getSpot() || isClusterRun(run)) {
+                    if (run.getInstance().getSpot()) {
                         performStop(run, cpuUsageRate);
                     } else {
                         performPause(run, cpuUsageRate);
