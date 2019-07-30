@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
@@ -70,8 +71,9 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     /**
      * Starts previously stopped cloud instance
      * @param instanceId
+     * @return
      */
-    void startInstance(T region, String instanceId);
+    CloudInstanceOperationResult startInstance(T region, String instanceId);
 
     /**
      * Pauses cloud instance

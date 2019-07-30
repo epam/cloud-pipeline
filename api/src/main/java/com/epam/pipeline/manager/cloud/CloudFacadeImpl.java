@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
@@ -133,9 +134,9 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public void startInstance(final Long regionId, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final Long regionId, final String instanceId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        getInstanceService(region).startInstance(region, instanceId);
+        return getInstanceService(region).startInstance(region, instanceId);
     }
 
     @Override

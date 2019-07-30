@@ -429,6 +429,7 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+    public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
 
     private MessageConstants() {
         // no-op

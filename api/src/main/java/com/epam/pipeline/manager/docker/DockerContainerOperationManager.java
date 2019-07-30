@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -264,17 +265,27 @@ public class DockerContainerOperationManager {
     }
 
     @Async("pauseRunExecutor")
-    public void resumeRun(PipelineRun run, List<String> endpoints) {
+    public void resumeRun(final PipelineRun run, final List<String> endpoints) {
         try {
+            final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
+            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
+                    run.getInstance().getNodeId());
 
-            AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            cloudFacade.startInstance(cloudRegion.getId(), run.getInstance().getNodeId());
+            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
+                        startInstanceResult.getMessage());
+                addRunLog(run, msg, RESUME_RUN_TASK);
+                LOGGER.warn(msg);
+                run.setStatus(TaskStatus.PAUSED);
+                runManager.updatePipelineStatus(run);
+                return;
+            }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
-            String cmd = String.format(PipelineLauncher.LAUNCH_TEMPLATE, launchScriptUrl,
+            final String cmd = String.format(PipelineLauncher.LAUNCH_TEMPLATE, launchScriptUrl,
                     launchScriptUrl, "", "", run.getActualCmd());
-            List<EnvVar> envVars = Collections.singletonList(
+            final List<EnvVar> envVars = Collections.singletonList(
                     new EnvVar(SystemParams.RESUMED_RUN.getEnvName(), "true", null));
             executor.launchRootPod(cmd, run, envVars, endpoints,
                     run.getPodId(), run.getId().toString(), null, null, false);
