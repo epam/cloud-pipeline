@@ -57,6 +57,57 @@ EOF
     fi
 }
 
+function check_installed {
+      local _COMMAND_TO_CHECK=$1
+      command -v "$_COMMAND_TO_CHECK" >/dev/null 2>&1
+      return $?
+}
+
+function local_package_install {
+
+    local _SOURCE=$1
+
+    # This script will download archive with sources to be installed
+
+    if [ -z $_SOURCE ]; then
+         echo "Env var SOURCE not found, no package will be installed"
+         return 1
+    fi
+
+    local _PATH_TO_PACKAGES=/tmp/localinstall
+    local _ARCH_NAME=$(basename "$_SOURCE")
+    local _BIN_DIR=${_ARCH_NAME%.*}
+
+    mkdir -p $_PATH_TO_PACKAGES
+    wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
+    tar -xf "$_PATH_TO_PACKAGES/$_ARCH_NAME" -C $_PATH_TO_PACKAGES
+
+    check_installed "dpkg" && check_installed "apt-get" && {
+        echo "Local installation deb packages"
+        apt-get update
+        export DEBIAN_FRONTEND=noninteractive
+        dpkg -i $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb &> /dev/null
+        dpkg --configure -a > /dev/null
+        apt-get install -f -y
+    };
+
+    check_installed "yum" && {
+        echo "Local installation rpm packages"
+        yum localinstall $_PATH_TO_PACKAGES/$_BIN_DIR/*.rpm -y -q > /dev/null
+    };
+
+    rm -rf $_PATH_TO_PACKAGES
+
+    command -v gcsfuse >/dev/null 2>&1
+    _IS_GCSFUSE_INSTALLED=$?
+    if [ $_IS_GCSFUSE_INSTALLED -ne 0 ]; then
+        echo "Local installation gcsfuse failed"
+        exit 1
+    fi
+
+    echo "Done with packages installation"
+}
+
 _FUSE_TYPE=gcsfuse
 _FUSE_BIN=/usr/bin/gcsfuse
 
@@ -69,11 +120,17 @@ fi
 
 echo "$_FUSE_TYPE is NOT installed, proceeding with installation from package repository"
 
-install_from_package_repository
-_IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
-if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
-    echo "${_FUSE_TYPE} installed from package repository"
-else
-    echo "${_FUSE_TYPE} installation from package repository failed"
-    exit 1
+_DISTR_URL_PATH="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/gcsfuse/gcsfuse.tar"
+
+local_package_install $_DISTR_URL_PATH
+if [ $? -ne 0 ]; then
+    install_from_package_repository
+    _IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
+    if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
+        echo "${_FUSE_TYPE} installed from package repository"
+    else
+        echo "${_FUSE_TYPE} installation from package repository failed"
+        exit 1
+    fi
 fi
+echo "${_FUSE_TYPE} installed from local repository"
