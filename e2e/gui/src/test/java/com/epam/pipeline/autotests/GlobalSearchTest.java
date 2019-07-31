@@ -36,7 +36,7 @@ public class GlobalSearchTest extends AbstractBfxPipelineTest implements Navigat
     private final String defaultGroup = C.DEFAULT_GROUP;
     private final String testingTool = C.TESTING_TOOL_NAME;
 
-    private final String title = "testIssue";
+    private final String title = "testIssue" + Utils.randomSuffix();
     private final String description = "testIssueDescription";
 
     @BeforeClass

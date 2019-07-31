@@ -81,6 +81,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
         new StorageRulesTabAO(getPipelineName())
                 .runPipeline()
                 .validateThereIsParameterOfType("result", pathToFile, ParameterType.OUTPUT,true)
+                .waitUntilLaunchButtonAppear()
                 .launchAndWaitUntilFinished(this);
     }
 

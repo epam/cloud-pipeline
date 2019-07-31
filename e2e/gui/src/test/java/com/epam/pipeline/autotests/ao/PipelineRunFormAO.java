@@ -30,6 +30,7 @@ import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.tagName;
@@ -201,6 +202,17 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         launch();
         test.setRunId(Utils.getToolRunId(toolSelfName));
         return new RunsMenuAO();
+    }
+
+    public PipelineRunFormAO waitUntilLaunchButtonAppear() {
+        for (int i = 0; i < 3; i++) {
+            refresh();
+            if ($(button("Launch")).isEnabled()) {
+                break;
+            }
+            sleep(1, SECONDS);
+        }
+        return this;
     }
 
     /**

@@ -76,6 +76,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             .saveAndCommitWithMessage("test: Add required output parameter named result")
             .runPipeline()
             .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
+            .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);
     }
 
