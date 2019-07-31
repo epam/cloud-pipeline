@@ -932,6 +932,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
+      !this.state.autoScaledCluster &&
+      !this.state.launchCluster &&
       !this.state.autoPause) {
       payload.nonPause = true;
     }
@@ -3024,7 +3026,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.disableAutoPauseEnabled) {
       const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
         this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
-      if (!isSpot) {
+      const {
+        autoScaledCluster,
+        launchCluster
+      } = this.state;
+      if (!isSpot && !autoScaledCluster && !launchCluster) {
         const onChange = (e) => {
           this.setState({
             autoPause: e.target.checked
