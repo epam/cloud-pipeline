@@ -688,38 +688,38 @@ def storage():
 
 @storage.command(name='create')
 @click.option('-n', '--name', required=True,
-              help='Name of the new storage',  prompt='Name of the new storage',)
+              help='Name (alias) of the new object storage',  prompt='Name (alias) of the new object storage',)
 @click.option('-d', '--description', default='', show_default=False,
-              prompt='Write down some description of this datastorage',
-              help='Description of the datastorage')
+              prompt='Write down some description of this storage',
+              help='Description of the object storage')
 @click.option('-sts', '--short_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the short term storage?',
+              prompt='How many days data in this datastorage will be stored in the short term storage?',
               help='Number of days for storing data in the short term storage')
 @click.option('-lts', '--long_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the long term storage?',
+              prompt='How many days data in this datastorage will be stored in the long term storage?',
               help='Number of days for storing data in the long term storage')
 @click.option('-v', '--versioning', default=False, show_default=False, is_flag=True,
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration',  default='', show_default=False,
-              prompt='How many days backups of the bucket will be stored?',
-              help='Number of days for storing backups of the bucket')
+              prompt='How many days backups of the datastorage will be stored?',
+              help='Number of days for storing backups of the datastorage')
 @click.option('-t', '--type',  default='S3',
-              prompt='Type of the cloud for datastorage',
-              help='type of the cloud for datastorage')
+              prompt='Type of the Cloud for the storage',
+              help='Type of the Cloud for the storage')
 @click.option('-f', '--parent_folder',  default='', show_default=False,
-              prompt='Name of the folder which will contain this datastorage, nothing for root of the hierarchy',
-              help='Name of the folder which will contain this datastorage')
+              prompt='Name/ID of the folder which will contain this object storage, nothing - for root of the hierarchy',
+              help='Name/ID of the folder which will contain this object storage')
 @click.option('-c', '--on_cloud',
-              prompt='Do you want to create this storage on a cloud?',
-              help='Create bucket on a cloud', default=False, is_flag=True)
-@click.option('-p', '--path', default='', help='The name of the new bucket.',
-              prompt='The name of the new bucket.')
-@click.option('-r', '--region_id', default='default', help='Cloud region id where storage shall be created. ',
-              prompt='Cloud region id where storage shall be created.')
+              prompt='Do you want to create this storage on the Cloud?',
+              help='Create datastorage on the Cloud', default=False, is_flag=True)
+@click.option('-p', '--path', default='', help='Datastorage path',
+              prompt='Datastorage path')
+@click.option('-r', '--region_id', default='default', help='Cloud Region ID where the datastorage shall be created',
+              prompt='Cloud Region ID where the datastorage shall be created')
 @Config.validate_access_token
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
-    """Creates a new datastorage
+    """Creates a new object storage
     """
     DataStorageOperations.save_data_storage(name, description, short_term_storage, long_term_storage, versioning,
                                             backup_duration, type, parent_folder, on_cloud, path, region_id)
@@ -727,34 +727,34 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 
 @storage.command(name='delete')
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
-@click.option('-c', '--on_cloud', help='Delete bucket on a cloud', is_flag=True)
+@click.option('-c', '--on_cloud', help='Delete a datastorage from the Cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @Config.validate_access_token
 def delete(name, on_cloud, yes):
-    """Deletes a datastorage
+    """Deletes an object storage
     """
     DataStorageOperations.delete(name, on_cloud, yes)
 
 
 @storage.command(name='policy')
-@click.option('-n', '--name', required=True, help='Name of the storage to update the policy of')
+@click.option('-n', '--name', required=True, help='Name/path of the storage to update the policy')
 @click.option('-sts', '--short_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the short term storage? (Empty means deletion of the current rule)',
+              prompt='How many days data in this datastorage will be stored in the short term storage? (Empty means deletion of the current rule)',
               help='Number of days for storing data in the short term storage')
 @click.option('-lts', '--long_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the long term storage? (Empty means for deletion of the current rule)',
+              prompt='How many days data in this datastorage will be stored in the long term storage? (Empty means deletion of the current rule)',
               help='Number of days for storing data in the long term storage')
 @click.option('-v', '--versioning', default=False, show_default=False, is_flag=True,
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
-@click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the bucket')
+@click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the datastorage')
 @Config.validate_access_token
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
-    """Update the policy of the given datastorage
+    """Updates the policy of the datastorage
     """
     if not backup_duration and versioning:
         backup_duration = click.prompt(
-            "How many days backups of the bucket will be stored? (Empty means deletion of the current rule)",
+            "How many days backups of the datastorage will be stored? (Empty means deletion of the current rule)",
             default="")
     DataStorageOperations.policy(name, short_term_storage, long_term_storage, backup_duration, versioning)
 
@@ -763,7 +763,7 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
 def mvtodir(name, directory):
-    """Moves a datastorage to a new parent folder
+    """Moves an object storage to a new parent folder
     """
     DataStorageOperations.mvtodir(name, directory)
 
@@ -786,7 +786,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 @click.argument('folders', required=True, nargs=-1)
 @Config.validate_access_token
 def storage_mk_dir(folders):
-    """ Creates a directory in a datastorage
+    """ Creates a directory in a storage
     """
     DataStorageOperations.storage_mk_dir(folders)
 
@@ -794,8 +794,8 @@ def storage_mk_dir(folders):
 @storage.command('rm')
 @click.argument('path', required=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
-@click.option('-v', '--version', required=False, help='Delete a specified version of object')
-@click.option('-d', '--hard-delete', is_flag=True, help='Completely delete a path form bucket')
+@click.option('-v', '--version', required=False, help='Delete a specified version of an object')
+@click.option('-d', '--hard-delete', is_flag=True, help='Completely delete a path from the storage')
 @click.option('-r', '--recursive', is_flag=True, help='Recursive deletion (required for deleting folders)')
 @click.option('-e', '--exclude', required=False, multiple=True,
               help='Exclude all files matching this pattern from processing')
@@ -823,10 +823,10 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
-                                                                  "be overwritten.")
-@click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
-                                                        "should be tub delimited and consist of two columns: "
-                                                        "relative path to file and size.")
+                                                                  "be overwritten")
+@click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be moved. This file "
+                                                        "should be tab delimited and consist of two columns: "
+                                                        "relative path to a file and size")
 @click.option('-sl', '--symlinks', required=False, default="follow",
               type=click.Choice(['follow', 'filter', 'skip']),
               help="Describe symlinks processing strategy for local sources. Possible values: "
@@ -836,8 +836,8 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks):
-    """ Moves file or folder from one datastorage to another one
-    or between local filesystem and a datastorage (in both directions)
+    """ Moves a file or a folder from one datastorage to another one
+    or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, clean=True, skip_existing=skip_existing)
@@ -859,9 +859,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
                                                                   "be overwritten.")
-@click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
-                                                        "should be tub delimited and consist of two columns: "
-                                                        "relative path to file and size.")
+@click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be copied. This file "
+                                                        "should be tab delimited and consist of two columns: "
+                                                        "relative path to a file and size")
 @click.option('-sl', '--symlinks', required=False, default="follow",
               type=click.Choice(['follow', 'filter', 'skip']),
               help="Describe symlinks processing strategy for local sources. Possible values: "
@@ -872,7 +872,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
                       symlinks):
     """ Copies files from one datastorage to another one
-    or between local filesystem and a datastorage (in both directions)
+    or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
@@ -893,24 +893,29 @@ def storage_restore_item(path, version):
 @storage.command('set-object-tags')
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Set tags for a specified version')
 @Config.validate_access_token
 def storage_set_object_tags(path, tags, version):
-    """ Sets tags for a specified object
-        - path - full path to an object in data storage starting with 'cp://' scheme
-        - tags - specified as single KEY=VALUE pair or a list of them
-        - If a specific tag key already exists for an object - it will be overwritten
+    """ Sets tags for a specified object.\n
+        If a specific tag key already exists for an object - it will
+        be overwritten.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
+        - TAGS: specified as single KEY=VALUE pair or a list of them
     """
     DataStorageOperations.set_object_tags(path, tags, version)
 
 
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Get tags for a specified version')
 @Config.validate_access_token
 def storage_get_object_tags(path, version):
-    """ Gets tags for a specified object
-        - path - full path to an object in data storage starting with 'cp://' scheme
+    """ Gets tags for a specified object.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
     """
     DataStorageOperations.get_object_tags(path, version)
 
@@ -918,12 +923,14 @@ def storage_get_object_tags(path, version):
 @storage.command('delete-object-tags')
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Delete tags for a specified version')
 @Config.validate_access_token
 def storage_delete_object_tags(path, tags, version):
-    """ Sets tags for a specified object
-        - path - full path to an object in data storage starting with 'cp://' scheme
-        - tags - list of tags to delete
+    """ Deletes tags for a specified object.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
+        - TAGS: list of the file tag KEYs to delete
     """
     DataStorageOperations.delete_object_tags(path, tags, version)
 
@@ -938,7 +945,8 @@ def storage_delete_object_tags(path, tags, version):
 )
 @Config.validate_access_token
 def view_acl(identifier, object_type):
-    """ View object permissions
+    """ View object permissions.\n
+    - IDENTIFIER: defines name or id of an object
     """
     ACLOperations.view_acl(identifier, object_type)
 
@@ -952,13 +960,14 @@ def view_acl(identifier, object_type):
     type=click.Choice(['pipeline', 'folder', 'data_storage'])
 )
 @click.option('-s', '--sid', help='User or group name', required=True)
-@click.option('-g', '--group', help='Group', is_flag=True)
+@click.option('-g', '--group', help='Group flag', is_flag=True)
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
 @Config.validate_access_token
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
-    """ Set object permissions
+    """ Set object permissions.\n
+    - IDENTIFIER: defines name or id of an object
     """
     ACLOperations.set_acl(identifier, object_type, sid, group, allow, deny, inherit)
 
@@ -976,13 +985,14 @@ def tag():
 @click.argument('data', required=True, nargs=-1)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
-    """ Sets tags for a specified object.
+    """ Sets tags for a specified object. If a specific tag key already
+    exists for an object - it will be overwritten\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
-    configuration
-    - ENTITY_ID: defines name or id of an object of a specified class
-    - DATA: defines a list of tags to set. Can be specified as a single "KEY"="VALUE" pair or a list of them.
-    If a specific tag key already exists for an object - it will be overwritten
+    configuration\n
+    - ENTITY_ID: defines name or id of an object of a specified class\n
+    - DATA: defines a list of tags to set. Can be specified as a single
+    "KEY"="VALUE" pair or a list of them
     """
     MetadataOperations.set_metadata(entity_class, entity_id, data)
 
@@ -992,10 +1002,10 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_id', required=True)
 @Config.validate_access_token
 def get_tag(entity_class, entity_id):
-    """ Lists all tags for a specific object or list of objects.
+    """ Lists all tags for a specific object or list of objects.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
-    configuration
+    configuration\n
     - ENTITY_ID: defines name or id of an object of a specified class
     """
     MetadataOperations.get_metadata(entity_class, entity_id)
@@ -1010,8 +1020,8 @@ def delete_tag(entity_class, entity_id, keys):
     """ Deletes specified tags for a specified object.\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
-    configuration
-    - ENTITY_ID: defines name or id of an object of a specified class
+    configuration\n
+    - ENTITY_ID: defines name or id of an object of a specified class\n
     - KEYS: defines a list of attribute keys to delete
     """
     MetadataOperations.delete_metadata(entity_class, entity_id, keys)
@@ -1023,11 +1033,11 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('entity_name', required=True)
 @Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
-    """ Changes current owner to specified.
-    - USER_NAME: desired object owner
+    """ Changes current owner to specified.\n
+    - USER_NAME: desired object owner\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
-    configuration
+    configuration\n
     - ENTITY_NAME: defines name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
