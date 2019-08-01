@@ -416,6 +416,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         .find(byXpath(String.format(
                                 ".//td[contains(@class, 'user-management-form__user-name-column') and " +
                                         "contains(., '%s')]", login)))
+                        .closest(".ant-table-row-level-0")
                         .shouldBe(visible);
                 return new UserEntry(this, login, entry);
             }

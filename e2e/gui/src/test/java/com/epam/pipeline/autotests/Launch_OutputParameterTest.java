@@ -25,6 +25,8 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 
 public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunningTest {
@@ -58,7 +60,7 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
     @Test(dependsOnMethods = {"preparePipeline"})
     @TestCase(value = {"EPMCMBIBPC-362"})
     public void launchPipelineWithNewParameter() {
-        final String pathToFile = String.format("%s://%s/%s/%s", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
+        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_FOLDER,
                 getPipelineName());
         new PipelineCodeTabAO(getPipelineName())
             .runPipeline()
@@ -69,8 +71,8 @@ public class Launch_OutputParameterTest extends AbstractAutoRemovingPipelineRunn
 
     @Test(dependsOnMethods = {"launchPipelineWithNewParameter"})
     @TestCase(value = {"EPMCMBIBPC-362"})
-    public void shouldSaveOutputToTheStorage() throws InterruptedException {
-        Thread.sleep(6000);
+    public void shouldSaveOutputToTheStorage() {
+        sleep(6, SECONDS);
         final List<String> filesAndFolders = navigationMenu()
             .library()
             .selectStorage(storage)
