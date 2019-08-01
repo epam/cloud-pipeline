@@ -101,6 +101,14 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -s|--service \                                      # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
                 --keep-kubedm-proxies \                             # Allow (http/https/no)_proxy settings to be included in to kube-api manifest by kubeadm. If option is not set - variables will be dropped before the kubeadm init command and then restored
 
+                # Templates customization
+                -env CP_PREF_TEMPLATES_DIRECTORY_EXT \              # If defined, shall point to a directory with pipelines templates, which override the defaults (cloud-pipeline/workflows/pipe-templates)
+                -env CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT \        # If defined, shall point to a directory with folders templates (e.g. "Project" template), which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/folder-templates)
+                -env CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT \  # If defined, shall point to a directory with error pages templates, which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/error-pages)
+                -env CP_ERROR_REDIRECT_URL \                        # Allows to specify a custom value for the Cloud Pipeline main page redirection url to use in the error pages placeholders (default: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/)
+                -env CP_ERROR_PLATFORM_NAME \                       # Allows to specify a custom value for the deployment name to use in the error pages placeholders (default: $CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME from the install-config)
+                -env CP_ERROR_SUPPORT_EMAIL \                       # Allows to specify a custom value for the admins' support email to use in the error pages placeholders (default: $CP_DEFAULT_ADMIN_EMAIL from the install-config)
+
                 # Misc
                 -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME= \         # Name of the object storage, that is used to store system-level data (e.g. issues attachments)
                 -env CP_CLOUD_REGION_FILE_STORAGE_HOSTS= \

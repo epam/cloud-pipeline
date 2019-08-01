@@ -37,13 +37,16 @@ function is_dir_empty {
     return $result
 }
 
-function update_config_json_templates {
+function update_resources_templates {
     local templates_key="$1"
     local external_storage_var_name="$2"
     local search_pattern="${3:-"config.json"}"
     local properties_file="${4:-$CP_API_HOME/config/application.properties}"
 
     IFS="=" read -r param_key param_value <<< $(grep $templates_key < $properties_file)
+    # This is used to expand any variable name, that can be used in the application.properties file
+    param_value="$(envsubst <<< "$param_value")"
+    
     if [ -z "$param_key" ] || [ -z "$param_value" ] || [ ! -d "$param_value" ]; then
         echo "$templates_key cannot be retrieved from $properties_file or that location does not exist (\"$param_value\""
         return 1
@@ -157,6 +160,11 @@ if [ ! -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
     exit 1
 fi
 
+# Setup values for the error pages placeholders
+export CP_ERROR_REDIRECT_URL="${CP_ERROR_REDIRECT_URL:-https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/}"
+export CP_ERROR_PLATFORM_NAME="${CP_ERROR_PLATFORM_NAME:-$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME}"
+export CP_ERROR_SUPPORT_EMAIL="${CP_ERROR_SUPPORT_EMAIL:-$CP_DEFAULT_ADMIN_EMAIL}"
+
 
 mkdir -p $CP_API_HOME/keystore/
 
@@ -222,9 +230,10 @@ keytool  -import \
          -alias idp \
          -file $CP_IDP_CERT_DIR/idp-public-cert.pem
 
-# Update pipe/folder templates with any specific values (e.g. instance/vm size)
-update_config_json_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
-update_config_json_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
+# Update pipe/folder/error templates with any specific values (e.g. instance/vm size)
+update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
+update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
+update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
 
 # Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
