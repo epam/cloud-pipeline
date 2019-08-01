@@ -50,6 +50,10 @@ jobs:
       install: true
       language: java
       script:
+        # Previously pipe-cli:build and pipe-cli:buildLinux were executed in a single gradle command
+        # But this caused an invalid version set to the second one. See https://github.com/epam/cloud-pipeline/issues/561
+        # As a workaround - commands were divided into two calls for now
+        # FIXME: this shall be reviewed further to uncover the real causes of such a behavior
         - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:build --no-daemon
         - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon
         - tar -zcf cli-linux.tgz pipe-cli/dist
