@@ -67,7 +67,6 @@ import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStor
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata from '../../special/metadata/Metadata';
 import Issues from '../../special/issues/Issues';
-import EditableField from '../../special/EditableField';
 import {
   ContentIssuesMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -469,6 +468,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       this.closeEditStorageDialog();
       await this.props.folder.fetch();
+      await this.props.dataStorages.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!this._currentFolder.folder.parentId);
       }
@@ -671,6 +671,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       this.closeCreateStorageDialog();
       await this.props.folder.fetch();
+      await this.props.dataStorages.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
       }
