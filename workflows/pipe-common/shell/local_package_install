@@ -15,6 +15,7 @@
 # limitations under the License.
 
 _SOURCE=$1
+_PACKAGE_TO_CHECK=$2
 
 function check_installed {
       local _COMMAND_TO_CHECK=$1
@@ -52,6 +53,15 @@ check_installed "yum" && {
 };
 
 rm -rf $_PATH_TO_PACKAGES
+
+if [[ ! -z $_PACKAGE_TO_CHECK ]]; then
+    command -v $_PACKAGE_TO_CHECK >/dev/null 2>&1
+    _IS_ARCH_INSTALLED=$?
+    if [ $_IS_ARCH_INSTALLED -ne 0 ]; then
+        echo "Local installation of $_PACKAGE_TO_CHECK failed"
+        exit 1
+    fi
+fi
 
 echo "Done with packages installation"
 
