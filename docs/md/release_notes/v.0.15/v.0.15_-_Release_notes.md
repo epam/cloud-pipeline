@@ -23,6 +23,7 @@
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
 - [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
+- [Verification of docker/storage permissions when launching a run](#verification-of-dockerstorage-permissions-when-launching-a-run)
 
 ***
 
@@ -35,6 +36,10 @@
     - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
     - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipeline_user-and-role-entities-for-metadata-api)
     - [Getting logs from Kubernetes may cause `OutOfMemory` error](#getting-logs-from-kubernetes-may-cause-outofmemory-error)
+    - [Layout is broken for pipeline's versions table](#layout-is-broken-for-pipelines-versions-table)
+    - [AWS: Incorrect `nodeup` handling of spot request status](#aws-incorrect-nodeup-handling-of-spot-request-status)
+    - [Not handling clusters in `autopause` daemon](#not-handling-clusters-in-autopause-daemon)
+    - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
 
 ***
 
@@ -452,16 +457,33 @@ As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#
     - "Share with: ..." parameter, within a run log form, can be used for this  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
     - Specific users or whole groups can be set for sharing  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
     - Once this is set - other users will be able to access run's endpoints
     - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
 2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
 To open shared instance application user should click the service name.  
 To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
 
 For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
+
+## Verification of docker/storage permissions when launching a run
+
+Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding **permission** for that executable.  
+But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.
+
+In **`v0.15`** additional verification implemented that checks if:
+
+- `execution` is allowed for specified docker image;
+- `read` operations are allowed for **input** and **common** path parameters;
+- `write` operations are allowed for **output** path parameters.
+
+If there are such permission issues, run won't be launched and special warning notifications will be shown to a user, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_1.png)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_2.png)
+
+For more details see sections [6.2. Launch a pipeline](../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md), [7.2. Launch Detached Configuration](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md) and [10.5. Launch a Tool](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md).
 
 ***
 
@@ -524,3 +546,29 @@ Now a general user may list only personal `user-level` metadata. Administrators 
 
 For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause `OutOfMemory` error, since Kubernetes library tries to load it into a single String object.  
 In current version, a new system preference was introduced: **`system.logs.line.limit`**. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.
+
+### Layout is broken for pipeline's versions table
+
+[#553](https://github.com/epam/cloud-pipeline/issues/553)
+
+Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.
+
+### AWS: Incorrect `nodeup` handling of spot request status
+
+[#556](https://github.com/epam/cloud-pipeline/issues/556)
+
+Previously, in a situation when an `AWS` spot instance created after some timeout - spot status wasn't updated correctly in the handling of `spot request status`. It might cause errors while getting spot instance info.
+
+### Not handling clusters in `autopause` daemon
+
+[#557](https://github.com/epam/cloud-pipeline/issues/557)
+
+Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).
+In current version, `autopause` daemon doesn't handle any clusters ("Static" or "Autoscaled").  
+Also now, if the cluster is configured - **Auto pause** checkbox doesn't display in the **Launch Form** for the `On-Demand` node types.
+
+### Incorrect `pipe` CLI version displaying
+
+[#561](https://github.com/epam/cloud-pipeline/issues/561)
+
+Previously, `pipe` CLI version displayed incorrectly for the `pipe` CLI installations performed via hints from the **Cloud Pipeline** System Settings menu.
