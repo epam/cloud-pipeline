@@ -310,6 +310,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .waitUntilLaunchButtonAppear()
                 .launch(this);
 
         navigationMenu()
@@ -425,6 +426,7 @@ public class RoleModelTest
                 .shouldContainInCode(newFileContent)
                 .close()
                 .runPipeline()
+                .waitUntilLaunchButtonAppear()
                 .launch(this);
 
         navigationMenu()
