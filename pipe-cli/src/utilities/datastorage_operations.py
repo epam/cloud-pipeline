@@ -61,6 +61,7 @@ class DataStorageOperations(object):
             if not force and not destination_wrapper.is_empty(relative=relative):
                 click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
                 sys.exit(1)
+
             # append slashes to path to correctly determine file/folder type
             if not source_wrapper.is_file():
                 if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
@@ -69,16 +70,22 @@ class DataStorageOperations(object):
                     destination_wrapper.path = destination_wrapper.path + os.path.sep
                 if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
                     destination_wrapper.path = destination_wrapper.path + '/'
+
             # copying a file to a remote destination, we need to set folder/file flag correctly
             if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
                 destination_wrapper.is_file_flag = True
+
             command = 'mv' if clean else 'cp'
+            permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
                 size = item[3]
+                # check that we have corresponding permission for the file before take action
+                if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+                    continue
                 if not include and not exclude:
                     if source_wrapper.is_file() and not source_wrapper.path == full_path:
                         continue
