@@ -94,6 +94,9 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_SHARE_SRV_SAML_ID_TRAIL = \                 # SAML partner ID will for Share Service be constructed as {CP_SHARE_SRV_EXTERNAL_HOST}:{CP_SHARE_SRV_EXTERNAL_PORT} and this parameter 
                 -env CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS = \            # SAML claims that shall be used as ROLEs while parsing user info receinved from IDP
 
+                # EDGE Service
+                -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)
+
                 # Pipectl options
                 -m|--install-kube-master \                          # Install kuberneters master
                 -d|--docker \                                       # Limit images to be pushed during deployment
