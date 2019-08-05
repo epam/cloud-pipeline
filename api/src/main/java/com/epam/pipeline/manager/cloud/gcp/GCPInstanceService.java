@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -117,8 +118,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void startInstance(final GCPRegion region, final String instanceId) {
-        vmService.startInstance(region, instanceId);
+    public CloudInstanceOperationResult startInstance(final GCPRegion region, final String instanceId) {
+        return vmService.startInstance(region, instanceId);
     }
 
     @Override

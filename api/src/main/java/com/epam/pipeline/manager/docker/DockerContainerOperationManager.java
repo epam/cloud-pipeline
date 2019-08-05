@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -266,9 +267,14 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void resumeRun(PipelineRun run, List<String> endpoints) {
         try {
+            final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
+            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
+                    run.getInstance().getNodeId());
 
-            AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            cloudFacade.startInstance(cloudRegion.getId(), run.getInstance().getNodeId());
+            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                rollbackRunToPausedState(run, startInstanceResult);
+                return;
+            }
 
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
@@ -287,6 +293,16 @@ public class DockerContainerOperationManager {
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
+    }
+
+    private void rollbackRunToPausedState(final PipelineRun run,
+                                          final CloudInstanceOperationResult startInstanceResult) {
+        final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
+                startInstanceResult.getMessage());
+        addRunLog(run, msg, RESUME_RUN_TASK);
+        LOGGER.warn(msg);
+        run.setStatus(TaskStatus.PAUSED);
+        runManager.updatePipelineStatus(run);
     }
 
     private Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {

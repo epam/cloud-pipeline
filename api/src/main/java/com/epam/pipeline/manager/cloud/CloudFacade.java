@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -55,7 +56,7 @@ public interface CloudFacade {
 
     void stopInstance(Long regionId, String instanceId);
 
-    void startInstance(Long regionId, String instanceId);
+    CloudInstanceOperationResult startInstance(Long regionId, String instanceId);
 
     void terminateInstance(Long regionId, String instanceId);
 
