@@ -252,7 +252,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_PROVIDER=AZURE
 elif [[ $gcloud_header == *"Google"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
-    _CLOUD_REGION=${_CLOUD_INSTANCE_AZ::-2}
+    _CLOUD_REGION=${_CLOUD_INSTANCE_AZ}
     _CLOUD_INSTANCE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/name)
     _CLOUD_INSTANCE_TYPE=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
