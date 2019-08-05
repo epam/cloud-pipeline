@@ -492,7 +492,8 @@
 </blockquote>
 <p>Cloud Platform currently provides functionality to launch and access services on Cloud hosted calculation nodes. Launching a service takes up to several minutes depending on multiple factors. When work with service is done, instance is terminated and all the local data and environment (installed tools, settings) are completely lost. In order to store the data it should be uploaded to Cloud data storage before service termination, to save service environment user may user <strong>COMMIT</strong> option to update a service or create a new one, but for some use cases, e.g. script development in <em>RStudio</em>, these options may be inconvenient.</p>
 <p><strong>PAUSE</strong> and <strong>RESUME</strong> options allow to reduce time to start a service, have an option to store service state and to reduce expenses for idle services. Stopped instances cost less than running instances.<br />
-<strong><em>Note</em></strong>: pause/resume options are available only for on-demand instances. <strong>Price type</strong> can be set during Run configuration in the <strong>Advanced</strong> tab.</p>
+<strong><em>Note</em></strong>: pause/resume options are available only for on-demand instances. <strong>Price type</strong> can be set during Run configuration in the <strong>Advanced</strong> tab.<br />
+<strong><em>Note</em></strong>: you can't pause/resume cluster runs even with <strong>On-demand</strong> price type.  </p>
 <p><img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_1.png" /></p>
 <h2 id="pauseresume-run">Pause/resume run</h2>
 <ol>

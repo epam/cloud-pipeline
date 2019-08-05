@@ -507,13 +507,31 @@
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_01.png" /></li>
 <li>If you want to change settings, you shall click the arrow near the <strong>Run</strong> button → <strong>Custom settings</strong>.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_02.png" /></li>
-<li><strong>Launch tool</strong> page will be opened.<br />
+<li>
+<p><strong>Launch tool</strong> page will be opened.<br />
 <img alt="CP_LaunchTool" src="../attachments/LaunchTool_03.png" /><br />
 <strong><em>Note</em></strong>: if <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
-<img alt="CP_LaunchPipeline" src="../attachments/LaunchTool_23.png" /><br />
-    This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</li>
-<li>Define the parameters in the <strong>Exec environment</strong>, <strong>Advanced</strong> and <strong>Parameters</strong> tabs.</li>
-<li>Click the <strong>Launch</strong> button in the top-right corner of the screen.</li>
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_23.png" /><br />
+    This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</p>
+<blockquote>
+<p>Please note, this checkbox will not be displayed if any cluster is configured ("Static" or "Autoscaled").</p>
+</blockquote>
+</li>
+<li>
+<p>Define the parameters in the <strong>Exec environment</strong>, <strong>Advanced</strong> and <strong>Parameters</strong> tabs.</p>
+</li>
+<li>
+<p>Click the <strong>Launch</strong> button in the top-right corner of the screen.<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_24.png" /><br />
+    Please note, that the current user can launch a tool only if he/his group has corresponding permissions on that tool (for more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>), but the <strong>Launch</strong> button may be disabled also for one of the following reasons:</p>
+<ul>
+<li><code>execution</code> isn't allowed for specified docker image;</li>
+<li><code>read</code> operations aren't allowed for specified <strong>input</strong> or <strong>common</strong> path parameters;</li>
+<li><code>write</code> operations aren't allowed for specified <strong>output</strong> path parameters.</li>
+</ul>
+<p>In such cases, hover over the <strong>Launch</strong> button to view warning notification with a reason of a run forbiddance, e.g.:<br />
+<img alt="CP_LaunchTool" src="../../../release_notes/v.0.15/attachments/RN015_PermissionsVerification_2.png" />  </p>
+</li>
 </ol>
 <h2 id="launch-particular-tool-version">Launch particular Tool version</h2>
 <ol>

@@ -576,11 +576,11 @@
 <tbody>
 <tr>
 <td><strong>PAUSE/RESUME</strong></td>
-<td>Pauses/resumes a run. Available for <strong>on-demand</strong> instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#pauseresume-run">here</a>.</td>
+<td>Pauses/resumes a run. Available for <strong>On-demand</strong> non-cluster instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#pauseresume-run">here</a>.</td>
 </tr>
 <tr>
 <td><strong>TERMINATE</strong></td>
-<td>Terminates compute node of a paused run without its resuming. Available for <strong>on-demand</strong> instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#stopterminate-run">here</a>.</td>
+<td>Terminates compute node of a paused run without its resuming. Available for <strong>On-demand</strong> non-cluster instances only. Learn more about feature <a href="../11.1._Manage_runs_lifecycles/#stopterminate-run">here</a>.</td>
 </tr>
 <tr>
 <td><strong>STOP</strong></td>
@@ -600,7 +600,7 @@ If launched run uses a cluster or an auto-scaled cluster (see sections <a href="
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_35.png" /></p>
 <p>So, you can view an information about each child-run and its state, also you can stop specific nested run without stopping a parent run. You can open <strong>Run logs</strong> page (see <a href="#run-information-page">below</a>) for any of the cluster runs by click it or <strong>LOG</strong> button next to run ID.</p>
 <blockquote>
-<p><strong><em>Note</em></strong>: you can't pause cluster runs even with <em>"On-demand"</em> price type.<br />
+<p><strong><em>Note</em></strong>: you can't pause cluster runs even with <strong>On-demand</strong> price type.<br />
 <strong><em>Note</em></strong>: stopping a parent run will stop execution of all nested runs too.</p>
 </blockquote>
 <p>For runs with the <strong>auto-scaled cluster</strong> not all of the child-runs appear in the list immediately after parent run was launched, "scale-up" runs will appear only of necessity.</p>
@@ -778,15 +778,15 @@ Clicking a task and its console output will be loaded in the right panel.<br />
 <tbody>
 <tr>
 <td><strong>PAUSE</strong></td>
-<td>Allows to pause a run. (<em>only for On-demand runs</em>)</td>
+<td>Allows to pause a run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 <tr>
 <td><strong>RESUME</strong></td>
-<td>Allows to resume a paused run. (<em>only for On-demand runs</em>)</td>
+<td>Allows to resume a paused run (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 <tr>
 <td><strong>TERMINATE</strong></td>
-<td>Allows to terminate compute node of a paused run without resuming. (<em>only for On-demand runs</em>)</td>
+<td>Allows to terminate compute node of a paused run without resuming (<em>only for <strong>On-demand</strong> non-cluster runs</em>).</td>
 </tr>
 <tr>
 <td><strong>STOP</strong></td>

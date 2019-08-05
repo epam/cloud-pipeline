@@ -121,6 +121,8 @@
         
             <li><a class="toctree-l4" href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
         
+            <li><a class="toctree-l4" href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -551,6 +553,7 @@
 <li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 <li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
 <li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
+<li><a href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
 </ul>
 <hr />
 <ul>
@@ -563,6 +566,10 @@
 <li><a href="#cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</a></li>
 <li><a href="#acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a></li>
 <li><a href="#getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</a></li>
+<li><a href="#layout-is-broken-for-pipelines-versions-table">Layout is broken for pipeline's versions table</a></li>
+<li><a href="#aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</a></li>
+<li><a href="#not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</a></li>
+<li><a href="#incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</a></li>
 </ul>
 </li>
 </ul>
@@ -879,18 +886,31 @@ Password of the user1 user:
 <li>"Share with: ..." parameter, within a run log form, can be used for this<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_1.png" /></li>
 <li>Specific users or whole groups can be set for sharing<br />
-<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_2.png" /></li>
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_2.png" /></li>
 <li>Once this is set - other users will be able to access run's endpoints</li>
 <li>Also you can share SSH access to the running instance via setting "<strong>Enable SSH connection</strong>" checkbox<br />
-<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_3.png" /></li>
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_3.png" /></li>
 </ul>
 </li>
 <li><strong>SERVICES</strong> widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.<br />
 To open shared instance application user should click the service name.<br />
 To get SSH-access to the shared instance user should hover over service "card" and click the <strong>SSH</strong> hyperlink<br />
-<img alt="CP_v.0.13_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
 </ol>
 <p>For more information about runs sharing see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users or groups of users</a>.</p>
+<h2 id="verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</h2>
+<p>Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding <strong>permission</strong> for that executable.<br />
+But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.</p>
+<p>In <strong><code>v0.15</code></strong> additional verification implemented that checks if:</p>
+<ul>
+<li><code>execution</code> is allowed for specified docker image;</li>
+<li><code>read</code> operations are allowed for <strong>input</strong> and <strong>common</strong> path parameters;</li>
+<li><code>write</code> operations are allowed for <strong>output</strong> path parameters.</li>
+</ul>
+<p>If there are such permission issues, run won't be launched and special warning notifications will be shown to a user, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_1.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_2.png" /></p>
+<p>For more details see sections <a href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a>, <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached Configuration</a> and <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
@@ -925,6 +945,20 @@ To get SSH-access to the shared instance user should hover over service "card" a
 <p><a href="https://github.com/epam/cloud-pipeline/issues/468">#468</a></p>
 <p>For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause <code>OutOfMemory</code> error, since Kubernetes library tries to load it into a single String object.<br />
 In current version, a new system preference was introduced: <strong><code>system.logs.line.limit</code></strong>. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.</p>
+<h3 id="layout-is-broken-for-pipelines-versions-table">Layout is broken for pipeline's versions table</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a></p>
+<p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.</p>
+<h3 id="aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/556">#556</a></p>
+<p>Previously, in a situation when an <code>AWS</code> spot instance created after some timeout - spot status wasn't updated correctly in the handling of <code>spot request status</code>. It might cause errors while getting spot instance info.</p>
+<h3 id="not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/557">#557</a></p>
+<p>Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).
+In current version, <code>autopause</code> daemon doesn't handle any clusters ("Static" or "Autoscaled").<br />
+Also now, if the cluster is configured - <strong>Auto pause</strong> checkbox doesn't display in the <strong>Launch Form</strong> for the <code>On-Demand</code> node types.</p>
+<h3 id="incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/561">#561</a></p>
+<p>Previously, <code>pipe</code> CLI version displayed incorrectly for the <code>pipe</code> CLI installations performed via hints from the <strong>Cloud Pipeline</strong> System Settings menu.</p>
               
             </div>
           </div>

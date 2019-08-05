@@ -485,14 +485,32 @@
 <ol>
 <li>Select a pipeline in the "<strong>Library</strong>" menu (<a href="../../03_Overview/3._Overview/#library">3. Overview</a>).</li>
 <li>Select a pipeline version to run.</li>
-<li>Click the <strong>Run</strong> button. Launch pipeline page will open.<br />
+<li>
+<p>Click the <strong>Run</strong> button. Launch pipeline page will open.<br />
 <img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_1.png" /><br />
     Feel free to change settings of run configuration if you need to. See an example of editing configuration <a href="../6.1._Create_and_configure_pipeline/#edit-pipeline-configuration-optional">here</a>.<br />
 <strong><em>Note</em></strong>: if <strong>Price type</strong> is set as "<em>On-demand</em>" - at the <strong>Launch page</strong>, an additional checkbox <strong>Auto pause</strong> appears:<br />
 <img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_4.png" /><br />
-    This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</li>
-<li>Click <strong>Launch</strong>.<br />
-<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_2.png" /></li>
+    This checkbox allows to enable automatic pausing on-demand instance if it is not used. Such behavior could be controlled by Administrators using a set of parameters at System Preferences (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a>).</p>
+<blockquote>
+<p>Please note, this checkbox will not be displayed if any cluster is configured ("Static" or "Autoscaled").</p>
+</blockquote>
+</li>
+<li>
+<p>Click <strong>Launch</strong>.<br />
+<img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_2.png" /><br />
+    Please note, that the current user can launch a pipeline only if he/his group has corresponding permissions on that pipeline (for more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>), but the <strong>Launch</strong> button may be disabled also for one of the following reasons:</p>
+<ul>
+<li><code>execution</code> isn't allowed for specified docker image;</li>
+<li><code>read</code> operations aren't allowed for specified <strong>input</strong> or <strong>common</strong> path parameters;</li>
+<li><code>write</code> operations aren't allowed for specified <strong>output</strong> path parameters.</li>
+</ul>
+<p>In such cases, hover over the <strong>Launch</strong> button to view warning notification with a reason of a run forbiddance, e.g.:<br />
+<img alt="CP_LaunchPipeline" src="../../../release_notes/v.0.15/attachments/RN015_PermissionsVerification_2.png" /></p>
+</li>
+<li>
+<p>Confirm launch in an appeared popup.</p>
+</li>
 <li>You'll be redirected to the <strong>"Runs"</strong> area. Here you'll find your pipeline running. You can monitor status of your run and see additional information (see <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>).<br />
 <img alt="CP_LaunchPipeline" src="../attachments/LaunchPipeline_3.png" /><br />
 <strong><em>Note</em></strong>: after some initialization time, a new node will appear in the "<strong>Cluster nodes</strong>" tab. See <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage Cluster nodes</a>.</li>

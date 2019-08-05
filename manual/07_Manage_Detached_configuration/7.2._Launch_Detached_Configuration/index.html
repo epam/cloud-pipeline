@@ -500,12 +500,24 @@
 <h2 id="launch-detached-cluster-configuration-as-a-cluster">Launch detached cluster configuration as a cluster</h2>
 <ol>
 <li>Navigate to <strong>Detached Configuration</strong> details page.</li>
-<li>Click <strong>Run → Run cluster</strong>. All the Run configurations of the Detached configuration will start execution.<br />
+<li>
+<p>Click <strong>Run → Run cluster</strong>. All the Run configurations of the Detached configuration will start execution.<br />
 <img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_1.png" /><br />
-<strong><em>Note</em></strong>: Select <strong>Run selected</strong> to launch only the opened Run configuration.</li>
-<li>In case of launching <strong>Root entity configuration</strong>, a pop-up window emerges. Select an appropriate metadata in correspondence with <strong>root entity</strong>. If root entity is an attribute of the selected metadata, use <a href="../7.3._Expansion_Expressions/">expansion expression</a> in the <strong>Define expression field</strong>.<br />
+<strong><em>Note</em></strong>: Select <strong>Run selected</strong> to launch only the opened Run configuration.</p>
+<p>Please note, that the current user can launch a detached configuration only if he/his group has corresponding permissions on that configuration (for more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>), but the <strong>Run</strong> button may be disabled also for one of the following reasons:</p>
+<ul>
+<li><code>execution</code> isn't allowed for specified docker image;</li>
+<li><code>read</code> operations aren't allowed for specified <strong>input</strong> or <strong>common</strong> path parameters;</li>
+<li><code>write</code> operations aren't allowed for specified <strong>output</strong> path parameters.</li>
+</ul>
+<p>In such cases, hover over the <strong>Run</strong> button to view warning notification with a reason of a run forbiddance, e.g.:<br />
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_3.png" /></p>
+</li>
+<li>
+<p>In case of launching <strong>Root entity configuration</strong>, a pop-up window emerges. Select an appropriate metadata in correspondence with <strong>root entity</strong>. If root entity is an attribute of the selected metadata, use <a href="../7.3._Expansion_Expressions/">expansion expression</a> in the <strong>Define expression field</strong>.<br />
     Click <strong>OK</strong>.<br />
-<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_2.png" /></li>
+<img alt="CP_LaunchDetachedConfiguration" src="../attachments/LaunchDetachedConfiguration_2.png" /></p>
+</li>
 </ol>
               
             </div>
