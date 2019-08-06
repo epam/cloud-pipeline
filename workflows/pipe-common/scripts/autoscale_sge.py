@@ -149,8 +149,8 @@ class GridEngineJob:
 
 
 class GridEngine:
-    _MAIN_Q = 'main.q'
-    _PARALLEL_ENVIRONMENT = 'local'
+    _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    _PARALLEL_ENVIRONMENT = os.getenv('CP_CAP_SGE_PE_NAME', 'local')
     _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -sp %s | grep "^slots" | awk \'{print $2}\''
