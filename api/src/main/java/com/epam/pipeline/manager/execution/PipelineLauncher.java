@@ -106,6 +106,12 @@ public class PipelineLauncher {
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
             List<String> endpoints, String nodeIdLabel, boolean useLaunch, String pipelineId, String clusterId) {
+        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId, true);
+    }
+
+    public String launch(PipelineRun run, PipelineConfiguration configuration,
+                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
+                         String pipelineId, String clusterId, boolean pullImage) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         Map<SystemParams, String> systemParams = matchSystemParams(
@@ -128,7 +134,7 @@ public class PipelineLauncher {
                 : pipelineCommand;
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, pullImage);
         return pipelineCommand;
     }
 
