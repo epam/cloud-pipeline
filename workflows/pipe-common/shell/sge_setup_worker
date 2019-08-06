@@ -160,6 +160,7 @@ pipe_log_info "Installing SGE worker" "$SGE_WORKER_SETUP_TASK"
 
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
+export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 
 IFS='@' read -r -a owner_info <<< "$OWNER"
 OWNER_NAME="${owner_info[0]}"
@@ -252,12 +253,13 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 fi
 
 pipe_log_info "Adding worker node to SGE cluster" "$SGE_WORKER_SETUP_TASK"
-add_worker main.q "$(nproc)" $MASTER_NAME
+add_worker "$CP_CAP_SGE_QUEUE_NAME" "$(nproc)" $MASTER_NAME
 check_last_exit_code $? "Host was added as a worker to the SGE cluster" "Fail to add SGE worker host"
 
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK"
