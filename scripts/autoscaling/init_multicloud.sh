@@ -250,6 +250,10 @@ elif [[ $cloud == *"Microsoft"* ]]; then
         _CLOUD_INSTANCE_IMAGE_ID=""
     fi
     _CLOUD_PROVIDER=AZURE
+
+
+    crontab -l | { cat ; echo -e "* * * * * curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep Preempt && kubectl label node $(hostname) preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf' \n* * * * * sleep 20 && curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep Preempt && kubectl label node $(hostname) preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf' \n* * * * * sleep 40 && curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep Preempt && kubectl label node $(hostname) preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf'" ; } | crontab -
+
 elif [[ $gcloud_header == *"Google"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
     _CLOUD_REGION=${_CLOUD_INSTANCE_AZ}

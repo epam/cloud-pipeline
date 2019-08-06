@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
@@ -78,6 +79,8 @@ public class AzureVMService {
 
     private final MessageHelper messageHelper;
 
+    private final NodesManager nodesManager;
+
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
         return CloudInstanceOperationResult.success(
@@ -124,7 +127,7 @@ public class AzureVMService {
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
         final Optional<String> scaleSetName = getScaleSetName(vmName);
         return scaleSetName.isPresent()
-                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get())
+                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get(), vmName)
                 : fetchFailingStatusFromVm(region, vmName);
     }
 
@@ -175,10 +178,16 @@ public class AzureVMService {
     }
 
     private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
-                                                                        final String scaleSetName) {
+                                                                        final String scaleSetName,
+                                                                        final String nodeName) {
+
+        if (nodesManager.getNode(nodeName).getLabels().containsKey(PREEMPTED)) {
+            return Optional.of(SCALE_SET_FAILED_STATUS);
+        }
+
         final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
         if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
-            PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
+            final PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
             return scaleSetVMs.size() > 0
                     ? findFailedStatus(scaleSetVMs.get(0).instanceView().statuses())
                     : Optional.of(SCALE_SET_FAILED_STATUS);
