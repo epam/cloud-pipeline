@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -95,7 +96,7 @@ public class DataStorageApiService {
 
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
-    @AclMaskList
+    @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount() {
         return dataStorageManager.getDataStoragesWithShareMountObject();
     }
