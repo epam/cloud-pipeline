@@ -31,6 +31,7 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.index.IndexRequest;
 
@@ -128,7 +129,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(Instant.ofEpochMilli(blob.getUpdateTime()))));
         file.setVersion(null);
         file.setDeleteMarker(null);
-        final Map<String, String> labels = new HashMap<>(blob.getMetadata());
+        final Map<String, String> labels = new HashMap<>(MapUtils.emptyIfNull(blob.getMetadata()));
         final StorageClass storageClass = blob.getStorageClass();
         if (storageClass != null) {
             labels.put(ESConstants.STORAGE_CLASS_LABEL, storageClass.name());
