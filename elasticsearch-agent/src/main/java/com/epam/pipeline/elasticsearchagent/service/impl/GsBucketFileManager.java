@@ -73,7 +73,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     Iterable<Blob> getAllBlobsFromStorage(final AbstractDataStorage dataStorage,
                                           final TemporaryCredentials credentials) {
         final Storage googleStorage = getGoogleStorage(credentials);
-        final String bucketName = dataStorage.getName();
+        final String bucketName = dataStorage.getPath();
         return googleStorage.list(bucketName).iterateAll();
     }
 
