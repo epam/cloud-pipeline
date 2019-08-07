@@ -24,18 +24,6 @@ before_install:
 jobs:
   include:
     - stage: "Build"
-      name: "Tests"
-      addons:
-        postgresql: '9.6'
-      before_script:
-        - psql -c "CREATE DATABASE pipeline_test;" -U postgres
-        - psql -c "CREATE SCHEMA pipeline; ALTER ROLE postgres IN DATABASE pipeline_test SET search_path TO pipeline;" -U postgres -d pipeline_test
-      install: true
-      language: java
-      script: ./gradlew :api:test --no-daemon
-      if: tag IS present
-  
-    - stage: "Build"
       name: "Build GUI"
       install: true
       language: java
@@ -89,7 +77,7 @@ jobs:
         - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release fs-browser:build --no-daemon
       after_success:
         - aws s3 mv fs-browser/dist/fsbrowser-*.tar.gz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
-       
+
     - stage: "Deploy"
       name: "Pack jars and deploy"
       install:
@@ -105,6 +93,20 @@ jobs:
       language: java
       script:
         - bash deploy/travis/travis_publish_docs.sh
+
+    - stage: "Verify"
+      name: "Tests"
+      addons:
+        postgresql: '9.6'
+      before_script:
+        - psql -c "CREATE DATABASE pipeline_test;" -U postgres
+        - psql -c "CREATE SCHEMA pipeline; ALTER ROLE postgres IN DATABASE pipeline_test SET search_path TO pipeline;" -U postgres -d pipeline_test
+      install: true
+      language: java
+      script:
+        - ./gradlew :api:verify --no-daemon
+      after_script:
+        - aws s3 mv api/build/reports/ s3://cloud-pipeline-oss-builds/verify/${TRAVIS_BUILD_NUMBER}/ --recursive
 
 after_failure:
   - aws s3 rm s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER} --recursive
