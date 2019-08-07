@@ -104,7 +104,7 @@ jobs:
       install: true
       language: java
       script:
-        - ./gradlew :api:verify --no-daemon
+        - ./gradlew :api:check --no-daemon
       after_script:
         - aws s3 mv api/build/reports/ s3://cloud-pipeline-oss-builds/verify/${TRAVIS_BUILD_NUMBER}/ --recursive
 
