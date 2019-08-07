@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
+package com.epam.pipeline.manager.security.acl;
 
-import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.SecuredEntityDegate;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-/**
- * An entity, that represents a Data Storage and {@link FileShareMount} if it's exists for current data storage.
- */
-@Getter
-@Setter
-@AllArgsConstructor
-public class DataStorageWithShareMount implements SecuredEntityDegate {
-    private AbstractDataStorage storage;
-    private FileShareMount shareMount;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    @Override
-    public AbstractSecuredEntity getDelegate() {
-        return storage;
-    }
+@Inherited
+@Retention(RUNTIME)
+@Target(ElementType.METHOD)
+public @interface AclMaskDelegateList {
 }
