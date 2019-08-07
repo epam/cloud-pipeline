@@ -22,7 +22,7 @@ import java.util.Optional;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
-import com.epam.pipeline.entity.SecuredEntityDegate;
+import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -120,9 +120,9 @@ public class AclAspect {
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskDelegateList)",
             returning = "list")
     @Transactional(propagation = Propagation.REQUIRED)
-    public void setMaskForDelegateList(JoinPoint joinPoint, List<? extends SecuredEntityDegate> list) {
+    public void setMaskForDelegateList(JoinPoint joinPoint, List<? extends SecuredEntityDelegate> list) {
         ListUtils.emptyIfNull(list).forEach(delegate ->
-                Optional.ofNullable(delegate.getDelegate())
+                Optional.ofNullable(delegate.toDelegate())
                         .ifPresent(entity -> entity.setMask(
                                 permissionManager.getPermissionsMask(entity, true, true))));
     }
