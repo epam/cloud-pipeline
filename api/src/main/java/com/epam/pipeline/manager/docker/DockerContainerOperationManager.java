@@ -302,7 +302,9 @@ public class DockerContainerOperationManager {
         addRunLog(run, msg, RESUME_RUN_TASK);
         LOGGER.warn(msg);
         run.setStatus(TaskStatus.PAUSED);
-        runManager.updateStateReasonMessage(run, msg);
+        // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
+        // but would be passed to aspect and used for RunStatus update
+        run.setStateReasonMessage(msg);
         runManager.updatePipelineStatus(run);
     }
 
