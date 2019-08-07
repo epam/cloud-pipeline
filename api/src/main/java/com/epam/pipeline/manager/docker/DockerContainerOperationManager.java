@@ -131,9 +131,6 @@ public class DockerContainerOperationManager {
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
 
-    @Value("${launch.script.url}")
-    private String launchScriptUrl;
-
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(

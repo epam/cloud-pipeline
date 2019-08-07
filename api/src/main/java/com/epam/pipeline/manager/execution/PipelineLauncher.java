@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+
 @Service
 public class PipelineLauncher {
 
@@ -216,7 +217,9 @@ public class PipelineLauncher {
                 SystemPreferences.BASE_PIPE_DISTR_URL));
         systemParamsWithValue.put(SystemParams.PARENT, run.getPodId());
         systemParamsWithValue.put(SystemParams.PIPELINE_NAME,
-                run.getPipelineName().replaceAll("\\s+", ""));
+                Optional.ofNullable(run.getPipelineName())
+                        .orElse(PipelineRun.DEFAULT_PIPELINE_NAME)
+                        .replaceAll("\\s+", ""));
         systemParamsWithValue
                 .put(SystemParams.RUN_DATE, dateFormat.format(run.getStartDate()));
         systemParamsWithValue
