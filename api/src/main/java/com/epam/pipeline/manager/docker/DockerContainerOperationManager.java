@@ -264,6 +264,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
@@ -290,6 +291,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.RUNNING);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
