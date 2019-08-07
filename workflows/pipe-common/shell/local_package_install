@@ -14,23 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_SOURCE=$1
-_PACKAGE_TO_CHECK=$2
+_SOURCE="$1"
+_PACKAGE_TO_CHECK="$2"
 
 function check_installed {
-      local _COMMAND_TO_CHECK=$1
+      local _COMMAND_TO_CHECK="$1"
       command -v "$_COMMAND_TO_CHECK" >/dev/null 2>&1
       return $?
 }
 
 # This script will download archive with sources to be installed
 
-if [ -z $_SOURCE ]; then
-     echo "Env var SOURCE not found, no package will be installed"
+if [ -z "$_SOURCE" ]; then
+     echo "Parameter SOURCE is not specified, no package will be installed"
      exit 1
 fi
 
-_PATH_TO_PACKAGES=/tmp/localisntall
+_PATH_TO_PACKAGES=/tmp/localinstall
 _ARCH_NAME=$(basename "$_SOURCE")
 _BIN_DIR=${_ARCH_NAME%.*}
 
@@ -39,7 +39,7 @@ wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > 
 tar -xf "$_PATH_TO_PACKAGES/$_ARCH_NAME" -C $_PATH_TO_PACKAGES
 
 check_installed "dpkg" && check_installed "apt-get" && {
-    echo "Local installation deb packages"
+    echo "Local installation of the deb file(s): $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb"
     apt-get update
     export DEBIAN_FRONTEND=noninteractive
     dpkg -i $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb &> /dev/null
@@ -48,21 +48,18 @@ check_installed "dpkg" && check_installed "apt-get" && {
 };
 
 check_installed "yum" && {
-    echo "Local installation rpm packages"
+    echo "Local installation of the rpm file(s): $_PATH_TO_PACKAGES/$_BIN_DIR/*.rpm"
     yum localinstall $_PATH_TO_PACKAGES/$_BIN_DIR/*.rpm -y -q > /dev/null
 };
 
 rm -rf $_PATH_TO_PACKAGES
 
-if [[ ! -z $_PACKAGE_TO_CHECK ]]; then
+if [ "$_PACKAGE_TO_CHECK" ]; then
     command -v $_PACKAGE_TO_CHECK >/dev/null 2>&1
-    _IS_ARCH_INSTALLED=$?
-    if [ $_IS_ARCH_INSTALLED -ne 0 ]; then
+    if [ $? -ne 0 ]; then
         echo "Local installation of $_PACKAGE_TO_CHECK failed"
         exit 1
     fi
 fi
 
 echo "Done with packages installation"
-
-
