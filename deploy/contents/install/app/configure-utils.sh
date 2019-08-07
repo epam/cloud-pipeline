@@ -956,6 +956,8 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "S3_STORAGE": "cp-s3-storage",
     "AZ_BLOB_STORAGE": "cp-az-storage",
     "NFS_STORAGE": "cp-nfs-storage",
+    "GS_FILE": "cp-gs-file*",
+    "GS_STORAGE": "cp-gs-storage",
     "TOOL": "cp-tool",
     "TOOL_GROUP": "cp-tool-group",
     "DOCKER_REGISTRY": "cp-docker-registry",
