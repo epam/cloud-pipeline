@@ -136,7 +136,8 @@ public class AzureBlobManager implements ObjectStorageFileManager {
         file.setSize(blob.properties().contentLength());
         file.setChanged(ESConstants.FILE_DATE_FORMAT.format(Date.from(blob.properties().lastModified().toInstant())));
         if (blob.properties().accessTier() != null) {
-            file.setLabels(Collections.singletonMap("StorageClass",  blob.properties().accessTier().toString()));
+            file.setLabels(Collections.singletonMap(ESConstants.STORAGE_CLASS_LABEL,
+                    blob.properties().accessTier().toString()));
         }
         file.setTags(blob.metadata());
         return file;

@@ -26,6 +26,10 @@ public class GSBucketStorage extends AbstractDataStorage {
 
     private Long regionId;
 
+    public GSBucketStorage() {
+        setType(DataStorageType.GS);
+    }
+
     public GSBucketStorage(final Long id, final String name, final String path, final StoragePolicy policy,
                            final String mountPoint) {
         super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.GS, policy, mountPoint);
