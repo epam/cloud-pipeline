@@ -17,7 +17,7 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.SecuredEntityDegate;
+import com.epam.pipeline.entity.SecuredEntityDelegate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,12 +28,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class DataStorageWithShareMount implements SecuredEntityDegate {
+public class DataStorageWithShareMount implements SecuredEntityDelegate {
     private AbstractDataStorage storage;
     private FileShareMount shareMount;
 
     @Override
-    public AbstractSecuredEntity getDelegate() {
+    public AbstractSecuredEntity toDelegate() {
         return storage;
     }
 }

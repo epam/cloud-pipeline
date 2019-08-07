@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity;
 
-public interface SecuredEntityDegate {
-    AbstractSecuredEntity getDelegate();
+public interface SecuredEntityDelegate {
+
+    AbstractSecuredEntity toDelegate();
 }
