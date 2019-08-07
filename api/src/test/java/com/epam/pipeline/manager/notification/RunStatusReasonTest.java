@@ -43,7 +43,8 @@ import java.util.List;
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 public class RunStatusReasonTest extends AbstractManagerTest {
-    public static final String RESUME_RUN_FAILED = "Resume run failed.";
+
+    private static final String RESUME_RUN_FAILED_MESSAGE = "Could not resume run. Operation failed with message 'InsufficientInstanceCapacity'";
 
     @Autowired
     private PipelineRunManager pipelineRunManager;
@@ -68,27 +69,24 @@ public class RunStatusReasonTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChangedWithReason() {
-        PipelineRun run = TestUtils.createPipelineRun(null, null, TaskStatus.RUNNING, testOwner.getUserName(),
+        PipelineRun run = TestUtils.createPipelineRun(null, null, TaskStatus.PAUSED, testOwner.getUserName(),
                 null, null, true, null, null, "pod-id", 1L);
         pipelineRunDao.createPipelineRun(run);
-
-        run.setStatus(TaskStatus.PAUSED);
-        pipelineRunManager.updatePipelineStatus(run);
 
         run.setStatus(TaskStatus.RESUMING);
         pipelineRunManager.updatePipelineStatus(run);
 
         run.setStatus(TaskStatus.PAUSED);
+        pipelineRunManager.updateStateReasonMessage(run, RESUME_RUN_FAILED_MESSAGE);
         pipelineRunManager.updatePipelineStatus(run);
 
         List<RunStatus> runStatuses = runStatusManager.loadRunStatus(run.getId());
-        System.out.println(runStatuses.size());
         RunStatus runStatus = runStatuses.stream()
                 .max(Comparator.comparing(RunStatus::getTimestamp))
                 .orElse(null);
         Assert.assertNotNull(runStatus);
         Assert.assertEquals(TaskStatus.PAUSED, runStatus.getStatus());
-        Assert.assertEquals(RESUME_RUN_FAILED, runStatus.getReason());
+        Assert.assertEquals(RESUME_RUN_FAILED_MESSAGE, runStatus.getReason());
 
     }
 

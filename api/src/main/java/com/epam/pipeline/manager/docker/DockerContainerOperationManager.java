@@ -302,6 +302,7 @@ public class DockerContainerOperationManager {
         addRunLog(run, msg, RESUME_RUN_TASK);
         LOGGER.warn(msg);
         run.setStatus(TaskStatus.PAUSED);
+        runManager.updateStateReasonMessage(run, msg);
         runManager.updatePipelineStatus(run);
     }
 

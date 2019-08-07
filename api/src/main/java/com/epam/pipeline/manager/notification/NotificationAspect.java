@@ -18,12 +18,10 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
-import org.apache.commons.collections4.ListUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -32,8 +30,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-
-import java.util.Comparator;
 
 /**
  * This aspect controls sending notifications
@@ -74,7 +70,7 @@ public class NotificationAspect {
         final RunStatus newStatus = RunStatus.builder()
                 .runId(run.getId()).status(run.getStatus())
                 .timestamp(DateUtils.nowUTC())
-                .reason(getStatusReason(run))
+                .reason(run.getStateReasonMessage())
                 .build();
         runStatusManager.saveStatus(newStatus);
         if (run.isTerminating()) {
@@ -97,12 +93,5 @@ public class NotificationAspect {
         notificationManager.notifyRunStatusChanged(run);
     }
 
-    private String getStatusReason(final PipelineRun run) {
-        final TaskStatus prevStatus = ListUtils.emptyIfNull(runStatusManager.loadRunStatus(run.getId())).stream()
-                .max(Comparator.comparing(RunStatus::getTimestamp)).map(RunStatus::getStatus).orElse(null);
-        return run.getStatus() == TaskStatus.PAUSED && prevStatus == TaskStatus.RESUMING
-                ? RESUME_RUN_FAILED
-                : null;
-    }
 }
 
