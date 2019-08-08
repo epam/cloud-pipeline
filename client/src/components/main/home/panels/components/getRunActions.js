@@ -89,8 +89,9 @@ export default function (callbacks) {
         if (run.initialized && run.instance && run.instance.spot !== undefined && !run.instance.spot) {
           actions.push({
             title: 'RESUME',
-            icon: 'play-circle-o',
-            action: callbacks ? callbacks.resume : undefined
+            icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
+            action: callbacks ? callbacks.resume : undefined,
+            overlay: run.resumeFailureReason
           });
         }
         actions.push({
