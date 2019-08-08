@@ -832,6 +832,9 @@ install_pip_package PipelineCLI
 if [ -z "$GIT_REPO" ] ;
 then
       echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
 else
       # clone current pipeline repo
       clone_repository $GIT_REPO $SCRIPTS_DIR 3 10
@@ -942,27 +945,29 @@ echo
 ######################################################
 
 
-
-
-
-######################################################
-echo "Checking if remote data needs localizing"
-echo "-"
-######################################################
-LOCALIZATION_TASK_NAME="InputData"
-INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
-
-upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
-
-if [ $? -ne 0 ];
+if [ "$RESUMED_RUN" == true ];
 then
-    echo "Failed to upload input data"
-    exit 1
+    echo "Skipping data localization for resumed run"
+else
+    ######################################################
+    echo "Checking if remote data needs localizing"
+    echo "-"
+    ######################################################
+    LOCALIZATION_TASK_NAME="InputData"
+    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+
+    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+
+    if [ $? -ne 0 ];
+    then
+        echo "Failed to upload input data"
+        exit 1
+    fi
+    echo
+
+    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
 fi
-echo
-
-[ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
-
 echo "------"
 echo
 ######################################################

@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -124,8 +125,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public void startInstance(final AzureRegion region, final String instanceId) {
-        vmService.startInstance(region, instanceId);
+    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
+        return vmService.startInstance(region, instanceId);
     }
 
     @Override

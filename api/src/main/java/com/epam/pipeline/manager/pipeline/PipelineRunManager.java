@@ -102,7 +102,6 @@ public class PipelineRunManager {
 
     private static final int POD_ID_LENGTH = 63;
     private static final String EMPTY_STING = "";
-    private static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
@@ -236,7 +235,7 @@ public class PipelineRunManager {
         run.setId(runVO.getUseRunId());
         run.setStartDate(DateUtils.now());
         run.setStatus(TaskStatus.RUNNING);
-        run.setPipelineName(DEFAULT_PIPELINE_NAME);
+        run.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         run.setPodId(getRootPodIDFromTool(tool.getImage(), run.getId()));
         run.setDockerImage(configuration.getDockerImage());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
@@ -1221,7 +1220,7 @@ public class PipelineRunManager {
     }
 
     private void fillMissingPipelineFields(final PipelineRun restartedRun) {
-        restartedRun.setPipelineName(DEFAULT_PIPELINE_NAME);
+        restartedRun.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         restartedRun.setRepository(EMPTY_STING);
         restartedRun.setPipelineId(EMPTY_PIPELINE_ID);
         restartedRun.setVersion(EMPTY_STING);

@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -117,9 +118,9 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void startInstance(final AwsRegion region, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final AwsRegion region, final String instanceId) {
         log.debug("Starting AWS instance {}", instanceId);
-        ec2Helper.startInstance(instanceId, region.getRegionCode());
+        return ec2Helper.startInstance(instanceId, region.getRegionCode());
     }
 
     @Override

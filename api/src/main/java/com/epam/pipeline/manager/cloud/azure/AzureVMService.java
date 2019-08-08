@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.microsoft.azure.Page;
@@ -55,8 +56,11 @@ public class AzureVMService {
     private static final String RESOURCE_DELIMITER = "/";
     private final MessageHelper messageHelper;
 
-    public void startInstance(final AzureRegion region, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final AzureRegion region, final String instanceId) {

@@ -652,6 +652,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         static MapSqlParameterSource getParameters(PipelineRun run, Connection connection) {
             MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(RUN_ID.name(), run.getId());
+            params.addValue(PIPELINE_NAME.name(), run.getPipelineName());
             params.addValue(PIPELINE_ID.name(), run.getPipelineId());
             params.addValue(VERSION.name(), run.getVersion());
             params.addValue(START_DATE.name(), run.getStartDate());
