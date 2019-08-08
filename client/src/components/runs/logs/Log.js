@@ -64,6 +64,7 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
+import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1023,6 +1024,7 @@ class Logs extends localization.LocalizedReactComponent {
     let SwitchModeButton;
     let CommitStatusButton;
     let dockerImage;
+    let ResumeFailureReason;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -1105,9 +1107,13 @@ class Logs extends localization.LocalizedReactComponent {
         pipelineRunParameters,
         status,
         instance,
-        commitStatus
-      } = this.props.run.value;
+        commitStatus,
+        resumeFailureReason
+      } = mapResumeFailureReason(this.props.run.value);
       dockerImage = this.props.run.value.dockerImage;
+      ResumeFailureReason = resumeFailureReason
+        ? (<Alert type="warning" message={resumeFailureReason} />)
+        : null;
       const pipelineLink = pipeline
         ? (
           <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
@@ -1414,6 +1420,7 @@ class Logs extends localization.LocalizedReactComponent {
                   type="error" />
               </Row>
             }
+            {ResumeFailureReason}
             <Row>
               {Details}
             </Row>
