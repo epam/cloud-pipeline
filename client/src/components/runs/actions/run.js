@@ -28,6 +28,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
+import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
@@ -193,6 +194,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             cloudRegionId={payload.cloudRegionId}
             availableInstanceTypes={availableInstanceTypes}
             dataStorages={dataStorages}
+            parameters={payload.params}
             permissionErrors={permissionErrors}
             limitMounts={
               payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]
@@ -208,6 +210,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
           if (component) {
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
+            payload.hddSize = component.state.hddSize;
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
               if (limitMounts) {
@@ -281,6 +284,10 @@ export class RunConfirmation extends React.Component {
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
     onChangeLimitMounts: PropTypes.func,
+    onChangeHddSize: PropTypes.func,
+    nodeCount: PropTypes.number,
+    hddSize: PropTypes.number,
+    parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
   };
 
@@ -678,6 +685,12 @@ export class RunConfirmation extends React.Component {
             )
             : undefined
         }
+        <EstimatedDiskSizeWarning
+          nodeCount={this.props.nodeCount}
+          parameters={this.props.parameters}
+          hddSize={this.props.hddSize}
+          onDiskSizeChanged={this.props.onChangeHddSize}
+        />
       </div>
     );
   }
@@ -713,7 +726,9 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
+    onChangeHddSize: PropTypes.func,
     onChangeLimitMounts: PropTypes.func,
+    parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
   };
 
@@ -725,6 +740,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
 
   state = {
     isSpot: false,
+    hddSize: 0,
     instanceType: null,
     limitMounts: null
   };
@@ -735,7 +751,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }, async () => {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });
@@ -748,7 +764,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }, async () => {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });
@@ -760,6 +776,19 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       limitMounts
     }, async () => {
       this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(limitMounts);
+    });
+  };
+
+  onChangeHddSize = (hddSize) => {
+    this.setState({
+      hddSize
+    }, async () => {
+      await this._estimatedPriceType.send({
+        instanceType: this.state.instanceType,
+        instanceDisk: this.state.hddSize,
+        spot: this.state.isSpot,
+        regionId: this.props.cloudRegionId
+      });
     });
   };
 
@@ -780,6 +809,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             dataStorages={this.props.dataStorages}
             limitMounts={this.props.limitMounts}
             onChangeLimitMounts={this.onChangeLimitMounts}
+            onChangeHddSize={this.onChangeHddSize}
+            nodeCount={this.props.nodeCount}
+            hddSize={this.props.hddSize}
+            parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
           />
         </Row>
@@ -807,6 +840,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     this.setState({
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
+      hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts
     }, async () => {
       this._estimatedPriceType = new PipelineRunEstimatedPrice(
@@ -816,7 +850,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       );
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });

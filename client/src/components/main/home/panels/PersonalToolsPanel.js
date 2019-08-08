@@ -198,6 +198,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo.instanceType !== undefined) {
       payload.instanceType = this.state.runToolInfo.instanceType;
     }
+    if (this.state.runToolInfo.hddSize !== undefined) {
+      payload.hddSize = this.state.runToolInfo.hddSize;
+    }
     if (this.state.runToolInfo.limitMounts !== undefined) {
       if (!payload.params) {
         payload.params = {};
@@ -559,7 +562,9 @@ export default class PersonalToolsPanel extends React.Component {
         instanceType: runToolInfo.instanceType !== undefined
           ? runToolInfo.instanceType
           : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.payload.hddSize,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
         spot: isSpot,
         regionId: runToolInfo.payload.cloudRegionId
       });
@@ -577,7 +582,33 @@ export default class PersonalToolsPanel extends React.Component {
       const estimatedPriceRequest = new PipelineRunEstimatedPrice();
       await estimatedPriceRequest.send({
         instanceType: instanceType,
-        instanceDisk: runToolInfo.payload.hddSize,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
+        spot: runToolInfo.isSpot !== undefined
+          ? runToolInfo.isSpot
+          : runToolInfo.payload.isSpot,
+        regionId: runToolInfo.payload.cloudRegionId
+      });
+      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
+      this.setState({
+        runToolInfo
+      });
+    }
+  };
+
+  onChangeDiskSize = async (diskSize) => {
+    if (this.state.runToolInfo) {
+      const runToolInfo = this.state.runToolInfo;
+      runToolInfo.hddSize = diskSize;
+      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
+      await estimatedPriceRequest.send({
+        instanceType: runToolInfo.instanceType !== undefined
+          ? runToolInfo.instanceType
+          : runToolInfo.payload.instanceType,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
         spot: runToolInfo.isSpot !== undefined
           ? runToolInfo.isSpot
           : runToolInfo.payload.isSpot,
@@ -691,6 +722,10 @@ export default class PersonalToolsPanel extends React.Component {
                     : undefined
                 }
                 onChangeLimitMounts={this.onChangeLimitMounts}
+                onChangeHddSize={this.onChangeDiskSize}
+                nodeCount={+this.state.runToolInfo.payload.nodeCount || 0}
+                hddSize={this.state.runToolInfo.payload.hddSize}
+                parameters={this.state.runToolInfo.payload.params}
                 permissionErrors={this.state.runToolInfo.permissionErrors}
               />
           }
