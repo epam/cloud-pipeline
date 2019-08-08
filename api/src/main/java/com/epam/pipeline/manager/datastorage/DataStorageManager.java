@@ -602,7 +602,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private Collection<String> getRootPaths(final List<String> paths) {
         final Set<String> initialPaths = new HashSet<>(paths);
         final List<String> childPaths = initialPaths.stream()
-                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) && p.startsWith(path)))
+                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) &&
+                        p.startsWith(ProviderUtils.withTrailingDelimiter(path))))
                 .flatMap(Function.identity())
                 .collect(Collectors.toList());
         return CollectionUtils.subtract(initialPaths, childPaths);
@@ -628,15 +629,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
             final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
             Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
-                    String.format("The specified path %s has incorrect state. Expected path mask: %s",
-                            path, dataStorage.getPathMask()));
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_INVALID_SCHEMA, path,
+                            dataStorage.getPathMask()));
 
             pathDescription.setDataStorageId(dataStorage.getId());
             pathDescription.setSize(0L);
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    String.format("An error occurred during processing path '%s'. %s", path, e.getMessage()), e);
+            LOGGER.error(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCCESSING, path, e.getMessage()));
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
