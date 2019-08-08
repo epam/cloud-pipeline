@@ -129,6 +129,8 @@ public class SystemPreferences {
             "storage.transfer.pipeline.version", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
+    public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
+            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);

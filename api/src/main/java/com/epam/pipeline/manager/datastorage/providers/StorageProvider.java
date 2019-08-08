@@ -29,6 +29,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
@@ -87,4 +89,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     String buildFullStoragePath(T dataStorage, String name);
 
     String getDefaultMountOptions(T dataStorage);
+
+    PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
 }

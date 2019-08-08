@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -215,6 +216,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public String getDefaultMountOptions(S3bucketDataStorage dataStorage) {
         return "--dir-mode 0774 --file-mode 0774 -o rw -o allow_other -f --gid 0";
+    }
+
+    @Override
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getS3Helper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

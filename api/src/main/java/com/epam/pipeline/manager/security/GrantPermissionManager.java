@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
@@ -484,6 +485,12 @@ public class GrantPermissionManager {
             }
         }
         return true;
+    }
+
+    public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
+        return ListUtils.emptyIfNull(paths).stream()
+                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
+                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
     }
 
     public boolean checkStorageShared(Long storageId) {
