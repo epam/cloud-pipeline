@@ -635,6 +635,8 @@ class S3BucketOperations(object):
                 prefix = prefix + relative_path
             else:
                 prefix = prefix + delimiter + relative_path
+        if prefix.startswith(S3BucketOperations.S3_PATH_SEPARATOR):
+            prefix = prefix[1:]
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
         client = session.client('s3', config=S3BucketOperations.get_proxy_config())
@@ -651,7 +653,8 @@ class S3BucketOperations(object):
         }
 
         page_iterator = paginator.paginate(**operation_parameters)
-        if not prefix.endswith(cls.S3_PATH_SEPARATOR) and not storage_wrapper.path.endswith(cls.S3_PATH_SEPARATOR):
+        if not prefix.endswith(cls.S3_PATH_SEPARATOR) and not storage_wrapper.path.endswith(cls.S3_PATH_SEPARATOR) \
+                and storage_wrapper.path:
             prefix = storage_wrapper.path
         for page in page_iterator:
             if cls.check_prefix_existence_for_section(prefix, page, 'Contents', 'Key'):

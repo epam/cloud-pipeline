@@ -262,6 +262,13 @@ class AbstractListingManager:
                 return True
         return False
 
+    def item_exists(self, relative_path):
+        prefix = StorageOperations.get_prefix(relative_path)
+        for item in self.list_items(prefix, show_all=True):
+            if prefix.endswith(item.name):
+                return True
+        return False
+
     @abstractmethod
     def get_file_tags(self, relative_path):
         pass

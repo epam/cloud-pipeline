@@ -217,6 +217,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
         self.bucket = bucket
         self.is_file_flag = False
         self.exists_flag = False
+        self.is_root = path == '' or path is None or path == "/"
         # case when the root bucket folder is passed
         if len(path) == 0 and self.bucket.identifier:
             self.exists_flag = True
@@ -241,7 +242,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
             path = self.path.rstrip(delimiter) + delimiter + relative
         else:
             path = self.path
-        return not self.get_list_manager().folder_exists(path)
+        return not self.get_list_manager().item_exists(path)
 
     @abstractmethod
     def get_type(self):
@@ -282,7 +283,7 @@ class S3BucketWrapper(CloudDataStorageWrapper):
             return True
         if self.is_file():
             return False
-        if not self.is_empty_flag and relative:
+        if not self.is_empty_flag and relative or self.is_root:
             return not S3BucketOperations.path_exists(self, relative, session=self.session)
         return self.is_empty_flag
 
