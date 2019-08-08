@@ -23,17 +23,12 @@ export default function (run) {
   }
   const {runStatuses, status} = run;
   run.resumeFailureReason = undefined;
-  if (
-    runStatuses &&
-    status !== Statuses.success &&
-    status !== Statuses.stopped &&
-    status !== Statuses.failure
-  ) {
+  if (runStatuses && status === Statuses.paused) {
     const sortedStatuses = runStatuses
       .sort((a, b) => moment.utc(a.timestamp).diff(moment.utc(b.timestamp)));
-    const lastResumingStatus = sortedStatuses.filter(s => s.status === Statuses.resuming).pop();
-    if (lastResumingStatus && lastResumingStatus.reason) {
-      run.resumeFailureReason = lastResumingStatus.reason;
+    const lastStatus = sortedStatuses.pop();
+    if (lastStatus && lastStatus.status === Statuses.paused && lastStatus.reason) {
+      run.resumeFailureReason = lastStatus.reason;
     }
   }
   return run;
