@@ -732,7 +732,12 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   ? (
                     <Popover
                       title={null}
-                      content={resumeFailureReason}
+                      placement="left"
+                      content={
+                        <div style={{maxWidth: '40vw'}}>
+                          {resumeFailureReason}
+                        </div>
+                      }
                     >
                       <Icon
                         type="exclamation-circle-o"

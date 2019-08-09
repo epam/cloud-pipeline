@@ -23,10 +23,10 @@ export default function (run) {
   }
   const {runStatuses, status} = run;
   run.resumeFailureReason = undefined;
-  if (runStatuses && status === Statuses.paused) {
+  if (runStatuses && runStatuses.length > 0 && status === Statuses.paused) {
     const sortedStatuses = runStatuses
       .sort((a, b) => moment.utc(a.timestamp).diff(moment.utc(b.timestamp)));
-    const lastStatus = sortedStatuses.pop();
+    const lastStatus = sortedStatuses[sortedStatuses.length - 1];
     if (lastStatus && lastStatus.status === Statuses.paused && lastStatus.reason) {
       run.resumeFailureReason = lastStatus.reason;
     }
