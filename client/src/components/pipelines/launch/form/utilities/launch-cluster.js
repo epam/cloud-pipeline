@@ -45,7 +45,7 @@ export const ClusterFormItemNames = {
 };
 
 function booleanParameterIsSetToValue (parameters, parameter, value = true) {
-  return !!parameters && parameters[parameter] && `${parameters[parameter].value}` === `${value}`;
+  return !!parameters && parameters.hasOwnProperty(parameter) && `${parameters[parameter].value}` === `${value}`;
 }
 
 export function autoScaledClusterEnabled (parameters) {

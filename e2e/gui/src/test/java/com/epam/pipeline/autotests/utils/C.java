@@ -42,6 +42,7 @@ public class C {
         COMPLETION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.run.completion.timeout"));
         BUCKETS_MOUNTING_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.buckets.mounting.timeout"));
         ENDPOINT_INITIALIZATION_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.endpoint.initialization.timeout"));
+        LOGIN_DELAY_TIMEOUT = Integer.parseInt(conf.getProperty("e2e.ui.login.delay.timeout"));
         VALID_ENDPOINT = conf.getProperty("e2e.ui.valid.endpoint");
         LOGIN = conf.getProperty("e2e.ui.login");
         PASSWORD = conf.getProperty("e2e.ui.password");
@@ -68,6 +69,7 @@ public class C {
         NFS_PREFIX = conf.getProperty("e2e.ui.nfs.prefix");
         DEFAULT_INSTANCE_PRICE_TYPE = conf.getProperty("e2e.ui.default.instance.price.type");
         CLOUD_PROVIDER = conf.getProperty("e2e.ui.cloud.provider");
+        SPOT_PRICE_NAME = conf.getProperty("e2e.ui.spot.price.name");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -77,6 +79,7 @@ public class C {
     public static final int COMPLETION_TIMEOUT;
     public static final int BUCKETS_MOUNTING_TIMEOUT;
     public static final int ENDPOINT_INITIALIZATION_TIMEOUT;
+    public static final int LOGIN_DELAY_TIMEOUT;
 
     public static final String LOGIN;
     public static final String PASSWORD;
@@ -113,4 +116,6 @@ public class C {
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;
     public static final String CLOUD_PROVIDER;
+
+    public static final String SPOT_PRICE_NAME;
 }

@@ -41,6 +41,19 @@ export function canCommitRun (run) {
     !(run.parentRunId && run.parentRunId > 0);
 }
 
+export function canPauseRun (run) {
+  // Checks only run state, not user permissions
+  const {instance, pipelineRunParameters, podIP, initialized} = run;
+  return canStopRun(run) && initialized &&
+    instance && instance.spot !== undefined && !instance.spot &&
+    podIP && !(run.nodeCount > 0) &&
+    !(run.parentRunId && run.parentRunId > 0) &&
+    (pipelineRunParameters || []).filter(r => {
+      return (r.name === 'CP_CAP_AUTOSCALE' && r.value === 'true') ||
+        (r.name === 'CP_CAP_SGE' && r.value === 'true');
+    }).length === 0;
+}
+
 export function stopRun (parent, callback) {
   if (!parent) {
     console.warn('"stopRun" function should be called with parent component passed to arguments:');

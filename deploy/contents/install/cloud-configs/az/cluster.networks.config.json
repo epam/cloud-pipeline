@@ -9,7 +9,7 @@
             ],
             "amis": [
                 {
-                    "instance_mask": "N*",
+                    "instance_mask": "Standard_N*",
                     "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU}",
                     "init_script": "/opt/api/scripts/init_multicloud.sh"
                 },
@@ -22,7 +22,7 @@
             "swap": [
                 {
                     "name": "swap_ratio",
-                    "path": "0.5"
+                    "path": "0.01"
                 },
                 {
                     "name": "swap_location",
@@ -33,5 +33,8 @@
                 ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS}
             ]
         }
-    ]
+    ],
+    "tags": {
+        ${CP_VM_MONITOR_INSTANCE_TAG_NAME} : ${CP_VM_MONITOR_INSTANCE_TAG_VALUE}
+    }
 }

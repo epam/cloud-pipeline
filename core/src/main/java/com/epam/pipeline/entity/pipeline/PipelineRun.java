@@ -49,6 +49,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     public static final String PARENT_ID_PARAM = "parent-id";
     public static final String KEY_VALUE_DELIMITER = "=";
     public static final String PARAM_DELIMITER = "|";
+    public static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
 
     private Long pipelineId;

@@ -28,6 +28,7 @@ CLOUD_REGION_LABEL = 'cloud_region'
 res_client = get_client_from_auth_file(ResourceManagementClient)
 compute_client = get_client_from_auth_file(ComputeManagementClient)
 network_client = get_client_from_auth_file(NetworkManagementClient)
+resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def find_and_tag_instance(old_id, new_id):
@@ -40,6 +41,11 @@ def find_and_tag_instance(old_id, new_id):
             resource = compute_client.virtual_machines.get(resource_group, resource.name)
             resource.tags["Name"] = new_id
             compute_client.virtual_machines.create_or_update(resource_group, resource.name, resource)
+        elif resource_type == "virtualMachineScaleSets":
+            resource = compute_client.virtual_machine_scale_sets.get(resource_group, resource.name)
+            resource.tags["Name"] = new_id
+            compute_client.virtual_machine_scale_sets.create_or_update(resource_group, resource.name, resource)
+            ins_id, _ = get_instance_name_and_private_ip_from_vmss(resource.name)
         elif resource_type == "networkInterfaces":
             resource = network_client.network_interfaces.get(resource_group, resource.name)
             resource.tags["Name"] = new_id
@@ -59,27 +65,33 @@ def find_and_tag_instance(old_id, new_id):
         raise RuntimeError("Failed to find instance {}".format(old_id))
 
 
-def verify_regnode(kube_api, resource_group_name, ins_id):
-    public_ip = network_client.public_ip_addresses.get(
-        resource_group_name,
-        ins_id + '-ip'
-    )
-    nodename_full = public_ip.dns_settings.fqdn
-    nodename = nodename_full.split('.', 1)[0]
-
+def verify_regnode(kube_api, ins_id):
     exist_node = False
     ret_namenode = ""
-    node = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': nodename})
+    node = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': ins_id})
     if len(node.response['items']) > 0:
         exist_node = True
-        ret_namenode = nodename
-    node_full = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': nodename_full})
-    if len(node_full.response['items']) > 0:
-        exist_node = True
-        ret_namenode = nodename_full
+        ret_namenode = ins_id
     if not exist_node:
         raise RuntimeError("Failed to find Node {}".format(ins_id))
     return ret_namenode
+
+
+def get_instance_name_and_private_ip_from_vmss(scale_set_name):
+    vm_vmss_id = None
+    for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
+        vm_vmss_id = vm.instance_id
+        break
+    instance_name = compute_client.virtual_machine_scale_set_vms \
+        .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
+        .additional_properties["computerName"]
+    private_ip = network_client.network_interfaces\
+        .get_virtual_machine_scale_set_ip_configuration(resource_group_name,
+                                                        scale_set_name, vm_vmss_id,
+                                                        scale_set_name + "-nic",
+                                                        scale_set_name + "-ip") \
+        .private_ip_address
+    return instance_name, private_ip
 
 
 def change_label(api, nodename, new_id, cloud_region):
@@ -123,16 +135,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--old_id", "-kid", type=str, required=True)
     parser.add_argument("--new_id", "-nid", type=str, required=True)
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     old_id = args.old_id
     new_id = args.new_id
 
     kube_api = get_kube_api()
     cloud_region = get_cloud_region(kube_api, old_id)
 
-    resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
     ins_id = find_and_tag_instance(old_id, new_id)
-    nodename = verify_regnode(kube_api, resource_group_name, ins_id)
+    nodename = verify_regnode(kube_api, ins_id)
     change_label(kube_api, nodename, new_id, cloud_region)
 
 

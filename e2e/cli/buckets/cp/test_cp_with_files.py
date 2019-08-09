@@ -27,7 +27,7 @@ class TestCopyWithFiles(object):
     other_bucket_name = "{}-other".format(bucket_name)
     empty_bucket_name = "{}-empty".format(bucket_name)
     current_directory = os.getcwd()
-    home_dir = "test_cp_home_dir-594/"
+    home_dir = "test_cp_home_dir-594%s/" % get_test_prefix()
     checkout_dir = "checkout/"
     output_folder = "cp-files-" + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = "cp-files-" + TestFiles.TEST_FILE1
@@ -272,7 +272,7 @@ class TestCopyWithFiles(object):
         self.upload_file_to_bucket(source)
         try:
             error = pipe_storage_cp(source, destination, force=True, expected_status=1)[1]
-            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az".')
+            assert_error_message_is_present(error, 'Error: Supported schemes for datastorage are: "cp", "s3", "az", "gs".')
         except AssertionError as e:
             pytest.fail("Test case {} failed. {}".format("EPMCMBIBPC-655", e.message))
 

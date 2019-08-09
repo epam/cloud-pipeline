@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.region;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.region.CloudRegionApiService;
@@ -107,7 +107,7 @@ public class CloudRegionController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<AbstractCloudRegion> create(@RequestBody final CloudRegionVO region) {
+    public Result<AbstractCloudRegion> create(@RequestBody final AbstractCloudRegionDTO region) {
         return Result.success(cloudRegionApiService.create(region));
     }
 
@@ -120,7 +120,7 @@ public class CloudRegionController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractCloudRegion> update(@PathVariable(REGION_ID) final Long id,
-                                    @RequestBody final CloudRegionVO region) {
+                                    @RequestBody final AbstractCloudRegionDTO region) {
         return Result.success(cloudRegionApiService.update(id, region));
     }
 

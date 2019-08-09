@@ -79,7 +79,7 @@ public class ToolGroup implements AccessObject<ToolGroup> {
         SelenideElement element = get(SEARCH);
         element.click();
         element.clear();
-        element.sendKeys(Keys.CONTROL + "v");
+        element.sendKeys(Keys.chord(Keys.CONTROL, "v"));
         return this;
     }
 

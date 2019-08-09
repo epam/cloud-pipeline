@@ -34,7 +34,7 @@ class Remote {
   @observable failed = false;
   @observable error = undefined;
 
-  constructor() {
+  constructor () {
     if (this.constructor.auto) {
       this.fetch();
     }
@@ -42,14 +42,14 @@ class Remote {
 
   @observable _pending = true;
   @computed
-  get pending() {
+  get pending () {
     this._fetchIfNeeded();
     return this._pending;
   }
 
   @observable _loaded = false;
   @computed
-  get loaded() {
+  get loaded () {
     this._fetchIfNeeded();
     return this._loaded;
   }
@@ -138,7 +138,7 @@ class Remote {
     }
   }
 
-  postprocess(value) {
+  postprocess (value) {
     return value.payload;
   }
 
@@ -150,9 +150,8 @@ class Remote {
       this.failed = true;
       if (authorization.isAuthorized()) {
         authorization.setAuthorized(false);
-        console.log("Changing authorization to: " + authorization.isAuthorized());
-        let url = `${SERVER}/saml/logout`;
-        window.location = url;
+        console.log('Changing authorization to: ' + authorization.isAuthorized());
+        window.location = `${SERVER}/saml/logout`;
       }
     } else if (value.status && value.status === 'OK') {
       this._value = this.postprocess(value);
@@ -161,7 +160,7 @@ class Remote {
       this.failed = false;
       if (!authorization.isAuthorized()) {
         authorization.setAuthorized(true);
-        console.log("Changing authorization to: " + authorization.isAuthorized());
+        console.log('Changing authorization to: ' + authorization.isAuthorized());
       }
     } else {
       this.error = value.message;

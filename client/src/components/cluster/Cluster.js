@@ -27,6 +27,11 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import styles from './Cluster.css';
 import {renderNodeLabels} from './renderers';
+import {
+  getRoles,
+  nodeRoles,
+  testRole
+} from './node-roles';
 
 @connect({
   clusterNodes,
@@ -149,34 +154,12 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   renderTerminateButton = (item) => {
-    if (roleModel.executeAllowed(item) && roleModel.isOwner(item)) {
-      let isMaster = false;
-      for (let label in item.labels) {
-        if (item.labels.hasOwnProperty(label) &&
-          (
-            (label.toUpperCase() === 'KUBEADM.ALPHA.KUBERNETES.IO/ROLE' && item.labels[label].toLowerCase() === 'master') ||
-            label.toUpperCase() === 'NODE-ROLE.KUBERNETES.IO/MASTER' ||
-            (label.toUpperCase() === 'CLOUD-PIPELINE/ROLE' &&
-              (
-                item.labels[label].toLowerCase() === 'edge' ||
-                item.labels[label].toLowerCase() === 'heapster' ||
-                item.labels[label].toLowerCase() === 'elasticsearch' ||
-                item.labels[label].toLowerCase() === 'master' ||
-                item.labels[label].toLowerCase() === 'dns'
-              )
-            )
-          )) {
-          isMaster = true;
-          break;
-        }
-      }
-      if (!isMaster) {
-        return <Button
-          id="terminate-node-button"
-          type="danger"
-          size="small"
-          onClick={(event) => this.nodeTerminationConfirm(item, event)}>TERMINATE</Button>;
-      }
+    if (roleModel.executeAllowed(item) && roleModel.isOwner(item) && this.nodeIsSlave(item)) {
+      return <Button
+        id="terminate-node-button"
+        type="danger"
+        size="small"
+        onClick={(event) => this.nodeTerminationConfirm(item, event)}>TERMINATE</Button>;
     }
     return <span />;
   };
@@ -401,25 +384,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   nodeIsSlave = (node) => {
-    for (let key in node.labels) {
-      if (node.labels.hasOwnProperty(key)) {
-        if (key.toUpperCase() === 'NODE-ROLE.KUBERNETES.IO/MASTER') {
-          return false;
-        } else if (
-          key.toUpperCase() === 'KUBEADM.ALPHA.KUBERNETES.IO/ROLE') {
-          return node.labels[key].toLowerCase() !== 'master';
-        } else if (key.toUpperCase() === 'CLOUD-PIPELINE/ROLE') {
-          return (
-            node.labels[key].toLowerCase() !== 'edge' &&
-            node.labels[key].toLowerCase() !== 'heapster' &&
-            node.labels[key].toLowerCase() !== 'elasticsearch' &&
-            node.labels[key].toLowerCase() !== 'master' &&
-            node.labels[key].toLowerCase() !== 'dns'
-          );
-        }
-      }
-    }
-    return true;
+    const roles = getRoles(node.labels);
+    return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
   render () {

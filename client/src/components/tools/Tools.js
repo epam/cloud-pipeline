@@ -235,7 +235,9 @@ export default class ToolsNew extends React.Component {
         }
       };
       return (
-        <ContentIssuesMetadataPanel onPanelClose={onPanelClose}>
+        <ContentIssuesMetadataPanel
+          style={{flex: 1, overflow: 'auto'}}
+          onPanelClose={onPanelClose}>
           <div
             key={CONTENT_PANEL_KEY}
             style={{

@@ -37,6 +37,8 @@ def upload_data(src, dst, f_name_format, c_name, c_type, create_folders, entity_
             dst = dst + c_name + '/' + f_name_format
         else:
             dst = dst + f_name_format.format(c_name)
+    elif f_name_format is None and c_name is not None and create_folders:
+        dst = dst + c_name + '/' + src.split('/')[-1:][0]
     else:
         dst = dst + src.split('/')[-1:][0]
 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
                     metadata_class,
                     ', '.join(metadata_columns)
                 ), task_name=METADATA_TASK_NAME)
-    
+
     api = EntitiesAPI(api_path, api_token)
     for el in api.load_all(metadata_id, metadata_class):
         if len(metadata_entities) > 0 and str(el.id) not in metadata_entities:

@@ -189,7 +189,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{display: 'inline-flex'}}>
           <Button
             id="launch-pipeline-button"
             size="small"
@@ -327,7 +327,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           </Menu>
         </Row>
         <div
-          className={styles.fullHeightContainer}>
+          className={styles.fullHeightContainer} style={{overflow: 'auto'}}>
           {
             React.Children.map(
               this.props.children,

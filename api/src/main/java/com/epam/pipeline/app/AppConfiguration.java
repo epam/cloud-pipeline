@@ -41,7 +41,8 @@ import java.util.concurrent.Executors;
 @ComponentScan(basePackages = {"com.epam.pipeline.dao",
         "com.epam.pipeline.manager",
         "com.epam.pipeline.security",
-        "com.epam.pipeline.aspect"})
+        "com.epam.pipeline.aspect",
+        "com.epam.pipeline.event"})
 public class AppConfiguration implements SchedulingConfigurer {
 
     private static final int MAX_LOG_PAYLOAD_LENGTH = 1000;
@@ -92,6 +93,11 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Bean
     public Executor pauseRunExecutor() {
         return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun"));
+    }
+
+    @Bean
+    public Executor dataStoragePathExecutor() {
+        return getSingleThreadExecutor("PathExecutor");
     }
 
     private Executor getThreadPoolTaskExecutor(String name) {

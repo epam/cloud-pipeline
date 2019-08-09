@@ -105,10 +105,10 @@ export default class FolderPreview extends React.Component {
         };
       }
 
-      if (item.type === SearchItemTypes.s3Bucket || item.type === SearchItemTypes.azStorage) {
+      if (item.type === SearchItemTypes.s3Bucket || item.type === SearchItemTypes.gsStorage || item.type === SearchItemTypes.azStorage) {
         nameComponent = (
           <span>
-            <span style={nameStyle}>{item.name}</span><AWSRegionTag regionId={item.regionId} />
+            <span style={nameStyle}>{item.name}</span><AWSRegionTag darkMode regionId={item.regionId} />
           </span>
         );
       } else {
@@ -148,6 +148,7 @@ export default class FolderPreview extends React.Component {
         case 'az': type = SearchItemTypes.azStorage; break;
         case 's3': type = SearchItemTypes.s3Bucket; break;
         case 'nfs': type = SearchItemTypes.NFSBucket; break;
+        case 'gs': type = SearchItemTypes.gsStorage; break;
         default: type = item.aclClass; break;
       }
       return type;

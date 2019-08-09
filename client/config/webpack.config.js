@@ -393,7 +393,7 @@ module.exports = function (webpackEnv) {
                 javascriptEnabled: true,
                 modifyVars: {
                   '@icon-url': `"${publicUrl}/iconfont/iconfont"`,
-                  '@flags-root': `"${publicUrl}/awsregions"`
+                  '@icons-root': `"${publicUrl}/icons"`
                 }
               })
             },

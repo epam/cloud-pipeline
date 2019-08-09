@@ -147,7 +147,7 @@ public class S3FileManager implements ObjectStorageFileManager {
         file.setDeleteMarker(null);
         Map<String, String> labels = new HashMap<>();
         if (s3ObjectSummary.getStorageClass() != null) {
-            labels.put("StorageClass", s3ObjectSummary.getStorageClass());
+            labels.put(ESConstants.STORAGE_CLASS_LABEL, s3ObjectSummary.getStorageClass());
         }
         file.setLabels(labels);
         return file;

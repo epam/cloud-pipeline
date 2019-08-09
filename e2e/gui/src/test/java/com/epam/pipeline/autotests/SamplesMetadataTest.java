@@ -221,6 +221,7 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes3repset))
                 .uploadMetadata(getFile(wes11repsamples))
                 .uploadMetadata(getFile(wes11repset))
+                .sleep(2, SECONDS)
                 .ensure(byText(metadataFolder), visible);
     }
 
@@ -245,7 +246,7 @@ public class SamplesMetadataTest
                             final String r1value = r1key.getValue();
                             r1key.changeValue(r1value.replace(nonExistingPath, path(dataStorage)));
 
-                            sleep(500, MILLISECONDS);
+                            sleep(2, SECONDS);
 
                             final MetadataKeyAO r2key = metadataSection.selectKey("R2_Fastq");
                             final String r2value = r2key.getValue();

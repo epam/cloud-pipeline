@@ -16,24 +16,113 @@
 
 export CP_DOLLAR='$'
 
-function update_config_json_templates {
+function is_dir_empty {
+    local dir_path="$1"
+
+    if [ ! -d "$dir_path" ]; then
+        mkdir -p "$dir_path"
+        return 0
+    fi
+
+    shopt -s nullglob
+    shopt -s dotglob
+
+    local dir_contents=(${1}/*)
+
+    shopt -u nullglob
+    shopt -u dotglob
+
+    local result=0
+    (( ${#dir_contents[*]} )) && result=1 || result=0
+    return $result
+}
+
+function update_resources_templates {
     local templates_key="$1"
-    local search_pattern="${2:-"config.json"}"
-    local properties_file="${3:-$CP_API_HOME/config/application.properties}"
+    local external_storage_var_name="$2"
+    local search_pattern="${3:-"config.json"}"
+    local properties_file="${4:-$CP_API_HOME/config/application.properties}"
 
     IFS="=" read -r param_key param_value <<< $(grep $templates_key < $properties_file)
+    # This is used to expand any variable name, that can be used in the application.properties file
+    param_value="$(envsubst <<< "$param_value")"
+    
     if [ -z "$param_key" ] || [ -z "$param_value" ] || [ ! -d "$param_value" ]; then
-        echo "$templates_key cannot be retireved from $properties_file or that location does not exist (\"$param_value\""
+        echo "$templates_key cannot be retrieved from $properties_file or that location does not exist (\"$param_value\""
         return 1
-    else
-        echo "Updating configuration files (properties_file: ${properties_file}, templates_key: ${templates_key}, search_pattern: ${search_pattern})"
-        for config_json_file in $(find "$param_value" -type f -name "$search_pattern"); do
-            local config_json_file_contents="$(envsubst < "$config_json_file")"
-            cat <<< "$config_json_file_contents" > "$config_json_file"
-            echo "$config_json_file"
-        done
     fi
+
+    local external_storage="${!external_storage_var_name}"
+    # Import external templates if provided, this overrides the default templates backed into the docker image
+    if [ "$external_storage" ]; then
+        is_dir_empty "$external_storage"
+        if [ $? -eq 0 ]; then
+            echo "External configuration for $templates_key template is set, but the $external_storage directory is empty or does not exist. External templates WILL NOT be applied"
+        else
+            echo "Replacing $templates_key templates from $external_storage to $param_value"
+            rm -rf $param_value/*
+            \cp -r $external_storage/* $param_value/
+        fi
+    fi
+
+    echo "Updating configuration files (properties_file: ${properties_file}, templates_key: ${templates_key}, search_pattern: ${search_pattern})"
+    for config_json_file in $(find "$param_value" -type f -name "$search_pattern"); do
+        local config_json_file_contents="$(envsubst < "$config_json_file")"
+        cat <<< "$config_json_file_contents" > "$config_json_file"
+        echo "$config_json_file"
+    done
     echo
+}
+
+function sign_win_executable() {
+    local exec_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+
+    local signed_exec_path="signed-$(basename "$exec_path")"
+    if [ "$cert_pass" ]; then
+        local sign_with_pass_opt="-pass \"$cert_pass\""
+    fi
+    
+    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
+    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    local ORIGINAL_PATH="$PATH"
+    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
+    export PATH="/opt/openssl/bin:$PATH"
+    
+    osslsigncode sign \
+                -pkcs12 "$cert_path" \
+                -n "$cert_desc" \
+                -i "$cert_url" \
+                -in "$exec_path" \
+                -out "$signed_exec_path" $sign_with_pass_opt
+
+    if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
+        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
+    else
+        mv -f "$signed_exec_path" "$exec_path"
+    fi
+
+    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
+    export PATH="$ORIGINAL_PATH"
+}
+
+function sign_and_publish_pipe_win_distribution() {
+    local jar_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+    local output_dir="$6"
+    unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
+    unzip -qq pipe.zip
+    rm -f pipe.zip
+    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    zip -q -r "$output_dir/pipe.zip" pipe
+    rm -rf pipe
 }
 
 # Validate SSO and SSL certificates
@@ -70,6 +159,11 @@ if [ ! -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
     echo "SSO Metadata not found at $CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml, but it is required to setup Single Sign-On for the API Service. Exiting"
     exit 1
 fi
+
+# Setup values for the error pages placeholders
+export CP_ERROR_REDIRECT_URL="${CP_ERROR_REDIRECT_URL:-https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/}"
+export CP_ERROR_PLATFORM_NAME="${CP_ERROR_PLATFORM_NAME:-$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME}"
+export CP_ERROR_SUPPORT_EMAIL="${CP_ERROR_SUPPORT_EMAIL:-$CP_DEFAULT_ADMIN_EMAIL}"
 
 
 mkdir -p $CP_API_HOME/keystore/
@@ -110,6 +204,21 @@ if [ -f "$ca_cert_path" ]; then
     /update-trust $ca_cert_path "cp-ca"
 fi
 
+# Create static distribution directory
+export CP_API_SRV_STATIC_DIR="${CP_API_SRV_STATIC_DIR:-$CP_API_HOME/static}"
+mkdir -p $CP_API_SRV_STATIC_DIR
+
+# Sign and export pipe win distribution
+export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}"
+export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
+
+win_code_sign_cert_path="$CP_API_SRV_CERT_DIR/win-code-sign-cert.pfx"
+if [ -f "$win_code_sign_cert_path" ]; then
+    echo "Signing Windows CLI with Code Signing Certificate"
+    sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+        "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
+fi
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
@@ -121,10 +230,10 @@ keytool  -import \
          -alias idp \
          -file $CP_IDP_CERT_DIR/idp-public-cert.pem
 
-
-# Update pipe/folder templates with any specific values (e.g. instance/vm size)
-update_config_json_templates "templates.directory" "config.json"
-update_config_json_templates "templates.folder.directory" "template.json"
+# Update pipe/folder/error templates with any specific values (e.g. instance/vm size)
+update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
+update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
+update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
 
 # Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log

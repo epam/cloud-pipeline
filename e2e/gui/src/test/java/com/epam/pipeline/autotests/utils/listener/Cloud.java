@@ -17,7 +17,8 @@ package com.epam.pipeline.autotests.utils.listener;
 
 public enum Cloud {
     AWS("aws"),
-    AZURE("azure");
+    AZURE("azure"),
+    GCP("gcp");
 
     public final String cloudProvider;
 

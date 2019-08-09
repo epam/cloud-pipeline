@@ -21,7 +21,7 @@ spec:
           image: postgres:9.6
           imagePullPolicy: "IfNotPresent"
           ports:
-            - containerPort: 5432
+            - containerPort: ${PSG_PORT}
           env:
             - name: POSTGRES_DB
               value: "postgres"
@@ -38,7 +38,7 @@ spec:
               name: pgdata
           readinessProbe:
             tcpSocket:
-              port: 5432
+              port: ${PSG_PORT}
             initialDelaySeconds: 5
             periodSeconds: 10
       volumes:

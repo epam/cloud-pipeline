@@ -16,6 +16,13 @@
 
 import RemotePost from '../basic/RemotePost';
 
+const AccessTypes = {
+  endpoint: 'ENDPOINT',
+  ssh: 'SSH'
+};
+
+export {AccessTypes};
+
 export default class PipelineRunSSH extends RemotePost {
   constructor (id) {
     super();

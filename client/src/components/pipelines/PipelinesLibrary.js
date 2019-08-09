@@ -33,6 +33,7 @@ import {
   search
 } from './model/treeStructureFunctions';
 import styles from './PipelinesLibrary.css';
+import '../../staticStyles/PipelineLibrary.css';
 
 import pipelinesLibrary from '../../models/folders/FolderLoadTree';
 import folders from '../../models/folders/Folders';
@@ -293,7 +294,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           icon = 'hdd';
         }
         subTitle = (
-          <AWSRegionTag regionId={item.regionId} size="small" />
+          <AWSRegionTag
+            className={styles.regionFlags}
+            regionId={item.regionId}
+          />
         );
         break;
       case ItemTypes.configuration: icon = 'setting'; break;
@@ -361,7 +365,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   generateTree () {
     return (
       <Tree
-        className={styles.libraryTree}
+        className={`${styles.libraryTree} pipeline-library`}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
         checkStrictly={true}

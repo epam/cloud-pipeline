@@ -87,9 +87,9 @@ const startIdleHint = (localizedStringFn) => (
 
 const priceTypeHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    <b>Spot</b> type will provide ~3 times lower prices, but may introduce longer startup time and accidental node failure.<br />
-    <b>On-demand</b> type is more expensive, but provides solid init and run time behavior.<br />
-    Use <b>Spot</b> for testing and debugging purposes
+    <b>{localizedStringFn('Spot')}</b> type will provide ~3 times lower prices, but may introduce longer startup time and accidental node failure.<br />
+    <b>{localizedStringFn('On-demand')}</b> type is more expensive, but provides solid init and run time behavior.<br />
+    Use <b>{localizedStringFn('Spot')}</b> for testing and debugging purposes
   </Row>
 );
 

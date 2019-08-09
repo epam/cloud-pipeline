@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.autotests.utils;
 
 import com.codeborne.selenide.ElementsCollection;
@@ -20,6 +21,12 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.RunPipelineTest;
 import com.epam.pipeline.autotests.mixins.Navigation;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.SearchContext;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
+
 import java.awt.AWTException;
 import java.awt.Color;
 import java.awt.Robot;
@@ -39,14 +46,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.SearchContext;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.interactions.Actions;
+
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
-import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.withText;
@@ -115,7 +117,7 @@ public class Utils {
         action.perform();
     }
 
-    public static void sendKeysWithSlashes(String text) {
+    public static void sendKeysWithSlashes(final String text) {
         //////////////////////////////////////////////////////////////////////////
         // ! WARNING: there is robot to fix forward slashed issue
         // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
@@ -135,6 +137,22 @@ public class Utils {
             actions().sendKeys(s).perform();
         }
         //////////////////////////////////////////////////////////////////////////
+    }
+
+    public static void sendKeysByChars(final SelenideElement field, final String text) {
+        final char[] charArray = text.toCharArray();
+        int charNumber = 0;
+        for (final char character : charArray) {
+            while (true) {
+                field.sendKeys(String.valueOf(character));
+                sleep(10, MILLISECONDS);
+                final String enteredText = field.getAttribute("value");
+                if (enteredText.charAt(charNumber) == character) {
+                    break;
+                }
+            }
+            charNumber++;
+        }
     }
 
     public static String getPipelineRunId(final String pipelineName) {
@@ -211,7 +229,8 @@ public class Utils {
     }
 
     private static String runNameToRunId(final String runName) {
-        return runName.substring(runName.lastIndexOf("-") + 1);
+        String[] splitRunName = runName.substring(0, runName.indexOf("\n")).split("-");
+        return splitRunName[splitRunName.length - 1];
     }
 
     public static void sleep(long duration, TimeUnit units) {
@@ -360,9 +379,5 @@ public class Utils {
     public static void restartBrowser(final String address) {
         Selenide.close();
         Selenide.open(address);
-    }
-
-    public static void click(final By selector) {
-        $(selector).shouldBe(visible).click();
     }
 }

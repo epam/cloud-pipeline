@@ -36,6 +36,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator;
@@ -45,6 +46,7 @@ import org.springframework.security.saml.key.KeyManager;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.FileNotFoundException;
+import java.util.concurrent.Executor;
 
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
@@ -82,6 +84,12 @@ public class TestApplication {
 
     @MockBean
     public JwtTokenVerifier jwtTokenVerifier;
+
+    @MockBean
+    public Executor dataStoragePathExecutor;
+
+    @MockBean
+    public TaskScheduler scheduler;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

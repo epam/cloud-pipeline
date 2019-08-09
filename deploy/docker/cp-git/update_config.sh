@@ -35,7 +35,25 @@ IDP_CERT_CONTENTS="$(<$IDP_CERT_PATH)"
 GIT_SSO_CERT_CONTENTS="$(<$GIT_SSO_CERT_PATH)"
 GIT_SSO_KEY_CONTENTS="$(<$GIT_SSO_KEY_PATH)"
 
+CP_GITLAB_SSO_TARGET_URL_TRAIL="${CP_GITLAB_SSO_TARGET_URL_TRAIL:-"/saml/sso"}"
+CP_GITLAB_SLO_TARGET_URL_TRAIL="${CP_GITLAB_SLO_TARGET_URL_TRAIL:-"/saml/sso"}"
+CP_GITLAB_SSO_TARGET_URL="${CP_GITLAB_SSO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SSO_TARGET_URL_TRAIL}"}"
+CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"}"
+
+echo
+echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
+echo "idp_sso_target_url: $CP_GITLAB_SLO_TARGET_URL"
+echo
+
 cat >> /etc/gitlab/gitlab.rb <<-EOF
+
+gitlab_rails['db_adapter'] = '${GITLAB_DATABASE_ADAPTER}'
+gitlab_rails['db_encoding'] = '${GITLAB_DATABASE_ENCODING}'
+gitlab_rails['db_host'] = '${GITLAB_DATABASE_HOST}'
+gitlab_rails['db_port'] = ${GITLAB_DATABASE_PORT}
+gitlab_rails['db_username'] = '${GITLAB_DATABASE_USERNAME}'
+gitlab_rails['db_password'] = '${GITLAB_DATABASE_PASSWORD}'
+
 external_url 'https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}'
 nginx['ssl_certificate'] = "/opt/gitlab/pki/ssl-public-cert.pem"
 nginx['ssl_certificate_key'] = "/opt/gitlab/pki/ssl-private-key.pem"
@@ -53,8 +71,8 @@ gitlab_rails['omniauth_providers'] = [
   args: {
     assertion_consumer_service_url: 'https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}/users/auth/saml/callback',
     idp_cert: "$IDP_CERT_CONTENTS",
-    idp_sso_target_url: 'https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}/saml/sso',
-    idp_slo_target_url: 'https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}/saml/sso',
+    idp_sso_target_url: '$CP_GITLAB_SSO_TARGET_URL',
+    idp_slo_target_url: '$CP_GITLAB_SLO_TARGET_URL',
     issuer: 'https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}',
     name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
     allowed_clock_drift: 60,

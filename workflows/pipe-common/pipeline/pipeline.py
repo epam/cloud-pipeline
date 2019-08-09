@@ -63,7 +63,8 @@ class PipelineApiTask(luigi.Task, S3Bucket):
     pipeline_name = luigi.Parameter(significant=False)
     # namespace to generate all pods
     namespace = luigi.Parameter(significant=False)
-    version = luigi.Parameter(significant=False)
+    pipeline_version = luigi.Parameter(significant=False)
+    version = luigi.Parameter(significant=False, default="")
     parent = luigi.Parameter(significant=False)
     read_only = luigi.BoolParameter(significant=False, default=False)
     distribution_url = luigi.Parameter(significant=False, default="")

@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../../utils/connect';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
 import {names} from '../../../../models/utils/ContextualPreference';
 import pipelines from '../../../../models/pipelines/Pipelines';
@@ -35,9 +35,9 @@ import styles from './PipelineConfiguration.css';
 @connect({
   pipelines, preferences
 })
-@inject(({pipelines, routing, preferences}, {onReloadTree, params}) => {
+@inject(({history, pipelines, routing, preferences}, {onReloadTree, params}) => {
   return {
-    allowedInstanceTypes: new AllowedInstanceTypes(),
+    history,
     onReloadTree,
     currentConfiguration: params.configuration,
     pipeline: pipelines.getPipeline(params.id),
@@ -52,12 +52,76 @@ import styles from './PipelineConfiguration.css';
 })
 @observer
 export default class PipelineConfiguration extends React.Component {
+  @observable allowedInstanceTypes;
+
+  @observable configurationModified;
+
+  navigationBlockedListener;
+  navigationBlocker;
+  allowedNavigation;
 
   state = {
     createConfigurationForm: false,
     configurationsListCollapsed: false,
     pending: false
   };
+
+  componentDidMount() {
+    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
+      const locationBefore = this.props.routing.location.pathname;
+      if (location.pathname === locationBefore) {
+        callback();
+        return;
+      }
+      const clearBlocker = () => {
+        setTimeout(() => {
+          this.navigationBlocker = null;
+        }, 0);
+      };
+      if (this.configurationModified && !this.navigationBlocker && location.pathname !== this.allowedNavigation) {
+        const cancel = () => {
+          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
+            this.props.history.replace(locationBefore);
+          }
+          clearBlocker();
+        };
+        this.navigationBlocker = Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            callback();
+            clearBlocker();
+          },
+          onCancel () {
+            cancel();
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+
+      } else {
+        callback();
+      }
+    });
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
+    }
+  }
+
+  componentWillUnmount () {
+    if (this.navigationBlockedListener) {
+      this.navigationBlockedListener();
+    }
+  }
 
   @computed
   get selectedConfiguration () {
@@ -120,6 +184,10 @@ export default class PipelineConfiguration extends React.Component {
       this.props.version === this.props.pipeline.value.currentVersion.name;
   };
 
+  onConfigurationModified = (modified) => {
+    this.configurationModified = modified;
+  };
+
   onSelectConfiguration = (key) => {
     this.props.router.push(`/${this.props.pipelineId}/${this.props.version}/configuration/${key}`);
   };
@@ -163,11 +231,14 @@ export default class PipelineConfiguration extends React.Component {
   };
 
   navigateToNewVersion = (configuration) => {
+    let url;
     if (configuration) {
-      this.props.routing.push(`/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration/${configuration}`);
+      url = `/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration/${configuration}`;
     } else {
-      this.props.routing.push(`/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration`);
+      url = `/${this.props.pipelineId}/${this.props.pipeline.value.currentVersion.name}/configuration`;
     }
+    this.allowedNavigation = url;
+    this.props.router.push(url);
   };
 
   onRemoveConfigurationClicked = (configuration) => (e) => {
@@ -281,7 +352,7 @@ export default class PipelineConfiguration extends React.Component {
           .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
-        return;
+        return false;
       }
       const [configuration] = this.props.configurations.value
         .filter(c => c.name.toLowerCase() === this.selectedConfigurationName.toLowerCase());
@@ -337,6 +408,7 @@ export default class PipelineConfiguration extends React.Component {
         });
       }
     }
+    return false;
   };
 
   renderTabs = () => {
@@ -383,8 +455,24 @@ export default class PipelineConfiguration extends React.Component {
     );
   };
 
+  componentDidUpdate() {
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
+    }
+  }
+
   render () {
-    if (!this.props.configurations.loaded && this.props.configurations.pending) {
+    if (
+      (!this.props.configurations.loaded && this.props.configurations.pending) ||
+      !this.allowedInstanceTypes
+    ) {
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
@@ -414,13 +502,15 @@ export default class PipelineConfiguration extends React.Component {
             currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
             onSetConfigurationAsDefault={this.onSetAsDefaultClicked}
             pipeline={this.props.pipeline ? this.props.pipeline.value : undefined}
-            allowedInstanceTypes={this.props.allowedInstanceTypes}
+            allowedInstanceTypes={this.allowedInstanceTypes}
             toolInstanceTypes={names.allowedInstanceTypes}
             version={this.props.version}
             parameters={this.getParameters()}
             configurations={this.getConfigurations()}
             onLaunch={this.onSaveConfiguration}
-            isDetachedConfiguration={false} />
+            isDetachedConfiguration={false}
+            onModified={this.onConfigurationModified}
+          />
         </Row>
         <CreateConfigurationForm
           pending={false}

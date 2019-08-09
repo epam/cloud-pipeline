@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
 import pipelinesLibrary from '../../../models/folders/FolderLoadTree';
@@ -93,6 +93,7 @@ export default class Metadata extends React.Component {
 
   columns = [];
   defaultColumns = [];
+  @observable keys;
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -149,20 +150,32 @@ export default class Metadata extends React.Component {
 
   @computed
   get currentClassEntityFields () {
+    if (!this.keys) {
+      return [];
+    }
+    const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
     const [metadata] = this.entityTypes
       .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
     if (metadata) {
-      return (metadata.fields || []).map(f => f);
+      return (metadata.fields || [])
+        .filter(f => ownKeys.indexOf(f.name) >= 0)
+        .map(f => f);
     }
     return [];
   }
 
   @computed
   get currentClassEntityPathFields () {
+    if (!this.keys) {
+      return [];
+    }
+    const ownKeys = this.keys.filter(k => !k.predefined).map(k => k.name);
     const [metadata] = this.entityTypes
       .filter(e => e.metadataClass.name.toLowerCase() === (this.props.metadataClass || '').toLowerCase());
     if (metadata) {
-      return (metadata.fields || []).filter(f => f.type.toLowerCase() === 'path').map(f => f);
+      return (metadata.fields || [])
+        .filter(f => f.type.toLowerCase() === 'path' && ownKeys.indexOf(f.name) >= 0)
+        .map(f => f);
     }
     return [];
   }
@@ -336,6 +349,7 @@ export default class Metadata extends React.Component {
     if (metadataEntityKeysRequest.error) {
       message.error(metadataEntityKeysRequest.error, 5);
     } else {
+      this.keys = (metadataEntityKeysRequest.value || []).map(k => k);
       const newColumns = (metadataEntityKeysRequest.value || [])
         .filter(k => !k.predefined || k.name === 'externalId')
         .map(k => k.name === 'externalId' ? 'ID' : k.name);
@@ -657,7 +671,9 @@ export default class Metadata extends React.Component {
       : [];
 
     return (
-      <ContentMetadataPanel style={{flex: 1}} onPanelClose={onPanelClose}>
+      <ContentMetadataPanel
+        style={{flex: 1, overflow: 'auto'}}
+        onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {renderTable()}
           {renderConfigurationBrowser()}

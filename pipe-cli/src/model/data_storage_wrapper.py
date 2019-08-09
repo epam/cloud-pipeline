@@ -30,6 +30,7 @@ from ..config import ConfigNotFoundError
 from ..utilities.storage.s3 import S3BucketOperations
 from ..utilities.storage.local import LocalOperations
 from ..utilities.storage.azure import AzureListingManager, AzureDeleteManager, AzureBucketOperations
+from ..utilities.storage.gs import GsRestoreManager, GsListingManager, GsDeleteManager, GsBucketOperations
 from ..utilities.storage.common import StorageOperations
 from .data_storage_wrapper_type import WrapperType
 import shutil
@@ -38,6 +39,12 @@ import posixpath
 
 FILE = 'File'
 FOLDER = 'Folder'
+
+
+class AllowedSymlinkValues(object):
+    FOLLOW = 'follow'
+    SKIP = 'skip'
+    FILTER = 'filter'
 
 
 class DataStorageWrapper(object):
@@ -55,6 +62,12 @@ class DataStorageWrapper(object):
         (WrapperType.FTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.AZURE): AzureBucketOperations.get_transfer_from_http_or_ftp_manager,
 
+        (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
+        (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
+        (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
     }
@@ -64,10 +77,10 @@ class DataStorageWrapper(object):
         self.items = []
 
     @classmethod
-    def get_wrapper(cls, uri):
+    def get_wrapper(cls, uri, symlinks=None):
         parsed = urlparse(uri)
         if not parsed.scheme or not parsed.netloc:
-            return LocalFileSystemWrapper(uri)
+            return LocalFileSystemWrapper(uri, symlinks)
         if parsed.scheme.lower() == 'ftp' or parsed.scheme.lower() == 'ftps':
             return HttpSourceWrapper(uri) if os.getenv("ftp_proxy") \
                 else FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
@@ -90,7 +103,8 @@ class DataStorageWrapper(object):
     def __get_storage_wrapper(cls, bucket, relative_path, *args, **kwargs):
         _suppliers = {
             WrapperType.S3: S3BucketWrapper.build_wrapper,
-            WrapperType.AZURE: AzureBucketWrapper.build_wrapper
+            WrapperType.AZURE: AzureBucketWrapper.build_wrapper,
+            WrapperType.GS: GsBucketWrapper.build_wrapper,
         }
         if bucket.type in _suppliers:
             supplier = _suppliers[bucket.type]
@@ -214,12 +228,31 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def exists(self):
         return self.exists_flag
 
+    def get_items(self):
+        return self.get_list_manager().get_items(self.path)
+
+    def is_empty(self, relative=None):
+        if not self.exists():
+            return True
+        if self.is_file():
+            return False
+        if relative:
+            delimiter = StorageOperations.PATH_SEPARATOR
+            path = self.path.rstrip(delimiter) + delimiter + relative
+        else:
+            path = self.path
+        return not self.get_list_manager().folder_exists(path)
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
     @abstractmethod
     def get_restore_manager(self):
         pass
 
     @abstractmethod
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         pass
 
     @abstractmethod
@@ -253,9 +286,6 @@ class S3BucketWrapper(CloudDataStorageWrapper):
             return not S3BucketOperations.path_exists(self, relative, session=self.session)
         return self.is_empty_flag
 
-    def get_items(self):
-        return S3BucketOperations.get_items(self, session=self.session)
-
     def get_file_download_uri(self, relative_path):
         download_url_model = None
         try:
@@ -278,7 +308,7 @@ class S3BucketWrapper(CloudDataStorageWrapper):
     def get_restore_manager(self):
         return S3BucketOperations.get_restore_manager(self)
 
-    def get_list_manager(self, show_versions):
+    def get_list_manager(self, show_versions=False):
         return S3BucketOperations.get_list_manager(self, show_versions=show_versions)
 
     def get_delete_manager(self, versioning):
@@ -297,26 +327,11 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         wrapper = AzureBucketWrapper(root_bucket, relative_path)
         if init:
-            AzureBucketOperations.init_wrapper(wrapper)
+            StorageOperations.init_wrapper(wrapper, versioning=versioning)
         return wrapper
 
     def get_type(self):
         return WrapperType.AZURE
-
-    def is_empty(self, relative=None):
-        if not self.exists():
-            return True
-        if self.is_file():
-            return False
-        if relative:
-            delimiter = StorageOperations.PATH_SEPARATOR
-            path = self.path.rstrip(delimiter) + delimiter + relative
-        else:
-            path = self.path
-        return not self.get_list_manager().folder_exists(path)
-
-    def get_items(self):
-        return self.get_list_manager().get_items(self.path)
 
     def get_restore_manager(self):
         raise RuntimeError('Versioning is not supported by AZURE cloud provider')
@@ -337,14 +352,40 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
         return self.service
 
 
+class GsBucketWrapper(CloudDataStorageWrapper):
+
+    @classmethod
+    def build_wrapper(cls, root_bucket, relative_path, init=True, *args, **kwargs):
+        wrapper = GsBucketWrapper(root_bucket, relative_path)
+        if init:
+            StorageOperations.init_wrapper(wrapper, *args, **kwargs)
+        return wrapper
+
+    def get_type(self):
+        return WrapperType.GS
+
+    def get_restore_manager(self):
+        return GsRestoreManager(self._storage_client(write=True, versioning=True), self)
+
+    def get_list_manager(self, show_versions=False):
+        return GsListingManager(self._storage_client(versioning=show_versions), self.bucket, show_versions)
+
+    def get_delete_manager(self, versioning):
+        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), self.bucket)
+
+    def _storage_client(self, read=True, write=False, versioning=False):
+        return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
+
+
 class LocalFileSystemWrapper(DataStorageWrapper):
 
-    def __init__(self, path):
+    def __init__(self, path, symlinks=None):
         super(LocalFileSystemWrapper, self).__init__(path)
         if self.path == ".":
             self.path = "./"
         if self.path.startswith("~"):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
+        self.symlinks = symlinks
 
     def exists(self):
         return os.path.exists(self.path)
@@ -373,21 +414,36 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         self.path = os.path.abspath(self.path)
 
         if os.path.isfile(self.path):
+            if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
+                return []
             return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
         else:
             result = list()
+            visited_symlinks = set()
 
-            def list_items(path, parent, root=False):
+            def list_items(path, parent, symlinks, visited_symlinks, root=False):
                 for item in os.listdir(path):
                     absolute_path = os.path.join(path, item)
+                    symlink_target = None
+                    if os.path.islink(absolute_path) and symlinks != AllowedSymlinkValues.FOLLOW:
+                        if symlinks == AllowedSymlinkValues.SKIP:
+                            continue
+                        if symlinks == AllowedSymlinkValues.FILTER:
+                            symlink_target = os.readlink(absolute_path)
+                            if symlink_target in visited_symlinks:
+                                continue
+                            else:
+                                visited_symlinks.add(symlink_target)
                     relative_path = item
                     if not root and parent is not None:
                         relative_path = os.path.join(parent, item)
                     if os.path.isfile(absolute_path):
                         result.append((FILE, absolute_path, relative_path, os.path.getsize(absolute_path)))
                     elif os.path.isdir(absolute_path):
-                        list_items(absolute_path, relative_path)
-            list_items(self.path, leaf_path(self.path), root=True)
+                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
+                    if symlink_target and os.path.islink(path) and symlink_target in visited_symlinks:
+                        visited_symlinks.remove(symlink_target)
+            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
             return result
 
     def create_folder(self, relative_path):

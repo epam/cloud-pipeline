@@ -38,7 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.util.StringUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Getter
 @Setter
@@ -98,15 +99,19 @@ public class NotificationMessage {
 
         @Override
         public String convertToDatabaseColumn(List<Long> attribute) {
-            return attribute.stream()
+            return ListUtils.emptyIfNull(attribute).stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(","));
         }
 
         @Override
         public List<Long> convertToEntityAttribute(String dbData) {
-            return Arrays.stream(dbData.split(","))
-                    .filter(s -> !StringUtils.isEmpty(s))
+            final String trimmedUserIds = dbData.trim();
+            return StringUtils.isEmpty(trimmedUserIds)
+                    ? Collections.emptyList()
+                    : Arrays.stream(trimmedUserIds.split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::isNumeric)
                     .map(Long::parseLong)
                     .collect(Collectors.toList());
         }

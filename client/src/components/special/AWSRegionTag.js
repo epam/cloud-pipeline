@@ -23,31 +23,28 @@ import './AWSRegionTagFlags.less';
 
 @inject('awsRegions')
 @observer
-export default class AWSRegionTag extends React.Component {
-
+class AWSRegionTag extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
+    darkMode: PropTypes.bool,
+    displayFlag: PropTypes.bool,
+    displayName: PropTypes.bool,
+    flagStyle: PropTypes.object,
+    plainMode: PropTypes.bool,
+    provider: PropTypes.string,
+    providerStyle: PropTypes.object,
     regionId: PropTypes.number,
     regionUID: PropTypes.string,
-    style: PropTypes.object,
-    className: PropTypes.string,
-    size: PropTypes.oneOf(['small', 'normal', 'large']),
-    displayName: PropTypes.bool,
-    displayFlag: PropTypes.bool,
-    flagBorder: PropTypes.oneOfType([
-      PropTypes.bool,
-      PropTypes.string,
-      PropTypes.shape({
-        size: PropTypes.number,
-        color: PropTypes.string
-      })
-    ])
+    showProvider: PropTypes.oneOf([true, false, undefined]),
+    style: PropTypes.object
   };
 
   static defaultProps = {
-    size: 'normal',
+    darkMode: false,
     displayName: false,
     displayFlag: true,
-    flagBorder: false
+    plainMode: false,
+    showProvider: undefined
   };
 
   @computed
@@ -59,6 +56,23 @@ export default class AWSRegionTag extends React.Component {
       return this.props.awsRegions.getRegionByUID(this.props.regionUID);
     }
     return null;
+  }
+
+  @computed
+  get shouldDisplayProvider () {
+    if (this.props.showProvider) {
+      return true;
+    }
+    if (this.props.showProvider === false) {
+      return false;
+    }
+    if (this.props.awsRegions.loaded) {
+      return (this.props.awsRegions.value || [])
+        .filter(r => r.provider)
+        .filter((p, i, a) => a.indexOf(p) === i)
+        .length > 1;
+    }
+    return false;
   }
 
   @computed
@@ -74,16 +88,23 @@ export default class AWSRegionTag extends React.Component {
 
   @computed
   get provider () {
-    if (this.region) {
-      return this.region.provider;
+    if (this.region && this.region.provider) {
+      return this.region.provider.toUpperCase();
+    }
+    if (this.props.provider) {
+      return this.props.provider.toUpperCase();
     }
     return null;
   }
 
   @computed
-  get flagClassName () {
+  get zoneInfo () {
     if (this.zone) {
-      let getGlobalFn = () => this.zone.toLowerCase().split('-')[0];
+      const simpleZone = this.zone.toLowerCase().split('-')[0];
+      let getGlobalFn = () => ({
+        zone: simpleZone,
+        result: simpleZone
+      });
       if (this.provider === 'AZURE' || this.zone.split('-').length === 1) {
         getGlobalFn = () => {
           const checkZones = [
@@ -138,55 +159,145 @@ export default class AWSRegionTag extends React.Component {
             return !!r;
           });
           if (result) {
-            return result.result;
+            return {
+              region: zone,
+              result: result.result,
+              zone
+            };
           }
-          return '';
+          return null;
+        };
+      } else if (this.provider === 'GCP') {
+        getGlobalFn = () => {
+          const checkZones = [
+            {
+              region: 'asia',
+              subRegion: 'east1',
+              result: 'taiwan'
+            },
+            {
+              region: 'asia',
+              subRegion: 'east2',
+              result: 'cn'
+            },
+            {
+              region: 'asia',
+              subRegion: 'northeast1',
+              result: 'ap ap-northeast-1'
+            },
+            {
+              region: 'asia',
+              subRegion: 'south1',
+              result: 'ap ap-south-1'
+            },
+            {
+              region: 'asia',
+              subRegion: 'southeast1',
+              result: 'ap ap-southeast-1'
+            },
+
+            {
+              region: 'australia',
+              result: 'ap ap-southeast-2'
+            },
+            {
+              region: 'europe',
+              result: 'eu'
+            },
+            {
+              region: 'northamerica',
+              result: 'ca'
+            },
+            {
+              region: 'southamerica',
+              result: 'sa'
+            },
+            {
+              region: 'us',
+              result: 'us'
+            }
+          ];
+          const zone = this.zone.toLowerCase();
+          const [region, subRegion] = zone.split('-');
+          let [result] = checkZones.filter(z => {
+            return z.region.toLowerCase() === region &&
+              (z.subRegion || '').toLowerCase() === (subRegion || '');
+          });
+          if (!result) {
+            [result] = checkZones.filter(z => z.region.toLowerCase() === region);
+          }
+          return {...result, zone};
         };
       }
-      const global = getGlobalFn();
-      return `${styles.flag} flag ${global} ${this.zone.toLowerCase()}`;
+      return getGlobalFn();
     }
     return null;
   }
 
   render () {
     const parts = [];
-    if (this.props.displayFlag && this.flagClassName) {
-      const flagStyle = {};
-      if (this.props.flagBorder &&
-        typeof this.props.flagBorder === 'string' &&
-        this.props.flagBorder.toLowerCase() !== 'false') {
-        flagStyle.boxShadow = '0 0 0 1px black';
-      } else if (this.props.flagBorder &&
-        typeof this.props.flagBorder === 'boolean' &&
-        this.props.flagBorder) {
-        flagStyle.boxShadow = '0 0 0 1px black';
-      } else if (this.props.flagBorder && typeof this.props.flagBorder === 'object') {
-        const size = this.props.flagBorder.size || 1;
-        const color = this.props.flagBorder.color || 'black';
-        flagStyle.boxShadow = `0 0 0 ${size}px ${color}`;
+    if (this.provider && this.shouldDisplayProvider) {
+      if (this.props.plainMode) {
+        parts.push(this.provider.toLowerCase());
+      } else {
+        parts.push(
+          <span
+            className={
+              `${styles.provider} provider ${this.provider} ${this.props.darkMode && styles.dark}`
+            }
+            data-provider={this.provider}
+            key="provider"
+            style={this.props.providerStyle}
+          />
+        );
       }
-      parts.push(
-        <span
-          key="flag"
-          style={flagStyle}
-          className={`${this.flagClassName} ${styles[this.props.size]}`} />
-      );
+    }
+    const info = this.zoneInfo;
+    if (this.props.displayFlag && info) {
+      if (this.props.plainMode) {
+        parts.push(info.zone);
+      } else {
+        const flagClassName = `${styles.flag} flag ${info.result} ${info.zone.toLowerCase()}`;
+        parts.push(
+          <span
+            className={`${flagClassName} ${this.props.darkMode && styles.dark}`}
+            key="flag"
+            style={this.props.flagStyle}
+          />
+        );
+      }
     }
     if (this.props.displayName && this.region) {
-      parts.push(
-        <span key="name" className={styles.title}>{this.region.name}</span>
-      );
+      if (this.props.plainMode) {
+        if (parts.indexOf(this.region.name) === -1) {
+          parts.push(this.region.name);
+        }
+      } else {
+        parts.push(
+          <span
+            className={styles.title}
+            key="name"
+          >
+            {this.region.name}
+          </span>
+        );
+      }
     }
     if (parts.length > 0) {
-      return (
-        <span
-          style={this.props.style}
-          className={`${styles.container} ${styles[this.props.size]} ${this.props.className || ''}`}>
-          {parts}
-        </span>
-      );
+      if (this.props.plainMode) {
+        return <span>{parts.join('/')}</span>;
+      } else {
+        return (
+          <span
+            style={this.props.style}
+            className={`${styles.container} ${this.props.className || ''}`}>
+            {parts}
+          </span>
+        );
+      }
     }
     return null;
   }
 }
+
+export default AWSRegionTag;

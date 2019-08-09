@@ -170,8 +170,9 @@ export default class S3FilePreview extends React.Component {
               <td style={{paddingLeft: 5}}>
                 {this.props.dataStorageInfo.value.name}
                 <AWSRegionTag
+                  darkMode
                   regionId={this.props.dataStorageInfo.value.regionId}
-                  size="normal" />
+                />
               </td>
             </tr>
             <tr>

@@ -189,6 +189,22 @@ function cp_cap_publish {
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_DIND_CONTAINER"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _DIND_CONTAINER_INIT="dind_setup && docker_setup_credentials"
+            echo "Requested DinD CONTAINER mode capability, setting init scripts:"
+            echo "--> Master/Worker: $_DIND_CONTAINER_INIT"
+
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -220,7 +236,7 @@ function cp_cap_init {
 
             if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
             then
-                  $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py &
+                  nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py 1>/dev/null 2>$LOG_DIR/.nohup.sge.autoscale.log &
             fi
       fi
 }
@@ -292,6 +308,15 @@ function get_install_command_by_current_distr {
       local _RESULT_VAR="$1"
       local _TOOLS_TO_INSTALL="$2"
       local _INSTALL_COMMAND_TEXT=
+
+      # Handle some distro-specific package names
+      if [[ "$_TOOLS_TO_INSTALL" == *"ltdl"* ]]; then
+            local _ltdl_lib_name=
+            check_installed "apt-get" && _ltdl_lib_name="libltdl7"
+            check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
+            _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
+
       check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/ && apt-get update -y -qq && DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated install $_TOOLS_TO_INSTALL";  };
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
@@ -391,6 +416,32 @@ function create_sys_dir {
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
 }
 
+function initialise_restrictors {
+    local _RESTRICTING_COMMANDS="$1"
+    local _RESTRICTOR="$2"
+    local _RESTRICTORS_BIN="$3"
+    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$_RESTRICTING_COMMANDS"
+    for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
+    do
+        COMMAND_PATH=$(command -v "$COMMAND")
+        if [[ "$?" == 0 ]]
+        then
+            COMMAND_WRAPPER_PATH="$_RESTRICTORS_BIN/$COMMAND"
+            COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
+            if [[ "$?" == 0 ]]
+            then
+                echo "$COMMON_REPO_DIR/shell/$_RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
+            fi
+        fi
+    done
+}
+
+function list_storage_mounts() {
+    local _MOUNT_ROOT="$1"
+    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
+}
+
 ######################################################
 
 
@@ -431,7 +482,7 @@ fi
 configure_package_manager
 
 # First check whether all packages upgrade required
-if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]
+if [ "${CP_UPGRADE_PACKAGES,,}" == 'true' ] || [ "${CP_UPGRADE_PACKAGES,,}" == 'yes' ]
 then
       echo "Packages upgrade requested. Performing upgrade"
       upgrade_installed_packages
@@ -450,7 +501,8 @@ if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
     local_package_install $CP_CAP_DISTR_STORAGE_COMMON
 else
     _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
+     get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
+                                                                coreutils"
     eval "$_DEPS_INSTALL_COMMAND"
 fi
 
@@ -468,6 +520,8 @@ echo "------"
 echo
 
 ######################################################
+
+
 
 ######################################################
 echo "Init default variables if they are not set explicitly"
@@ -778,6 +832,9 @@ install_pip_package PipelineCLI
 if [ -z "$GIT_REPO" ] ;
 then
       echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
 else
       # clone current pipeline repo
       clone_repository $GIT_REPO $SCRIPTS_DIR 3 10
@@ -859,7 +916,7 @@ then
     mount_nfs_if_required "$parent_id"
     cluster_setup_client "$parent_id" "$SHARED_FOLDER"
     _SETUP_RESULT=$?
-elif [ -z "$cluster_role" ];
+elif [ -z "$cluster_role" ] || [ "$cluster_role" = "master" ];
 then 
       # If this is a common run (not a cluster - still publish scripts for CAPs)
       export cluster_role="master"
@@ -888,27 +945,29 @@ echo
 ######################################################
 
 
-
-
-
-######################################################
-echo "Checking if remote data needs localizing"
-echo "-"
-######################################################
-LOCALIZATION_TASK_NAME="InputData"
-INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
-
-upload_inputs ${INPUT_ENV_FILE} ${LOCALIZATION_TASK_NAME}
-
-if [ $? -ne 0 ];
+if [ "$RESUMED_RUN" == true ];
 then
-    echo "Failed to upload input data"
-    exit 1
+    echo "Skipping data localization for resumed run"
+else
+    ######################################################
+    echo "Checking if remote data needs localizing"
+    echo "-"
+    ######################################################
+    LOCALIZATION_TASK_NAME="InputData"
+    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+
+    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+
+    if [ $? -ne 0 ];
+    then
+        echo "Failed to upload input data"
+        exit 1
+    fi
+    echo
+
+    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
 fi
-echo
-
-source ${INPUT_ENV_FILE}
-
 echo "------"
 echo
 ######################################################
@@ -992,12 +1051,13 @@ do
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \
             [[ "$var" == "CP_ACCOUNT_KEY_"* ]] || \
+            [[ "$var" == "CP_CREDENTIALS_FILE_CONTENT_"* ]] || \
             [[ $SECURE_ENV_VARS == *"$var"* ]]; then
 		continue
 	fi
       _var_value="\"${!var}\""
       if [[ "$var" == "PATH" ]]; then
-            _var_value="\"${!var}:\$$var\""
+            _var_value="\"${!var}:\${$var}\""
       fi
 	echo "export $var=$_var_value" >> $CP_ENV_FILE_TO_SOURCE
 done
@@ -1042,33 +1102,25 @@ echo
 
 
 ######################################################
-echo "Create package manager restriction wrappers"
+echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
 CP_USR_BIN="/usr/cpbin"
 
 mkdir -p "$CP_USR_BIN"
-IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MANAGERS"
 
-for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
-do
-    MANAGER_PATH=$(command -v "$MANAGER")
-    if [[ "$?" == 0 ]]
-    then
-        MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
-        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
-        if [[ "$?" == 0 ]]
-        then
-            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
-            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
-        fi
-    fi
-done
+initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
-echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
+if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
+then
+    MOUNTED_PATHS=$(list_storage_mounts "$DATA_STORAGE_MOUNT_ROOT")
+    initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
+fi
 
-echo "Finished creating package manager restriction wrappers"
+echo "export PATH=\"$CP_USR_BIN:\${PATH}\"" >> "$CP_ENV_FILE_TO_SOURCE"
+
+echo "Finished creating restriction wrappers"
 
 echo "------"
 echo
@@ -1116,9 +1168,53 @@ echo
 
 
 ######################################################
+# Setup native DinD
+######################################################
+
+echo "Setup DinD (native)"
+echo "-"
+
+# DinD container mode is set for all cluster nodes via cp_cap_publish
+# as the $CP_CAP_DIND_CONTAINER parameter will not be available for workers
+# Same approach as for SGE
+if [ "$CP_CAP_DIND_NATIVE" == "true" ] && check_installed "docker"; then
+      _DIND_DEPS_INSTALL_COMMAND=
+      get_install_command_by_current_distr _DIND_DEPS_INSTALL_COMMAND "ltdl"
+      eval "$_DIND_DEPS_INSTALL_COMMAND"
+      # Skipping registry certificate configuration for the "native" mode as is shall be inherited from the host node
+      docker_setup_credentials --skip-cert
+else
+    echo "DinD (native) configuration is not requested"
+fi
+
+######################################################
+
+
+
+######################################################
+# Setup "modules" support
+######################################################
+
+echo "Setup Environment Modules support"
+echo "-"
+
+if [ "$CP_CAP_MODULES" == "true" ]; then
+      modules_setup
+else
+    echo "Environment Modules support is not requested"
+fi
+
+######################################################
+
+
+
+######################################################
 echo Executing task
 echo "-"
 ######################################################
+
+# Check whether there are any capabilities init scripts available and execute them before main SCRIPT
+cp_cap_init
 
 # As some environments do not support "sleep infinity" command - it is substituted with "sleep 10000d"
 SCRIPT="${SCRIPT/sleep infinity/sleep 10000d}"
@@ -1129,9 +1225,6 @@ if [ ! -d "$ANALYSIS_DIR" ]; then
 fi
 cd $ANALYSIS_DIR
 echo "CWD is now at $ANALYSIS_DIR"
-
-# Check whether there are any capabilities init scripts available and execute them before main SCRIPT
-cp_cap_init
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

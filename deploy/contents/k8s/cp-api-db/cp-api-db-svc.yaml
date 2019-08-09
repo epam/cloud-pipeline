@@ -8,7 +8,7 @@ metadata:
 spec:
   ports:
   - protocol: TCP
-    port: 5432
-    targetPort: 5432
+    port: ${PSG_PORT}
+    targetPort: ${PSG_PORT}
   selector:
     cloud-pipeline/cp-api-db: "true"

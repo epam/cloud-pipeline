@@ -16,14 +16,14 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
 import {Alert, Collapse, Icon, Row} from 'antd';
 import LoadingView from '../../special/LoadingView';
+import {getSpotTypeName} from '../../special/spot-instance-names';
 import connect from '../../../utils/connect';
 import configurations from '../../../models/configuration/Configurations';
 import pipelines from '../../../models/pipelines/Pipelines';
-import instanceTypes from '../../../models/utils/InstanceTypes';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import styles from './PreviewConfiguration.css';
 
@@ -32,15 +32,18 @@ const ADVANCED = 'advanced';
 const PARAMETERS = 'parameters';
 const SYSTEM_PARAMETERS = 'systemParameters';
 
-@connect({configurations, pipelines, instanceTypes})
-@inject(({configurations, runDefaultParameters, pipelines}, params) => {
+@connect({configurations, pipelines})
+@inject('cloudProviders')
+@inject(({cloudProviders, configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
   return {
+    cloudProviders,
     configuration: configurations.getConfiguration(params.configurationId),
     configurationsCache: configurations,
     entitiesTypes: new MetadataClassLoadAll(),
     runDefaultParameters,
     pipelines,
-    instanceTypes
+    onDemandInstanceTypes,
+    spotInstanceTypes
   };
 })
 @observer
@@ -60,6 +63,16 @@ export default class PreviewConfiguration extends Component {
   selectedPipelineConfiguration = null;
   @observable
   selectedRootEntity = null;
+
+  @computed
+  get currentCloudProvider() {
+    if (this.selectedEntry && this.selectedEntry.configuration && this.props.cloudProviders.loaded) {
+      const [provider] = (this.props.cloudProviders.value || [])
+        .filter(p => p.id === this.selectedEntry.configuration.cloudProviderId);
+      return provider;
+    }
+    return null;
+  }
 
   getPanelHeader = (key) => {
     let title;
@@ -81,7 +94,8 @@ export default class PreviewConfiguration extends Component {
 
   renderExecEnvironmentSection = () => {
     const res = [];
-    if (!this.selectedEntry || this.props.instanceTypes.pending ||
+    if (!this.selectedEntry ||
+      this.props.onDemandInstanceTypes.pending || this.props.spotInstanceTypes.pending ||
       (this.selectedEntry.pipelineId && this.selectedPipeline && this.selectedPipeline.pending)) {
       return res;
     }
@@ -125,7 +139,9 @@ export default class PreviewConfiguration extends Component {
       this.getDivider('docker_image_divider', 6)
     );
     let instance = this.selectedEntry.configuration.instance_size;
-    const [instanceType] = this.props.instanceTypes.value.filter(i => i.name === instance);
+    const [instanceType] = (this.selectedEntry.configuration.is_spot
+      ? this.props.spotInstanceTypes.value
+      : this.props.onDemandInstanceTypes.value).filter(i => i.name === instance);
     if (instanceType) {
       instance = `${instanceType.name} (CPU: ${instanceType.vcpu}, RAM: ${instanceType.memory}`;
       if (instanceType.gpu > 0) {
@@ -205,7 +221,7 @@ export default class PreviewConfiguration extends Component {
       </tr>,
       <tr key={'is_spot_value'} className={styles.valueRow}>
         <td id={'value-column-is_spot'} colSpan={6}>
-          {this.selectedEntry.configuration.is_spot ? 'Spot' : 'On-demand'}
+          {getSpotTypeName(this.selectedEntry.configuration.is_spot, this.currentCloudProvider)}
         </td>
       </tr>,
       this.getDivider('is_spot_divider', 6)
@@ -496,17 +512,19 @@ export default class PreviewConfiguration extends Component {
   };
 
   render () {
-    if (this.props.configuration.pending || this.props.instanceTypes.pending ||
+    if (this.props.configuration.pending ||
+      this.props.onDemandInstanceTypes.pending || this.props.spotInstanceTypes.pending ||
       this.props.entitiesTypes.pending ||
       (this.selectedPipeline && this.selectedPipeline.pending)) {
       return <LoadingView />;
     }
-    if (this.props.configuration.error || this.props.instanceTypes.error ||
+    if (this.props.configuration.error || this.props.onDemandInstanceTypes.error || this.props.spotInstanceTypes.error ||
       this.props.entitiesTypes.error ||
       (this.selectedPipeline && this.selectedPipeline.error)) {
       const errors = [
         this.props.configuration.error || false,
-        this.props.instanceTypes.error || false,
+        this.props.onDemandInstanceTypes.error || false,
+        this.props.spotInstanceTypes.error || false,
         this.props.entitiesTypes.error || false,
         this.selectedPipeline.error || false
       ];

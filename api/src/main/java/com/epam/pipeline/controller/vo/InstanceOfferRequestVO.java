@@ -30,9 +30,10 @@ public class InstanceOfferRequestVO {
     private String productFamily;
     private String volumeType;
     private Long regionId;
+    private String cloudProvider;
 
     public boolean isEmpty() {
         return termType == null && unit == null && instanceType == null && tenancy == null && operatingSystem == null
-                && productFamily == null && volumeType == null && regionId == null;
+                && productFamily == null && volumeType == null && regionId == null && cloudProvider == null;
     }
 }

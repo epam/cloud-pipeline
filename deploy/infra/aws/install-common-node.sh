@@ -13,6 +13,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Disable automatic packages upgrade, if cloud-init is configured
+if [ -d "/etc/cloud/cloud.cfg.d" ]; then
+
+cat <<EOF >/etc/cloud/cloud.cfg.d/99_no_upgrades.cfg
+repo_upgrade: none
+repo_upgrade_exclude:
+ - kernel
+ - nvidia*
+ - cuda*
+ - kubernetes*
+EOF
+
+fi
+
+
 
 # Install common
 yum install -y  nc \

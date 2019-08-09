@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
@@ -43,7 +44,6 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,6 @@ import static com.epam.pipeline.manager.cloud.azure.AzurePricingClient.executeRe
 @Slf4j
 public class AzurePriceListLoader {
 
-    private static final String CURRENCY = "USD";
     private static final String LOCALE = "en-US";
     private static final String REGION_INFO = "US";
     private static final String API_VERSION = "2016-08-31-preview";
@@ -76,7 +75,7 @@ public class AzurePriceListLoader {
     private static final String DISK_INDICATOR = "Disks";
     private static final String VIRTUAL_MACHINES_CATEGORY = "Virtual Machines";
     private static final String DISKS_CATEGORY = "Storage";
-    private static final String LOW_PRIORITY_VM_POSTFIX = "Low Priority";
+    private static final String LOW_PRIORITY_VM_POSTFIX = " Low Priority";
     private static final String DELIMITER = "/";
     private static final String AZURE_PRICING_FILTERS =
             "OfferDurableId eq '%s' and Currency eq '%s' and Locale eq '%s' and RegionInfo eq '%s'";
@@ -84,6 +83,7 @@ public class AzurePriceListLoader {
     private static final int CONNECT_TIMEOUT = 30;
     private static final String GENERAL_PURPOSE_FAMILY = "General purpose";
     private static final String GPU_FAMILY = "GPU instance";
+    public static final String EMPTY = "";
 
     private final AzurePricingClient azurePricingClient;
     private final String meterRegionName;
@@ -205,6 +205,7 @@ public class AzurePriceListLoader {
                         ResourceSkuCapabilities::value));
 
         return InstanceOffer.builder()
+                .cloudProvider(CloudProvider.AZURE)
                 .tenancy(SHARED_TENANCY)
                 .productFamily(STORAGE_PRODUCT_FAMILY)
                 .sku(diskSku.size())
@@ -234,7 +235,11 @@ public class AzurePriceListLoader {
 
         final int gpu = Integer.parseInt(capabilitiesByName.getOrDefault(GPU_CAPABILITY, "0"));
         return InstanceOffer.builder()
-                .termType(ON_DEMAND_TERM_TYPE)
+                .cloudProvider(CloudProvider.AZURE)
+                .termType(meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
+                        ? TermType.LOW_PRIORITY.getName()
+                        : TermType.ON_DEMAND.getName()
+                )
                 .tenancy(SHARED_TENANCY)
                 .productFamily(INSTANCE_PRODUCT_FAMILY)
                 .sku(meter.getMeterId())
@@ -290,11 +295,10 @@ public class AzurePriceListLoader {
     }
 
     private List<String> getVmSizes(final String rawMeterName) {
-        if (rawMeterName.endsWith(LOW_PRIORITY_VM_POSTFIX)) {
-            return Collections.emptyList();
-        }
         return Arrays.stream(rawMeterName.split(DELIMITER))
-                .map(vmSize -> vmSize.trim().replaceAll(" ", "_"))
+                .map(vmSize -> vmSize.trim()
+                        .replaceAll(LOW_PRIORITY_VM_POSTFIX, EMPTY)
+                        .replaceAll(" ", "_"))
                 .collect(Collectors.toList());
     }
 }

@@ -83,5 +83,7 @@ ${DEPLOY_DIR}/pipectl install \
                       -env CP_KUBE_MASTER_DOCKER_PATH="${CP_AZURE_KUBE_MASTER_DOCKER_PATH}" \
                       -env CP_KUBE_MASTER_ETCD_HOST_PATH="${CP_AZURE_KUBE_MASTER_ETCD_HOST_PATH}" \
                       -env CP_KUBE_MIN_DNS_REPLICAS=3 \
+                      -env CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES="${CP_PREF_CLUSTER_ALLOWED_PRICE_TYPES}" \
+                      -env CP_PREF_CLUSTER_SPOT="${CP_PREF_CLUSTER_SPOT}" \
                       -m \
                       -demo  ${DOLLAR}_SERVICES_TO_INSTALL ${DOLLAR}_ERASE_DATA

@@ -22,6 +22,8 @@ import org.testng.annotations.AfterClass;
 import java.util.Optional;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractSinglePipelineRunningTest
         extends AbstractBfxPipelineTest
@@ -40,6 +42,7 @@ public abstract class AbstractSinglePipelineRunningTest
     @AfterClass(alwaysRun = true)
     void removeNode() {
         open(C.ROOT_ADDRESS);
+        sleep(1, SECONDS);
         Optional.ofNullable(getRunId())
                 .ifPresent(runId -> clusterMenu().waitForTheNode(runId).removeNodeIfPresent(runId));
     }
@@ -47,6 +50,7 @@ public abstract class AbstractSinglePipelineRunningTest
     @AfterClass(alwaysRun = true)
     void stopRun() {
         open(C.ROOT_ADDRESS);
+        sleep(1, SECONDS);
         Optional.ofNullable(getRunId())
                 .ifPresent(runId -> runsMenu().stopRunIfPresent(runId));
     }

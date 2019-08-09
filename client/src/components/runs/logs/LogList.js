@@ -15,9 +15,8 @@
  */
 
 import React, {Component} from 'react';
-import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Row, Col, Spin, Input, Button, Icon, Checkbox} from 'antd';
+import {Row, Col, Spin, Input, Button, Checkbox} from 'antd';
 import {AutoSizer, List} from 'react-virtualized';
 import AU from 'ansi_up';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
@@ -41,8 +40,7 @@ const formatNumber = (number, mask) => (mask + '' + number).substring((number + 
   };
 })
 @observer
-export default class LogList extends Component {
-
+class LogList extends Component {
   ansiUp = new AU();
 
   state = {
@@ -182,8 +180,12 @@ export default class LogList extends Component {
     );
   };
 
-  componentWillReceiveProps () {
-    if (this.props.logs) {
+  componentWillReceiveProps (nextProps) {
+    if (this.props.logs &&
+      (
+        nextProps.taskName !== this.props.taskName ||
+        nextProps.runId !== this.props.runId
+      )) {
       this.props.logs.clearInterval();
     }
   }
@@ -196,6 +198,14 @@ export default class LogList extends Component {
 
   componentDidUpdate () {
     this.props.logs.onDataReceived = () => this.onDataReceived();
+    if (this.props.Run.loaded) {
+      const {status} = this.props.Run.value;
+      if (status === 'RUNNING') {
+        this.props.logs.startInterval();
+      } else {
+        this.props.logs.clearInterval();
+      }
+    }
   }
 
   componentDidMount () {
@@ -336,6 +346,7 @@ export default class LogList extends Component {
   componentWillUnmount () {
     window.onkeydown = null;
     this.props.logs.clearInterval();
+    this.props.logs.clearInterval();
   }
 
   initializeHeightCalculator = (span) => {
@@ -360,15 +371,6 @@ export default class LogList extends Component {
   };
 
   render () {
-    if (!this.props.Run.pending) {
-      const {status}=this.props.Run.value;
-      if (status === 'RUNNING') {
-        this.props.logs.startInterval();
-      } else {
-        this.props.logs.clearInterval();
-      }
-    }
-
     let Logs;
     if (this.props.logs.pending) {
       this.listElement = null;
@@ -399,8 +401,8 @@ export default class LogList extends Component {
             rowCount={linesCount}
             rowRenderer={this.renderLogRow}
             width={width}
-            />
-            )}
+          />)
+        }
       </AutoSizer>;
     }
 
@@ -485,3 +487,5 @@ export default class LogList extends Component {
     );
   }
 }
+
+export default LogList;

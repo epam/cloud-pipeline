@@ -225,12 +225,12 @@ public class PodMonitor extends AbstractSchedulingManager {
             tasks.forEach(task -> {
                 if (task.getStatus() == TaskStatus.RUNNING && !StringUtils.isEmpty(task.getInstance())) {
                     Pod pod = client.pods().inNamespace(kubeNamespace).withName(task.getInstance()).get();
-                    getPodLogs(run, client, pod);
+                    getPodLogs(run, pod);
                 }
             });
             clearWorkerNodes(run, client);
             //save luigi log
-            getPodLogs(run, client, parent);
+            getPodLogs(run, parent);
             //delete all pods
             LOGGER.debug("Clearing pods for successful pipeline: {}.", run.getPodId());
             client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, run.getPodId()).delete();
@@ -248,7 +248,7 @@ public class PodMonitor extends AbstractSchedulingManager {
             LOGGER.debug("Clearing worker {} node for parent run {}.", runIdLabel, run.getId());
             Long workerId = Long.parseLong(runIdLabel);
             PipelineRun workerRun = pipelineRunManager.loadPipelineRun(workerId);
-            getPodLogs(workerRun, client, worker);
+            getPodLogs(workerRun, worker);
             workerRun.setTerminating(false);
             workerRun.setStatus(run.getStatus());
             workerRun.setEndDate(run.getEndDate());
@@ -283,15 +283,15 @@ public class PodMonitor extends AbstractSchedulingManager {
         return worker.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL);
     }
 
-    private void getPodLogs(PipelineRun pipelineRun, KubernetesClient client, Pod pod) {
+    private void getPodLogs(PipelineRun pipelineRun, Pod pod) {
         String log = "";
         TaskStatus status = getStatus(pipelineRun, pod);
         String instance = pod == null ? pipelineRun.getPodId() : pod.getMetadata().getName();
         try {
             if (pod != null) {
                 LOGGER.debug("LOGS FOR POD: " + pod.getMetadata().getName());
-                log = client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
-                        .getLog();
+                log = kubernetesManager.getPodLogs(pod.getMetadata().getName(),
+                        preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES));
             }
         } catch (KubernetesClientException e) {
             LOGGER.debug(e.getMessage(), e);
@@ -449,11 +449,12 @@ public class PodMonitor extends AbstractSchedulingManager {
 
         private boolean killChildrenPods(String podId, PipelineRun run) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
+            Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
             try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
                 //get pipeline logs
                 String log = "";
                 try {
-                    log = client.pods().inNamespace(kubeNamespace).withName(run.getPodId()).getLog();
+                    log = kubernetesManager.getPodLogs(run.getPodId(), preference);
                 } catch (KubernetesClientException e) {
                     LOGGER.error(e.getMessage(), e);
                 }
@@ -471,7 +472,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                     if (pod.getMetadata().getName().equals(podId)) {
                         return;
                     }
-                    getPodLogs(run, client, pod);
+                    getPodLogs(run, pod);
                     client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
                         .delete();
                 });
@@ -538,12 +539,13 @@ public class PodMonitor extends AbstractSchedulingManager {
 
     private boolean shouldRerunBatchRun(PipelineRun run, String stateReason) {
         boolean isSpot = run.getInstance().getSpot() != null && run.getInstance().getSpot();
-        return run.getStatus() != TaskStatus.STOPPED && isSpot && isBatchJob(run) &&
+        return run.getStatus() != TaskStatus.STOPPED && isSpot && isParentBatchJob(run) &&
                 isStateReasonForRestart(stateReason) && checkRetryRestartCount(run.getId());
     }
 
-    private boolean isBatchJob(PipelineRun run) {
+    private boolean isParentBatchJob(PipelineRun run) {
         return isNotClusterRun(run)
+                && run.getParentRunId() == null
                 && run.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.CLOUD_PLATFORM
                 && CollectionUtils.isEmpty(toolManager.loadByNameOrId(run.getDockerImage()).getEndpoints());
     }

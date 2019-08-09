@@ -16,7 +16,6 @@
 
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
-import {Link} from 'react-router';
 import {computed, observable} from 'mobx';
 import {Card, Col, Menu, Row} from 'antd';
 import * as styles from './AllRuns.css';
@@ -88,7 +87,7 @@ const refreshInterval = 10000;
   };
 })
 @observer
-export default class AllRuns extends Component {
+class AllRuns extends Component {
 
   initializeRunFilter = (filterParams) => {
     this._runFilter = this.props.pipelineRun.runFilter(filterParams, true);
@@ -426,3 +425,5 @@ export default class AllRuns extends Component {
       </Card>);
   }
 }
+
+export default AllRuns;

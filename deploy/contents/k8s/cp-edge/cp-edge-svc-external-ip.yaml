@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-edge: "true"
+    cloud-pipeline/role: "EDGE"
+  name: cp-edge
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_EDGE_INTERNAL_PORT}
+    targetPort: 8080
+    name: cp-edge-port-https
+  - protocol: TCP
+    port: ${CP_EDGE_WEB_INTERNAL_PORT}
+    targetPort: 8181
+    name: cp-edge-port-web
+  - protocol: TCP
+    port: ${CP_EDGE_CONNECT_INTERNAL_PORT}
+    targetPort: 8282
+    name: cp-edge-port-connect
+  externalIPs:
+${CP_EDGE_SVC_EXTERNAL_IP_LIST}
+  selector:
+    cloud-pipeline/cp-edge: "true"

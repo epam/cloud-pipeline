@@ -91,16 +91,9 @@ class Log extends Remote {
 
   postprocess (value) {
     const result = [];
-
     value.payload && value.payload.forEach(log => {
-      const {date, status}=log;
-      const name = log.task? log.task.name : undefined;
-      // TODO: Decide whether we need these messages at all (i.e. [TASK] [STATE])
-      // Log only success/failed/stopped events
-      // if (status !== 'RUNNING') {
-      //  result.push([`[${displayDate(date)}]`, status, name].join(' '));
-      // }
       if (log.logText) {
+        const {date} = log;
         result.push(...parseLog(log.logText, displayDate(date)));
       }
     });
@@ -132,7 +125,7 @@ class PipelineRun extends Remote {
   _runRunIdCache = new Map();
 
   run (runId, params) {
-    const {refresh}=params || {};
+    const {refresh} = params || {};
     if (!this._runRunIdCache.has(`${runId}`)) {
       this._runRunIdCache.set(`${runId}`, new Run(`${runId}`));
     } else {
@@ -145,11 +138,25 @@ class PipelineRun extends Remote {
     return this._runRunIdCache.get(`${runId}`);
   }
 
-
   _runRunIdTasksCache = new Map();
+  _nestedRunsCache = new Map();
 
   runTasks (runId) {
     return this.constructor.getCache(this._runRunIdTasksCache, runId, RunTasks, runId);
+  }
+  nestedRuns (runId, count) {
+    return this.constructor.getCache(
+      this._nestedRunsCache,
+      `${runId}`,
+      PipelineRunFilter,
+      {
+        page: 1,
+        pageSize: count,
+        parentId: runId,
+        userModified: true
+      },
+      false
+    );
   }
 }
 

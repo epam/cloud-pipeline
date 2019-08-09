@@ -239,7 +239,7 @@ export default class UploadToDatastorageForm extends React.Component {
           path={this.state.destination}
           showOnlyFolder
           checkWritePermissions
-          bucketTypes={['AZ', 'S3']} />
+          bucketTypes={['AZ', 'S3', 'GS']} />
       </Modal>
     );
   }

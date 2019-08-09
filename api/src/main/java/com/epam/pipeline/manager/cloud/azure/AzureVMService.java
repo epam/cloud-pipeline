@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.microsoft.azure.Page;
@@ -27,8 +29,11 @@ import com.microsoft.azure.management.compute.InstanceViewStatus;
 import com.microsoft.azure.management.compute.PowerState;
 import com.microsoft.azure.management.compute.VirtualMachine;
 import com.microsoft.azure.management.compute.VirtualMachineInstanceView;
+import com.microsoft.azure.management.compute.VirtualMachineScaleSet;
+import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.resources.GenericResource;
+import com.microsoft.azure.management.resources.fluentcore.arm.models.Resource;
 import com.microsoft.rest.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,39 +47,90 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @Slf4j
 @Service
 public class AzureVMService {
+
     private static final String VM_FAILED_STATE = "ProvisioningState/failed";
     private static final String TAG_NAME = "Name";
-    private static final String VIRTUAL_MACHINES = "virtualMachines";
+    private static final String VIRTUAL_MACHINE_PREFIX = "virtualMachine";
+    private static final String VIRTUAL_MACHINES_TYPE = "virtualMachines";
+    private static final String VIRTUAL_MACHINE_SCALE_SET_TYPE = "virtualMachineScaleSets";
     private static final String NETWORK_INTERFACES = "networkInterfaces";
     private static final String RESOURCE_DELIMITER = "/";
+    private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
+    private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
+    private static final String SUCCEEDED = "Succeeded";
+    private static final String PREEMPTED = "preempted";
+    private static final String INSTANCE_WAS_PREEMPTED = "Low priority instance was preempted";
+    private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
+
+    static {
+        SCALE_SET_FAILED_STATUS = new InstanceViewStatus();
+        SCALE_SET_FAILED_STATUS.withCode(VM_FAILED_STATE + RESOURCE_DELIMITER + PREEMPTED);
+        SCALE_SET_FAILED_STATUS.withMessage(INSTANCE_WAS_PREEMPTED);
+    }
+
     private final MessageHelper messageHelper;
 
-    public void startInstance(final AzureRegion region, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).powerOff();
     }
 
+    public AzureVirtualMachineStats getRunningVMByRunId(final AzureRegion region, final String tagValue) {
+        final AzureVirtualMachineStats virtualMachine = getVMStatsByTag(region, tagValue);
+        final PowerState powerState = virtualMachine.getPowerState();
+        if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
+            throw new AzureException(messageHelper.getMessage(
+                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
+        }
+        return virtualMachine;
+    }
+
+    public AzureVirtualMachineStats getAliveVMByRunId(final AzureRegion region, final String tagValue) {
+        return getVMStatsByTag(region, tagValue);
+    }
+
+    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
+        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
+    }
+
     public void terminateInstance(final AzureRegion region, final String instanceId) {
         final Azure azure = buildClient(region.getAuthFile());
-        final String instanceName = getInstanceName(region, instanceId);
+        final String instanceName = getInstanceResourceName(region, instanceId);
         resourcesByTag(region, instanceName)
                 .sorted(this::resourcesTerminationOrder)
                 .map(GenericResource::id)
                 .forEach(resource -> azure.genericResources().deleteById(resource));
     }
 
-    private String getInstanceName(final AzureRegion region, final String instanceId) {
-        return findVmByName(region, instanceId)
-                .map(VirtualMachine::tags)
+    public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
+        final String interfaceId = vm.primaryNetworkInterfaceId();
+        return buildClient(authFile).networkInterfaces().getById(interfaceId);
+    }
+
+    public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
+        final Optional<String> scaleSetName = getScaleSetName(vmName);
+        return scaleSetName.isPresent()
+                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get())
+                : fetchFailingStatusFromVm(region, vmName);
+    }
+
+    private String getInstanceResourceName(final AzureRegion region, final String instanceId) {
+        return searchVmResource(region, instanceId)
+                .map(Resource::tags)
                 .map(Map::entrySet)
                 .map(Set::stream)
                 .orElseGet(Stream::empty)
@@ -85,9 +141,23 @@ public class AzureVMService {
                         MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, instanceId)));
     }
 
+    public Optional<? extends Resource> searchVmResource(final AzureRegion region, final String instanceId) {
+        final Optional<String> scaleSetName = getScaleSetName(instanceId);
+        if(scaleSetName.isPresent()) {
+            return findVmScaleSetByName(region, scaleSetName.get());
+        } else {
+            return findVmByName(region, instanceId);
+        }
+    }
+
+    private Optional<String> getScaleSetName(final String instanceId) {
+        final Matcher matcher = LOW_PRIORITY_VM_NAME_PATTERN.matcher(instanceId);
+        return matcher.matches() ? Optional.ofNullable(matcher.group(1)) : Optional.empty();
+    }
+
     private int resourcesTerminationOrder(final GenericResource r1, final GenericResource r2) {
-        return resourceType(r1).equals(VIRTUAL_MACHINES)
-                || resourceType(r1).equals(NETWORK_INTERFACES) && !resourceType(r2).equals(VIRTUAL_MACHINES)
+        return resourceType(r1).startsWith(VIRTUAL_MACHINE_PREFIX)
+                || resourceType(r1).equals(NETWORK_INTERFACES) && !resourceType(r2).startsWith(VIRTUAL_MACHINE_PREFIX)
                 ? -1 : 0;
     }
 
@@ -99,30 +169,24 @@ public class AzureVMService {
         return items[items.length - 1];
     }
 
-    public VirtualMachine getRunningVMByRunId(final AzureRegion region, final String tagValue) {
-        final VirtualMachine virtualMachine = getVMByTag(region, tagValue);
-        final PowerState powerState = virtualMachine.powerState();
-        if (!powerState.equals(PowerState.RUNNING) && !powerState.equals(PowerState.STARTING)) {
-            throw new AzureException(messageHelper.getMessage(
-                    MessageConstants.ERROR_AZURE_INSTANCE_NOT_RUNNING, tagValue, powerState));
+    private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final AzureRegion region,
+                                                                  final String scaleSetName) {
+        return findVmScaleSetByName(region.getAuthFile(), region.getResourceGroup(), scaleSetName);
+    }
+
+    private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
+                                                                        final String scaleSetName) {
+        final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
+        if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
+            PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
+            return scaleSetVMs.size() > 0
+                    ? findFailedStatus(scaleSetVMs.get(0).instanceView().statuses())
+                    : Optional.of(SCALE_SET_FAILED_STATUS);
         }
-        return virtualMachine;
+        return Optional.empty();
     }
 
-    public VirtualMachine getAliveVMByRunId(final AzureRegion region, final String tagValue) {
-        return getVMByTag(region, tagValue);
-    }
-
-    public Optional<VirtualMachine> findVmByName(final AzureRegion region, final String instanceId) {
-        return findVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId);
-    }
-
-    public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
-        final String interfaceId = vm.primaryNetworkInterfaceId();
-        return buildClient(authFile).networkInterfaces().getById(interfaceId);
-    }
-
-    public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
+    private Optional<InstanceViewStatus> fetchFailingStatusFromVm(final AzureRegion region, final String vmName) {
         final Optional<VirtualMachine> virtualMachine = findVmByName(region, vmName);
         if (!virtualMachine.isPresent()) {
             return Optional.empty();
@@ -137,6 +201,10 @@ public class AzureVMService {
             return Optional.empty();
         }
 
+        return findFailedStatus(statuses);
+    }
+
+    private Optional<InstanceViewStatus> findFailedStatus(final List<InstanceViewStatus> statuses) {
         return statuses.stream()
                 .filter(status -> status.code().startsWith(VM_FAILED_STATE))
                 .findFirst();
@@ -157,31 +225,52 @@ public class AzureVMService {
                 .map(client -> client.getByResourceGroup(resourceGroup, instanceId));
     }
 
-    private VirtualMachine getVMByTag(final AzureRegion region, final String tagValue) {
+    private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final String authFile,
+                                                  final String resourceGroup,
+                                                  final String scaleSetName) {
+        return Optional.of(buildClient(authFile).virtualMachineScaleSets())
+                .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
+    }
+
+    private AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
         final Azure azure = buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
-        return findVMInPagedResult(resources.currentPage(), resources)
-                .map(resource  -> azure.virtualMachines().getById(resource.id()))
+        return findVMContainerInPagedResult(resources.currentPage(), resources)
+                .map(vmc -> getVmStatsByVmContainer(azure, vmc))
                 .orElseThrow(() -> new AzureException(messageHelper.getMessage(
                         MessageConstants.ERROR_AZURE_INSTANCE_NOT_FOUND, tagValue)));
     }
 
-    private Optional<GenericResource> findVMInPagedResult(final Page<GenericResource> currentPage,
-                                                          final PagedList<GenericResource> resources) {
+    private AzureVirtualMachineStats getVmStatsByVmContainer(final Azure azure, final GenericResource vmc) {
+        if (vmc.resourceType().equals(VIRTUAL_MACHINE_SCALE_SET_TYPE)) {
+            final VirtualMachineScaleSetVM scaleSetVM = azure.virtualMachineScaleSets().getById(vmc.id())
+                    .virtualMachines().list().stream().findFirst()
+                    .orElseThrow(() -> new AzureException(messageHelper.getMessage(
+                            MessageConstants.ERROR_AZURE_SCALE_SET_DOESNT_CONTAIN_VMS, vmc.id())));
+            return AzureVirtualMachineStats.fromScaleSetVirtualMachine(scaleSetVM);
+        } else if (vmc.resourceType().equals(VIRTUAL_MACHINES_TYPE)){
+            return AzureVirtualMachineStats.fromVirtualMachine(azure.virtualMachines().getById(vmc.id()));
+        }
+        throw new AzureException(messageHelper.getMessage(
+                MessageConstants.ERROR_AZURE_RESOURCE_IS_NOT_VM_LIKE, vmc.id()));
+    }
+
+    private Optional<GenericResource> findVMContainerInPagedResult(final Page<GenericResource> currentPage,
+                                                                   final PagedList<GenericResource> resources) {
         if (currentPage == null || CollectionUtils.isEmpty(currentPage.items())) {
             return Optional.empty();
         }
-        final Optional<GenericResource> virtualMachine = currentPage.items().stream()
-                .filter(r -> r.resourceType().equals(VIRTUAL_MACHINES)).findFirst();
-        return virtualMachine.isPresent() ? virtualMachine : checkNextPage(currentPage, resources);
+        final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
+                .filter(r -> r.resourceType().startsWith(VIRTUAL_MACHINE_PREFIX)).findFirst();
+        return virtualMachineContainer.isPresent() ? virtualMachineContainer : checkNextPage(currentPage, resources);
     }
 
     private Optional<GenericResource> checkNextPage(final Page<GenericResource> currentPage,
                                                     final PagedList<GenericResource> resources) {
         if (resources.hasNextPage()) {
             try {
-                return findVMInPagedResult(resources.nextPage(currentPage.nextPageLink()), resources);
+                return findVMContainerInPagedResult(resources.nextPage(currentPage.nextPageLink()), resources);
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
             }

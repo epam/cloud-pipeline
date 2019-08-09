@@ -20,6 +20,7 @@ from datetime import datetime, timedelta
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 import subprocess
 import time
+import multiprocessing
 
 
 class ExecutionError(RuntimeError):
@@ -148,9 +149,12 @@ class GridEngineJob:
 
 
 class GridEngine:
-    _MAIN_Q = 'main.q'
+    _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    _PARALLEL_ENVIRONMENT = os.getenv('CP_CAP_SGE_PE_NAME', 'local')
     _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
+    _SHOW_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -sp %s | grep "^slots" | awk \'{print $2}\''
+    _REPLACE_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -rattr pe slots %s %s'
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
@@ -239,6 +243,34 @@ class GridEngine:
         :param queue: Queue that host is a part of.
         """
         self.cmd_executor.execute(GridEngine._QMOD_ENABLE % (queue, host))
+
+    def increase_parallel_environment_slots(self, slots, pe=_PARALLEL_ENVIRONMENT):
+        """
+        Increases the number of parallel environment slots.
+
+        :param slots: Number of slots to append.
+        :param pe: Parallel environment to update number of slots for.
+        """
+        pe_slots = self.get_parallel_environment_slots(pe)
+        self.cmd_executor.execute(GridEngine._REPLACE_PARALLEL_ENVIRONMENT_SLOTS % (pe_slots + slots, pe))
+
+    def decrease_parallel_environment_slots(self, slots, pe=_PARALLEL_ENVIRONMENT):
+        """
+        Decreases the number of parallel environment slots.
+
+        :param slots: Number of slots to subtract.
+        :param pe: Parallel environment to update number of slots for.
+        """
+        pe_slots = self.get_parallel_environment_slots(pe)
+        self.cmd_executor.execute(GridEngine._REPLACE_PARALLEL_ENVIRONMENT_SLOTS % (pe_slots - slots, pe))
+
+    def get_parallel_environment_slots(self, pe=_PARALLEL_ENVIRONMENT):
+        """
+        Returns number of the parallel environment slots.
+
+        :param pe: Parallel environment to return number of slots for.
+        """
+        return int(self.cmd_executor.execute(GridEngine._SHOW_PARALLEL_ENVIRONMENT_SLOTS % pe).strip())
 
     def delete_host(self, host, queue=_MAIN_Q, hostgroup=_ALL_HOSTS, skip_on_failure=False):
         """
@@ -341,9 +373,11 @@ class Clock:
 
 class GridEngineScaleUpHandler:
     _POLL_ATTEMPTS = 60
+    _POLL_DELAY = 10
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_type, instance_image, price_type, polling_timeout=10):
+                 instance_type, instance_image, price_type, region_id, instance_cores, polling_timeout,
+                 polling_delay=_POLL_DELAY):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -358,7 +392,10 @@ class GridEngineScaleUpHandler:
         :param instance_type: Additional nodes instance type.
         :param instance_image: Additional nodes docker image.
         :param price_type: Additional nodes price type.
+        :param region_id: Additional nodes Cloud Region id.
+        :param instance_cores:  Additional nodes cores number.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
+        :param polling_delay: Polling delay - in seconds.
         """
         self.executor = cmd_executor
         self.pipe = pipe
@@ -370,7 +407,10 @@ class GridEngineScaleUpHandler:
         self.instance_type = instance_type
         self.instance_image = instance_image
         self.price_type = price_type
+        self.region_id = region_id
+        self.instance_cores = instance_cores
         self.polling_timeout = polling_timeout
+        self.polling_delay = polling_delay
 
     def scale_up(self):
         """
@@ -392,6 +432,7 @@ class GridEngineScaleUpHandler:
         self._add_worker_to_master_hosts(pod)
         self._await_worker_initialization(run_id)
         self.grid_engine.enable_host(pod.name)
+        self._increase_parallel_environment_slots(self.instance_cores)
         Logger.info('Additional worker with host=%s has been created.' % pod.name, crucial=True)
 
         # todo: Some delay is needed for GE to submit task to a new host.
@@ -410,10 +451,14 @@ class GridEngineScaleUpHandler:
                            '--cmd-template "sleep infinity" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
+                           '--region-id %s ' \
                            'cluster_role worker ' \
-                           'cluster_role_type additional' \
+                           'cluster_role_type additional ' \
+                           'CP_CAP_SGE false ' \
+                           'CP_CAP_AUTOSCALE false ' \
+                           'CP_CAP_AUTOSCALE_WORKERS 0' \
                            % (self.instance_disk, self.instance_type, self.instance_image, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type))
+                              self._pipe_cli_price_type(self.price_type), self.region_id)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
@@ -439,7 +484,8 @@ class GridEngineScaleUpHandler:
 
     def _await_pod_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s pod to initialize.' % run_id)
-        attempts = GridEngineScaleUpHandler._POLL_ATTEMPTS
+        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+            else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.pipe.load_run(run_id)
             if 'podIP' in run:
@@ -449,9 +495,8 @@ class GridEngineScaleUpHandler:
             Logger.info('Additional worker pod initialization hasn\'t finished yet. Only %s attempts remain left.'
                         % attempts)
             attempts -= 1
-            time.sleep(self.polling_timeout)
-        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' \
-                    % (run_id, GridEngineScaleUpHandler._POLL_ATTEMPTS * self.polling_timeout)
+            time.sleep(self.polling_delay)
+        error_msg = 'Pod with run_id=%s hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
 
@@ -461,7 +506,8 @@ class GridEngineScaleUpHandler:
 
     def _await_worker_initialization(self, run_id):
         Logger.info('Waiting for additional worker with run_id=%s to initialize.' % run_id)
-        attempts = GridEngineScaleUpHandler._POLL_ATTEMPTS
+        attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
+            else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
             run = self.pipe.load_run(run_id)
             if run['initialized']:
@@ -470,11 +516,15 @@ class GridEngineScaleUpHandler:
             Logger.info('Additional worker with run_id=%s hasn\'t been initialized yet. Only %s attempts remain left.'
                         % (run_id, attempts))
             attempts -= 1
-            time.sleep(self.polling_timeout)
-        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' \
-                    % GridEngineScaleUpHandler._POLL_ATTEMPTS * self.polling_timeout
+            time.sleep(self.polling_delay)
+        error_msg = 'Additional worker hasn\'t been initialized after %s seconds.' % self.polling_timeout
         Logger.fail(error_msg)
         raise ScalingError(error_msg)
+
+    def _increase_parallel_environment_slots(self, slots_to_append):
+        Logger.info('Increase number of parallel environment slots by %s.' % slots_to_append)
+        self.grid_engine.increase_parallel_environment_slots(slots_to_append)
+        Logger.info('Number of parallel environment slots was increased.')
 
 
 class GridEngineScaleDownHandler:
@@ -485,7 +535,7 @@ class GridEngineScaleDownHandler:
                            'cp %(file)s_MODIFIED %(file)s; ' \
                            'rm %(file)s_MODIFIED'
 
-    def __init__(self, cmd_executor, grid_engine, default_hostfile):
+    def __init__(self, cmd_executor, grid_engine, default_hostfile, instance_cores):
         """
         Grid engine scale down implementation. It handles grid engine host removal, hosts configuration (/etc/hosts
         and self.default_hostfile) and additional nodes stopping.
@@ -493,10 +543,12 @@ class GridEngineScaleDownHandler:
         :param cmd_executor: Cmd executor.
         :param grid_engine: Grid engine client.
         :param default_hostfile: Default host file location.
+        :param instance_cores:  Additional nodes cores number.
         """
         self.executor = cmd_executor
         self.grid_engine = grid_engine
         self.default_hostfile = default_hostfile
+        self.instance_cores = instance_cores
 
     def scale_down(self, child_host):
         """
@@ -516,12 +568,18 @@ class GridEngineScaleDownHandler:
             Logger.info('Enable additional worker with host=%s again.' % child_host)
             self.grid_engine.enable_host(child_host)
             return False
+        self._decrease_parallel_environment_slots(self.instance_cores)
         self._remove_host_from_grid_engine_configuration(child_host)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         self._remove_host_from_default_hostfile(child_host)
         Logger.info('Additional worker with host=%s has been stopped.' % child_host, crucial=True)
         return True
+
+    def _decrease_parallel_environment_slots(self, slots_to_remove):
+        Logger.info('Decrease number of parallel environment slots by %s.' % slots_to_remove)
+        self.grid_engine.decrease_parallel_environment_slots(slots_to_remove)
+        Logger.info('Number of parallel environment slots was decreased.')
 
     def _remove_host_from_grid_engine_configuration(self, host):
         Logger.info('Remove additional worker with host=%s from GE cluster configuration.' % host)
@@ -886,6 +944,9 @@ if __name__ == '__main__':
     instance_type = os.environ['instance_size']
     instance_image = os.environ['docker_image']
     price_type = os.environ['price_type']
+    region_id = os.environ['CLOUD_REGION_ID']
+    instance_cores = int(os.environ['CLOUD_PIPELINE_NODE_CORES']) \
+        if 'CLOUD_PIPELINE_NODE_CORES' in os.environ else multiprocessing.cpu_count()
     max_additional_hosts = int(os.environ['CP_CAP_AUTOSCALE_WORKERS']) \
         if 'CP_CAP_AUTOSCALE_WORKERS' in os.environ else 3
     log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
@@ -900,13 +961,16 @@ if __name__ == '__main__':
     pipe = PipelineAPI(api_url=pipeline_api, log_dir='/common/workdir/.pipe.log')
     scale_up_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.down.timeout', default_value=30))
+    scale_up_polling_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.polling.timeout',
+                                                        default_value=600))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
                                                 instance_type=instance_type, instance_image=instance_image,
-                                                price_type=price_type)
+                                                price_type=price_type, region_id=region_id,
+                                                instance_cores=instance_cores, polling_timeout=scale_up_polling_timeout)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                    default_hostfile=default_hostfile)
+                                                    default_hostfile=default_hostfile, instance_cores=instance_cores)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,

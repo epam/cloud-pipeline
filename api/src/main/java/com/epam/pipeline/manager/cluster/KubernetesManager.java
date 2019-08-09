@@ -31,6 +31,7 @@ import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretList;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.client.Config;
@@ -53,9 +54,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 @Component
 public class KubernetesManager {
@@ -71,6 +75,7 @@ public class KubernetesManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
     private static final String DEFAULT_SVC_SCHEME = "http";
     private static final int NODE_PULL_TIMEOUT = 200;
+    private static final String NEW_LINE = "\n";
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -132,7 +137,7 @@ public class KubernetesManager {
     public String createDockerRegistrySecret(DockerRegistrySecret secret) {
         Secret dockerRegistrySecret;
         String encodedSecret = encodeDockerSecret(secret);
-        String secretName = getValidName(secret.getRegistryUrl());
+        String secretName = getValidSecretName(secret.getRegistryUrl());
         try (KubernetesClient client = getKubernetesClient()) {
             dockerRegistrySecret = client.secrets()
                     .createNew()
@@ -149,6 +154,19 @@ public class KubernetesManager {
         return dockerRegistrySecret.getMetadata().getName();
     }
 
+    public Set<String> listAllSecrets() {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final SecretList list = client.secrets().list();
+            if (Objects.isNull(list)) {
+                return Collections.emptySet();
+            }
+            return list.getItems()
+                    .stream()
+                    .map(secret -> secret.getMetadata().getName())
+                    .collect(Collectors.toSet());
+        }
+    }
+
     public void deleteSecret(String secretName) {
         if (StringUtils.isBlank(secretName)) {
             return;
@@ -160,13 +178,22 @@ public class KubernetesManager {
         }
     }
 
-    public String getPodLogs(String podId) {
+    public String getPodLogs(final String podId, final int limit) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.pods().inNamespace(kubeNamespace).withName(podId).getLog();
+            final String tail = client.pods().inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .tailingLines(limit + 1).getLog();
+            return isLogTruncated(tail, limit)
+                    ? messageHelper.getMessage(MessageConstants.LOG_WAS_TRUNCATED) + NEW_LINE + tail
+                    : tail;
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    private boolean isLogTruncated(final String tail, final int limit) {
+        return tail.split(NEW_LINE).length > limit;
     }
 
     /**
@@ -385,7 +412,7 @@ public class KubernetesManager {
         return Base64.encodeBase64String(secretJson.getBytes());
     }
 
-    private String getValidName(String name) {
+    public String getValidSecretName(String name) {
         return name.toLowerCase().replaceAll("[^a-z0-9\\-]+", "-");
     }
 

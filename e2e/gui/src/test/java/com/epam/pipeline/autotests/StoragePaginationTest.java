@@ -90,7 +90,7 @@ public class StoragePaginationTest extends AbstractBfxPipelineTest
 
     @Test
     @TestCase({"EPMCMBIBPC-1068"})
-    @CloudProviderOnly(Cloud.AWS)
+    @CloudProviderOnly(values = {Cloud.AWS, Cloud.GCP})
     public void filesVersionModeOnShouldEnablePaginationOnRemovedFiles() {
         final int filesNumber = 51;
         final List<String> filesSuffixes = generateNames(filesNumber, fileSuffix);

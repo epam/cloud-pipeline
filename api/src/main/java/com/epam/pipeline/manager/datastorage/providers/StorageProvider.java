@@ -29,6 +29,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.region.VersioningAwareRegion;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
@@ -87,4 +90,22 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     String buildFullStoragePath(T dataStorage, String name);
 
     String getDefaultMountOptions(T dataStorage);
+
+    default StoragePolicy buildPolicy(VersioningAwareRegion region, StoragePolicy storagePolicy) {
+        if (storagePolicy == null) {
+            StoragePolicy defaultPolicy = new StoragePolicy();
+            defaultPolicy.setVersioningEnabled(region.isVersioningEnabled());
+            defaultPolicy.setBackupDuration(region.getBackupDuration());
+            return defaultPolicy;
+        }
+        if (storagePolicy.getVersioningEnabled() == null) {
+            storagePolicy.setVersioningEnabled(region.isVersioningEnabled());
+        }
+        if (storagePolicy.getBackupDuration() == null) {
+            storagePolicy.setBackupDuration(region.getBackupDuration());
+        }
+        return storagePolicy;
+    }
+
+    PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
 }

@@ -25,16 +25,14 @@ import java.util.Arrays;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.sleep;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public interface Authorization extends Navigation {
     Account admin = new Account(C.LOGIN, C.PASSWORD);
     Account user = new Account(C.ANOTHER_LOGIN, C.ANOTHER_PASSWORD);
     Account userWithoutCompletedRuns = new Account(C.CLEAN_HISTORY_LOGIN, C.CLEAN_HISTORY_PASSWORD);
 
-    // Delay was added in order to prevent page from auto-refreshing
-    long LOGIN_DELAY = MILLISECONDS.convert(5, SECONDS);
+    // Delay was added in order to prevent page from auto-refreshing (in milliseconds)
+    long LOGIN_DELAY = C.LOGIN_DELAY_TIMEOUT;
 
     default void givePermissions(Account account, Permission... permissions) {
         Arrays.stream(permissions).forEachOrdered(p -> p.set(getUserNameByAccountLogin(account.login)));

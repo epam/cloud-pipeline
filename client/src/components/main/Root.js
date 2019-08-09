@@ -36,8 +36,8 @@ import cloudProviders from '../../models/cloudRegions/CloudProviders';
 import dataStorageCache from '../../models/dataStorage/DataStorageCache';
 import dataStorageAvailable from '../../models/dataStorage/DataStorageAvailable';
 import dtsList from '../../models/dts/DTSList';
-import instanceTypes from '../../models/utils/InstanceTypes';
-import toolInstanceTypes from '../../models/utils/ToolInstanceTypes';
+import InstanceTypes from '../../models/utils/InstanceTypes';
+import ToolInstanceTypes from '../../models/utils/ToolInstanceTypes';
 import FolderLoadWithMetadata from '../../models/folders/FolderLoadWithMetadata';
 import dockerRegistries from '../../models/tools/DockerRegistriesTree';
 import RunCount from '../../models/pipelines/RunCount';
@@ -61,8 +61,17 @@ const users = new Users();
 const allowedInstanceTypes = new AllowedInstanceTypes();
 const searchEngine = new Search();
 
+const spotInstanceTypes = new InstanceTypes(true);
+const onDemandInstanceTypes = new InstanceTypes(false);
+const spotToolInstanceTypes = new ToolInstanceTypes(true);
+const onDemandToolInstanceTypes = new ToolInstanceTypes(false);
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
+(() => { return spotInstanceTypes.fetchIfNeededOrWait(); })();
+(() => { return onDemandInstanceTypes.fetchIfNeededOrWait(); })();
+(() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
+(() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 
 const Root = () =>
   <Provider
@@ -84,8 +93,10 @@ const Root = () =>
       availableCloudRegions,
       cloudProviders,
       folders,
-      instanceTypes,
-      toolInstanceTypes,
+      spotInstanceTypes,
+      onDemandInstanceTypes,
+      spotToolInstanceTypes,
+      onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
       metadataCache: FolderLoadWithMetadata.metadataCache,

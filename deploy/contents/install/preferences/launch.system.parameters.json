@@ -18,6 +18,24 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_SGE_QUEUE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine queue",
+        "defaultValue": "main.q"
+    },
+    {
+        "name": "CP_CAP_SGE_PE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine PE",
+        "defaultValue": "local"
+    },
+    {
+        "name": "CP_CAP_MODULES",
+        "type": "boolean",
+        "description": "Enables Environment Modules for a current run",
+        "defaultValue": "true"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",
@@ -80,7 +98,7 @@
     {
         "name": "INPUT_DIR",
         "type": "string",
-        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the S3 buckets automatically",
+        "description": "Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically",
         "defaultValue": ""
     },
     {
@@ -112,5 +130,11 @@
         "type": "int",
         "description": "Maximum number of additional cluster autoscaled workers",
         "defaultValue": "3"
+    },
+    {
+        "name": "CP_CAP_DIND_CONTAINER",
+        "type": "boolean",
+        "description": "Enable docker engine for a current run using a containerized approach",
+        "defaultValue": "true"
     }
 ]

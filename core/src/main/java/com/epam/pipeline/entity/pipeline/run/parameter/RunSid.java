@@ -25,7 +25,9 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class RunSid {
 
+    private Long runId;
     private String name;
     private Boolean isPrincipal;
+    private RunAccessType accessType;
 
 }

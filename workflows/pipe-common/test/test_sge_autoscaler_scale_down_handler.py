@@ -26,8 +26,9 @@ RUN_ID = '12345'
 cmd_executor = Mock()
 grid_engine = Mock()
 default_hostfile = 'default_hostfile'
+instance_cores = 4
 scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                default_hostfile=default_hostfile)
+                                                default_hostfile=default_hostfile, instance_cores=instance_cores)
 
 
 def setup_function():
@@ -100,3 +101,9 @@ def test_scaling_down_updates_default_hostfile():
 
     assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
     assert_first_argument_contained(cmd_executor.execute, default_hostfile)
+
+
+def test_scaling_down_decreases_parallel_environment_slots():
+    scale_down_handler.scale_down(HOSTNAME)
+
+    grid_engine.decrease_parallel_environment_slots.assert_called_with(instance_cores)

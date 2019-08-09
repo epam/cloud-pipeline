@@ -89,7 +89,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     }
 
     default ELEMENT_TYPE click(Primitive primitive) {
-        get(primitive).shouldBe(visible).click();
+        get(primitive).shouldBe(visible, enabled).click();
         return (ELEMENT_TYPE) this;
     }
 

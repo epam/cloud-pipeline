@@ -17,16 +17,19 @@
 package com.epam.pipeline.manager.security.acl;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
+import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.apache.commons.collections4.ListUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -112,6 +115,16 @@ public class AclAspect {
     public void setMaskForList(JoinPoint joinPoint, List<? extends AbstractSecuredEntity> list) {
         list.forEach(entity ->
                 entity.setMask(permissionManager.getPermissionsMask(entity, true, true)));
+    }
+
+    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskDelegateList)",
+            returning = "list")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setMaskForDelegateList(JoinPoint joinPoint, List<? extends SecuredEntityDelegate> list) {
+        ListUtils.emptyIfNull(list).forEach(delegate ->
+                Optional.ofNullable(delegate.toDelegate())
+                        .ifPresent(entity -> entity.setMask(
+                                permissionManager.getPermissionsMask(entity, true, true))));
     }
 
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskPage)",

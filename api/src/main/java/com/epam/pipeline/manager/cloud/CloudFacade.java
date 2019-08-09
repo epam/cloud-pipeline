@@ -17,7 +17,9 @@
 package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 
@@ -54,7 +56,7 @@ public interface CloudFacade {
 
     void stopInstance(Long regionId, String instanceId);
 
-    void startInstance(Long regionId, String instanceId);
+    CloudInstanceOperationResult startInstance(Long regionId, String instanceId);
 
     void terminateInstance(Long regionId, String instanceId);
 
@@ -64,9 +66,12 @@ public interface CloudFacade {
 
     List<InstanceOffer> refreshPriceListForRegion(Long regionId);
 
-    double getPriceForDisk(Long regionId, List<InstanceOffer> diskOffers, int instanceDisk, String instanceType);
+    double getPriceForDisk(Long regionId, List<InstanceOffer> diskOffers, int instanceDisk, String instanceType,
+                           boolean spot);
 
     double getSpotPrice(Long regionId, String instanceType);
 
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
+
+    List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 }

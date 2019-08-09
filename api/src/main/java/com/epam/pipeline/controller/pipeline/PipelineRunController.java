@@ -70,7 +70,6 @@ import java.util.List;
 public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
-    public static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final String TRUE = "true";
 
     @Autowired
@@ -169,7 +168,7 @@ public class PipelineRunController extends AbstractRestController {
         byte[] logs = runApiService.downloadLogs(runId).getBytes(Charset.defaultCharset());
         response.setContentType(MediaType.TEXT_PLAIN_VALUE);
         String pipelineName = !StringUtils.isEmpty(run.getPipelineName())
-                ? run.getPipelineName() : DEFAULT_PIPELINE_NAME;
+                ? run.getPipelineName() : PipelineRun.DEFAULT_PIPELINE_NAME;
         String pipelineVersion = !StringUtils.isEmpty(run.getVersion()) ? run.getVersion() : "";
         response.setHeader("Content-Disposition", String.format("attachment;filename=%s_%s_%d.log",
                         pipelineName, pipelineVersion, run.getId()));

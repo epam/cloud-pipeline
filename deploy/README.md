@@ -11,7 +11,7 @@ export CP_AZURE_RESOURCE_GROUP=
 # Docker-specific parameters
 export CP_DOCKER_DIST_USER=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
 export CP_DOCKER_DIST_PASS=                                         # Optional, if non-default (lifescience/cloud-pipeline) dockerhub images will be used
-export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/cloud-pipeline.latest.tgz
+export CP_API_DIST_URL=                                             # Specify API distribution tarball URI. If not set - latest version will be used from https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/develop/cloud-pipeline.latest.tgz
 
 bash build.sh -aws eu-central-1,us-east-1 \                         # List of regions to build VM images in AWS. -im shall be set to "rebuild" to build images from scratch
               -az westeurope,centralus \                            # Same as -aws, but Azure environment
@@ -48,16 +48,25 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_AWS_SECRET_ACCESS_KEY= \                    # For AWS key secret can be specified via environment variables
                 -env CP_AWS_KMS_ARN= \
                 -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE= \
+                -env CP_DOCKER_STORAGE_ROOT_DIR= \                  # Root directory within a $CP_DOCKER_STORAGE_CONTAINER, used to store images blobs. If not set - "cloud-pipeline-${CP_DEPLOYMENT_ID}" will be used
                 ## Azure
                 -env CP_AZURE_STORAGE_ACCOUNT= \                    # Default storage account name, that will be used to manage BLOB/FS storages and persist docker images (if CP_DOCKER_STORAGE_TYPE=obj)
                 -env CP_AZURE_STORAGE_KEY= \                        # Key for the default storage account (CP_AZURE_STORAGE_ACCOUNT)
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
-                -env CP_AZURE_OFFER_DURABLE_ID = \                  # 
-                -env CP_AZURE_SUBSCRIPTION_ID = \                   # 
-                
+                -env CP_AZURE_OFFER_DURABLE_ID=\                    # 
+                -env CP_AZURE_SUBSCRIPTION_ID=\                     # 
+
                 # Core API
+                -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
                 -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
-         
+                -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
+
+                # GitLab
+                -env CP_GITLAB_SSO_TARGET_URL= \                    # Sets idp_sso_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SSO_TARGET_URL_TRAIL}"
+                -env CP_GITLAB_SLO_TARGET_URL= \                    # Sets idp_slo_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"
+                -env CP_GITLAB_SSO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_sso_target_url (default: "/saml/sso")
+                -env CP_GITLAB_SLO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_slo_target_url (default: "/saml/sso")
+
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
                 -env CP_NOTIFIER_SMTP_SERVER_PORT= \
@@ -73,12 +82,35 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_DEFAULT_ADMIN_NAME= \
                 -env CP_DEFAULT_ADMIN_PASS= \
                 -env CP_DEFAULT_ADMIN_EMAIL= \
+                
+                # VM Monitor
+                -env CP_VM_MONITOR_HOUR_INTERVAL= \                 # Specify interval in hours between VM Monitor checks. Value 1 (default) means that VM Monitor will check VMs each hour       
+                -env CP_VM_MONITOR_INSTANCE_TAG_NAME= \             # VM Monitor will check status only of nodes labeled by this tag and value CP_VM_MONITOR_INSTANCE_TAG_VALUE 
+                -env CP_VM_MONITOR_INSTANCE_TAG_VALUE= \            # VM Monitor will check status only of nodes labeled by tag CP_VM_MONITOR_INSTANCE_TAG_NAME and this value 
+                -env CP_VM_MONITOR_TO_USER= \                       # Username that shall by notified when VM Monitor detects invalid VM state
+                -env CP_VM_MONITOR_CC_USERS= \                      # Usernames that shall by additionaly notified (cc) when VM Monitor detects invalid VM state
+
+                # Share Service
+                -env CP_SHARE_SRV_SAML_ID_TRAIL = \                 # SAML partner ID will for Share Service be constructed as {CP_SHARE_SRV_EXTERNAL_HOST}:{CP_SHARE_SRV_EXTERNAL_PORT} and this parameter 
+                -env CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS = \            # SAML claims that shall be used as ROLEs while parsing user info receinved from IDP
+
+                # EDGE Service
+                -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)
 
                 # Pipectl options
-                -m \                                                # Install kuberneters master
-                --docker \                                          # Limit images to be pushed during deployment
-                -id \                                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
-                -s \                                                # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
+                -m|--install-kube-master \                          # Install kuberneters master
+                -d|--docker \                                       # Limit images to be pushed during deployment
+                -id|--deployment-id \                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
+                -s|--service \                                      # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
+                --keep-kubedm-proxies \                             # Allow (http/https/no)_proxy settings to be included in to kube-api manifest by kubeadm. If option is not set - variables will be dropped before the kubeadm init command and then restored
+
+                # Templates customization
+                -env CP_PREF_TEMPLATES_DIRECTORY_EXT \              # If defined, shall point to a directory with pipelines templates, which override the defaults (cloud-pipeline/workflows/pipe-templates)
+                -env CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT \        # If defined, shall point to a directory with folders templates (e.g. "Project" template), which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/folder-templates)
+                -env CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT \  # If defined, shall point to a directory with error pages templates, which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/error-pages)
+                -env CP_ERROR_REDIRECT_URL \                        # Allows to specify a custom value for the Cloud Pipeline main page redirection url to use in the error pages placeholders (default: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/)
+                -env CP_ERROR_PLATFORM_NAME \                       # Allows to specify a custom value for the deployment name to use in the error pages placeholders (default: $CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME from the install-config)
+                -env CP_ERROR_SUPPORT_EMAIL \                       # Allows to specify a custom value for the admins' support email to use in the error pages placeholders (default: $CP_DEFAULT_ADMIN_EMAIL from the install-config)
 
                 # Misc
                 -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME= \         # Name of the object storage, that is used to store system-level data (e.g. issues attachments)
@@ -88,6 +120,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_KUBE_MASTER_DOCKER_PATH= \                  # Allows to override a location of the folder where docker stores it's data. This is useful when docker generates too much I/O to the OS Disk and shall be pointed to another device mounted to a more custom location. If not defined - docker defaults are used.
                 -env CP_KUBE_MASTER_ETCD_HOST_PATH= \               # Allows to override a location of the folder where etcd stores wal/data dirs. This is useful when etcd runs into I/O latency issues and shall be pointed to another device mounted to a more custom location, which leads to the kube control plane failures. If not defined - /var/lib/etcd path will be used
                 -env CP_KUBE_MIN_DNS_REPLICAS= \                    # Allows to configure a minimal number of DNS replicas for the cluster (default: 1). DNS will be autoscaled based on the size of a cluster (1 new replica for each 128 cores or 5 nodes)
+                -env CP_KUBE_SERVICES_TYPE= \                       # Allows to select a preferred services mode type: "node-port" or "external-ip" (default: "node-port")
 ```
 
 # Examples

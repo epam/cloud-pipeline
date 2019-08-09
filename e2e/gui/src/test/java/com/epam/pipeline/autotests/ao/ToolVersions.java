@@ -194,14 +194,14 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     public ToolVersions viewUnscannedVersions() {
         sleep(2, SECONDS);
-        if($(viewUnscannedVersions).is(exist)) {
+        if($(viewUnscannedVersions).exists()) {
             click(viewUnscannedVersions);
         }
         return this;
     }
 
     public ToolVersions viewUnscannedVersionsAvailable() {
-        $(viewUnscannedVersions).is(enabled);
+        $(viewUnscannedVersions).shouldBe(enabled);
         return this;
     }
 

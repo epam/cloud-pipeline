@@ -18,6 +18,10 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-heapster-elk
+          command:
+          - sh
+          - elasticsearch/bin/elasticsearch
+          - -Ehttp.host=0.0.0.0
           image: nshou/elasticsearch-kibana:kibana5
           imagePullPolicy: "IfNotPresent"
           envFrom:

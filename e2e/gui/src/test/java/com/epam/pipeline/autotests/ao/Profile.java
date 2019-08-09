@@ -31,6 +31,8 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.byAttribute;
+import static com.codeborne.selenide.Selectors.withText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
@@ -44,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SET_AS_DEFAULT;
 import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Profile implements AccessObject<Profile> {
     private final SelenideElement context;
@@ -147,6 +150,16 @@ public class Profile implements AccessObject<Profile> {
         return elements;
     }
 
+    public Profile waitUntilSaveEnding(final String name) {
+        for (int i = 0; i < 2; i++) {
+            if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
+                sleep(3, SECONDS);
+                break;
+            }
+        }
+        return this;
+    }
+
     public static By profileWithName(final String name) {
         return byXpath(String.format(".//*[@role = 'tab' and normalize-space() = '%s']", name));
     }
@@ -166,5 +179,4 @@ public class Profile implements AccessObject<Profile> {
         return Selenide.$$(byAttribute("role", "presentation"))
                 .findBy(and("first editor line", visible, attribute("style", "padding-right: 0.1px;")));
     }
-
 }

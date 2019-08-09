@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.region;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -25,6 +26,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@EqualsAndHashCode
 public class AzurePolicy {
     /**
      * The minimum IP address of the range of IP addresses.
