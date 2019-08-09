@@ -25,12 +25,19 @@ git checkout ${GIT_BRANCH}
 
 pip install -r ${CP_SRC}/e2e/cli/requirements.txt
 pip install -r ${CP_SRC}/pipe-cli/requirements.txt
-pip install awscli
+pip install awscli --force-reinstall --upgrade
 
-mkdir -p ${CP_CLI_DIR}
-wget --no-check-certificate ${PIPE_CLI_DOWNLOAD_URL} -O ${CP_CLI_DIR}/pipe
-chmod +x ${CP_CLI_DIR}/pipe
-export PATH=$PATH:${CP_CLI_DIR}
+if [[ -z $PIPE_CLI_DOWNLOAD_URL ]]; then
+    cd pipe-cli
+    python setup.py sdist
+    cd dist
+    pip install PipelineCLI-0.10.tar.gz
+else
+    mkdir -p ${CP_CLI_DIR}
+    wget --no-check-certificate ${PIPE_CLI_DOWNLOAD_URL} -O ${CP_CLI_DIR}/pipe
+    chmod +x ${CP_CLI_DIR}/pipe
+    export PATH=$PATH:${CP_CLI_DIR}
+fi
 
 export PYTHONPATH=$PYTHONPATH:${CP_SRC}/pipe-cli:${CP_SRC}/e2e/cli
 
@@ -39,7 +46,6 @@ RUN_TESTS_CMD_EXIT_CODE=$?
 ${RUN_METADATA_TESTS_CMD}
 RUN_METADATA_TESTS_CMD_EXIT_CODE=$?
 
-if [[ $RUN_TESTS_CMD_EXIT_CODE -ne 0 || -z $RUN_METADATA_TESTS_CMD && $RUN_METADATA_TESTS_CMD_EXIT_CODE -ne 0 ]];
-then
+if [[ $RUN_TESTS_CMD_EXIT_CODE -ne 0 || -z $RUN_METADATA_TESTS_CMD && $RUN_METADATA_TESTS_CMD_EXIT_CODE -ne 0 ]]; then
     exit 1
 fi
