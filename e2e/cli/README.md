@@ -37,7 +37,7 @@ Aws cloud provider default credentials should be configured to launch integratio
 
 ### Run with docker
 
-To run test in docker use `run_tests.sh` script and the commands below. Before launching the following common 
+To run test with docker use `run_tests.sh` script and the commands below. Before launching the following common 
 environment variable should be specified:
 
 ```
@@ -51,7 +51,10 @@ $PIPE_CLI_DOWNLOAD_URL - path to download Cloud Pipeline CLI. If this envvar is 
 $GIT_BRANCH - git branch with source code
 $WORKSPACE - path to Cloud Pipeline project source code
 $CP_TEST_REGION_ID - the created Cloud Pipeline region ID
+```
 
+Launch command examples:
+```
 $RUN_TESTS_CMD="pytest --html=/home/results/report.html -s -vv --tx 4*popen//python=python2.7 --dist=loadscope /home/cloud-pipeline/e2e/cli/buckets"
 $RUN_METADATA_TESTS_CMD="pytest --html=/home/results/metadata-report.html -s -vv /home/cloud-pipeline/e2e/cli/tag"
 ```

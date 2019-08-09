@@ -25,7 +25,6 @@ git checkout ${GIT_BRANCH}
 
 pip install -r ${CP_SRC}/e2e/cli/requirements.txt
 pip install -r ${CP_SRC}/pipe-cli/requirements.txt
-pip install awscli --force-reinstall --upgrade
 
 if [[ -z $PIPE_CLI_DOWNLOAD_URL ]]; then
     cd pipe-cli
@@ -38,6 +37,8 @@ else
     chmod +x ${CP_CLI_DIR}/pipe
     export PATH=$PATH:${CP_CLI_DIR}
 fi
+
+pip install awscli
 
 export PYTHONPATH=$PYTHONPATH:${CP_SRC}/pipe-cli:${CP_SRC}/e2e/cli
 
