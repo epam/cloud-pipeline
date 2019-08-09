@@ -93,12 +93,7 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runId: params.runId,
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
-    nestedRuns: pipelineRun.runFilter({
-      page: 1,
-      pageSize: MAX_NESTED_RUNS_TO_DISPLAY,
-      parentId: params.runId,
-      userModified: true
-    }, false),
+    nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
     runSSH: new PipelineRunSSH(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     task,
