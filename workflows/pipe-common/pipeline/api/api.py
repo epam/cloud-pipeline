@@ -814,7 +814,7 @@ class PipelineAPI:
 
     def get_allowed_instance_types(self, region_id, spot=False):
         try:
-            url = str(self.api_url) + self.LOAD_ALLOWED_INSTANCE_TYPES % str(region_id), str(spot).lower()
+            url = str(self.api_url) + self.LOAD_ALLOWED_INSTANCE_TYPES % (str(region_id), str(spot).lower())
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to get allowed instances for region %s." % region_id,
