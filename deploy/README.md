@@ -54,7 +54,10 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_AZURE_DEFAULT_RESOURCE_GROUP= \             # Which Azure resource group will be used by default
                 -env CP_AZURE_OFFER_DURABLE_ID = \                  # 
                 -env CP_AZURE_SUBSCRIPTION_ID = \                   # 
-
+                
+                # Core API
+                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
+         
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
                 -env CP_NOTIFIER_SMTP_SERVER_PORT= \
