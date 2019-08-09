@@ -197,6 +197,7 @@ class PipelineAPI:
     COMMENT_URL = '/comments'
     NOTIFICATION_URL = '/notification'
     REGION_URL = '/cloud/region'
+    LOAD_ALLOWED_INSTANCE_TYPES = '/cluster/instance/allowed?regionId=%s&spot=%s'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -810,3 +811,11 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to find storage by its id or name. "
                                "Error message: {}".format(str(e.message)))
+
+    def get_allowed_instance_types(self, region_id, spot=False):
+        try:
+            url = str(self.api_url) + self.LOAD_ALLOWED_INSTANCE_TYPES % str(region_id), str(spot).lower()
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to get allowed instances for region %s." % region_id,
+                               "Error message: %s" % str(e.message))
