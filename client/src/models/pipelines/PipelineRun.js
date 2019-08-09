@@ -139,9 +139,24 @@ class PipelineRun extends Remote {
   }
 
   _runRunIdTasksCache = new Map();
+  _nestedRunsCache = new Map();
 
   runTasks (runId) {
     return this.constructor.getCache(this._runRunIdTasksCache, runId, RunTasks, runId);
+  }
+  nestedRuns (runId, count) {
+    return this.constructor.getCache(
+      this._nestedRunsCache,
+      `${runId}`,
+      PipelineRunFilter,
+      {
+        page: 1,
+        pageSize: count,
+        parentId: runId,
+        userModified: true
+      },
+      false
+    );
   }
 }
 
