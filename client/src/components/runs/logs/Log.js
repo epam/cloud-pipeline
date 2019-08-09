@@ -743,7 +743,7 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%'}}>
+          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
