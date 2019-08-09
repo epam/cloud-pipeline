@@ -278,6 +278,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
             "instance.restart.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> INSTANCE_LIMIT_STATE_REASONS = new ObjectPreference<>(
+            "instance.limit.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference CLUSTER_INSTANCE_HDD_EXTRA_MULTI =
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
