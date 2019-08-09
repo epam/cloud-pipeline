@@ -17,6 +17,7 @@
 import Remote from '../basic/Remote';
 import RunTasks from './RunTasks';
 import PipelineRunFilter from './PipelineRunFilter';
+import NestedRunsFilter from './NestedRunsFilter';
 import displayDate from '../../utils/displayDate';
 const repeatInterval = 5000;
 const parseLog = (text, date) => (text.split('\n')
@@ -148,7 +149,7 @@ class PipelineRun extends Remote {
     return this.constructor.getCache(
       this._nestedRunsCache,
       `${runId}`,
-      PipelineRunFilter,
+      NestedRunsFilter,
       {
         page: 1,
         pageSize: count,
