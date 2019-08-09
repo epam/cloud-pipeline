@@ -37,6 +37,7 @@ NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+BOTO3_RETRY_COUNT = 6
 
 current_run_id = 0
 api_url = None
@@ -933,11 +934,11 @@ def main():
             try:
                 ec2 = boto3.client('ec2')
                 if hasattr(ec2.meta.events, "_unique_id_handlers"):
-                    ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = num_rep
+                    ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = BOTO3_RETRY_COUNT
             except Exception as inner_exception:
                 pipe_log('Unable to modify retry config:\n{}'.format(str(inner_exception)))
         else:
-            ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
+            ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
             
 
