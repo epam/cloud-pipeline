@@ -5,6 +5,3 @@ google-api-python-client==1.7.9
 azure-storage-blob==1.5.0
 google-cloud-storage==1.14.0
 tzlocal==1.5.1
-azure-mgmt-compute==5.0.0
-azure-mgmt-network==3.0.0
-azure-mgmt-resource==3.0.0
