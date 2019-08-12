@@ -177,6 +177,12 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO validateThereIsNoNode(String runId) {
+        for (int i = 0; i < 5; i++) {
+            if ($(byText(runIdLabelText(runId))).is(not(exist))) {
+                break;
+            }
+            sleep(2, SECONDS);
+        }
         $(byText(runIdLabelText(runId))).shouldNot(exist);
         return this;
     }
