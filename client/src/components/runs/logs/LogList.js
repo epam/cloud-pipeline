@@ -180,8 +180,12 @@ class LogList extends Component {
     );
   };
 
-  componentWillReceiveProps () {
-    if (this.props.logs) {
+  componentWillReceiveProps (nextProps) {
+    if (this.props.logs &&
+      (
+        nextProps.taskName !== this.props.taskName ||
+        nextProps.runId !== this.props.runId
+      )) {
       this.props.logs.clearInterval();
     }
   }
@@ -194,6 +198,14 @@ class LogList extends Component {
 
   componentDidUpdate () {
     this.props.logs.onDataReceived = () => this.onDataReceived();
+    if (this.props.Run.loaded) {
+      const {status} = this.props.Run.value;
+      if (status === 'RUNNING') {
+        this.props.logs.startInterval();
+      } else {
+        this.props.logs.clearInterval();
+      }
+    }
   }
 
   componentDidMount () {
@@ -334,6 +346,7 @@ class LogList extends Component {
   componentWillUnmount () {
     window.onkeydown = null;
     this.props.logs.clearInterval();
+    this.props.logs.clearInterval();
   }
 
   initializeHeightCalculator = (span) => {
@@ -358,15 +371,6 @@ class LogList extends Component {
   };
 
   render () {
-    if (!this.props.Run.pending) {
-      const {status}=this.props.Run.value;
-      if (status === 'RUNNING') {
-        this.props.logs.startInterval();
-      } else {
-        this.props.logs.clearInterval();
-      }
-    }
-
     let Logs;
     if (this.props.logs.pending) {
       this.listElement = null;
@@ -397,8 +401,8 @@ class LogList extends Component {
             rowCount={linesCount}
             rowRenderer={this.renderLogRow}
             width={width}
-            />
-            )}
+          />)
+        }
       </AutoSizer>;
     }
 

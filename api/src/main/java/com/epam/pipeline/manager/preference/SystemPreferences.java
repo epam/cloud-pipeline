@@ -131,6 +131,8 @@ public class SystemPreferences {
             "storage.transfer.pipeline.version", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
+    public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
+            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -275,6 +277,9 @@ public class SystemPreferences {
             0, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
             "instance.restart.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> INSTANCE_LIMIT_STATE_REASONS = new ObjectPreference<>(
+            "instance.limit.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference CLUSTER_INSTANCE_HDD_EXTRA_MULTI =
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));

@@ -414,7 +414,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 sleep(1, SECONDS);
                 SelenideElement entry = elements().get(TABLE)
                         .find(byXpath(String.format(
-                                ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", login)))
+                                ".//td[contains(@class, 'user-management-form__user-name-column') and " +
+                                        "contains(., '%s')]", login)))
+                        .closest(".ant-table-row-level-0")
                         .shouldBe(visible);
                 return new UserEntry(this, login, entry);
             }

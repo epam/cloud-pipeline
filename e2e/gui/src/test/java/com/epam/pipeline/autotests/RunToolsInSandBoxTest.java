@@ -50,6 +50,7 @@ public class RunToolsInSandBoxTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String endpoint = C.VALID_ENDPOINT;
+    private String nodeName;
 
     @BeforeClass
     @AfterClass(alwaysRun = true)
@@ -146,6 +147,9 @@ public class RunToolsInSandBoxTest
     @TestCase(value = {"EPMCMBIBPC-501"})
     public void validateStopToolInSandbox() {
         open(C.ROOT_ADDRESS);
+        nodeName = clusterMenu()
+                .waitForTheNode(nameWithoutGroup(tool), getLastRunId())
+                .getNodeName(getLastRunId());
         runsMenu()
                 .stopRun(getLastRunId())
                 .completedRuns()
@@ -160,9 +164,6 @@ public class RunToolsInSandBoxTest
     @TestCase(value = {"EPMCMBIBPC-503"})
     public void validateNodeReusage() {
         open(C.ROOT_ADDRESS);
-        String nodeName = clusterMenu()
-                .waitForTheNode(nameWithoutGroup(tool), getLastRunId())
-                .getNodeName(getLastRunId());
 
         tools().perform(registry, group, tool, runTool())
                 .setDefaultLaunchOptions()

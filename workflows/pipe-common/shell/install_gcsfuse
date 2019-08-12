@@ -51,7 +51,7 @@ EOF
         apt-get install -y -qq gnupg lsb-release > /dev/null
         export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
         echo "deb http://packages.cloud.google.com/apt $GCSFUSE_REPO main" | tee /etc/apt/sources.list.d/gcsfuse.list
-        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
         apt-get update -qq -y > /dev/null
         apt-get install -y -qq gcsfuse > /dev/null
     fi
@@ -69,11 +69,18 @@ fi
 
 echo "$_FUSE_TYPE is NOT installed, proceeding with installation from package repository"
 
-install_from_package_repository
-_IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
-if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
-    echo "${_FUSE_TYPE} installed from package repository"
+_DISTR_URL_PATH="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/gcsfuse/gcsfuse.tar"
+
+local_package_install $_DISTR_URL_PATH "gcsfuse"
+if [ $? -ne 0 ]; then
+    install_from_package_repository
+    _IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
+    if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
+        echo "${_FUSE_TYPE} installed from package repository"
+    else
+        echo "${_FUSE_TYPE} installation from package repository failed"
+        exit 1
+    fi
 else
-    echo "${_FUSE_TYPE} installation from package repository failed"
-    exit 1
+    echo "${_FUSE_TYPE} installed from local repository"
 fi

@@ -168,7 +168,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
     @Override
     public List<InstanceType> getAllInstanceTypes(final Long regionId, final boolean spot) {
         final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setTermType(spot ? TermType.ON_DEMAND.getName() : TermType.ON_DEMAND.getName());
+        requestVO.setTermType(spot ? TermType.PREEMPTIBLE.getName() : TermType.ON_DEMAND.getName());
         requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
         requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
         requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);

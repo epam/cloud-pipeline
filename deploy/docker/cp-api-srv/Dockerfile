@@ -14,7 +14,9 @@
 
 # docker build . \
 #   -t lifescience/cloud-pipeline:api-srv-latest \
-#   --build-arg CP_API_DIST_URL="https://..."
+#   --build-arg CP_API_DIST_URL="https://..." \
+#   --build-arg OPENSSL_DIST_URL="https://..." \
+#   --build-arg OSSLSIGNCODE_DIST_URL="https://..."
 
 FROM centos:7
 
@@ -24,6 +26,7 @@ RUN yum install -y \
                 curl \
                 java-1.8.0-openjdk \
                 python \
+                zip \
                 unzip \
                 openssl \
                 git \
@@ -33,6 +36,19 @@ RUN yum install -y \
                 samba-client \
                 cifs-utils \
                 gettext
+
+# Prebuild version of openssl v1.1.x which is required by osslsigncode.
+# As long as its compatibility is proven for osslsigncode tool only
+# openssl v1.0.x installed with package manager will be used by default.
+ARG OPENSSL_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/openssl/openssl-1.1.1c.tar.gz"
+RUN wget $OPENSSL_DIST_URL -O openssl.tgz && \
+    tar -xzf openssl.tgz -C /opt/ && \
+    rm -f openssl.tgz
+
+ARG OSSLSIGNCODE_DIST_URL="https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/osslsigncode/osslsigncode-2.0.tar.gz"
+RUN wget $OSSLSIGNCODE_DIST_URL -O osslsigncode.tgz && \
+    tar -xzf osslsigncode.tgz -C /usr/local/bin/ && \
+    rm -f osslsigncode.tgz
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I  requests==2.21.0 \
@@ -82,6 +98,9 @@ RUN mkdir -p /tmp/pipe-temp && \
 
 # Install projects templates
 ADD folder-templates /opt/api/folder-templates
+
+# Install error-pages templates
+ADD error-pages /opt/api/static/error
 
 # Add initialization scripts (api jar and git-sync)
 ADD init-api /init-api

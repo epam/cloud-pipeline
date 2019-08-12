@@ -67,9 +67,7 @@ ADD ./src/common/scripts $STARTUPDIR
 RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
 
 ### Install LibreOffice
-RUN $INST_SCRIPTS/libreoffice.sh
-
-### Install s3fs
-RUN $INST_SCRIPTS/s3fs.sh
+ARG WITH_OFFICE=
+RUN if [ "$WITH_OFFICE" ]; then $INST_SCRIPTS/libreoffice.sh; fi
 
 USER 0

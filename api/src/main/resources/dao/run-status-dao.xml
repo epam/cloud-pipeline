@@ -25,10 +25,12 @@
                     INSERT INTO pipeline.run_status_change (
                         run_id,
                         status,
+                        reason,
                         date)
                     VALUES (
                         :RUN_ID,
                         :STATUS,
+                        :REASON,
                         :DATE)
                 ]]>
             </value>
@@ -39,6 +41,7 @@
                     SELECT
                         run_id,
                         status,
+                        reason,
                         date
                     FROM
                         pipeline.run_status_change
@@ -53,6 +56,7 @@
                     SELECT
                         run_id,
                         status,
+                        reason,
                         date
                     FROM
                         pipeline.run_status_change

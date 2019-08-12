@@ -66,6 +66,7 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     enum RunStatusParameters {
         RUN_ID,
         STATUS,
+        REASON,
         DATE;
 
         static MapSqlParameterSource getParameters(RunStatus runStatus) {
@@ -73,6 +74,7 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
             params.addValue(RUN_ID.name(), runStatus.getRunId());
             params.addValue(STATUS.name(), runStatus.getStatus().getId());
             params.addValue(DATE.name(), runStatus.getTimestamp());
+            params.addValue(REASON.name(), runStatus.getReason());
             return params;
         }
 
@@ -82,6 +84,12 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
                 restartRun.setRunId(rs.getLong(RUN_ID.name()));
                 restartRun.setStatus(TaskStatus.getById(rs.getLong(STATUS.name())));
                 restartRun.setTimestamp(rs.getTimestamp(DATE.name()).toLocalDateTime());
+
+                final String reason = rs.getString(REASON.name());
+                if (!rs.wasNull()) {
+                    restartRun.setReason(reason);
+                }
+
                 return restartRun;
             };
         }

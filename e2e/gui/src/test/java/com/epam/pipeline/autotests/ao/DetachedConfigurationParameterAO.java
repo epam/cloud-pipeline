@@ -21,6 +21,7 @@ import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.value;
+import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -68,6 +69,12 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
     public DetachedConfigurationParameterAO validateParameter(String name, String value) {
         ensure(PARAMETER_NAME, Condition.have(value(name)));
         ensure(PARAMETER_VALUE, Condition.have(value(value)));
+        return this;
+    }
+
+    public DetachedConfigurationParameterAO deleteParameter() {
+        ensure(REMOVE_PARAMETER, visible);
+        click(REMOVE_PARAMETER);
         return this;
     }
 

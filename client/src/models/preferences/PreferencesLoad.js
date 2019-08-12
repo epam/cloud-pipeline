@@ -63,6 +63,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get maximumFileSize () {
+    return +this.getPreferenceValue('misc.max.tool.icon.size.kb') || undefined;
+  }
+
+  @computed
   get forceToolScanningEnabled () {
     return `${this.getPreferenceValue('security.tools.scan.all.registries')}` === 'true';
   }

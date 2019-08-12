@@ -53,6 +53,7 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
+import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -733,9 +734,37 @@ export default class RunTable extends localization.LocalizedReactComponent {
           }
           break;
         case 'paused':
-          return <a
-            id={`run-${record.id}-resume-button`}
-            onClick={(e) => this.showResumeConfirmDialog(e, record)}>RESUME</a>;
+          const {resumeFailureReason} = record;
+          return (
+            <a
+              id={`run-${record.id}-resume-button`}
+              onClick={(e) => this.showResumeConfirmDialog(e, record)}>
+              {
+                resumeFailureReason
+                  ? (
+                    <Popover
+                      title={null}
+                      placement="left"
+                      content={
+                        <div style={{maxWidth: '40vw'}}>
+                          {resumeFailureReason}
+                        </div>
+                      }
+                    >
+                      <Icon
+                        type="exclamation-circle-o"
+                        style={{
+                          marginRight: 5,
+                          color: 'orange'
+                        }}
+                      />
+                    </Popover>
+                  )
+                  : null
+              }
+              RESUME
+            </a>
+          );
       }
     }
     return <div />;
@@ -1150,7 +1179,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (item.childRuns) {
       item.children = item.childRuns.map(this.prepareSourceItem);
     }
-    return item;
+    return mapResumeFailureReason(item);
   };
 
   containsNestedChildren = () => {

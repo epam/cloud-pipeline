@@ -80,16 +80,18 @@ const PAGE_SIZE = 40;
 @connect({
   dataStorages, folders, pipelinesLibrary
 })
-@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences}, {params, onReloadTree}) => {
+@inject(({routing, dataStorages, folders, pipelinesLibrary, preferences, dataStorageCache }, {params, onReloadTree}) => {
   const queryParameters = parseQueryParameters(routing);
   const showVersions = (queryParameters.versions || 'false').toLowerCase() === 'true';
   return {
     onReloadTree,
+    dataStorageCache,
     storageId: params.id,
     path: queryParameters.path,
     showVersions: showVersions,
     storage: new DataStorageRequest(params.id, queryParameters.path, showVersions, PAGE_SIZE),
     info: dataStorages.load(params.id),
+    dataStorages,
     pipelinesLibrary,
     folders,
     preferences
@@ -261,6 +263,7 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       if (this.props.info.value.parentFolderId) {
         this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
       } else {
@@ -390,8 +393,15 @@ export default class DataStorage extends React.Component {
     this.setState({renameItem: item});
   };
 
-  closeRenameItemDialog = () => {
-    this.setState({renameItem: null});
+  closeRenameItemDialog = (clearSelection = false) => {
+    if (clearSelection) {
+      this.setState({
+        renameItem: null,
+        selectedFile: null,
+      });
+    } else {
+      this.setState({renameItem: null});
+    }
   };
 
   renameItem = async ({name}) => {
@@ -412,7 +422,10 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
-      this.closeRenameItemDialog();
+      const {renameItem, selectedFile} = this.state;
+      this.closeRenameItemDialog(
+        renameItem && selectedFile && renameItem.path === selectedFile.path
+      );
       await this.refreshList();
     }
   };
@@ -481,14 +494,21 @@ export default class DataStorage extends React.Component {
   };
 
   saveEditableFile = async(path, content) => {
+    const currentItemContent = this.props.dataStorageCache.getContent(
+      this.props.storageId,
+      this.state.selectedFile.path,
+      this.state.selectedFile.version
+    );
     const request = new DataStorageItemUpdateContent(this.props.storageId, path);
     const hide = message.loading('Uploading changes...');
+
     await request.send(content);
     hide();
     if (request.error) {
       message.error(request.error, 5);
     } else {
       await this.props.storage.fetch();
+			await currentItemContent.fetch();
       this.closeEditFileForm();
       await this.refreshList();
     }
@@ -507,7 +527,7 @@ export default class DataStorage extends React.Component {
     if (this.showVersions) {
       if (item.isVersion) {
         const removeItem = () => this.removeItems([item], true, true);
-        let content = `Are you sure you want to delete selected version of the ${item.type.toLowerCase()} '${item.name}' from bucket?`;
+        let content = `Are you sure you want to delete selected version of the ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         Modal.confirm({
           title: `Remove ${item.type.toLowerCase()}'s version`,
           content: content,
@@ -520,7 +540,7 @@ export default class DataStorage extends React.Component {
         });
       } else if (item.deleteMarker) {
         const removeItem = () => this.removeItems([item], true, true);
-        let content = `Are you sure you want to delete ${item.type.toLowerCase()} '${item.name}' from bucket?`;
+        let content = `Are you sure you want to delete ${item.type.toLowerCase()} '${item.name}' from object storage?`;
         if (item.type.toLowerCase() === 'folder') {
           content = (
             <div>
@@ -937,7 +957,7 @@ export default class DataStorage extends React.Component {
       key: 'size',
       title: 'Size',
       className: styles.sizeCell,
-      render: displaySize,
+      render: size => displaySize(size),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const changedColumn = {
@@ -1107,7 +1127,7 @@ export default class DataStorage extends React.Component {
     const [selectedFile] = this.tableData
       .filter(file => file.name === this.state.selectedFile.name);
 
-    return !selectedFile.size > 0;
+    return !selectedFile || selectedFile.size === 0 || !(selectedFile.size);
   };
 
   render () {
@@ -1577,12 +1597,12 @@ export default class DataStorage extends React.Component {
           }
           name={this.state.renameItem ? this.state.renameItem.name : null}
           visible={!!this.state.renameItem}
-          onCancel={this.closeRenameItemDialog}
+          onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
         <Modal
           visible={!!this.state.itemsToDelete}
           onCancel={this.closeDeleteModal}
-          title="Do you want to delete item(s) from bucket or set 'Deletion' marker?"
+          title="Do you want to delete item(s) from object storage or set 'Deletion' marker?"
           footer={
             <Row type="flex" justify="space-between">
               <Col span={8}>
@@ -1609,7 +1629,7 @@ export default class DataStorage extends React.Component {
                       this.closeDeleteModal();
                       this.setState({selectedItems: []});
                       this.afterDataStorageEdit();
-                    })}>Delete from bucket</Button>
+                    })}>Delete from object storage</Button>
                 </Row>
               </Col>
             </Row>

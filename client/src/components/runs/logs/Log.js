@@ -64,6 +64,7 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
+import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -92,12 +93,7 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runId: params.runId,
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
-    nestedRuns: pipelineRun.runFilter({
-      page: 1,
-      pageSize: MAX_NESTED_RUNS_TO_DISPLAY,
-      parentId: params.runId,
-      userModified: true
-    }, false),
+    nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
     runSSH: new PipelineRunSSH(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     task,
@@ -742,7 +738,7 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%'}}>
+          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
@@ -1023,6 +1019,7 @@ class Logs extends localization.LocalizedReactComponent {
     let SwitchModeButton;
     let CommitStatusButton;
     let dockerImage;
+    let ResumeFailureReason;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -1105,9 +1102,13 @@ class Logs extends localization.LocalizedReactComponent {
         pipelineRunParameters,
         status,
         instance,
-        commitStatus
-      } = this.props.run.value;
+        commitStatus,
+        resumeFailureReason
+      } = mapResumeFailureReason(this.props.run.value);
       dockerImage = this.props.run.value.dockerImage;
+      ResumeFailureReason = resumeFailureReason
+        ? (<Alert type="warning" message={resumeFailureReason} />)
+        : null;
       const pipelineLink = pipeline
         ? (
           <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
@@ -1342,11 +1343,12 @@ class Logs extends localization.LocalizedReactComponent {
           (commitStatus || '').toLowerCase() !== 'committing' &&
           roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': previousStatus = <span>COMMIT FAILURE</span>; break;
-            case 'success': previousStatus = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
@@ -1355,11 +1357,12 @@ class Logs extends localization.LocalizedReactComponent {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
         } else {
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': CommitStatusButton = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': CommitStatusButton = <span>COMMIT FAILURE</span>; break;
-            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': CommitStatusButton = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
         }
@@ -1414,6 +1417,7 @@ class Logs extends localization.LocalizedReactComponent {
                   type="error" />
               </Row>
             }
+            {ResumeFailureReason}
             <Row>
               {Details}
             </Row>

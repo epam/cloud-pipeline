@@ -55,6 +55,11 @@ if [ ! -f "$JWT_PUB_KEY" ]; then
     fi
 fi
 
+# Replace well-know environment variables placeholders in the nginx.conf
+export CP_EDGE_WEB_CLIENT_MAX_SIZE="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-500M}"
+NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE}' < /etc/nginx/nginx.conf)"
+echo "$NGINX_CONF" > /etc/nginx/nginx.conf
+
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
 

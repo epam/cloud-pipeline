@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -181,6 +182,12 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public String getDefaultMountOptions(GSBucketStorage dataStorage) {
         return null;
+    }
+
+    @Override
+    public PathDescription getDataSize(final GSBucketStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {

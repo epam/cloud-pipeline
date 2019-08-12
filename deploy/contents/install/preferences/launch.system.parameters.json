@@ -18,6 +18,18 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_SGE_QUEUE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine queue",
+        "defaultValue": "main.q"
+    },
+    {
+        "name": "CP_CAP_SGE_PE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine PE",
+        "defaultValue": "local"
+    },
+    {
         "name": "CP_CAP_MODULES",
         "type": "boolean",
         "description": "Enables Environment Modules for a current run",

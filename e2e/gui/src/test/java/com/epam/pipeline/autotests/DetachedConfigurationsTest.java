@@ -40,7 +40,6 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
-import static com.epam.pipeline.autotests.ao.Configuration.FIRST_PARAMETER_INDEX;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Configuration.priceType;
 import static com.epam.pipeline.autotests.ao.Configuration.startIdle;
@@ -163,6 +162,7 @@ public class DetachedConfigurationsTest
                     .addInputParameter(inputParameter, inputParameterValue)
                     .addOutputParameter(outputParameter, outputParameterValue)
                     .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611)
             );
         library().clickRoot();
     }
@@ -238,19 +238,11 @@ public class DetachedConfigurationsTest
                         .also(confirmConfigurationChange())
                 )
                 .ensure(DISK, value(defaultDisk))
+                .resetChanges()
         );
     }
 
     @Test(priority = 1, dependsOnMethods = {"pipelineAdditionValidation"})
-    @TestCase({"EPMCMBIBPC-1149"})
-    public void groupAdditionValidation() {
-        library().configurationWithin(mainConfiguration, configuration ->
-            configuration.selectPipeline(pipeline1, pipelineCustomProfile)
-                    .ensure(DISK, value(customDisk))
-        );
-    }
-
-    @Test(priority = 1, dependsOnMethods = {"groupAdditionValidation"})
     @TestCase({"EPMCMBIBPC-1113"})
     public void exitWithoutSavingValidation() {
         library().configurationWithin(mainConfiguration, configuration ->
@@ -264,12 +256,25 @@ public class DetachedConfigurationsTest
     }
 
     @Test(priority = 1, dependsOnMethods = {"exitWithoutSavingValidation"})
+    @TestCase({"EPMCMBIBPC-1149"})
+    public void groupAdditionValidation() {
+        library().configurationWithin(mainConfiguration, configuration ->
+                configuration
+                        .expandTabs(execEnvironmentTab, advancedTab)
+                        .selectPipeline(pipeline1, pipelineCustomProfile)
+                        .ensure(DISK, value(customDisk))
+                        .click(SAVE)
+        );
+    }
+
+    @Test(priority = 1, dependsOnMethods = {"groupAdditionValidation"})
     @TestCase({"EPMCMBIBPC-1114"})
     public void configurationSavingValidation() {
         library()
             .configurationWithin(mainConfiguration, configuration ->
-                configuration.selectPipeline(pipeline1, pipelineDefaultProfile)
-                    .click(SAVE)
+                configuration.expandTabs(execEnvironmentTab, advancedTab)
+                        .selectPipeline(pipeline1, pipelineDefaultProfile)
+                        .click(SAVE)
             )
             .configurationWithin(mainConfiguration, configuration ->
                 configuration.expandTabs(execEnvironmentTab, advancedTab)
@@ -293,6 +298,7 @@ public class DetachedConfigurationsTest
                     .ensure(INSTANCE_TYPE, text(defaultInstanceType))
                     .ensure(PRICE_TYPE, text(defaultPriceType))
                     .ensure(DISK, value(customDisk))
+                    .resetChanges()
             );
     }
 
@@ -456,7 +462,8 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1601)
             .configurationWithin(configuration1601, configuration -> configuration.expandTabs(parametersTab)
                 .addStringParameter(parameterName, parameterValue)
-                .also(ensureParameterExists(FIRST_PARAMETER_INDEX, parameterName, parameterValue))
+                .also(ensureParameterExists(parameterName, parameterValue))
+                .deleteParameter(parameterName)
             );
     }
 
@@ -512,6 +519,7 @@ public class DetachedConfigurationsTest
                             .click(OK)
                     )
                     .ensure(IMAGE, valueContains(String.format("%s/%s:test", defaultRegistryUrl, testingTool)))
+                    .resetChanges()
             );
     }
 
@@ -560,24 +568,25 @@ public class DetachedConfigurationsTest
         library()
             .createConfiguration(runWithParametersConfiguration)
             .configurationWithin(runWithParametersConfiguration, configuration -> {
-                configuration.selectPipeline(pipeline1)
-                    .click(SAVE)
-                    .addProfile(secondConfigurationProfile)
-                    .selectPipeline(pipeline1, pipelineCustomProfile)
-                    .click(SAVE)
-                    .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX)
-                    .validateParameter(stringParameterName, "")
-                    .setValue(stringParameterValue2)
-                    .validateParameter(stringParameterName, stringParameterValue2)
-                    .close()
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX + 1)
-                    .validateParameter(pathParameterName, "")
-                    .setValue(pathParameterValue2)
-                    .validateParameter(pathParameterName, pathParameterValue2)
-                    .ensure(PARAMETER_NAME, disabled);
-                configuration.click(SAVE);
-                }
+                        configuration.selectPipeline(pipeline1)
+                                .click(SAVE)
+                                .addProfile(secondConfigurationProfile)
+                                .selectPipeline(pipeline1, pipelineCustomProfile)
+                                .click(SAVE)
+                                .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
+                                .getParameterByIndex(parameterByName(stringParameterName).index())
+                                .validateParameter(stringParameterName, "")
+                                .setValue(stringParameterValue2)
+                                .validateParameter(stringParameterName, stringParameterValue2)
+                                .close()
+                                .getParameterByIndex(parameterByName(pathParameterName).index())
+                                .validateParameter(pathParameterName, "")
+                                .setValue(pathParameterValue2)
+                                .validateParameter(pathParameterName, pathParameterValue2)
+                                .ensure(PARAMETER_NAME, disabled);
+                        configuration
+                                .click(SAVE);
+                    }
             );
     }
 
@@ -592,7 +601,6 @@ public class DetachedConfigurationsTest
                 profile.expandTab(PARAMETERS)
                     .ensure(parameterByName(stringParameterName).valueInput, value(""))
                     .ensure(parameterByName(pathParameterName).valueInput, value(""))
-                    .getParameterByIndex(FIRST_PARAMETER_INDEX)
             );
     }
 
@@ -689,7 +697,7 @@ public class DetachedConfigurationsTest
                     .selectProfile(defaultConfigurationProfile)
                     .expandTab(INSTANCE)
                     .selectValue(PRICE_TYPE, defaultPriceType)
-                    .click(SAVE)
+                    .saveIfNeeded()
                     .selectProfile(secondConfigurationProfile)
                     .expandTabs(execEnvironmentTab, advancedTab)
                     .selectPipeline(pipeline1)
@@ -718,10 +726,10 @@ public class DetachedConfigurationsTest
             .ensure(configurationWithName(mainConfiguration), not(visible));
     }
 
-    private Consumer<Configuration> ensureParameterExists(final int index,
-                                                          final String parameterName,
+    private Consumer<Configuration> ensureParameterExists(final String parameterName,
                                                           final String parameterValue) {
-        return configuration -> configuration.getParameterByIndex(index)
+        return configuration -> configuration
+                .getParameterByIndex(parameterByName(parameterName).index())
                 .validateParameter(parameterName, parameterValue);
     }
 

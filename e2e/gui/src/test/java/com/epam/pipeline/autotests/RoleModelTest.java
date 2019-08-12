@@ -124,14 +124,6 @@ public class RoleModelTest
                     .removeStorage(anotherBucket)
                     .removePipeline(pipelineName);
 
-            navigationMenu()
-                    .settings()
-                    .switchToUserManagement()
-                    .switchToGroups()
-                    .deleteGroupIfPresent(userGroup)
-                    .sleep(1, SECONDS)
-                    .ok();
-
             Utils.removeStorages(this, bucketForDataStoragesTests, presetBucketForDataStoragesTests);
         });
     }
@@ -318,6 +310,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .waitUntilLaunchButtonAppear()
                 .launch(this);
 
         navigationMenu()
@@ -433,6 +426,7 @@ public class RoleModelTest
                 .shouldContainInCode(newFileContent)
                 .close()
                 .runPipeline()
+                .waitUntilLaunchButtonAppear()
                 .launch(this);
 
         navigationMenu()
@@ -952,6 +946,7 @@ public class RoleModelTest
                         .settings()
                         .switchToUserManagement()
                         .switchToGroups()
+                        .deleteGroupIfPresent(userGroup)
                         .pressCreateGroup()
                         .enterGroupName(userGroup)
                         .sleep(2, SECONDS)

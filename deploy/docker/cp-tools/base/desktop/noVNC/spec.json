@@ -1,0 +1,7 @@
+{
+    "short_description": "Ubuntu with Xfce desktop environment (via noVNC) and CPU-only support",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "100",
+    "default_command": "/dockerstartup/start.sh",
+    "endpoints": [ "{ \"name\": \"noVNC Desktop\", \"nginx\": {\"port\": \"8080\", \"additional\" : \"proxy_set_header X-Forwarded-For ${CP_DOLLAR}proxy_add_x_forwarded_for;proxy_set_header X-Real-IP ${CP_DOLLAR}remote_addr;proxy_set_header Host ${CP_DOLLAR}http_host;proxy_http_version 1.1;proxy_redirect off;proxy_buffering off;proxy_set_header Upgrade ${CP_DOLLAR}http_upgrade;proxy_set_header Connection \\\"upgrade\\\";proxy_read_timeout 86400;\" }, \"isDefault\": false }" ]
+}

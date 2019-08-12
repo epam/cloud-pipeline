@@ -115,21 +115,21 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },
     {
       dataIndex: 'description',
       key: 'description',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNameWrap}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },
     {
       dataIndex: 'createdDate',
       key: 'createdDate',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
       render: (text, item) => this.renderTreeItemText(`Last updated: ${displayDate(text)}`, item),
       onCellClick: (item) => this.navigate(item)
     },
