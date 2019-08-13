@@ -940,7 +940,7 @@ function api_register_search {
     api_set_preference "search.elastic.denied.users.field" "denied_users" "false"
     api_set_preference "search.elastic.denied.groups.field" "denied_groups" "false"
     api_set_preference "search.elastic.type.field" "doc_type" "false"
-    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "false"
+    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
