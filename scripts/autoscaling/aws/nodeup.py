@@ -433,7 +433,8 @@ def get_swap_size(aws_region, ins_type, is_spot):
     swap_size = int(math.ceil(swap_ratio * ram))
     if swap_size >= MIN_SWAP_DEVICE_SIZE:
         pipe_log("Swap device will be configured with size %d." % swap_size)
-    return swap_size
+        return swap_size
+    return None
 
 
 def replace_swap(swap_size, init_script):
