@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +14,6 @@
 # limitations under the License.
 
 # User Data script to initialize common/gpu instances for azure instances
-
 # Output out/err to the logfile
 user_data_log="/var/log/user_data.log"
 exec > $user_data_log 2>&1
@@ -57,6 +55,49 @@ function update_nameserver {
     chattr +i /etc/resolv.conf
   fi
 }
+
+function setup_swap_device {
+    local swap_size="${1:-0}"
+    if [[ "swap_size" == "@"*"@" ]]; then
+        return
+    fi
+    local unmounted_drives=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
+    local drive_num=0
+    local swap_drive_name=""
+    for drive_name in $unmounted_drives
+    do
+        drive_num=$(( drive_num + 1 ))
+        drive_size_str=$(lsblk -sdrpn -o SIZE "${drive_name}")
+        if [[ "${drive_size_str: -1}" == "G" ]]; then
+            drive_size=${drive_size_str%"G"}
+            if (( swap_size == drive_size )); then
+                swap_drive_name="${drive_name}"
+            fi
+        fi
+    done
+    if [[ -z "${swap_drive_name}" ]]; then
+        echo "Block device matching swap size ${swap_size}G was not found. Swap device won't be configured."
+    elif (( drive_num < 2 )); then
+        echo "${drive_num} device found. Swap device won't be configured."
+    else
+        echo "Swap device ${swap_drive_name} will be configured"
+        mkswap "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to mkswap at $swap_drive_name"
+            return 1
+        fi
+        swapon "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to swapon at $swap_drive_name"
+            return 1
+        fi
+        echo "$swap_drive_name none swap sw 0 0" >> /etc/fstab
+    fi
+}
+
+# Setup swap device configuration
+swap_size="@swap_size@"
+setup_swap_device "${swap_size:-0}"
 
 # Mount all drives that do not have mount points yet. Each drive will be mounted to /ebsN folder (N is a number of a drive)
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')

@@ -32,6 +32,7 @@ import json
 from distutils.version import LooseVersion
 import fnmatch
 import sys
+import math
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
@@ -214,9 +215,9 @@ def root_device(ec2, ins_img):
                                                                                                  str(e)))
         return ROOT_DEVICE_DEFAULT
 
-def block_device(ins_hdd, kms_encyr_key_id):
+def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
     block_device_spec = {
-        "DeviceName": "/dev/sdb",
+        "DeviceName": name,
         "Ebs": {
             "VolumeSize": ins_hdd,
             "VolumeType": "gp2",
@@ -262,17 +263,20 @@ def run_id_filter(run_id):
 
 
 def run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
-    user_data_script = get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token)
+    swap_size = get_swap_size(aws_region, ins_type, is_spot)
+    user_data_script = get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep)
+                                            user_data_script, num_rep, time_rep, swap_size)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                                num_rep, time_rep)
+                                                num_rep, time_rep, swap_size)
     return ins_id, ins_ip
 
 
-def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep):
+def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
+                           kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
+                           swap_size):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(aws_region)
     additional_args = {}
@@ -286,7 +290,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     else:
         pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         additional_args = { 'SecurityGroupIds': get_security_groups(aws_region)}
-
     response = {}
     try:
         response = ec2.run_instances(
@@ -296,7 +299,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             KeyName=ins_key,
             InstanceType=ins_type,
             UserData=user_data_script,
-            BlockDeviceMappings=[root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)],
+            BlockDeviceMappings=get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
@@ -342,6 +345,12 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
 
     return ins_id, ins_ip
 
+
+def get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
+    block_devices = [root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)]
+    if swap_size is not None and swap_size > 0:
+        block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
+    return block_devices
 
 def get_certs_string():
     global api_token
@@ -406,10 +415,77 @@ def replace_common_params(aws_region, init_script, config_section):
 def replace_proxies(aws_region, init_script):
     return replace_common_params(aws_region, init_script, "proxies")
 
-def replace_swap(aws_region, init_script):
-    return replace_common_params(aws_region, init_script, "swap")
 
-def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token):
+def get_swap_size(aws_region, ins_type, is_spot):
+    pipe_log('Configuring swap settings for an instance in {} region'.format(aws_region))
+    swap_params = get_cloud_config_section(aws_region, "swap")
+    if swap_params is None:
+        return None
+    swap_ratio = get_swap_ratio(swap_params)
+    if swap_ratio is None:
+        pipe_log("Swap ratio is not configured. Swap configuration will be skipped.")
+        return None
+    ram = get_instance_ram(aws_region, ins_type, is_spot)
+    if ram is None:
+        pipe_log("Failed to determine instance RAM. Swap configuration will be skipped.")
+        return None
+    swap_size = int(math.ceil(swap_ratio * ram))
+    if swap_size > 0:
+        pipe_log("Swap device will be configured with size %d." % swap_size)
+    return swap_size
+
+
+def replace_swap(swap_size, init_script):
+    if swap_size is not None:
+        return init_script.replace('@swap_size@', str(swap_size))
+    return init_script
+
+
+def get_instance_ram(aws_region, ins_type, is_spot):
+    api = PipelineAPI(api_url, None)
+    region_id = get_region_id(aws_region, api)
+    if region_id is None:
+        return None
+    instance_types = api.get_allowed_instance_types(region_id, spot=is_spot)
+    ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types', ins_type)
+    if ram is None:
+        ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types.docker', ins_type)
+    return ram
+
+
+def get_ram_from_group(instance_types, group, instance_type):
+    if group in instance_types:
+        for current_type in instance_types[group]:
+            if current_type['name'] == instance_type:
+                return current_type['memory']
+    return None
+
+
+def get_region_id(aws_region, api):
+    regions = api.get_regions()
+    if regions is None:
+        return None
+    for region in regions:
+        if region.provider == 'AWS' and region.region_id == aws_region:
+            return region.id
+    return None
+
+
+def get_swap_ratio(swap_params):
+    for swap_param in swap_params:
+        if not 'name' in swap_param or not 'path' in swap_param:
+            continue
+        item_name = swap_param['name']
+        if item_name == 'swap_ratio':
+            item_value = swap_param['path']
+            if item_value:
+                try:
+                    return float(item_value)
+                except ValueError:
+                    pipe_log("Unexpected swap_ratio value: {}".format(item_value))
+    return None
+
+def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -418,7 +494,7 @@ def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token):
         well_known_string = get_well_known_hosts_string(aws_region)
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
-        user_data_script = replace_swap(aws_region, user_data_script)
+        user_data_script = replace_swap(swap_size, user_data_script)
         return user_data_script.replace('@DOCKER_CERTS@', certs_string)\
             .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
             .replace('@KUBE_IP@', kube_ip)\
@@ -649,7 +725,9 @@ def exit_if_spot_unavailable(run_id, last_status):
                  status=TaskStatus.FAILURE)
         sys.exit(5)
 
-def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
+def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
+                       ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
+                       swap_size):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -664,13 +742,12 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
         pipe_log('- Prices for {} spots:\n'.format(ins_type) +
                 '\n'.join('{0}: {1:.5f}'.format(zone, price) for zone, price in spot_prices) + '\n' +
                 '{} zone will be used'.format(cheapest_zone))
-
     specifications = {
             'ImageId': ins_img,
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': [root_device(ec2, ins_img), block_device(ins_hdd, kms_encyr_key_id)],
+            'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_hdd, kms_encyr_key_id, swap_size),
         }
     if allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]

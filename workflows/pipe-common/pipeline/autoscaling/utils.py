@@ -16,6 +16,7 @@ import os
 import fnmatch
 import logging
 import json
+import math
 from pipeline import Logger, TaskStatus, PipelineAPI
 
 NETWORKS_PARAM = "cluster.networks.config"
@@ -228,7 +229,13 @@ def replace_proxies(aws_region, init_script):
     return init_script
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token):
+def replace_swap(swap_size, init_script):
+    if swap_size is not None:
+        return init_script.replace('@swap_size@', str(swap_size))
+    return init_script
+
+
+def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -237,6 +244,7 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         well_known_string = get_well_known_hosts_string(cloud_region)
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
+        user_data_script = replace_swap(swap_size, user_data_script)
         return user_data_script\
             .replace('@DOCKER_CERTS@', certs_string) \
             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
@@ -284,3 +292,67 @@ def poll_instance(sock, timeout, ip, port):
         print e
     sock.settimeout(None)
     return result
+
+
+def get_swap_size(cloud_region, ins_type, is_spot, provider):
+    pipe_log('Configuring swap settings for an instance in {} region'.format(cloud_region))
+    swap_params = get_cloud_config_section(cloud_region, "swap")
+    if swap_params is None:
+        return None
+    swap_ratio = get_swap_ratio(swap_params)
+    if swap_ratio is None:
+        pipe_log("Swap ratio is not configured. Swap configuration will be skipped.")
+        return None
+    ram = get_instance_ram(cloud_region, ins_type, is_spot, provider)
+    if ram is None:
+        pipe_log("Failed to determine instance RAM. Swap configuration will be skipped.")
+        return None
+    swap_size = int(math.ceil(swap_ratio * ram))
+    if swap_size > 0:
+        pipe_log("Swap device will be configured with size %d." % swap_size)
+    return swap_size
+
+
+def get_swap_ratio(swap_params):
+    for swap_param in swap_params:
+        if not 'name' in swap_param or not 'path' in swap_param:
+            continue
+        item_name = swap_param['name']
+        if item_name == 'swap_ratio':
+            item_value = swap_param['path']
+            if item_value:
+                try:
+                    return float(item_value)
+                except ValueError:
+                    pipe_log("Unexpected swap_ratio value: {}".format(item_value))
+    return None
+
+
+def get_instance_ram(cloud_region, ins_type, is_spot, provider):
+    api = PipelineAPI(api_url, None)
+    region_id = get_region_id(cloud_region, provider, api)
+    if region_id is None:
+        return None
+    instance_types = api.get_allowed_instance_types(region_id, spot=is_spot)
+    ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types', ins_type)
+    if ram is None:
+        ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types.docker', ins_type)
+    return ram
+
+
+def get_ram_from_group(instance_types, group, instance_type):
+    if group in instance_types:
+        for current_type in instance_types[group]:
+            if current_type['name'] == instance_type:
+                return current_type['memory']
+    return None
+
+
+def get_region_id(cloud_region, provider, api):
+    regions = api.get_regions()
+    if regions is None:
+        return None
+    for region in regions:
+        if region.provider == provider and region.region_id == cloud_region:
+            return region.id
+    return None

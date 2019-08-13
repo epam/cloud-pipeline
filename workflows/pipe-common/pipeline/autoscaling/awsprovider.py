@@ -36,6 +36,7 @@ ROOT_DEVICE_DEFAULT = {
     "Ebs": {"VolumeSize": 40}
 }
 
+BOTO3_RETRY_COUNT = 6
 
 class AWSInstanceProvider(AbstractInstanceProvider):
 
@@ -56,11 +57,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             try:
                 self.ec2 = boto3.client('ec2')
                 if hasattr(self.ec2.meta.events, "_unique_id_handlers"):
-                    self.ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = num_rep
+                    self.ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = BOTO3_RETRY_COUNT
             except Exception as inner_exception:
                 utils.pipe_log('Unable to modify retry config:\n{}'.format(str(inner_exception)))
         else:
-            self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
+            self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
@@ -68,15 +69,15 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)
         if ins_id:
             return ins_id, ins_ip
-
-        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+        swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
+        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token,
+                                                      swap_size)
         if is_spot:
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
-                                                             kms_encyr_key_id, user_data_script, num_rep, time_rep)
+                                                       kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size)
         else:
-            ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd,
-                                                                 kms_encyr_key_id, run_id, user_data_script,
-                                                                 num_rep, time_rep)
+            ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id,
+                                                           run_id, user_data_script, num_rep, time_rep, swap_size)
         return ins_id, ins_ip
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
@@ -201,7 +202,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         }
 
     def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                 num_rep, time_rep):
+                                 num_rep, time_rep, swap_size):
         utils.pipe_log('Creating on demand instance')
         allowed_networks = utils.get_networks_config(self.cloud_region)
         additional_args = {}
@@ -224,8 +225,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 KeyName=ins_key,
                 InstanceType=ins_type,
                 UserData=user_data_script,
-                BlockDeviceMappings=[self.__root_device(ins_img),
-                                     AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+                BlockDeviceMappings=self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
                 TagSpecifications=[
                     {
                         'ResourceType': 'instance',
@@ -309,10 +309,16 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                                                                                            str(e)))
             return ROOT_DEVICE_DEFAULT
 
+    def __get_block_devices(self, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
+        block_devices = [self.__root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)]
+        if swap_size is not None and swap_size > 0:
+            block_devices.append(AWSInstanceProvider.block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
+        return block_devices
+
     @staticmethod
-    def block_device(ins_hdd, kms_encyr_key_id):
+    def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
         block_device_spec = {
-            "DeviceName": "/dev/sdb",
+            "DeviceName": name,
             "Ebs": {
                 "VolumeSize": ins_hdd,
                 "VolumeType": "gp2",
@@ -357,7 +363,8 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                            status=TaskStatus.FAILURE)
             sys.exit(5)
 
-    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
+    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+                             kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size):
         utils.pipe_log('Creating spot request')
 
         utils.pipe_log('- Checking spot prices for current region...')
@@ -378,7 +385,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': [self.__root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+            'BlockDeviceMappings': self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
         }
         if allowed_networks and cheapest_zone in allowed_networks:
             subnet_id = allowed_networks[cheapest_zone]
