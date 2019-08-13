@@ -72,6 +72,11 @@ class PreferencesLoad extends Remote {
     return `${this.getPreferenceValue('security.tools.scan.all.registries')}` === 'true';
   }
 
+  @computed
+  get searchEnabled () {
+    return !!this.getPreferenceValue('search.elastic.host');
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
