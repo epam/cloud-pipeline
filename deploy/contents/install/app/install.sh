@@ -532,6 +532,13 @@ fi
 if is_service_requested cp-docker-registry; then
     print_ok "[Starting Docker registry deployment]"
 
+    check_enough_disk "${CP_KUBE_MASTER_DOCKER_MIN_DISK_MB:-102400}" \
+                      "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/docker"
+
+    if [ $? -ne 0 ]; then
+        print_err "!!! Docker images storage does not provide enough space (see above), subsequent images transfer (and overall installation) may fail !!!"
+    fi
+
     print_info "-> Deleting existing instance of Docker registry"
     delete_deployment_and_service   "cp-docker-registry" \
                                     "/opt/docker-registry" \

@@ -34,6 +34,26 @@ function id_from_arn {
     echo $arn | cut -d/ -f2
 }
 
+# Will return amount of availble disk volume, mounted to the "$1" location
+# If "$1" is not specified - "/" will be used by default
+function get_available_disk {
+    local mount_path="${1:-/}"
+    df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+}
+
+function check_enough_disk {
+    local min_disk="$1"
+    shift
+    local mount_locations="$@"
+
+    for location in $mount_locations; do
+        local location_free_volume="$(get_available_disk "$location")"
+        print_info "${location} has ${location_free_volume}MB free (required: ${min_disk}MB)"
+        (( "$location_free_volume" < "$min_disk" )) && return 1
+    done
+    return 0
+}
+
 function escape_comma_separated_values {
     local value="$1"
     IFS="," read -ra v_arr <<< "$value"
@@ -60,6 +80,8 @@ function run_preflight {
         print_err "Unsopported Linux distribution. Centos 7 and above shall be used"
         return 1
     fi
+
+    if [ -z ""]
     return 0
 }
 
