@@ -866,6 +866,9 @@ function api_setup_base_preferences {
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
+    api_set_preference "security.tools.policy.max.medium.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_MEDIUM_VULNERABILITIES:-300}" "true"
+    api_set_preference "security.tools.policy.max.high.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_HIGH_VULNERABILITIES:-100}" "true"
+    api_set_preference "security.tools.policy.max.critical.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_CRITICAL_VULNERABILITIES:-50}" "true"
 
     ## UI templates
     api_set_preference "ui.pipeline.deployment.name" "${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-"Cloud Pipeline"}" "true"
