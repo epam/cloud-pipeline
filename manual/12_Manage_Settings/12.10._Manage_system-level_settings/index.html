@@ -780,6 +780,10 @@
 <td><strong><code>storage.object.prefix</code></strong></td>
 <td>A mandatory prefix for the new creating data storages</td>
 </tr>
+<tr>
+<td><strong><code>storage.listing.time.limit</code></strong></td>
+<td>Sets the timeout (in milliseconds) for the processing of the size getting for all input/common files before the pipeline launch. Default: 3000 milliseconds (3 sec). If computation of the files size doesn't end in this timeout, accumulated size will return as is</td>
+</tr>
 </tbody>
 </table>
 <h3 id="docker-security">Docker security</h3>

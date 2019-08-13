@@ -123,6 +123,14 @@
         
             <li><a class="toctree-l4" href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
         
+            <li><a class="toctree-l4" href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
+        
+            <li><a class="toctree-l4" href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via pipe without failures in case of lacks read permissions</a></li>
+        
+            <li><a class="toctree-l4" href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
+        
+            <li><a class="toctree-l4" href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -554,6 +562,10 @@
 <li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
 <li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
 <li><a href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
+<li><a href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
+<li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
+<li><a href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
+<li><a href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a></li>
 </ul>
 <hr />
 <ul>
@@ -570,6 +582,8 @@
 <li><a href="#aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</a></li>
 <li><a href="#not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</a></li>
 <li><a href="#incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</a></li>
+<li><a href="#jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</a></li>
+<li><a href="#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</a></li>
 </ul>
 </li>
 </ul>
@@ -723,9 +737,9 @@ RStudio will work correctly, but it may confuse the users.</p>
 <h2 id="setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</h2>
 <p>This feature is addresses the same issues as the previous <strong>Notifications about high resources pressure</strong> by making the compute-intensive jobs runs more reliable.</p>
 <p>In certain cases jobs may fail with unexpected errors if the compute node runs <code>Out Of Memory</code>.</p>
-<p><strong><code>v0.15</code></strong> provides an ability for admin users to configure a default <code>swap</code> file to the compute node being created.
-This allow to avoid runs failures due to memory limits.</p>
-<p>The size and the location of the <code>swap</code> can be configured via <code>cluster.networks.config</code> item of the <code>Preferences</code>. It is accomplished by adding the similar <code>json</code> object to the platform's global or a region/cloud specific configuration:<br />
+<p><strong><code>v0.15</code></strong> provides an ability for admin users to configure a default <code>swap</code> volume to the compute node being created.
+This allows to avoid runs failures due to memory limits.</p>
+<p>The size of the <code>swap</code> volume can be configured via <code>cluster.networks.config</code> item of the <code>Preferences</code>. It is accomplished by adding the similar <code>json</code> object to the platform's global or a region/cloud specific configuration:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SwapFiles_1.png" /></p>
 <p>Options that can be used to configure <code>swap</code>:</p>
 <ul>
@@ -911,6 +925,44 @@ But in some cases this verification is not enough, e.g. when user has no read pe
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_1.png" /><br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_2.png" /></p>
 <p>For more details see sections <a href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a>, <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached Configuration</a> and <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>.</p>
+<h2 id="ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the <code>queue</code>/<code>PE</code> configuration in the GE configuration</h2>
+<p>Previously, if the Grid Engine was enabled, the following was configured:</p>
+<ul>
+<li>a single <code>queue</code> with all the hosts was creating, named "<strong>main.q</strong>"</li>
+<li>a single <code>PE</code> (Parallel Environment) was creating, named "<strong>local</strong>"</li>
+</ul>
+<p>In <strong><code>v0.15</code></strong>, the overriding of the names of the <code>queue</code>/<code>PE</code> is implemented to be compatible with any existing scripts, that rely on a specific GE configuration (e.g. hardcoded).<br />
+You can do it using two new System Parameters at the Launch or the Configuration forms:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GE_QueueAndPeRenaming_1.png" /></p>
+<ul>
+<li><strong><code>CP_CAP_SGE_QUEUE_NAME</code></strong> <em>(string)</em> - allows to override the GE's <code>queue</code> name (default: "<strong>main.q</strong>")</li>
+<li><strong><code>CP_CAP_SGE_PE_NAME</code></strong> <em>(string)</em> - allows to override the GE's <code>PE</code> name (default: "<strong>local</strong>")</li>
+</ul>
+<p>More information how to use System Parameters when a job is launched see <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-system-parameter">here</a>.</p>
+<h2 id="execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via <code>pipe</code> without failures in case of lacks read permissions</h2>
+<p>Previously, <code>pipe storage cp</code>/<code>mv</code> commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the <code>pipe</code> process had reached one of files that was not readable for the <code>pipe</code> process, then the whole command was being failed, remaining files did not upload.</p>
+<p>In current version, the <code>pipe</code> process checks read permission for the "local" source (directories and files) and skip those that are not readable:</p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeCPforNotReadable_1.png" /></p>
+<h2 id="estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</h2>
+<p>Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using <code>STAR</code> aligner, where the genome index file is 20Gb).</p>
+<p>In <strong><code>v0.15</code></strong>, an attempt to handle some of such cases is implemented. Now, the Cloud Pipeline try to estimate the required disk size using the input/common parameters and warn the user if the requested disk is not enough.</p>
+<p>When a job is launching, the system try to get the size of all input/common parameters. The time of the size getting for all files is limited, as this may take too much for lots of small files. Limit for this time is set by the <strong><code>storage.listing.time.limit</code></strong> system preference (in milliseconds). Default: 3 sec (3000 milliseconds). If computation doesn't end in this timeout, accumulated size will return as is.</p>
+<p>If the resulting size of all input/common parameters is greater than requested disk size (considering cluster configuration) - the user will be warned:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EstimateDiskSize_1.png" /><br />
+    User can set suggested disk size or launch a job at user's own risk with the requested size.</p>
+<p>If calculated suggested disk size exceeds 16Tb (hard limit) a different warning message will be shown:</p>
+<pre><code class="text">The requested disk size for this run is &lt;N&gt; Gb, but the data that is going to be processed exceeds 16 Tb (which is a hard limit).
+Please use the cluster run configuration to scale the disks horizontally or reduce the input data volume.
+Do you want to use the maximum disk size 16 Tb anyway?
+</code></pre>
+
+<h2 id="disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</h2>
+<p>Version <strong><code>0.14</code></strong> introduced the <a href="../../v.0.14/v.0.14_-_Release_notes/#global-search">Global Search</a> feature over all Cloud Pipeline objects.<br />
+In current version, a small enhancement for the Global Search is implemented. Now, if the <strong><code>search.elastic.host</code></strong> system preference is not set by admin - other users will not be able to try search performing:</p>
+<ul>
+<li>the "Search" button will be hidden from the left menu</li>
+<li>keyboard search shortcut will be disabled</li>
+</ul>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
@@ -959,6 +1011,13 @@ Also now, if the cluster is configured - <strong>Auto pause</strong> checkbox do
 <h3 id="incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/561">#561</a></p>
 <p>Previously, <code>pipe</code> CLI version displayed incorrectly for the <code>pipe</code> CLI installations performed via hints from the <strong>Cloud Pipeline</strong> System Settings menu.</p>
+<h3 id="jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/579">#579</a></p>
+<p>In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.</p>
+<p>Now, the JWT token (and other variables as well) are being updated when a job is being resumed.</p>
+<h3 id="trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/520">#520</a></p>
+<p>Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.</p>
               
             </div>
           </div>
