@@ -58,7 +58,7 @@ function update_nameserver {
 
 function setup_swap_device {
     local swap_size="${1:-0}"
-    if [[ "swap_size" == "@"*"@" ]]; then
+    if [[ "${swap_size}" == "@"*"@" ]]; then
         return
     fi
     local unmounted_drives=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
