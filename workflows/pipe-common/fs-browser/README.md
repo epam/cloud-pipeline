@@ -13,8 +13,17 @@ FS Browser is the `python/flask` service that allows to expose compute node's fi
 
 To run app use the following command:
 ```
-python <path to project>/app.py --working_directory=/root/ --host=0.0.0.0 --port=8080 --log_dir=/root/logs
+python <path to project>/app.py --working_directory=/root/ --host=0.0.0.0 --port=8080 --log_dir=/root/logs --transfer_storage <stoarge path>
 ```
+
+## Command line options
+- --working_directory (Required) - the directory on compute node 
+- --transfer_storage (Required) - the cloud path for transferring data: <storage name>/<path to cloud directory>. If the <path to cloud directory> is not specified a bucket root will be used
+- --host - the host where this service will be launched. Default: 127.0.0.1
+- --port - the port where this service will be launched. Default: 5000
+- --process_count - the number of threads available for this service. Default: 2
+- --log_dir - the path to log directory
+- --run_id - the run ID for Cloud Pipeline logger. If that value is not specified the stdout will be used. 
 
 ## RESTful API methods
 
