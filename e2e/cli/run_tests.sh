@@ -23,8 +23,8 @@ git clone https://github.com/epam/cloud-pipeline.git ${CP_SRC}
 cd ${CP_SRC}
 git checkout ${GIT_BRANCH}
 
-pip install -r ${CP_SRC}/e2e/cli/requirements.txt
 pip install -r ${CP_SRC}/pipe-cli/requirements.txt
+pip install -r ${CP_SRC}/e2e/cli/requirements.txt
 
 if [[ -z $PIPE_CLI_DOWNLOAD_URL ]]; then
     cd pipe-cli
