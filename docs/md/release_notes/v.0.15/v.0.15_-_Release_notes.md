@@ -239,10 +239,10 @@ This feature is addresses the same issues as the previous **Notifications about 
 
 In certain cases jobs may fail with unexpected errors if the compute node runs `Out Of Memory`.
 
-**`v0.15`** provides an ability for admin users to configure a default `swap` file to the compute node being created.
-This allow to avoid runs failures due to memory limits.
+**`v0.15`** provides an ability for admin users to configure a default `swap` volume to the compute node being created.
+This allows to avoid runs failures due to memory limits.
 
-The size and the location of the `swap` can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
+The size of the `swap` volume can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_SwapFiles_1.png)
 
 Options that can be used to configure `swap`:
