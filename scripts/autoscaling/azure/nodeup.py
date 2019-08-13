@@ -15,6 +15,7 @@
 import argparse
 import functools
 import os
+import math
 import json
 import sys
 import re
@@ -208,15 +209,16 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 def run_instance(instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
                  ins_type, is_spot, kube_ip, kubeadm_token):
     ins_key = read_ssh_key(ssh_pub_key)
-    user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+    swap_size = get_swap_size(cloud_region, ins_type, is_spot)
+    user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if not is_spot:
         create_public_ip_address(instance_name, run_id)
         create_nic(instance_name, run_id)
         return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                         user_data_script, ins_key, user)
+                         user_data_script, ins_key, user, swap_size)
     else:
         return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
-                                      user_data_script, ins_key, user)
+                                      user_data_script, ins_key, user, swap_size)
 
 
 def read_ssh_key(ssh_pub_key):
@@ -358,7 +360,29 @@ def get_os_profile(instance_name, ssh_pub_key, user, user_data_script, computer_
     return profile
 
 
-def get_storage_profile(disk, image, instance_type):
+def get_data_disk(size, disk_type, lun, disk_name=None):
+    disk = {
+                "diskSizeGB": size,
+                "lun": lun,
+                "createOption": "Empty",
+                "managedDisk": {
+                    "storageAccountType": disk_type
+                }
+            }
+    if disk_name is not None:
+        disk["name"] = disk_name
+    return disk
+
+
+def get_storage_profile(disk, image, instance_type,
+                        instance_name=None, swap_size=None):
+    disk_type = get_disk_type(instance_type)
+    disk_name = None if instance_name is None else instance_name + "-data"
+    disk_lun = 62
+    data_disks = [get_data_disk(disk, disk_type, disk_lun, disk_name=disk_name)]
+    if swap_size is not None and swap_size > 0:
+        swap_name = None if instance_name is None else instance_name + "-swap"
+        data_disks.append(get_data_disk(swap_size, disk_type, disk_lun + 1, disk_name=swap_name))
     return {
         'image_reference': {
             'id': image.id
@@ -366,25 +390,16 @@ def get_storage_profile(disk, image, instance_type):
         "osDisk": {
             "caching": "ReadWrite",
             "managedDisk": {
-                "storageAccountType": get_disk_type(instance_type)
+                "storageAccountType": disk_type
             },
             "createOption": "FromImage"
         },
-        "dataDisks": [
-            {
-                "diskSizeGB": disk,
-                "lun": 63,
-                "createOption": "Empty",
-                "managedDisk": {
-                    "storageAccountType": get_disk_type(instance_type)
-                }
-            }
-        ]
+        "dataDisks": data_disks
     }
 
 
 def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_data_script,
-              ssh_pub_key, user):
+              ssh_pub_key, user, swap_size):
     nic = network_client.network_interfaces.get(
         resource_group_name,
         instance_name + '-nic'
@@ -393,9 +408,9 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
 
     image = compute_client.images.get(resource_group, image_name)
 
-    storage_profile = get_storage_profile(disk, image, instance_type)
-    storage_profile["dataDisks"][0]["name"] = instance_name + "-data"
-
+    storage_profile = get_storage_profile(disk, image, instance_type,
+                                          instance_name=instance_name,
+                                          swap_size=swap_size)
     vm_parameters = {
         'location': zone,
         'os_profile': get_os_profile(instance_name, ssh_pub_key, user, user_data_script, 'computer_name'),
@@ -419,7 +434,8 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
     return instance_name, private_ip
 
 
-def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script, ssh_pub_key, user):
+def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script,
+                           ssh_pub_key, user, swap_size):
 
     pipe_log('Create VMScaleSet with low priority instance for run: {}'.format(run_id))
     resource_group, image_name = get_res_grp_and_res_name_from_string(instance_image, 'images')
@@ -445,7 +461,7 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
                 'priority': 'Low',
                 'evictionPolicy': 'delete',
                 'os_profile': get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
-                'storage_profile': get_storage_profile(disk, image, instance_type),
+                'storage_profile': get_storage_profile(disk, image, instance_type, swap_size=swap_size),
                 "network_profile": {
                     "networkInterfaceConfigurations": [
                         {
@@ -851,11 +867,77 @@ def replace_proxies(cloud_region, init_script):
     return replace_common_params(cloud_region, init_script, "proxies")
 
 
-def replace_swap(cloud_region, init_script):
-    return replace_common_params(cloud_region, init_script, "swap")
+def replace_swap(swap_size, init_script):
+    if swap_size is not None:
+        return init_script.replace('@swap_size@', str(swap_size))
+    return init_script
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token):
+def get_swap_size(cloud_region, ins_type, is_spot):
+    pipe_log('Configuring swap settings for an instance in {} region'.format(cloud_region))
+    swap_params = get_cloud_config_section(cloud_region, "swap")
+    if swap_params is None:
+        return None
+    swap_ratio = get_swap_ratio(swap_params)
+    if swap_ratio is None:
+        pipe_log("Swap ratio is not configured. Swap configuration will be skipped.")
+        return None
+    ram = get_instance_ram(cloud_region, ins_type, is_spot)
+    if ram is None:
+        pipe_log("Failed to determine instance RAM. Swap configuration will be skipped.")
+        return None
+    swap_size = int(math.ceil(swap_ratio * ram))
+    if swap_size > 0:
+        pipe_log("Swap device will be configured with size %d." % swap_size)
+    return swap_size
+
+
+def get_instance_ram(cloud_region, ins_type, is_spot):
+    api = PipelineAPI(api_url, None)
+    region_id = get_region_id(cloud_region, api)
+    if region_id is None:
+        return None
+    instance_types = api.get_allowed_instance_types(region_id, spot=is_spot)
+    ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types', ins_type)
+    if ram is None:
+        ram = get_ram_from_group(instance_types, 'cluster.allowed.instance.types.docker', ins_type)
+    return ram
+
+
+def get_ram_from_group(instance_types, group, instance_type):
+    if group in instance_types:
+        for current_type in instance_types[group]:
+            if current_type['name'] == instance_type:
+                return current_type['memory']
+    return None
+
+
+def get_region_id(cloud_region, api):
+    regions = api.get_regions()
+    if regions is None:
+        return None
+    for region in regions:
+        if region.provider == 'AZURE' and region.region_id == cloud_region:
+            return region.id
+    return None
+
+
+def get_swap_ratio(swap_params):
+    for swap_param in swap_params:
+        if not 'name' in swap_param or not 'path' in swap_param:
+            continue
+        item_name = swap_param['name']
+        if item_name == 'swap_ratio':
+            item_value = swap_param['path']
+            if item_value:
+                try:
+                    return float(item_value)
+                except ValueError:
+                    pipe_log("Unexpected swap_ratio value: {}".format(item_value))
+    return None
+
+
+def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -864,7 +946,7 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         well_known_string = get_well_known_hosts_string(cloud_region)
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
-        user_data_script = replace_swap(cloud_region, user_data_script)
+        user_data_script = replace_swap(swap_size, user_data_script)
         return user_data_script\
             .replace('@DOCKER_CERTS@', certs_string) \
             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \

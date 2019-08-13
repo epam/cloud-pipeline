@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +14,6 @@
 # limitations under the License.
 
 # User Data script to initialize common/gpu instances for azure instances
-
 # Output out/err to the logfile
 user_data_log="/var/log/user_data.log"
 exec > $user_data_log 2>&1
@@ -58,66 +56,48 @@ function update_nameserver {
   fi
 }
 
-function setup_swap {
-  local default_swap_file="/ebs/swap/swapfile"
-  local swap_ratio="${1:-0}"
-  local swap_file="${2:-$default_swap_file}"
-  
-  # If swap_ratio/swap_file are not set at all - they will appear with @ in the beginning and the end
-  # Consider that as default values
-  if [[ "$swap_ratio" == "@"*"@" ]]; then
-    swap_ratio=0
-  fi
-  if [[ "$swap_file" == "@"*"@" ]]; then
-    swap_file=$default_swap_file
-  fi
-
-  # If explicitely set to 0 - do not do anything
-  if [ -z "$swap_ratio" ] || [ "$swap_ratio" == "0" ]; then
-    echo "Swap ratio is not set of equals to 0"
-    return 0
-  fi
-
-  # If swap file already exists - fallback, as it may be a paused run
-  if [ -f "$swap_file" ]; then
-    echo "Swap file already exists at ${swap_file}. Refusing to proceed with the swap configuration"
-    return 1
-  fi
-
-  local physical_ram_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-  local swap_size_gb=$(echo "$physical_ram_kb * $swap_ratio / 1024 / 1024" | bc)
-  if [ $? -ne 0 ] || [ "$swap_size_gb" == "0" ]; then
-    echo "Unable to compute swap size. physical_ram_kb: $physical_ram_kb swap_ratio: $swap_ratio swap_size_gb: $swap_size_gb"
-    return 1
-  fi
-
-  mkdir -p $(dirname $swap_file)
-
-  echo "$swap_size_gb Gb swap file will be create at $swap_file"
-  dd if=/dev/zero of=$swap_file bs=1G count=$swap_size_gb
-  if [ $? -ne 0 ]; then
-    echo "Unable to create a swapfile at $swap_file"
-    rm -f "$swap_file"
-    return 1
-  fi
-
-  chmod 600 $swap_file
-  mkswap $swap_file
-  if [ $? -ne 0 ]; then
-    echo "Unable to mkswap at $swap_file"
-    rm -f "$swap_file"
-    return 1
-  fi
-
-  swapon $swap_file
-  if [ $? -ne 0 ]; then
-    echo "Unable to swapon at $swap_file"
-    rm -f "$swap_file"
-    return 1
-  fi
-
-  return 0
+function setup_swap_device {
+    local swap_size="${1:-0}"
+    if [[ "swap_size" == "@"*"@" ]]; then
+        return
+    fi
+    local unmounted_drives=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
+    local drive_num=0
+    local swap_drive_name=""
+    for drive_name in $unmounted_drives
+    do
+        drive_num=$(( drive_num + 1 ))
+        drive_size_str=$(lsblk -sdrpn -o SIZE "${drive_name}")
+        if [[ "${drive_size_str: -1}" == "G" ]]; then
+            drive_size=${drive_size_str%"G"}
+            if (( swap_size == drive_size )); then
+                swap_drive_name="${drive_name}"
+            fi
+        fi
+    done
+    if [[ -z "${swap_drive_name}" ]]; then
+        echo "Block device matching swap size ${swap_size}G was not found. Swap device won't be configured."
+    elif (( drive_num < 2 )); then
+        echo "${drive_num} device found. Swap device won't be configured."
+    else
+        echo "Swap device ${swap_drive_name} will be configured"
+        mkswap "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to mkswap at $swap_drive_name"
+            return 1
+        fi
+        swapon "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to swapon at $swap_drive_name"
+            return 1
+        fi
+        echo "$swap_drive_name none swap sw 0 0" >> /etc/fstab
+    fi
 }
+
+# Setup swap device configuration
+swap_size="@swap_size@"
+setup_swap_device "${swap_size:-0}"
 
 # Mount all drives that do not have mount points yet. Each drive will be mounted to /ebsN folder (N is a number of a drive)
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
@@ -151,11 +131,6 @@ do
   rm -rf $MOUNT_POINT/lost+found/   
  
 done
-
-# Setup swap configuration
-swap_ratio="@swap_ratio@"
-swap_location="@swap_location@"
-setup_swap "${swap_ratio:-0}" "${swap_location:-/ebs/swap/swapfile}"
 
 # Stop docker if it is running and clean any remaining default directories
 systemctl stop docker
