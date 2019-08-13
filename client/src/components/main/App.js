@@ -83,6 +83,7 @@ export default class App extends Component {
   };
 
   render () {
+    const {preferences} = this.props;
     const isMiewApp = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase() === 'miew';
     const activeTabPath = (this.props.router.location.pathname.split('/')[1] || '').toLowerCase();
     let content;
@@ -106,6 +107,7 @@ export default class App extends Component {
               onLibraryCollapsedChange={this.onLibraryCollapsedChange}
               openSearchDialog={this.openSearchDialog}
               searchControlVisible={this.state.searchFormVisible}
+              searchEnabled={preferences.loaded && preferences.searchEnabled}
               router={this.props.router} />
           </Layout.Sider>
           <Layout.Content

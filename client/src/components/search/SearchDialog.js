@@ -637,6 +637,10 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   render () {
+    const {preferences} = this.props;
+    if (preferences.loaded && !preferences.searchEnabled) {
+      return null;
+    }
     const searchFormClassNames = [styles.searchForm];
     if (this.state.searchResults.length) {
       searchFormClassNames.push(styles.resultsAvailable);
@@ -756,6 +760,10 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   }
 
   openDialog = () => {
+    const {preferences} = this.props;
+    if (preferences.loaded && !preferences.searchEnabled) {
+      return;
+    }
     this.setState({
       visible: true
     }, () => {
@@ -778,6 +786,10 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
     }
     const modals = Array.from(document.getElementsByClassName('ant-modal-mask'));
     if (modals && modals.filter(m => m.className === 'ant-modal-mask').length) {
+      return;
+    }
+    const {preferences} = this.props;
+    if (preferences.loaded && !preferences.searchEnabled) {
       return;
     }
     if (e.keyCode === 114 || ((e.ctrlKey || e.metaKey) && e.keyCode === 70)) {
@@ -820,7 +832,14 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
-    window.addEventListener('keydown', this.handleKeyPress);
+    const {preferences} = this.props;
+    preferences
+      .fetchIfNeededOrWait()
+      .then(
+        () => {
+          window.addEventListener('keydown', this.handleKeyPress);
+        }
+      );
     this.props.onInitialized && this.props.onInitialized(this);
   }
 
