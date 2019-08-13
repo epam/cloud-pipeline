@@ -46,6 +46,7 @@ import {
 import EditFolderForm from './forms/EditFolderForm';
 import EditPipelineForm from '../version/forms/EditPipelineForm';
 import {DataStorageEditDialog, ServiceTypes} from './forms/DataStorageEditDialog';
+import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import CloneFolderForm from './forms/CloneFolderForm';
 import EditDetachedConfigurationForm from '../configuration/forms/EditDetachedConfigurationForm';
 import dataStorages from '../../../models/dataStorage/DataStorages';
@@ -92,7 +93,8 @@ const MAX_INLINE_METADATA_KEYS = 10;
   folders
 })
 @roleModel.authenticationInfo
-@inject(({pipelines, dataStorages, folders}, params) => {
+@inject('awsRegions')
+@inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
     componentParameters = params.params;
@@ -107,7 +109,8 @@ const MAX_INLINE_METADATA_KEYS = 10;
     pipelines,
     dataStorages,
     folders,
-    pipelinesLibrary
+    pipelinesLibrary,
+    awsRegions
   };
 })
 @observer
@@ -1267,6 +1270,8 @@ export default class Folder extends localization.LocalizedReactComponent {
         }
       }
       if (roleModel.isManager.storage(this)) {
+        const fsMountsAvailable = this.props.awsRegions.loaded &&
+          extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
           <Menu.SubMenu
             key={storageKey}
@@ -1291,13 +1296,15 @@ export default class Folder extends localization.LocalizedReactComponent {
               key={`${storageKey}_existing`}>
               Add existing object storage
             </Menu.Item>
-            <Menu.Divider key="storages_divider" />
-            <Menu.Item
-              id="create-new-nfs-mount"
-              className="create-new-nfs-mount"
-              key={`${storageKey}_${nfsStorageKey}`}>
-              Create new FS mount
-            </Menu.Item>
+            {fsMountsAvailable && (<Menu.Divider key="storages_divider" />)}
+            {fsMountsAvailable && (
+              <Menu.Item
+                id="create-new-nfs-mount"
+                className="create-new-nfs-mount"
+                key={`${storageKey}_${nfsStorageKey}`}>
+                Create new FS mount
+              </Menu.Item>
+            )}
           </Menu.SubMenu>
         );
       }
