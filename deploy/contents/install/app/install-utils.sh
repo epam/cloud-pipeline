@@ -80,8 +80,6 @@ function run_preflight {
         print_err "Unsopported Linux distribution. Centos 7 and above shall be used"
         return 1
     fi
-
-    if [ -z ""]
     return 0
 }
 
