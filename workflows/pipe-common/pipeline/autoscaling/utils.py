@@ -21,6 +21,7 @@ from pipeline import Logger, TaskStatus, PipelineAPI
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
+MIN_SWAP_DEVICE_SIZE = 5
 
 current_run_id = 0
 api_url = None
@@ -308,7 +309,7 @@ def get_swap_size(cloud_region, ins_type, is_spot, provider):
         pipe_log("Failed to determine instance RAM. Swap configuration will be skipped.")
         return None
     swap_size = int(math.ceil(swap_ratio * ram))
-    if swap_size > 0:
+    if swap_size >= MIN_SWAP_DEVICE_SIZE:
         pipe_log("Swap device will be configured with size %d." % swap_size)
     return swap_size
 

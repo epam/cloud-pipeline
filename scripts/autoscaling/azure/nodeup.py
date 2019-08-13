@@ -43,6 +43,8 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 
+MIN_SWAP_DEVICE_SIZE = 5
+
 current_run_id = 0
 api_url = None
 api_token = None
@@ -887,7 +889,7 @@ def get_swap_size(cloud_region, ins_type, is_spot):
         pipe_log("Failed to determine instance RAM. Swap configuration will be skipped.")
         return None
     swap_size = int(math.ceil(swap_ratio * ram))
-    if swap_size > 0:
+    if swap_size >= MIN_SWAP_DEVICE_SIZE:
         pipe_log("Swap device will be configured with size %d." % swap_size)
     return swap_size
 
