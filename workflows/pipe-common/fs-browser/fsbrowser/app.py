@@ -16,8 +16,8 @@ import argparse
 import traceback
 from flask import Flask, jsonify
 
-from fsbrowser.fs_browser_manager import FsBrowserManager
-from fsbrowser.logger import BrowserLogger
+from fsbrowser.src.fs_browser_manager import FsBrowserManager
+from fsbrowser.src.logger import BrowserLogger
 
 app = Flask(__name__)
 
@@ -36,8 +36,17 @@ def error(message):
     }
 
 
-@app.route('/view', defaults={"path": ""})
+@app.route('/view')
+@app.route('/view/')
+def view_root():
+    return view("")
+
+
 @app.route('/view/<path:path>')
+def view_path(path):
+    return view(path)
+
+
 def view(path):
     manager = app.config['fsbrowser']
     try:
@@ -111,17 +120,22 @@ def delete(path):
         return jsonify(error(e.__str__()))
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default="5000")
     parser.add_argument("--working_directory", required=True)
+    parser.add_argument("--transfer_storage", required=True)
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
     parser.add_argument("--log_dir", required=False)
 
     args = parser.parse_args()
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
-                                               BrowserLogger(args.run_id, args.log_dir))
+                                               BrowserLogger(args.run_id, args.log_dir), args.transfer_storage)
 
     app.run(host=args.host, port=args.port)
+
+
+if __name__ == '__main__':
+    main()

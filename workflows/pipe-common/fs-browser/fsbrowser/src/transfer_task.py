@@ -17,9 +17,8 @@ import traceback
 import tarfile
 import subprocess
 
-from fsbrowser.cloud_pipeline_api_provider import CloudPipelineApiProvider
-from fsbrowser.logger import BrowserLogger
-from fsbrowser.utils import get_object_storage
+from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.logger import BrowserLogger
 
 TAF_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
@@ -39,14 +38,16 @@ class TaskStatus(object):
 
 class TransferTask(object):
 
-    def __init__(self, task_id, logger=BrowserLogger()):
+    def __init__(self, task_id, storage_name, storage_path='', logger=BrowserLogger()):
         self.task_id = task_id
+        self.storage_name = storage_name
         self.status = TaskStatus.PENDING
         self.process = None
         self.message = None
         self.result = None
         self.path = None
         self.logger = logger
+        self.storage_path = storage_path
 
     def success(self, result=None):
         self.status = TaskStatus.SUCCESS
@@ -92,24 +93,27 @@ class TransferTask(object):
             self.running()
             source_path = source_path.strip(DELIMITER)
             full_source_path = os.path.join(working_directory, source_path)
-            if not os.path.isfile(full_source_path):
+            compressed = not os.path.isfile(full_source_path)
+            if compressed:
                 self.logger.log("Starting to compress folder for download")
                 compressed_name = full_source_path + TAF_GZ_EXTENSION
                 self.compress_directory(compressed_name, full_source_path)
                 full_source_path = compressed_name
                 source_path = source_path + TAF_GZ_EXTENSION
-            storage = get_object_storage()
-            full_destination_path = os.path.join(storage, self.task_id, source_path)
+            source_file_name = os.path.basename(source_path)
+            full_destination_path = os.path.join(self.storage_name, self.storage_path, self.task_id, source_file_name)
             if self.status == TaskStatus.CANCELED:
                 self.logger.log('Cancel initiated by user')
                 return
             self.pipe_storage_cp(full_source_path, 'cp://%s' % full_destination_path)
             pipeline_api = CloudPipelineApiProvider(self.logger.log_dir)
-            storage_id = pipeline_api.load_storage_id_by_name(storage)
-            url = pipeline_api.get_download_url(storage_id, os.path.join(self.task_id, source_path))
-            os.remove(full_source_path)
+            storage_id = pipeline_api.load_storage_id_by_name(self.storage_name)
+            url = pipeline_api.get_download_url(storage_id, os.path.join(self.storage_path, self.task_id,
+                                                                         source_file_name))
+            if compressed:
+                os.remove(full_source_path)
             self.success(url)
-            self.logger.log("Data successfully uploaded to bucket %s" % storage)
+            self.logger.log("Data successfully uploaded to bucket %s" % self.storage_name)
         except Exception as e:
             self.logger.log(traceback.format_exc())
             if self.status != TaskStatus.CANCELED:
@@ -122,14 +126,14 @@ class TransferTask(object):
                                 % self.status)
                 return
             self.running()
-            storage = get_object_storage()
-            full_source_path = 'cp://%s' % os.path.join(storage, self.task_id, self.path)
+            full_source_path = 'cp://%s' % os.path.join(self.storage_name, self.storage_path, self.task_id, self.path)
             full_destination_path = os.path.join(working_directory, self.path)
             tmp_destination_path = os.path.join(os.path.dirname(full_destination_path), self.task_id)
             self.pipe_storage_cp(full_source_path, tmp_destination_path)
             os.rename(tmp_destination_path, full_destination_path)
             self.success()
-            self.logger.log("Data successfully downloaded from bucket %s to %s" % (storage, full_destination_path))
+            self.logger.log("Data successfully downloaded from bucket %s to %s"
+                            % (self.storage_name, full_destination_path))
         except Exception as e:
             self.logger.log(traceback.format_exc())
             if self.status != TaskStatus.CANCELED:

@@ -11,13 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import os
 
+from fsbrowser.src.model.fs_item import FsItem
 
-def get_object_storage():
-    storage = os.environ['CP_CAP_EXPOSE_FS_STORAGE']
-    if not storage:
-        raise RuntimeError('No object storage available. Please specify CP_CAP_EXPOSE_FS_STORAGE '
-                           'environment variable')
-    return storage
+FILE_TYPE = "File"
+
+
+class File(FsItem):
+
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+        self.size = self._get_size()
+
+    def is_file(self):
+        return True
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "path": self.path,
+            "type": FILE_TYPE,
+            "size": self.size
+        }
+
+    def _get_size(self):
+        return os.path.getsize(self.path)

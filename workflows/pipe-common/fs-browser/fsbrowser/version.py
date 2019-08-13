@@ -12,24 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-from fsbrowser.model.fs_item import FsItem
-
-FOLDER_TYPE = "Folder"
-
-
-class Folder(FsItem):
-
-    def __init__(self, name, path):
-        self.name = name
-        self.path = path
-
-    def is_file(self):
-        return False
-
-    def to_json(self):
-        return {
-            "name": self.name,
-            "path": self.path,
-            "type": FOLDER_TYPE
-        }
+__version__ = '0.0.1'

@@ -30,7 +30,8 @@ Response example:
     "payload": [{
         "name": "file_name.txt",
         "path": "/root/data/file_name.txt",
-        "type": "File" (or "Folder")
+        "type": "File" (or "Folder"),
+        "size": 1 (size in bytes, avilable for Files only)
     }],
     "status":"OK"
 }
@@ -59,10 +60,10 @@ Response example:
 {    
     "payload": {
        "status":"success",
-	"result": {
-		"expires":"2019-05-30 08:53:49.602",
-		"url":"..."
-	}
+	    "result": {
+		    "expires":"2019-05-30 08:53:49.602",
+		    "url":"..."
+	    }
     },
     "status":"OK"
 }

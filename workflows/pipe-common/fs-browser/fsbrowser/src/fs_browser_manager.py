@@ -17,20 +17,20 @@ import uuid
 import shutil
 from multiprocessing.pool import ThreadPool
 
-from fsbrowser.cloud_pipeline_api_provider import CloudPipelineApiProvider
-from fsbrowser.utils import get_object_storage
-from fsbrowser.transfer_task import TransferTask, TaskStatus
-from fsbrowser.model.file import File
-from fsbrowser.model.folder import Folder
+from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
+from fsbrowser.src.model.file import File
+from fsbrowser.src.model.folder import Folder
+from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger):
+    def __init__(self, working_directory, process_count, logger, storage):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
         self.logger = logger
+        self.storage_name, self.storage_path = self._parse_transfer_storage_path(storage)
 
     def list(self, path):
         items = []
@@ -48,20 +48,19 @@ class FsBrowserManager(object):
 
     def run_download(self, path):
         task_id = str(uuid.uuid4().hex)
-        task = TransferTask(task_id, self.logger)
+        task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
         self.pool.apply_async(task.download, [path, self.working_directory])
         return task_id
 
     def init_upload(self, path):
         task_id = str(uuid.uuid4().hex)
-        task = TransferTask(task_id, self.logger)
+        task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         task.path = path
         self.tasks.update({task_id: task})
-        storage = get_object_storage()
         pipeline_client = CloudPipelineApiProvider(self.logger.log_dir)
-        storage_id = pipeline_client.load_storage_id_by_name(storage)
-        upload_url = pipeline_client.get_upload_url(storage_id, os.path.join(task_id, path))
+        storage_id = pipeline_client.load_storage_id_by_name(self.storage_name)
+        upload_url = pipeline_client.get_upload_url(storage_id, os.path.join(self.storage_path, task_id, path))
         return task_id, upload_url
 
     def run_upload(self, task_id):
@@ -90,6 +89,17 @@ class FsBrowserManager(object):
             shutil.rmtree(full_path)
         self.logger.log("Data by path '%s' has been successfully deleted" % full_path)
         return path
+
+    @staticmethod
+    def _parse_transfer_storage_path(storage):
+        if not storage:
+            raise RuntimeError('Transfer storage path must be specified')
+        parts = storage.split("/", 1)
+        storage_name = parts[0]
+        storage_path = ''
+        if len(parts) > 1 and parts[1]:
+            storage_path = parts[1]
+        return storage_name, storage_path
 
     def _check_task_exists(self, task_id):
         if task_id in self.tasks:

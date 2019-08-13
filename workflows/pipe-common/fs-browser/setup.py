@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fsbrowser.model.fs_item import FsItem
+from setuptools import setup, find_packages
+from fsbrowser.version import __version__
 
-FILE_TYPE = "File"
-
-
-class File(FsItem):
-
-    def __init__(self, name, path):
-        self.name = name
-        self.path = path
-
-    def is_file(self):
-        return True
-
-    def to_json(self):
-        return {
-            "name": self.name,
-            "path": self.path,
-            "type": FILE_TYPE
-        }
+setup(
+    name='fs-browser',
+    version=__version__,
+    py_modules=['fs-browser'],
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[
+        'flask==1.1.1'
+    ]
+)
