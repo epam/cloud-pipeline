@@ -1,16 +1,37 @@
-plugins {
-    id 'java'
+group 'com.epam.pipeline.adapter'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    ext {
+        springBootVersion = '1.5.2.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+    }
 }
 
-group 'com.epam.pipeline'
-
-sourceCompatibility = 1.8
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
 
 repositories {
     mavenCentral()
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.epam.pipeline.adapter.TesAdapterApplication'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+sourceCompatibility = 1.8
+
 dependencies {
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    
 }
