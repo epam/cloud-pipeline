@@ -59,7 +59,21 @@ read -r -d '' storage_driver_config <<-EOF
     container: ${CP_DOCKER_STORAGE_CONTAINER}
     realm: core.windows.net
 EOF
+  elif [  "$CP_CLOUD_PLATFORM" == "gcp" ]; then
 
+     echo "GCP storage driver will be configured"
+
+     if [ -z "$CP_DOCKER_STORAGE_ROOT_DIR" ]; then
+           CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
+     fi
+
+read -r -d '' storage_driver_config <<-EOF
+  gcs:
+    bucket: ${CP_DOCKER_STORAGE_CONTAINER}
+    keyfile: ${CP_CLOUD_CREDENTIALS_LOCATION}
+    chunksize: 52428800
+    rootdirectory: ${CP_DOCKER_STORAGE_ROOT_DIR}
+EOF
   else
     echo "WARN: Cloud Platform \"$CP_CLOUD_PLATFORM\" is not supported for the docker registry storage backend. Local filesystem will be used"
   fi

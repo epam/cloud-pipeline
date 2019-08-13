@@ -26,6 +26,8 @@ spec:
           name: idp-pki
         - mountPath: /opt/api/pki
           name: api-pki
+        - mountPath: /opt/share-srv/pki
+          name: share-pki
         - mountPath: /opt/gitlab/pki
           name: git-pki
       readinessProbe:
@@ -45,6 +47,9 @@ spec:
     - name: git-pki
       hostPath:
         path: /opt/gitlab/pki
+    - name: share-pki
+      hostPath:
+        path: /opt/share-srv/pki
   imagePullSecrets:
     - name: cp-distr-docker-registry-secret
   

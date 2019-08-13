@@ -1,45 +1,63 @@
-@flags-root: '/awsregions';
+@icons-root: '/icons';
+
+.provider[data-provider="AWS"] {
+  background-image: url('@{icons-root}/providers/aws.svg');
+}
+
+.provider[data-provider="GCP"] {
+  background-image: url('@{icons-root}/providers/gcp.svg');
+  background-color: transparent;
+  box-shadow: 0 0 0 1px transparent;
+}
+
+.provider[data-provider="AZURE"] {
+  background-image: url('@{icons-root}/providers/azure.svg');
+}
 
 .flag.eu {
-  background-image: url('@{flags-root}/eu.svg');
+  background-image: url('@{icons-root}/regions/eu.svg');
 }
 
 .flag.us {
-  background-image: url('@{flags-root}/us.svg');
+  background-image: url('@{icons-root}/regions/us.svg');
 }
 
 .flag.sa {
-  background-image: url('@{flags-root}/sa.svg');
+  background-image: url('@{icons-root}/regions/sa.svg');
 }
 
 .flag.cn {
-  background-image: url('@{flags-root}/cn.svg');
+  background-image: url('@{icons-root}/regions/cn.svg');
 }
 
 .flag.ca {
-  background-image: url('@{flags-root}/ca.svg');
+  background-image: url('@{icons-root}/regions/ca.svg');
 }
 
 .flag.ap.ap-northeast-1 {
-  background-image: url('@{flags-root}/ap-northeast-1.svg');
+  background-image: url('@{icons-root}/regions/ap-northeast-1.svg');
 }
 
 .flag.ap.ap-northeast-2 {
-  background-image: url('@{flags-root}/ap-northeast-2.svg');
+  background-image: url('@{icons-root}/regions/ap-northeast-2.svg');
 }
 
 .flag.ap.ap-northeast-3 {
-  background-image: url('@{flags-root}/ap-northeast-3.svg');
+  background-image: url('@{icons-root}/regions/ap-northeast-3.svg');
 }
 
 .flag.ap.ap-south-1 {
-  background-image: url('@{flags-root}/ap-south-1.svg');
+  background-image: url('@{icons-root}/regions/ap-south-1.svg');
 }
 
 .flag.ap.ap-southeast-1 {
-  background-image: url('@{flags-root}/ap-southeast-1.svg');
+  background-image: url('@{icons-root}/regions/ap-southeast-1.svg');
 }
 
 .flag.ap.ap-southeast-2 {
-  background-image: url('@{flags-root}/ap-southeast-2.svg');
+  background-image: url('@{icons-root}/regions/ap-southeast-2.svg');
+}
+
+.flag.taiwan {
+  background-image: url('@{icons-root}/regions/taiwan.svg');
 }

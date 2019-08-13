@@ -23,7 +23,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
-import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -282,6 +282,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(DATASTORAGE_LOCKED.name(), dataStorage.isLocked());
             params.addValue(MOUNT_POINT.name(), dataStorage.getMountPoint());
             params.addValue(SHARED.name(), dataStorage.isShared());
+            params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
+            params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
 
             if (dataStorage instanceof S3bucketDataStorage) {
                 S3bucketDataStorage bucket = ((S3bucketDataStorage) dataStorage);
@@ -292,32 +294,21 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             } else if (dataStorage instanceof AzureBlobStorage) {
                 AzureBlobStorage blob = ((AzureBlobStorage) dataStorage);
                 params.addValue(REGION_ID.name(), blob.getRegionId());
-                params.addValue(ALLOWED_CIDRS.name(), null);
-            } else {
-                params.addValue(ALLOWED_CIDRS.name(), null);
-                params.addValue(REGION_ID.name(), null);
-            }
-
-            if (dataStorage instanceof NFSDataStorage) {
-                params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
-                params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
-            } else {
-                params.addValue(MOUNT_OPTIONS.name(), null);
-                params.addValue(FILE_SHARE_MOUNT_ID.name(), null);
+            } else if (dataStorage instanceof GSBucketStorage) {
+                params.addValue(REGION_ID.name(), ((GSBucketStorage)dataStorage).getRegionId());
             }
 
             addPolicyParameters(dataStorage, params);
+            Arrays.stream(DataStorageParameters.values())
+                    .map(DataStorageParameters::name)
+                    .filter(param -> !params.hasValue(param))
+                    .forEach(param -> params.addValue(param, null));
             return params;
         }
 
         private static void addPolicyParameters(AbstractDataStorage dataStorage,
                 MapSqlParameterSource params) {
-            if (dataStorage.getStoragePolicy() == null) {
-                params.addValue(ENABLE_VERSIONING.name(), false);
-                params.addValue(BACKUP_DURATION.name(), null);
-                params.addValue(STS_DURATION.name(), null);
-                params.addValue(LTS_DURATION.name(), null);
-            } else {
+            if (dataStorage.getStoragePolicy() != null) {
                 StoragePolicy policy = dataStorage.getStoragePolicy();
                 params.addValue(ENABLE_VERSIONING.name(), policy.isVersioningEnabled());
                 params.addValue(BACKUP_DURATION.name(), policy.getBackupDuration());

@@ -37,6 +37,7 @@ NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+BOTO3_RETRY_COUNT = 6
 
 current_run_id = 0
 api_url = None
@@ -152,7 +153,7 @@ def get_security_groups(aws_region):
     if not config:
         raise RuntimeError('Security group setting is required to run an instance')
     return config
-    
+
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
@@ -374,10 +375,10 @@ def get_well_known_hosts_string(aws_region):
         well_known_host = well_known_item['host']
         if not well_known_ip or not well_known_host:
             continue
-    
+
         entries.append(command_pattern.format(well_known_ip=well_known_ip, well_known_host=well_known_host))
         pipe_log('-> {}={}'.format(well_known_ip, well_known_host))
-    
+
     if len(entries) == 0:
         return ''
     return ' && '.join(entries)
@@ -743,6 +744,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     while rep <= num_rep:
         current_request = ec2.describe_spot_instance_requests(SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
         status = current_request['Status']['Code']
+        last_status = status
         if status == 'fulfilled':
             ins_id = current_request['InstanceId']
             instance = None
@@ -784,7 +786,6 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
 
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
-        last_status = status
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
         rep = increment_or_fail(num_rep, rep,
                                 'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
@@ -880,7 +881,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     ins_key = args.ins_key
     run_id = args.run_id
     ins_type = args.ins_type
@@ -933,13 +934,13 @@ def main():
             try:
                 ec2 = boto3.client('ec2')
                 if hasattr(ec2.meta.events, "_unique_id_handlers"):
-                    ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = num_rep
+                    ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = BOTO3_RETRY_COUNT
             except Exception as inner_exception:
                 pipe_log('Unable to modify retry config:\n{}'.format(str(inner_exception)))
         else:
-            ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
+            ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-            
+
 
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)

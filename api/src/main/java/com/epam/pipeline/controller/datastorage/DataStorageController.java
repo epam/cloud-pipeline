@@ -25,7 +25,6 @@ import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -34,6 +33,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
@@ -68,7 +69,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -242,19 +243,16 @@ public class DataStorageController extends AbstractRestController {
             HttpServletRequest request) throws FileUploadException {
         MultipartFile file = consumeMultipartFile(request);
 
-        LinkedList<UploadFileMetadata> uploadedFiles = new LinkedList<>();
         UploadFileMetadata fileMeta = new UploadFileMetadata();
         fileMeta.setFileName(FilenameUtils.getName(file.getOriginalFilename()));
         fileMeta.setFileSize(file.getSize() / BYTES_IN_KB + " Kb");
         fileMeta.setFileType(file.getContentType());
         try {
-            fileMeta.setBytes(file.getBytes());
-            uploadedFiles.add(fileMeta);
+            dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), file.getBytes());
         } catch (IOException e) {
             throw new DataStorageException("Failed to upload file to datastorage.", e);
         }
-        dataStorageApiService.createDataStorageFile(id, folder, fileMeta.getFileName(), fileMeta.getBytes());
-        return uploadedFiles;
+        return Collections.singletonList(fileMeta);
     }
 
     @RequestMapping(value = "/datastorage/{id}/upload/stream", method= RequestMethod.POST)
@@ -645,4 +643,16 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getStoragePermission(page, pageSize, filterMask));
     }
 
+    @PostMapping(value = "/datastorage/path/size")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns full size specified by path.",
+            notes = "Returns full size specified by path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<PathDescription>> getDataSizes(@RequestBody final List<String> paths) {
+        return Result.success(dataStorageApiService.getDataSizes(paths));
+    }
 }

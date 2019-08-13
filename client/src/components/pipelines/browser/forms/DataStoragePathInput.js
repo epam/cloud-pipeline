@@ -24,6 +24,8 @@ import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './DataStoragePathInput.css';
 import LoadingView from '../../../special/LoadingView';
 
+const SERVER_PORT_MASK = /^[^:]+(:[\d]+)?$/i;
+
 export function extractFileShareMountList (regions) {
   const list = [];
   for (let i = 0; i < regions.length; i++) {
@@ -31,7 +33,10 @@ export function extractFileShareMountList (regions) {
     if (region.fileShareMounts && region.fileShareMounts.length) {
       region.fileShareMounts.forEach(fileShareMount => {
         if ((fileShareMount.mountRoot || '').trim()) {
-          const separator = fileShareMount.mountType === 'NFS' ? ':' : '';
+          let separator = '';
+          if (fileShareMount.mountType === 'NFS' && SERVER_PORT_MASK.test(fileShareMount.mountRoot)) {
+            separator = ':';
+          }
           const mountPathMask = new RegExp(`^${fileShareMount.mountRoot}${separator}(.*)$`, 'i');
           list.push({
             ...fileShareMount,

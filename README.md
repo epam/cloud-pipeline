@@ -3,7 +3,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/2d8f9c0c32814e6ca6669226c565c6e0)](https://app.codacy.com/app/sidoruka/cloud-pipeline?utm_source=github.com&utm_medium=referral&utm_content=epam/cloud-pipeline&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.org/epam/cloud-pipeline.svg?branch=develop)](https://travis-ci.org/epam/cloud-pipeline)
 
-`Cloud Pipeline` solution wraps `AWS` and `Azure` compute and storage resources into a single service. Providing an easy and scalable approach to accomplish a wide range of scientific tasks.
+`Cloud Pipeline` solution wraps `AWS`, `GCP` and `Azure` compute and storage resources into a single service. Providing an easy and scalable approach to accomplish a wide range of scientific tasks.
 
 - **Data processing**: create data processing pipelines and run them in the Cloud in the automated way. Each pipeline represents a workflow script with versioned source code, documentation, and configuration. You can create such scripts in the `Cloud Pipeline` environment or upload them from the local machine.
 - **Data storage management**: create your data storage, download or upload data or edit files right in the `Cloud Pipeline` user interface. File version control is supported.
@@ -14,7 +14,7 @@
 
 ![CP_General](docs/md/attachments/cloud-pipeline-gui.png)
 
-`Cloud Pipeline` supports `AWS` and `Azure` Cloud providers to run computing and store data.
+`Cloud Pipeline` supports `Amazon Web Services` , `Google Cloud Platform` and `Microsoft Azure` Cloud providers to run computing and store data.
 
 ## Documentation
 

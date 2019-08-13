@@ -16,8 +16,12 @@
 
 import React from 'react';
 import AdaptedLink from '../special/AdaptedLink';
-
-export const PIPELINE_INFO_LABEL = 'pipeline-info';
+import {
+  nodeRoles,
+  parseLabel,
+  roleIsDefined,
+  testRole
+} from './node-roles';
 
 export function renderNodeLabels (labels, config) {
   if (!labels) {
@@ -26,36 +30,39 @@ export function renderNodeLabels (labels, config) {
   const {onlyKnown = false, pipelineRun, className, additionalStyle, location} = config;
   const renderItems = [];
   const displayTag =
-    (label, value) =>
+    (label, value, role = 0) =>
       <span
         id={`label-${label}`}
         className={className}
         style={{...additionalStyle}}
         key={label}
-        label={label.toUpperCase()}>
+        data-run={testRole(role, nodeRoles.run)}
+        data-master={testRole(role, nodeRoles.master)}
+        data-cloud-pipeline-role={testRole(role, nodeRoles.cloudPipelineRole)}
+        data-pipeline-info={testRole(role, nodeRoles.pipelineInfo)}
+        data-label={label}>
         {value.toUpperCase()}
       </span>;
   for (let key in labels) {
     if (labels.hasOwnProperty(key)) {
-      if (key.toUpperCase() === 'RUNID') {
+      const info = parseLabel(key, labels[key]);
+      if (testRole(info.role, nodeRoles.run)) {
         const labelKey = pipelineRun ? key.toUpperCase() : 'default';
         if (location && pipelineRun) {
           renderItems.push(
-            <AdaptedLink id="label-link-run-id" key={key} to={`/run/${pipelineRun.id}`} location={location}>
-              {displayTag(labelKey, `RUN ID ${labels[key]}`)}
+            <AdaptedLink
+              id="label-link-run-id"
+              key={key}
+              to={`/run/${pipelineRun.id}`}
+              location={location}>
+              {displayTag(labelKey, info.value, info.role)}
             </AdaptedLink>
           );
         } else {
-          renderItems.push(displayTag(key, `RUN ID ${labels[key]}`));
+          renderItems.push(displayTag(key, info.value, info.role));
         }
-      } else if (key.toUpperCase() === 'NODE-ROLE.KUBERNETES.IO/MASTER') {
-        renderItems.push(displayTag(key, 'MASTER'));
-      } else if (key.toUpperCase() === 'CLOUD-PIPELINE/ROLE') {
-        renderItems.push(displayTag(key, labels[key]));
-      } else if (
-        key.toUpperCase() === 'KUBEADM.ALPHA.KUBERNETES.IO/ROLE' ||
-        key.toUpperCase() === PIPELINE_INFO_LABEL.toUpperCase() || !onlyKnown) {
-        renderItems.push(displayTag(key, labels[key]));
+      } else if (!onlyKnown || roleIsDefined(info.role)) {
+        renderItems.push(displayTag(info.name, info.value, info.role));
       }
     }
   }

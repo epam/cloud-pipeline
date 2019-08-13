@@ -1,0 +1,170 @@
+{
+  "cpu_ondemand_standard": {
+    "prefix": "N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_ondemand_standard": {
+    "prefix": "N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_ondemand_highcpu": {
+    "prefix": "N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_ondemand_highcpu": {
+    "prefix": "N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_ondemand_highmem": {
+    "prefix": "N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_ondemand_highmem": {
+    "prefix": "N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_ondemand_megamem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_megamem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_ultramem": {
+    "prefix": "Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_ultramem": {
+    "prefix": "Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_micro": {
+    "prefix": "Micro Instance",
+    "group": "F1Micro"
+  },
+  "cpu_ondemand_small": {
+    "prefix": "Small Instance",
+    "group": "G1Small"
+  },
+  "cpu_ondemand_custom": {
+    "prefix": "Custom Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_custom": {
+    "prefix": "Custom Instance Ram",
+    "group": "RAM"
+  },
+  "extendedram_ondemand_custom": {
+    "prefix": "Custom Extended Instance Ram",
+    "group": "RAM"
+  },
+  "gpu_ondemand_t4": {
+    "prefix": "Nvidia Tesla T4 GPU running",
+    "group": "GPU"
+  },
+  "gpu_ondemand_p4": {
+    "prefix": "Nvidia Tesla P4 GPU running",
+    "group": "GPU"
+  },
+  "gpu_ondemand_v100": {
+    "prefix": "Nvidia Tesla V100 GPU running",
+    "group": "GPU"
+  },
+  "gpu_ondemand_p100": {
+    "prefix": "Nvidia Tesla P100 GPU running",
+    "group": "GPU"
+  },
+  "gpu_ondemand_k80": {
+    "prefix": "Nvidia Tesla K80 GPU running",
+    "group": "GPU"
+  },
+  "cpu_preemptible_standard": {
+    "prefix": "Preemptible N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_preemptible_standard": {
+    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_preemptible_highcpu": {
+    "prefix": "Preemptible N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_preemptible_highcpu": {
+    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_preemptible_highmem": {
+    "prefix": "Preemptible N1 Predefined Instance Core",
+    "group": "N1Standard"
+  },
+  "ram_preemptible_highmem": {
+    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "group": "N1Standard"
+  },
+  "cpu_preemptible_megamem": {
+    "prefix": "Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_megamem": {
+    "prefix": "Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_ultramem": {
+    "prefix": "Preemptible Memory-optimized Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_ultramem": {
+    "prefix": "Preemptible Memory-optimized Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_micro": {
+    "prefix": "Preemptible Micro Instance",
+    "group": "F1Micro"
+  },
+  "cpu_preemptible_small": {
+    "prefix": "Preemptible Small Instance",
+    "group": "G1Small"
+  },
+  "cpu_preemptible_custom": {
+    "prefix": "Preemptible Custom Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_custom": {
+    "prefix": "Preemptible Custom Instance Ram",
+    "group": "RAM"
+  },
+  "extendedram_preemptible_custom": {
+    "prefix": "Preemptible Custom Extended Instance Ram",
+    "group": "RAM"
+  },
+  "gpu_preemptible_t4": {
+    "prefix": "Nvidia Tesla T4 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_p4": {
+    "prefix": "Nvidia Tesla P4 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_v100": {
+    "prefix": "Nvidia Tesla V100 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_p100": {
+    "prefix": "Nvidia Tesla P100 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_k80": {
+    "prefix": "Nvidia Tesla K80 GPU attached to preemptible",
+    "group": "GPU"
+  },
+  "disk_ondemand": {
+    "prefix": "SSD backed Local Storage",
+    "group": "LocalSSD"
+  },
+  "disk_preemptible": {
+    "prefix": "SSD backed Local Storage attached to Preemptible VMs",
+    "group": "LocalSSD"
+  }
+}

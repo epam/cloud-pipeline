@@ -155,7 +155,7 @@ export class DataStorageEditDialog extends React.Component {
 
   @computed
   get currentRegionSupportsPolicy () {
-    return this.currentRegion && this.currentRegion.provider === 'AWS';
+    return this.currentRegion && ['AWS', 'GCP'].indexOf(this.currentRegion.provider) >= 0;
   }
 
   @computed
@@ -263,7 +263,7 @@ export class DataStorageEditDialog extends React.Component {
         callback('Storage path must begin with \'/\'');
       }
     } else if (!value || !value.path) {
-      callback('Bucket is required');
+      callback('Storage path is required');
     }
     callback();
   };
@@ -355,7 +355,7 @@ export class DataStorageEditDialog extends React.Component {
                         disabled={!!this.props.dataStorage || isReadOnly}
                       >
                         {this.awsRegions.map(region => {
-                          return <Select.Option key={region.id.toString()}>
+                          return <Select.Option key={region.id.toString()} title={region.name}>
                             <AWSRegionTag regionUID={region.regionId} /> {region.name}
                           </Select.Option>;
                         })}

@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -75,7 +76,7 @@ public final class StorageProviderManager {
     }
 
     public void deleteBucket(AbstractDataStorage dataStorage) throws DataStorageException {
-        LOGGER.debug("Start the process of deleting of the %s bucket: %s",
+        LOGGER.debug("Start the process of deleting of the {} bucket: {}",
                 dataStorage.getType(), dataStorage.getPath());
         getStorageProvider(dataStorage).deleteStorage(dataStorage);
     }
@@ -168,5 +169,10 @@ public final class StorageProviderManager {
 
     public String buildFullStoragePath(AbstractDataStorage dataStorage, String name) {
         return getStorageProvider(dataStorage).buildFullStoragePath(dataStorage, name);
+    }
+
+    public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 }

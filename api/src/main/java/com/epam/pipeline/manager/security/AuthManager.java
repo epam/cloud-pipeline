@@ -50,7 +50,7 @@ public class AuthManager {
     @Value("${flyway.placeholders.default.admin}")
     private String defaultAdmin;
 
-    @Value("${default.admin.id:1}")
+    @Value("${flyway.placeholders.default.admin.id:1}")
     private Long defaultAdminId;
 
     /**

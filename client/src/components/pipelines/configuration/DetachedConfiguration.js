@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -51,9 +51,10 @@ const DTS_ENVIRONMENT = 'DTS';
   preferences
 })
 @localization.localizedComponent
-@inject(({configurations, folders, pipelinesLibrary, preferences}, {onReloadTree, params}) => {
+@inject(({configurations, folders, pipelinesLibrary, preferences, history, routing}, {onReloadTree, params}) => {
   return {
-    allowedInstanceTypes: new AllowedInstanceTypes(),
+    history,
+    routing,
     onReloadTree,
     configurations: configurations.getConfiguration(params.id),
     pipelines,
@@ -67,6 +68,12 @@ const DTS_ENVIRONMENT = 'DTS';
 })
 @observer
 export default class DetachedConfiguration extends localization.LocalizedReactComponent {
+  @observable allowedInstanceTypes;
+
+  @observable configurationModified;
+
+  navigationBlockedListener;
+  navigationBlocker;
 
   state = {
     configurationsListCollapsed: false,
@@ -289,6 +296,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     }
   };
 
+  onConfigurationModified = (modified) => {
+    this.configurationModified = modified;
+  };
+
   onSaveConfiguration = async (opts) => {
     if (this.selectedConfigurationName &&
       this.props.configurations.loaded &&
@@ -298,7 +309,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           .filter(c => c.name.toLowerCase() !== this.selectedConfigurationName.toLowerCase() &&
           c.name === opts.configuration.name).length > 0) {
         message.error(`Configuration ${opts.configuration.name} already exists`, 5);
-        return;
+        return false;
       }
       const [configuration] = entries
         .filter(c => c.name.toLowerCase() === this.selectedConfigurationName.toLowerCase());
@@ -375,6 +386,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         if (request.error) {
           hide();
           message.error(request.error, 5);
+          return false;
         } else {
           await this.props.configurations.fetch();
           this.props.configurationsCache.invalidateConfigurationCache(this.props.configurationId);
@@ -386,9 +398,11 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               this.props.router.push(`/configuration/${this.props.configurationId}/${configuration.name}`);
             }
           });
+          return true;
         }
       }
     }
+    return false;
   };
 
   @computed
@@ -573,7 +587,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       selectedPipelineParameters: selectedPipelineParameters,
       selectedPipelineParametersIsLoading: false
     });
-  }
+  };
 
   runSelected = (opts, entitiesIds, metadataClass, expansionExpression, folderId) => {
 
@@ -654,8 +668,12 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         SessionStorageWrapper.navigateToActiveRuns(this.props.router);
       }
     };
+    let title = `Launch ${this.selectedConfigurationName} configuration?`;
+    if (this.configurationModified) {
+      title = `You have unsaved changes. ${title}`;
+    }
     Modal.confirm({
-      title: `Launch ${this.selectedConfigurationName} configuration?`,
+      title: title,
       style: {
         wordWrap: 'break-word'
       },
@@ -752,8 +770,12 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         SessionStorageWrapper.navigateToActiveRuns(this.props.router);
       }
     };
+    let title = 'Launch cluster?';
+    if (this.configurationModified) {
+      title = `You have unsaved changes. ${title}`;
+    }
     Modal.confirm({
-      title: 'Launch cluster?',
+      title: title,
       onOk: () => {
         launchFn();
       }
@@ -910,7 +932,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   };
 
   render () {
-    if (!this.props.configurations.loaded && this.props.configurations.pending) {
+    if (
+      (!this.props.configurations.loaded && this.props.configurations.pending) ||
+      !this.allowedInstanceTypes
+      ){
       return <LoadingView />;
     }
     if (this.props.configurations.error) {
@@ -979,7 +1004,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               version={this.getSelectedPipelineVersion()}
               pipelineConfiguration={this.getSelectedPipelineVersionConfiguration()}
               pipelines={this.getPipelines()}
-              allowedInstanceTypes={this.props.allowedInstanceTypes}
+              allowedInstanceTypes={this.allowedInstanceTypes}
               parameters={this.getParameters()}
               configurations={this.getConfigurations()}
               onLaunch={this.onSaveConfiguration}
@@ -988,6 +1013,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
               configurationId={this.props.configurationId}
               selectedPipelineParametersIsLoading={this.state.selectedPipelineParametersIsLoading}
               fireCloudMethod={this.selectedFireCloudMethod}
+              onModified={this.onConfigurationModified}
             />
           </Row>
           <CreateConfigurationForm
@@ -1011,6 +1037,50 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
 
   componentDidMount () {
     this.loadSelectedPipelineParameters();
+    this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
+      const locationBefore = this.props.routing.location.pathname;
+      if (location.pathname === locationBefore) {
+        callback();
+        return;
+      }
+      const clearBlocker = () => {
+        setTimeout(() => {
+          this.navigationBlocker = null;
+        }, 0);
+      };
+      if (this.configurationModified && !this.navigationBlocker) {
+        const cancel = () => {
+          if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
+            this.props.history.replace(locationBefore);
+          }
+          clearBlocker();
+        };
+        this.navigationBlocker = Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            callback();
+            clearBlocker();
+          },
+          onCancel () {
+            cancel();
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+
+      } else {
+        callback();
+      }
+    });
+  }
+
+  componentWillUnmount () {
+    if (this.navigationBlockedListener) {
+      this.navigationBlockedListener();
+    }
   }
 
   componentDidUpdate (prevProps) {
@@ -1018,6 +1088,16 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
       prevProps.configurationId !== this.props.configurationId) {
       this.loadSelectedPipelineParameters();
       this.setState({overriddenConfiguration: null});
+    }
+    const parameters = this.getParameters();
+    if (!this.allowedInstanceTypes) {
+      this.allowedInstanceTypes = new AllowedInstanceTypes();
+    }
+    if (this.allowedInstanceTypes && parameters) {
+      this.allowedInstanceTypes.setParameters({
+        isSpot: parameters.is_spot,
+        regionId: parameters.cloudRegionId
+      });
     }
   }
 }

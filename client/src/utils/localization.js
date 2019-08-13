@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {observable, computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {inject} from 'mobx-react';
 import Controls from '../models/user/Controls';
 
 class Localization {
@@ -34,16 +34,18 @@ class Localization {
     return (this._dictionaryRequest.value || []).map(c => c);
   }
 
-  getDictionaryElement = (key) => {
-    return this.dictionary.filter(d => (d.key || '').toLowerCase() === (key || '').toLowerCase())[0];
+  getDictionaryElement = (key, extraDictionary = []) => {
+    return [...this.dictionary, ...extraDictionary]
+      .filter(d => (d.key || '').toLowerCase() === (key || '').toLowerCase())[0];
   };
 
-  localizedString = (key) => {
-    const dictionaryElement = this.getDictionaryElement(key);
+  localizedString = (key, extraDictionary = []) => {
+    const dictionaryElement = this.getDictionaryElement(key, extraDictionary);
     if (key && dictionaryElement) {
       const uppercased = key.toUpperCase() === key;
       const lowercased = key.toLowerCase() === key;
-      const capitalized = key[0].toUpperCase() === key[0] && key.substring(1).toLowerCase() === key.substring(1);
+      const capitalized = key[0].toUpperCase() === key[0] &&
+        key.substring(1).toLowerCase() === key.substring(1);
       if (uppercased) {
         return (dictionaryElement.value || '').toUpperCase();
       } else if (lowercased) {
@@ -62,8 +64,8 @@ class Localization {
 const localizedComponent = (...opts) => inject('localization')(...opts);
 
 class LocalizedReactComponent extends React.Component {
-  localizedString = (key) => this.props.localization
-    ? this.props.localization.localizedString(key)
+  localizedString = (key, extra) => this.props.localization
+    ? this.props.localization.localizedString(key, extra)
     : key;
 }
 

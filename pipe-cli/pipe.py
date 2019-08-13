@@ -22,7 +22,7 @@ from src.api.cluster import Cluster
 from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
-from src.config import Config, ConfigNotFoundError
+from src.config import Config, ConfigNotFoundError, silent_print_config_info
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
@@ -37,8 +37,23 @@ MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 
 
+def print_version(ctx, param, value):
+    if value is False:
+        return
+    click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
+    silent_print_config_info()
+    ctx.exit()
+
+
 @click.group()
-@click.version_option(prog_name='Cloud Pipeline CLI', version=__version__)
+@click.option(
+    '--version',
+    is_eager=False,
+    is_flag=True,
+    expose_value=False,
+    callback=print_version,
+    help='Show the version and exit'
+)
 def cli():
     """pipe is command line interface to Bfx Pipeline engine
     It allows run pipelines as well as viewing runs and cluster state
@@ -63,10 +78,36 @@ def cli():
               prompt='Proxy address',
               help='URL of a proxy for all calls',
               default='')
-def configure(auth_token, api, timezone, proxy):
+@click.option('-nt', '--proxy-ntlm',
+              help='Use NTLM authentication for the server, specified by the "--proxy"',
+              is_flag=True)
+@click.option('-nu', '--proxy-ntlm-user',
+              help='Username for the NTLM authentication against the server, specified by the "--proxy"',
+              default=None)
+@click.option('-nd', '--proxy-ntlm-domain',
+              help='Domain name of the user, specified by the "--proxy-ntlm-user"',
+              default=None)
+@click.option('-np', '--proxy-ntlm-pass',
+              help='Password of the user, specified by the "--proxy-ntlm-user"',
+              default=None)
+def configure(auth_token, api, timezone, proxy, proxy_ntlm, proxy_ntlm_user, proxy_ntlm_domain, proxy_ntlm_pass):
     """Configures CLI parameters
     """
-    Config.store(auth_token, api, timezone, proxy)
+    if proxy_ntlm and not proxy_ntlm_user:
+        proxy_ntlm_user = click.prompt('Username for the proxy NTLM authentication', type=str)
+    if proxy_ntlm and not proxy_ntlm_domain:
+        proxy_ntlm_domain = click.prompt('Domain of the {} user'.format(proxy_ntlm_user), type=str)
+    if proxy_ntlm and not proxy_ntlm_pass:
+        proxy_ntlm_pass = click.prompt('Password of the {} user'.format(proxy_ntlm_user), type=str, hide_input=True)
+
+    Config.store(auth_token,
+                 api,
+                 timezone,
+                 proxy,
+                 proxy_ntlm,
+                 proxy_ntlm_user,
+                 proxy_ntlm_domain,
+                 proxy_ntlm_pass)
 
 
 def echo_title(title, line=True):
@@ -83,6 +124,7 @@ def echo_title(title, line=True):
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
 @click.option('-r', '--permissions', help='List user permissions of a pipeline', is_flag=True)
+@Config.validate_access_token
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
     """
@@ -216,6 +258,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks', is_flag=True)
+@Config.validate_access_token
 def view_runs(run_id,
               status,
               date_from,
@@ -403,6 +446,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
 
 @cli.command(name='view-cluster')
 @click.argument('node-name', required=False)
+@Config.validate_access_token
 def view_cluster(node_name):
     """Lists cluster nodes
     """
@@ -570,6 +614,7 @@ def view_cluster_for_node(node_name):
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
 @click.option('-pn', '--parent-node', help='Parent instance id', type=int, required=False)
+@Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
         parameters,
@@ -597,6 +642,7 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@Config.validate_access_token
 def stop(run_id, yes):
     """Stops a running pipeline
     """
@@ -606,6 +652,7 @@ def stop(run_id, yes):
 @cli.command(name='terminate-node')
 @click.argument('node-name', required=True, type=str)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@Config.validate_access_token
 def terminate_node(node_name, yes):
     """Terminates calculation node
     """
@@ -665,10 +712,11 @@ def storage():
 @click.option('-c', '--on_cloud',
               prompt='Do you want to create this storage on a cloud?',
               help='Create bucket on a cloud', default=False, is_flag=True)
-@click.option('-p', '--path', required=False, default='', help='The name of the new bucket.',
+@click.option('-p', '--path', default='', help='The name of the new bucket.',
               prompt='The name of the new bucket.')
-@click.option('-r', '--region_id', required=False, type=int, help='Cloud region id where storage shall be created.',
+@click.option('-r', '--region_id', default='default', help='Cloud region id where storage shall be created. ',
               prompt='Cloud region id where storage shall be created.')
+@Config.validate_access_token
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
     """Creates a new datastorage
@@ -681,6 +729,7 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
 @click.option('-c', '--on_cloud', help='Delete bucket on a cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@Config.validate_access_token
 def delete(name, on_cloud, yes):
     """Deletes a datastorage
     """
@@ -699,6 +748,7 @@ def delete(name, on_cloud, yes):
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the bucket')
+@Config.validate_access_token
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
     """Update the policy of the given datastorage
     """
@@ -725,6 +775,7 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
+@Config.validate_access_token
 def storage_list(path, show_details, show_versions, recursive, page, all):
     """Lists storage contents
     """
@@ -733,6 +784,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 
 @storage.command(name='mkdir')
 @click.argument('folders', required=True, nargs=-1)
+@Config.validate_access_token
 def storage_mk_dir(folders):
     """ Creates a directory in a datastorage
     """
@@ -749,6 +801,7 @@ def storage_mk_dir(folders):
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
+@Config.validate_access_token
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
     """ Removes file or folder from a datastorage
     """
@@ -774,12 +827,20 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
-def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
+@click.option('-sl', '--symlinks', required=False, default="follow",
+              type=click.Choice(['follow', 'filter', 'skip']),
+              help="Describe symlinks processing strategy for local sources. Possible values: "
+              "follow - follow symlinks (default); "
+              "skip - do not follow symlinks; "
+              "filter - follow symlinks but check for cyclic links")
+@Config.validate_access_token(quiet_flag_property_name='quiet')
+def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
+                      symlinks):
     """ Moves file or folder from one datastorage to another one
     or between local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             clean=True, skip_existing=skip_existing)
+                             symlinks, clean=True, skip_existing=skip_existing)
 
 
 @storage.command('cp')
@@ -801,17 +862,26 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-l', '--file-list', required=False, help="Path to file with file paths that should be copied. This file "
                                                         "should be tub delimited and consist of two columns: "
                                                         "relative path to file and size.")
-def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
+@click.option('-sl', '--symlinks', required=False, default="follow",
+              type=click.Choice(['follow', 'filter', 'skip']),
+              help="Describe symlinks processing strategy for local sources. Possible values: "
+              "follow - follow symlinks (default); "
+              "skip - do not follow symlinks; "
+              "filter - follow symlinks but check for cyclic links")
+@Config.validate_access_token(quiet_flag_property_name='quiet')
+def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
+                      symlinks):
     """ Copies files from one datastorage to another one
     or between local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, skip_existing=skip_existing)
+                             exclude, include, quiet, tags, file_list, symlinks, skip_existing=skip_existing)
 
 
 @storage.command('restore')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Restore specified version')
+@Config.validate_access_token
 def storage_restore_item(path, version):
     """ Restores file version in a datastorage.
     If version is not specified it will try to restore the latest non deleted version.
@@ -824,6 +894,7 @@ def storage_restore_item(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@Config.validate_access_token
 def storage_set_object_tags(path, tags, version):
     """ Sets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -836,6 +907,7 @@ def storage_set_object_tags(path, tags, version):
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@Config.validate_access_token
 def storage_get_object_tags(path, version):
     """ Gets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -847,6 +919,7 @@ def storage_get_object_tags(path, version):
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
+@Config.validate_access_token
 def storage_delete_object_tags(path, tags, version):
     """ Sets tags for a specified object
         - path - full path to an object in data storage starting with 'cp://' scheme
@@ -863,6 +936,7 @@ def storage_delete_object_tags(path, tags, version):
     required=True,
     type=click.Choice(['pipeline', 'folder', 'data_storage'])
 )
+@Config.validate_access_token
 def view_acl(identifier, object_type):
     """ View object permissions
     """
@@ -882,6 +956,7 @@ def view_acl(identifier, object_type):
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
+@Config.validate_access_token
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
     """ Set object permissions
     """
@@ -899,6 +974,7 @@ def tag():
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('data', required=True, nargs=-1)
+@Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
     """ Sets tags for a specified object
     - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
@@ -912,6 +988,7 @@ def set_tag(entity_class, entity_id, data):
 @tag.command(name='get')
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
+@Config.validate_access_token
 def get_tag(entity_class, entity_id):
     """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:
     - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
@@ -924,6 +1001,7 @@ def get_tag(entity_class, entity_id):
 @click.argument('entity_class', required=True)
 @click.argument('entity_id', required=True)
 @click.argument('keys', required=False, nargs=-1)
+@Config.validate_access_token
 def delete_tag(entity_class, entity_id, keys):
     """ Deletes specified tags for a specified object
     - Tags can be specified as single KEY=VALUE pair or a list of them
@@ -936,6 +1014,7 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('user_name', required=True)
 @click.argument('entity_class', required=True)
 @click.argument('entity_name', required=True)
+@Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
     """
     Changes current owner to specified.

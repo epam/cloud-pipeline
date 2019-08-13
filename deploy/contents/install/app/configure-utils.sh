@@ -653,7 +653,7 @@ function api_register_region {
     local cors_rules="$(get_file_based_preference storage.cors.policy other $CP_CLOUD_PLATFORM escape)"
     if [ $? -ne 0 ] || [ -z "$cors_rules" ]; then
         print_err "CORS rules cannot be retrieved for $CP_CLOUD_PLATFORM cloud provider, you will have to specify them manually via GUI/API"
-        cors_rules=""
+        cors_rules="[]"
     fi
 
     if [ "$CP_CLOUD_REGION_FILE_STORAGE_HOSTS" ]; then
@@ -714,7 +714,24 @@ read -r -d '' payload <<-EOF
     "corsRules": "$cors_rules"
 }
 EOF
-
+    elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        api_setup_file_based_preferences "$INSTALL_SCRIPT_PATH/../cloud-configs/$CP_GOOGLE/prerequisites"
+        local gcp_custom_instance_types_json="$(get_file_based_preference gcp.custom.instance.types other $CP_GOOGLE)"
+read -r -d '' payload <<-EOF
+{
+    "regionId":"$region_name",
+    "provider":"GCP",
+    "name":"$region_name",
+    "default":true,
+    "authFile": "$CP_CLOUD_CREDENTIALS_LOCATION",
+    "sshPublicKeyPath": "$CP_PREF_CLUSTER_SSH_KEY_PATH",
+    "corsRules": "$cors_rules",
+    "project": "$CP_GCP_PROJECT",
+    "applicationName": "$CP_GCP_APPLICATION_NAME",
+    "tempCredentialsRole": "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
+    "customInstanceTypes": $gcp_custom_instance_types_json
+}
+EOF
     else
         print_err "Cloud Provider $CP_CLOUD_PLATFORM is not supported at a full scale, region $region_name WILL NOT be registered. You will have to conifgure it manually from the GUI"
         return 1
@@ -906,7 +923,7 @@ function api_setup_base_preferences {
     ## Set cluster.networks.config preference
     local cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
     if [ -f "$cloud_config_network_file" ]; then
-        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES}' < "$cloud_config_network_file")")"
+        local cluster_networks_config_json="$(escape_string "$(envsubst '${CP_CLOUD_REGION_ID} ${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU} ${CP_PREF_CLUSTER_INSTANCE_IMAGE} ${CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS} ${CP_PREF_CLUSTER_PROXIES} ${CP_VM_MONITOR_INSTANCE_TAG_NAME} ${CP_VM_MONITOR_INSTANCE_TAG_VALUE} ${CP_PREF_CLUSTER_INSTANCE_NETWORK} ${CP_PREF_CLUSTER_INSTANCE_SUBNETWORK}' < "$cloud_config_network_file")")"
         
         # cluster.networks.config shall be visible, or otherwise node_up.py will NOT be able to get the information from the API Services
         api_set_preference "cluster.networks.config" "$cluster_networks_config_json" "true"
@@ -923,7 +940,7 @@ function api_register_search {
     api_set_preference "search.elastic.denied.users.field" "denied_users" "false"
     api_set_preference "search.elastic.denied.groups.field" "denied_groups" "false"
     api_set_preference "search.elastic.type.field" "doc_type" "false"
-    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "false"
+    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
@@ -939,6 +956,8 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "S3_STORAGE": "cp-s3-storage",
     "AZ_BLOB_STORAGE": "cp-az-storage",
     "NFS_STORAGE": "cp-nfs-storage",
+    "GS_FILE": "cp-gs-file*",
+    "GS_STORAGE": "cp-gs-storage",
     "TOOL": "cp-tool",
     "TOOL_GROUP": "cp-tool-group",
     "DOCKER_REGISTRY": "cp-docker-registry",
@@ -973,6 +992,21 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+}
+
+function api_register_share_service {
+    api_set_preference "data.sharing.base.api" "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/?id=%d" "false"
+
+    local share_service_configuration_preference="{}"
+read -r -d '' share_service_configuration_preference <<-EOF
+[{
+    "endpointId": "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}${CP_SHARE_SRV_SAML_ID_TRAIL:-/proxy}",
+    "metadataPath": "${CP_API_SRV_FED_META_DIR}/cp-share-srv-fed-meta.xml",
+    "external": "true"
+}]
+EOF
+    share_service_configuration_preference="$(escape_string "${share_service_configuration_preference}")"
+    api_set_preference "system.external.services.endpoints" "${share_service_configuration_preference}" "false"
 }
 
 function idp_register_app {
@@ -1055,6 +1089,8 @@ function api_register_system_storage {
             export CP_API_SRV_SYSTEM_FOLDER_TYPE="S3"
         elif [ "$CP_CLOUD_PLATFORM" == "$CP_AZURE" ]; then
             export CP_API_SRV_SYSTEM_FOLDER_TYPE="AZ"
+        elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+            export CP_API_SRV_SYSTEM_FOLDER_TYPE="GS"
         else
             print_err "Type of the system storage is not set (CP_API_SRV_SYSTEM_FOLDER_TYPE) and it is not possible to determine it from the environment"
             return 1

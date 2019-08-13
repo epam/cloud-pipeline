@@ -17,8 +17,6 @@ from future.standard_library import install_aliases
 install_aliases()
 
 from urllib.parse import urlparse, urlencode
-from urllib.request import urlopen, Request
-from urllib.error import HTTPError
 
 import json
 from src.model.data_storage_tmp_credentials_model import TemporaryCredentialsModel
@@ -67,6 +65,8 @@ class DataStorage(API):
             return None
         storages = DataStorage.list()
         for storage in storages:
+            if storage.name is not None and storage.name.lower() == name.lower():
+                return storage
             if storage.path is not None and storage.path.lower() == name.lower():
                 return storage
         raise ValueError("Datastorage with name {} does not exist!".format(name))
@@ -201,8 +201,16 @@ class DataStorage(API):
         return DataStorage._get_temporary_credentials(data)
 
     @classmethod
-    def get_single_temporary_credentials(cls, bucket, read=False, write=False):
-        credentials = DataStorage._get_temporary_credentials([{'id': bucket, 'read': read, 'write': write}])
+    def get_single_temporary_credentials(cls, bucket, read=False, write=False, versioning=False):
+        operation = {
+            'id': bucket,
+            'read': read,
+            'write': write
+        }
+        if versioning:
+            operation['readVersion'] = read
+            operation['writeVersion'] = write
+        credentials = DataStorage._get_temporary_credentials([operation])
         credentials.expiration = parse(credentials.expiration).replace(tzinfo=None)
         return credentials
 

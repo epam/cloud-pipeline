@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
@@ -24,10 +25,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.ConfigurationProfile;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
-import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
-import com.epam.pipeline.autotests.utils.listener.ConditionalTestAnalyzer;
 import org.testng.annotations.AfterClass;
-import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import static com.codeborne.selenide.Condition.enabled;
@@ -60,7 +58,6 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-@Listeners(value = ConditionalTestAnalyzer.class)
 public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTest {
     private final String configurationFileName = "config.json";
     private final String defaultConfigurationName = "default";
@@ -73,6 +70,8 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     private final String pipeline1257 = resourceName("epmcmbibpc-1257");
     private final String pipeline1263 = resourceName("epmcmbibpc-1263");
     private final String pipeline1500 = resourceName("epmcmbibpc-1500");
+    private final String spotPriceName = C.SPOT_PRICE_NAME;
+    private final String onDemandPriceName = "On-demand";
 
     @AfterClass(alwaysRun = true)
     public void removePipelines() {
@@ -104,10 +103,9 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .saveAndCommitWithMessage("test: Set spot property of default configuration profile false")
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
-            .ensure(combobox("Price type"), have(selectedValue("On-demand")));
+            .ensure(combobox("Price type"), have(selectedValue(onDemandPriceName)));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1257")
     public void changeInstancePriceTypeToSpotInConfigurationFile() {
@@ -125,10 +123,9 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .saveAndCommitWithMessage("test: Set spot property of default configuration profile true")
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
-            .ensure(combobox("Price type"), have(selectedValue("Spot")));
+            .ensure(combobox("Price type"), have(selectedValue(spotPriceName)));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1263")
     public void validationOfDefaultPriceType() {
@@ -139,10 +136,9 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
-            .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")));
+            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)));
     }
 
-    @CloudProviderOnly(Cloud.AWS)
     @Test
     @TestCase("EPMCMBIBPC-1241")
     public void validationOfRunPipelineUsingOnDemandInstance() {
@@ -153,14 +149,27 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .click(combobox("Price type"))
-            .ensure(menu(), contains(menuitem("Spot"), menuitem("On-demand")))
+            .ensure(menu(), contains(menuitem(spotPriceName), menuitem(onDemandPriceName)))
             .click(combobox("Price type"))
-            .selectValue(combobox("Price type"), menuitem("On-demand"))
+            .selectValue(combobox("Price type"), menuitem(onDemandPriceName))
             .launch(this)
             .showLog(getLastRunId())
-            .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text("On-demand"))))
+            .instanceParameters(p -> p.ensure(parameterWithName("Price type"), have(text(onDemandPriceName))))
             .click(taskWithName("InitializeNode"))
-            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible)
+            .ensure(logMessage(withActualRunId("Checking if instance already exists for RunID run_id")), visible);
+        if (Cloud.AZURE.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
+            new LogAO()
+                    .ensure(logMessage(withActualRunId("Create VMScaleSet with low priority instance for run: run_id")),
+                            not(visible));
+            return;
+        } else if (Cloud.GCP.name().equalsIgnoreCase(C.CLOUD_PROVIDER)) {
+            new LogAO()
+                    .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
+                    .ensure(logMessage(withActualRunId("Preemptible instance with run id: run_id will be launched")),
+                            not(visible));
+            return;
+        }
+        new LogAO()
             .ensure(logMessage(withActualRunId("No existing instance found for RunID run_id")), visible)
             .ensure(logMessage(withActualRunId("Checking if spot request for RunID run_id already exists...")), visible)
             .ensure(logMessage(withActualRunId("No spot request for RunID run_id found")), visible)
@@ -220,7 +229,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(ADD_CONFIGURATION, visible, enabled)
                 .ensure(profileWithName(defaultConfigurationName), visible)
                 .editConfiguration(defaultConfigurationName, profile ->
-                        profile.ensure(SAVE, visible, enabled)
+                        profile.ensure(SAVE, visible)
                                .ensure(ESTIMATE_PRICE, visible)
                                .ensure(INSTANCE, expandedTab)
                                .ensure(EXEC_ENVIRONMENT, collapsedTab)

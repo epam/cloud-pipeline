@@ -33,8 +33,11 @@ def create_bucket(bucket_name, **kwargs):
 def delete_buckets(*args):
     for bucket_name in args:
         delete_data_storage(bucket_name)
-        wait_for_bucket_deletion(bucket_name)
-        logging.info("Bucket {} deleted".format(bucket_name))
+        try:
+            wait_for_bucket_deletion(bucket_name)
+            logging.info("Bucket {} deleted".format(bucket_name))
+        except Exception as e:
+            logging.error('Failed to delete bucket %s' % bucket_name, e)
 
 
 def prepare_paths_with_slash(source, destination, has_source_slash, has_destination_slash):

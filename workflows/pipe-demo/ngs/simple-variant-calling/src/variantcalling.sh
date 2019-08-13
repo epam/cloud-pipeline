@@ -73,7 +73,7 @@ do
         SORTED_OUTPUT=$SAMPLE_NAME_CURRENT/3_sort
         mkdir -p $SORTED_OUTPUT
         pipe_log_info "Started BAM sort and index" "$SAMPLE_NAME_CURRENT"
-        $SAMTOOLS_BIN sort -f $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted.bam
+        $SAMTOOLS_BIN sort -@ $(nproc) $BWA_OUTPUT/$SAMPLE_NAME_CURRENT.unsorted.bam $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted
         $SAMTOOLS_BIN index $SORTED_OUTPUT/$SAMPLE_NAME_CURRENT.sorted.bam
         finish_task $SAMPLE_NAME_CURRENT $?
 

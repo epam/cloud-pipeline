@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -124,8 +125,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private void processOverloadedRuns(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = runs.stream()
                 .filter(r -> {
-                    log.debug("Pipeline with id: " + r.getId() + " has not node name.");
-                    return Objects.nonNull(r.getInstance()) && Objects.nonNull(r.getInstance().getNodeName());
+                    final boolean hasNodeName = Objects.nonNull(r.getInstance())
+                            && Objects.nonNull(r.getInstance().getNodeName());
+                    if (!hasNodeName) {
+                        log.debug("Pipeline with id: " + r.getId() + " has not node name.");
+                    }
+                    return hasNodeName;
                 })
                 .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
@@ -195,8 +200,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final int idleTimeout = preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_IDLE_TIMEOUT_MINUTES);
 
         final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
-                .filter(e -> DateUtils.nowUTC().isAfter(e.getValue().getProlongedAtTime()
-                        .plus(idleTimeout, ChronoUnit.MINUTES)))
+                .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
+                        .map(timestamp -> DateUtils.nowUTC().isAfter(timestamp.plus(idleTimeout, ChronoUnit.MINUTES)))
+                        .orElse(Boolean.FALSE))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         log.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
@@ -227,7 +233,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
-            if (run.isNonPause()) {
+            if (run.isNonPause() || isClusterRun(run)) {
                 continue;
             }
             Double metric = cpuMetrics.get(entry.getKey());
@@ -312,5 +318,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_PAUSED);
+    }
+
+    private boolean isClusterRun(final PipelineRun run) {
+        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
     }
 }

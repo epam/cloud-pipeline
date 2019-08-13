@@ -22,6 +22,7 @@ events {
 http {
 
   server {
+    set $docker_external_host "${CP_DOCKER_EXTERNAL_HOST}";
     set $realm_external_host "${CP_API_SRV_EXTERNAL_HOST}";
     set $realm_external_port "${CP_API_SRV_EXTERNAL_PORT}";
     set $realm_internal_host "${CP_API_SRV_INTERNAL_HOST}";
@@ -55,7 +56,7 @@ http {
         return 404;
       }
 
-      proxy_pass                          http://localhost;
+      proxy_pass                          http://127.0.0.1;
       proxy_set_header  Host              $http_host;   # required for docker client's sake
       proxy_set_header  X-Real-IP         $remote_addr; # pass on real client's IP
       proxy_set_header  X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -63,7 +64,7 @@ http {
       proxy_read_timeout                  900;
 
       set $realm_endpoint "${realm_internal_host}:${realm_internal_port}";
-      if ($host = $realm_external_host) {
+      if ($host = $docker_external_host) {
           set $realm_endpoint "${realm_external_host}:${realm_external_port}";
       }
 
@@ -74,7 +75,7 @@ http {
 }
 EOF
 
-envsubst '${CP_API_SRV_EXTERNAL_HOST} ${CP_API_SRV_EXTERNAL_PORT} ${CP_API_SRV_INTERNAL_HOST} ${CP_API_SRV_INTERNAL_PORT} ${CP_DOCKER_INTERNAL_PORT} ${CP_DOCKER_INTERNAL_HOST} ${CP_DOCKER_INTERNAL_PORT}' < /tmp/nginx.conf > $nginx_config_path
+envsubst '${CP_DOCKER_EXTERNAL_HOST} ${CP_API_SRV_EXTERNAL_HOST} ${CP_API_SRV_EXTERNAL_PORT} ${CP_API_SRV_INTERNAL_HOST} ${CP_API_SRV_INTERNAL_PORT} ${CP_DOCKER_INTERNAL_PORT} ${CP_DOCKER_INTERNAL_HOST} ${CP_DOCKER_INTERNAL_PORT}' < /tmp/nginx.conf > $nginx_config_path
 rm -f /tmp/nginx.conf
 
 nginx

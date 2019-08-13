@@ -24,7 +24,7 @@ export default class DataStorageItemUpdate extends RemotePost {
 
   static uploadUrl (id, path) {
     if (path) {
-      return `${this.prefix}/datastorage/${id}/list/upload?path=${path}`;
+      return `${this.prefix}/datastorage/${id}/list/upload?path=${encodeURIComponent(path)}`;
     } else {
       return `${this.prefix}/datastorage/${id}/list/upload`;
     }

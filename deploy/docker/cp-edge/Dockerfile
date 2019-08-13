@@ -43,17 +43,14 @@ RUN cd /tmp && \
     git clone https://github.com/chobits/ngx_http_proxy_connect_module.git
 
 RUN     cd /tmp && \
-        wget -q https://openresty.org/download/openresty-1.13.6.2.tar.gz && \
-        tar -zxf openresty-1.13.6.2.tar.gz && \
-        rm -f openresty-1.13.6.2.tar.gz && \
-        cd openresty-1.13.6.2 && \
-        ./configure --add-module=/tmp/ngx_http_proxy_connect_module -j$(nproc) && \
-        patch -d build/nginx-1.13.6/ -p 1 < /tmp/ngx_http_proxy_connect_module/patch/proxy_connect_1014.patch && \
+        wget -q https://openresty.org/download/openresty-1.15.8.1.tar.gz && \
+        tar -zxf openresty-1.15.8.1.tar.gz && \
+        rm -f openresty-1.15.8.1.tar.gz && \
+        cd openresty-1.15.8.1 && \
+        ./configure --with-stream_ssl_preread_module --add-module=/tmp/ngx_http_proxy_connect_module -j$(nproc) && \
+        patch -d build/nginx-1.15.8/ -p 1 < /tmp/ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_101504.patch && \
         make -j$(nproc) && \
         make install
-
-# curl https://openresty.org/download/openresty-1.11.2.5.tar.gz -o openresty-1.11.2.5.tar.gz	            
-# opm get SkyLothar/lua-resty-jwt
 
 # Install LUA JWT
 RUN opm get cdbattags/lua-resty-jwt

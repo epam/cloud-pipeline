@@ -20,6 +20,16 @@
                     "type": "input",
                     "required": false
                 },
+                "Mutect2_normal_bam": {
+                    "value": "",
+                    "type": "input",
+                    "required": false
+                },
+                "Mutect2_normal_bai": {
+                    "value": "",
+                    "type": "input",
+                    "required": false
+                },
                 "Result": {
                     "value": "",
                     "type": "output",

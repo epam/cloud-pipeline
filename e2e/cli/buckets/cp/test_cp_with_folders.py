@@ -22,7 +22,7 @@ class TestCopyWithFolders(object):
     bucket_name = "epmcmbibpc-it-cp-folders{}".format(get_test_prefix())
     other_bucket_name = "{}-other".format(bucket_name)
     current_directory = os.getcwd()
-    home_dir = "test_cp_home_dir-597/"
+    home_dir = "test_cp_home_dir-597%s/" % get_test_prefix()
     checkout_dir = "checkout/"
     output_folder = "cp-folders-" + TestFiles.TEST_FOLDER_FOR_OUTPUT
     test_file_1 = "cp-folders-" + TestFiles.TEST_FILE1

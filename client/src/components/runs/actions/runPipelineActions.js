@@ -17,5 +17,12 @@
 import {inject, observer} from 'mobx-react';
 
 export default function runPipelineActions (WrappedComponent) {
-  return inject('dockerRegistries', 'localization', 'preferences', 'pipelines')(observer(WrappedComponent));
+  return inject(
+    'awsRegions',
+    'dataStorageAvailable',
+    'dockerRegistries',
+    'localization',
+    'preferences',
+    'pipelines'
+  )(observer(WrappedComponent));
 }

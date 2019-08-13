@@ -18,7 +18,13 @@ package com.epam.pipeline.util;
 
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
@@ -118,5 +124,32 @@ public final class TestUtils {
         Vulnerability v = new Vulnerability();
         v.setSeverity(severity);
         return v;
+    }
+
+    public static PipelineRun createPipelineRun(Long pipelineId, String params, TaskStatus status, String owner,
+                                                Long parentRunId, Long entitiesId, Boolean isSpot, Long configurationId,
+                                                List<RunSid> runSids, String podId, Long regionId) {
+        PipelineRun run = new PipelineRun();
+        run.setPipelineId(pipelineId);
+        run.setStartDate(new Date());
+        run.setEndDate(new Date());
+        run.setStatus(status);
+        run.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        run.setLastChangeCommitTime(new Date());
+        run.setPodId(podId);
+        run.setParams(params);
+        run.setOwner(owner);
+        run.setParentRunId(parentRunId);
+        run.setRunSids(runSids);
+
+        RunInstance instance = new RunInstance();
+        instance.setCloudRegionId(regionId);
+        instance.setCloudProvider(CloudProvider.AWS);
+        instance.setSpot(isSpot);
+        instance.setNodeId("1");
+        run.setInstance(instance);
+        run.setEntitiesIds(Collections.singletonList(entitiesId));
+        run.setConfigurationId(configurationId);
+        return run;
     }
 }

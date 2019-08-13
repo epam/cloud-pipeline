@@ -169,7 +169,7 @@ EOL
 }
 
 configure_local_pe() {
-    _PE_NAME="local"
+    _PE_NAME="${1:-local}"
 
     # Delete any existing-default parallel environments, before adding a new one
     _CURRENT_PES=$(qconf -spl)
@@ -198,7 +198,7 @@ configure_local_pe() {
         qsort_args         NONE
 EOL
     qconf -Ap ./local_pe.conf
-    qconf -mattr queue pe_list "$_PE_NAME" "main.q"
+    qconf -mattr queue pe_list "$_PE_NAME" "$CP_CAP_SGE_QUEUE_NAME"
     rm -f ./local_pe.conf
 }
 
@@ -285,6 +285,9 @@ pipe_log_info "Installing SGE master" "$SGE_MASTER_SETUP_TASK"
 # Set SGE env vars, and store in cp_env.sh for further ssh sessions
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
+export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
+export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
@@ -293,6 +296,9 @@ fi
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> /etc/cp_env.sh
+
 
 # Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
 if [ "$RESUMED_RUN" = true ]; then
@@ -427,7 +433,7 @@ check_last_exit_code $? "Global settings were configured" "Failed to configure g
 configure_scheduler
 check_last_exit_code $? "Scheduler was configured" "Fail to configure scheduler"
 
-add_queue "main.q"
+add_queue "$CP_CAP_SGE_QUEUE_NAME"
 check_last_exit_code $? "Queue was configured" "Fail to configure queue"
 
 #add local worker
@@ -444,7 +450,7 @@ else
     CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
     _MASTER_WORKER_CORES=$((_MASTER_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _MASTER_WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
 
-    add_worker main.q "$_MASTER_WORKER_CORES"
+    add_worker "$CP_CAP_SGE_QUEUE_NAME" "$_MASTER_WORKER_CORES"
     check_last_exit_code $? "Master host was added as a worker with $_MASTER_WORKER_CORES slots" "Fail to add master host as a SGE worker"
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
@@ -458,7 +464,7 @@ pipe_log_info "Add $OWNER_NAME as SGE manager and operator" "$SGE_MASTER_SETUP_T
 qconf -am $OWNER_NAME
 qconf -ao $OWNER_NAME
 
-configure_local_pe
+configure_local_pe "$CP_CAP_SGE_PE_NAME"
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK"

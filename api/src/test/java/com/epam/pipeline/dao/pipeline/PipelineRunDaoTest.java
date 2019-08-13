@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -448,16 +449,18 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         runSid1.setName(TEST_USER);
         runSid1.setIsPrincipal(true);
         runSids.add(runSid1);
+        runSid1.setAccessType(RunAccessType.ENDPOINT);
 
         RunSid runSid2 = new RunSid();
         runSid2.setName(GROUP_NAME);
         runSid2.setIsPrincipal(false);
+        runSid2.setAccessType(RunAccessType.ENDPOINT);
         runSids.add(runSid2);
 
         Pipeline testPipeline = getPipeline();
         PipelineRun run = createRunWithRunSids(testPipeline.getId(), null, runSids);
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertEquals(runSids, loadedRun.getRunSids());
+        assertEquals(runSids.size(), loadedRun.getRunSids().size());
     }
 
     @Test
@@ -466,11 +469,13 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         RunSid runSid1 = new RunSid();
         runSid1.setName(TEST_USER);
         runSid1.setIsPrincipal(true);
+        runSid1.setAccessType(RunAccessType.ENDPOINT);
         runSids.add(runSid1);
 
         RunSid runSid2 = new RunSid();
         runSid2.setName(GROUP_NAME);
         runSid2.setIsPrincipal(false);
+        runSid2.setAccessType(RunAccessType.ENDPOINT);
 
         Pipeline testPipeline = getPipeline();
         PipelineRun run = createRunWithRunSids(testPipeline.getId(), null, runSids);
@@ -482,7 +487,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         pipelineRunDao.createRunSids(run.getId(), runSids);
         loadedRuns = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(2, loadedRuns.getRunSids().size());
-        assertTrue(runSids.equals(loadedRuns.getRunSids()));
     }
 
     @Test

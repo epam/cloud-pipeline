@@ -24,4 +24,4 @@ nohup java $CP_VM_MONITOR_JAVA_OPTS -jar vm-monitor.jar &> $VM_MONITOR_RUN_TIME_
 
 sleep 5
 
-tail -F $VM_MONITOR_RUN_TIME_LOGG
+tail -F $VM_MONITOR_RUN_TIME_LOG

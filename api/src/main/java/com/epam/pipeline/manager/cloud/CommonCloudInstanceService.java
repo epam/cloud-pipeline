@@ -20,9 +20,8 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
-import com.epam.pipeline.manager.cloud.commands.AbstractClusterCommand;
-import com.epam.pipeline.manager.cloud.commands.ReassignCommand;
-import com.epam.pipeline.manager.cloud.commands.TerminateNodeCommand;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -30,23 +29,38 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.utils.CommonUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class CommonCloudInstanceService {
 
     private final PreferenceManager preferenceManager;
     private final UserManager userManager;
     private final AuthManager authManager;
     private final PipelineRunManager pipelineRunManager;
+    private final KubernetesManager kubernetesManager;
+
+    public CommonCloudInstanceService(final PreferenceManager preferenceManager,
+                                      final UserManager userManager,
+                                      final AuthManager authManager,
+                                      final PipelineRunManager pipelineRunManager,
+                                      final KubernetesManager kubernetesManager) {
+        this.preferenceManager = preferenceManager;
+        this.userManager = userManager;
+        this.authManager = authManager;
+        this.pipelineRunManager = pipelineRunManager;
+        this.kubernetesManager = kubernetesManager;
+    }
 
     public RunInstance runNodeUpScript(final CmdExecutor cmdExecutor,
                                        final Long runId,
@@ -70,12 +84,11 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public boolean runNodeReassignScript(final Long oldId,
+    public boolean runNodeReassignScript(final CmdExecutor cmdExecutor,
+                                         final String command,
+                                         final Long oldId,
                                          final Long newId,
-                                         final CmdExecutor cmdExecutor,
-                                         final String reassignScript,
                                          final Map<String, String> envVars) {
-        final String command = buildNodeReassignCommand(reassignScript, oldId, newId);
         log.debug("Reusing Node with previous ID {} for rud ID {}. Command {}.", oldId, newId, command);
         try {
             cmdExecutor.executeCommandWithEnvVars(command, envVars);
@@ -93,27 +106,19 @@ public class CommonCloudInstanceService {
         executeCmd(cmdExecutor, command, envVars);
     }
 
-    public String buildTerminateNodeCommand(final String internalIp, final String nodeName,
-                                            final String nodeTerminateScript) {
-        return TerminateNodeCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeTerminateScript)
-                .internalIp(internalIp)
-                .nodeName(nodeName)
-                .build()
-                .getCommand();
-    }
-
-    private String buildNodeReassignCommand(final String reassignScript,
-                                            final Long oldId,
-                                            final Long newId) {
-        return ReassignCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(reassignScript)
-                .oldRunId(String.valueOf(oldId))
-                .newRunId(String.valueOf(newId))
-                .build()
-                .getCommand();
+    public LocalDateTime getNodeLaunchTimeFromKube(final Long runId) {
+        return kubernetesManager.findNodeByRunId(String.valueOf(runId))
+                .map(node -> node.getMetadata().getCreationTimestamp())
+                .filter(StringUtils::isNotBlank)
+                .map(timestamp -> {
+                    try {
+                        return ZonedDateTime.parse(timestamp, KubernetesConstants.KUBE_DATE_FORMATTER)
+                                .toLocalDateTime();
+                    } catch (DateTimeParseException e) {
+                        log.error("Failed to parse date from Kubernetes API: {}", timestamp);
+                        return null;
+                    }
+                }).orElse(null);
     }
 
     private void readInstanceId(final RunInstance instance, final String output) {

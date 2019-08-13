@@ -19,7 +19,18 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router';
-import {Alert, Checkbox, Icon, Input, message, Modal, Popover, Row, Table} from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Col,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Table
+} from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
 import PausePipeline from '../../models/pipelines/PausePipeline';
@@ -28,8 +39,9 @@ import {
   PipelineRunCommitCheck,
   PIPELINE_RUN_COMMIT_CHECK_FAILED
 } from '../../models/pipelines/PipelineRunCommitCheck';
-import {stopRun, canStopRun, runPipelineActions, terminateRun} from './actions';
+import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
+import AWSRegionTag from '../special/AWSRegionTag';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
@@ -41,6 +53,7 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
+import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -663,7 +676,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
       );
     }
     Modal.confirm({
-      title: `Do you want to pause ${this.renderPipelineName(run, true) || this.localizedString('pipeline')}?`,
+      title: (
+        <Row>
+          Do you want to pause {this.renderPipelineName(run, true, true) || this.localizedString('pipeline')}?
+        </Row>
+      ),
       content,
       style: {
         wordWrap: 'break-word'
@@ -678,7 +695,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
   showResumeConfirmDialog = (event, run) => {
     event.stopPropagation();
     Modal.confirm({
-      title: `Do you want to resume ${this.renderPipelineName(run, true) || this.localizedString('pipeline')}?`,
+      title: (
+        <span>
+          Do you want to resume {this.renderPipelineName(run, true, true) || this.localizedString('pipeline')}?
+        </span>
+      ),
       style: {
         wordWrap: 'break-word'
       },
@@ -706,16 +727,44 @@ export default class RunTable extends localization.LocalizedReactComponent {
         case 'resuming':
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
-          if (record.podIP) {
+          if (canPauseRun(record)) {
             return <a
               id={`run-${record.id}-pause-button`}
               onClick={(e) => this.showPauseConfirmDialog(e, record)}>PAUSE</a>;
           }
           break;
         case 'paused':
-          return <a
-            id={`run-${record.id}-resume-button`}
-            onClick={(e) => this.showResumeConfirmDialog(e, record)}>RESUME</a>;
+          const {resumeFailureReason} = record;
+          return (
+            <a
+              id={`run-${record.id}-resume-button`}
+              onClick={(e) => this.showResumeConfirmDialog(e, record)}>
+              {
+                resumeFailureReason
+                  ? (
+                    <Popover
+                      title={null}
+                      placement="left"
+                      content={
+                        <div style={{maxWidth: '40vw'}}>
+                          {resumeFailureReason}
+                        </div>
+                      }
+                    >
+                      <Icon
+                        type="exclamation-circle-o"
+                        style={{
+                          marginRight: 5,
+                          color: 'orange'
+                        }}
+                      />
+                    </Popover>
+                  )
+                  : null
+              }
+              RESUME
+            </a>
+          );
       }
     }
     return <div />;
@@ -808,8 +857,11 @@ export default class RunTable extends localization.LocalizedReactComponent {
     );
   };
 
-  renderPipelineName = (run, renderDockerImageName = false) => {
+  renderPipelineName = (run, renderDockerImageName = false, inline = false) => {
     if (run.pipelineName && run.version) {
+      if (inline) {
+        return `${run.pipelineName} (${run.version})`;
+      }
       return (
         <div>
           <Row>
@@ -860,10 +912,21 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.nodeCount > 0) {
           clusterIcon = <Icon type="database" />;
         }
+        let instance;
+        if (run.instance) {
+          instance = (
+            <AWSRegionTag
+              plainMode
+              provider={run.instance.cloudProvider}
+              regionId={run.instance.cloudRegionId}
+            />
+          );
+        }
+        const name = <b>{text}</b>;
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
-            <span>
+            <div style={{display: 'inline-table'}}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
               <Popover
                 mouseEnterDelay={1}
@@ -881,12 +944,35 @@ export default class RunTable extends localization.LocalizedReactComponent {
                   </div>
                 }
                 trigger="hover">
-                {clusterIcon} <Icon type="export" /> {text}
+                {clusterIcon} <Icon type="export" /> {name}
+                {instance && <br />}
+                {
+                  instance &&
+                  <span style={{marginLeft: 18}}>
+                  {instance}
+                </span>
+                }
               </Popover>
-            </span>
+            </div>
           );
         } else {
-          return (<span><StatusIcon run={run} small /> {clusterIcon} {text}</span>);
+          return (
+            <div style={{display: 'inline-table'}}>
+              <StatusIcon
+                run={run}
+                small
+                additionalStyle={{marginRight: 5}}
+              />
+              {clusterIcon}{name}
+              {instance && <br />}
+              {
+                instance &&
+                <span style={{marginLeft: 18}}>
+                  {instance}
+                </span>
+              }
+            </div>
+          );
         }
       },
       ...statusesFilter
@@ -1093,7 +1179,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (item.childRuns) {
       item.children = item.childRuns.map(this.prepareSourceItem);
     }
-    return item;
+    return mapResumeFailureReason(item);
   };
 
   containsNestedChildren = () => {

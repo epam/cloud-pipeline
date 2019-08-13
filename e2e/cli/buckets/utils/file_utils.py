@@ -16,6 +16,7 @@ import os
 import shutil
 import time
 import datetime
+import logging
 
 
 class TestFiles(object):
@@ -54,12 +55,15 @@ def create_test_files(content, *args):
 
 
 def clean_test_data(path):
-    if not os.path.exists(path):
-        return
-    if os.path.isfile(path):
-        os.remove(path)
-    else:
-        shutil.rmtree(path)
+    try:
+        if not os.path.exists(path):
+            return
+        if os.path.isfile(path):
+            os.remove(path)
+        else:
+            shutil.rmtree(path)
+    except Exception as e:
+        logging.error('Filed to delete data from %s' % path, e)
 
 
 def create_test_folder(path):

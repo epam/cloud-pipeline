@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,41 +17,76 @@
 _CURRENT_EXEC_NODE_NAME=$1
 _SGE_RESOURCES_SETUP_TASK=$2
 
-if [ -z "$_SGE_RESOURCES_SETUP_TASK" ]; then
+function configure_consumable_sge_resource {
+    RESOURCE_NAME="$1"
+    RESOURCE_TYPE="$2"
+    RESOURCE_DEFAULT="$3"
+    RESOURCE_VALUE="$4"
+
+    # Add consumable resource if it is master node, this shall be done once
+    if [[ "$cluster_role" = "master" ]]; then
+        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT"
+    fi
+
+    # Add consumable resource capacity for a current execution host
+    add_sge_resource_capacity "$RESOURCE_NAME" "$RESOURCE_VALUE"
+}
+
+function add_consumable_sge_resource {
+    RESOURCE_NAME="$1"
+    RESOURCE_TYPE="$2"
+    RESOURCE_DEFAULT="$3"
+
+    _CONFIG_FILE=/tmp/complex_${_CURRENT_EXEC_NODE_NAME}.txt
+    qconf -sc > "$_CONFIG_FILE"
+    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE <= YES YES $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
+    qconf -Mc "$_CONFIG_FILE"
+    rm "$_CONFIG_FILE"
+    pipe_log_info "Added GridEngine consumable resource: $RESOURCE_NAME" "$_SGE_RESOURCES_SETUP_TASK"
+}
+
+function add_sge_resource_capacity {
+    RESOURCE_NAME="$1"
+    RESOURCE_VALUE="$2"
+
+    qconf -aattr exechost complex_values "$RESOURCE_NAME=$RESOURCE_VALUE" "$_CURRENT_EXEC_NODE_NAME"
+    pipe_log_info "Added $RESOURCE_NAME=$RESOURCE_VALUE for $_CURRENT_EXEC_NODE_NAME execution host" "$_SGE_RESOURCES_SETUP_TASK"
+}
+
+if [[ -z "$_SGE_RESOURCES_SETUP_TASK" ]]; then
     _SGE_RESOURCES_SETUP_TASK="SGESetupResources"
 fi
 
-if [ -z "$_CURRENT_EXEC_NODE_NAME" ]; then
-    pipe_log_info "Execution node name is not set, using ${HOSTNAME}" $_SGE_RESOURCES_SETUP_TASK
-    _CURRENT_EXEC_NODE_NAME=$HOSTNAME
+if [[ -z "$_CURRENT_EXEC_NODE_NAME" ]]; then
+    pipe_log_info "Execution node name is not set, using ${HOSTNAME}" "$_SGE_RESOURCES_SETUP_TASK"
+    _CURRENT_EXEC_NODE_NAME="$HOSTNAME"
 fi
 
 #
-# Setup GPU consumable resources for a current node
+# Setup GPU and RAM consumable resources for a current node
 #
 _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
 
 if (( _NODE_GPUS_COUNT > 0 ))
 then
-    pipe_log_info "$_NODE_GPUS_COUNT GPUs found. Starting GridEngine configuration" $_SGE_RESOURCES_SETUP_TASK
-    # Retrieve list of exec servers (hosts).
-    hosts=$(qconf -sel)
-
-    # Add GPU consumable resource if it is master node, this shall be done once
-    if [ "$cluster_role" = "master" ]; then
-        _GPU_CONFIG_FILE=/tmp/complex_${_CURRENT_EXEC_NODE_NAME}.txt
-        qconf -sc > $_GPU_CONFIG_FILE
-        echo "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU                $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU       INT       <=    YES         YES        0        0" >> $_GPU_CONFIG_FILE
-        qconf -Mc $_GPU_CONFIG_FILE
-        rm $_GPU_CONFIG_FILE
-        pipe_log_info "Added GridEngine consumable resource: $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" $_SGE_RESOURCES_SETUP_TASK
-    fi
-
-    # Add number of GPU resources for a current execution host.
-    qconf -aattr exechost complex_values "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=$_NODE_GPUS_COUNT" $_CURRENT_EXEC_NODE_NAME
-    pipe_log_info "Added $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=$_NODE_GPUS_COUNT for $_CURRENT_EXEC_NODE_NAME execution host" $_SGE_RESOURCES_SETUP_TASK
-
+    pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 else
-    pipe_log_info "No GPUs found... Skipping GridEngine configuration for GPU consumable resources" $_SGE_RESOURCES_SETUP_TASK
+    pipe_log_info "No GPUs found... GridEngine GPU configuration will be skipped" "$_SGE_RESOURCES_SETUP_TASK"
 fi
+
+_NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
+CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
+
+pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"
+
+pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_SETUP_TASK"
+
+if (( _NODE_GPUS_COUNT > 0 ))
+then
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT"
+fi
+
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT"
+
+pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"

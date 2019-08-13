@@ -56,6 +56,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+
 @Service
 public class PipelineLauncher {
 
@@ -106,6 +107,12 @@ public class PipelineLauncher {
 
     public String launch(PipelineRun run, PipelineConfiguration configuration,
             List<String> endpoints, String nodeIdLabel, boolean useLaunch, String pipelineId, String clusterId) {
+        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId, true);
+    }
+
+    public String launch(PipelineRun run, PipelineConfiguration configuration,
+                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
+                         String pipelineId, String clusterId, boolean pullImage) {
         GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
         Map<SystemParams, String> systemParams = matchSystemParams(
@@ -128,7 +135,7 @@ public class PipelineLauncher {
                 : pipelineCommand;
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, pullImage);
         return pipelineCommand;
     }
 
@@ -196,10 +203,10 @@ public class PipelineLauncher {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
 
         if (run.getPipelineId() == null || run.getVersion() == null) {
-            systemParamsWithValue.put(SystemParams.VERSION, EMPTY_PARAMETER);
+            systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, EMPTY_PARAMETER);
             systemParamsWithValue.put(SystemParams.PIPELINE_ID, EMPTY_PARAMETER);
         } else {
-            systemParamsWithValue.put(SystemParams.VERSION, run.getVersion());
+            systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, run.getVersion());
             systemParamsWithValue.put(SystemParams.PIPELINE_ID, String.valueOf(run.getPipelineId()));
         }
 
@@ -210,7 +217,9 @@ public class PipelineLauncher {
                 SystemPreferences.BASE_PIPE_DISTR_URL));
         systemParamsWithValue.put(SystemParams.PARENT, run.getPodId());
         systemParamsWithValue.put(SystemParams.PIPELINE_NAME,
-                run.getPipelineName().replaceAll("\\s+", ""));
+                Optional.ofNullable(run.getPipelineName())
+                        .orElse(PipelineRun.DEFAULT_PIPELINE_NAME)
+                        .replaceAll("\\s+", ""));
         systemParamsWithValue
                 .put(SystemParams.RUN_DATE, dateFormat.format(run.getStartDate()));
         systemParamsWithValue

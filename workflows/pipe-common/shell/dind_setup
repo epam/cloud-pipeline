@@ -41,7 +41,7 @@ if [ $IS_RPM_BASED -eq 0 ]; then
     _DIND_DEP_INSTALL_RESULT=$?
 else
     apt install -y -qq \
-                btrfs-progs \
+                btrfs-tools \
                 e2fsprogs \
                 iptables \
                 iproute2 \
@@ -97,6 +97,23 @@ chmod +x /usr/local/bin/dind
 chmod +x /usr/local/bin/modprobe
 
 pipe_log_info "DIND fix installed: $DIND_COMMIT" "$DIND_SETUP_TASK"
+
+######################################################
+# Setup docker daemon options
+######################################################
+DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
+mkdir -p "$DIND_DATA_ROOT"
+mkdir -p "/etc/docker"
+cat <<EOT > /etc/docker/daemon.json
+{
+  "data-root": "$DIND_DATA_ROOT",
+  "storage-driver": "overlay2",
+  "storage-opts": [
+    "overlay2.override_kernel_check=true"
+  ]
+}
+EOT
 
 ######################################################
 # Start dockerd

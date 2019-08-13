@@ -13,6 +13,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#######################################
+# Step 1: Build NTLM APS with Python 2
+#######################################
+
+CP_PYINSTALL_WIN32_PY2_DOCKER="lifescience/cloud-pipeline:pyinstaller-win32-py2"
+docker pull $CP_PYINSTALL_WIN32_PY2_DOCKER
+if [ $? -ne 0 ]; then
+    echo "Unable to pull $CP_PYINSTALL_WIN32_PY2_DOCKER image, it will be rebuilt"
+    docker build docker/win32 -t $CP_PYINSTALL_WIN32_PY2_DOCKER
+fi
+
+_BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win32_py2_$(date +%s).sh
+
+cat >$_BUILD_SCRIPT_NAME <<'EOL'
+
+pip install --upgrade setuptools && \
+pip install -r /pipe-cli/requirements.txt
+
+cd /tmp
+git clone https://github.com/sidoruka/ntlmaps.git && \
+cd ntlmaps && \
+git checkout 5f798a88369eddbe732364b98fbd445aacc809d0
+
+pyinstaller main.py -y \
+        --clean \
+        --distpath /tmp/ntlmaps/dist \
+        -p /tmp/ntlmaps/lib \
+        --add-data "./server.cfg;./" \
+        --name ntlmaps
+
+cp -r /tmp/ntlmaps/dist/ntlmaps /pipe-cli/
+EOL
+
+docker run -i --rm \
+           -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
+           -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           $CP_PYINSTALL_WIN32_PY2_DOCKER \
+           bash $_BUILD_SCRIPT_NAME
+
+rm -f $_BUILD_SCRIPT_NAME
+
+
+#######################################
+# Step 2: pipe CLI
+#######################################
+
+
 CP_PYINSTALL_WIN64_DOCKER="lifescience/cloud-pipeline:pyinstaller-win64"
 docker pull $CP_PYINSTALL_WIN64_DOCKER
 if [ $? -ne 0 ]; then
@@ -24,11 +71,14 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
-pip install -r /src/requirements.txt && \
-pip install pywin32 && \
 pip install --upgrade setuptools && \
-cd /src && \
-pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
+pip install -r /pipe-cli/requirements.txt && \
+pip install pywin32 && \
+cd /pipe-cli && \
+pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
+            --hidden-import=boto3 \
+            --hidden-import=pytz \
+            --hidden-import=tkinter \
             --hidden-import=UserList \
             --hidden-import=UserString \
             --hidden-import=commands \
@@ -45,18 +95,20 @@ pyinstaller --add-data "/src/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
+            --additional-hooks-dir="/pipe-cli/hooks" \
             -y \
             --clean \
             --workpath /tmp \
-            --distpath /src/dist/win64 \
-            /src/pipe.py && \
-cd /src/dist/win64 && \
+            --distpath /pipe-cli/dist/win64 \
+            pipe.py \
+            --add-data "/pipe-cli/ntlmaps;ntlmaps" && \
+cd /pipe-cli/dist/win64 && \
 zip -r -q pipe.zip pipe
 EOL
 
 docker run -i --rm \
-           -v $PIPE_CLI_SOURCES_DIR:/src \
-           -v $PIPE_CLI_WIN_DIST_DIR:/src/dist/win64 \
+           -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
+           -v $PIPE_CLI_WIN_DIST_DIR:/pipe-cli/dist/win64 \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME

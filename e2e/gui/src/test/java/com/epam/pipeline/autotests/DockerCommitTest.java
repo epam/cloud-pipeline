@@ -151,10 +151,11 @@ public class DockerCommitTest
     public void commitDockerValidation() {
         logAO()
                 .waitForSshLink()
-                .ssh(shell ->
-                        shell.execute("cd /")
-                                .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
-                                .close()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
+                        .execute("cd /")
+                        .execute(String.format("echo '%s' > %s", testFileContent, testFileName))
+                        .close()
                 );
 
         runsMenu()
@@ -210,7 +211,9 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(5, SECONDS)
                                 .click(stopPipeline())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))
@@ -230,7 +233,9 @@ public class DockerCommitTest
                 .waitForCommitButton()
                 .commit(commit ->
                         commit.setRegistry(registry)
+                                .sleep(3, SECONDS)
                                 .setName(nameWithoutGroup(tool))
+                                .sleep(5, SECONDS)
                                 .click(deleteRuntimeFiles())
                                 .ok()
                                 .also(confirmCommittingToExistingTool(registryIp, tool))
@@ -272,6 +277,7 @@ public class DockerCommitTest
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
                                         .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
                                                 .execute(commandCD)
                                                 .execute(String.format(command, suffix, testFileName))))
                                 .waitForCommitButton()

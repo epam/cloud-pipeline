@@ -40,6 +40,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String encryptionKey;
     private final boolean isSpot;
     private final String bidPrice;
+    private final String cloud;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -62,6 +63,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
         commands.add(kubeToken);
         commands.add(REGION_PARAMETER);
         commands.add(region);
+        commands.add(CLOUD_PARAMETER);
+        commands.add(cloud);
         if (StringUtils.isNotBlank(encryptionKey)) {
             commands.add("--kms_encyr_key_id");
             commands.add(encryptionKey);
@@ -69,8 +72,10 @@ public class NodeUpCommand extends AbstractClusterCommand {
         if (isSpot) {
             commands.add("--is_spot");
             commands.add("True");
-            commands.add("--bid_price");
-            commands.add(bidPrice == null ? "" : String.valueOf(bidPrice));
+            if (StringUtils.isNotBlank(bidPrice)) {
+                commands.add("--bid_price");
+                commands.add(String.valueOf(bidPrice));
+            }
         }
         return commands;
     }

@@ -24,6 +24,7 @@ import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
@@ -239,6 +240,7 @@ export default class PipelineRunPreview extends React.Component {
               value: (
                 <span>
                   <AWSRegionTag
+                    darkMode
                     style={{verticalAlign: 'top', marginRight: -3, marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
                   {instance.nodeType}
@@ -252,16 +254,15 @@ export default class PipelineRunPreview extends React.Component {
               key: 'Cloud Region',
               value: (
                 <AWSRegionTag
+                  darkMode
                   style={{verticalAlign: 'top'}}
                   regionId={instance.cloudRegionId} />
               )
             });
           }
-          if (instance.spot !== undefined) {
-            details.push(
-              {key: 'Price type', value: `${instance.spot}` === 'true' ? 'Spot' : 'On-demand'}
-            );
-          }
+          details.push(
+            {key: 'Price type', value: getRunSpotTypeName({instance})}
+          );
           if (instance.nodeDisk) {
             details.push({key: 'Disk', value: `${instance.nodeDisk}Gb`});
           }

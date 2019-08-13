@@ -67,7 +67,6 @@ import DataStorageUpdateStoragePolicy from '../../../models/dataStorage/DataStor
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata from '../../special/metadata/Metadata';
 import Issues from '../../special/issues/Issues';
-import EditableField from '../../special/EditableField';
 import {
   ContentIssuesMetadataPanel,
   CONTENT_PANEL_KEY,
@@ -286,15 +285,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       className: styles.treeItemName,
       render: (name, item) => {
         let nameComponent;
-        let subTitle;
-        if (item.type === ItemTypes.storage) {
-          subTitle = <AWSRegionTag regionId={item.regionId} />;
-        }
         const boldClassName = this.state.showDescription ? styles.objectNameBold : '';
         if (item.locked) {
-          nameComponent = <span><Icon type="lock" /> <span className={`object-name ${boldClassName}`}>{name}</span>{subTitle}</span>;
+          nameComponent = <span><Icon type="lock" /> <span className={`object-name ${boldClassName}`}>{name}</span></span>;
         } else {
-          nameComponent = <span><span className={`object-name ${boldClassName}`}>{name}</span>{subTitle}</span>;
+          nameComponent = <span><span className={`object-name ${boldClassName}`}>{name}</span></span>;
         }
         if (this.state.showDescription && (item.description || item.hasMetadata)) {
           nameComponent = (
@@ -322,6 +317,15 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
         return nameComponent;
+      }
+    },
+    {
+      key: 'region',
+      render: (item) => {
+        if (item.type === ItemTypes.storage) {
+          return <AWSRegionTag regionId={item.regionId} />;
+        }
+        return null;
       }
     },
     {
@@ -469,6 +473,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       this.closeEditStorageDialog();
       await this.props.folder.fetch();
+      await this.props.dataStorages.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!this._currentFolder.folder.parentId);
       }
@@ -642,6 +647,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (path.toLowerCase().startsWith('az://')) {
       path = path.substring('az://'.length);
     }
+    if (path.toLowerCase().startsWith('gs://')) {
+      path = path.substring('gs://'.length);
+    }
     if (!name || !name.length) {
       name = path;
     }
@@ -671,6 +679,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       this.closeCreateStorageDialog();
       await this.props.folder.fetch();
+      await this.props.dataStorages.fetch();
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
       }
@@ -1066,7 +1075,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
     };
     return (
-      <ContentIssuesMetadataPanel onPanelClose={onPanelClose}>
+      <ContentIssuesMetadataPanel
+        style={{flex: 1, overflow: 'auto'}}
+        onPanelClose={onPanelClose}>
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}

@@ -96,9 +96,11 @@ function init_cloud_config {
     local azure_meta_url="-H Metadata:true \"http://169.254.169.254/metadata/instance?api-version=2017-12-01\""
     local aws_meta_url="http://169.254.169.254/latest/meta-data/"
     local aws_meta_url_dynamic="http://169.254.169.254/latest/dynamic/instance-identity/document"
+    local gcp_meta_url="-H Metadata-Flavor:Google http://metadata.google.internal/computeMetadata/v1/instance"
 
     [ $(eval "curl -s $aws_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AWS
     [ $(eval "curl -s $azure_meta_url -o /dev/null -w \"%{http_code}\"") == "200" ] && CP_CLOUD_PLATFORM=$CP_AZURE
+    [ $(eval "curl -s $gcp_meta_url -o /dev/null -w \"%{http_code}\"") == "301" ] && CP_CLOUD_PLATFORM=$CP_GOOGLE
 
     if [ -z "$CP_CLOUD_PLATFORM" ]; then
         print_err "Current cloud provider cannot be detected"
@@ -120,8 +122,11 @@ function init_cloud_config {
         CP_CLOUD_EXTERNAL_HOST=$(curl -s -f $aws_meta_url/public-ipv4)
     fi
     if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
-        print_err "Metadata is NOT supported for $CP_GOOGLE, cannot auto initialize cloud config"
-        return 1
+        CP_CLOUD_REGION_ID=$(basename $(curl -s $gcp_meta_url/zone))
+        CP_CLOUD_INSTANCE_TYPE=$(basename $(curl -s $gcp_meta_url/machine-type))
+        #TODO: handle errors
+        CP_CLOUD_INTERNAL_HOST=$(curl -s $gcp_meta_url/network-interfaces/0/ip)
+        CP_CLOUD_EXTERNAL_HOST=$(curl -s $gcp_meta_url/network-interfaces/0/access-configs/0/external-ip)
     fi
 
     # Check cloud images manifest file and use it if exists
@@ -241,6 +246,38 @@ EOF
             print_err "Azure durable ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_AZURE_OFFER_DURABLE_ID=\" option"
             return 1
         fi
+    elif [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        if [ -f "$CP_CLOUD_CREDENTIALS_FILE" ]; then
+            print_info "GCP credentials json file is defined via CP_CLOUD_CREDENTIALS_FILE"
+        elif [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            print_info "Using application default GCP credentials json file defined via GOOGLE_APPLICATION_CREDENTIALS environment variable."
+            export CP_CLOUD_CREDENTIALS_FILE="$GOOGLE_APPLICATION_CREDENTIALS"
+        else
+            print_err "GCP credentials json file is defined, please use -env option to define CP_CLOUD_CREDENTIALS_FILE path to the GCP credentials"
+            return 1
+        fi
+        if [ -z "$CP_CLUSTER_SSH_PUB" ]; then
+            print_err "Path to the SSH public key (used to access cloud nodes) is not defined, but it is required for the configuration. Please specify it using \"-env CP_CLUSTER_SSH_PUB=\" option"
+            return 1
+        fi
+        if [ -z "$CP_GCP_PROJECT" ]; then
+            print_warn "GCP project is not defined. Reading project from credentials file. You can specify deployment GCP project using \"-env CP_GCP_PROJECT=\" option"
+            export CP_GCP_PROJECT=$(cat "$CP_CLOUD_CREDENTIALS_FILE" | jq ".project_id")
+            if [ -z "$CP_GCP_PROJECT" ]; then
+                print_err "Failed to read GCP project from the credentials file. Please check that correct credentials file is specified using \"-env CP_CLOUD_CREDENTIALS_FILE=\" option or specify GCP project using \"-env CP_GCP_PROJECT\" option"
+                return 1
+            fi
+        fi
+        if [ -z "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE" ]; then
+            print_warn "Name of temporary credentials service account is  NOT set. \"pipe storage ...\" commands will NOT work correctly. Please specify it using \"-env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE=\" option"
+        fi
+        if [ -z "$CP_GCP_APPLICATION_NAME" ]; then
+            print_warn "GCP Application name is not specified, default value \"Cloud Pipeline\" will be used. You can specify it using \"-env CP_GCP_APPLICATION_NAME=\" option"
+            export CP_GCP_APPLICATION_NAME="Cloud Pipeline"
+        fi
+        if [ -z "$CP_GCP_CUSTOM_INSTANCE_TYPES" ]; then
+            print_warn "List of custom instance types for GCP is not provided. You will have to add GPU instance types manually."
+        fi
     else
         print_err "Unsupported Cloud Provider ($CP_CLOUD_PLATFORM)"
         return 1
@@ -256,8 +293,10 @@ EOF
         export CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=$CP_PREF_CLUSTER_INSTANCE_IMAGE
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS" ]; then
-        print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
-        return 1
+        if [ "$CP_CLOUD_PLATFORM" != "$CP_GOOGLE" ]; then
+            print_err "Default list of security groups is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS=\" option (comma separated list is accepted)"
+            return 1
+        fi
     else
         export CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="$(escape_comma_separated_values "$CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS")"
     fi
@@ -448,6 +487,14 @@ function parse_options {
         export CP_FORCE_DATA_ERASE=1
         shift # past argument
         ;;
+        -n|--external-host-dns)
+        export CP_REGISTER_EXTERNAL_NAMES_IN_CLUSTER_DNS=1
+        shift # past argument
+        ;;
+        --keep-kubedm-proxies)
+        export CP_KUBE_KEEP_KUBEADM_PROXIES=1
+        shift # past argument
+        ;;
         -d|--docker)
         CP_DOCKERS_TO_INIT="$CP_DOCKERS_TO_INIT $2"
         shift # past argument
@@ -549,11 +596,19 @@ function parse_options {
         return 1
     fi
 
+    if [ "$CP_CLOUD_PLATFORM" == "$CP_GOOGLE" ]; then
+        if [ -z "$CP_PREF_CLUSTER_INSTANCE_NETWORK" ] || [ -z "$CP_PREF_CLUSTER_INSTANCE_SUBNETWORK" ]; then
+            print_err "Network configuration for GCP cloud is required. Please specify a valid network using \"-env CP_PREF_CLUSTER_INSTANCE_NETWORK=\" and \"-env CP_PREF_CLUSTER_INSTANCE_SUBNETWORK=\""
+            return 1
+        fi
+    fi
+
     set_service_host "CP_API_SRV_EXTERNAL_HOST" "CP_API_SRV_INTERNAL_HOST" && \
     set_service_host "CP_IDP_EXTERNAL_HOST" "CP_IDP_INTERNAL_HOST"  && \
     set_service_host "CP_DOCKER_EXTERNAL_HOST" "CP_DOCKER_INTERNAL_HOST" && \
     set_service_host "CP_EDGE_EXTERNAL_HOST" "CP_EDGE_INTERNAL_HOST"  && \
-    set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST"
+    set_service_host "CP_GITLAB_EXTERNAL_HOST" "CP_GITLAB_INTERNAL_HOST" && \
+    set_service_host "CP_SHARE_SRV_EXTERNAL_HOST" "CP_SHARE_SRV_INTERNAL_HOST"
 
     if [ $? -ne 0 ]; then
         print_err "Unrecoverable error occured while setting services hosts, exiting"
@@ -600,12 +655,311 @@ function parse_options {
     return 0
 }
 
+function get_kube_node_ip_list {
+    local node_name="$1"
+    local node_name_ext=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.addresses[] | select(.type=="ExternalIP") | .address' -r)
+    local node_name_int=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.addresses[] | select(.type=="InternalIP") | .address' -r)
+    echo $node_name_ext $node_name_int
+}
+
+function get_svc_preferred_external_ip {
+    local source_explicit_ip="$1"
+    local source_kube_node_name="$2"
+    local source_kube_node_label="$3"
+
+    local source_explicit_ip_value=
+    local source_kube_node_name_value=
+    local source_kube_node_label_value=
+    local source_selected_ip=
+    
+    if [ "$source_explicit_ip" ]; then
+        source_explicit_ip_value="${!source_explicit_ip}"
+    fi
+    if [ "$source_kube_node_name" ]; then
+        source_kube_node_name_value="${!source_kube_node_name}"
+        if [ "$source_kube_node_name_value" ]; then
+            source_kube_node_name_value="$(get_kube_node_ip_list $source_kube_node_name_value)"
+        fi
+    fi
+    if [ "$source_kube_node_label" ]; then
+        source_kube_node_label_value="$source_kube_node_label"
+        local source_kube_node_label_names_item_ip=
+        source_kube_node_label_names=$(kubectl get no --selector "$source_kube_node_label_value" -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+        for source_kube_node_label_names_item in $source_kube_node_label_names; do
+            source_kube_node_label_names_item_ip="$source_kube_node_label_names_item_ip $(get_kube_node_ip_list $source_kube_node_label_names_item)"
+        done
+        source_kube_node_label_value=$(echo $source_kube_node_label_names_item_ip)
+    fi
+
+    # CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE can be one of:
+    # - source_explicit_ip: defines explicit list of IPs
+    # - source_kube_node_name: defines explicit name of the kube node
+    # - source_kube_node_label: defines label, that will be used for search
+    if [ "$CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE" ]; then
+        preferred_source_var_name="${CP_PREFERRED_SERVICE_EXTERNAL_IP_SOURCE}_value"
+        source_selected_ip=${!preferred_source_var_name}
+        if [ "$source_selected_ip" ]; then
+            echo "$source_selected_ip"
+            return 0
+        fi
+    fi
+
+    # Otherwise check options one by one
+    if [ "$source_explicit_ip_value" ]; then
+        echo $source_explicit_ip_value
+        return 0
+    elif [ "$source_kube_node_name_value" ]; then
+        echo $source_kube_node_name_value
+        return 0
+    elif [ "$source_kube_node_label_value" ]; then
+        echo $source_kube_node_label_value
+        return 0
+    else
+        return 1
+    fi
+}
+
+function is_kube_dns_configured_for_custom_entries {
+   kubectl get deployment kube-dns -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
+   return $?
+}
+
+function prepare_kube_dns {
+    local static_names="$1"
+
+    if ! is_kube_dns_configured_for_custom_entries; then
+        # 1. Mount hosts config map into dnsmasq
+        print_info "Configuring kube-dns for custom entries support"
+        kubectl patch deployment kube-dns \
+            --namespace kube-system \
+            --type='json' \
+            -p='[
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/volumes/-",
+                        "value": {
+                            "configMap": {
+                                "name": "cp-dnsmasq-hosts",
+                                "optional": true
+                            },
+                            "name": "cp-dnsmasq-hosts"
+                        }
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
+                        "value": {
+                            "mountPath": "/etc/hosts.d",
+                            "name": "cp-dnsmasq-hosts"
+                        }
+                    },
+                    {
+                        "op": "add",
+                        "path": "/spec/template/spec/containers/1/args/-",
+                        "value": "--hostsdir=/etc/hosts.d"
+                    }
+                ]'
+        if [ $? -ne 0 ]; then
+            print_err "Unable to patch kube-dns deployment"
+            return 1
+        fi
+
+        # Wait for the pods restart
+        kubectl rollout status deployment/kube-dns -n kube-system -w
+        # Just in case...
+        sleep 10
+        
+        print_ok "kube-dns is configured for custom entries support"
+    else
+        print_info "kube-dns seems to be already configured for custom entries support"
+    fi
+
+    # 2. Add ${static_names} to the kube-dns
+    local custom_name_registration_results=0
+    IFS="," read -ra static_names_arr <<< "$static_names"
+
+    if [ "${#static_names_arr[@]}" == "0" ]; then
+        print_info "Static custom DNS entries registration is not requested, skipping"
+        return 0
+    fi
+
+    for name_pair in "${static_names_arr[@]}"; do
+        static_name=
+        static_ip=
+        IFS="=" read -r static_name static_ip <<< "$name_pair"
+        if [ "$static_name" ] && [ "$static_ip" ]; then
+            register_custom_name_in_dns "$static_name" --ip "$static_ip"
+            custom_name_registration_results=$?
+        else
+            print_warn "Cannot parse $name_pair name or ip is empty"
+        fi
+    done
+
+    if [ $custom_name_registration_results -ne 0 ]; then
+        print_err "Errors occured while registering custom DNS entries. Some of the names may not be resolved"
+    else
+        print_ok "All custom DNS entries are registered"
+    fi
+}
+
+function get_kube_resource_spec_file_by_type {
+    local original_spec_file="$1"
+    local resource_type="$2"
+
+    if [ "$resource_type" == "--svc" ]; then
+        if [ -f "$original_spec_file" ]; then
+            echo "$original_spec_file"
+            return 0
+        fi
+        local spec_dir="$(dirname $original_spec_file)"
+        local spec_file="$(basename $original_spec_file)"
+
+        local spec_ext="${spec_file##*.}"
+        local spec_file="${spec_file%.*}"
+        local spec_suffix="${CP_KUBE_SERVICES_TYPE:-"node-port"}"
+        
+        echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
+    else
+        echo "$original_spec_file"
+    fi
+}
+
+function set_kube_service_external_ip {
+    local result_var="$1"
+    local source_explicit_ip="$2"
+    local source_kube_node_name="$3"
+    local source_kube_node_label="$4"
+
+    if [ "$CP_KUBE_SERVICES_TYPE" != "external-ip" ]; then
+        print_info "Services mode type is not \"external-ip\", external ip list WILL NOT be applied"
+        return 0
+    fi
+
+    local result_ip_list=$(get_svc_preferred_external_ip "$source_explicit_ip" \
+                                                        "$source_kube_node_name" \
+                                                        "$source_kube_node_label")
+
+    if [ -z "$result_ip_list" ]; then
+        return 1
+    fi
+
+    local result_ip_list_yml=
+    for result_ip in $result_ip_list; do
+        result_ip_list_yml="${result_ip_list_yml}  - ${result_ip}\n"
+    done
+    result_ip_list_yml="$(echo -e "$result_ip_list_yml")"
+    declare -xg "${result_var}"="${result_ip_list_yml}"
+    return 0
+}
+
 function create_kube_resource {
     local spec_file="$1"
+    local resource_type="$2"
+
+    spec_file="$(get_kube_resource_spec_file_by_type "$spec_file" "$resource_type")"
+
     local updated_spec_file="/tmp/$(basename $spec_file)"
     envsubst < $spec_file > "$updated_spec_file"
     kubectl create -f "$updated_spec_file"
     rm -f "$updated_spec_file"
+}
+
+function register_svc_custom_names_in_cluster {
+    local service_name="$1"
+    local custom_name="$2"
+
+    if [ "$CP_REGISTER_EXTERNAL_NAMES_IN_CLUSTER_DNS" == "1" ]; then
+        register_custom_name_in_dns "$custom_name" --svc "$service_name"
+        return $?
+    else
+        print_info "Custom name $custom_name DNS registration is skipped for $service_name as it was not requested. To make it work please specify \"-n|--external-host-dns\" option"
+        return 0
+    fi
+}
+
+function register_custom_name_in_dns {
+    local custom_name="$1"
+    # custom_target_type can be --ip <ip> or --svc <kube_svc_name>
+    local custom_target_type="$2"
+    local custom_target_value="$3"
+
+    if [ "$custom_target_type" == "--svc" ]; then
+        # If it is svc - get the cluster ip
+        custom_target_value=$(get_service_cluster_ip "${custom_target_value}")
+    fi
+
+    print_info "Registering DNS entry $custom_name as $custom_target_value (source type: $custom_target_type)"
+    # Check config map with hosts exists
+    if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
+        # If so - add new/update existing entry
+        current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
+        if [ $? -ne 0 ]; then
+            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
+            return 1
+        fi
+        # Delete existing entry
+        if grep -q "$custom_name" <<< "$current_custom_names"; then
+            current_custom_names="$(sed "/$custom_name/d" <<< "$current_custom_names")"
+        fi
+        # And add an update one
+        current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
+        # Escape the newlines
+        current_custom_names="$(escape_string "$current_custom_names")"
+        # Apply changes to the configmap
+        kubectl patch cm cp-dnsmasq-hosts \
+            -n kube-system \
+            --type merge \
+            -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
+        if [ $? -ne 0 ]; then
+            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+            print_info "================"
+            print_info "$current_custom_names"
+            print_info "================"
+            echo
+            return 1
+        fi
+
+    else
+        # Else create it from scratch
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cp-dnsmasq-hosts
+  namespace: kube-system
+data:
+  hosts: |
+    ${custom_target_value} ${custom_name}
+EOF
+         if [ $? -ne 0 ]; then
+            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+            return 1
+        fi
+    fi
+
+    # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
+    if ! is_kube_dns_configured_for_custom_entries; then
+        prepare_kube_dns
+    fi
+    # Trigger dns update (rollout)
+    kubectl patch deployment kube-dns \
+        -n kube-system \
+        --type='json' \
+        -p="[{\"op\": \"replace\", \"path\": \"/spec/template/metadata/annotations/cp-updated\", \"value\": \"$(date)\" }]"
+
+    if [ $? -ne 0 ]; then
+        print_err "Unable to trigger kube-dns redeployment map after adding $custom_name for ${custom_target_value}"
+        return 1
+    fi
+
+    # Wait for the pods restart
+    kubectl rollout status deployment/kube-dns -n kube-system -w
+    # Just in case...
+    sleep 10
+
+    print_ok "Custom entry $custom_name for ${custom_target_value} is registered in the DNS"
 }
 
 function expose_cluster_port {
@@ -936,4 +1290,77 @@ function is_service_requested {
 function is_install_requested {
     [ "$CP_INSTALLER_COMMAND" = "install" ]
     return $?
+}
+
+
+function generate_ssl_sso_certificates {
+    local service_name="$1"
+    local certificate_path="$2"
+    local service_external_host="$3"
+    local service_internal_host="$4"
+    local certificate_name="$5"
+
+    print_info "-> Creating self-signed SSL certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
+    generate_self_signed_key_pair   ${certificate_path}/ssl-private-key.pem \
+                                    ${certificate_path}/ssl-public-cert.pem \
+                                    ${service_external_host} \
+                                    ${service_internal_host} && \
+    openssl pkcs12 -export  -in ${certificate_path}/ssl-public-cert.pem \
+                            -inkey ${certificate_path}/ssl-private-key.pem \
+                            -out ${certificate_path}/cp-${certificate_name}-srv-ssl.p12 \
+                            -name ssl \
+                            -password pass:changeit
+
+    print_info "-> Creating self-signed SSO certificate for ${service_name} Service (${service_external_host}, ${service_internal_host})"
+    generate_self_signed_key_pair   force_self_sign \
+                                        ${certificate_path}/sso-private-key.pem \
+                                        ${certificate_path}/sso-public-cert.pem \
+                                        ${service_external_host} \
+                                        ${service_internal_host} && \
+    openssl pkcs12 -export  -in ${certificate_path}/sso-public-cert.pem \
+                                -inkey ${certificate_path}/sso-private-key.pem \
+                                -out ${certificate_path}/cp-${certificate_name}-srv-sso.p12 \
+                                -name sso \
+                                -password pass:changeit
+}
+
+function configure_idp_metadata {
+    local service_name="${1}"
+    local metadata_file="${2}"
+    local idp_external_host="${3}"
+    local idp_external_port="${4}"
+    local idp_internal_host="${5}"
+    local idp_internal_port="${6}"
+    local service_external_host="${7}"
+    local service_external_port="${8}"
+    local certificate_dir="${9}"
+    local context_path="${10}"
+
+    local metadata_exists=0
+    local metadata_dir=$(dirname "${metadata_file}")
+
+    print_info "-> Configuring SSO metadata for the ${service_name} Service"
+    if [ -f "${metadata_file}" ]; then
+        print_warn "SSO Metadata already exists at ${metadata_file}, it will be reused"
+        metadata_exists=1
+    else
+        print_info "-> Trying to configure SSO metadata using basic IdP (from https://${idp_internal_host}:${idp_internal_port}/metadata)"
+        mkdir -p "${metadata_dir}"
+        # Note: HOST header is substituted with the external address, to generate valid binding URLs in the metadata file
+        curl    "https://${idp_internal_host}:${idp_internal_port}/metadata" \
+                    -o "${metadata_file}" \
+                    -H "Host: ${idp_external_host}:${idp_external_port}" \
+                    -s \
+                    -k
+        if [ $? -eq 0 ] && [ -f "${metadata_file}" ]; then
+            metadata_exists=1
+            idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
+                                 "${certificate_dir}/sso-public-cert.pem"
+        fi
+    fi
+
+    if [ -z "$metadata_exists" ]; then
+        print_warn "SSO Metadata was not provided explicitly and/or error occurred while getting it from the basic IdP"
+        print_warn "${service_name} Service will attempt to start without metadata, but may fail to initialize"
+    fi
 }

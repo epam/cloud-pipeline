@@ -32,6 +32,11 @@
   color: #2282bf;
 }
 
+.storage-type[type=GS] {
+  border-color: #bf7d1d;
+  color: #bf7d1d;
+}
+
 .storage-type[type=NFS] {
   border-color: #116118;
   color: #116118;
@@ -124,4 +129,12 @@ div[type=actions-container-background] {
   background-color: #555;
   color: white;
   white-space: nowrap;
+}
+
+.storage-name > span {
+  margin-left: 5px;
+}
+
+.storage-name > span:first-child {
+  margin-left: 0;
 }

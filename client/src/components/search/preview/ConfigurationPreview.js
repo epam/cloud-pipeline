@@ -24,12 +24,21 @@ import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import {getSpotTypeName} from '../../special/spot-instance-names';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
+@inject('cloudProviders')
 @inject((stores, params) => {
-  const {configurations, dtsList, pipelines, preferences, runDefaultParameters} = stores;
+  const {
+    cloudProviders,
+    configurations,
+    dtsList,
+    pipelines,
+    preferences,
+    runDefaultParameters
+  } = stores;
   const [configId, entryName] = `${params.item.id}`.split('-');
   const configuration = configurations.getConfiguration(configId);
 
@@ -37,6 +46,7 @@ const DTS_ENVIRONMENT = 'DTS';
   runDefaultParameters.fetch();
 
   return {
+    cloudProviders,
     configuration,
     entryName,
     dtsList,
@@ -110,6 +120,24 @@ export default class ConfigurationPreview extends React.Component {
 
     return this.props.configuration.value.entries
       .filter(e => e.name === this.props.entryName)[0];
+  }
+
+  @computed
+  get isSpot() {
+    if (this.configurationEntry && this.configurationEntry.configuration) {
+      return this.configurationEntry.configuration.is_spot;
+    }
+    return null;
+  }
+
+  @computed
+  get currentCloudProvider() {
+    if (this.configurationEntry && this.configurationEntry.configuration && this.props.cloudProviders.loaded) {
+      const [provider] = (this.props.cloudProviders.value || [])
+        .filter(p => p.id === this.configurationEntry.configuration.cloudProviderId);
+      return provider;
+    }
+    return null;
   }
 
   @computed
@@ -234,6 +262,7 @@ export default class ConfigurationPreview extends React.Component {
       : configuration.configuration && configuration.configuration.docker_image;
     const cloudRegion = !this.isDtsEnvironment && !this.isFireCloudEnvironment
       ? <AWSRegionTag
+        darkMode
         regionId={configuration.configuration.cloudRegionId}
         displayName
         style={{marginLeft: -5, verticalAlign: 'top'}} />
@@ -352,7 +381,7 @@ export default class ConfigurationPreview extends React.Component {
                   Price type
                 </td>
                 <td>
-                  {configuration.is_spot ? 'Spot' : 'On-demand'}
+                  {getSpotTypeName(this.isSpot, this.currentCloudProvider)}
                 </td>
               </tr>
             }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.cluster;
 
+import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -47,4 +48,5 @@ public class InstanceOffer {
     private String instanceFamily;
     private int gpu;
     private Long regionId;
+    private CloudProvider cloudProvider;
 }

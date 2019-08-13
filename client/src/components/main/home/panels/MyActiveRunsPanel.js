@@ -31,6 +31,7 @@ import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
 import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
+import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 
@@ -54,7 +55,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   getActiveRuns = () => {
     if (this.props.activeRuns.loaded) {
       return (this.props.activeRuns.value || [])
-        .map(r => r)
+        .map(mapResumeFailureReason)
         .filter(r => ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'].indexOf(r.status) >= 0);
     }
     return [];

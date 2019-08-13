@@ -124,7 +124,7 @@ public final class PreferenceValidators {
     };
 
     public static final BiPredicate<String, Map<String, Preference>> isValidSpotAllocStrategy = (pref, dependencies) ->
-            StringUtils.isNotBlank(pref) && (pref.equals("on_demand") || pref.equals("spot"));
+            StringUtils.isNotBlank(pref) && (pref.equals("on_demand") || pref.equals("manual"));
 
     public static final BiPredicate<String, Map<String, Preference>> isValidCron = (pref, dependencies) -> {
         try {

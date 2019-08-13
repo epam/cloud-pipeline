@@ -246,7 +246,7 @@ public class SamplesMetadataTest
                             final String r1value = r1key.getValue();
                             r1key.changeValue(r1value.replace(nonExistingPath, path(dataStorage)));
 
-                            sleep(500, MILLISECONDS);
+                            sleep(2, SECONDS);
 
                             final MetadataKeyAO r2key = metadataSection.selectKey("R2_Fastq");
                             final String r2value = r2key.getValue();
@@ -526,6 +526,7 @@ public class SamplesMetadataTest
                                         )
                                 ).click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
                                 .click(save())
+                                .sleep(1, SECONDS)
                 );
     }
 

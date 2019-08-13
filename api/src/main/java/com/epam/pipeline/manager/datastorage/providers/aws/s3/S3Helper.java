@@ -74,7 +74,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -113,7 +115,6 @@ import java.util.stream.Collectors;
 public class S3Helper {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Helper.class);
 
-    private static final String OWNER_TAG_KEY = "CP_OWNER";
     private static final int NOT_FOUND = 404;
     private static final int INVALID_RANGE = 416;
     private static final long COPYING_FILE_SIZE_LIMIT = 5L * 1024L * 1024L * 1024L; // 5gb
@@ -374,7 +375,7 @@ public class S3Helper {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
-        List<Tag> tags = Collections.singletonList(new Tag(OWNER_TAG_KEY, owner));
+        List<Tag> tags = Collections.singletonList(new Tag(ProviderUtils.OWNER_TAG_KEY, owner));
         putObjectRequest.withTagging(new ObjectTagging(tags));
         client.putObject(putObjectRequest);
         return this.getFile(client, bucket, path);
@@ -446,10 +447,7 @@ public class S3Helper {
         String folderPath = ProviderUtils.withoutLeadingDelimiter(ProviderUtils.withTrailingDelimiter(path.trim()));
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         AmazonS3 client = getDefaultS3Client();
-        if (itemExists(client, bucket, folderPath, true)) {
-            throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS));
-        }
+        checkItemDoesNotExist(client, bucket, folderPath, true);
         folderPath += ProviderUtils.FOLDER_TOKEN_FILE;
         String[] parts = folderPath.split(ProviderUtils.DELIMITER);
         final String folderName = parts[parts.length - 2];
@@ -536,14 +534,8 @@ public class S3Helper {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
         AmazonS3 client = getDefaultS3Client();
-        if (!itemExists(client, bucket, oldPath, false)) {
-            throw new DataStorageException(messageHelper
-                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, oldPath, bucket));
-        }
-        if (itemExists(client, bucket, newPath, false)) {
-            throw new DataStorageException(messageHelper
-                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, newPath, bucket));
-        }
+        checkItemExists(client, bucket, oldPath, false);
+        checkItemDoesNotExist(client, bucket, newPath, false);
         if (fileSizeExceedsLimit(client, bucket, oldPath)) {
             throw new DataStorageException(String.format("File '%s' moving was aborted because " +
                     "file size exceeds the limit of %s bytes", newPath, COPYING_FILE_SIZE_LIMIT));
@@ -573,12 +565,8 @@ public class S3Helper {
         String[] parts = newPath.split(ProviderUtils.DELIMITER);
         final String folderName = parts[parts.length - 1];
         AmazonS3 client = getDefaultS3Client();
-        if (!itemExists(client, bucket, oldPath, true)) {
-            throw new DataStorageException(String.format("Folder '%s' does not exist", oldPath));
-        }
-        if (itemExists(client, bucket, newPath, true)) {
-            throw new DataStorageException(String.format("Folder '%s' already exists", newPath));
-        }
+        checkItemExists(client, bucket, oldPath, true);
+        checkItemDoesNotExist(client, bucket, newPath, true);
         ListObjectsRequest req = new ListObjectsRequest();
         req.setBucketName(bucket);
         ObjectListing listing = client.listObjects(req);
@@ -615,6 +603,24 @@ public class S3Helper {
     public boolean checkBucket(String bucket) {
         AmazonS3 client = getDefaultS3Client();
         return client.doesBucketExistV2(bucket);
+    }
+
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final AmazonS3 client = getDefaultS3Client();
+
+        ObjectListing listing = client.listObjects(dataStorage.getPath(), requestPath);
+        boolean hasNextPageMarker = true;
+        while (hasNextPageMarker && !pathDescription.getCompleted()) {
+            ProviderUtils.getSizeByPath(listing.getObjectSummaries(), requestPath,
+                    S3ObjectSummary::getSize, S3ObjectSummary::getKey, pathDescription);
+            hasNextPageMarker = listing.isTruncated();
+            listing = client.listNextBatchOfObjects(listing);
+        }
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {
@@ -793,7 +799,7 @@ public class S3Helper {
     }
 
     private String buildOwnerTag(String owner) {
-        return OWNER_TAG_KEY + "=" + owner;
+        return ProviderUtils.OWNER_TAG_KEY + "=" + owner;
     }
 
     private void deleteAllVersions(AmazonS3 client, String bucket, String path) {
@@ -1005,5 +1011,17 @@ public class S3Helper {
         dataStorageDownloadFileUrl.setExpires(expires);
         dataStorageDownloadFileUrl.setTagValue(tagValue);
         return dataStorageDownloadFileUrl;
+    }
+
+    private void checkItemDoesNotExist(final AmazonS3 client, final String bucketName, final String itemPath,
+                                       final boolean isFolder) {
+        Assert.isTrue(!itemExists(client, bucketName, itemPath, isFolder), messageHelper
+                .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, itemPath, bucketName));
+    }
+
+    private void checkItemExists(final AmazonS3 client, final String bucketName, final String itemPath,
+                                 final boolean isFolder) {
+        Assert.isTrue(itemExists(client, bucketName, itemPath, isFolder), messageHelper
+                .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, itemPath, bucketName));
     }
 }

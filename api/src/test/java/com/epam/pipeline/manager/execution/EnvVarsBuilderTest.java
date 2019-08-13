@@ -47,7 +47,7 @@ public class EnvVarsBuilderTest {
     private static final String MAIN_FILE = "MAIN_FILE";
     private static final String MAIN_FILE_VALUE = "mainf";
 
-    private static final String VERSION = "VERSION";
+    private static final String VERSION = "pipeline-version";
     private static final String VERSION_VALUE = "version";
 
     private static final String PIPELINE_ID = "PIPELINE_ID_VALUE";
@@ -84,7 +84,7 @@ public class EnvVarsBuilderTest {
     public static Map<SystemParams, String> matchSystemParams() {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
 
-        systemParamsWithValue.put(SystemParams.VERSION, VERSION_VALUE);
+        systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, VERSION_VALUE);
         systemParamsWithValue.put(SystemParams.PIPELINE_ID, PIPELINE_ID_VALUE);
 
         return systemParamsWithValue;

@@ -1,0 +1,18 @@
+[ {
+  "name" : "default",
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "nonPause" : false,
+    "cloudRegionId" : 1,
+    "main_file" : "@",
+    "main_class" : "all",
+    "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "instance_disk" : "20",
+    "docker_image" : "cp-docker-registry.default.svc.cluster.local:31443/library/snakemake",
+    "timeout" : 0,
+    "cmd_template" : "snakemake -s ${CP_DOLLAR}SCRIPTS_DIR/src/[main_file] --directory ${CP_DOLLAR}RUN_DIR [main_class]",
+    "language" : "other",
+    "is_spot" : true
+  },
+  "default" : true
+} ]

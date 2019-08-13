@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.region;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.controller.vo.CloudRegionVO;
+import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
@@ -27,7 +27,7 @@ import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.mapper.CloudRegionMapper;
+import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
@@ -113,31 +113,28 @@ public abstract class AbstractCloudRegionManagerTest {
         doReturn(Optional.empty()).when(cloudRegionDao).loadById(ID);
 
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.update(ID, createRegionBuilder().build()));
+            () -> cloudRegionManager.update(ID, createRegionDTO()));
     }
 
     @Test
     public void updateShouldThrowIfNameIsMissing() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.update(ID, updateRegionBuilder().name(null).build()));
+            () -> {
+                final AbstractCloudRegionDTO regionDTO = updateRegionDTO();
+                regionDTO.setName(null);
+                cloudRegionManager.update(ID, regionDTO);
+            });
     }
 
     @Test
     public void updateShouldSaveRegionIdFromTheOldValue() {
-        cloudRegionManager.update(ID, updateRegionBuilder().regionCode("another region id").build());
+        final AbstractCloudRegionDTO regionDTO = updateRegionDTO();
+        regionDTO.setRegionCode("another region id");
+        cloudRegionManager.update(ID, regionDTO);
 
         final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
         assertThat(regionCaptor.getValue().getRegionCode(), is(validRegionId()));
-    }
-
-    @Test
-    public void updateShouldSaveProviderFromTheOldValue() {
-        cloudRegionManager.update(ID, updateRegionBuilder().provider(null).build());
-
-        final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
-        verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
-        assertThat(regionCaptor.getValue().getProvider(), is(defaultProvider()));
     }
 
     @Test
@@ -146,7 +143,7 @@ public abstract class AbstractCloudRegionManagerTest {
         final AbstractCloudRegion originalRegion = commonRegion();
         originalRegion.setCreatedDate(createdDate);
         doReturn(Optional.of(originalRegion)).when(cloudRegionDao).loadById(ID);
-        cloudRegionManager.update(ID, updateRegionBuilder().build());
+        cloudRegionManager.update(ID, updateRegionDTO());
 
         final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
@@ -160,7 +157,7 @@ public abstract class AbstractCloudRegionManagerTest {
         final AbstractCloudRegion originalRegion = commonRegion();
         originalRegion.setOwner(ownerUserName);
         doReturn(Optional.of(originalRegion)).when(cloudRegionDao).loadById(ID);
-        cloudRegionManager.update(ID, updateRegionBuilder().build());
+        cloudRegionManager.update(ID, updateRegionDTO());
 
         final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
@@ -171,33 +168,36 @@ public abstract class AbstractCloudRegionManagerTest {
     @Test
     public void createShouldThrowIfNameIsMissing() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().name(null).build()));
+            () -> {
+                final AbstractCloudRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setName(null);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void createShouldThrowIfRegionIdIsMissing() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().regionCode(null).build()));
+            () -> {
+                final AbstractCloudRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setRegionCode(null);
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void createShouldThrowIfRegionIdIsInvalid() {
         assertThrows(IllegalArgumentException.class,
-            () -> cloudRegionManager.create(createRegionBuilder().regionCode("invalid").build()));
-    }
-
-    @Test
-    public void createShouldUseDefaultProviderIfNoneIsGiven() {
-        cloudRegionManager.create(createRegionBuilder().provider(null).build());
-
-        final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
-        verify(cloudRegionDao).create(regionCaptor.capture(), eq(credentials()));
-        assertThat(regionCaptor.getValue().getProvider(), is(defaultProvider()));
+            () -> {
+                final AbstractCloudRegionDTO regionDTO = createRegionDTO();
+                regionDTO.setRegionCode("invalid");
+                cloudRegionManager.create(regionDTO);
+            });
     }
 
     @Test
     public void createShouldSetCreatedDateForCloudRegion() {
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
         verify(cloudRegionDao).create(regionCaptor.capture(), eq(credentials()));
@@ -208,7 +208,7 @@ public abstract class AbstractCloudRegionManagerTest {
     public void createShouldSetOwnerForCloudRegion() {
         final String ownerUserName = "ownerUserName";
         doReturn(ownerUserName).when(authManager).getAuthorizedUser();
-        cloudRegionManager.create(createRegionBuilder().build());
+        cloudRegionManager.create(createRegionDTO());
 
         final ArgumentCaptor<AbstractCloudRegion> regionCaptor = ArgumentCaptor.forClass(AbstractCloudRegion.class);
         verify(cloudRegionDao).create(regionCaptor.capture(), eq(credentials()));
@@ -232,9 +232,9 @@ public abstract class AbstractCloudRegionManagerTest {
 
     abstract AbstractCloudRegion commonRegion();
 
-    abstract CloudRegionVO.CloudRegionVOBuilder createRegionBuilder();
+    abstract AbstractCloudRegionDTO createRegionDTO();
 
-    abstract CloudRegionVO.CloudRegionVOBuilder updateRegionBuilder();
+    abstract AbstractCloudRegionDTO updateRegionDTO();
 
     abstract AbstractCloudRegionCredentials credentials();
 

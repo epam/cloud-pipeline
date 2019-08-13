@@ -133,10 +133,11 @@ public class ClusterController extends AbstractRestController {
             })
     public Result<List<InstanceType>> loadAllInstanceTypes(
             @RequestParam(required = false) final Long regionId,
-            @RequestParam(required = false, defaultValue = "false") final boolean toolInstances) {
+            @RequestParam(required = false, defaultValue = "false") final boolean toolInstances,
+            @RequestParam(required = false) final Boolean spot) {
         return toolInstances
-            ? Result.success(clusterApiService.getAllowedToolInstanceTypes(regionId))
-            : Result.success(clusterApiService.getAllowedInstanceTypes(regionId));
+            ? Result.success(clusterApiService.getAllowedToolInstanceTypes(regionId, spot))
+            : Result.success(clusterApiService.getAllowedInstanceTypes(regionId, spot));
     }
 
     @RequestMapping(value = "/cluster/instance/allowed", method = RequestMethod.GET)
@@ -152,8 +153,9 @@ public class ClusterController extends AbstractRestController {
             })
     public Result<AllowedInstanceAndPriceTypes> loadAllowedInstanceAndPriceTypes(
             @RequestParam(required = false) final Long toolId,
-            @RequestParam(required = false) final Long regionId) {
-        return Result.success(clusterApiService.getAllowedInstanceAndPriceTypes(toolId, regionId));
+            @RequestParam(required = false) final Long regionId,
+            @RequestParam(required = false) final Boolean spot) {
+        return Result.success(clusterApiService.getAllowedInstanceAndPriceTypes(toolId, regionId, spot));
     }
 
     @RequestMapping(value = "/cluster/node/{name}/usage", method = RequestMethod.GET)

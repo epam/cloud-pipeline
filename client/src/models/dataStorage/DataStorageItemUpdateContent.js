@@ -19,6 +19,6 @@ import RemotePost from '../basic/RemotePost';
 export default class DataStorageItemUpdateContent extends RemotePost {
   constructor (id, path) {
     super();
-    this.url = `/datastorage/${id}/content?path=${path}`;
+    this.url = `/datastorage/${id}/content?path=${encodeURIComponent(path)}`;
   }
 }

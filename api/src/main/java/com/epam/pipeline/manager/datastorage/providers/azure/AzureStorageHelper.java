@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -60,6 +61,7 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -160,7 +162,7 @@ public class AzureStorageHelper {
         unwrap(getBlobUrl(dataStorage, path)
                 .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
                         StringUtils.isBlank(owner) ? null
-                                : new Metadata(Collections.singletonMap("CP_OWNER", owner)),
+                                : new Metadata(Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, owner)),
                         null, null));
         return getDataStorageFile(dataStorage, path);
     }
@@ -181,7 +183,7 @@ public class AzureStorageHelper {
         String folderPath = ProviderUtils.withoutLeadingDelimiter(ProviderUtils.withTrailingDelimiter(path.trim()));
         if (directoryExists(dataStorage, folderPath)) {
             throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS));
+                    MessageConstants.ERROR_DATASTORAGE_PATH_ALREADY_EXISTS, folderPath, dataStorage.getName()));
         }
         final String folderFullPath = folderPath.substring(0, folderPath.length() - 1);
         folderPath += ProviderUtils.FOLDER_TOKEN_FILE;
@@ -338,6 +340,19 @@ public class AzureStorageHelper {
         }
     }
 
+    public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final List<BlobItem> items = rawList(AbstractListingIterator.flat(getContainerURL(dataStorage), requestPath))
+                .collect(Collectors.toList());
+
+        ProviderUtils.getSizeByPath(items, requestPath, item -> item.properties().contentLength(),
+                BlobItem::name, pathDescription);
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
+    }
+
     private void deleteFolder(final AzureBlobStorage dataStorage, final String path) {
         validateDirectory(dataStorage, path, true);
         while (true) {
@@ -419,6 +434,16 @@ public class AzureStorageHelper {
                 .map(response -> Optional.of(response.body())
                         .map(ListBlobsFlatSegmentResponse::segment)
                         .map(segment -> files(segment.blobItems(), null)))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .flatMap(Function.identity());
+    }
+
+    private Stream<BlobItem> rawList(final FlatIterator iterator) {
+        return iterator.stream()
+                .map(response -> Optional.of(response.body())
+                        .map(ListBlobsFlatSegmentResponse::segment)
+                        .map(segment -> ListUtils.emptyIfNull(segment.blobItems()).stream()))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .flatMap(Function.identity());

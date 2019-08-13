@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
@@ -90,6 +91,7 @@ public class SystemPreferences {
     private static final String SYSTEM_GROUP = "System"; // important stuff, related to system as a whole
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
+    private static final String GCP_GROUP = "GCP";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -129,6 +131,8 @@ public class SystemPreferences {
             "storage.transfer.pipeline.version", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
+    public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
+            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -274,6 +278,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
             "instance.restart.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> INSTANCE_LIMIT_STATE_REASONS = new ObjectPreference<>(
+            "instance.limit.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference CLUSTER_INSTANCE_HDD_EXTRA_MULTI =
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
@@ -365,6 +372,13 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+
+    /**
+     * Controls the amount of pod logs to be loaded
+     */
+    public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
+            "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
@@ -473,12 +487,22 @@ public class SystemPreferences {
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
-            new IntPreference("ge.autoscaling.scale.up.timeout", null,
+            new IntPreference("ge.autoscaling.scale.up.timeout", 30,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
     public static final IntPreference GE_AUTOSCALING_SCALE_DOWN_TIMEOUT =
-            new IntPreference("ge.autoscaling.scale.down.timeout", null,
+            new IntPreference("ge.autoscaling.scale.down.timeout", 30,
+                    GRID_ENGINE_AUTOSCALING_GROUP, pass);
+    public static final IntPreference GE_AUTOSCALING_SCALE_UP_POLLING_TIMEOUT =
+            new IntPreference("ge.autoscaling.scale.up.polling.timeout", 900,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
 
+    //GCP
+    public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
+            "gcp.regions.list", null, new TypeReference<List<String>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<Map<String, GCPResourceMapping>> GCP_SKU_MAPPING = new ObjectPreference<>(
+            "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
+            isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
