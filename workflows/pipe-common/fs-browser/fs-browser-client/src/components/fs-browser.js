@@ -4,10 +4,11 @@ import {createHashHistory} from 'history';
 import {
   Route,
   Router,
-  Switch,
 } from 'react-router-dom';
-
-import styles from './fs-browser.css';
+import Browser from './browser';
+import Header from './header';
+import Download from './download';
+import Upload from './upload';
 
 const history = createHashHistory({});
 
@@ -19,12 +20,10 @@ export default function () {
   return (
     <Provider {...stores}>
       <Router history={history}>
-        <div
-          id="qsp-container"
-          className={styles.container}
-        >
-          FS Browser
-        </div>
+        <Route path="/" component={Header} />
+        <Route path="/" component={Browser} />
+        <Route path="/upload" component={Upload} />
+        <Route path="/download" component={Download} />
       </Router>
     </Provider>
   );

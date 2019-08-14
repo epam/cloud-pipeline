@@ -1,0 +1,31 @@
+.container {
+  font-size: medium;
+  padding: 5px;
+  width: 100%;
+  cursor: text;
+  -webkit-transition: background-color 250ms;
+  -moz-transition: background-color 250ms;
+  -ms-transition: background-color 250ms;
+  -o-transition: background-color 250ms;
+  transition: background-color 250ms;
+}
+
+.container:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.link {
+
+}
+
+.link::after {
+  content: ' / ';
+}
+
+.link:last-child::after {
+  content: unset;
+}
+
+.input {
+
+}
