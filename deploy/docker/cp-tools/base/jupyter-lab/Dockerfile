@@ -15,23 +15,22 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
-# Install deps
-RUN apt update && \
-    apt install -y  bzip2 \
-                    vim \
-                    nano \
-                    acl
+# JupyterLab
+RUN conda install -c conda-forge jupyterlab -y && \
+    jupyter serverextension enable --py jupyterlab --sys-prefix
 
-# Install anaconda
-ENV ANACONDA_HOME=/opt/local/anaconda3
-ENV SPYDER_LAUNCHER_HOME=/opt/local/spyder/
-ARG ANACONDA_VERSION="3-5.3.1"
+# NodeJS for git plugin
+RUN conda install -c conda-forge nodejs -y
 
-ADD spyder.sh spyder.png anaconda_install.sh $SPYDER_LAUNCHER_HOME/
-ADD create_spyder_launcher.sh /caps/create_spyder_launcher.sh
+# Git Plugin
+RUN jupyter labextension install @jupyterlab/git && \
+    pip install --upgrade jupyterlab-git && \
+    jupyter serverextension enable --py jupyterlab_git
 
-RUN mkdir -p $ANACONDA_HOME
+# Add nbdime to the jupyterlab build
+RUN pip install --upgrade nbdime && \
+    jupyter nbextension enable nbdime --py --sys-prefix && \
+    jupyter lab build
 
-RUN chmod 777 $SPYDER_LAUNCHER_HOME/ -R && \
-    $SPYDER_LAUNCHER_HOME/anaconda_install.sh $ANACONDA_HOME $ANACONDA_VERSION && \
-    echo "bash /caps/create_spyder_launcher.sh" >> /caps.sh
+ADD start.sh /start.sh
+RUN chmod +x /start.sh
