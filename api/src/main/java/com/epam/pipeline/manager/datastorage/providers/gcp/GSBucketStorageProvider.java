@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -59,6 +60,11 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public String createStorage(final GSBucketStorage storage) throws DataStorageException {
         return getHelper(storage).createGoogleStorage(storage);
+    }
+
+    @Override
+    public ActionStatus postCreationProcessing(final GSBucketStorage storage) {
+        return getHelper(storage).applyIamPolicy(storage);
     }
 
     @Override

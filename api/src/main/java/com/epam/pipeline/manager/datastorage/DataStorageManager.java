@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.BaseEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -247,8 +248,10 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public AbstractDataStorage create(DataStorageVO dataStorageVO, Boolean proceedOnCloud, Boolean checkExistence,
-                                      boolean replaceStoragePath)
+    public BaseEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                            final Boolean proceedOnCloud,
+                                                            final Boolean checkExistence,
+                                                            final boolean replaceStoragePath)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -270,6 +273,8 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
+        final BaseEntityWithAction<AbstractDataStorage> createdStorage = new BaseEntityWithAction<>();
+        createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
@@ -281,6 +286,8 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             String created = storageProviderManager.createBucket(dataStorage);
             dataStorage.setPath(created);
+
+            createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
         } else if (checkExistence && !storageProviderManager.checkStorage(dataStorage)) {
             throw new IllegalStateException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, dataStorage.getName(),
@@ -299,7 +306,8 @@ public class DataStorageManager implements SecuredEntityManager {
         if (dataStorage.isPolicySupported()) {
             storageProviderManager.applyStoragePolicy(dataStorage);
         }
-        return dataStorage;
+
+        return createdStorage;
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
