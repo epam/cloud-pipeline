@@ -106,7 +106,7 @@ if ! java -version > /dev/null 2>&1; then
     curl -s "$CP_CAP_SPARK_JAVA_DIST_URL" -o openjdk.tar.gz && \
     tar -zxf openjdk.tar.gz && \
     rm -f openjdk.tar.gz && \
-    mv jdk* "$JAVA_HOME"
+    mv *jdk* "$JAVA_HOME"
 
     if [ $? -ne 0 ]; then
         pipe_log_fail "JAVA installation failed, aborting Spark installation" "$SPARK_MASTER_SETUP_TASK"
