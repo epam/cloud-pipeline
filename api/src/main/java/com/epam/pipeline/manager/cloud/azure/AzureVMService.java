@@ -67,6 +67,7 @@ public class AzureVMService {
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
     private static final String SUCCEEDED = "Succeeded";
+    private static final String KUBE_PREEMPTED_LABEL = "cloud-pipeline/preempted";
     private static final String PREEMPTED = "preempted";
     private static final String INSTANCE_WAS_PREEMPTED = "Low priority instance was preempted";
     private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
@@ -181,7 +182,7 @@ public class AzureVMService {
                                                                         final String scaleSetName,
                                                                         final String nodeName) {
 
-        if (nodesManager.getNode(nodeName).getLabels().containsKey(PREEMPTED)) {
+        if (nodesManager.getNode(nodeName).getLabels().containsKey(KUBE_PREEMPTED_LABEL)) {
             return Optional.of(SCALE_SET_FAILED_STATUS);
         }
 

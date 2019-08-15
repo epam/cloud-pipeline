@@ -251,7 +251,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     fi
     _CLOUD_PROVIDER=AZURE
 
-    CHECK_AZURE_EVENTS_COMMAND="curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep Preempt && kubectl label node $(hostname) preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf'"
+    CHECK_AZURE_EVENTS_COMMAND="curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep -q Preempt && kubectl label node $(hostname) cloud-pipeline/preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf'"
 
     # run 3 cron jobs to be able to check events each 20 seconds
     crontab -l | { cat ; echo -e "* * * * * $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 20 && $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 40 && $CHECK_AZURE_EVENTS_COMMAND" ; } | crontab -
