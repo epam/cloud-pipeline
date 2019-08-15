@@ -23,7 +23,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.BaseEntityWithAction;
+import com.epam.pipeline.entity.AbstractSecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -36,7 +36,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.DataStorageWithAction;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -249,10 +248,10 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public BaseEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
-                                                            final Boolean proceedOnCloud,
-                                                            final Boolean checkExistence,
-                                                            final boolean replaceStoragePath)
+    public AbstractSecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                                       final Boolean proceedOnCloud,
+                                                                       final Boolean checkExistence,
+                                                                       final boolean replaceStoragePath)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -274,7 +273,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
-        final DataStorageWithAction createdStorage = new DataStorageWithAction();
+        final AbstractSecuredEntityWithAction<AbstractDataStorage> createdStorage = new AbstractSecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
