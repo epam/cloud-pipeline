@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function get_proxy_value {
+    local proxy_var_name="$1"
+
+    # Try to get the proxy value in the lower case (e.g. http_proxy)
+    proxy_var_name="$(echo $proxy_var_name | tr '[:upper:]' '[:lower:]')"
+    local proxy_var_value="${!proxy_var_name}"
+    [ "$proxy_var_value" ] && echo "$proxy_var_value" && return
+
+    # If a lower case variable has no value - try an upper case (e.g. HTTP_PROXY)
+    proxy_var_name="$(echo $proxy_var_name | tr '[:lower:]' '[:upper:]')"
+    echo "${!proxy_var_name}"
+}
+
+function get_proxy_for_java {
+    local proxy_type="$1"
+    
+    local proxy_var_name="${proxy_type}_proxy"
+    local proxy_value="$(get_proxy_value $proxy_var_name)"
+    [ -z "$proxy_value" ] && return
+
+    local proxy_host_name="$(parse_url $proxy_value hostname)"
+    local proxy_port="$(parse_url "$proxy_value" port)"
+    ([ -z "$proxy_host_name" ] || [ -z "$proxy_port" ]) && return
+
+    echo "-D$proxy_type.proxyHost=$proxy_host_name -D$proxy_type.proxyPort=$proxy_port"
+}
+
+SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
+SPARK_MASTER_SETUP_TASK_WORKERS="SparkMasterSetupWorkers"
+
+export CP_CAP_SPARK_INSTALL_DIR="${CP_CAP_SPARK_INSTALL_DIR:-/common/spark}"
+export CP_CAP_SPARK_VERSION="${CP_CAP_SPARK_VERSION:-2.4.3}"
+export CP_CAP_SPARK_DIST_URL="${CP_CAP_SPARK_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/spark/spark-$CP_CAP_SPARK_VERSION.tgz}"
+export CP_CAP_SPARK_HOST="${CP_CAP_SPARK_HOST:-$(hostname)}"
+export CP_CAP_SPARK_PORT="${CP_CAP_SPARK_PORT:-7077}"
+export CP_CAP_SPARK_UI_PORT="${CP_CAP_SPARK_UI_PORT:-8088}"
+
+rm -rf "$CP_CAP_SPARK_INSTALL_DIR"
+mkdir -p "$(dirname $CP_CAP_SPARK_INSTALL_DIR)"
+
+# Install Spark master
+pipe_log_info "Installing Spark $CP_CAP_SPARK_VERSION using $CP_CAP_SPARK_DIST_URL" "$SPARK_MASTER_SETUP_TASK"
+
+install_tmp="$(mktemp -d)"
+
+cd $install_tmp && \
+curl -s "$CP_CAP_SPARK_DIST_URL" -o spark.tar.gz && \
+tar -zxf spark.tar.gz && \
+rm -f spark.tar.gz && \
+mv spark* "$CP_CAP_SPARK_INSTALL_DIR"
+
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Spark installation failed, aborting" "$SPARK_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_info "Spark installed into $CP_CAP_SPARK_INSTALL_DIR" "$SPARK_MASTER_SETUP_TASK"
+
+# Check jq is installed (used to parse the Spark API responses)
+if ! jq --version > /dev/null 2>&1; then
+    pipe_log_info "Installing jq"
+    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
+    chmod +x /usr/bin/jq
+fi
+
+# Install java
+if ! java -version > /dev/null 2>&1; then
+    export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-11.0.2}"
+    export CP_CAP_SPARK_JAVA_DIST_URL="${CP_CAP_SPARK_JAVA_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/openjdk-${CP_CAP_SPARK_JAVA_VERSION}_linux-x64_bin.tar.gz}"
+
+    pipe_log_info "JAVA not found, it will be installed using $CP_CAP_SPARK_JAVA_DIST_URL" "$SPARK_MASTER_SETUP_TASK"
+
+    export JAVA_HOME="$CP_CAP_SPARK_INSTALL_DIR/jdk"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    
+    cd $install_tmp && \
+    curl -s "$CP_CAP_SPARK_JAVA_DIST_URL" -o openjdk.tar.gz && \
+    tar -zxf openjdk.tar.gz && \
+    rm -f openjdk.tar.gz && \
+    mv jdk* "$JAVA_HOME"
+
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "JAVA installation failed, aborting Spark installation" "$SPARK_MASTER_SETUP_TASK"
+        exit 1
+    fi
+
+    if ! java -version > /dev/null 2>&1; then
+        pipe_log_fail "JAVA installed without errors, but 'java -version' failed, aborting Spark installation" "$SPARK_MASTER_SETUP_TASK"
+        exit 1
+    fi
+
+    pipe_log_info "JAVA installed into $JAVA_HOME" "$SPARK_MASTER_SETUP_TASK"
+fi
+
+# Setup proxies for Spark, if needed
+java_proxy_options="$(get_proxy_for_java http)"
+java_proxy_options="$java_proxy_options $(get_proxy_for_java https)"
+java_proxy_options="$java_proxy_options $(get_proxy_for_java ftp)"
+
+# Translate no_proxy shell to java notation:
+# , -> | (delimiter)
+# . -> *. (wildcard domain name)
+# e.g.: "127.0.0.1,localhost,.local" -> "127.0.0.1|localhost|*.local"
+java_no_proxy="$(get_proxy_value no_proxy)"
+if [ "$java_no_proxy" ]; then
+    java_no_proxy="$(echo "$java_no_proxy" | sed 's/,/|/g' | sed 's/|\./|*./g')"
+    java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
+fi
+
+if [ "$java_proxy_options" ]; then
+    spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
+    [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
+    echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
+fi
+
+# Start Spark master
+pipe_log_info "Starting Spark master service spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT} with Web UI on port $CP_CAP_SPARK_UI_PORT" "$SPARK_MASTER_SETUP_TASK"
+$CP_CAP_SPARK_INSTALL_DIR/sbin/start-master.sh -h "$CP_CAP_SPARK_HOST" \
+                                               -p "$CP_CAP_SPARK_PORT" \
+                                               --webui-port "$CP_CAP_SPARK_UI_PORT"
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Spark master startup failed, aborting. Please review the logs in $CP_CAP_SPARK_INSTALL_DIR/logs" "$SPARK_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
+
+# Add a current master as a worker (if not restricted)
+if [ "$CP_CAP_SPARK_MASTER_NO_SCHEDULE" == "true" ]; then
+    pipe_log_info "Spark master host WILL NOT be added as a worker (prohibited by CP_CAP_SPARK_MASTER_NO_SCHEDULE=true)" "$SPARK_MASTER_SETUP_TASK"
+    exit 0
+fi
+
+pipe_log_info "Adding Spark master host as a worker" "$SPARK_MASTER_SETUP_TASK"
+spark_setup_worker "$CP_CAP_SPARK_HOST"
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Cannot add a Spark master host as a worker, treating this as critical error and aborting" "$SPARK_MASTER_SETUP_TASK"
+    exit 1
+fi
+
+# Wait for worker nodes to initiate and connect to the master
+if [ -z "$node_count" ] || (( "$node_count" == 0 )); then
+    pipe_log_success "Worker nodes count is not defined. Won't wait for them" "$SPARK_MASTER_SETUP_TASK_WORKERS"
+else
+    _MASTER_API_ENDPOINT="http://$CP_CAP_SPARK_HOST:$CP_CAP_SPARK_UI_PORT/json/"
+    _MASTER_EXEC_WAIT_ATTEMPTS=${_MASTER_EXEC_WAIT_ATTEMPTS:-60}
+    _MASTER_EXEC_WAIT_SEC=${_MASTER_EXEC_WAIT_SEC:-10}
+    _CURRENT_EXEC_HOSTS_COUNT=$(curl -s $_MASTER_API_ENDPOINT | jq -r '.aliveworkers')
+    while [ "$node_count" -gt "$_CURRENT_EXEC_HOSTS_COUNT" ]; do
+        pipe_log_info "Waiting for workers to connect. $_CURRENT_EXEC_HOSTS_COUNT out of $node_count are ready" "$SPARK_MASTER_SETUP_TASK_WORKERS"
+        sleep $_MASTER_EXEC_WAIT_SEC
+        _CURRENT_EXEC_HOSTS_COUNT=$(curl -s $_MASTER_API_ENDPOINT | jq -r '.aliveworkers')
+        _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
+
+        if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
+            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SPARK_MASTER_SETUP_TASK_WORKERS"
+            exit 0
+        fi
+    done
+    pipe_log_success "All workers are connected" "$SPARK_MASTER_SETUP_TASK_WORKERS"
+fi
