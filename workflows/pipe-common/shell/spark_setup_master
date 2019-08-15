@@ -41,6 +41,13 @@ function get_proxy_for_java {
     echo "-D$proxy_type.proxyHost=$proxy_host_name -D$proxy_type.proxyPort=$proxy_port"
 }
 
+function get_spark_workers_count {
+    local api_endpoint="$1"
+    local workers_count=$(( $(curl -s $api_endpoint | jq -r '.aliveworkers') - 1 ))
+    (( "$workers_count" < 0 )) && workers_count=0
+    echo "$workers_count"
+}
+
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
 SPARK_MASTER_SETUP_TASK_WORKERS="SparkMasterSetupWorkers"
 
@@ -169,11 +176,11 @@ else
     _MASTER_API_ENDPOINT="http://$CP_CAP_SPARK_HOST:$CP_CAP_SPARK_UI_PORT/json/"
     _MASTER_EXEC_WAIT_ATTEMPTS=${_MASTER_EXEC_WAIT_ATTEMPTS:-60}
     _MASTER_EXEC_WAIT_SEC=${_MASTER_EXEC_WAIT_SEC:-10}
-    _CURRENT_WORKERS_COUNT=$(( $(curl -s $_MASTER_API_ENDPOINT | jq -r '.aliveworkers') - 1 ))
+    _CURRENT_WORKERS_COUNT=$(get_spark_workers_count "$_MASTER_API_ENDPOINT")
     while [ "$node_count" -gt "$_CURRENT_WORKERS_COUNT" ]; do
         pipe_log_info "Waiting for workers to connect. $_CURRENT_WORKERS_COUNT out of $node_count are ready" "$SPARK_MASTER_SETUP_TASK_WORKERS"
         sleep $_MASTER_EXEC_WAIT_SEC
-        _CURRENT_WORKERS_COUNT=$(( $(curl -s $_MASTER_API_ENDPOINT | jq -r '.aliveworkers') - 1 ))
+        _CURRENT_WORKERS_COUNT=$(get_spark_workers_count "$_MASTER_API_ENDPOINT")
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
