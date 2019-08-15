@@ -20,8 +20,8 @@ public class TesSwaggerConfig {
         return new Docket(DocumentationType.SWAGGER_2)
                 .apiInfo(getApiInfo())
                 .select()
-                .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
+                .apis(RequestHandlerSelectors.basePackage("com.epam.pipeline.tesadapter.controller"))
+                .paths(PathSelectors.ant("/v1/tasks/**"))
                 .build();
     }
 
