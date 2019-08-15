@@ -205,6 +205,24 @@ function cp_cap_publish {
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_SPARK"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _SPARK_MASTER_INIT="spark_setup_master"
+            _SPARK_WORKER_INIT="spark_setup_worker"
+            echo "Requested Spark capability, setting init scripts:"
+            echo "--> Master: $_SPARK_MASTER_INIT"
+            echo "--> Worker: $_SPARK_WORKER_INIT"
+
+            sed -i "/$_SPARK_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_SPARK_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_SPARK_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_SPARK_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
