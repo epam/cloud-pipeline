@@ -1,7 +1,7 @@
 import React from 'react';
 
-export default function ({}) {
+export default function ({id}) {
   return (
-    <div>Upload</div>
+    <div>Upload {id}</div>
   );
 }

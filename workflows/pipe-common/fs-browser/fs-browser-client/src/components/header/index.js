@@ -3,7 +3,7 @@ import {parse} from '../../utilities/query-parameters';
 import PathInput from './path-input';
 import styles from './header.css';
 
-function header({history}) {
+function header({disabled, history}) {
   const {location} = history;
   const {path} = parse(location.search);
   const onNavigate = (p) => {
@@ -18,6 +18,7 @@ function header({history}) {
       className={styles.header}
     >
       <PathInput
+        disabled={disabled}
         path={path}
         onNavigate={onNavigate}
       />

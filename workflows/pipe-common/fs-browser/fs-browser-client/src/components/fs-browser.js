@@ -5,6 +5,7 @@ import {
   Route,
   Router,
 } from 'react-router-dom';
+import {taskManager} from '../models';
 import Browser from './browser';
 import Header from './header';
 import Download from './download';
@@ -14,6 +15,7 @@ const history = createHashHistory({});
 
 const stores = {
   history,
+  taskManager,
 };
 
 export default function () {
@@ -22,8 +24,8 @@ export default function () {
       <Router history={history}>
         <Route path="/" component={Header} />
         <Route path="/" component={Browser} />
-        <Route path="/upload" component={Upload} />
-        <Route path="/download" component={Download} />
+        <Route path="/upload/:taskId" component={Upload} />
+        <Route path="/download/:taskId" component={Download} />
       </Router>
     </Provider>
   );

@@ -1,20 +1,169 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {
+  Alert,
+  Icon,
+} from 'antd';
+import classNames from 'classnames';
 import {parse} from '../../utilities/query-parameters';
+import {ListDirectory} from '../../models';
+import {
+  DownloadAction,
+  RemoveAction,
+} from './actions';
+import styles from './browser.css';
 
-@inject((stores, params) => {
+@inject('taskManager')
+@inject(({taskManager}, params) => {
   const {path} = parse(params.history.location.search);
   return {
     path,
+    directory: new ListDirectory(path),
+    taskManager,
   };
 })
 @observer
 class Browser extends React.Component {
-  render() {
-    const {path} = this.props;
+  state = {
+    disabled: false,
+    activeTasks: [],
+  };
+
+  blockingOperation = fn => (...opts) => {
+    this.setState({disabled: true}, async () => {
+      await fn(...opts);
+      this.setState({
+        disabled: false,
+      });
+    });
+  };
+
+  onSelectItem = item => (e) => {
+    e.stopPropagation();
+    const {disabled} = this.state;
+    if (disabled) {
+      return;
+    }
+    const {history} = this.props;
+    if (item.isFolder && item.path && item.path.length > 0) {
+      history.push(`?path=${item.path}`);
+    } else if (item.isFolder) {
+      history.push('/');
+    }
+  };
+
+  onDownload = async (item, task) => {
+    const {activeTasks} = this.state;
+    activeTasks.push(item);
+    console.log('On download', item, task, activeTasks);
+    this.setState({activeTasks});
+  };
+
+  onRemove = async () => {
+    const {directory} = this.props;
+    return directory.fetch();
+  };
+
+  renderDirectory = () => {
+    const {path, directory} = this.props;
+    if (directory.pending && !directory.loaded) {
+      return (
+        <Icon type="loading" />
+      );
+    }
+    if (directory.error) {
+      return (
+        <Alert type="error" message={directory.error} />
+      );
+    }
+    const {disabled} = this.state;
+    const elements = [];
+    const parts = (path || '').split('/').filter(l => l.length > 0);
+    if (parts.length > 0) {
+      elements.push({
+        name: '..',
+        path: parts.slice(0, parts.length - 1).join('/'),
+        isFolder: true,
+        downloadable: false,
+        removable: false,
+      });
+    }
+    const items = (directory.value || [])
+      .map(d => ({
+        ...d,
+        isFolder: /^folder$/i.test(d.type),
+        downloadable: true,
+        removable: true,
+      }));
+    items.sort((a, b) => {
+      if (a.isFolder && b.isFolder) {
+        return 0;
+      }
+      if (a.isFolder) {
+        return -1;
+      }
+      return 1;
+    });
+    elements.push(...items);
     return (
-      <div>
-        Browser
+      <table
+        className={
+          classNames(
+            styles.table,
+            {
+              [styles.disabled]: disabled || (directory.pending && !directory.loaded),
+            },
+          )
+        }
+      >
+        <tbody>
+          {
+            elements.map((element, index) => (
+              <tr
+                /* eslint-disable-next-line */
+                key={index}
+                className={
+                  classNames(
+                    styles.item,
+                    {[styles.folder]: element.isFolder},
+                  )
+                }
+                onClick={this.onSelectItem(element)}
+              >
+                <td className={styles.icon}>
+                  <Icon type={element.isFolder ? 'folder' : 'file'} />
+                </td>
+                <td>
+                  {element.name}
+                </td>
+                <td
+                  className={styles.actions}
+                >
+                  <DownloadAction
+                    disabled={disabled}
+                    item={element}
+                    callback={this.blockingOperation(this.onDownload)}
+                  />
+                  <RemoveAction
+                    disabled={disabled}
+                    item={element}
+                    callback={this.blockingOperation(this.onRemove)}
+                  />
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    );
+  };
+
+  render() {
+    return (
+      <div
+        className={styles.container}
+      >
+        {this.renderDirectory()}
       </div>
     );
   }

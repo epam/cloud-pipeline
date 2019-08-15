@@ -10,11 +10,13 @@ import styles from './path-input.css';
 @observer
 class PathInput extends React.Component {
   static propTypes = {
+    disabled: PropTypes.bool,
     onNavigate: PropTypes.func,
     path: PropTypes.string,
   };
 
   static defaultProps = {
+    disabled: false,
     onNavigate: null,
     path: null,
   };
@@ -28,7 +30,7 @@ class PathInput extends React.Component {
     if (!editMode) {
       return null;
     }
-    const {path, onNavigate} = this.props;
+    const {disabled, path, onNavigate} = this.props;
     const onPressEnter = (e) => {
       this.toggleEditMode(false);
       if (onNavigate) {
@@ -39,6 +41,7 @@ class PathInput extends React.Component {
       <Input
         autoFocus
         className={styles.input}
+        disabled={disabled}
         size="small"
         defaultValue={path}
         onPressEnter={onPressEnter}
@@ -52,7 +55,7 @@ class PathInput extends React.Component {
     if (editMode) {
       return null;
     }
-    const {path, onNavigate} = this.props;
+    const {disabled, path, onNavigate} = this.props;
     const paths = [{
       name: 'Root',
       path: '',
@@ -68,12 +71,12 @@ class PathInput extends React.Component {
     const onLinkClicked = link => (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (onNavigate) {
+      if (onNavigate && !disabled) {
         onNavigate(link.path);
       }
     };
     const renderLink = (link, index, array) => {
-      if (array.length - 1 === index) {
+      if (array.length - 1 === index || disabled) {
         return (
           <span
             key={index}

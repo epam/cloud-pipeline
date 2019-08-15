@@ -1,0 +1,49 @@
+.container {
+  padding: 5px;
+}
+
+.table {
+  width: 100%;
+}
+
+.table tr.item {
+  line-height: 24px;
+}
+
+.table.disabled td {
+  color: gray;
+}
+
+tr.item.folder {
+  cursor: pointer;
+}
+
+tr.item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+tr.item.folder:hover {
+  text-decoration: underline;
+}
+
+.table .icon {
+  width: 20px;
+}
+
+.table .actions {
+  width: 200px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.actions .action {
+  color: #1890ff;
+}
+
+.actions .action > i {
+  width: 30px;
+}
+
+.actions .action .hint {
+  font-size: x-small;
+}
