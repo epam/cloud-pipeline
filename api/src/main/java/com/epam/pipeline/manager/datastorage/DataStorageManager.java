@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.DataStorageWithAction;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -273,7 +274,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
-        final BaseEntityWithAction<AbstractDataStorage> createdStorage = new BaseEntityWithAction<>();
+        final DataStorageWithAction createdStorage = new DataStorageWithAction();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(

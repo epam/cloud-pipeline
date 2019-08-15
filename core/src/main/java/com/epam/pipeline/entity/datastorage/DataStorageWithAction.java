@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity;
+package com.epam.pipeline.entity.datastorage;
 
-import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.BaseEntityWithAction;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.Delegate;
 
 @Getter
 @Setter
 @NoArgsConstructor
-public class BaseEntityWithAction<T extends BaseEntity> {
-
-    private T entity;
-    private ActionStatus actionStatus;
+public class DataStorageWithAction extends BaseEntityWithAction<AbstractDataStorage> {
+    @Delegate
+    @JsonIgnore
+    private AbstractDataStorage entity;
 }
