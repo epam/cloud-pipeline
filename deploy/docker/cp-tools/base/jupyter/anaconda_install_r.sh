@@ -20,8 +20,8 @@ _ANACONDA_ENVIRONMENT=$2
 setfacl -d -m g::rwx $_ANACONDA_HOME
 $_ANACONDA_HOME/bin/conda install -y -n ${_ANACONDA_ENVIRONMENT} 'r' \
                                                                  'r-essentials' \
-                                                                 'sparklyr' \
-                                                                 'magrittr' \
-                                                                 'tidyverse'
+                                                                 'r-sparklyr' \
+                                                                 'r-magrittr' \
+                                                                 'r-tidyverse'
 
 $_ANACONDA_HOME/bin/conda clean -a -y

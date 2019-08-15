@@ -141,7 +141,8 @@ if [ "$java_no_proxy" ]; then
     java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
 fi
 
-if [ "$java_proxy_options" ]; then
+# Write the proxy options only if the java_proxy_options is not empty or does not consist of empty spaces
+if [ "${java_proxy_options// }" ]; then
     spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
     [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
     echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
