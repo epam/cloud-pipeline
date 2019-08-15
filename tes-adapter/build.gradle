@@ -1,4 +1,4 @@
-group 'com.epam.pipeline.adapter'
+group 'com.epam.pipeline'
 version '1.0-SNAPSHOT'
 
 buildscript {
@@ -22,7 +22,7 @@ repositories {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'com.epam.pipeline.adapter.TesAdapterApplication'
+        attributes 'Main-Class': 'com.epam.pipeline.tesadapter.TesAdapterApplication'
     }
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
 }
