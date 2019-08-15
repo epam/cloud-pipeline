@@ -77,7 +77,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+export SPARK_HOME="$CP_CAP_SPARK_INSTALL_DIR"
 if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
+    echo "export SPARK_HOME=$SPARK_HOME" >> "$CP_ENV_FILE_TO_SOURCE"
     echo "export PATH=\$PATH:$CP_CAP_SPARK_INSTALL_DIR/bin" >> "$CP_ENV_FILE_TO_SOURCE"
 fi
 
@@ -92,7 +94,7 @@ fi
 
 # Install java
 if ! java -version > /dev/null 2>&1; then
-    export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-11.0.2}"
+    export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-1.8.0_222}"
     export CP_CAP_SPARK_JAVA_DIST_URL="${CP_CAP_SPARK_JAVA_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/openjdk-${CP_CAP_SPARK_JAVA_VERSION}_linux-x64_bin.tar.gz}"
 
     pipe_log_info "JAVA not found, it will be installed using $CP_CAP_SPARK_JAVA_DIST_URL" "$SPARK_MASTER_SETUP_TASK"
@@ -118,6 +120,7 @@ if ! java -version > /dev/null 2>&1; then
 
     if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
         echo "export JAVA_HOME=$JAVA_HOME" >> "$CP_ENV_FILE_TO_SOURCE"
+        echo "export PATH=\$PATH:$JAVA_HOME/bin" >> "$CP_ENV_FILE_TO_SOURCE"
     fi
 
     pipe_log_info "JAVA installed into $JAVA_HOME" "$SPARK_MASTER_SETUP_TASK"
