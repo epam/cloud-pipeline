@@ -52,15 +52,16 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.compute_client = get_client_from_auth_file(ComputeManagementClient)
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+    def generate_resource_name(self):
+        return "az-" + uuid.uuid4().hex[0:16]
+
+    def run_instance(self, instance_name, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
         try:
             ins_key = utils.read_ssh_key(ins_key)
             swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
             user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token,
                                                           swap_size)
-            instance_name = "az-" + uuid.uuid4().hex[0:16]
-
             if not is_spot:
                 self.__create_public_ip_address(instance_name, run_id)
                 self.__create_nic(instance_name, run_id)
@@ -109,6 +110,12 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
                 return self.generate_scale_set_vm_names(resource.name)
         return []
+
+    def get_kube_node_names(self, name, spot):
+        if not spot:
+            return [name]
+        else:
+            self.generate_scale_set_vm_names(name)
 
     def generate_scale_set_vm_names(self, scale_set_name):
         return [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]

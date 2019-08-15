@@ -18,7 +18,13 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 
 class AbstractInstanceProvider(object):
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+    def generate_resource_name(self):
+        return None
+
+    def get_kube_node_names(self, name, spot):
+        return []
+
+    def run_instance(self, instance_name, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
         pass
 
