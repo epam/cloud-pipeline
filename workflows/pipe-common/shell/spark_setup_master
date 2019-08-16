@@ -43,9 +43,54 @@ function get_proxy_for_java {
 
 function get_spark_workers_count {
     local api_endpoint="$1"
-    local workers_count=$(( $(curl -s $api_endpoint | jq -r '.aliveworkers') - 1 ))
+
+    local workers_to_skip=1
+    [ "$CP_CAP_SPARK_MASTER_NO_SCHEDULE" == "true" ] && workers_to_skip=0
+
+    local workers_count=$(( $(curl -s $api_endpoint | jq -r '.aliveworkers') - $workers_to_skip ))
     (( "$workers_count" < 0 )) && workers_count=0
     echo "$workers_count"
+}
+
+# FIXME: this sets up access only to S3 and only for "current" region (which is used to run a compute node)
+# FIXME: such an implementation shall be treated as a PoC and further replaced with the temporary tokens for all the supported Cloud Providers
+function setup_object_storage_access {
+    pipe_log_info "Starting Object Storage access configuration" "$SPARK_MASTER_SETUP_TASK"
+
+    if [ -z "$CLOUD_REGION_ID" ]; then
+        pipe_log_fail "Current region ID is not set via CLOUD_REGION_ID, object storages access WILL NOT be configured" "$SPARK_MASTER_SETUP_TASK"
+        return 1
+    fi
+
+    local key_id_var_name="CP_ACCOUNT_ID_${CLOUD_REGION_ID}"
+    local access_key_var_name="CP_ACCOUNT_KEY_${CLOUD_REGION_ID}"
+    local region_var_name="CP_ACCOUNT_REGION_${CLOUD_REGION_ID}"
+
+    export AWS_ACCESS_KEY_ID="${!key_id_var_name}"
+    export AWS_SECRET_ACCESS_KEY="${!access_key_var_name}"
+    export AWS_DEFAULT_REGION="${!region_var_name}"
+
+    if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ]; then
+        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
+        pipe_log_fail "Credentials for the Cloud Region $CLOUD_REGION_ID cannot be found, object storages access WILL NOT be configured" "$SPARK_MASTER_SETUP_TASK"
+        return 1
+    fi
+
+    spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
+    if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"; then
+        pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+    else
+        cat >> "$spark_config_file" << EOF
+spark.hadoop.fs.s3a.impl                                org.apache.hadoop.fs.s3a.S3AFileSystem
+spark.hadoop.fs.s3a.endpoint                            s3.${AWS_DEFAULT_REGION}.amazonaws.com
+spark.hadoop.fs.s3a.server-side-encryption-algorithm    AES256
+spark.executor.extraJavaOptions                         -Dcom.amazonaws.services.s3.enableV4=true
+spark.driver.extraJavaOptions                           -Dcom.amazonaws.services.s3.enableV4=true
+EOF
+    fi
+
+    pipe_log_info "Object Storage access configuration is done" "$SPARK_MASTER_SETUP_TASK"
+    return 0
 }
 
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
@@ -148,6 +193,13 @@ if [ "${java_proxy_options// }" ]; then
     echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
 fi
 
+# Setup Object Storages access for Spark (if not restricted)
+if [ "$CP_CAP_SPARK_NO_OBJECT_STORAGES" == "true" ]; then
+    pipe_log_info " Object Storage access configuration WILL NO be performed (prohibited by CP_CAP_SPARK_NO_OBJECT_STORAGES=true)" "$SPARK_MASTER_SETUP_TASK"
+else
+    setup_object_storage_access
+fi
+
 # Start Spark master
 pipe_log_info "Starting Spark master service spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT} with Web UI on port $CP_CAP_SPARK_UI_PORT" "$SPARK_MASTER_SETUP_TASK"
 $CP_CAP_SPARK_INSTALL_DIR/sbin/start-master.sh -h "$CP_CAP_SPARK_HOST" \
@@ -163,14 +215,13 @@ pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
 # Add a current master as a worker (if not restricted)
 if [ "$CP_CAP_SPARK_MASTER_NO_SCHEDULE" == "true" ]; then
     pipe_log_info "Spark master host WILL NOT be added as a worker (prohibited by CP_CAP_SPARK_MASTER_NO_SCHEDULE=true)" "$SPARK_MASTER_SETUP_TASK"
-    exit 0
-fi
-
-pipe_log_info "Adding Spark master host as a worker" "$SPARK_MASTER_SETUP_TASK"
-spark_setup_worker "$CP_CAP_SPARK_HOST"
-if [ $? -ne 0 ]; then
-    pipe_log_fail "Cannot add a Spark master host as a worker, treating this as critical error and aborting" "$SPARK_MASTER_SETUP_TASK"
-    exit 1
+else
+    pipe_log_info "Adding Spark master host as a worker" "$SPARK_MASTER_SETUP_TASK"
+    spark_setup_worker "$CP_CAP_SPARK_HOST"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Cannot add a Spark master host as a worker, treating this as critical error and aborting" "$SPARK_MASTER_SETUP_TASK"
+        exit 1
+    fi
 fi
 
 # Wait for worker nodes to initiate and connect to the master
