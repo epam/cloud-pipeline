@@ -1,0 +1,20 @@
+.container {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.button {
+
+}
+
+.native-input {
+  font-size: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}

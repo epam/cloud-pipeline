@@ -8,8 +8,6 @@ import {
 import {taskManager} from '../models';
 import Browser from './browser';
 import Header from './header';
-import Download from './download';
-import Upload from './upload';
 
 const history = createHashHistory({});
 
@@ -22,10 +20,17 @@ export default function () {
   return (
     <Provider {...stores}>
       <Router history={history}>
-        <Route path="/" component={Header} />
-        <Route path="/" component={Browser} />
-        <Route path="/upload/:taskId" component={Upload} />
-        <Route path="/download/:taskId" component={Download} />
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            height: '100vh',
+          }}
+        >
+          <Route path="/" component={Header} />
+          <Route path="/" component={Browser} />
+        </div>
       </Router>
     </Provider>
   );

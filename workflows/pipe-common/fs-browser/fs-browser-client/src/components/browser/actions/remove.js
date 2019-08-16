@@ -1,10 +1,10 @@
 import React from 'react';
 import {
   Button,
-  Icon,
   Modal,
   message,
 } from 'antd';
+import Icon from '../../shared/icon';
 import styles from '../browser.css';
 import {DeletePath} from '../../../models';
 
@@ -40,16 +40,12 @@ function remove(
     <span
       className={styles.action}
     >
-      <Button
+      <Icon
         disabled={disabled}
-        size="small"
+        type="close"
+        color="red"
         onClick={onClick}
-        type="link"
-        title={`Remove ${item.name}`}
-        style={{color: 'red'}}
-      >
-        <Icon type="close" />
-      </Button>
+      />
     </span>
   );
 }

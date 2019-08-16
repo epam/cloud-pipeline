@@ -1,5 +1,5 @@
-import {Remote} from './base';
 import dateFns from 'date-fns';
+import {Remote} from './base';
 
 export const Statuses = {
   pending: 'pending',
@@ -31,7 +31,7 @@ export default class Status extends Remote {
         this.value.status = Statuses.success;
         this.value.result = {
           expires: dateFns.format(new Date(), 'YYYY-MM-DD HH:mm:ss.SSS'),
-          url: 'ds',
+          url: '',
         };
       } else if (this.fetchIndex > 3) {
         this.value.status = Statuses.running;

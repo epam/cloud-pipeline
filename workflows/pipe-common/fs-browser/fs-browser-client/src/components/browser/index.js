@@ -2,15 +2,17 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
-  Icon,
 } from 'antd';
 import classNames from 'classnames';
+import Icon from '../shared/icon';
 import {parse} from '../../utilities/query-parameters';
 import {ListDirectory} from '../../models';
 import {
   DownloadAction,
   RemoveAction,
 } from './actions';
+import TaskQueue from './task-queue';
+import Upload from '../upload';
 import styles from './browser.css';
 
 @inject('taskManager')
@@ -55,7 +57,6 @@ class Browser extends React.Component {
   onDownload = async (item, task) => {
     const {activeTasks} = this.state;
     activeTasks.push(item);
-    console.log('On download', item, task, activeTasks);
     this.setState({activeTasks});
   };
 
@@ -131,7 +132,10 @@ class Browser extends React.Component {
                 onClick={this.onSelectItem(element)}
               >
                 <td className={styles.icon}>
-                  <Icon type={element.isFolder ? 'folder' : 'file'} />
+                  <Icon
+                    type={element.isFolder ? 'folder' : 'file'}
+                    color="#666"
+                  />
                 </td>
                 <td>
                   {element.name}
@@ -159,12 +163,18 @@ class Browser extends React.Component {
   };
 
   render() {
+    const {path, taskManager} = this.props;
     return (
-      <div
-        className={styles.container}
-      >
-        {this.renderDirectory()}
-      </div>
+      <Upload path={path}>
+        <div
+          className={styles.container}
+        >
+          {this.renderDirectory()}
+          <TaskQueue
+            activeTasksCount={(taskManager.items || []).length}
+          />
+        </div>
+      </Upload>
     );
   }
 }

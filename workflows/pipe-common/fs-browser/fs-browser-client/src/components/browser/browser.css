@@ -1,5 +1,6 @@
 .container {
   padding: 5px;
+  position: relative;
 }
 
 .table {
@@ -28,6 +29,13 @@ tr.item.folder:hover {
 
 .table .icon {
   width: 20px;
+  vertical-align: middle;
+}
+
+.table .icon div {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
 }
 
 .table .actions {
@@ -37,10 +45,14 @@ tr.item.folder:hover {
 }
 
 .actions .action {
-  color: #1890ff;
+  display: inline-block;
 }
 
-.actions .action > i {
+.actions .action svg {
+  stroke: #1890ff;
+}
+
+.actions .action > div {
   width: 30px;
 }
 

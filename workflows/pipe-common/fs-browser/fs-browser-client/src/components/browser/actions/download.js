@@ -1,10 +1,9 @@
 import React from 'react';
 import {
-  Button,
-  Icon,
   message,
 } from 'antd';
 import {inject, observer} from 'mobx-react';
+import Icon from '../../shared/icon';
 import styles from '../browser.css';
 
 function download(
@@ -37,7 +36,10 @@ function download(
       <span
         className={styles.action}
       >
-        <Icon type="loading" />
+        <Icon
+          type="loading"
+          width={20}
+        />
       </span>
     );
   }
@@ -45,15 +47,11 @@ function download(
     <span
       className={styles.action}
     >
-      <Button
+      <Icon
         disabled={disabled}
-        size="small"
+        type="download"
         onClick={onClick}
-        type="link"
-        title={`Download ${item.name}`}
-      >
-        <Icon type="download" />
-      </Button>
+      />
     </span>
   );
 }
