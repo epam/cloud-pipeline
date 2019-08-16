@@ -63,7 +63,16 @@ const ENABLE_GRID_ENGINE_TOOLTIP = (
     </Row>
   </div>
 );
-const ENABLE_SPARK_TOOLTIP = null;
+const ENABLE_SPARK_TOOLTIP = (
+  <div>
+    <Row>
+      Setting this checkbox will enable the <b>Apache Spark</b> for the cluster, with the access to <b>File/Object Storages</b> from the Spark Applications.
+    </Row>
+    <Row>
+      This checkbox is a convenience option for the <b>"CP_CAP_SPARK=true"</b> parameter.
+    </Row>
+  </div>
+);
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (
   <div>
     <Row>
