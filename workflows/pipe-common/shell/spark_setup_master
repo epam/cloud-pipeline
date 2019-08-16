@@ -181,6 +181,9 @@ if ! java -version > /dev/null 2>&1; then
     pipe_log_info "JAVA installed into $JAVA_HOME" "$SPARK_MASTER_SETUP_TASK"
 fi
 
+# Configuration file setup
+spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
+
 # Setup proxies for Spark, if needed
 java_proxy_options="$(get_proxy_for_java http)"
 java_proxy_options="$java_proxy_options $(get_proxy_for_java https)"
@@ -196,8 +199,8 @@ if [ "$java_no_proxy" ]; then
     java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
 fi
 
-if [ "$java_proxy_options" ]; then
-    spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
+# Write the proxy options only if the java_proxy_options is not empty or does not consist of empty spaces
+if [ "${java_proxy_options// }" ]; then
     [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
     echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
 fi
@@ -210,7 +213,8 @@ else
 fi
 
 # Start Spark master
-pipe_log_info "Starting Spark master service spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT} with Web UI on port $CP_CAP_SPARK_UI_PORT" "$SPARK_MASTER_SETUP_TASK"
+spark_master_url="spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT}"
+pipe_log_info "Starting Spark master service $spark_master_url with Web UI on port $CP_CAP_SPARK_UI_PORT" "$SPARK_MASTER_SETUP_TASK"
 $CP_CAP_SPARK_INSTALL_DIR/sbin/start-master.sh -h "$CP_CAP_SPARK_HOST" \
                                                -p "$CP_CAP_SPARK_PORT" \
                                                --webui-port "$CP_CAP_SPARK_UI_PORT"
@@ -218,6 +222,10 @@ if [ $? -ne 0 ]; then
     pipe_log_fail "Spark master startup failed, aborting. Please review the logs in $CP_CAP_SPARK_INSTALL_DIR/logs" "$SPARK_MASTER_SETUP_TASK"
     exit 1
 fi
+
+# Add the master's URL to the config
+[ -f "$spark_config_file" ] && sed -i '/spark.master/d' "$spark_config_file"
+echo "spark.master $spark_master_url" >> "$spark_config_file"
 
 pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
 
