@@ -52,9 +52,37 @@ function get_spark_workers_count {
     echo "$workers_count"
 }
 
+function setup_executors {
+    local spark_config_file="$1"
+
+    nodes_total=$(( ${node_count:-0} + 1 ))
+
+    mem_per_node=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    mem_per_node=$(( $mem_per_node / 1024 / 1024 ))
+    mem_total=$(( $mem_per_node * $nodes_total ))
+
+    cpu_per_node=$(nproc)
+    cpu_total=$(( $cpu_per_node * $nodes_total ))
+
+    executor_cores=${CP_CAP_SPARK_EXECUTOR_CORES:-2}
+    executors_num=$(( $cpu_total / $executor_cores ))
+    executor_mem=$(( ($mem_total / $executors_num) - 1 ))
+
+    if grep -q "spark.executor.cores" "$spark_config_file"  2>/dev/null; then
+        pipe_log_warn "Spark config file at $spark_config_file already contains executors configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+    else
+        cat >> "$spark_config_file" << EOF
+spark.executor.cores        $executor_cores
+spark.executor.memory       ${executor_mem}G
+EOF
+    fi
+}
+
 # FIXME: this sets up access only to S3 and only for "current" region (which is used to run a compute node)
 # FIXME: such an implementation shall be treated as a PoC and further replaced with the temporary tokens for all the supported Cloud Providers
 function setup_object_storage_access {
+    local spark_config_file="$1"
+
     pipe_log_info "Starting Object Storage access configuration" "$SPARK_MASTER_SETUP_TASK"
 
     if [ -z "$CLOUD_REGION_ID" ]; then
@@ -76,7 +104,6 @@ function setup_object_storage_access {
         return 1
     fi
 
-    spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
     if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"  2>/dev/null; then
         pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
@@ -101,6 +128,30 @@ EOF
 
     pipe_log_info "Object Storage access configuration is done" "$SPARK_MASTER_SETUP_TASK"
     return 0
+}
+
+function setup_proxy_config {
+    local spark_config_file="$1"
+
+    java_proxy_options="$(get_proxy_for_java http)"
+    java_proxy_options="$java_proxy_options $(get_proxy_for_java https)"
+    java_proxy_options="$java_proxy_options $(get_proxy_for_java ftp)"
+
+    # Translate no_proxy shell to java notation:
+    # , -> | (delimiter)
+    # . -> *. (wildcard domain name)
+    # e.g.: "127.0.0.1,localhost,.local" -> "127.0.0.1|localhost|*.local"
+    java_no_proxy="$(get_proxy_value no_proxy)"
+    if [ "$java_no_proxy" ]; then
+        java_no_proxy="$(echo "$java_no_proxy" | sed 's/,/|/g' | sed 's/|\./|*./g')"
+        java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
+    fi
+
+    # Write the proxy options only if the java_proxy_options is not empty or does not consist of empty spaces
+    if [ "${java_proxy_options// }" ]; then
+        [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
+        echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
+    fi
 }
 
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
@@ -184,33 +235,18 @@ fi
 # Configuration file setup
 spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
 
-# Setup proxies for Spark, if needed
-java_proxy_options="$(get_proxy_for_java http)"
-java_proxy_options="$java_proxy_options $(get_proxy_for_java https)"
-java_proxy_options="$java_proxy_options $(get_proxy_for_java ftp)"
-
-# Translate no_proxy shell to java notation:
-# , -> | (delimiter)
-# . -> *. (wildcard domain name)
-# e.g.: "127.0.0.1,localhost,.local" -> "127.0.0.1|localhost|*.local"
-java_no_proxy="$(get_proxy_value no_proxy)"
-if [ "$java_no_proxy" ]; then
-    java_no_proxy="$(echo "$java_no_proxy" | sed 's/,/|/g' | sed 's/|\./|*./g')"
-    java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
-fi
-
-# Write the proxy options only if the java_proxy_options is not empty or does not consist of empty spaces
-if [ "${java_proxy_options// }" ]; then
-    [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
-    echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
-fi
+# Setup proxies for Spark, if defined in the environment variables
+setup_proxy_config "$spark_config_file"
 
 # Setup Object Storages access for Spark (if not restricted)
 if [ "$CP_CAP_SPARK_NO_OBJECT_STORAGES" == "true" ]; then
     pipe_log_info " Object Storage access configuration WILL NO be performed (prohibited by CP_CAP_SPARK_NO_OBJECT_STORAGES=true)" "$SPARK_MASTER_SETUP_TASK"
 else
-    setup_object_storage_access
+    setup_object_storage_access "$spark_config_file"
 fi
+
+# Setup executors num/cores/mem configuration
+setup_executors "$spark_config_file"
 
 # Start Spark master
 spark_master_url="spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT}"
