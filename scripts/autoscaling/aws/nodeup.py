@@ -33,6 +33,7 @@ from distutils.version import LooseVersion
 import fnmatch
 import sys
 import math
+import socket
 
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
@@ -589,12 +590,13 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
     response = ec2.describe_instances(InstanceIds=[ins_id])
     nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
     nodename = nodename_full.split('.', 1)[0]
-    pipe_log('Waiting for instance {} registration in cluster with name {}'.format(ins_id, nodename))
+    nodenames = [nodename, nodename_full, ins_id]
+    pipe_log('Waiting for instance {} registration in cluster with name(s) {}'.format(ins_id, nodenames))
 
     ret_namenode = ''
     rep = 0
     while rep <= num_rep:
-        ret_namenode = find_node(nodename, nodename_full, api)
+        ret_namenode = find_node(nodenames, api)
         if ret_namenode:
             break
         rep = increment_or_fail(num_rep, rep,
@@ -672,12 +674,12 @@ def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instanc
     return rep
 
 
-def find_node(nodename, nodename_full, api):
-    ret_namenode = get_nodename(api, nodename)
-    if not ret_namenode:
-        return get_nodename(api, nodename_full)
-    else:
-        return ret_namenode
+def find_node(nodes, api):
+    for nodename in nodes:
+        ret_namenode = get_nodename(api, nodename)
+        if ret_namenode:
+            return ret_namenode
+    return ''
 
 
 def get_nodename(api, nodename):

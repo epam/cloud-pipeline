@@ -1,20 +1,4 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# User Data script to initialize common/gpu instances for azure instances
-# Output out/err to the logfile
 user_data_log="/var/log/user_data.log"
 exec > $user_data_log 2>&1
 
@@ -286,12 +270,15 @@ _KUBELET_LOG_PATH=/var/log/kubelet
 mkdir -p $_KUBELET_LOG_PATH
 _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 
+_KUBE_NODE_NAME="${_CLOUD_INSTANCE_ID:-$(hostname)}"
+_KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
+
 _KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 ## Append node-labels string to the systemd config
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS"
+Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS"
 EOF
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
@@ -299,12 +286,12 @@ chmod +x $_KUBELET_INITD_DROPIN_PATH
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
 # Add support for joining node to kube cluster after starting
-echo -e "systemctl start docker\nkubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks\nsystemctl start kubelet" >> /etc/rc.local
+echo -e "systemctl start docker\nkubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME\nsystemctl start kubelet" >> /etc/rc.local
 
 nc -l -k 8888 &
