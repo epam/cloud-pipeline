@@ -137,12 +137,26 @@ function setup_proxy_config {
     java_proxy_options="$java_proxy_options $(get_proxy_for_java https)"
     java_proxy_options="$java_proxy_options $(get_proxy_for_java ftp)"
 
+    # Add all the spark nodes' names/ips to the no_proxy to allow internal http communication
+    local spark_cluster_no_proxy=""
+    if [ -f "$DEFAULT_HOSTFILE" ]; then
+        while read cluster_node; do
+            spark_cluster_no_proxy="${spark_cluster_no_proxy},${cluster_node}"
+
+            cluster_node_ip="$(cat /etc/hosts | grep "$cluster_node$" | cut -f1)"
+            [ -z "$cluster_node_ip" ] && continue
+            spark_cluster_no_proxy="${spark_cluster_no_proxy},${cluster_node_ip}"
+        done <"$DEFAULT_HOSTFILE"
+    fi
+
     # Translate no_proxy shell to java notation:
     # , -> | (delimiter)
     # . -> *. (wildcard domain name)
     # e.g.: "127.0.0.1,localhost,.local" -> "127.0.0.1|localhost|*.local"
     java_no_proxy="$(get_proxy_value no_proxy)"
     if [ "$java_no_proxy" ]; then
+        java_no_proxy="${java_no_proxy}${spark_cluster_no_proxy}"
+        export no_proxy="$java_no_proxy"
         java_no_proxy="$(echo "$java_no_proxy" | sed 's/,/|/g' | sed 's/|\./|*./g')"
         java_proxy_options="$java_proxy_options -Dhttp.nonProxyHosts=$java_no_proxy -Dftp.nonProxyHosts=$java_no_proxy"
     fi
