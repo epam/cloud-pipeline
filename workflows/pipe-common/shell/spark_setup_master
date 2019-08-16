@@ -77,7 +77,7 @@ function setup_object_storage_access {
     fi
 
     spark_config_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-defaults.conf"
-    if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"; then
+    if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"  2>/dev/null; then
         pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
         cat >> "$spark_config_file" << EOF
@@ -86,6 +86,16 @@ spark.hadoop.fs.s3a.endpoint                            s3.${AWS_DEFAULT_REGION}
 spark.hadoop.fs.s3a.server-side-encryption-algorithm    AES256
 spark.executor.extraJavaOptions                         -Dcom.amazonaws.services.s3.enableV4=true
 spark.driver.extraJavaOptions                           -Dcom.amazonaws.services.s3.enableV4=true
+EOF
+    fi
+
+    spark_env_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-env.sh"
+    if grep -q "AWS_" "$spark_env_file" 2>/dev/null; then
+        pipe_log_warn "Spark environment file at $spark_env_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+    else
+        cat >> "$spark_env_file" << EOF
+AWS_ACCESS_KEY_ID="${!key_id_var_name}"
+AWS_SECRET_ACCESS_KEY="${!access_key_var_name}"
 EOF
     fi
 
