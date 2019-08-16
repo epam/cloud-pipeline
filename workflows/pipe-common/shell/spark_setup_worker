@@ -30,7 +30,7 @@ else
     MASTER_NAME=${MASTER_INFO[-2]}
 
     if [ "$_MASTER_AWAIT_RESULT" -ne 0 ]; then
-        pipe_log_error "Failed to install Spark worker. Unable to get master information" "$SPARK_WORKER_SETUP_TASK"
+        pipe_log_fail "Failed to install Spark worker. Unable to get master information" "$SPARK_WORKER_SETUP_TASK"
         exit 1
     fi
 
