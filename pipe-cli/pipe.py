@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import click
 import requests
 import sys
@@ -22,7 +21,7 @@ from src.api.cluster import Cluster
 from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
 from src.api.user import User
-from src.config import Config, ConfigNotFoundError, silent_print_config_info
+from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
@@ -32,6 +31,7 @@ from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
 from src.utilities.ssh_operations import run_ssh
+from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -1092,6 +1092,24 @@ def ssh(ctx, run_id):
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
+
+
+@cli.command(name='update')
+@click.argument('path', required=False)
+@Config.validate_access_token
+def update_cli_version(path):
+    """
+    Install latest Cloud Pipeline CLI version.
+    :param path: the API URL path to download Cloud Pipeline CLI source
+    """
+    if is_frozen():
+        try:
+            UpdateCLIVersionManager(path).update()
+        except Exception as e:
+            click.echo("Error: %s" % e.message, err=True)
+    else:
+        click.echo("Updating Cloud Pipeline CLI is not available")
+
 
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
