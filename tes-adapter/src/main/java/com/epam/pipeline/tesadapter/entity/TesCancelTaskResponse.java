@@ -1,10 +1,9 @@
 package com.epam.pipeline.tesadapter.entity;
 
-import java.util.Objects;
 import io.swagger.annotations.ApiModel;
 import org.springframework.validation.annotation.Validated;
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+
+import java.util.Objects;
 
 /**
  * CancelTaskResponse describes a response from the CancelTask endpoint.

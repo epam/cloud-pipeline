@@ -1,8 +1,7 @@
 package com.epam.pipeline.tesadapter.entity;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * Gets or Sets tesFileType

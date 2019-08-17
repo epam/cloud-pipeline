@@ -1,10 +1,11 @@
 package com.epam.pipeline.tesadapter.entity;
 
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.Objects;
 
 /**
  * OutputFileLog describes a single output file. This describes file details after the task has completed successfully, for logging purposes.
