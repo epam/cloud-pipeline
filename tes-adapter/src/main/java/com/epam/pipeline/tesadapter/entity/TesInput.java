@@ -1,11 +1,12 @@
 package com.epam.pipeline.tesadapter.entity;
 
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.springframework.validation.annotation.Validated;
+
 import javax.validation.Valid;
+import java.util.Objects;
 
 /**
  * Input describes Task input files.

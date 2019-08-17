@@ -1,10 +1,11 @@
 package com.epam.pipeline.tesadapter.entity;
 
-import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.Objects;
 
 /**
  * CreateTaskResponse describes a response from the CreateTask endpoint.
