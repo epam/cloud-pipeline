@@ -276,6 +276,10 @@ fi
 # Add the master's URL to the config
 [ -f "$spark_config_file" ] && sed -i '/spark.master/d' "$spark_config_file"
 echo "spark.master $spark_master_url" >> "$spark_config_file"
+export SPARK_MASTER="$spark_master_url"
+if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
+    echo "export SPARK_MASTER=$SPARK_MASTER" >> "$CP_ENV_FILE_TO_SOURCE"
+fi    
 
 pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
 
