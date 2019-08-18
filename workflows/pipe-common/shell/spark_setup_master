@@ -200,7 +200,7 @@ fi
 export SPARK_HOME="$CP_CAP_SPARK_INSTALL_DIR"
 if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
     echo "export SPARK_HOME=$SPARK_HOME" >> "$CP_ENV_FILE_TO_SOURCE"
-    echo "export PATH=\$PATH:$CP_CAP_SPARK_INSTALL_DIR/bin" >> "$CP_ENV_FILE_TO_SOURCE"
+    echo "export PATH=\${PATH}:$CP_CAP_SPARK_INSTALL_DIR/bin" >> "$CP_ENV_FILE_TO_SOURCE"
 fi
 
 pipe_log_info "Spark installed into $CP_CAP_SPARK_INSTALL_DIR" "$SPARK_MASTER_SETUP_TASK"
