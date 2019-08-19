@@ -5,6 +5,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import Icon from '../shared/icon';
+import displaySize from '../../utilities/display-size';
 import {parse} from '../../utilities/query-parameters';
 import {ListDirectory} from '../../models';
 import {
@@ -28,7 +29,6 @@ import styles from './browser.css';
 class Browser extends React.Component {
   state = {
     disabled: false,
-    activeTasks: [],
   };
 
   blockingOperation = fn => (...opts) => {
@@ -52,12 +52,6 @@ class Browser extends React.Component {
     } else if (item.isFolder) {
       history.push('/');
     }
-  };
-
-  onDownload = async (item, task) => {
-    const {activeTasks} = this.state;
-    activeTasks.push(item);
-    this.setState({activeTasks});
   };
 
   onRemove = async () => {
@@ -137,8 +131,11 @@ class Browser extends React.Component {
                     color="#666"
                   />
                 </td>
-                <td>
+                <td className={styles.name}>
                   {element.name}
+                </td>
+                <td className={styles.size}>
+                  {displaySize(element.size)}
                 </td>
                 <td
                   className={styles.actions}
@@ -146,7 +143,6 @@ class Browser extends React.Component {
                   <DownloadAction
                     disabled={disabled}
                     item={element}
-                    callback={this.blockingOperation(this.onDownload)}
                   />
                   <RemoveAction
                     disabled={disabled}

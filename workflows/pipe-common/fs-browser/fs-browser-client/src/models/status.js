@@ -31,7 +31,7 @@ export default class Status extends Remote {
         this.value.status = Statuses.success;
         this.value.result = {
           expires: dateFns.format(new Date(), 'YYYY-MM-DD HH:mm:ss.SSS'),
-          url: '',
+          url: 'download url',
         };
       } else if (this.fetchIndex > 3) {
         this.value.status = Statuses.running;

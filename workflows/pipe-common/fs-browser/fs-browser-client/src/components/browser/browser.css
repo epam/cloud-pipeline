@@ -9,6 +9,11 @@
 
 .table tr.item {
   line-height: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table tr.item:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.025);
 }
 
 .table.disabled td {
@@ -19,7 +24,8 @@ tr.item.folder {
   cursor: pointer;
 }
 
-tr.item:hover {
+tr.item:hover,
+tr.item:nth-child(even):hover {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
@@ -30,6 +36,12 @@ tr.item.folder:hover {
 .table .icon {
   width: 20px;
   vertical-align: middle;
+}
+
+.table .name {
+  width: 1px;
+  min-width: 200px;
+  white-space: nowrap;
 }
 
 .table .icon div {

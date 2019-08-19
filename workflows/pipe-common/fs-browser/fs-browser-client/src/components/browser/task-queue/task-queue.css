@@ -98,7 +98,15 @@
   background-color: rgba(0, 0, 0, 0.05);
 }
 
-.task.downloadable:hover {
+.name-container {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.task.downloadable .name-container:hover {
   cursor: pointer;
   text-decoration: underline;
   color: #1890ff;
@@ -112,4 +120,8 @@
 
 .task.downloadable .download {
   display: initial;
+}
+
+.task .clear {
+
 }

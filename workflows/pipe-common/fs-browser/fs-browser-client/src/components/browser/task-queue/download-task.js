@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
 import StatusIcon from './status-icon';
+import Icon from '../../shared/icon';
 import autoDownloadFile from '../../../models/utilities/auto-download-file';
 import styles from './task-queue.css';
 
@@ -30,6 +31,13 @@ class DownloadTask extends React.Component {
     }
   };
 
+  clear = () => {
+    const {manager, task} = this.props;
+    if (manager) {
+      manager.removeTask(task);
+    }
+  };
+
   render() {
     const {task} = this.props;
     if (!task || !task.item || (task.downloadUrl && task.activeSession)) {
@@ -46,21 +54,30 @@ class DownloadTask extends React.Component {
             },
           )
         }
-        onClick={task.downloadUrl && !task.activeSession ? this.download : null}
       >
         <div
-          className={styles.name}
+          className={styles.nameContainer}
+          onClick={task.downloadUrl && !task.activeSession ? this.download : null}
         >
-          <StatusIcon
-            status={task.loaded ? task.value.status : null}
-          />
-          {itemName(task.item.path)}
+          <div
+            className={styles.name}
+          >
+            <StatusIcon
+              status={task.loaded ? task.value.status : null}
+            />
+            {itemName(task.item.path)}
+          </div>
+          <span
+            className={styles.download}
+          >
+            Download
+          </span>
         </div>
-        <span
-          className={styles.download}
-        >
-          Download
-        </span>
+        <Icon
+          type="close"
+          className={styles.clear}
+          onClick={this.clear}
+        />
       </div>
     );
   }
