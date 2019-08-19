@@ -282,6 +282,12 @@ if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
     echo "export SPARK_MASTER=$SPARK_MASTER" >> "$CP_ENV_FILE_TO_SOURCE"
 fi    
 
+# Fix permissions for the SPARK_HOME
+# If the SPARK_HOME is located in the LFS mountpoint - ACLs are ignored: https://github.com/lizardfs/lizardfs/issues/816
+if [ "$OWNER" ]; then
+    chown "$OWNER" "$SPARK_HOME" -R
+fi
+
 pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
 
 # Add a current master as a worker (if not restricted)
