@@ -186,9 +186,10 @@ pipe_log_info "Installing Spark $CP_CAP_SPARK_VERSION using $CP_CAP_SPARK_DIST_U
 
 install_tmp="$(mktemp -d)"
 
+# "--no-same-owner" is used to keep current user's ownership. Otherwise extracted directory will have owner/group IDs from the archive
 cd $install_tmp && \
 curl -s "$CP_CAP_SPARK_DIST_URL" -o spark.tar.gz && \
-tar -zxf spark.tar.gz && \
+tar -zxf spark.tar.gz --no-same-owner && \
 rm -f spark.tar.gz && \
 mv spark* "$CP_CAP_SPARK_INSTALL_DIR"
 
@@ -212,6 +213,7 @@ if ! jq --version > /dev/null 2>&1; then
     chmod +x /usr/bin/jq
 fi
 
+# FIXME: java 8 for SPARK shall be installed even if other java already exists
 # Install java
 if ! java -version > /dev/null 2>&1; then
     export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-1.8.0_222}"
@@ -224,7 +226,7 @@ if ! java -version > /dev/null 2>&1; then
     
     cd $install_tmp && \
     curl -s "$CP_CAP_SPARK_JAVA_DIST_URL" -o openjdk.tar.gz && \
-    tar -zxf openjdk.tar.gz && \
+    tar -zxf openjdk.tar.gz --no-same-owner && \
     rm -f openjdk.tar.gz && \
     mv *jdk* "$JAVA_HOME"
 
