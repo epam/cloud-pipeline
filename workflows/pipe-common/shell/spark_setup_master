@@ -241,7 +241,7 @@ if ! java -version > /dev/null 2>&1 || [ ! -d "$JAVA_HOME" ]; then
 
     if [ -f "$CP_ENV_FILE_TO_SOURCE" ]; then
         echo "export JAVA_HOME=$JAVA_HOME" >> "$CP_ENV_FILE_TO_SOURCE"
-        echo "export PATH=\$PATH:$JAVA_HOME/bin" >> "$CP_ENV_FILE_TO_SOURCE"
+        echo "export PATH=\${PATH}:$JAVA_HOME/bin" >> "$CP_ENV_FILE_TO_SOURCE"
     fi
 
     pipe_log_info "JAVA installed into $JAVA_HOME" "$SPARK_MASTER_SETUP_TASK"
