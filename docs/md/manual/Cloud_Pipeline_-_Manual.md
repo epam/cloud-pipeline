@@ -64,6 +64,7 @@
     - [14.2. View and manage Attributes via CLI](14_CLI/14.2._View_and_manage_Attributes_via_CLI.md)
     - [14.3. Manage Storage via CLI](14_CLI/14.3._Manage_Storage_via_CLI.md)
     - [14.4. View and manage Permissions via CLI](14_CLI/14.4._View_and_manage_Permissions_via_CLI.md)
+    - [14.5. Manage pipeline executions via CLI](14_CLI/14.5._Manage_pipeline_executions_via_CLI.md)
 - [15. Interactive services](15_Interactive_services/15._Interactive_services.md)
     - [15.1 Starting an Interactive application](15_Interactive_services/15.1_Starting_an_Interactive_application.md)
     - [15.2 Using Terminal access](15_Interactive_services/15.2_Using_Terminal_access.md)

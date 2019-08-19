@@ -89,6 +89,7 @@ nav:
     - 14.2. View and manage Attributes: 'manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI.md'
     - 14.3. Manage Data Storage: 'manual/14_CLI/14.3._Manage_Storage_via_CLI.md'
     - 14.4. View and manage Permissions: 'manual/14_CLI/14.4._View_and_manage_Permissions_via_CLI.md'
+    - 14.5. Manage pipeline executions: 'manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md'
   - 15. Interactive services:
     - 15.0. Overview: 'manual/15_Interactive_services/15._Interactive_services.md'
     - 15.1. Starting an interactive application: 'manual/15_Interactive_services/15.1_Starting_an_Interactive_application.md'
