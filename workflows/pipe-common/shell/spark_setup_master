@@ -213,9 +213,8 @@ if ! jq --version > /dev/null 2>&1; then
     chmod +x /usr/bin/jq
 fi
 
-# FIXME: java 8 for SPARK shall be installed even if other java already exists
 # Install java
-if ! java -version > /dev/null 2>&1; then
+if ! java -version > /dev/null 2>&1 || [ ! -d "$JAVA_HOME" ]; then
     export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-1.8.0_222}"
     export CP_CAP_SPARK_JAVA_DIST_URL="${CP_CAP_SPARK_JAVA_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/openjdk-${CP_CAP_SPARK_JAVA_VERSION}_linux-x64_bin.tar.gz}"
 
