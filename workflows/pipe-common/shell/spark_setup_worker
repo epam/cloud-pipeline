@@ -44,7 +44,7 @@ export CP_CAP_SPARK_INSTALL_DIR="${CP_CAP_SPARK_INSTALL_DIR:-/common/spark}"
 export CP_CAP_SPARK_WORKER_CORES="${CP_CAP_SPARK_WORKER_CORES:-$(nproc)}"
 
 
-if ! java -version > /dev/null 2>&1; then
+if ! java -version > /dev/null 2>&1 || [ ! -d "$JAVA_HOME" ]; then
     export JAVA_HOME="$CP_CAP_SPARK_INSTALL_DIR/jdk"
     export PATH="$JAVA_HOME/bin:$PATH"
     pipe_log_info "JAVA is not loaded, will try to get the master's jdk from $JAVA_HOME" "$SPARK_WORKER_SETUP_TASK"
