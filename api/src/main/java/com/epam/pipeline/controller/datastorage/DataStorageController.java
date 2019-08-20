@@ -23,7 +23,7 @@ import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.entity.AbstractSecuredEntityWithAction;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -442,7 +442,7 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<AbstractSecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
+    public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
             @RequestBody DataStorageVO dataStorageVO,
             @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud) {
         return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud));

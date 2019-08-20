@@ -21,7 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.entity.AbstractSecuredEntityWithAction;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -207,7 +207,7 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public AbstractSecuredEntityWithAction<AbstractDataStorage> create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
+    public SecuredEntityWithAction<AbstractDataStorage> create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true);
     }
 

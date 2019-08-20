@@ -25,7 +25,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AbstractSecuredEntityWithAction<T extends AbstractSecuredEntity> {
+public class SecuredEntityWithAction<T extends AbstractSecuredEntity> {
 
     @JsonUnwrapped
     private T entity;

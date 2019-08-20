@@ -23,7 +23,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.AbstractSecuredEntityWithAction;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -248,10 +248,10 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public AbstractSecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
-                                                                       final Boolean proceedOnCloud,
-                                                                       final Boolean checkExistence,
-                                                                       final boolean replaceStoragePath)
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final Boolean proceedOnCloud,
+                                                               final Boolean checkExistence,
+                                                               final boolean replaceStoragePath)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -273,7 +273,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
-        final AbstractSecuredEntityWithAction<AbstractDataStorage> createdStorage = new AbstractSecuredEntityWithAction<>();
+        final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
