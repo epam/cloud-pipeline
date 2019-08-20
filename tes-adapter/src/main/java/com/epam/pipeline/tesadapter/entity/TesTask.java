@@ -5,52 +5,44 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
-import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 
 @ApiModel(description = "Task describes an instance of a task.")
 @Data
 public class TesTask {
     @ApiModelProperty(value = "Task identifier assigned by the server.")
     @JsonProperty("id")
-    private String id = null;
+    private String id;
 
     @ApiModelProperty(value = "")
-    @Valid
     @JsonProperty("state")
-    private TesState state = null;
+    private TesState state;
 
     @ApiModelProperty(value = "")
     @JsonProperty("name")
-    private String name = null;
+    private String name;
 
     @ApiModelProperty(value = "")
     @JsonProperty("description")
-    private String description = null;
+    private String description;
 
     @ApiModelProperty(value = "Input files. Inputs will be downloaded and mounted into the executor container.")
     @JsonProperty("inputs")
-    @Valid
-    private List<TesInput> inputs = null;
+    private List<TesInput> inputs;
 
-    @ApiModelProperty(value = "Output files. Outputs will be uploaded from the executor container to long-term storage.")
+    @ApiModelProperty(value = "Output files. Outputs will be uploaded from the executor container " +
+            "to long-term storage.")
     @JsonProperty("outputs")
-    @Valid
-    private List<TesOutput> outputs = null;
+    private List<TesOutput> outputs;
 
     @ApiModelProperty(value = "Request that the task be run with these resources.")
     @JsonProperty("resources")
-    @Valid
-    private TesResources resources = null;
+    private TesResources resources;
 
     @ApiModelProperty(value = "A list of executors to be run, sequentially. Execution stops on the first error.")
     @JsonProperty("executors")
-    @Valid
-    private List<TesExecutor> executors = null;
+    private List<TesExecutor> executors;
 
     @ApiModelProperty(value = "Volumes are directories which may be used to share data between Executors. " +
             "Volumes are initialized as empty directories by the system when the task starts and are mounted " +
@@ -59,22 +51,20 @@ public class TesTask {
             "(Essentially, this translates to a `docker run -v` flag where the container path is the same " +
             "for each executor).")
     @JsonProperty("volumes")
-    @Valid
-    private List<String> volumes = null;
+    private List<String> volumes;
 
     @ApiModelProperty(value = "A key-value map of arbitrary tags.")
     @JsonProperty("tags")
-    @Valid
-    private Map<String, String> tags = null;
+    private Map<String, String> tags;
+
     @ApiModelProperty(value = "Task logging information. Normally, this will contain only one entry, but in the" +
             " case where a task fails and is retried, an entry will be appended to this list.")
     @JsonProperty("logs")
-    @Valid
-    private List<TesTaskLog> logs = null;
+    private List<TesTaskLog> logs;
 
     @ApiModelProperty(value = "Date + time the task was created, in RFC 3339 format. This is set by the system, " +
             "not the client.")
     @JsonProperty("creation_time")
-    private String creationTime = null;
+    private String creationTime;
 }
 
