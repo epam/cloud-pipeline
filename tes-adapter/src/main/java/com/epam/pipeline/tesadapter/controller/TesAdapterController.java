@@ -9,8 +9,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TesAdapterController {
-    @Autowired
+  
     private TesTaskService tesTaskService;
+  
+    @Autowired
+    public TesAdapterController(TesTaskService tesTaskService) {
+        this.tesTaskService = tesTaskService;
+    }
 
     @GetMapping("/v1/tasks/service-info")
     public ResponseEntity<String> serviceInfo() {
