@@ -108,11 +108,24 @@ function setup_object_storage_access {
         pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
         cat >> "$spark_config_file" << EOF
+# S3A config
 spark.hadoop.fs.s3a.impl                                org.apache.hadoop.fs.s3a.S3AFileSystem
 spark.hadoop.fs.s3a.endpoint                            s3.${AWS_DEFAULT_REGION}.amazonaws.com
 spark.hadoop.fs.s3a.server-side-encryption-algorithm    AES256
 spark.executor.extraJavaOptions                         -Dcom.amazonaws.services.s3.enableV4=true
 spark.driver.extraJavaOptions                           -Dcom.amazonaws.services.s3.enableV4=true
+
+# Parquet I/O Settings (https://spark.apache.org/docs/2.4.3/cloud-integration.html#parquet-io-settings)
+spark.hadoop.parquet.enable.summary-metadata            false
+spark.sql.parquet.mergeSchema                           false
+spark.sql.parquet.filterPushdown                        true
+spark.sql.hive.metastorePartitionPruning                true
+
+# ORC I/O Settings (https://spark.apache.org/docs/2.4.3/cloud-integration.html#orc-io-settings)
+spark.sql.orc.filterPushdown                            true
+spark.sql.orc.splits.include.file.footer                true
+spark.sql.orc.cache.stripe.details.size                 10000
+spark.sql.hive.metastorePartitionPruning                true
 EOF
     fi
 
