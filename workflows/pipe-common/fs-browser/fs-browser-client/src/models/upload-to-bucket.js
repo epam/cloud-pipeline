@@ -9,7 +9,7 @@ export default class UploadToBucket extends Remote {
     super();
     this.url = url;
     this.file = file;
-    this.fetch();
+    this.name = file.name;
   }
 
   static async wait(seconds) {
@@ -25,8 +25,8 @@ export default class UploadToBucket extends Remote {
         this._pending = true;
         try {
           await defer();
-          for (let i = 0; i < 60; i++) {
-            this.percent = i / 60.0;
+          for (let i = 0; i < 20; i++) {
+            this.percent = i / 20.0;
             await UploadToBucket.wait(1);
           }
           this.percent = 1.0;

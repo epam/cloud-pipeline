@@ -4,13 +4,11 @@ import {observer} from 'mobx-react';
 import {message} from 'antd';
 import classNames from 'classnames';
 import StatusIcon from './status-icon';
-import itemName from './item-name';
 import Icon from '../../shared/icon';
-import autoDownloadFile from '../../../models/utilities/auto-download-file';
 import styles from './task-queue.css';
 
 @observer
-class DownloadTask extends React.Component {
+class UploadToBucketTask extends React.Component {
   static propTypes = {
     // eslint-disable-next-line
     manager: PropTypes.object,
@@ -23,14 +21,6 @@ class DownloadTask extends React.Component {
     task: null,
   };
 
-  download = () => {
-    const {manager, task} = this.props;
-    autoDownloadFile(itemName(task.item.path), task.downloadUrl);
-    if (manager) {
-      manager.removeTask(task);
-    }
-  };
-
   clear = async () => {
     const {manager, task} = this.props;
     if (manager) {
@@ -41,26 +31,47 @@ class DownloadTask extends React.Component {
     }
   };
 
-  render() {
+  renderProgress = () => {
     const {task} = this.props;
-    if (!task || !task.item || (task.downloadUrl && task.activeSession)) {
+    if (!task || !task.item) {
       return null;
     }
     return (
       <div
         className={
           classNames(
-            styles.task,
+            styles.progress,
             {
-              [styles.downloadable]: task.downloadUrl && !task.activeSession,
+              [styles.done]: task.loaded,
+              [styles.error]: !!task.error,
             },
           )
         }
+        style={{width: `${task.percent * 100}%`}}
       >
+        {'\u00A0'}
+      </div>
+    );
+  };
+
+  render() {
+    const {task} = this.props;
+    if (!task || !task.item) {
+      return null;
+    }
+    return (
+      // eslint-disable-next-line
+      <div
+        className={
+          classNames(
+            styles.task,
+          )
+        }
+      >
+        {this.renderProgress()}
         {/* eslint-disable-next-line */}
         <div
           className={styles.nameContainer}
-          onClick={task.downloadUrl && !task.activeSession ? this.download : null}
         >
           <div
             className={styles.name}
@@ -68,13 +79,8 @@ class DownloadTask extends React.Component {
             <StatusIcon
               status={task.loaded ? task.value.status : null}
             />
-            {itemName(task.item.path)}
+            {task.name}
           </div>
-          <span
-            className={styles.download}
-          >
-            Download
-          </span>
         </div>
         <Icon
           type="close"
@@ -86,4 +92,4 @@ class DownloadTask extends React.Component {
   }
 }
 
-export default DownloadTask;
+export default UploadToBucketTask;

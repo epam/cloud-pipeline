@@ -2,6 +2,7 @@ import {
   computed,
   observable,
 } from 'mobx';
+import CancelTask from './cancel';
 import TaskStatus, {Statuses as TaskStatuses} from './status';
 import Download from './download';
 import Upload from './upload';
@@ -17,7 +18,7 @@ const isRunning = status => [
 ].indexOf(status) >= 0;
 
 function localStorageFilter(task) {
-  return task.type !== 'upload-to-bucket';
+  return task.type === 'download';
 }
 
 class Task extends TaskStatus {
@@ -85,9 +86,18 @@ class Task extends TaskStatus {
 }
 
 class UploadToBucketTask extends UploadToBucket {
-  constructor(id, url, file) {
+  constructor(id, path, url, file) {
     super(id, url, file);
-    // this.item =
+    this.id = id;
+    this.item = {path, type: 'upload-to-bucket'};
+  }
+}
+
+class UploadTask extends Upload {
+  constructor(id, path) {
+    super(id);
+    this.id = id;
+    this.item = {path, type: 'upload'};
   }
 }
 
@@ -136,7 +146,15 @@ class TaskManager {
     if (request.error) {
       return request.error;
     }
-    const task = new UploadToBucket(request.value.task, request.value.url.url, file);
+    const task = new UploadToBucketTask(request.value.task, path, request.value.url.url, file);
+    task.fetch().then(() => {
+      if (task.loaded) {
+        this.removeTask(task);
+        const uploadTask = new UploadTask(request.value.task, path);
+        this.items.push(uploadTask);
+        uploadTask.fetch();
+      }
+    });
     this.items.push(task);
     return null;
   };
@@ -148,6 +166,16 @@ class TaskManager {
       this.items.splice(index, 1);
       localStorage.setItem('TASKS', JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)));
     }
+  };
+
+  cancelTask = async (task) => {
+    const request = new CancelTask(task.id);
+    await request.fetch();
+    if (request.error) {
+      return request.error;
+    }
+    this.removeTask(task);
+    return null;
   }
 }
 

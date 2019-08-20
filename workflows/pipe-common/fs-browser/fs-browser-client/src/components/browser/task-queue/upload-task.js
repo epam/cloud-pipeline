@@ -6,11 +6,11 @@ import classNames from 'classnames';
 import StatusIcon from './status-icon';
 import itemName from './item-name';
 import Icon from '../../shared/icon';
-import autoDownloadFile from '../../../models/utilities/auto-download-file';
 import styles from './task-queue.css';
+import {TaskStatuses} from '../../../models';
 
 @observer
-class DownloadTask extends React.Component {
+class UploadTask extends React.Component {
   static propTypes = {
     // eslint-disable-next-line
     manager: PropTypes.object,
@@ -23,12 +23,15 @@ class DownloadTask extends React.Component {
     task: null,
   };
 
-  download = () => {
-    const {manager, task} = this.props;
-    autoDownloadFile(itemName(task.item.path), task.downloadUrl);
-    if (manager) {
-      manager.removeTask(task);
+  getTaskStatus = () => {
+    const {task} = this.props;
+    if (!task || task.pending) {
+      return TaskStatuses.running;
     }
+    if (task.error) {
+      return TaskStatuses.failure;
+    }
+    return TaskStatuses.success;
   };
 
   clear = async () => {
@@ -43,38 +46,30 @@ class DownloadTask extends React.Component {
 
   render() {
     const {task} = this.props;
-    if (!task || !task.item || (task.downloadUrl && task.activeSession)) {
+    if (!task || !task.item) {
       return null;
     }
     return (
+      // eslint-disable-next-line
       <div
         className={
           classNames(
             styles.task,
-            {
-              [styles.downloadable]: task.downloadUrl && !task.activeSession,
-            },
           )
         }
       >
         {/* eslint-disable-next-line */}
         <div
           className={styles.nameContainer}
-          onClick={task.downloadUrl && !task.activeSession ? this.download : null}
         >
           <div
             className={styles.name}
           >
             <StatusIcon
-              status={task.loaded ? task.value.status : null}
+              status={this.getTaskStatus()}
             />
             {itemName(task.item.path)}
           </div>
-          <span
-            className={styles.download}
-          >
-            Download
-          </span>
         </div>
         <Icon
           type="close"
@@ -86,4 +81,4 @@ class DownloadTask extends React.Component {
   }
 }
 
-export default DownloadTask;
+export default UploadTask;

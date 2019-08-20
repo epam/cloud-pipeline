@@ -27,8 +27,8 @@ class Upload extends React.Component {
       promises.push(taskManager.upload(`${path}/${file.name}`, file));
     }
     const errors = await Promise.all(promises);
-    if (errors.length) {
-      message.error(errors.join('\n'), 5);
+    if (errors.filter(Boolean).length) {
+      message.error(errors.filter(Boolean).join('\n'), 5);
     }
   };
 

@@ -86,6 +86,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .task .name {
@@ -104,6 +105,7 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  z-index: 1;
 }
 
 .task.downloadable .name-container:hover {
@@ -124,4 +126,25 @@
 
 .task .clear {
 
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  background-color: #1890ff;
+  height: 2px;
+  -webkit-transition: width 250ms;
+  -moz-transition: width 250ms;
+  -ms-transition: width 250ms;
+  -o-transition: width 250ms;
+  transition: width 250ms;
+}
+
+.progress.done {
+  display: none;
+}
+
+.progress.error {
+  background-color: red;
 }

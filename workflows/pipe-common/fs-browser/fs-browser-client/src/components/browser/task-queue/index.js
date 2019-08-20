@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import Icon from '../../shared/icon';
-import DownloadTask from './download-task';
+import Task from './task';
 import styles from './task-queue.css';
 
 @inject('taskManager')
@@ -79,7 +79,7 @@ class TaskQueue extends React.Component {
           {
             taskManager.items
             && taskManager.items.map(item => (
-              <DownloadTask
+              <Task
                 key={item.id}
                 manager={taskManager}
                 task={item}
