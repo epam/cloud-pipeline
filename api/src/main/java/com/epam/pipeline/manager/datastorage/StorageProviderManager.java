@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -73,6 +74,10 @@ public final class StorageProviderManager {
 
     public String createBucket(AbstractDataStorage dataStorage) throws DataStorageException {
         return getStorageProvider(dataStorage).createStorage(dataStorage);
+    }
+
+    public ActionStatus postCreationProcessing(final AbstractDataStorage dataStorage) {
+        return getStorageProvider(dataStorage).postCreationProcessing(dataStorage);
     }
 
     public void deleteBucket(AbstractDataStorage dataStorage) throws DataStorageException {

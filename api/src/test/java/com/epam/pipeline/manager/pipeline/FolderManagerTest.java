@@ -215,7 +215,7 @@ public class FolderManagerTest extends AbstractSpringTest {
                 STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         Pipeline pipeline = pipelineManager.create(pipelineVO);
-        AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false);
+        AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
 
         pipelineVO.setId(pipeline.getId());
         pipelineVO.setParentFolderId(null);
@@ -295,7 +295,7 @@ public class FolderManagerTest extends AbstractSpringTest {
                 STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         Pipeline pipeline = pipelineManager.create(pipelineVO);
-        AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false);
+        AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
 
         Folder loaded = folderManager.load(folder.getId());
         Pipeline loadedPipe = loaded.getPipelines().get(0);
@@ -408,7 +408,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         storagePolicy.setBackupDuration(BACKUP_DURATION);
         dataStorageVO.setStoragePolicy(storagePolicy);
         dataStorageVO.setRegionId(cloudRegion.getId());
-        AbstractDataStorage expectedDataStorage = dataStorageManager.create(dataStorageVO, true, true, false);
+        AbstractDataStorage expectedDataStorage = dataStorageManager.create(dataStorageVO, true, true, false)
+                .getEntity();
 
         Folder childSourceFolder = new Folder();
         childSourceFolder.setName(CHILD_FOLDER_TO_CLONE);

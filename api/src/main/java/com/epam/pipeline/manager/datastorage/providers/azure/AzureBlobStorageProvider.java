@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -58,6 +59,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public String createStorage(final AzureBlobStorage storage) {
         return getAzureStorageHelper(storage).createBlobStorage(storage);
+    }
+
+    @Override
+    public ActionStatus postCreationProcessing(final AzureBlobStorage storage) {
+        return ActionStatus.notSupported();
     }
 
     @Override
