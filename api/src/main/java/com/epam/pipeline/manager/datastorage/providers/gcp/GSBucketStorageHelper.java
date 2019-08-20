@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -107,7 +108,6 @@ public class GSBucketStorageHelper {
                 .setStorageClass(StorageClass.REGIONAL)
                 .setLocation(trimRegionZone(region.getRegionCode()))
                 .build());
-        applyIamPolicy(storage, client);
         return bucket.getName();
     }
 
@@ -444,7 +444,9 @@ public class GSBucketStorageHelper {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void applyIamPolicy(final GSBucketStorage storage, final Storage client) {
+    public ActionStatus applyIamPolicy(final GSBucketStorage storage) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
         if (StringUtils.isNotBlank(region.getPolicy())) {
             try {
                 final Policy currentPolicy = client.getIamPolicy(storage.getPath());
@@ -452,8 +454,10 @@ public class GSBucketStorageHelper {
                         buildIamPolicy(MapUtils.emptyIfNull(currentPolicy.getBindings())));
             } catch(Exception e) {
                 log.error(e.getMessage(), e);
+                return ActionStatus.error(e.getMessage());
             }
         }
+        return ActionStatus.success();
     }
 
     private Policy buildIamPolicy(final Map<Role, Set<Identity>> currentPolicy) {
