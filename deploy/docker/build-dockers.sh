@@ -252,13 +252,12 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="3-latest"
 
 # JupyterLab
+# Python2 version is not built due to https://github.com/jupyterlab/jupyterlab/issues/2096 (Python2 support is dropped since JupyterLab 0.33)
 ## - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-2-${DOCKERS_VERSION}" "library/jupyter-lab:conda-2" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-2-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="2-latest" --build-arg WITH_GIT_PLUGIN=NO
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-3-${DOCKERS_VERSION}" "library/jupyter-lab:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-${DOCKERS_VERSION}" "library/jupyter-lab:latest" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
 
 ## - CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-2-cuda9-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-2-cuda9" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-2-cuda9-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="2-latest" --build-arg WITH_GIT_PLUGIN=NO
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-3-cuda9-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-3-cuda9" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-3-cuda9-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-cuda9-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-cuda9-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
 
