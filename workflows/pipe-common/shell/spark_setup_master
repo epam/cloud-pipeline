@@ -192,6 +192,7 @@ export CP_CAP_SPARK_HOST="${CP_CAP_SPARK_HOST:-$(hostname)}"
 export CP_CAP_SPARK_PORT="${CP_CAP_SPARK_PORT:-7077}"
 export CP_CAP_SPARK_UI_PORT="${CP_CAP_SPARK_UI_PORT:-8087}"
 export CP_CAP_SPARK_UI_PROXY_PORT="${CP_CAP_SPARK_UI_PROXY_PORT:-8088}"
+export CP_CAP_SPARK_UI_PROXY_ENDPOINT_ID="${CP_CAP_SPARK_UI_PROXY_ENDPOINT_ID:-1000}"
 
 rm -rf "$CP_CAP_SPARK_INSTALL_DIR"
 mkdir -p "$(dirname $CP_CAP_SPARK_INSTALL_DIR)"
@@ -304,6 +305,8 @@ if [ "$OWNER" ]; then
 fi
 
 # Configure Spark UI proxy
+# Construct EDGE-compatible URL prefix for the proxy, e.g. /pipeline-1111-8088-1000/
+export URL_PREFIX="/$(hostname)-${CP_CAP_SPARK_UI_PROXY_PORT}-${CP_CAP_SPARK_UI_PROXY_ENDPOINT_ID}/"
 nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/shell/spark_setup_ui \
         "${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_UI_PORT}" \
         "${CP_CAP_SPARK_UI_PROXY_PORT}" > /dev/null 2>&1 &
