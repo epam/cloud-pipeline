@@ -196,8 +196,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                                 is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                                 additional = endpoint["nginx"].get("additional", "")
-                                                custom_endpoint_num = int(endpoint["endpoint_num"]) if "endpoint_num" in endpoint.keys() else i
-                                                if not pretty_url:
+                                                has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
+                                                custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
+                                                if not pretty_url or has_explicit_endpoint_num:
                                                         edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                                 else:
                                                         if endpoints_count == 1:
