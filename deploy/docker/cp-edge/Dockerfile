@@ -40,10 +40,12 @@ RUN yum install -y  pcre-devel \
                     perl-Digest-MD5
 
 RUN cd /tmp && \
-    git clone https://github.com/chobits/ngx_http_proxy_connect_module.git
+    git clone https://github.com/sidoruka/ngx_http_proxy_connect_module.git && \
+    cd ngx_http_proxy_connect_module && \
+    git checkout b41a20b6cb4e38a5cf30369f9a58f1e9d1ff97fc
 
 RUN     cd /tmp && \
-        wget -q https://openresty.org/download/openresty-1.15.8.1.tar.gz && \
+        wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nginx/openresty-1.15.8.1.tar.gz && \
         tar -zxf openresty-1.15.8.1.tar.gz && \
         rm -f openresty-1.15.8.1.tar.gz && \
         cd openresty-1.15.8.1 && \
@@ -53,7 +55,8 @@ RUN     cd /tmp && \
         make install
 
 # Install LUA JWT
-RUN opm get cdbattags/lua-resty-jwt
+# FIXME: fork the distribution
+RUN opm get cdbattags/lua-resty-jwt=0.2.0
 
 # Configure cron and sync reoutes script
 ADD	crontab /etc/cron.d/sync-routes
@@ -82,7 +85,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ## Install node.js
 RUN mkdir -p /etc/ssh-proxy/  && \
     cd /etc/ssh-proxy/ && \
-    wget -q https://nodejs.org/dist/v6.11.3/node-v6.11.3-linux-x64.tar.xz && \
+    wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nodejs/node-v6.11.3-linux-x64.tar.xz && \
     tar xfJ node-v6.11.3-linux-x64.tar.xz && \
     rm -f node-v6.11.3-linux-x64.tar.xz
 
