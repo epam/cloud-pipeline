@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 public class TesTaskServiceImpl implements TesTaskService {
     @Override
     public TesListTasksResponse listTesTask() {
-        TesListTasksResponse tesListTasksResponse = new TesListTasksResponse();
         return new TesListTasksResponse();
     }
 
