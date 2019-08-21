@@ -111,6 +111,35 @@ def run_sids_to_str(run_sids, is_principal):
                 return ""
         return ",".join([shared_sid["name"] for shared_sid in run_sids if shared_sid["isPrincipal"] == is_principal])
 
+# FIXME: once we'll get more than one "system endpoint" - a list of such endpoints shall be moved to the configuration
+SYSTEM_ENDPOINTS={ "CP_CAP_SPARK": { "value": "true", "endpoint": str(os.environ.get("CP_CAP_SPARK_UI_PROXY_PORT", "8088")), "friendly_name": "SparkUI" } }
+def append_system_endpoints(tool_endpoints, run_details):
+        if not tool_endpoints:
+                tool_endpoints = []
+        system_endpoints_params = SYSTEM_ENDPOINTS.keys()
+        if run_details and "pipelineRunParameters" in run_details:
+                # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
+                system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"] 
+                                                if x["name"] in system_endpoints_params 
+                                                   and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
+                                                   and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
+                                                   and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
+
+                # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
+                # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
+                if len(system_endpoints_matched) > 0 and len(tool_endpoints) == 1:
+                        current_tool_endpoint = json.loads(tool_endpoints[0])
+                        current_tool_endpoint["isDefault"] = "true"
+                        tool_endpoints[0] = json.dumps(current_tool_endpoint)
+
+                # Append system endpoints to the existing list
+                for system_endpoint in system_endpoints_matched:
+                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }, "isDefault": "false" }
+                        if "friendly_name" in system_endpoint:
+                                tool_endpoint["name"] = system_endpoint["friendly_name"]
+                        tool_endpoints.append(json.dumps(tool_endpoint))
+        return tool_endpoints 
+
 def get_service_list(pod_id, pod_run_id, pod_ip):
         service_list = {}
         get_run_details_method = os.path.join(api_url, API_GET_RUN_DETAILS.format(run_id=pod_run_id))
@@ -149,6 +178,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                 if endpoints_response and "payload" in endpoints_response and "endpoints" in endpoints_response["payload"]:
                         endpoints_data = endpoints_response["payload"]["endpoints"]
                         if endpoints_data:
+                                # FIXME: at the moment, "system endpoints" are added only to the runs, that already have at least one endpoint defined for the tool
+                                #        it shall be fixed further to allow "system endpoints" enablement for "non-interactive" tools
+                                endpoints_data = append_system_endpoints(endpoints_data, run_info)
                                 endpoints_count = len(endpoints_data)
                                 for i in range(endpoints_count):
                                         endpoint = json.loads(endpoints_data[i])
@@ -363,5 +395,3 @@ for run_id in service_url_dict:
                 print('Service url ({}) assigned to RunID: {}'.format(service_urls_json, run_id))
         else:
                 print('Service url was not assigned due to API errors')
-
-

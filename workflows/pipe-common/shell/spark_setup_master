@@ -190,7 +190,8 @@ export CP_CAP_SPARK_VERSION="${CP_CAP_SPARK_VERSION:-2.4.3}"
 export CP_CAP_SPARK_DIST_URL="${CP_CAP_SPARK_DIST_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/spark/spark-$CP_CAP_SPARK_VERSION.tgz}"
 export CP_CAP_SPARK_HOST="${CP_CAP_SPARK_HOST:-$(hostname)}"
 export CP_CAP_SPARK_PORT="${CP_CAP_SPARK_PORT:-7077}"
-export CP_CAP_SPARK_UI_PORT="${CP_CAP_SPARK_UI_PORT:-8088}"
+export CP_CAP_SPARK_UI_PORT="${CP_CAP_SPARK_UI_PORT:-8087}"
+export CP_CAP_SPARK_UI_PROXY_PORT="${CP_CAP_SPARK_UI_PROXY_PORT:-8088}"
 
 rm -rf "$CP_CAP_SPARK_INSTALL_DIR"
 mkdir -p "$(dirname $CP_CAP_SPARK_INSTALL_DIR)"
@@ -300,6 +301,18 @@ fi
 # If the SPARK_HOME is located in the LFS mountpoint - ACLs are ignored: https://github.com/lizardfs/lizardfs/issues/816
 if [ "$OWNER" ]; then
     chown "$OWNER" "$SPARK_HOME" -R
+fi
+
+# Configure Spark UI proxy
+nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/shell/spark_setup_ui \
+        "${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_UI_PORT}" \
+        "${CP_CAP_SPARK_UI_PROXY_PORT}" > /dev/null 2>&1 &
+spark_setup_ui=$!
+sleep 1
+if ! kill -0 $spark_setup_ui > /dev/null 2>&1; then
+    pipe_log_warn "Spark UI proxy failed to start on port $CP_CAP_SPARK_UI_PROXY_PORT --> ${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_UI_PORT}" "$SPARK_MASTER_SETUP_TASK"
+else
+    pipe_log_info "Spark UI proxy started on port $CP_CAP_SPARK_UI_PROXY_PORT --> ${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_UI_PORT}" "$SPARK_MASTER_SETUP_TASK"
 fi
 
 pipe_log_success "Spark master is started" "$SPARK_MASTER_SETUP_TASK"
