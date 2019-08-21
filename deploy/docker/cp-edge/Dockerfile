@@ -47,7 +47,7 @@ RUN     cd /tmp && \
         tar -zxf openresty-1.15.8.1.tar.gz && \
         rm -f openresty-1.15.8.1.tar.gz && \
         cd openresty-1.15.8.1 && \
-        ./configure --with-stream_ssl_preread_module --add-module=/tmp/ngx_http_proxy_connect_module -j$(nproc) && \
+        ./configure --with-stream_ssl_preread_module --with-http_sub_module --add-module=/tmp/ngx_http_proxy_connect_module -j$(nproc) && \
         patch -d build/nginx-1.15.8/ -p 1 < /tmp/ngx_http_proxy_connect_module/patch/proxy_connect_rewrite_101504.patch && \
         make -j$(nproc) && \
         make install
