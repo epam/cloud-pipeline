@@ -16,7 +16,7 @@ ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
 # JupyterLab
-RUN conda install -c conda-forge jupyterlab -y && \
+RUN conda install -c conda-forge jupyterlab==1.0.7 -y && \
     jupyter serverextension enable --py jupyterlab --sys-prefix
 
 # NodeJS for git plugin
