@@ -39,14 +39,14 @@ public class TesAdapterController {
 
     @GetMapping("/v1/tasks/{id}")
     @ResponseBody
-    ResponseEntity<TesTask> getTesTask(@PathVariable("id") String id) {
+    ResponseEntity<TesTask> getTesTask(@PathVariable String id) {
         tesTaskService.stub();
         return new ResponseEntity<TesTask>(new TesTask(), HttpStatus.NOT_IMPLEMENTED);
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
     @ResponseBody
-    ResponseEntity<TesCancelTaskResponse> cancelTesTask(@PathVariable("id") String id) {
+    ResponseEntity<TesCancelTaskResponse> cancelTesTask(@PathVariable String id) {
         tesTaskService.stub();
         return new ResponseEntity<TesCancelTaskResponse>(new TesCancelTaskResponse(), HttpStatus.NOT_IMPLEMENTED);
     }
