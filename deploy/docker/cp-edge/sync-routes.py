@@ -203,7 +203,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                         if endpoints_count == 1:
                                                                 edge_location = pretty_url
                                                         else:
-                                                                pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(i)
+                                                                pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
                                                                 edge_location = '{}-{}'.format(pretty_url, pretty_url_suffix)
                                                 edge_target = \
                                                         EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
