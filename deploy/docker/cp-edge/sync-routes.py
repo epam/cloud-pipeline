@@ -112,7 +112,11 @@ def run_sids_to_str(run_sids, is_principal):
         return ",".join([shared_sid["name"] for shared_sid in run_sids if shared_sid["isPrincipal"] == is_principal])
 
 # FIXME: once we'll get more than one "system endpoint" - a list of such endpoints shall be moved to the configuration
-SYSTEM_ENDPOINTS={ "CP_CAP_SPARK": { "value": "true", "endpoint": str(os.environ.get("CP_CAP_SPARK_UI_PROXY_PORT", "8088")), "friendly_name": "SparkUI" } }
+SYSTEM_ENDPOINTS={ "CP_CAP_SPARK": { 
+                        "value": "true", 
+                        "endpoint": str(os.environ.get("CP_CAP_SPARK_UI_PROXY_PORT", "8088")), 
+                        "endpoint_num":  str(os.environ.get("CP_CAP_SPARK_UI_PROXY_ENDPOINT_ID", "1000")),
+                        "friendly_name": "SparkUI" }}
 def append_system_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
@@ -137,6 +141,8 @@ def append_system_endpoints(tool_endpoints, run_details):
                         tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }, "isDefault": "false" }
                         if "friendly_name" in system_endpoint:
                                 tool_endpoint["name"] = system_endpoint["friendly_name"]
+                        if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
+                                tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
                         tool_endpoints.append(json.dumps(tool_endpoint))
         return tool_endpoints 
 
@@ -190,8 +196,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                                 is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                                 additional = endpoint["nginx"].get("additional", "")
+                                                custom_endpoint_num = int(endpoint["endpoint_num"]) if "endpoint_num" in endpoint.keys() else i
                                                 if not pretty_url:
-                                                        edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=i)
+                                                        edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                                 else:
                                                         if endpoints_count == 1:
                                                                 edge_location = pretty_url
