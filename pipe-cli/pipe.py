@@ -123,7 +123,7 @@ def echo_title(title, line=True):
 @click.option('-v', '--versions', help='List versions of a pipeline', is_flag=True)
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
-@click.option('-r', '--permissions', help='List user permissions of a pipeline', is_flag=True)
+@click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
 @Config.validate_access_token
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
@@ -248,16 +248,16 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 
 @cli.command(name='view-runs')
 @click.argument('run-id', required=False, type=int)
-@click.option('-s', '--status', help='List pipelines with a specific status [ANY/FAILURE/SUCCESS/STOPPED/RUNNING]')
-@click.option('-df', '--date-from', help='List pipeline runs started after date')
-@click.option('-dt', '--date-to', help='List pipeline runs started before date')
-@click.option('-p', '--pipeline', help='List runs for a specific pipeline type@version')
+@click.option('-s', '--status', help='List pipelines with a specific status [ANY/FAILURE/PAUSED/PAUSING/RESUMING/RUNNING/STOPPED/SUCCESS]')
+@click.option('-df', '--date-from', help='List pipeline runs started after specified date')
+@click.option('-dt', '--date-to', help='List pipeline runs started before specified date')
+@click.option('-p', '--pipeline', help='List history of runs for a specific pipeline. Pipeline name shall be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
 @click.option('-pid', '--parent-id', help='List runs for a specific parent pipeline run', type=int)
-@click.option('-f', '--find', help='Search runs with a specific substring in a run parameters')
-@click.option('-t', '--top', help='Display top N records', type=int)
-@click.option('-nd', '--node-details', help='Display node details', is_flag=True)
-@click.option('-pd', '--parameters-details', help='Display parameters', is_flag=True)
-@click.option('-td', '--tasks-details', help='Display tasks', is_flag=True)
+@click.option('-f', '--find', help='Search runs with a specific substring in run parameters values')
+@click.option('-t', '--top', help='Display top <N> records', type=int)
+@click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
+@click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
+@click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @Config.validate_access_token
 def view_runs(run_id,
               status,
@@ -270,7 +270,7 @@ def view_runs(run_id,
               node_details,
               parameters_details,
               tasks_details):
-    """Lists pipelines runs
+    """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
@@ -432,7 +432,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
                         [task.name, state_utilities.color_state(task.status), scheduled, started, finished])
                 click.echo(tasks_table)
             else:
-                click.echo('No tasks are available for run')
+                click.echo('No tasks are available for the run')
             click.echo()
     except ConfigNotFoundError as config_not_found_error:
         click.echo(str(config_not_found_error), err=True)
@@ -594,7 +594,7 @@ def view_cluster_for_node(node_name):
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
-@click.option('-n', '--pipeline', required=False)
+@click.option('-n', '--pipeline', required=False, help='Pipeline name or ID. Pipeline name could be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
 @click.option('-c', '--config', required=False, type=str, help='Pipeline configuration name')
 @click.argument('run-params', nargs=-1, type=click.UNPROCESSED)
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
@@ -603,17 +603,17 @@ def view_cluster_for_node(node_name):
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
-@click.option('-t', '--timeout', help='Timeout, when elapsed - run will be stopped', type=int)
+@click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
-@click.option('-ic', '--instance-count', help='Number of instances to launch',
+@click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(1, MAX_INSTANCE_COUNT, clamp=True), required=False)
 @click.option('-nc', '--cores', help='Number cores that a cluster shall contain',
               type=click.IntRange(2, MAX_CORES_COUNT, clamp=True), required=False)
-@click.option('-s', '--sync', is_flag=True, help='Allow to be run in a sync mode.')
-@click.option('-pt', '--price-type', help='Instance price type',
+@click.option('-s', '--sync', is_flag=True, help='Allow a pipeline to be run in a sync mode. When set - terminal will be blocked until the finish status of the launched pipeline won\'t be returned')
+@click.option('-pt', '--price-type', help='Instance price type [on-demand/spot]',
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
-@click.option('-pn', '--parent-node', help='Parent instance id', type=int, required=False)
+@click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
@@ -632,7 +632,7 @@ def run(pipeline,
         price_type,
         region_id,
         parent_node):
-    """Schedules a pipeline/version execution
+    """Schedules a pipeline execution
     """
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
@@ -654,14 +654,14 @@ def stop(run_id, yes):
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @Config.validate_access_token
 def terminate_node(node_name, yes):
-    """Terminates calculation node
+    """Terminates a calculation node
     """
     terminate_node_calculation(node_name, yes)
 
 
 def terminate_node_calculation(node_name, yes):
     if not yes:
-        click.confirm('Are you sure you want to terminate node {}?'.format(node_name), abort=True)
+        click.confirm('Are you sure you want to terminate the node {}?'.format(node_name), abort=True)
     try:
         node_model = Cluster.get(node_name)
         if node_model.is_master:
