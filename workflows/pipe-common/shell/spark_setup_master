@@ -94,7 +94,7 @@ function setup_object_storage_access {
 
     # Auth settings
     CP_CAP_SPARK_MASTER_S3A_AUTH="${CP_CAP_SPARK_MASTER_S3A_AUTH:-cp}"
-    pipe_log_info "Object Storage \"$CP_CAP_SPARK_MASTER_S3A_AUTH\" auth shema will be used" "$SPARK_MASTER_SETUP_TASK"
+    pipe_log_info "Object Storage '$CP_CAP_SPARK_MASTER_S3A_AUTH' auth shema will be used" "$SPARK_MASTER_SETUP_TASK"
 
     if [[ "$CP_CAP_SPARK_MASTER_S3A_AUTH" == "keys" ]]; then
         local key_id_var_name="CP_ACCOUNT_ID_${CLOUD_REGION_ID}"
