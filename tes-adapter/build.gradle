@@ -29,6 +29,7 @@ jar {
 sourceCompatibility = 1.8
 
 dependencies {
+    implementation project(":cloud-pipeline-common:model")
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('io.springfox:springfox-swagger2:2.9.2')
     compile('io.springfox:springfox-swagger-ui:2.9.2')
