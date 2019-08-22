@@ -234,7 +234,7 @@ public class PipelineConfigurationManager {
         configuration.setClusterRole(WORKER_CLUSTER_ROLE);
         configuration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
                 runVO.getWorkerCmd() : WORKER_CMD_TEMPLATE);
-
+        configuration.setPrettyUrl(null);
         //remove node count parameter for workers
         configuration.setNodeCount(null);
         configuration.buildEnvVariables();
