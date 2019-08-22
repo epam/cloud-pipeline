@@ -15,14 +15,6 @@ const presets = [
 ];
 const plugins = [
   [
-    'import',
-    {
-      libraryName: 'antd',
-      style: true,
-    },
-    'antd',
-  ],
-  [
     '@babel/plugin-proposal-decorators',
     {
       legacy: true,

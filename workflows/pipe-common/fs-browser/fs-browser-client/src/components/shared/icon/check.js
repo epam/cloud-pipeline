@@ -10,8 +10,8 @@ export default function ({color, size}) {
       style={{stroke: color}}
     >
       <path
-        d="M 8,8 L 32,32 M 32,8 L 8,32"
-        strokeWidth="4"
+        d="M 8,20 L 20,30 L 32,8"
+        strokeWidth="6"
         fill="none"
       />
     </svg>

@@ -1,18 +1,22 @@
 import React from 'react';
 import classNames from 'classnames';
 import styles from './icons.css';
+import check from './check';
 import close from './close';
 import download from './download';
 import loading from './loading';
 import file from './file';
 import folder from './folder';
+import warning from './warning';
 
 const types = {
+  check,
   close,
   download,
   loading,
   file,
   folder,
+  warning,
 };
 
 function Icon(

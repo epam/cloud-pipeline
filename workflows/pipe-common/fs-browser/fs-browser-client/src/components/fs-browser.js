@@ -8,11 +8,13 @@ import {
 import {taskManager} from '../models';
 import Browser from './browser';
 import Header from './header';
+import AlertsContainer, {messages} from './shared/alerts';
 
 const history = createHashHistory({});
 
 const stores = {
   history,
+  messages,
   taskManager,
 };
 
@@ -28,6 +30,7 @@ export default function () {
             height: '100vh',
           }}
         >
+          <AlertsContainer />
           <Route path="/" component={Header} />
           <Route path="/" component={Browser} />
         </div>

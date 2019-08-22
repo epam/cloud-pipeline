@@ -27,5 +27,17 @@
 }
 
 .input {
+  width: 100%;
+  line-height: 1;
+  font-size: 12pt;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  padding: 2px;
+}
 
+.input:focus,
+.input:focus-within {
+  outline-width: 3px;
+  outline-offset: -3px;
+  outline-color: rgba(0, 103, 244, 0.25);
 }

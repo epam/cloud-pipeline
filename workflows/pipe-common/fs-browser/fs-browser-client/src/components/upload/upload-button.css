@@ -7,7 +7,9 @@
 }
 
 .button {
-
+  font-size: 10pt;
+  background-color: white;
+  font-weight: normal;
 }
 
 .native-input {

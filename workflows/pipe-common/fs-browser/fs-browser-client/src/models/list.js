@@ -1,6 +1,6 @@
-import {Remote} from './base';
+import Remote from './base';
 
-const def = (path) => [
+const def = path => [
   {
     name: 'file_a.txt',
     path: path ? `${path}/file_a.txt` : 'file_a.txt',

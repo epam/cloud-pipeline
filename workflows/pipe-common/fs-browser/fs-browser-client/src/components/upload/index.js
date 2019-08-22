@@ -2,11 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject} from 'mobx-react';
 import classNames from 'classnames';
-import {message} from 'antd';
 import UploadButton from './upload-button';
 import styles from './upload.css';
 
-@inject('taskManager')
+@inject('messages', 'taskManager')
 class Upload extends React.Component {
   static propTypes = {
     path: PropTypes.string.isRequired,
@@ -20,7 +19,7 @@ class Upload extends React.Component {
     if (!files || !files.length) {
       return;
     }
-    const {path, taskManager} = this.props;
+    const {messages, path, taskManager} = this.props;
     const promises = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -28,7 +27,7 @@ class Upload extends React.Component {
     }
     const errors = await Promise.all(promises);
     if (errors.filter(Boolean).length) {
-      message.error(errors.filter(Boolean).join('\n'), 5);
+      messages.error(errors.filter(Boolean).join('\n'), 5);
     }
   };
 

@@ -1,8 +1,5 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {
-  Alert,
-} from 'antd';
 import classNames from 'classnames';
 import Icon from '../shared/icon';
 import displaySize from '../../utilities/display-size';
@@ -68,7 +65,9 @@ class Browser extends React.Component {
     }
     if (directory.error) {
       return (
-        <Alert type="error" message={directory.error} />
+        <div className={styles.alert}>
+          {directory.error}
+        </div>
       );
     }
     const {disabled} = this.state;

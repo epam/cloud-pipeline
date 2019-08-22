@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {message} from 'antd';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import StatusIcon from './status-icon';
 import Icon from '../../shared/icon';
 import styles from './task-queue.css';
+import {TaskStatuses} from '../../../models';
 
+@inject('messages')
 @observer
 class UploadToBucketTask extends React.Component {
   static propTypes = {
@@ -21,12 +22,20 @@ class UploadToBucketTask extends React.Component {
     task: null,
   };
 
+  get status() {
+    const {task} = this.props;
+    if (task && task.error) {
+      return TaskStatuses.failure;
+    }
+    return TaskStatuses.pending;
+  }
+
   clear = async () => {
-    const {manager, task} = this.props;
+    const {manager, messages, task} = this.props;
     if (manager) {
       const error = await manager.cancelTask(task);
       if (error) {
-        message.error(error, 5);
+        messages.error(error, 5);
       }
     }
   };
@@ -77,7 +86,7 @@ class UploadToBucketTask extends React.Component {
             className={styles.name}
           >
             <StatusIcon
-              status={task.loaded ? task.value.status : null}
+              status={this.status}
             />
             {task.name}
           </div>

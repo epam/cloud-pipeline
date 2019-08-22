@@ -1,5 +1,5 @@
 import dateFns from 'date-fns';
-import {Remote} from './base';
+import Remote from './base';
 
 export const Statuses = {
   pending: 'pending',

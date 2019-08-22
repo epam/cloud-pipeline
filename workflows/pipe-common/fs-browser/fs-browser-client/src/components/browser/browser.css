@@ -3,6 +3,13 @@
   position: relative;
 }
 
+.alert {
+  border: 1px solid #ff908e;
+  background-color: #ffe4e9;
+  border-radius: 5px;
+  padding: 5px;
+}
+
 .table {
   width: 100%;
 }

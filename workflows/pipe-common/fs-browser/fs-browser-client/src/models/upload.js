@@ -1,4 +1,4 @@
-import {Remote} from './base';
+import Remote from './base';
 
 export default class Upload extends Remote {
   constructor(id) {

@@ -45,6 +45,7 @@
   -ms-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
   -o-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
   transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
+  box-sizing: border-box;
 }
 
 .container.hidden .content {
@@ -122,6 +123,13 @@
 
 .task.downloadable .download {
   display: initial;
+}
+
+.task .download,
+.task .upload,
+.task .description {
+  padding-left: 5px;
+  font-size: smaller;
 }
 
 .task .clear {

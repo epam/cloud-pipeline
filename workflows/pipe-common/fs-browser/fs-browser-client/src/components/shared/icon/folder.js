@@ -11,7 +11,7 @@ export default function ({color, size}) {
       shapeRendering="crispEdges"
     >
       <path
-        d="M 5,10 L 5,30 L 35,30 L 35,15 L 15,15 L 15,10 Z"
+        d="M 5,10 L 5,30 L 35,30 L 35,15 L 20,15 L 15,10 Z"
         fill="none"
         strokeWidth="2"
       />

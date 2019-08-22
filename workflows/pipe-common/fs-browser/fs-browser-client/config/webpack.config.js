@@ -314,15 +314,6 @@ module.exports = function (webpackEnv) {
               // exclude: /node_modules/,
               loader: require.resolve('babel-loader'),
               options: {
-                plugins: [
-                  [
-                    'import',
-                    {
-                      libraryName: 'antd',
-                      style: true
-                    }
-                  ]
-                ],
                 // This is a feature of `babel-loader` for webpack (not Babel itself).
                 // It enables caching results in ./node_modules/.cache/babel-loader/
                 // directory for faster rebuilds.
@@ -436,12 +427,7 @@ module.exports = function (webpackEnv) {
         {},
         env.stringified,
         {
-          'process.env.SERVER': isEnvProduction
-            ? JSON.stringify(process.env.PUBLIC_URL)
-            : JSON.stringify(process.env.SERVER),
-          'process.env.VERSION': isEnvProduction
-            ? JSON.stringify(process.env.VERSION)
-            : JSON.stringify('DEVELOPMENT')
+          'process.env.FS_BROWSER_API': JSON.stringify(process.env.FS_BROWSER_API || ''),
         },
         isEnvDevelopment
           ? {

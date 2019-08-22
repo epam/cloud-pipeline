@@ -1,5 +1,5 @@
-import {observable} from 'mobx';
-import {Remote} from './base';
+import {action, observable} from 'mobx';
+import Remote from './base';
 import defer from './utilities/defer';
 
 export default class UploadToBucket extends Remote {
@@ -12,12 +12,7 @@ export default class UploadToBucket extends Remote {
     this.name = file.name;
   }
 
-  static async wait(seconds) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, seconds * 1000);
-    });
-  }
-
+  @action
   async fetch() {
     this._loadRequired = false;
     if (!this._fetchPromise) {
@@ -25,22 +20,55 @@ export default class UploadToBucket extends Remote {
         this._pending = true;
         try {
           await defer();
-          for (let i = 0; i < 20; i++) {
-            this.percent = i / 20.0;
-            await UploadToBucket.wait(1);
-          }
-          this.percent = 1.0;
-          this._loaded = true;
-          this.error = undefined;
-          this.failed = false;
+          const updatePercent = ({loaded, total}) => {
+            this.percent = loaded / total;
+          };
+          const updateError = (error) => {
+            this.percent = 1;
+            this.error = error;
+            this.failed = true;
+            this._pending = false;
+          };
+          const updateStatus = (status) => {
+            this.percent = 1;
+            if (status === 'canceled' || status === 'error') {
+              this.failed = true;
+            }
+            if (status === 'done') {
+              this._loaded = true;
+              this._pending = false;
+            }
+          };
+          const request = new XMLHttpRequest();
+          request.upload.onprogress = (event) => {
+            updatePercent(event);
+          };
+          request.upload.onload = () => {
+            updateStatus('processing...');
+          };
+          request.upload.onerror = () => {
+            updateError('error');
+          };
+          request.upload.onabort = () => {
+            updateStatus('canceled');
+            resolve();
+          };
+          request.onreadystatechange = () => {
+            if (request.readyState !== 4) return;
+
+            if (request.status !== 200) {
+              updateError(request.statusText);
+            } else {
+              updateStatus('done');
+            }
+            resolve();
+          };
+          request.open('PUT', this.url, true);
+          request.send(this.file);
         } catch (e) {
           this.failed = true;
           this.error = e.toString();
         }
-
-        this._pending = false;
-        this._fetchPromise = null;
-        resolve();
       });
     }
     return this._fetchPromise;

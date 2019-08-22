@@ -2,9 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Link} from 'react-router-dom';
-import {
-  Input,
-} from 'antd';
 import styles from './path-input.css';
 
 @observer
@@ -31,20 +28,26 @@ class PathInput extends React.Component {
       return null;
     }
     const {disabled, path, onNavigate} = this.props;
-    const onPressEnter = (e) => {
-      this.toggleEditMode(false);
-      if (onNavigate) {
-        onNavigate(e.target.value);
+    const onKeyPress = (e) => {
+      if (!e) e = window.event;
+      const keyCode = e.keyCode || e.which;
+      if (+keyCode === 13) {
+        this.toggleEditMode(false);
+        if (onNavigate) {
+          onNavigate(e.target.value);
+        }
+        return false;
       }
+      return true;
     };
     return (
-      <Input
+      <input
+        /* eslint-disable-next-line */
         autoFocus
         className={styles.input}
         disabled={disabled}
-        size="small"
         defaultValue={path}
-        onPressEnter={onPressEnter}
+        onKeyPress={onKeyPress}
         onBlur={() => this.toggleEditMode(false)}
       />
     );

@@ -18,7 +18,7 @@ const isRunning = status => [
 ].indexOf(status) >= 0;
 
 function localStorageFilter(task) {
-  return task.type === 'download';
+  return task.type !== 'upload-to-bucket';
 }
 
 class Task extends TaskStatus {
@@ -72,7 +72,9 @@ class Task extends TaskStatus {
     if (!this.loaded || isRunning(this.value.status)) {
       this.timer = setTimeout(this.fetch, UPDATE_INTERVAL);
     } else if (onFinished) {
-      this.downloadUrl = (this.value.result || {}).url;
+      if (this.item.type === 'download') {
+        this.downloadUrl = (this.value.result || {}).url;
+      }
       onFinished(this);
     }
   };
@@ -93,14 +95,6 @@ class UploadToBucketTask extends UploadToBucket {
   }
 }
 
-class UploadTask extends Upload {
-  constructor(id, path) {
-    super(id);
-    this.id = id;
-    this.item = {path, type: 'upload'};
-  }
-}
-
 class TaskManager {
   @observable items;
 
@@ -113,7 +107,11 @@ class TaskManager {
   }
 
   onTaskFinished = (task) => {
-    if (task.activeSession && task.loaded && task.value.result && task.value.result.url) {
+    if (task.item.type === 'download'
+      && task.activeSession
+      && task.loaded
+      && task.value.result
+      && task.value.result.url) {
       const name = task.item.path.split('/').pop();
       autoDownloadFile(name, task.downloadUrl);
       this.removeTask(task);
@@ -146,13 +144,25 @@ class TaskManager {
     if (request.error) {
       return request.error;
     }
-    const task = new UploadToBucketTask(request.value.task, path, request.value.url.url, file);
-    task.fetch().then(() => {
+    const task = new UploadToBucketTask(`${request.value.task}_${file.name}`, path, request.value.url.url, file);
+    task.fetch().then(async () => {
       if (task.loaded) {
-        this.removeTask(task);
-        const uploadTask = new UploadTask(request.value.task, path);
-        this.items.push(uploadTask);
-        uploadTask.fetch();
+        const uploadTask = new Upload(request.value.task);
+        await uploadTask.fetch();
+        if (uploadTask.loaded) {
+          const taskStatus = new Task(
+            request.value.task,
+            {path, type: 'upload'},
+            {onFinished: this.onTaskFinished},
+            true,
+          );
+          this.removeTask(task);
+          this.items.push(taskStatus);
+          localStorage.setItem('TASKS', JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)));
+        } else if (uploadTask.error) {
+          this.removeTask(task);
+          console.error(uploadTask.error);
+        }
       }
     });
     this.items.push(task);

@@ -1,2 +1,204 @@
-export {default as Remote} from './fake-remote';
-export {default as RemotePost} from './remote-post';
+import {observable, action, computed} from 'mobx';
+import defer from '../utilities/defer';
+
+// eslint-disable-next-line
+let FS_BROWSER_API = process.env.FS_BROWSER_API;
+if (FS_BROWSER_API.endsWith('/')) {
+  FS_BROWSER_API = FS_BROWSER_API.substring(0, FS_BROWSER_API.length - 1);
+}
+
+class Remote {
+  static defaultValue = {};
+
+  static fetchOptions = {
+    mode: 'cors',
+    credentials: 'include',
+  };
+
+  static prefix = FS_BROWSER_API || '';
+
+  static auto = false;
+
+  static isJson = true;
+
+  url;
+
+  @observable failed = false;
+
+  @observable error = undefined;
+
+  constructor() {
+    if (this.constructor.auto) {
+      this.fetch();
+    }
+  }
+
+  @observable _pending = true;
+
+  @computed
+  get pending() {
+    this._fetchIfNeeded();
+    return this._pending;
+  }
+
+  @observable _loaded = false;
+
+  @computed
+  get loaded() {
+    this._fetchIfNeeded();
+    return this._loaded;
+  }
+
+  @observable _value = this.constructor.defaultValue;
+
+  @computed
+  get value() {
+    this._fetchIfNeeded();
+    return this._value;
+  }
+
+  @observable _response = undefined;
+
+  @computed
+  get response() {
+    this._fetchIfNeeded();
+    return this._response;
+  }
+
+  _loadRequired = !this.constructor.auto;
+
+  async _fetchIfNeeded() {
+    if (this._loadRequired) {
+      this._loadRequired = false;
+      await this.fetch();
+    }
+  }
+
+  async fetchIfNeededOrWait() {
+    if (this._loadRequired) {
+      await this._fetchIfNeeded();
+    } else if (this._fetchPromise) {
+      await this._fetchPromise;
+    }
+  }
+
+  invalidateCache() {
+    this._loadRequired = true;
+  }
+
+  _fetchPromise = null;
+
+  async fetch() {
+    this._loadRequired = false;
+    if (!this._fetchPromise) {
+      this._fetchPromise = new Promise(async (resolve) => {
+        this._pending = true;
+        const {prefix, fetchOptions} = this.constructor;
+        try {
+          await defer();
+          let {headers} = fetchOptions;
+          if (!headers) {
+            headers = {};
+          }
+          fetchOptions.headers = headers;
+          const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+          const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+          this.update(data);
+        } catch (e) {
+          this.failed = true;
+          this.error = e.toString();
+        }
+
+        this._pending = false;
+        this._fetchPromise = null;
+        resolve();
+      });
+    }
+    return this._fetchPromise;
+  }
+
+  async silentFetch() {
+    const {prefix, fetchOptions} = this.constructor;
+    try {
+      await defer();
+      let {headers} = fetchOptions;
+      if (!headers) {
+        headers = {};
+      }
+      fetchOptions.headers = headers;
+      const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+      const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
+      this.update(data);
+    } catch (e) {
+      this.failed = true;
+      this.error = e;
+    }
+  }
+
+  // eslint-disable-next-line
+  postprocess(value) {
+    return value.payload;
+  }
+
+  @action
+  update(value) {
+    this._response = value;
+    if (value.status && value.status === 401) {
+      this.error = value.message;
+      this.failed = true;
+    } else if (value.status && value.status === 'OK') {
+      this._value = this.postprocess(value);
+      this._loaded = true;
+      this.error = undefined;
+      this.failed = false;
+    } else {
+      this.error = value.message;
+      this.failed = true;
+      this._loaded = false;
+    }
+  }
+}
+
+class FakeRemote extends Remote {
+  constructor(localStorageKey, defaultObject) {
+    super();
+    this.localStorageKey = localStorageKey;
+    if (localStorageKey && defaultObject && !localStorage.getItem(localStorageKey)) {
+      localStorage.setItem(localStorageKey, JSON.stringify(defaultObject));
+    }
+  }
+
+  static async wait(seconds) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, seconds * 1000);
+    });
+  }
+
+  async fetch() {
+    this._loadRequired = false;
+    if (!this._fetchPromise) {
+      this._fetchPromise = new Promise(async (resolve) => {
+        this._pending = true;
+        try {
+          await defer();
+          await FakeRemote.wait(1);
+          const data = JSON.parse(this.localStorageKey ? localStorage.getItem(this.localStorageKey) : '{}');
+          this.update({
+            status: 'OK',
+            payload: data,
+          });
+        } catch (e) {
+          this.failed = true;
+          this.error = e.toString();
+        }
+
+        this._pending = false;
+        this._fetchPromise = null;
+        resolve();
+      });
+    }
+    return this._fetchPromise;
+  }
+}
+
+export default FakeRemote;
