@@ -78,8 +78,7 @@ EOF
     fi
 }
 
-# FIXME: this sets up access only to S3 and only for "current" region (which is used to run a compute node)
-# FIXME: such an implementation shall be treated as a PoC and further replaced with the temporary tokens for all the supported Cloud Providers
+# FIXME: this sets up access only to AWS/S3 and only for "current" region (which is used to run a compute node). GCP/Azure shall be introduced later as well
 function setup_object_storage_access {
     local spark_config_file="$1"
 
@@ -90,20 +89,39 @@ function setup_object_storage_access {
         return 1
     fi
 
-    local key_id_var_name="CP_ACCOUNT_ID_${CLOUD_REGION_ID}"
-    local access_key_var_name="CP_ACCOUNT_KEY_${CLOUD_REGION_ID}"
     local region_var_name="CP_ACCOUNT_REGION_${CLOUD_REGION_ID}"
-
-    export AWS_ACCESS_KEY_ID="${!key_id_var_name}"
-    export AWS_SECRET_ACCESS_KEY="${!access_key_var_name}"
     export AWS_DEFAULT_REGION="${!region_var_name}"
 
-    if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_ACCESS_KEY_ID" ]; then
-        unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
-        pipe_log_fail "Credentials for the Cloud Region $CLOUD_REGION_ID cannot be found, object storages access WILL NOT be configured" "$SPARK_MASTER_SETUP_TASK"
-        return 1
+    # Auth settings
+    CP_CAP_SPARK_MASTER_S3A_AUTH="${CP_CAP_SPARK_MASTER_S3A_AUTH:-cp}"
+    pipe_log_info "Object Storage \"$CP_CAP_SPARK_MASTER_S3A_AUTH\" auth shema will be used" "$SPARK_MASTER_SETUP_TASK"
+
+    if [[ "$CP_CAP_SPARK_MASTER_S3A_AUTH" == "keys" ]]; then
+        local key_id_var_name="CP_ACCOUNT_ID_${CLOUD_REGION_ID}"
+        local access_key_var_name="CP_ACCOUNT_KEY_${CLOUD_REGION_ID}"
+        export AWS_ACCESS_KEY_ID="${!key_id_var_name}"
+        export AWS_SECRET_ACCESS_KEY="${!access_key_var_name}"
+
+        if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ]; then
+            unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION
+            pipe_log_fail "Credentials for the Cloud Region $CLOUD_REGION_ID cannot be found, object storages access WILL NOT be configured" "$SPARK_MASTER_SETUP_TASK"
+            return 1
+        fi
+
+        spark_env_file="$(dirname spark_config_file)/spark-env.sh"
+        if grep -q "AWS_" "$spark_env_file" 2>/dev/null; then
+            pipe_log_warn "Spark environment file at $spark_env_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+        else
+            cat >> "$spark_env_file" << EOF
+AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+EOF
+        fi
+    elif [[ "$CP_CAP_SPARK_MASTER_S3A_AUTH" == "cp" ]]; then
+        CP_CAP_SPARK_MASTER_S3A_ADDITIONAL_ARGS=$(printf "$CP_CAP_SPARK_MASTER_S3A_ADDITIONAL_ARGS\nspark.hadoop.fs.s3a.aws.credentials.provider com.epam.pipeline.hadoop.fs.s3a.CPCredentialsProvider")
     fi
 
+    # General settings
     if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"  2>/dev/null; then
         pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
@@ -114,6 +132,7 @@ spark.hadoop.fs.s3a.endpoint                            s3.${AWS_DEFAULT_REGION}
 spark.hadoop.fs.s3a.server-side-encryption-algorithm    AES256
 spark.executor.extraJavaOptions                         -Dcom.amazonaws.services.s3.enableV4=true
 spark.driver.extraJavaOptions                           -Dcom.amazonaws.services.s3.enableV4=true
+${CP_CAP_SPARK_MASTER_S3A_ADDITIONAL_ARGS}
 
 # Parquet I/O Settings (https://spark.apache.org/docs/2.4.3/cloud-integration.html#parquet-io-settings)
 spark.hadoop.parquet.enable.summary-metadata            false
@@ -126,16 +145,6 @@ spark.sql.orc.filterPushdown                            true
 spark.sql.orc.splits.include.file.footer                true
 spark.sql.orc.cache.stripe.details.size                 10000
 spark.sql.hive.metastorePartitionPruning                true
-EOF
-    fi
-
-    spark_env_file="$CP_CAP_SPARK_INSTALL_DIR/conf/spark-env.sh"
-    if grep -q "AWS_" "$spark_env_file" 2>/dev/null; then
-        pipe_log_warn "Spark environment file at $spark_env_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
-    else
-        cat >> "$spark_env_file" << EOF
-AWS_ACCESS_KEY_ID="${!key_id_var_name}"
-AWS_SECRET_ACCESS_KEY="${!access_key_var_name}"
 EOF
     fi
 
