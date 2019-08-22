@@ -246,6 +246,15 @@ public class KubernetesManager {
         }
     }
 
+    public Optional<Node> findNodeByName(final String nodeName) {
+        try(KubernetesClient client = getKubernetesClient()) {
+            return Optional.ofNullable(client.nodes().withName(nodeName).get());
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
     public void deletePod(String podId) {
         try(KubernetesClient client = getKubernetesClient()) {
             client.pods().inNamespace(kubeNamespace).withName(podId).withGracePeriod(0).delete();

@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
-import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
@@ -80,7 +80,7 @@ public class AzureVMService {
 
     private final MessageHelper messageHelper;
 
-    private final NodesManager nodesManager;
+    private final KubernetesManager kubernetesManager;
 
     public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
@@ -181,11 +181,12 @@ public class AzureVMService {
     private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
                                                                         final String scaleSetName,
                                                                         final String nodeName) {
-
-        if (nodesManager.getNode(nodeName).getLabels().containsKey(KUBE_PREEMPTED_LABEL)) {
+        final Map<String, String> nodeLabels = kubernetesManager.findNodeByName(nodeName)
+                .map(node -> node.getMetadata().getLabels())
+                .orElse(Collections.emptyMap());
+        if (nodeLabels.containsKey(KUBE_PREEMPTED_LABEL)) {
             return Optional.of(SCALE_SET_FAILED_STATUS);
         }
-
         final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
         if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
             final PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
