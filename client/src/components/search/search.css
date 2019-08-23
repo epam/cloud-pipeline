@@ -190,11 +190,11 @@
   flex-direction: column;
   overflow: auto;
   opacity: 0;
-  -webkit-transition: opacity 250ms 250ms;
-  -moz-transition: opacity 250ms 250ms;
-  -ms-transition: opacity 250ms 250ms;
-  -o-transition: opacity 250ms 250ms;
-  transition: opacity 250ms 250ms;
+  -webkit-transition: opacity 250ms;
+  -moz-transition: opacity 250ms;
+  -ms-transition: opacity 250ms;
+  -o-transition: opacity 250ms;
+  transition: opacity 250ms;
 }
 
 .search-results.results-available {
