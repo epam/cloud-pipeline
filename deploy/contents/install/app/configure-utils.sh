@@ -1025,7 +1025,7 @@ function api_register_drive_mapping {
                             "CP_DAV_EXTERNAL_AUTH_URL" \
                             "$CP_DAV_EXTERNAL_AUTH_URL"
 
-    api_set_preference "base.dav.auth.url" "$drive_mapping_auth_url" "true"
+    api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 }
 
 function api_register_share_service {

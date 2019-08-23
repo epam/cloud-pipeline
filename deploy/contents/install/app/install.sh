@@ -985,9 +985,9 @@ if is_service_requested cp-dav; then
         api_register_drive_mapping
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-dav:"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\Drive Mapping (internal):      http://${CP_DAV_INTERNAL_HOST}:${CP_DAV_INTERNAL_PORT}/${CP_DAV_URL_PATH}"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\Drive Mapping (external):      ${CP_DAV_EXTERNAL_MAPPING_URL}"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\Drive Mapping Auth (external): ${CP_DAV_EXTERNAL_AUTH_URL}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (internal):      http://${CP_DAV_INTERNAL_HOST}:${CP_DAV_INTERNAL_PORT}/${CP_DAV_URL_PATH}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (external):      ${CP_DAV_EXTERNAL_MAPPING_URL}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping Auth (external): ${CP_DAV_EXTERNAL_AUTH_URL}"
     fi
     echo
 fi
