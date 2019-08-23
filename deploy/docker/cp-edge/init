@@ -57,6 +57,11 @@ fi
 
 # Replace well-know environment variables placeholders in the assets
 export CP_EDGE_WEB_CLIENT_MAX_SIZE="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-500M}"
+export CP_EDGE_CLUSTER_RESOLVER="${CP_EDGE_CLUSTER_RESOLVER:-$CP_PREF_CLUSTER_PROXIES_DNS_POST}"
+if [ -z "$CP_EDGE_CLUSTER_RESOLVER" ]; then
+    export CP_EDGE_CLUSTER_RESOLVER="10.96.0.1"
+    echo "Cluster resolve is NOT set by CP_EDGE_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_EDGE_CLUSTER_RESOLVER"
+fi
 export CP_DAV_URL_PATH="${CP_DAV_URL_PATH:-webdav}"
 export CP_DAV_INTERNAL_HOST="${CP_DAV_INTERNAL_HOST:-127.0.0.1}"
 export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
@@ -68,7 +73,7 @@ export CP_DAV_INSTRUCTIONS_URL=${CP_DAV_INSTRUCTIONS_URL:-"#"}
 AUTH_HTML="$(envsubst '${CP_DAV_EXTERNAL_MAPPING_URL} ${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME} ${CP_DAV_INSTRUCTIONS_URL}' < /etc/nginx/dav/webdav/auth-sso/index.html)"
 echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
 
-NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA}' < /etc/nginx/nginx.conf)"
+NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 
