@@ -33,11 +33,11 @@ public class TesTaskServiceImpl implements TesTaskService {
     public TesCancelTaskResponse cancelTesTask(String id) {
         RunStatusVO updateStatus = new RunStatusVO();
         updateStatus.setStatus(TaskStatus.STOPPED);
-        cloudPipelineAPIClient.updateRunStatus(checkRunId(id), updateStatus);
+        cloudPipelineAPIClient.updateRunStatus(parseRunId(id), updateStatus);
         return new TesCancelTaskResponse();
     }
 
-    private Long checkRunId(String id) {
+    private Long parseRunId(String id) {
         Long longRunId = null;
         Assert.hasText(id, "INVALID RUN ID");
         try {
