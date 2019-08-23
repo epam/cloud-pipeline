@@ -678,6 +678,14 @@ export default class Folder extends localization.LocalizedReactComponent {
       if (this.props.onReloadTree) {
         this.props.onReloadTree(true);
       }
+      if (request.value) {
+        const {actionStatus} = request.value;
+        if (actionStatus && !/^success$/i.test(actionStatus.status) && actionStatus.message) {
+          Modal.warning({
+            title: actionStatus.message
+          });
+        }
+      }
     }
   };
   editStorage = async (storage) => {
