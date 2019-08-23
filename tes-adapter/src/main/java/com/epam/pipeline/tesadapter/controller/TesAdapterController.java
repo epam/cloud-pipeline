@@ -59,7 +59,7 @@ public class TesAdapterController {
     @PostMapping("/v1/tasks/{id}:cancel")
     @ResponseBody
     ResponseEntity<TesCancelTaskResponse> cancelTesTask(@RequestParam String id) {
-        tesTaskService.stub();
+        tesTaskService.cancelTesTask(id);
         return new ResponseEntity<TesCancelTaskResponse>(new TesCancelTaskResponse(), HttpStatus.NOT_IMPLEMENTED);
     }
 }
