@@ -39,6 +39,8 @@ CP_GITLAB_SSO_TARGET_URL_TRAIL="${CP_GITLAB_SSO_TARGET_URL_TRAIL:-"/saml/sso"}"
 CP_GITLAB_SLO_TARGET_URL_TRAIL="${CP_GITLAB_SLO_TARGET_URL_TRAIL:-"/saml/sso"}"
 CP_GITLAB_SSO_TARGET_URL="${CP_GITLAB_SSO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SSO_TARGET_URL_TRAIL}"}"
 CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"}"
+CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
+CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -58,6 +60,8 @@ external_url 'https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}'
 nginx['ssl_certificate'] = "/opt/gitlab/pki/ssl-public-cert.pem"
 nginx['ssl_certificate_key'] = "/opt/gitlab/pki/ssl-private-key.pem"
 prometheus_monitoring['enable'] = false
+
+omnibus_gitconfig['system'] = { "pack" => ["windowMemory = ${CP_GITLAB_WINDOW_MEMORY}", "packSizeLimit = ${CP_GITLAB_PACK_SIZE_LIMIT}"]}
 
 gitlab_rails['omniauth_enabled'] = true
 gitlab_rails['omniauth_allow_single_sign_on'] = ['saml']
