@@ -55,10 +55,22 @@ if [ ! -f "$JWT_PUB_KEY" ]; then
     fi
 fi
 
-# Replace well-know environment variables placeholders in the nginx.conf
+# Replace well-know environment variables placeholders in the assets
 export CP_EDGE_WEB_CLIENT_MAX_SIZE="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-500M}"
-NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE}' < /etc/nginx/nginx.conf)"
+export CP_DAV_URL_PATH="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-webdav}"
+export CP_DAV_INTERNAL_HOST="${CP_DAV_INTERNAL_HOST:-127.0.0.1}"
+export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
+export CP_DAV_AUTH_URL_PATH="${CP_DAV_AUTH_URL_PATH:-webdav/auth-sso}"
+export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT/$CP_DAV_URL_PATH/}"
+export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
+export CP_DAV_INSTRUCTIONS_URL=${CP_DAV_INSTRUCTIONS_URL:-"#"}
+
+AUTH_HTML="$(envsubst '${CP_DAV_EXTERNAL_MAPPING_URL} ${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME} ${CP_DAV_INSTRUCTIONS_URL}' < /etc/nginx/dav/webdav/auth-sso/index.html)"
+echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
+
+NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH}' < /etc/nginx/nginx.conf)"
 echo "$NGINX_CONF" > /etc/nginx/nginx.conf
+
 
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
