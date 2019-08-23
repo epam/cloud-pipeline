@@ -15,4 +15,3 @@ include 'data-sharing-service'
 include 'data-sharing-service:api'
 include 'data-sharing-service:client'
 include 'tes-adapter'
-
