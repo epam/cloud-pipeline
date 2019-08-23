@@ -644,8 +644,10 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
       return null;
     }
     const searchFormClassNames = [styles.searchForm];
+    const searchResultsClassNames = [styles.searchResults];
     if (this.state.searchResults.length) {
       searchFormClassNames.push(styles.resultsAvailable);
+      searchResultsClassNames.push(styles.resultsAvailable);
     }
     if (this.state.previewAvailable) {
       searchFormClassNames.push(styles.previewAvailable);
@@ -738,18 +740,15 @@ export default class SearchDialog extends localization.LocalizedReactComponent {
               <span>Nothing found</span>
             </Row>
           }
-          {
-            this.state.searchResults.length &&
-            <div
-              onScroll={this.loadMore}
-              id="search-results"
-              className={styles.searchResults}
-              onClick={this.closeDialog}>
-              {
-                this.state.searchResults.map(this.renderSearchResultItem)
-              }
-            </div>
-          }
+          <div
+            onScroll={this.loadMore}
+            id="search-results"
+            className={`${searchResultsClassNames.join(' ')}`}
+            onClick={this.closeDialog}>
+            {
+              this.state.searchResults.map(this.renderSearchResultItem)
+            }
+          </div>
           {
             this.state.searching &&
             <Row type="flex" className={styles.searchingInProgressContainer} align="middle" justify="center">
