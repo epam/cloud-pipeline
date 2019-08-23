@@ -997,6 +997,37 @@ function api_register_clair {
     api_set_preference "security.tools.scan.enabled" "true" "true"
 }
 
+function api_register_drive_mapping {
+    local drive_mapping_host="${CP_DAV_EXTERNAL_HOST:-$CP_EDGE_EXTERNAL_HOST}"
+    if [ -z "$drive_mapping_host" ]; then
+        drive_mapping_host="$CP_DAV_INTERNAL_HOST"
+        print_warn "Cannot determine external HOST for the drive mapping, internal address will be used ($drive_mapping_host)"
+    fi
+
+    local drive_mapping_port="${CP_DAV_EXTERNAL_PORT:-$CP_EDGE_EXTERNAL_PORT}"
+    if [ -z "$drive_mapping_port" ]; then
+        drive_mapping_port="$CP_DAV_INTERNAL_PORT"
+        print_warn "Cannot determine external PORT for the drive mapping, internal port will be used ($drive_mapping_port)"
+    fi
+
+    local drive_mapping_schema="${CP_DAV_EXTERNAL_SCHEMA:-$EDGE_EXTERNAL_SCHEMA}"
+    if [ -z "$drive_mapping_schema" ]; then
+        drive_mapping_schema="https"
+        print_warn "Cannot determine external HTTP schema for the drive mapping, $drive_mapping_schema will be used)"
+    fi
+
+    export CP_DAV_EXTERNAL_MAPPING_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_URL_PATH}/
+    export CP_DAV_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_AUTH_URL_PATH}/
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_DAV_EXTERNAL_MAPPING_URL" \
+                            "$CP_DAV_EXTERNAL_MAPPING_URL"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_DAV_EXTERNAL_AUTH_URL" \
+                            "$CP_DAV_EXTERNAL_AUTH_URL"
+
+    api_set_preference "base.dav.auth.url" "$drive_mapping_auth_url" "true"
+}
+
 function api_register_share_service {
     api_set_preference "data.sharing.base.api" "https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/?id=%d" "false"
 

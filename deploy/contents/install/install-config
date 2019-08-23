@@ -144,5 +144,14 @@ CP_SHARE_SRV_FED_META_DIR=/opt/share-srv/sso
 CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS=groups
 # CP_SHARE_SRV_SAML_ID_TRAIL=
 
+# cp-dav
+CP_DAV_INTERNAL_HOST=cp-dav.default.svc.cluster.local
+CP_DAV_INTERNAL_PORT=31085
+CP_DAV_URL_PATH=webdav
+CP_DAV_AUTH_URL_PATH=webdav/auth-sso
+CP_DAV_SERVE_DIR=/dav-serve
+CP_DAV_MOUNT_POINT=/dav-mount
+CP_DAV_INSTRUCTIONS_URL=
+
 # Other params, specified on command line
 #
