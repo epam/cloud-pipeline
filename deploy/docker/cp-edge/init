@@ -57,7 +57,7 @@ fi
 
 # Replace well-know environment variables placeholders in the assets
 export CP_EDGE_WEB_CLIENT_MAX_SIZE="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-500M}"
-export CP_DAV_URL_PATH="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-webdav}"
+export CP_DAV_URL_PATH="${CP_DAV_URL_PATH:-webdav}"
 export CP_DAV_INTERNAL_HOST="${CP_DAV_INTERNAL_HOST:-127.0.0.1}"
 export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
 export CP_DAV_AUTH_URL_PATH="${CP_DAV_AUTH_URL_PATH:-webdav/auth-sso}"

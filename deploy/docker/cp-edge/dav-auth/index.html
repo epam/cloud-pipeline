@@ -27,7 +27,7 @@
                 bearer_token = getCookie("bearer");
                 if (bearer_token) {
                     userName = parseJwt(bearer_token)["sub"]
-                    document.getElementById("davUrl").innerText = "${CP_DAV_EXTERNAL_MAPPING_URL}" + userName.split("@")[0];
+                    document.getElementById("davUrl").innerText = "${CP_DAV_EXTERNAL_MAPPING_URL}" + userName.split("@")[0] + "/";
                 }
             }
         </script>
