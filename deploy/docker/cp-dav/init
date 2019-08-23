@@ -21,6 +21,7 @@ export CP_DAV_SERVE_DIR="${CP_DAV_SERVE_DIR:-/dav-serve}"
 export CP_DAV_MOUNT_POINT="${CP_DAV_MOUNT_POINT:-/dav-mount}"
 export APACHE_LOG_DIR="${APACHE_LOG_DIR:-/var/log/dav/httpd}"
 export SYNC_LOG_DIR="${SYNC_LOG_DIR:-/var/log/dav/sync}"
+export APACHE_DAV_LOCK_DB="${APACHE_DAV_LOCK_DB:-$APACHE_HOME/dav/DavLock}"
 
 if [ -z "$API" ] && ([ -z "$CP_API_SRV_INTERNAL_HOST" ] || [ -z "$CP_API_SRV_INTERNAL_PORT" ]); then
     echo "$API is not set, and we cannot construct it as $CP_API_SRV_INTERNAL_HOST or $CP_API_SRV_INTERNAL_PORT are not set as well, exiting"
@@ -36,6 +37,7 @@ export API_TOKEN="${API_TOKEN:-$CP_API_JWT_ADMIN}"
 
 # Create the required directories
 mkdir -p "$CP_DAV_SERVE_DIR" "$CP_DAV_MOUNT_POINT" "$APACHE_LOG_DIR" "$SYNC_LOG_DIR"
+mkdir -p $(dirname $APACHE_DAV_LOCK_DB)
 
 # Persist environment for a cron job
 env > $SYNC_HOME/env.sh
