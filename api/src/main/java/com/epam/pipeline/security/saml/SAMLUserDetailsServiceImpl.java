@@ -53,6 +53,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SAMLUserDetailsServiceImpl.class);
     private static final String ATTRIBUTES_DELIMITER = "=";
+    private static final String ATTR_USER_BLOCKED_VALUE = "true";
 
     @Value("${saml.authorities.attribute.names: null}")
     private List<String> authorities;
@@ -62,6 +63,9 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
 
     @Value("${saml.user.auto.create: EXPLICIT}")
     private SamlUserRegisterStrategy autoCreateUsers;
+
+    @Value("${saml.user.blocked.attribute: }")
+    private String blockedAttribute;
 
     @Autowired
     private UserManager userManager;
@@ -80,7 +84,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         String userName = credential.getNameID().getValue().toUpperCase();
         List<String> groups = readAuthorities(credential);
         Map<String, String> attributes = readAttributes(credential);
-
+        final UserContext userContext;
         PipelineUser loadedUser = userManager.loadUserByName(userName);
         if (loadedUser == null) {
             String message = messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName);
@@ -91,15 +95,14 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                     roles, groups, attributes, null);
             LOGGER.debug("Created user {} with groups {}", userName, groups);
             validateGroupsBlockingStatus(createdUser.getAuthorities(), userName);
-            UserContext userContext = new UserContext(createdUser.getId(), userName);
+            userContext = new UserContext(createdUser.getId(), userName);
             userContext.setGroups(createdUser.getGroups());
             userContext.setRoles(createdUser.getRoles());
             return userContext;
         } else {
             LOGGER.debug("Found user by name {}", userName);
             if (loadedUser.isBlocked()) {
-                LOGGER.debug("User {} is blocked!", userName);
-                throw new LockedException("User is blocked!");
+                throwUserIsBlocked(userName);
             }
             loadedUser.setUserName(userName);
             List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
@@ -109,6 +112,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             }
             validateGroupsBlockingStatus(loadedUser.getAuthorities(), userName);
             return new UserContext(loadedUser);
+            userContext = new UserContext(loadedUser);
         }
     }
 
@@ -124,6 +128,21 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
             throw new LockedException("User is blocked!");
         }
+    }
+
+    private boolean isValidGroupsBlockingStatus(final List<String> groups) {
+        return userManager.loadGroupBlockingStatus(groups).stream().noneMatch(GroupStatus::isBlocked);
+    }
+
+    private void throwUserIsBlocked(final String userName) {
+        LOGGER.debug("User {} is blocked!", userName);
+        throw new LockedException("User is blocked!");
+    }
+
+    private boolean hasBlockedStatusAttribute(final SAMLCredential credential) {
+        final String blockingStatus = credential.getAttributeAsString(blockedAttribute);
+        return StringUtils.isNotEmpty(blockingStatus)
+                && blockingStatus.equalsIgnoreCase(ATTR_USER_BLOCKED_VALUE);
     }
 
     List<String> readAuthorities(SAMLCredential credential) {
