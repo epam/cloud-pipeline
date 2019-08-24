@@ -158,6 +158,13 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
+        final PipelineUser user = loadUserById(id);
+        user.setBlocked(blockStatus);
+        return userDao.updateUser(user);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserSAMLInfo(Long id, String name, List<Long> roles, List<String> groups,
                                            Map<String, String> attributes) {
         PipelineUser user = loadUserById(id);

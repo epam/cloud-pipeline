@@ -115,12 +115,42 @@ public class UserDaoTest extends AbstractSpringTest {
         Assert.assertEquals(1, userUpdatedRoles.getRoles().size());
         Assert.assertEquals(DefaultRoles.ROLE_USER.name(),  userUpdatedRoles.getRoles().get(0).getName());
 
-        userDao.deleteUserRoles(savedUser.getId());
-        userDao.deleteUser(savedUser.getId());
+        deleteUserAndHisRoles(savedUser);
 
         Assert.assertNull(userDao.loadUserById(savedUser.getId()));
         Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
         Assert.assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+    }
+
+    @Test
+    public void testUserCRUDWithBlockingStatus() {
+        final PipelineUser user = new PipelineUser();
+        user.setUserName(TEST_USER1);
+        final PipelineUser savedUser = userDao.createUser(user,
+                                                    Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(),
+                                                                  DefaultRoles.ROLE_USER.getId()));
+        Assert.assertFalse(savedUser.isBlocked());
+
+        final PipelineUser userById = userDao.loadUserById(savedUser.getId());
+        Assert.assertEquals(savedUser.getId(), userById.getId());
+        Assert.assertFalse(userById.isBlocked());
+
+        savedUser.setBlocked(true);
+        userDao.updateUser(savedUser);
+        final PipelineUser userByNameBlocked = userDao.loadUserByName(TEST_USER1.toUpperCase());
+        Assert.assertEquals(savedUser.getId(), userByNameBlocked.getId());
+        Assert.assertTrue(userByNameBlocked.isBlocked());
+
+        deleteUserAndHisRoles(savedUser);
+        Assert.assertNull(userDao.loadUserById(savedUser.getId()));
+
+        final Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
+        Assert.assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+    }
+
+    private void deleteUserAndHisRoles(final PipelineUser savedUser) {
+        userDao.deleteUserRoles(savedUser.getId());
+        userDao.deleteUser(savedUser.getId());
     }
 
     @Test
@@ -216,8 +246,7 @@ public class UserDaoTest extends AbstractSpringTest {
         Assert.assertEquals(savedUser.getId(), userByChangedName.getId());
         Assert.assertTrue(assertUserAttributes(attributes, userByChangedName.getAttributes()));
 
-        userDao.deleteUserRoles(savedUser.getId());
-        userDao.deleteUser(savedUser.getId());
+        deleteUserAndHisRoles(savedUser);
 
         Assert.assertNull(userDao.loadUserById(savedUser.getId()));
         Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();

@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.exception.AuthenticationException;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -125,8 +126,8 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
         user.setGroups(Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList()));
         Mockito.when(userManager.updateUserSAMLInfo(Matchers.anyLong(), Matchers.anyString(),
-                Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
-                Matchers.anyMapOf(String.class, String.class))).thenReturn(user);
+                                                    Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
+                                                    Matchers.anyMapOf(String.class, String.class))).thenReturn(user);
 
         UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
         Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
@@ -206,13 +207,27 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     private void mockUserDoesNotExistSituation() {
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(null);
         Mockito.when(userManager.createUser(Matchers.anyString(),
-                Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
-                Matchers.anyMapOf(String.class, String.class), Matchers.any())).thenReturn(user);
+                                            Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
+                                            Matchers.anyMapOf(String.class, String.class), Matchers.any()))
+               .thenReturn(user);
+    }
+
+    @Test(expected = AuthenticationException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForBlockedUser() {
+        blockCurrentUser();
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void blockCurrentUser() {
+        user.setUserName(USER_NAME);
+        user.setBlocked(true);
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
     }
 
     private void switchToExplicitGroupMode() {
         ReflectionTestUtils.setField(userDetailsService, "autoCreateUsers",
-                SamlUserRegisterStrategy.EXPLICIT_GROUP);
+                                     SamlUserRegisterStrategy.EXPLICIT_GROUP);
     }
 
     private void switchToExplicitMode() {
