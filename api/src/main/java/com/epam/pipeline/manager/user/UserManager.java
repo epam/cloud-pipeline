@@ -19,12 +19,14 @@ package com.epam.pipeline.manager.user;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -57,6 +59,9 @@ public class UserManager {
 
     @Autowired
     private RoleDao roleDao;
+
+    @Autowired
+    private GroupStatusDao groupStatusDao;
 
     @Autowired
     private AuthManager authManager;
@@ -125,7 +130,7 @@ public class UserManager {
     }
 
     public PipelineUser loadUserById(Long id) {
-        PipelineUser user =  userDao.loadUserById(id);
+        PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         return user;
     }
@@ -162,6 +167,31 @@ public class UserManager {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
         return userDao.updateUser(user);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
+        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus);
+        return groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public GroupStatus deleteGroupBlockingStatus(final String groupName) {
+        final GroupStatus groupStatus = loadGroupBlockingStatus(groupName);
+        Assert.notNull(groupName,
+                messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, groupName));
+        groupStatusDao.deleteGroupBlockingStatus(groupStatus.getGroupName());
+        return groupStatus;
+    }
+
+    private GroupStatus loadGroupBlockingStatus(final String groupName) {
+        return loadGroupBlockingStatus(Collections.singletonList(groupName)).stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    public List<GroupStatus> loadGroupBlockingStatus(final List<String> groupNames) {
+        return groupStatusDao.loadGroupsBlockingStatus(groupNames);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -257,7 +287,7 @@ public class UserManager {
     /**
      * Checks whether a specific user is a member of a specific group
      * @param userName a name of {@code UserContext}
-     * @param group a user group name
+     * @param group    a user group name
      * @return true if a specific user is a member of a specific group
      */
     public boolean checkUserByGroup(String userName, String group) {

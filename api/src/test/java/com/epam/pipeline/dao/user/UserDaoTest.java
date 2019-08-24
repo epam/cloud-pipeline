@@ -270,6 +270,7 @@ public class UserDaoTest extends AbstractSpringTest {
     private boolean isRolePresent(Role roleToFind, Collection<Role> roles) {
         return roles.stream().anyMatch(r -> r.equals(roleToFind));
     }
+
     private boolean assertUserAttributes(Map<String, String> expectedAttributes, Map<String, String> actualAttributes) {
         return CollectionUtils.isEqualCollection(expectedAttributes.entrySet(), actualAttributes.entrySet());
     }
