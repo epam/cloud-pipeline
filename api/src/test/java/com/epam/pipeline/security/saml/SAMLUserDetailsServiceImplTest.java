@@ -72,6 +72,10 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     private Map<String, String> expectedAttributes = new HashMap<>();
     private List<String> groups = Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList());
     private UserContext expectedUserContext = new UserContext(1L, USER_NAME.toUpperCase());
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_1 = "true";
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_2 = "True";
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_3 = "TRUE";
+    private static final String SAML_ATTRIBUTE_NOT_BLOCKED_USER_VALUE = "false";
 
     @InjectMocks
     @Autowired
@@ -243,9 +247,54 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
 
     @Test(expected = LockedException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty1() {
+        blockUserUsingCredentials(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_1);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty2() {
+        blockUserUsingCredentials(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_2);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty3() {
+        blockUserUsingCredentials(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_3);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldAcceptUserWithValidNotBlockedApplicationProperty() {
+        blockUserUsingCredentials(SAML_ATTRIBUTE_NOT_BLOCKED_USER_VALUE);
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldAcceptUserWithValidEmptyApplicationProperty() {
+        blockUserUsingCredentials("");
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+    }
+
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
         blockOneGroupForCurrentUser();
         userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void blockUserUsingCredentials(final String blockedValue) {
+        user.setUserName(USER_NAME);
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
+        final String testAttributeValue = blockedValue;
+        ReflectionTestUtils.setField(userDetailsService, "blockedAttribute", testAttributeValue);
+        Mockito.when(credential.getAttributeAsString(testAttributeValue)).thenReturn(blockedValue);
     }
 
     private void blockOneGroupForCurrentUser() {
