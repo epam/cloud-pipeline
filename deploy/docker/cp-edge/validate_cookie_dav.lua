@@ -69,17 +69,29 @@ if token then
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
         end
 
+    -- Parse request uri and split it into parts
+    -- E.g. /webdav/UserName1/ will provide { 'webdav', 'UserName1' }
+        local uri_raw = ngx.var.request_uri
+        local uri_parts =  split_str(uri_raw,'/')
+        local uri_parts_len = arr_length(uri_parts)
+        local uri_username = nil
+        local request_method = ngx.req.get_method()
+        
+    -- Restrict writing to the root dirs/files as they are not mounted anywhere and serve as "containers":
+    -- First level directory: "/webdav"
+    -- User-level directory: "/webdav/UserName1"
+    -- Objects in the user-level directory: "/webdav/UserName1/file.txt"
+        local restricted_root_methods = { "PUT", "POST", "DELETE", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK", "PATCH" }
+        if (uri_parts_len <= 3 and arr_has_value(restricted_root_methods, request_method)) then
+            ngx.status = ngx.HTTP_UNAUTHORIZED
+            ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        end
+
     -- Check whether this is an admin token
     -- If so - allow nginx to proceed with whatever is requested
         if arr_has_value(jwt_obj["payload"]["roles"], "ROLE_ADMIN") then
             return
         end
-
-    -- Parse request uri and split it into parts
-    -- E.g. /webdav/UserName1/ will provide { 'webdav', 'UserName1' }
-        local uri_parts =  split_str(ngx.var.request_uri,'/')
-        local uri_parts_len = arr_length(uri_parts)
-        local uri_username = nil
 
     -- We always treat uri to contain username as a second item
         if uri_parts_len > 1  then
