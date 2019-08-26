@@ -21,6 +21,4 @@ public class CloudPipelineAPIClient {
     public PipelineRun loadPipelineRun(final Long pipelineRunId) {
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineRun(pipelineRunId));
     }
-
-
 }
