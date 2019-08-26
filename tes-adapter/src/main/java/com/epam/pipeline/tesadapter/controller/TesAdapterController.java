@@ -18,9 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TesAdapterController {
-  
+
     private TesTaskService tesTaskService;
-  
+
     @Autowired
     public TesAdapterController(TesTaskService tesTaskService) {
         this.tesTaskService = tesTaskService;
@@ -59,7 +59,6 @@ public class TesAdapterController {
     @PostMapping("/v1/tasks/{id}:cancel")
     @ResponseBody
     ResponseEntity<TesCancelTaskResponse> cancelTesTask(@RequestParam String id) {
-        tesTaskService.cancelTesTask(id);
-        return new ResponseEntity<TesCancelTaskResponse>(new TesCancelTaskResponse(), HttpStatus.NOT_IMPLEMENTED);
+        return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.cancelTesTask(id));
     }
 }
