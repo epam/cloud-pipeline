@@ -3,18 +3,29 @@ import defer from '../utilities/defer';
 
 // eslint-disable-next-line
 let FS_BROWSER_API = process.env.FS_BROWSER_API;
-if (FS_BROWSER_API.endsWith('/')) {
+if (FS_BROWSER_API !== '/' && FS_BROWSER_API.endsWith('/')) {
   FS_BROWSER_API = FS_BROWSER_API.substring(0, FS_BROWSER_API.length - 1);
 }
 
-function fixUrl(url) {
+function buildUrl(prefix, url) {
   if (!url) {
-    return '';
+    return prefix;
   }
-  if (url.startsWith('/')) {
-    return url.substring(1);
+  if (!prefix || prefix.trim().length === 0) {
+    // relative to client's root; we should remove leading '/' from url
+    if (url.startsWith('/')) {
+      return url.substring(1);
+    }
+    return url;
   }
-  return url;
+  if (prefix === '/' && url.startsWith('/')) {
+    return `${prefix}${url.substring(1)}`;
+  }
+  // some path specified
+  if (!url.startsWith('/')) {
+    return `${prefix}/${url}`;
+  }
+  return `${prefix}${url}`;
 }
 
 class Remote {
@@ -111,7 +122,7 @@ class Remote {
             headers = {};
           }
           fetchOptions.headers = headers;
-          const response = await fetch(fixUrl(`${prefix}${this.url}`), fetchOptions);
+          const response = await fetch(buildUrl(prefix, this.url), fetchOptions);
           const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
           this.update(data);
         } catch (e) {
