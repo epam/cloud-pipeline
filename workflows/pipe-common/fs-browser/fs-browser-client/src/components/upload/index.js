@@ -23,7 +23,7 @@ class Upload extends React.Component {
     const promises = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      promises.push(taskManager.upload(`${path}/${file.name}`, file));
+      promises.push(taskManager.upload(`${path}/${file.name}`, path, file));
     }
     const errors = await Promise.all(promises);
     if (errors.filter(Boolean).length) {

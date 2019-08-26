@@ -23,7 +23,7 @@ class TaskQueue extends React.Component {
 
   componentWillReceiveProps(nextProps) {
     const {activeTasksCount} = this.props;
-    if (nextProps.activeTasksCount > 0 && activeTasksCount === 0) {
+    if (nextProps.activeTasksCount > activeTasksCount) {
       this.setState({visible: true});
     }
   }

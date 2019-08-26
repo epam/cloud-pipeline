@@ -69,9 +69,9 @@ class Task extends TaskStatus {
       onStatusChanged(this);
     }
     this.stop();
-    if (!this.loaded || isRunning(this.value.status)) {
+    if (this.loaded && isRunning(this.value.status)) {
       this.timer = setTimeout(this.fetch, UPDATE_INTERVAL);
-    } else if (onFinished) {
+    } else if (this.loaded && onFinished) {
       if (this.item.type === 'download') {
         this.downloadUrl = (this.value.result || {}).url;
       }
@@ -88,8 +88,8 @@ class Task extends TaskStatus {
 }
 
 class UploadToBucketTask extends UploadToBucket {
-  constructor(id, path, url, file) {
-    super(id, url, file);
+  constructor(id, path, url, tagValue, file) {
+    super(id, url, tagValue, file);
     this.id = id;
     this.item = {path, type: 'upload-to-bucket'};
   }
@@ -98,6 +98,8 @@ class UploadToBucketTask extends UploadToBucket {
 class TaskManager {
   @observable items;
 
+  listener;
+
   constructor() {
     this.items = JSON
       .parse(localStorage.getItem('TASKS') || '[]')
@@ -105,6 +107,10 @@ class TaskManager {
         onFinished: this.onTaskFinished,
       }));
   }
+
+  registerListener = (listener) => {
+    this.listener = listener;
+  };
 
   onTaskFinished = (task) => {
     if (task.item.type === 'download'
@@ -115,6 +121,9 @@ class TaskManager {
       const name = task.item.path.split('/').pop();
       autoDownloadFile(name, task.downloadUrl);
       this.removeTask(task);
+    }
+    if (this.listener) {
+      this.listener(task);
     }
   };
 
@@ -138,13 +147,19 @@ class TaskManager {
     return request;
   };
 
-  upload = async (path, file) => {
+  upload = async (path, root, file) => {
     const request = new UploadUrl(path);
     await request.fetch();
     if (request.error) {
       return request.error;
     }
-    const task = new UploadToBucketTask(`${request.value.task}_${file.name}`, path, request.value.url.url, file);
+    const task = new UploadToBucketTask(
+      request.value.task,
+      path,
+      request.value.url.url,
+      request.value.url.tagValue,
+      file,
+    );
     task.fetch().then(async () => {
       if (task.loaded) {
         const uploadTask = new Upload(request.value.task);
@@ -152,7 +167,7 @@ class TaskManager {
         if (uploadTask.loaded) {
           const taskStatus = new Task(
             request.value.task,
-            {path, type: 'upload'},
+            {path, root, type: 'upload'},
             {onFinished: this.onTaskFinished},
             true,
           );
@@ -182,7 +197,7 @@ class TaskManager {
     const request = new CancelTask(task.id);
     await request.fetch();
     if (request.error) {
-      return request.error;
+      console.warn(request.error);
     }
     this.removeTask(task);
     return null;

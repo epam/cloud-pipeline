@@ -23,6 +23,7 @@ export default class UploadButton extends React.Component {
       && onUpload
     ) {
       onUpload(this.inputControl.files);
+      this.inputControl.value = '';
     }
   };
 

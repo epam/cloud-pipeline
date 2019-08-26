@@ -6,6 +6,7 @@
   bottom: 15px;
   right: 15px;
   z-index: 1;
+  background-color: white;
 }
 
 .container.hidden {

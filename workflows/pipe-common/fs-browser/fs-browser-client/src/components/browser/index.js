@@ -13,6 +13,27 @@ import TaskQueue from './task-queue';
 import Upload from '../upload';
 import styles from './browser.css';
 
+function rootsAreEqual(rootA, rootB) {
+  if (!rootA && !rootB) {
+    return true;
+  }
+  if (!rootA) {
+    return false;
+  }
+  if (!rootB) {
+    return false;
+  }
+  let a = rootA.startsWith('/') ? rootA.substring(1) : rootA;
+  let b = rootB.startsWith('/') ? rootB.substring(1) : rootB;
+  if (a.endsWith('/')) {
+    a = a.substring(0, a.length - 1);
+  }
+  if (b.endsWith('/')) {
+    b = b.substring(0, b.length - 1);
+  }
+  return a.toLowerCase() === b.toLowerCase();
+}
+
 @inject('taskManager')
 @inject(({taskManager}, params) => {
   const {path} = parse(params.history.location.search);
@@ -26,6 +47,28 @@ import styles from './browser.css';
 class Browser extends React.Component {
   state = {
     disabled: false,
+  };
+
+  componentDidMount() {
+    const {taskManager} = this.props;
+    if (taskManager) {
+      taskManager.registerListener(this.reloadIfNeeded);
+    }
+  }
+
+  componentWillUnmount() {
+    const {taskManager} = this.props;
+    if (taskManager) {
+      taskManager.registerListener(null);
+    }
+  }
+
+  reloadIfNeeded = (task) => {
+    const {activeSession, item} = task;
+    const {path, directory} = this.props;
+    if (activeSession && item && rootsAreEqual(item.root, path)) {
+      directory.fetch();
+    }
   };
 
   blockingOperation = fn => (...opts) => {
@@ -160,7 +203,7 @@ class Browser extends React.Component {
   render() {
     const {path, taskManager} = this.props;
     return (
-      <Upload path={path}>
+      <Upload path={path || ''}>
         <div
           className={styles.container}
         >
