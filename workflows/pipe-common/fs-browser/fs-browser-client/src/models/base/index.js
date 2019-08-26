@@ -7,6 +7,16 @@ if (FS_BROWSER_API.endsWith('/')) {
   FS_BROWSER_API = FS_BROWSER_API.substring(0, FS_BROWSER_API.length - 1);
 }
 
+function fixUrl(url) {
+  if (!url) {
+    return '';
+  }
+  if (url.startsWith('/')) {
+    return url.substring(1);
+  }
+  return url;
+}
+
 class Remote {
   static defaultValue = {};
 
@@ -101,7 +111,7 @@ class Remote {
             headers = {};
           }
           fetchOptions.headers = headers;
-          const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+          const response = await fetch(fixUrl(`${prefix}${this.url}`), fetchOptions);
           const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
           this.update(data);
         } catch (e) {
