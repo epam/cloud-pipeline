@@ -55,7 +55,7 @@ RUN     cd /tmp && \
 # Install LUA JWT
 RUN opm get cdbattags/lua-resty-jwt
 
-# Configure cron and sync reoutes script
+# Configure cron and sync routes script
 ADD	crontab /etc/cron.d/sync-routes
 ADD sync-routes.sh /etc/sync-routes/sync-routes.sh
 ADD	sync-routes.py /etc/sync-routes/sync-routes.py
@@ -77,6 +77,11 @@ RUN	mkdir -p /etc/nginx/sites-enabled/
 ## Cookie validation
 ADD validate_cookie.lua /etc/nginx/validate_cookie.lua
 ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
+ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
+ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
+
+## DAV auth page
+ADD dav-auth /etc/nginx/dav/webdav/auth-sso
 
 # Install SSH proxy
 ## Install node.js

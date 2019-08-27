@@ -193,6 +193,14 @@ docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_VM_MONITOR_DIST_NAME"
 
+# Drive Mapping
+CP_DRIVE_MAPPING_DIST_NAME=${CP_DRIVE_MAPPING_DIST_NAME:-"$CP_DIST_REPO_NAME:dav-${DOCKERS_VERSION}"}
+\cp -r $DOCKERS_SOURCES_PATH/../../scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
+docker build    $DOCKERS_SOURCES_PATH/cp-dav \
+                -t "$CP_DRIVE_MAPPING_DIST_NAME"
+docker push "$CP_DRIVE_MAPPING_DIST_NAME"
+rm -rf $DOCKERS_SOURCES_PATH/cp-dav
+
 # Share Service
 CP_SHARE_SRV_DIST_NAME=${CP_SHARE_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:share-srv-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \

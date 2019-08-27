@@ -233,10 +233,15 @@ CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_N
 print_info "-> Assigning cloud-pipeline/cp-vm-monitor to $CP_VM_MONITOR_KUBE_NODE_NAME"
 kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-vm-monitor="true" --overwrite
 
+# Allow to schedule Drive Mapping service to the master
+CP_DRIVE_MAPPING_KUBE_NODE_NAME=${CP_DRIVE_MAPPING_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-dav to $CP_DRIVE_MAPPING_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DRIVE_MAPPING_KUBE_NODE_NAME" cloud-pipeline/cp-dav="true" --overwrite
+
 # Allow to schedule Share service to the master
-CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_VM_MONITOR_KUBE_NODE_NAME"
-kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
+CP_SHARE_SRV_KUBE_NODE_NAME=${CP_SHARE_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SHARE_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
 
 echo
 
@@ -954,9 +959,33 @@ if is_service_requested cp-vm-monitor; then
 fi
 
 # WebDav
+if is_service_requested cp-dav; then
+    print_ok "[Starting Drive Mapping service deployment]"
+
+    print_info "-> Deleting existing instance of Drive Mapping service"
+    delete_deployment_and_service   "cp-dav" \
+                                    "/opt/dav"
+
+    if is_install_requested; then
+        print_info "-> Deploying Drive Mapping service"
+        create_kube_resource $K8S_SPECS_HOME/cp-dav/cp-dav-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-dav/cp-dav-svc.yaml
+
+        print_info "-> Waiting for Drive Mapping service to initialize"
+        wait_for_deployment "cp-dav"
+
+        print_info "-> Registering Drive Mapping service in API"
+        api_register_drive_mapping
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-dav:"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (internal):      http://${CP_DAV_INTERNAL_HOST}:${CP_DAV_INTERNAL_PORT}/${CP_DAV_URL_PATH}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (external):      ${CP_DAV_EXTERNAL_MAPPING_URL}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping Auth (external): ${CP_DAV_EXTERNAL_AUTH_URL}"
+    fi
+    echo
+fi
 
 # Share Service
-
 if is_service_requested cp-share-srv; then
     print_ok "[Starting Share Service deployment]"
 

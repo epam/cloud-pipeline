@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-dav: "true"
+  name: cp-dav
+  namespace: default
+spec:
+  ports:
+  - protocol: TCP
+    port: ${CP_DAV_INTERNAL_PORT}
+    targetPort: 8080
+    name: cp-dav-port-http
+  selector:
+    cloud-pipeline/cp-dav: "true"
