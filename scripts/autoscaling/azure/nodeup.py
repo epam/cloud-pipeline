@@ -459,6 +459,7 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
             "automaticOSUpgrade": False
         },
         "properties": {
+            "overprovision": False,
             "virtualMachineProfile": {
                 'priority': 'Low',
                 'evictionPolicy': 'delete',
@@ -497,9 +498,7 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
         },
         'tags': get_tags(run_id)
     }
-
     create_node_resource(service, scale_set_name, vmss_parameters)
-
     return get_instance_name_and_private_ip_from_vmss(scale_set_name)
 
 
@@ -511,9 +510,6 @@ def create_node_resource(service, instance_name, node_parameters):
             node_parameters
         )
         creation_result.result()
-
-        start_result = service.start(resource_group_name, instance_name)
-        start_result.wait()
     except CloudError as client_error:
         delete_all_by_run_id(node_parameters['tags']['Name'])
         error_message = client_error.__str__()
@@ -605,35 +601,6 @@ def verify_run_id(run_id):
             break
 
     return vm_name, private_ip
-
-
-# There is a strange behavior, when you create scale set with one node,
-# several node will be created at first and then only one of it will stay as running
-# Some times other nodes can rich startup script before it will be terminated, so nodes will join a kube cluster
-# In order to get rid of this 'phantom' nodes this method will delete nodes with name like computerNamePrefix + 000000
-def delete_phantom_low_priority_kubernetes_node(kube_api, ins_id):
-    low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, ins_id)
-    if low_priority_search:
-        scale_set_name = low_priority_search.group(1)
-
-        # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
-        # delete node that opposite to ins_id
-        nodes_to_delete = generate_scale_set_vm_names(scale_set_name)
-        for node_to_delete in nodes_to_delete:
-
-            if node_to_delete == ins_id:
-                continue
-
-            nodes = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': node_to_delete})
-            for node in nodes.response['items']:
-                obj = {
-                    "apiVersion": "v1",
-                    "kind": "Node",
-                    "metadata": {
-                        "name": node["metadata"]["name"]
-                    }
-                }
-                pykube.Node(kube_api, obj).delete()
 
 
 def generate_scale_set_vm_names(scale_set_name):
@@ -1066,8 +1033,6 @@ def main():
         if not ins_id:
             ins_id, ins_ip = run_instance(resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
                                           "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
-
-        delete_phantom_low_priority_kubernetes_node(api, ins_id)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
         pipe_log('Node created:\n'

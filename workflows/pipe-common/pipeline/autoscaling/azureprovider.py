@@ -337,6 +337,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 "automaticOSUpgrade": False
             },
             "properties": {
+                "overprovision": False,
                 "virtualMachineProfile": {
                     'priority': 'Low',
                     'evictionPolicy': 'delete',
@@ -388,9 +389,6 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 node_parameters
             )
             creation_result.result()
-
-            start_result = service.start(self.resource_group_name, instance_name)
-            start_result.wait()
         except CloudError as client_error:
             self.__delete_all_by_run_id(node_parameters['tags']['Name'])
             error_message = client_error.__str__()
