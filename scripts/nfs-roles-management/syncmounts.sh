@@ -110,7 +110,7 @@ if ! command -v "jq" >/dev/null 2>&1 ; then
 fi
 
 fs_mounts="$(curl -sfk -H "Authorization: Bearer ${_API_TOKEN}" ${_API_URL%/}/cloud/region | \
-    jq -r '.payload[] | .fileShareMounts[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)|\(.mountOptions)"')"
+    jq -r '.payload[] | .fileShareMounts | select(.!=null)[] | "\(.id)|\(.regionId)|\(.mountRoot)|\(.mountType)"')"
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Cannot get list of the file shares, exiting"
