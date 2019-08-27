@@ -2,6 +2,7 @@ package com.epam.pipeline.tesadapter.app;
 
 
 import com.epam.pipeline.tesadapter.controller.TesAdapterController;
+import com.epam.pipeline.tesadapter.service.CloudPipelineAPIClient;
 import com.epam.pipeline.tesadapter.service.TesTaskServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +25,9 @@ public class TesAdapterControllerTest {
 
     @MockBean
     private TesTaskServiceImpl tesTaskService;
+
+    @MockBean
+    private CloudPipelineAPIClient cloudPipelineAPIClient;
 
 
     @Test
