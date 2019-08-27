@@ -188,6 +188,7 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
     _CLOUD_PROVIDER=AWS
+    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
     # Create user for cloud pipeline access, this is required only for AWS. Other cloud providers will create appropriate user automatically
     useradd pipeline
@@ -199,10 +200,9 @@ if [[ $cloud == *"EC2"* ]]; then
 elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_REGION=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/location?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
-
     _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
-
     _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
+    _KUBE_NODE_NAME="$(hostname)"
 
     _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
     if [[ "$_CLOUD_INSTANCE_IMAGE_ID" == '::' ]]; then
@@ -222,6 +222,7 @@ elif [[ $gcloud_header == *"Google"* ]]; then
     _CLOUD_INSTANCE_TYPE=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
     _CLOUD_PROVIDER=GCP
+    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 fi
 
 # Setup well-know hostnames
@@ -276,7 +277,7 @@ _KUBELET_LOG_PATH=/var/log/kubelet
 mkdir -p $_KUBELET_LOG_PATH
 _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 
-_KUBE_NODE_NAME="${_CLOUD_INSTANCE_ID:-$(hostname)}"
+_KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
 _KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
