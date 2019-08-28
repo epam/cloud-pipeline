@@ -42,11 +42,60 @@ function split_str(inputstr, sep)
     return t
 end
 
--- Check if request alread contains a cookie "bearer"
-local token = ngx.var.cookie_bearer
-if token then
+function is_empty(str)
+    return str == nil or str == ''
+end
 
-    -- If cookie present - validate it
+function get_basic_token()
+    local authorization = ngx.var.http_authorization
+    if is_empty(authorization) then
+        return nil
+    end
+
+    -- Check that Authorization header starts with "Basic: ", other header schemas are not supported
+    -- FIXME: shall we add "Bearer: " as well?
+    if authorization:find("Basic ") ~= 1 then
+        ngx.log(ngx.WARN, "HTTP Authorization header is set, but it is not Basic: " .. authorization)
+        return nil
+    end
+
+    -- Crop the "Basic: " from the Authorization header - base64 encoded value will be retrieved
+    local basicb64 = string.sub(authorization, 7)
+    if is_empty(basicb64) then
+        ngx.log(ngx.WARN, "Basic HTTP Authorization header is set, it has no value: " .. authorization)
+        return nil
+    end
+
+    -- Decode the base64 representation of the Authorization header value
+    local basic = ngx.decode_base64(basicb64)  
+    if is_empty(basic) then
+        ngx.log(ngx.WARN, "Basic HTTP Authorization header is set, but can not decode from base64: " .. authorization)
+        return nil
+    end
+
+    -- Split the Authorization header value by colon, i.e. "user:password"
+    local user_pass = split_str(basic, ':')
+    local user = user_pass[1]
+    local pass = user_pass[2]
+
+    if (is_empty(user) or is_empty(pass)) then
+        ngx.log(ngx.WARN, "Basic HTTP Authorization header is set and decoded, but user or pass is missing: " .. authorization)
+        return nil
+    end
+
+    -- We care only about password, as it shall contain the access token
+    return pass
+end
+
+-- First try to get the HTTP Basic auth from the request
+local token = get_basic_token()
+if is_empty(token) then
+    -- HTTP Basic auth is not set - check if request alread contains a cookie "bearer"
+    token = ngx.var.cookie_bearer
+end
+
+if token then
+    -- If token is present - validate it
         local cert_path = os.getenv("JWT_PUB_KEY")
         local cert_file = io.open(cert_path, 'r')
         local cert = cert_file:read("*all")
@@ -114,7 +163,7 @@ if token then
     return
 end
 
--- If no "bearer" cookie is found - proceed with authentication using API
+-- If no HTTP Basic auth and "bearer" cookie are found - proceed with authentication using API
 
 -- Construct full current URL to use for redirection
 local req_host_port = os.getenv("EDGE_EXTERNAL")
