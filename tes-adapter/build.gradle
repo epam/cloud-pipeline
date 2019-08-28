@@ -29,6 +29,9 @@ jar {
 sourceCompatibility = 1.8
 
 dependencies {
+    configurations {
+        all*.exclude module : "spring-boot-starter-logging"
+    }
     implementation project(":cloud-pipeline-common:model")
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('io.springfox:springfox-swagger2:2.9.2')
@@ -39,7 +42,5 @@ dependencies {
     testRuntime('org.junit.jupiter:junit-jupiter-engine:5.4.2')
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.0.pr1'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
-    compile('org.springframework.boot:spring-boot-starter-log4j2'){
-        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
-    }
+    compile('org.springframework.boot:spring-boot-starter-log4j2')
 }
