@@ -805,7 +805,7 @@ if is_service_requested cp-git-sync; then
             print_warn "Make sure CP_API_JWT_ADMIN is available in the Kube \"cp-config-global\" configmap, otherwise - rerun cp-api and cp-git-sync deployment"
         fi
         print_info "-> Deploying Git Sync"
-        create_kube_resource $K8S_SPECS_HOME/cp-git-sync/cp-git-sync-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-git-sync/cp-git-sync-dpl.yaml
 
         print_info "-> Waiting for Git Sync to initialize"
         wait_for_deployment "cp-git-sync"
@@ -889,7 +889,7 @@ if is_service_requested cp-notifier; then
             print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
-            create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-pod.yaml
+            create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-dpl.yaml
 
             print_info "-> Waiting for the Email notifier to initialize"
             wait_for_deployment "cp-notifier"
@@ -925,7 +925,7 @@ if is_service_requested cp-search; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-svc.yaml
 
         print_info "-> Waiting for Search service to initialize"
