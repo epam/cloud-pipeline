@@ -24,8 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(TesAdapterController.class)
 public class TesAdapterControllerTest {
-    private static final String stubbedTaskId = "5";
-    private static final Long stubbedPageSize = 55L;
+    private static final String STUBBED_TASK_ID = "5";
+    private static final Long STUBBED_PAGE_SIZE = 55L;
 
     @Autowired
     private MockMvc mockMvc;
@@ -38,15 +38,15 @@ public class TesAdapterControllerTest {
 
     @Test
     public void cancelTesTaskWhenRequestingIdReturnCanceledTask() throws Exception {
-        when(tesTaskService.cancelTesTask(stubbedTaskId)).thenReturn(new TesCancelTaskResponse());
-        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", stubbedTaskId)).andDo(print())
+        when(tesTaskService.cancelTesTask(STUBBED_TASK_ID)).thenReturn(new TesCancelTaskResponse());
+        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", STUBBED_TASK_ID)).andDo(print())
                 .andExpect(status().isOk());
     }
 
     @Test
     public void listTesTaskWhenRequestingReturnTesListTasksResponse() throws Exception {
         when(tesTaskService.listTesTask()).thenReturn(new TesListTasksResponse());
-        this.mockMvc.perform(get("/v1/tasks?page_size={size}", stubbedPageSize)).andDo(print())
+        this.mockMvc.perform(get("/v1/tasks?page_size={size}", STUBBED_PAGE_SIZE)).andDo(print())
                 .andExpect(status().isOk());
     }
 }
