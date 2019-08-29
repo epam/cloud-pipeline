@@ -45,8 +45,7 @@ public class TesAdapterController {
     @PostMapping("/v1/tasks")
     @ResponseBody
     ResponseEntity<TesCreateTaskResponse> submitTesTask(@RequestBody TesTask body) {
-        tesTaskService.stub();
-        return new ResponseEntity<TesCreateTaskResponse>(new TesCreateTaskResponse(), HttpStatus.NOT_IMPLEMENTED);
+        return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.submitTesTask(body));
     }
 
     @GetMapping("/v1/tasks/{id}")
