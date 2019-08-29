@@ -3,6 +3,8 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
+import com.epam.pipeline.tesadapter.entity.TesTask;
+import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,12 @@ public class TesTaskServiceImpl implements TesTaskService {
     @Autowired
     public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
+    }
+
+    @Override
+    public TesCreateTaskResponse submitTesTask(TesTask body) {
+
+        return null;
     }
 
     @Override
