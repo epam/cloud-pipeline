@@ -69,7 +69,7 @@ function setup_executors {
     executor_mem=$(( ($mem_total / $executors_num) - 1 ))
 
     if grep -q "spark.executor.cores" "$spark_config_file"  2>/dev/null; then
-        pipe_log_warn "Spark config file at $spark_config_file already contains executors configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+        pipe_log_warn "Spark config file at $spark_config_file already contains executors configuration, it WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
         cat >> "$spark_config_file" << EOF
 spark.executor.cores        $executor_cores
@@ -110,7 +110,7 @@ function setup_object_storage_access {
 
         spark_env_file="$(dirname spark_config_file)/spark-env.sh"
         if grep -q "AWS_" "$spark_env_file" 2>/dev/null; then
-            pipe_log_warn "Spark environment file at $spark_env_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+            pipe_log_warn "Spark environment file at $spark_env_file already contains S3A configuration, it WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
         else
             cat >> "$spark_env_file" << EOF
 AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
@@ -123,7 +123,7 @@ EOF
 
     # General settings
     if grep -q "spark.hadoop.fs.s3a" "$spark_config_file"  2>/dev/null; then
-        pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, if WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
+        pipe_log_warn "Spark config file at $spark_config_file already contains S3A configuration, it WILL NOT be updated" "$SPARK_MASTER_SETUP_TASK"
     else
         cat >> "$spark_config_file" << EOF
 # S3A config
@@ -188,6 +188,30 @@ function setup_proxy_config {
         [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
         echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
     fi
+}
+
+function setup_common_spark_conf {
+    local spark_config_file="$1"
+
+    CP_CAP_SPARK_DERBY_SYSTEM_HOME="${CP_CAP_SPARK_DERBY_SYSTEM_HOME:-$CP_CAP_SPARK_INSTALL_DIR/derby}"
+    mkdir -p "$CP_CAP_SPARK_DERBY_SYSTEM_HOME"
+
+    CP_CAP_SPARK_WAREHOUSE_DIR="${CP_CAP_SPARK_WAREHOUSE_DIR:-$CP_CAP_SPARK_INSTALL_DIR/spark-warehouse}"
+    mkdir -p "$CP_CAP_SPARK_WAREHOUSE_DIR"
+
+    # Setup additional driver options
+    local extra_java_opts="-Dderby.system.home=$CP_CAP_SPARK_DERBY_SYSTEM_HOME"
+    if grep -q "spark.driver.extraJavaOptions" "$spark_config_file"  2>/dev/null; then
+        extra_java_opts="$(grep "spark.driver.extraJavaOptions" "$spark_config_file" | cut -d\  -f2-) $extra_java_opts"
+        sed -i "/spark.driver.extraJavaOptions /d" "$spark_config_file"
+    fi
+    echo "spark.driver.extraJavaOptions ${extra_java_opts} " >> "$spark_config_file"
+
+    # Setup spark warehouse dir
+    if grep -q "spark.sql.warehouse.dir" "$spark_config_file"  2>/dev/null; then
+        sed -i "/spark.sql.warehouse.dir /d" "$spark_config_file"
+    fi
+    echo "spark.sql.warehouse.dir ${CP_CAP_SPARK_WAREHOUSE_DIR} " >> "$spark_config_file"
 }
 
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
@@ -287,6 +311,9 @@ fi
 
 # Setup executors num/cores/mem configuration
 setup_executors "$spark_config_file"
+
+# Setup other configuration options
+setup_common_spark_conf "$spark_config_file"
 
 # Start Spark master
 spark_master_url="spark://${CP_CAP_SPARK_HOST}:${CP_CAP_SPARK_PORT}"
