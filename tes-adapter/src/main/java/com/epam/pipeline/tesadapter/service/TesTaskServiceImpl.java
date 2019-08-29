@@ -1,6 +1,7 @@
 package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesTask;
@@ -23,7 +24,8 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesCreateTaskResponse submitTesTask(TesTask body) {
-
+        //stubbed
+        cloudPipelineAPIClient.runPipeline(new PipelineStart());
         return null;
     }
 
