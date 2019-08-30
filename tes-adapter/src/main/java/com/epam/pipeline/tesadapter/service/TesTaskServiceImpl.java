@@ -1,11 +1,11 @@
 package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.tesadapter.entity.TaskMapper;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
+import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesTask;
-import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +16,18 @@ import org.springframework.util.Assert;
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private final TaskMapper taskMapper;
 
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
+        this.taskMapper = taskMapper;
     }
 
     @Override
     public TesCreateTaskResponse submitTesTask(TesTask body) {
-        //stubbed
-        cloudPipelineAPIClient.runPipeline(new PipelineStart());
-        return null;
+        cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
+        return new TesCreateTaskResponse();
     }
 
     @Override

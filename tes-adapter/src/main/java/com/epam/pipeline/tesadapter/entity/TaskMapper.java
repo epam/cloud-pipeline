@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.List;
 import java.util.Map;
 
-public class ConvertTesTaskToPipelineStart {
+public class TaskMapper {
     private Long pipelineId;
     private String version;
     private Long timeout;
@@ -34,34 +34,40 @@ public class ConvertTesTaskToPipelineStart {
 
     private PipelineStart pipelineStart;
 
-    public ConvertTesTaskToPipelineStart(@Value("${cloud.pipeline.instanceType}") String instanceType,
-                                         @Value("${cloud.pipeline.hddSize}") Integer hddSize, TesTask tesTask) {
+    public TaskMapper(@Value("${cloud.pipeline.instanceType}") String instanceType,
+                      @Value("${cloud.pipeline.hddSize}") Integer hddSize) {
         this.pipelineId = null;
         this.version = null;
         this.timeout = null;
         this.instanceType = instanceType;
         this.hddSize = hddSize;
-        this.dockerImage = tesTask.getExecutors().get(0).getImage();
-        this.cmdTemplate = String.join(" ", tesTask.getExecutors().get(0).getCommand());//List of Executors?
         this.useRunId = null;
         this.parentNodeId = null;
         this.nodeCount = null;
         this.workerCmd = null;
         this.parentRunId = null;
-        this.isSpot = tesTask.getResources().getPreemptible();
         this.runSids = null;
         this.force = false;
         this.executionEnvironment = ExecutionEnvironment.CLOUD_PLATFORM;
         this.prettyUrl = null;
         this.nonPause = true;
-        this.params.put("", tesTask.getInputs().get(0).getContent());
-    }
-
-    public void getPipelineStartFromTesTask() {
 
     }
 
-    private PipelineStart setParamsToPipelineStart() {
+    public PipelineStart mapToPipelineStart(TesTask tesTask) {
+        this.dockerImage = tesTask.getExecutors().get(0).getImage(); //List of Executors
+        this.cmdTemplate = String.join(" ", tesTask.getExecutors().get(0).getCommand());//List of Executors?
+        this.isSpot = tesTask.getResources().getPreemptible();
+        //map params
+        this.params.put("inputs", new PipeConfValueVO(tesTask.getInputs().get(0).getPath(), "input"));
+        this.params.put("outputs", new PipeConfValueVO(tesTask.getOutputs().get(0).getPath(), "output"));
+        this.params.put("envs", new PipeConfValueVO(
+                String.join(" ", tesTask.getExecutors().get(0).getEnv().values()), "string"));
+        setParamsToPipelineStart();
+        return this.pipelineStart;
+    }
+
+    private void setParamsToPipelineStart() {
         pipelineStart.setPipelineId(pipelineId);
         pipelineStart.setVersion(version);
         pipelineStart.setTimeout(timeout);
@@ -80,7 +86,7 @@ public class ConvertTesTaskToPipelineStart {
         pipelineStart.setExecutionEnvironment(executionEnvironment);
         pipelineStart.setPrettyUrl(prettyUrl);
         pipelineStart.setNonPause(nonPause);
-        pipelineStart.setParams();
+        pipelineStart.setParams(params);
     }
 
 
