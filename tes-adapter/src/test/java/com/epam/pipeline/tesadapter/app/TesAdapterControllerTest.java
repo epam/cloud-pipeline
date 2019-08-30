@@ -23,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(TesAdapterController.class)
+@SuppressWarnings("unused")
 public class TesAdapterControllerTest {
     private static final String STUBBED_TASK_ID = "5";
     private static final Long STUBBED_PAGE_SIZE = 55L;

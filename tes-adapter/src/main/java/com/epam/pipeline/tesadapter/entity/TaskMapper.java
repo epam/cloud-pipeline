@@ -13,19 +13,24 @@ public class TaskMapper {
     private Long pipelineId;
     private String version;
     private Long timeout;
+
+    @Value("${cloud.pipeline.instanceType}")
     private String instanceType;
+
+    @Value("${cloud.pipeline.hddSize}")
     private Integer hddSize;
+
     private String dockerImage;
     private String cmdTemplate;
     private Long useRunId;
     private Long parentNodeId;
-    private String configurationName; //stubbed
+    // private String configurationName; //stubbed
     private Integer nodeCount;
     private String workerCmd;
     private Long parentRunId;
     private Boolean isSpot;
     private List<RunSid> runSids;
-    private Long cloudRegionId; //stubbed
+    // private Long cloudRegionId; //stubbed
     private boolean force;
     private ExecutionEnvironment executionEnvironment;
     private String prettyUrl;
@@ -34,13 +39,10 @@ public class TaskMapper {
 
     private PipelineStart pipelineStart;
 
-    public TaskMapper(@Value("${cloud.pipeline.instanceType}") String instanceType,
-                      @Value("${cloud.pipeline.hddSize}") Integer hddSize) {
+    public TaskMapper() {
         this.pipelineId = null;
         this.version = null;
         this.timeout = null;
-        this.instanceType = instanceType;
-        this.hddSize = hddSize;
         this.useRunId = null;
         this.parentNodeId = null;
         this.nodeCount = null;
@@ -51,7 +53,6 @@ public class TaskMapper {
         this.executionEnvironment = ExecutionEnvironment.CLOUD_PLATFORM;
         this.prettyUrl = null;
         this.nonPause = true;
-
     }
 
     public PipelineStart mapToPipelineStart(TesTask tesTask) {
@@ -88,6 +89,4 @@ public class TaskMapper {
         pipelineStart.setNonPause(nonPause);
         pipelineStart.setParams(params);
     }
-
-
 }
