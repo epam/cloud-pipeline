@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function update_spark_config_prop {
+    local prop_name="$1"
+    local prop_value="$2"
+    local spark_config_file="$3"
+
+    if [ -z "$prop_name" ] || [ -z "$prop_name" ] || [ -z "$prop_name" ]; then
+        return 1
+    fi
+
+    local prop_value_existing=
+    if grep -q "$prop_name " "$spark_config_file"  2>/dev/null; then
+        prop_value_existing="$(grep "$prop_name" "$spark_config_file" | cut -d\  -f2-)"
+        sed -i "/$prop_name /d" "$spark_config_file"
+    fi
+    echo "$prop_name $prop_value_existing $prop_value" >> "$spark_config_file"
+}
+
 function get_proxy_value {
     local proxy_var_name="$1"
 
@@ -131,7 +148,6 @@ spark.hadoop.fs.s3a.impl                                org.apache.hadoop.fs.s3a
 spark.hadoop.fs.s3a.endpoint                            s3.${AWS_DEFAULT_REGION}.amazonaws.com
 spark.hadoop.fs.s3a.server-side-encryption-algorithm    AES256
 spark.executor.extraJavaOptions                         -Dcom.amazonaws.services.s3.enableV4=true
-spark.driver.extraJavaOptions                           -Dcom.amazonaws.services.s3.enableV4=true
 ${CP_CAP_SPARK_MASTER_S3A_ADDITIONAL_ARGS}
 
 # Parquet I/O Settings (https://spark.apache.org/docs/2.4.3/cloud-integration.html#parquet-io-settings)
@@ -146,6 +162,7 @@ spark.sql.orc.splits.include.file.footer                true
 spark.sql.orc.cache.stripe.details.size                 10000
 spark.sql.hive.metastorePartitionPruning                true
 EOF
+        update_spark_config_prop "spark.driver.extraJavaOptions" "-Dcom.amazonaws.services.s3.enableV4=true" "$spark_config_file"
     fi
 
     pipe_log_info "Object Storage access configuration is done" "$SPARK_MASTER_SETUP_TASK"
@@ -185,8 +202,7 @@ function setup_proxy_config {
 
     # Write the proxy options only if the java_proxy_options is not empty or does not consist of empty spaces
     if [ "${java_proxy_options// }" ]; then
-        [ -f "$spark_config_file" ] && sed -i '/spark.driver.extraJavaOptions/d' "$spark_config_file"
-        echo "spark.driver.extraJavaOptions $java_proxy_options" >> "$spark_config_file"
+        update_spark_config_prop "spark.driver.extraJavaOptions" "$java_proxy_options" "$spark_config_file"
     fi
 }
 
@@ -201,17 +217,10 @@ function setup_common_spark_conf {
 
     # Setup additional driver options
     local extra_java_opts="-Dderby.system.home=$CP_CAP_SPARK_DERBY_SYSTEM_HOME"
-    if grep -q "spark.driver.extraJavaOptions" "$spark_config_file"  2>/dev/null; then
-        extra_java_opts="$(grep "spark.driver.extraJavaOptions" "$spark_config_file" | cut -d\  -f2-) $extra_java_opts"
-        sed -i "/spark.driver.extraJavaOptions /d" "$spark_config_file"
-    fi
-    echo "spark.driver.extraJavaOptions ${extra_java_opts} " >> "$spark_config_file"
+    update_spark_config_prop "spark.driver.extraJavaOptions" "$extra_java_opts" "$spark_config_file"
 
     # Setup spark warehouse dir
-    if grep -q "spark.sql.warehouse.dir" "$spark_config_file"  2>/dev/null; then
-        sed -i "/spark.sql.warehouse.dir /d" "$spark_config_file"
-    fi
-    echo "spark.sql.warehouse.dir ${CP_CAP_SPARK_WAREHOUSE_DIR} " >> "$spark_config_file"
+    update_spark_config_prop "spark.sql.warehouse.dir" "${CP_CAP_SPARK_WAREHOUSE_DIR}" "$spark_config_file"
 }
 
 SPARK_MASTER_SETUP_TASK="SparkMasterSetup"
