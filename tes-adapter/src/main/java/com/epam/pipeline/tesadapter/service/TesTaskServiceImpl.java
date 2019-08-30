@@ -19,9 +19,9 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final TaskMapper taskMapper;
 
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper) {
+    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
-        this.taskMapper = taskMapper;
+        this.taskMapper = new TaskMapper();
     }
 
     @Override
