@@ -34,7 +34,7 @@ public class TesAdapterControllerTest {
     private TesTaskServiceImpl tesTaskService;
 
     @MockBean
-    private CloudPipelineAPIClient cloudPipelineAPIClient;
+    CloudPipelineAPIClient cloudPipelineAPIClient;
 
     @Test
     public void cancelTesTaskWhenRequestingIdReturnCanceledTask() throws Exception {
