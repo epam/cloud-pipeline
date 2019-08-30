@@ -19,6 +19,10 @@ repositories {
     mavenCentral()
 }
 
+test {
+    useJUnitPlatform()
+}
+
 jar {
     manifest {
         attributes 'Main-Class': 'com.epam.pipeline.tesadapter.TesAdapterApplication'
@@ -29,18 +33,38 @@ jar {
 sourceCompatibility = 1.8
 
 dependencies {
+    //Binding with Pipeline API
     implementation project(":cloud-pipeline-common:model")
+
+    //Spring
     compile('org.springframework.boot:spring-boot-starter-web')
+
+    //Swagger
     compile('io.springfox:springfox-swagger2:2.9.2')
     compile('io.springfox:springfox-swagger-ui:2.9.2')
+
+    //Lombok
     compileOnly 'org.projectlombok:lombok:1.18.8'
     annotationProcessor 'org.projectlombok:lombok:1.18.8'
-    testImplementation('org.junit.jupiter:junit-jupiter-api:5.4.2')
-    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.4.2')
+
+    //Jackson
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.0.pr1'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
-    compile('org.springframework.boot:spring-boot-starter-log4j2'){
-        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+
+    //Logger
+    compile('org.springframework.boot:spring-boot-starter-log4j2')
+    configurations {
+        all*.exclude module : "spring-boot-starter-logging"
+    }
+
+    //Tests
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
+    testCompile "org.mockito:mockito-core:2.+"
+    testCompile('org.mockito:mockito-junit-jupiter:2.18.3')
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'junit', module: 'junit' //direct exclusion junit4
     }
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
     testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
