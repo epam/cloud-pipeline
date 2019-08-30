@@ -73,7 +73,7 @@ public interface CloudPipelineAPI {
     String VERSION = "version";
     String PATH = "path";
 
-    @POST("/run")
+    @POST("run")
     Call<Result<PipelineRun>> runPipeline(@Body PipelineStart runVo);
 
     @POST("run/{runId}/status")

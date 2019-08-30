@@ -1,7 +1,7 @@
 package com.epam.pipeline.tesadapter.service;
 
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.tesadapter.entity.TaskMapper;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
@@ -19,15 +19,19 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final TaskMapper taskMapper;
 
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
-        this.taskMapper = new TaskMapper();
+        this.taskMapper = taskMapper;
     }
 
     @Override
     public TesCreateTaskResponse submitTesTask(TesTask body) {
-        cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
-        return new TesCreateTaskResponse();
+        TesCreateTaskResponse tesCreateTaskResponse = new TesCreateTaskResponse();
+        PipelineRun pipelineRun = cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
+        Assert.notNull(pipelineRun.getId(), "INVALID PIPELINE ID");
+        String runId = pipelineRun.getId().toString();
+        tesCreateTaskResponse.setId(runId);
+        return tesCreateTaskResponse;
     }
 
     @Override
