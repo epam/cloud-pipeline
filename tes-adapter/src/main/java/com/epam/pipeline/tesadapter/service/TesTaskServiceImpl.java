@@ -29,8 +29,7 @@ public class TesTaskServiceImpl implements TesTaskService {
         TesCreateTaskResponse tesCreateTaskResponse = new TesCreateTaskResponse();
         PipelineRun pipelineRun = cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
         Assert.notNull(pipelineRun.getId(), "INVALID PIPELINE ID");
-        String runId = pipelineRun.getId().toString();
-        tesCreateTaskResponse.setId(runId);
+        tesCreateTaskResponse.setId("" + pipelineRun.getId());
         return tesCreateTaskResponse;
     }
 
