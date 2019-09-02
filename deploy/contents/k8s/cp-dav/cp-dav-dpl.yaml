@@ -32,7 +32,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /${CP_DAV_URL_PATH}
-              port: 8080
+              port: ${CP_DAV_INTERNAL_PORT}
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
