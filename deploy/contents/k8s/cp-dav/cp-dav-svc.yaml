@@ -9,7 +9,7 @@ spec:
   ports:
   - protocol: TCP
     port: ${CP_DAV_INTERNAL_PORT}
-    targetPort: 8080
+    targetPort: ${CP_DAV_INTERNAL_PORT}
     name: cp-dav-port-http
   selector:
     cloud-pipeline/cp-dav: "true"
