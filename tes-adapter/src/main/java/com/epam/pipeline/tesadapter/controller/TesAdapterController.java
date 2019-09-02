@@ -53,8 +53,8 @@ public class TesAdapterController {
     @ResponseBody
     ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
             defaultValue = "MINIMAL") TaskView view) {
-        tesTaskService.stub();
-        return new ResponseEntity<TesTask>(new TesTask(), HttpStatus.NOT_IMPLEMENTED);
+        return ResponseEntity.ok().body(tesTaskService.getTesTask(new Long(id)));
+
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
