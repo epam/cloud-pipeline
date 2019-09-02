@@ -928,6 +928,21 @@ def storage_delete_object_tags(path, tags, version):
     DataStorageOperations.delete_object_tags(path, tags, version)
 
 
+@storage.command('mount')
+@click.argument('mountpoint', required=True)
+@click.option('-o', '--options', required=False, help='Specify mount options')
+@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@Config.validate_access_token
+def mount_storage(mountpoint, options, quiet):
+    """ Mounts all available storages into a local folder.
+        Command is supported for Linux distributions and MacOS and requires
+        FUSE installed.
+        - mountpoint - destination for mount
+        - options - any mount options supported by underlying FUSE implementation.
+    """
+    DataStorageOperations.mount_storage(mountpoint, options=options, quiet=quiet)
+
+
 @cli.command(name='view-acl')
 @click.argument('identifier', required=False)
 @click.option(

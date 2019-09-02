@@ -35,6 +35,24 @@ python2 ./waf all
 python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 
 ###
+# Build pipe fuse
+###
+PIPE_MOUNT_SOURCES_DIR=${PIPE_CLI_SOURCES_DIR}/mount
+python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+cd $PIPE_MOUNT_SOURCES_DIR && \
+python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                --hidden-import=UserList \
+                                --hidden-import=UserString \
+                                -y \
+                                --clean \
+                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                --distpath /tmp/mount/dist \
+                                ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py \
+                                --onefile
+
+chmod +x /tmp/mount/dist/pipe-fuse
+
+###
 # Build ntlm proxy
 ###
 cd /tmp
@@ -80,6 +98,7 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
                                 --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
+                                --add-data /tmp/mount/dist/pipe-fuse:mount \
                                 ${PIPE_CLI_SOURCES_DIR}/pipe.py \
                                 --onefile
 EOL

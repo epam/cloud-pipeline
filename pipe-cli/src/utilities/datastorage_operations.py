@@ -17,12 +17,17 @@ import os
 from future.utils import iteritems
 import datetime
 import sys
+import subprocess
+import shutil
+import platform
 import prettytable
 
+from src.config import Config, is_frozen
 from src.model.data_storage_wrapper import DataStorageWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
+from src.api.preferenceapi import PreferenceAPI
 from src.utilities.patterns import PatternMatcher
 
 ALL_ERRORS = Exception
@@ -439,3 +444,35 @@ class DataStorageOperations(object):
                 path = splitted[0]
                 size = long(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
+
+    @classmethod
+    def mount_storage(cls, mountpoint, options=None, quiet=False):
+        if platform.system() == 'Windows':
+            click.echo('Mount command is not supported for Windows OS', err=True)
+            sys.exit(1)
+        config = Config.instance()
+        username = config.get_current_user()
+        web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
+        web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
+        if is_frozen():
+            cls.run_mount_frozen(config, mountpoint, options, web_dav_url)
+        else:
+            # TODO implement for src dist
+            pass
+
+    @classmethod
+    def run_mount_frozen(cls, config, mountpoint, options, web_dav_url):
+        with open(os.devnull, 'w') as dev_null:
+            mount_bin = config.build_inner_module_path('mount/pipe-fuse')
+            mount_cp = os.path.join(os.path.dirname(Config.config_path()), 'pipe-fuse')
+            shutil.copy(mount_bin, mount_cp)
+            mount_cmd = [mount_cp, '--mountpoint', mountpoint, '--webdav', web_dav_url]
+            if options:
+                mount_cmd.extend(['-o', options])
+            mount_environment = os.environ.copy()
+            mount_environment['API_TOKEN'] = config.access_key
+            mount_aps_proc = subprocess.Popen(mount_cmd, stdout=dev_null, stderr=dev_null, env=mount_environment)
+            if mount_aps_proc.poll() is not None:
+                click.echo('Mount command exited with return code: %d' % mount_aps_proc.returncode, err=True)
+                sys.exit(1)
+
