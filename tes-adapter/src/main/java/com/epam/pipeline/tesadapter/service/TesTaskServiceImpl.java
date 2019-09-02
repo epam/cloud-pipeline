@@ -3,6 +3,7 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
+import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,10 +14,12 @@ import org.springframework.util.Assert;
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private TaskMapper taskMapper;
 
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient) {
+    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
+        this.taskMapper = taskMapper;
     }
 
     @Override
@@ -35,6 +38,12 @@ public class TesTaskServiceImpl implements TesTaskService {
         updateStatus.setStatus(TaskStatus.STOPPED);
         cloudPipelineAPIClient.updateRunStatus(parseRunId(id), updateStatus);
         return new TesCancelTaskResponse();
+    }
+
+    @Override
+    public TesTask getTesTask(Long id) {
+        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(id));
+
     }
 
     private Long parseRunId(String id) {
