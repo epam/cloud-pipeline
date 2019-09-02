@@ -41,18 +41,13 @@ public class TaskMapper {
         pipelineStart.setIsSpot(tesTask.getResources().getPreemptible());
         pipelineStart.setForce(false);
         pipelineStart.setNonPause(true);
-
-        ListUtils.emptyIfNull(tesTask.getInputs())
-        .forEach(tesInput ->
+        ListUtils.emptyIfNull(tesTask.getInputs()).forEach(tesInput ->
                 params.put(tesInput.getName(), new PipeConfValueVO(tesInput.getUrl(), "input")));
-
         ListUtils.emptyIfNull(tesTask.getOutputs()).forEach(tesOutput ->
                 params.put(tesOutput.getName(), new PipeConfValueVO(tesOutput.getUrl(), "output")));
-
         MapUtils.emptyIfNull(tesExecutor.getEnv()).forEach((name, value) ->
                 params.put(name, new PipeConfValueVO(value, "string")));
         pipelineStart.setParams(params);
-
         return pipelineStart;
     }
 
