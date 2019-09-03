@@ -23,7 +23,7 @@ import time
 import easywebdav
 from fuse import FuseOSError, Operations
 
-from webav import CPWebDavClient
+from webdav import CPWebDavClient
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -171,7 +171,7 @@ class WebDavFS(Operations):
     def truncate(self, path, length, fh=None):
         file_size = self.getattr(path)['st_size']
         if file_size > 0 and length == 0:
-            self.create(path)
+            self.create(path, self.mode)
         elif length > file_size:
             self.webdav.upload_range([], path, offset=(length - 1))
         elif length != file_size:

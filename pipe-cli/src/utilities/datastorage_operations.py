@@ -444,4 +444,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, options=None, quiet=False):
-        Mount().mount_storages(mountpoint, options, quiet=quiet)
+        try:
+            Mount().mount_storages(mountpoint, options, quiet=quiet)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)

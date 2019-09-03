@@ -17,7 +17,7 @@ import errno
 import logging
 import os
 
-from pipefuse.wedavfs import WebDavFS
+from pipefuse.webdavfs import WebDavFS
 from fuse import FUSE
 
 
