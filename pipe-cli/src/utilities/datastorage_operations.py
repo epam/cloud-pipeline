@@ -19,8 +19,10 @@ import datetime
 import sys
 import subprocess
 import shutil
+import stat
 import platform
 import prettytable
+import uuid
 
 from src.config import Config, is_frozen
 from src.model.data_storage_wrapper import DataStorageWrapper
@@ -463,16 +465,35 @@ class DataStorageOperations(object):
     @classmethod
     def run_mount_frozen(cls, config, mountpoint, options, web_dav_url):
         with open(os.devnull, 'w') as dev_null:
-            mount_bin = config.build_inner_module_path('mount/pipe-fuse')
-            mount_cp = os.path.join(os.path.dirname(Config.config_path()), 'pipe-fuse')
-            shutil.copy(mount_bin, mount_cp)
-            mount_cmd = [mount_cp, '--mountpoint', mountpoint, '--webdav', web_dav_url]
-            if options:
-                mount_cmd.extend(['-o', options])
+            mount_script = cls.create_mount_script(config, mountpoint, options, web_dav_url)
             mount_environment = os.environ.copy()
             mount_environment['API_TOKEN'] = config.access_key
-            mount_aps_proc = subprocess.Popen(mount_cmd, stdout=dev_null, stderr=dev_null, env=mount_environment)
+            mount_aps_proc = subprocess.Popen(['bash', mount_script],
+                                              stdout=dev_null, stderr=dev_null,
+                                              env=mount_environment)
             if mount_aps_proc.poll() is not None:
                 click.echo('Mount command exited with return code: %d' % mount_aps_proc.returncode, err=True)
                 sys.exit(1)
+
+    @classmethod
+    def create_mount_script(cls, config, mountpoint, options, web_dav_url):
+        mount_bin = config.build_inner_module_path('mount/pipe-fuse')
+        config_folder = os.path.dirname(Config.config_path())
+        suffix = str(uuid.uuid4())
+        mount_cp = os.path.join(config_folder, 'pipe-fuse' + suffix)
+        shutil.copy(mount_bin, mount_cp)
+        mount_cmd = '%s --mountpoint %s  --webdav %s' % (mount_cp, mountpoint, web_dav_url)
+        if options:
+            mount_cmd += '-o ' + options
+        mount_script = os.path.join(config_folder, 'pipe-fuse-script' + suffix)
+        with open(mount_script, 'w') as script:
+            # run pipe-fuse
+            script.write(mount_cmd + '\n')
+            # delete tmp pipe-fuse
+            script.write('rm -f %s\n' % mount_cp)
+            # self delete launch script
+            script.write('rm -- "$0"\n')
+        st = os.stat(mount_script)
+        os.chmod(mount_script, st.st_mode | stat.S_IEXEC)
+        return mount_script
 
