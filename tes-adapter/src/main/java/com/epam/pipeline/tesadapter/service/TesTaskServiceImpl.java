@@ -7,12 +7,15 @@ import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -53,22 +56,20 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesServiceInfo getServiceInfo() {
-        String nameOfService = "CloudPipeline";
-        String doc = "https://epam.github.io/cloud-pipeline/";
-        TesServiceInfo tesServiceInfo = new TesServiceInfo();
-        tesServiceInfo.setName(nameOfService);
-        tesServiceInfo.setDoc(doc);
-        tesServiceInfo.setStorage(getDataStorage());
-        return tesServiceInfo;
+    public TesServiceInfo getServiceInfo(@Value("${TesTaskServiceImpl.nameOfService}") String nameOfService,
+                                         @Value("${TesTaskServiceImpl.doc}") String doc) {
+        Stream<TesServiceInfo> tesServiceInfoStream = Stream.of(new TesServiceInfo())
+                .peek(t -> t.setName(nameOfService))
+                .peek(t -> t.setDoc(doc))
+                .peek(t -> t.setStorage(getDataStorage()));
+        return tesServiceInfoStream.findFirst().get();
     }
 
     private List<String> getDataStorage(){
         List<String> listPathDataStorage = new ArrayList<>();
         List<AbstractDataStorage> storageList = cloudPipelineAPIClient.loadAllDataStorages();
-        for (AbstractDataStorage i: storageList){
-            listPathDataStorage.add(i.getPath());
-        }
+        ListUtils.emptyIfNull(storageList);
+        storageList.stream().forEach(storage -> listPathDataStorage.add(storage.getPath()));
         return listPathDataStorage;
     }
 }
