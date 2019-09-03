@@ -9,12 +9,14 @@ import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
 import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class TaskMapper {
@@ -29,8 +31,8 @@ public class TaskMapper {
 //        tesTask.setVolumes();  skip
 //        tesTask.setTags();   skip
 //        tesTask.setLogs();  skip
-        tesTask.setInputs(createTesInput(run.getPipelineRunParameters()));
-        tesTask.setOutputs(createTesOutput(run.getPipelineRunParameters()));
+        tesTask.setInputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())));
+        tesTask.setOutputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())));
         tesTask.setCreationTime(run.getStartDate().toString());
         return tesTask;
     }
@@ -58,49 +60,53 @@ public class TaskMapper {
     }
 
     private List<TesInput> createTesInput(List<PipelineRunParameter> parameters){
-        List<TesInput> listTesInput = new ArrayList<>();
-        Predicate<PipelineRunParameter> predicate = (s -> s.getType().contains("input"));
-        parameters.stream().filter(predicate).forEach(pipelineRunParameter -> {
-            TesInput tesInput = new TesInput();
-            tesInput.setName(pipelineRunParameter.getName());
-            tesInput.setUrl(pipelineRunParameter.getValue());
-            listTesInput.add(tesInput);
-        });
-        return listTesInput;
+        TesInput tesInput = new TesInput();
+        Stream<TesInput> stream = Stream.of(tesInput)
+                .peek(i -> {
+                    Predicate<PipelineRunParameter> predicate = (s -> s.getType().contains("input"));
+                    Stream<PipelineRunParameter> pipelineRunParameterStream =  parameters.stream()
+                            .filter(predicate)
+                            .peek(pipelineRunParameter -> {
+                                tesInput.setName(pipelineRunParameter.getName());
+                                tesInput.setUrl(pipelineRunParameter.getValue());
+                            });
+                });
+        return stream.collect(Collectors.toList());
     }
 
     private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters){
-        List<TesOutput> listTesOutput = new ArrayList<>();
-        Predicate<PipelineRunParameter> pipelineRunParameterPredicate = (s) -> s.getType().equals("output");
-        parameters.stream().filter(pipelineRunParameterPredicate).forEach(pipelineRunParameter -> {
-            TesOutput output = new TesOutput();
-            output.setName(pipelineRunParameter.getName());
-            output.setUrl(pipelineRunParameter.getValue());
-            listTesOutput.add(output);
-        });
-        return listTesOutput;
+        TesOutput tesOutput = new TesOutput();
+        Stream<TesOutput> stream = Stream.of(tesOutput)
+                .peek(i -> {
+                    Predicate<PipelineRunParameter> predicate = (s -> s.getType().contains("output"));
+                    Stream<PipelineRunParameter> pipelineRunParameterStream =  parameters.stream()
+                            .filter(predicate)
+                            .peek(pipelineRunParameter -> {
+                                tesOutput.setName(pipelineRunParameter.getName());
+                                tesOutput.setUrl(pipelineRunParameter.getValue());
+                            });
+                });
+        return stream.collect(Collectors.toList());
     }
 
     private TesResources createTesResources(PipelineRun run){
         TesResources tesResources = new TesResources();
 //            tesResources.setCpuCores();   skip, later get from instance.nodeType
-            tesResources.setPreemptible(run.getInstance().getSpot());
+        tesResources.setPreemptible(run.getInstance().getSpot());
 //            tesResources.setRamGb(); skip, later get from instance.nodeType
-            tesResources.setDiskGb(new Double(run.getInstance().getNodeDisk()));
+        tesResources.setDiskGb(new Double(run.getInstance().getNodeDisk()));
 //            tesResources.setZones();  skip, later get from region
-            return tesResources;
+        return tesResources;
     }
 
     private List<TesExecutor> createListExecutor(PipelineRun run){
-        List<TesExecutor> tesExecutorList = new ArrayList<>();
         TesExecutor tesExecutor = new TesExecutor();
-        tesExecutor.setCommand(new ArrayList<String>(Arrays.asList(run.getActualCmd().split(" "))));
+        tesExecutor.setCommand(Arrays.asList(run.getActualCmd().split(" ")));
         tesExecutor.setWorkdir("");
         tesExecutor.setStdin("");
         tesExecutor.setStdout("");
         tesExecutor.setStderr("");
         tesExecutor.setEnv(run.getEnvVars());
-        tesExecutorList.add(tesExecutor);
-        return tesExecutorList;
+        return Stream.of(tesExecutor).collect(Collectors.toList());
     }
 }
