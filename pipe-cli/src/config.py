@@ -154,13 +154,14 @@ class Config(object):
                     'https': self.proxy,
                     'ftp': self.proxy}
 
+    @classmethod
+    def get_base_source_dir(cls):
+        return sys._MEIPASS if is_frozen() else os.path.dirname(os.path.abspath(__file__))
+
     def build_inner_module_path(self, module):
         # Setup pipe executable path
         # Both frozen and plain distributions: https://stackoverflow.com/a/42615559
-        if is_frozen():
-            pipe_path = sys._MEIPASS
-        else:
-            pipe_path = os.path.dirname(os.path.abspath(__file__))
+        pipe_path = self.get_base_source_dir()
         return os.path.join(pipe_path, module)
 
     def build_ntlm_module_path(self):
