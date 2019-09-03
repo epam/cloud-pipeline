@@ -31,6 +31,4 @@ public class CloudPipelineAPIClient {
     public PipelineRun updateRunStatus(final Long pipelineRunId, RunStatusVO statusUpdate) {
         return QueryUtils.execute(cloudPipelineAPI.updateRunStatus(pipelineRunId, statusUpdate));
     }
-
-
 }
