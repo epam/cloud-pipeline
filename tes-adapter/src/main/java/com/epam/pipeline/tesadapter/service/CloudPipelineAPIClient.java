@@ -3,6 +3,7 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.RunStatusVO;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +18,10 @@ public class CloudPipelineAPIClient {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
+    }
+
+    public PipelineRun runPipeline(PipelineStart runVo) {
+        return QueryUtils.execute(cloudPipelineAPI.runPipeline(runVo));
     }
 
     public PipelineRun loadPipelineRun(final Long pipelineRunId) {
