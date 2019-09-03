@@ -1,7 +1,10 @@
 package com.epam.pipeline.tesadapter.service;
 
+
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.tesadapter.common.MessageConstants;
+import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
@@ -16,20 +19,28 @@ import org.springframework.util.Assert;
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
+
     private final TaskMapper taskMapper;
 
+    private final MessageHelper messageHelper;
+
+    private final static String ID = "id";
+
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper) {
+    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
+                              MessageHelper messageHelper) {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.taskMapper = taskMapper;
+        this.messageHelper = messageHelper;
     }
 
     @Override
     public TesCreateTaskResponse submitTesTask(TesTask body) {
         TesCreateTaskResponse tesCreateTaskResponse = new TesCreateTaskResponse();
         PipelineRun pipelineRun = cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
-        Assert.notNull(pipelineRun.getId(), "INVALID PIPELINE ID");
-        tesCreateTaskResponse.setId("" + pipelineRun.getId());
+        Assert.notNull(pipelineRun.getId(), messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED,
+                ID, TesCreateTaskResponse.class.getSimpleName()));
+        tesCreateTaskResponse.setId(String.valueOf(pipelineRun.getId()));
         return tesCreateTaskResponse;
     }
 
@@ -52,11 +63,13 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     private Long parseRunId(String id) {
-        Assert.hasText(id, "INVALID RUN ID");
+        Assert.hasText(id, messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NON_SCALAR_TYPE,
+                ID, id));
         try {
             return Long.parseLong(id);
         } catch (NumberFormatException e) {
-            log.error("INVALID RUN ID");
+            log.error(messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT,
+                    ID, id));
             throw new IllegalArgumentException(e);
         }
     }
