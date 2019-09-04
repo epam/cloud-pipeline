@@ -943,6 +943,19 @@ def mount_storage(mountpoint, options, quiet):
     DataStorageOperations.mount_storage(mountpoint, options=options, quiet=quiet)
 
 
+@storage.command('umount')
+@click.argument('mountpoint', required=True)
+@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@Config.validate_access_token
+def umount_storage(mountpoint, quiet):
+    """ Unmounts a mountpoint.
+        Command is supported for Linux distributions and MacOS and requires
+        FUSE installed.
+        - mountpoint - destination for unmount
+    """
+    DataStorageOperations.umount_storage(mountpoint, quiet=quiet)
+
+
 @cli.command(name='view-acl')
 @click.argument('identifier', required=False)
 @click.option(

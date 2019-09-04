@@ -14,17 +14,19 @@
 
 import datetime
 import logging
-from numbers import Number
 import platform
 import time
 import urllib
 import xml.etree.cElementTree as xml
 from collections import namedtuple
+from numbers import Number
 
 import easywebdav
 import requests
 import urllib3
 from requests import cookies
+
+import fuseutils
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -32,8 +34,19 @@ if py_version == '2':
 else:
     from urllib.parse import urlparse
 
-
 File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir'])
+
+# add additional methods
+easywebdav.OperationFailed._OPERATIONS = dict(
+    HEAD="get header",
+    GET="download",
+    PUT="upload",
+    DELETE="delete",
+    MKCOL="create directory",
+    PROPFIND="list directory",
+    OPTIONS="check availability",
+    MOVE="move"
+)
 
 
 class CPWebDavClient(easywebdav.Client):
@@ -64,6 +77,17 @@ class CPWebDavClient(easywebdav.Client):
             self.session.auth = auth
         elif username and password:
             self.session.auth = (username, password)
+
+    def is_available(self):
+        try:
+            self._send('OPTIONS', '/', 200, allow_redirects=False)
+            return True
+        except easywebdav.OperationFailed as e:
+            logging.error('WevDav is not available: %s' % str(e.reason))
+            return False
+        except BaseException as e:
+            logging.error('WevDav is not available: %s' % str(e.message))
+            return False
 
     def get_elem_value(self, elem, name):
         return elem.find('.//{DAV:}' + name)
@@ -139,5 +163,5 @@ class CPWebDavClient(easywebdav.Client):
         if path.startswith(self.root_path):
             return self.host + path
         if path.startswith('/'):
-            return self.baseurl + path
+            return fuseutils.join_path_with_delimiter(self.baseurl, path)
         return ''.join((self.baseurl, self.cwd, path))

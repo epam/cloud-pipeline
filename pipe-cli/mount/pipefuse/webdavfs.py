@@ -23,6 +23,7 @@ import time
 import easywebdav
 from fuse import FuseOSError, Operations
 
+import fuseutils
 from webdav import CPWebDavClient
 
 py_version, _, _ = platform.python_version_tuple()
@@ -43,13 +44,16 @@ class WebDavFS(Operations):
         url = urlparse(webdav_url)
         bearer = os.environ.get('API_TOKEN', '')
         self.webdav = CPWebDavClient(url.scheme + '://' + url.netloc, path=url.path, bearer=bearer)
+        if not self.webdav.is_available():
+            raise RuntimeError("WebDAV server is not available.")
         self.fd = self.FH_START
         self.mode = mode
         self.delimiter = '/'
         self.root = '/'
+        self.is_mac = platform.system() == 'Darwin'
 
     def is_skipped_mac_files(self, path):
-        if platform.system() != 'Darwin':
+        if not self.is_mac:
             return False
         filename = os.path.basename(path)
         return filename in ['.DS_Store', '.localized'] or filename.startswith('._')
@@ -95,7 +99,8 @@ class WebDavFS(Operations):
         dirents = ['.', '..']
         prefix = self.webdav.root_path
         if path != self.root:
-            prefix = prefix.rstrip(self.delimiter) + self.delimiter + path.strip(self.delimiter) + self.delimiter
+            prefix = fuseutils.append_delimiter(fuseutils.join_path_with_delimiter(
+                prefix, path, delimiter=self.delimiter), self.delimiter)
         for f in self.webdav.ls(path):
             f_name = f.name.replace(prefix, '').rstrip(self.delimiter)
             if self.is_skipped_mac_files(f_name):

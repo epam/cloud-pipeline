@@ -16,6 +16,7 @@ import argparse
 import errno
 import logging
 import os
+import sys
 
 from pipefuse.webdavfs import WebDavFS
 from fuse import FUSE
@@ -29,7 +30,7 @@ def start(mountpoint, webdav, default_mode, mount_options=None):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    FUSE(WebDavFS(webdav, int(default_mode, 8)), mountpoint, nothreads=False, foreground=True, **mount_options)
+    FUSE(WebDavFS(webdav, int(default_mode, 8)), mountpoint, nothreads=True, foreground=True, **mount_options)
 
 
 def parse_mount_options(options_string):
@@ -46,13 +47,8 @@ def parse_mount_options(options_string):
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger("fuse")
-    streamHandler = logging.StreamHandler()
-    streamHandler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    streamHandler.setFormatter(formatter)
-    logger.addHandler(streamHandler)
-
+    logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
+                        level=logging.ERROR)
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--mountpoint", type=str, required=True, help="Mount folder")
     parser.add_argument("-w", "--webdav", type=str, required=True, help="Webdav link")
@@ -61,5 +57,8 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--options", type=str, required=False,
                         help="String with mount options supported by FUSE")
     args = parser.parse_args()
-
-    start(args.mountpoint, args.webdav, default_mode=args.mode, mount_options=parse_mount_options(args.options))
+    try:
+        start(args.mountpoint, args.webdav, default_mode=args.mode, mount_options=parse_mount_options(args.options))
+    except BaseException as e:
+        logging.error('Unhandled error: %s' % e.message)
+        sys.exit(1)

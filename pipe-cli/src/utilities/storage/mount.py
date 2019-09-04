@@ -13,14 +13,14 @@
 # limitations under the License.
 
 import os
-from os.path import dirname
-import platform
 import shutil
 import stat
 import subprocess
 import sys
+import time
 import uuid
 from abc import abstractmethod, ABCMeta
+from os.path import dirname
 
 import click
 
@@ -83,9 +83,6 @@ class SourceMount(object):
 class Mount(object):
 
     def mount_storages(self, mountpoint, options=None, quiet=False):
-        if platform.system() == 'Windows':
-            click.echo('Mount command is not supported for Windows OS', err=True)
-            sys.exit(1)
         config = Config.instance()
         username = config.get_current_user()
         web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
@@ -97,15 +94,23 @@ class Mount(object):
         mount_cmd = mount.get_mount_cmd(config, mountpoint, options, web_dav_url)
         self.run(config, mount_cmd)
 
-    def run(self, config, mount_cmd):
+    def run(self, config, mount_cmd, mount_timeout=5):
         with open(os.devnull, 'w') as dev_null:
             mount_environment = os.environ.copy()
             mount_environment['API_TOKEN'] = config.access_key
             mount_aps_proc = subprocess.Popen(mount_cmd,
-                                              stdout=dev_null, stderr=dev_null,
+                                              stdout=dev_null,
+                                              stderr=subprocess.PIPE,
                                               env=mount_environment)
+            time.sleep(mount_timeout)
             if mount_aps_proc.poll() is not None:
-                click.echo('Mount command exited with return code: %d' % mount_aps_proc.returncode, err=True)
+                click.echo('Failed to mount storages. Mount command exited with return code: %d'
+                           % mount_aps_proc.returncode, err=True)
+                click.echo('Mount logs: ', err=True)
+                for line in mount_aps_proc.stderr.readlines():
+                    line = line.strip('\n')
+                    if line:
+                        click.echo(line, err=True)
                 sys.exit(1)
 
 
