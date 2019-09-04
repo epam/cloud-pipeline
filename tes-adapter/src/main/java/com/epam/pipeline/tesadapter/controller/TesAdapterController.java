@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TesAdapterController {
-
     private TesTaskService tesTaskService;
 
     @Autowired

@@ -10,16 +10,24 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 @Service
+@PropertySource("application.properties")
 public class TesTaskServiceImpl implements TesTaskService {
+    @Value("${cloud.pipeline.nameOfService}")
+    private String nameOfService;
+
+    @Value("${cloud.pipeline.doc}")
+    private String doc;
+
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
 
     @Autowired
@@ -56,8 +64,7 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesServiceInfo getServiceInfo(@Value("${TesTaskServiceImpl.nameOfService}") String nameOfService,
-                                         @Value("${TesTaskServiceImpl.doc}") String doc) {
+    public TesServiceInfo getServiceInfo() {
         Stream<TesServiceInfo> tesServiceInfoStream = Stream.of(new TesServiceInfo())
                 .peek(t -> t.setName(nameOfService))
                 .peek(t -> t.setDoc(doc))
@@ -65,11 +72,9 @@ public class TesTaskServiceImpl implements TesTaskService {
         return tesServiceInfoStream.findFirst().get();
     }
 
-    private List<String> getDataStorage(){
-        List<String> listPathDataStorage = new ArrayList<>();
+    private List<String> getDataStorage() {
         List<AbstractDataStorage> storageList = cloudPipelineAPIClient.loadAllDataStorages();
         ListUtils.emptyIfNull(storageList);
-        storageList.stream().forEach(storage -> listPathDataStorage.add(storage.getPath()));
-        return listPathDataStorage;
+        return storageList.stream().map(storage -> storage.getPath()).collect(Collectors.toList());
     }
 }
