@@ -22,10 +22,10 @@ import java.util.stream.Stream;
 @Service
 @PropertySource("application.properties")
 public class TesTaskServiceImpl implements TesTaskService {
-    @Value("${cloud.pipeline.nameOfService}")
+    @Value("cloud.pipeline.service.name")
     private String nameOfService;
 
-    @Value("${cloud.pipeline.doc}")
+    @Value("cloud.pipeline.doc")
     private String doc;
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
@@ -74,7 +74,6 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     private List<String> getDataStorage() {
         List<AbstractDataStorage> storageList = cloudPipelineAPIClient.loadAllDataStorages();
-        ListUtils.emptyIfNull(storageList);
-        return storageList.stream().map(storage -> storage.getPath()).collect(Collectors.toList());
+        return ListUtils.emptyIfNull(storageList).stream().map(storage -> storage.getPath()).collect(Collectors.toList());
     }
 }
