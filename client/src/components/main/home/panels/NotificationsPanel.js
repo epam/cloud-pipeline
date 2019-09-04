@@ -69,7 +69,7 @@ export default class NotificationsPanel extends React.Component {
         <Col className={styles.iconColumn}>
           {this.renderSeverityIcon(notification)}
         </Col>
-        <Col style={{paddingLeft: 10, flex: 1}}>
+        <Col style={{paddingLeft: 10, flex: 1, wordBreak: 'break-word'}}>
           <Row type="flex" style={{fontWeight: 'bold', fontSize: 'larger'}}>
             {notification.title}
           </Row>

@@ -125,7 +125,7 @@ export default class SystemNotification extends React.Component {
         <div className={styles.iconColumn}>
           {this.renderSeverityIcon()}
         </div>
-        <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+        <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column', wordBreak: 'break-word'}}>
           <Row type="flex" style={{
             marginBottom: 5,
             display: 'flex',
