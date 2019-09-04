@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -71,6 +72,9 @@ public interface CloudPipelineAPI {
     String TOOL_IDENTIFIER = "image";
     String VERSION = "version";
     String PATH = "path";
+
+    @POST("run")
+    Call<Result<PipelineRun>> runPipeline(@Body PipelineStart runVo);
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
