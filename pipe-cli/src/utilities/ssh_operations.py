@@ -76,7 +76,6 @@ def run_ssh_command(channel, command):
     return channel.recv_exit_status()
 
 def run_ssh_session(channel):
-    channel.get_pty()
     channel.invoke_shell()
     interactive_shell(channel)
 
@@ -99,6 +98,10 @@ def run_ssh(run_id, command):
             raise PermissionError('Authentication failed for {}@{}'.format(
                 DEFAULT_SSH_USER, conn_info.ssh_endpoint[0]))
         channel = transport.open_session()
+        # "get_pty" is used for non-interactive commands too
+        # This allows to get stdout and stderr in a correct order
+        # Otherwise we'll need to combine them somehow
+        channel.get_pty()
         if command:
             # Execute command and wait for it's execution
             return run_ssh_command(channel, command)
