@@ -14,12 +14,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class TesAdapterController {
-
     private TesTaskService tesTaskService;
 
     @Autowired
@@ -43,23 +41,28 @@ public class TesAdapterController {
     }
 
     @PostMapping("/v1/tasks")
-    @ResponseBody
     ResponseEntity<TesCreateTaskResponse> submitTesTask(@RequestBody TesTask body) {
         tesTaskService.stub();
         return new ResponseEntity<TesCreateTaskResponse>(new TesCreateTaskResponse(), HttpStatus.NOT_IMPLEMENTED);
     }
 
     @GetMapping("/v1/tasks/{id}")
-    @ResponseBody
     ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
             defaultValue = "MINIMAL") TaskView view) {
-        return ResponseEntity.ok().body(tesTaskService.getTesTask(new Long(id)));
+        return ResponseEntity.ok().body(tesTaskService.getTesTask(parseStringIdToLongId(id)));
 
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
-    @ResponseBody
     ResponseEntity<TesCancelTaskResponse> cancelTesTask(@PathVariable String id) {
         return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.cancelTesTask(id));
+    }
+
+    private Long parseStringIdToLongId(String id){
+        try {
+            return Long.parseLong(id);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }
