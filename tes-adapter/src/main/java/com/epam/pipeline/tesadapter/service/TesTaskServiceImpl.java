@@ -19,7 +19,6 @@ import org.springframework.util.Assert;
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
-    private TaskMapper taskMapper;
 
     private final TaskMapper taskMapper;
 

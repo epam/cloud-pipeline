@@ -2,10 +2,17 @@ package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesInput;
+import com.epam.pipeline.tesadapter.entity.TesOutput;
+import com.epam.pipeline.tesadapter.entity.TesResources;
+import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -15,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +79,7 @@ public class TaskMapper {
     }
 
     public TesTask mapToTesTask(PipelineRun run) {
-        TesTask tesTask = new TesTask();
+        final TesTask tesTask = new TesTask();
         tesTask.setId(String.valueOf(run.getId()));
         tesTask.setState(createTesState(run.getStatus()));
         tesTask.setName(run.getPodId());
@@ -136,7 +144,7 @@ public class TaskMapper {
 
     private List<TesExecutor> createListExecutor(PipelineRun run){
         final TesExecutor tesExecutor = new TesExecutor();
-        tesExecutor.setCommand(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(" "))));
+        tesExecutor.setCommand(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))));
         tesExecutor.setEnv(run.getEnvVars());
         return ListUtils.emptyIfNull(Arrays.asList(tesExecutor));
     }
