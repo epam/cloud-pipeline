@@ -29,10 +29,19 @@ class PipelineRunModel(object):
         self.start_date = None
         self.end_date = None
         self.scheduled_date = None
+        self.ssh_pass = None
+        self.pod_ip = None
         self.tasks = []
         self.instance = {}
         self.owner = None
         self.endpoints = []
+
+    @property
+    def is_initialized(self):
+        return self.status == 'RUNNING' and \
+            self.pod_ip is not None and \
+                next(( True for t in self.tasks \
+                    if t.name == 'InitializeNode' and t.status == 'SUCCESS' ), False)
 
     @classmethod
     def load(cls, json):
@@ -68,6 +77,10 @@ class PipelineRunModel(object):
                     instance.parameters.append(PipelineRunParameterModel(parameter['name'], None, None, False))
         if 'instance' in json:
             instance.instance = json['instance'].items()
+        if 'podIP' in json:
+            instance.pod_ip = json['podIP']
+        if 'sshPassword' in json:
+            instance.ssh_pass = json['sshPassword']
         node_ip_exists = False
         for (key, value) in instance.instance:
             if key == 'nodeIP':
@@ -75,6 +88,7 @@ class PipelineRunModel(object):
         if instance.status is not None and instance.status.upper() == 'RUNNING' and \
                 (instance.instance is None or not node_ip_exists):
             instance.status = 'SCHEDULED'
+
         return instance
 
 
