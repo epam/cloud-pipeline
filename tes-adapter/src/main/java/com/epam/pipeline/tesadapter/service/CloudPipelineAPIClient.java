@@ -2,6 +2,7 @@ package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.utils.QueryUtils;
@@ -30,5 +31,10 @@ public class CloudPipelineAPIClient {
 
     public PipelineRun updateRunStatus(final Long pipelineRunId, RunStatusVO statusUpdate) {
         return QueryUtils.execute(cloudPipelineAPI.updateRunStatus(pipelineRunId, statusUpdate));
+    }
+
+    public AllowedInstanceAndPriceTypes loadAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
+                                                                         final Boolean spot) {
+        return QueryUtils.execute(cloudPipelineAPI.loadAllowedInstanceAndPriceTypes(toolId, regionId, spot));
     }
 }
