@@ -16,7 +16,6 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -65,11 +64,11 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesServiceInfo getServiceInfo() {
-        Stream<TesServiceInfo> tesServiceInfoStream = Stream.of(new TesServiceInfo())
-                .peek(t -> t.setName(nameOfService))
-                .peek(t -> t.setDoc(doc))
-                .peek(t -> t.setStorage(getDataStorage()));
-        return tesServiceInfoStream.findFirst().get();
+        TesServiceInfo tesServiceInfo = new TesServiceInfo();
+        tesServiceInfo.setName(nameOfService);
+        tesServiceInfo.setDoc(doc);
+        tesServiceInfo.setStorage(getDataStorage());
+        return tesServiceInfo;
     }
 
     private List<String> getDataStorage() {
