@@ -21,10 +21,8 @@ import java.util.stream.Collectors;
 public class TesTaskServiceImpl implements TesTaskService {
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
-
     @Value("${cloud.pipeline.doc}")
     private String doc;
-
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
 
     @Autowired
@@ -62,7 +60,7 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesServiceInfo getServiceInfo() {
-        TesServiceInfo tesServiceInfo = new TesServiceInfo();
+        final TesServiceInfo tesServiceInfo = new TesServiceInfo();
         tesServiceInfo.setName(nameOfService);
         tesServiceInfo.setDoc(doc);
         tesServiceInfo.setStorage(getDataStorage());
@@ -70,7 +68,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     private List<String> getDataStorage() {
-        List<AbstractDataStorage> storageList = cloudPipelineAPIClient.loadAllDataStorages();
-        return ListUtils.emptyIfNull(storageList).stream().map(storage -> storage.getPath()).collect(Collectors.toList());
+        return ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllDataStorages())
+                .stream().map(storage -> storage.getPath())
+                .collect(Collectors.toList());
     }
 }
