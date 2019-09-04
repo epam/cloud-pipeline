@@ -107,6 +107,6 @@ public class TaskMapper {
         tesExecutor.setStdout("");
         tesExecutor.setStderr("");
         tesExecutor.setEnv(run.getEnvVars());
-        return Stream.of(tesExecutor).collect(Collectors.toList());
+        return ListUtils.emptyIfNull(Arrays.asList(tesExecutor));
     }
 }
