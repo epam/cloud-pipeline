@@ -30,12 +30,19 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 
 public class UserManagerTest extends AbstractSpringTest {
 
     private static final String TEST_USER = "TestUser";
     private static final String SUBJECT = "Subject";
     private static final String BODY = "Body";
+    private static final Long DEFAULT_STORAGE_ID = null;
+    private static final List<Long> DEFAULT_USER_ROLES = Collections.singletonList(2L);
+    private static final List<String> DEFAULT_USER_GROUPS = Collections.emptyList();
+    private static final Map<String, String> DEFAULT_USER_ATTRIBUTE = Collections.emptyMap();
 
     @Autowired
     private UserManager userManager;
@@ -45,10 +52,25 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateUser() {
+        Assert.assertNull(userManager.loadUserByName(TEST_USER));
+
+        final PipelineUser user = createDefaultPipelineUser();
+        Assert.assertFalse(user.isBlocked());
+
+        userManager.updateUserBlockingStatus(user.getId(), true);
+        final PipelineUser blockedPipelineUser = userManager.loadUserById(user.getId());
+        Assert.assertTrue(blockedPipelineUser.isBlocked());
+
+        userManager.updateUserBlockingStatus(user.getId(), false);
+        final PipelineUser unblockedPipelineUser = userManager.loadUserById(user.getId());
+        Assert.assertFalse(unblockedPipelineUser.isBlocked());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteUser() {
-        final PipelineUser user = userManager.createUser(TEST_USER,
-                Collections.singletonList(2L),
-                Collections.emptyList(), null, null);
+        final PipelineUser user = createDefaultPipelineUser();
 
         final NotificationMessage message = new NotificationMessage();
         final NotificationTemplate template = new NotificationTemplate();
@@ -63,5 +85,13 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertFalse(notificationDao.loadAllNotifications().isEmpty());
         userManager.deleteUser(user.getId());
         Assert.assertTrue(notificationDao.loadAllNotifications().isEmpty());
+    }
+
+    private PipelineUser createDefaultPipelineUser() {
+        return userManager.createUser(TEST_USER,
+                                      DEFAULT_USER_ROLES,
+                                      DEFAULT_USER_GROUPS,
+                                      DEFAULT_USER_ATTRIBUTE,
+                                      DEFAULT_STORAGE_ID);
     }
 }

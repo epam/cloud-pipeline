@@ -65,11 +65,11 @@ public class ContextualPreferenceManagerTest {
     private static final Role ROLE_2 = new Role(2L, "role2");
     private static final String USER_NAME = "userName";
     private static final PipelineUser USER = new PipelineUser(1L, null, Arrays.asList(ROLE_1, ROLE_2),
-            Collections.emptyList(), false, null, Collections.emptyMap());
+            Collections.emptyList(), false, false, null, Collections.emptyMap());
     private static final PipelineUser USER_WITHOUT_ROLES = new PipelineUser(USER.getId(), null, null,
-            Collections.emptyList(), false, null, Collections.emptyMap());
+            Collections.emptyList(), false, false, null, Collections.emptyMap());
     private static final PipelineUser USER_WITHOUT_ID = new PipelineUser(null, USER_NAME, Collections.emptyList(),
-            Collections.emptyList(), false, null, Collections.emptyMap());
+            Collections.emptyList(), false, false, null, Collections.emptyMap());
 
     private final ContextualPreferenceExternalResource toolResource =
             new ContextualPreferenceExternalResource(LEVEL, TOOL_ID);

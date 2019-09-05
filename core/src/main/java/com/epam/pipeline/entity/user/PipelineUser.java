@@ -71,6 +71,9 @@ public class PipelineUser implements StorageContainer {
     @Transient
     private boolean admin;
 
+    @Transient
+    private boolean blocked;
+
     private Long defaultStorageId;
 
     @Convert(converter = AttributesConverterJson.class)
@@ -78,6 +81,7 @@ public class PipelineUser implements StorageContainer {
 
     public PipelineUser() {
         this.admin = false;
+        this.blocked = false;
         this.roles = new ArrayList<>();
         this.groups = new ArrayList<>();
         this.attributes = new HashMap<>();

@@ -231,7 +231,8 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         USER_GROUPS,
         ATTRIBUTES,
         PREFIX,
-        USER_DEFAULT_STORAGE_ID;
+        USER_DEFAULT_STORAGE_ID,
+        USER_BLOCKED;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -248,6 +249,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             params.addValue(USER_GROUPS.name(), groupsSqlArray);
             params.addValue(ATTRIBUTES.name(), convertDataToJsonStringForQuery(user.getAttributes()));
             params.addValue(USER_DEFAULT_STORAGE_ID.name(), user.getDefaultStorageId());
+            params.addValue(USER_BLOCKED.name(), user.isBlocked());
             return params;
         }
 
@@ -280,6 +282,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             PipelineUser user = new PipelineUser();
             user.setId(userId);
             user.setUserName(rs.getString(USER_NAME.name()));
+            user.setBlocked(rs.getBoolean(USER_BLOCKED.name()));
             Array groupsSqlArray = rs.getArray(USER_GROUPS.name());
             if (groupsSqlArray != null) {
                 List<String> groups = Arrays.asList((String[]) groupsSqlArray.getArray());
