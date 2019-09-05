@@ -1,6 +1,5 @@
 package com.epam.pipeline.tesadapter.service;
 
-
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -11,6 +10,7 @@ import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -19,11 +19,8 @@ import org.springframework.util.Assert;
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private final TaskMapper taskMapper;
-
     private final MessageHelper messageHelper;
-
     private final static String ID = "id";
 
     @Autowired
@@ -63,20 +60,13 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesTask getTesTask(Long id) {
-        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(id));
-
+    public TesTask getTesTask(String id) {
+        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)));
     }
 
     private Long parseRunId(String id) {
-        Assert.hasText(id, messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NON_SCALAR_TYPE,
-                ID, id));
-        try {
-            return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            log.error(messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT,
-                    ID, id));
-            throw new IllegalArgumentException(e);
-        }
+        Assert.state(StringUtils.isNumeric(id),
+                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "ID", id));
+        return Long.parseLong(id);
     }
 }

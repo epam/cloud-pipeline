@@ -31,12 +31,9 @@ import java.util.Map;
 @Service
 public class TaskMapper {
     private final String defaultInstanceType;
-
     private final Integer defaultHddSize;
-
     @Autowired
     private MessageHelper messageHelper;
-
     private static final String SEPARATOR = " ";
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
@@ -91,44 +88,39 @@ public class TaskMapper {
         return tesTask;
     }
 
-    private TesState createTesState(TaskStatus status){
-        TesState tesStatus = TesState.UNKNOWN;
-        switch (status){
+    private TesState createTesState(TaskStatus status) {
+        switch (status) {
             case RUNNING:
-                tesStatus = TesState.RUNNING;
-                break;
+                return TesState.RUNNING;
             case PAUSED:
-                tesStatus = TesState.PAUSED;
-                break;
+                return TesState.PAUSED;
             case SUCCESS:
-                tesStatus = TesState.COMPLETE;
-                break;
+                return TesState.COMPLETE;
             case FAILURE:
-                tesStatus =  TesState.EXECUTOR_ERROR;
-                break;
+                return TesState.EXECUTOR_ERROR;
             case STOPPED:
-                tesStatus =  TesState.CANCELED;
-                break;
+                return TesState.CANCELED;
+            default:
+                return TesState.UNKNOWN;
         }
-        return tesStatus;
     }
 
-    private List<TesInput> createTesInput(List<PipelineRunParameter> parameters){
+    private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
         final TesInput tesInput = new TesInput();
         parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
-                .peek(pipelineRunParameter -> {
+                .forEach(pipelineRunParameter -> {
                     tesInput.setName(pipelineRunParameter.getName());
                     tesInput.setUrl(pipelineRunParameter.getValue());
                 });
         return ListUtils.emptyIfNull(Arrays.asList(tesInput));
     }
 
-    private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters){
+    private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
         final TesOutput tesOutput = new TesOutput();
         parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
-                .peek(pipelineRunParameter -> {
+                .forEach(pipelineRunParameter -> {
                     tesOutput.setName(pipelineRunParameter.getName());
                     tesOutput.setUrl(pipelineRunParameter.getValue());
                 });
