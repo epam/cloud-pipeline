@@ -39,6 +39,7 @@ import org.mockito.MockitoAnnotations;
 import org.opensaml.saml2.core.NameID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -212,7 +213,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
                .thenReturn(user);
     }
 
-    @Test(expected = AuthenticationException.class)
+    @Test(expected = LockedException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForBlockedUser() {
         blockCurrentUser();
