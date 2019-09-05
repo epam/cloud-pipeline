@@ -41,7 +41,7 @@ class PipelineRunModel(object):
         return self.status == 'RUNNING' and \
             self.pod_ip is not None and \
                 next(( True for t in self.tasks \
-                    if t.name == 'InitializeNode' and t.status == 'SUCCESS' ), False)
+                    if t.name == 'InitializeEnvironment' and t.status == 'SUCCESS' ), False)
 
     @classmethod
     def load(cls, json):
