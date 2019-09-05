@@ -1,6 +1,6 @@
 package com.epam.pipeline.tesadapter.service;
 
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
@@ -28,11 +28,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     @Value("${cloud.pipeline.doc}")
     private String doc;
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private final TaskMapper taskMapper;
-
     private final MessageHelper messageHelper;
-
     private final static String ID = "id";
 
     @Autowired
