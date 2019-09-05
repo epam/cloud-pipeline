@@ -25,12 +25,14 @@ DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
 
 def setup_paramiko_logging():
-    paramiko_log_file = os.getenv("PARAMIKO_LOG_FILE")
+    # Log to "null" file by default
+    paramiko_log_file = os.getenv("PARAMIKO_LOG_FILE", os.devnull)
     paramiko_log_level_name = os.getenv("PARAMIKO_LOG_LEVEL", "ERROR")
     if hasattr(logging, paramiko_log_level_name):
         paramiko_log_level = getattr(logging, paramiko_log_level_name)
     else:
         paramiko_log_level = logging.ERROR
+
     if paramiko_log_file:
         paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 

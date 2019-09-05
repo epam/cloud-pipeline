@@ -112,7 +112,7 @@ def posix_shell(channel, is_interactive=True):
             if channel in read_ready:
                 # try to do a read from the remote end and print to screen
                 try:
-                    out = channel.recv(1024).decode(encoding=sys.stdout.encoding, errors='replace')
+                    out = channel.recv(1024).decode(encoding=stdout_encoding, errors='replace')
 
                     # remote close
                     if len(out) == 0:
