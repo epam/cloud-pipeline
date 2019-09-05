@@ -232,7 +232,8 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<PipelineUser> updateUserBlockingStatus(@PathVariable final Long id, @PathVariable final Boolean blockStatus) {
+    public Result<PipelineUser> updateUserBlockingStatus(@PathVariable final Long id,
+                                                         @RequestParam final Boolean blockStatus) {
         return Result.success(userApiService.updateUserBlockingStatus(id, blockStatus));
     }
 
