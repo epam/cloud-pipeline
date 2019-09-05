@@ -29,7 +29,7 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None):
     sock.settimeout(timeout)
     sock.connect(proxy)
     cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
-    sock.sendall(bytes(cmd_connect, 'UTF-8'))
+    sock.sendall(cmd_connect.encode('UTF-8'))
     response = []
     sock.settimeout(2)  # quick hack - replace this with something better performing.
     try:

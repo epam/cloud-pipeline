@@ -55,6 +55,21 @@ def posix_shell(channel, is_interactive=True):
     # the remote shell is closed
     oldtty_attrs = termios.tcgetattr(sys.stdin)
 
+    # Python < 3.4 does not have get_terminal_size. If it's the case - use stty in posix
+    if not hasattr(shutil, 'get_terminal_size'):
+        import subprocess
+        def get_terminal_size(fallback=None):
+            try:
+                stty_size = subprocess.check_output(
+                    ['stty', 'size'],
+                    stderr=subprocess.PIPE,
+                ).decode('utf-8')
+                lines_str, columns_str = stty_size.split()
+                return (int(columns_str), int(lines_str))
+            except Exception:
+                return fallback
+        shutil.get_terminal_size = get_terminal_size
+
     # invoke_shell with default options is vt100 compatible
     # which is exactly what you want for an OpenSSH imitation
     def resize_pty():
@@ -96,7 +111,7 @@ def posix_shell(channel, is_interactive=True):
             if channel in read_ready:
                 # try to do a read from the remote end and print to screen
                 try:
-                    out = str(channel.recv(1024), encoding=sys.stdout.encoding, errors='replace')
+                    out = channel.recv(1024).decode(encoding=sys.stdout.encoding, errors='replace')
 
                     # remote close
                     if len(out) == 0:
