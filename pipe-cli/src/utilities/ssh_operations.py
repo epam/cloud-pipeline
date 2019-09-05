@@ -14,6 +14,7 @@
 
 import base64
 import collections
+import logging
 import os
 import paramiko
 from src.utilities.pipe_shell import plain_shell, interactive_shell
@@ -22,6 +23,16 @@ from urllib.parse import urlparse
 
 DEFAULT_SSH_PORT = 22
 DEFAULT_SSH_USER = 'root'
+
+def setup_paramiko_logging():
+    paramiko_log_file = os.getenv("PARAMIKO_LOG_FILE")
+    paramiko_log_level_name = os.getenv("PARAMIKO_LOG_LEVEL", "ERROR")
+    if hasattr(logging, paramiko_log_level_name):
+        paramiko_log_level = getattr(logging, paramiko_log_level_name)
+    else:
+        paramiko_log_level = logging.ERROR
+    if paramiko_log_file:
+        paramiko.util.log_to_file(paramiko_log_file, paramiko_log_level)
 
 def http_proxy_tunnel_connect(proxy, target, timeout=None):
     import socket
@@ -88,6 +99,7 @@ def run_ssh(run_id, command):
     transport = None
     try:
         socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
+        setup_paramiko_logging()
         transport = paramiko.Transport(socket)
         transport.start_client()
         # User password authentication, which available only to the OWNER and ROLE_ADMIN users

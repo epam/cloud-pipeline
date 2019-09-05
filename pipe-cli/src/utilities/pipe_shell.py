@@ -54,6 +54,7 @@ def posix_shell(channel, is_interactive=True):
     # get the current TTY attributes to reapply after
     # the remote shell is closed
     oldtty_attrs = termios.tcgetattr(sys.stdin)
+    stdout_encoding = sys.stdout.encoding if sys.stdout.encoding else "UTF-8"
 
     # Python < 3.4 does not have get_terminal_size. If it's the case - use stty in posix
     if not hasattr(shutil, 'get_terminal_size'):
