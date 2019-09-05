@@ -29,6 +29,7 @@ from paramiko.py3compat import u
 
 DEFAULT_TERMINAL_COLUMNS = 100
 DEFAULT_TERMINAL_LINES = 30
+PYTHON3 = sys.version_info.major == 3
 
 try:
     import termios
@@ -71,6 +72,25 @@ def posix_shell(channel, is_interactive=True):
                 return fallback
         shutil.get_terminal_size = get_terminal_size
 
+    def transmit_to_std_out(channel):
+        if PYTHON3:
+            out = str(channel.recv(1024), encoding=stdout_encoding, errors='replace')
+        else:
+            out = channel.recv(1024)
+
+        # Channel is closed
+        if len(out) == 0:
+            return False
+        
+        if PYTHON3:
+            sys.stdout.write(out)
+        else:
+            print(out, end='')
+
+        sys.stdout.flush()
+
+        return True
+
     # invoke_shell with default options is vt100 compatible
     # which is exactly what you want for an OpenSSH imitation
     def resize_pty():
@@ -112,14 +132,7 @@ def posix_shell(channel, is_interactive=True):
             if channel in read_ready:
                 # try to do a read from the remote end and print to screen
                 try:
-                    out = channel.recv(1024).decode(encoding=stdout_encoding, errors='replace')
-
-                    # remote close
-                    if len(out) == 0:
-                        is_alive = False
-                    else:
-                        sys.stdout.write(out)
-                        sys.stdout.flush()
+                    is_alive = transmit_to_std_out(channel)
 
                 # do nothing on a timeout, as this is an ordinary condition
                 except socket.timeout:
