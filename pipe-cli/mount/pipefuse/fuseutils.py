@@ -13,6 +13,8 @@
 # limitations under the License.
 
 DEFAULT_DELIMITER = '/'
+KB = 1024
+MB = KB * KB
 
 
 def join_path_with_delimiter(parent, child, delimiter=DEFAULT_DELIMITER):
@@ -22,3 +24,15 @@ def join_path_with_delimiter(parent, child, delimiter=DEFAULT_DELIMITER):
 def append_delimiter(path, delimiter=DEFAULT_DELIMITER):
     return path if path.endswith(delimiter) else path + delimiter
 
+
+def split_path(path, delimiter=DEFAULT_DELIMITER):
+    path_parts = path.rstrip(delimiter).rsplit(delimiter, 1)
+    if len(path_parts) == 1:
+        return '', path_parts[0]
+    else:
+        parent_path, file_name = path_parts
+        return parent_path, __matching_delimiter(file_name, path)
+
+
+def __matching_delimiter(path, reference_path, delimiter=DEFAULT_DELIMITER):
+    return path + delimiter if reference_path.endswith(delimiter) else path
