@@ -4,11 +4,15 @@ import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.RunStatusVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class CloudPipelineAPIClient {
@@ -36,5 +40,13 @@ public class CloudPipelineAPIClient {
     public AllowedInstanceAndPriceTypes loadAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
                                                                          final Boolean spot) {
         return QueryUtils.execute(cloudPipelineAPI.loadAllowedInstanceAndPriceTypes(toolId, regionId, spot));
+    }
+
+    public Tool loadTool(String image) {
+        return QueryUtils.execute(cloudPipelineAPI.loadTool(null, image));
+    }
+
+    public List<AbstractCloudRegion> loadAllRegions(){
+        return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
     }
 }
