@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +39,7 @@ public class TaskMapper {
     private static final String IMAGE = "image";
     private static final String EXECUTORS = "executors";
     private static final String ZONES = "zones";
+    private static final String MiB = "MiB";
     private static final Integer FIRST = 0;
     private static final Integer ONLY_ONE = 1;
     private static final Double GiB_TO_GiB = 1.0;
@@ -93,7 +95,8 @@ public class TaskMapper {
 
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
                 .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
-
+        Assert.isTrue(allowedInstanceAndPriceTypes.getAllowedInstanceTypes() != null, messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, allowedInstanceAndPriceTypes));
         return evaluateMostProperInstanceType(allowedInstanceAndPriceTypes, ramGb, cpuCores);
     }
 
@@ -109,8 +112,8 @@ public class TaskMapper {
                 .collect(Collectors.toList()).get(FIRST).getId();
     }
 
-    public String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
-                                                 Double ramGb, Long cpuCores) {
+    private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
+                                                  Double ramGb, Long cpuCores) {
         return allowedInstanceAndPriceTypes.getAllowedInstanceTypes().stream()
                 .collect(Collectors.toMap(InstanceType::getName, instancaType ->
                         calculateInstanceCoef(instancaType, ramGb, cpuCores))).entrySet().stream()
@@ -123,7 +126,7 @@ public class TaskMapper {
     }
 
     private Double parseInstanceMemoryUnit(String memoryUnit) {
-        if (memoryUnit != null && memoryUnit.equalsIgnoreCase("MiB")) {
+        if (memoryUnit != null && memoryUnit.equalsIgnoreCase(MiB)) {
             return MiB_TO_GiB;
         }
         return GiB_TO_GiB;
