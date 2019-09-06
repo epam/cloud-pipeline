@@ -15,7 +15,6 @@
  */
 
 import React from 'react';
-// import {computed, observable} from 'mobx';
 import ReactDOMServer from 'react-dom/server';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
