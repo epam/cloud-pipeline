@@ -10,6 +10,7 @@ import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesResources;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -23,6 +24,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,6 +33,7 @@ public class TaskMapper {
     private final Integer defaultHddSize;
     private final Double defaultRamGb;
     private final Long defaultCpuCore;
+    private final Boolean defaultPreemptible;
     private MessageHelper messageHelper;
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
 
@@ -55,18 +58,24 @@ public class TaskMapper {
     public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
                       @Value("${cloud.pipeline.ramGb}") Double defaultRamGb,
                       @Value("${cloud.pipeline.cpuCore}") Long defaultCpuCore,
+                      @Value("${cloud.pipeline.preemtible}") Boolean defaultPreemptible,
                       CloudPipelineAPIClient cloudPipelineAPIClient, MessageHelper messageHelper) {
         this.defaultHddSize = hddSize;
         this.defaultRamGb = defaultRamGb;
         this.defaultCpuCore = defaultCpuCore;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.messageHelper = messageHelper;
+        this.defaultPreemptible = defaultPreemptible;
     }
 
     public PipelineStart mapToPipelineStart(TesTask tesTask) {
+        Assert.notNull(tesTask, messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, tesTask));
         PipelineStart pipelineStart = new PipelineStart();
         Map<String, PipeConfValueVO> params = new HashMap<>();
         TesExecutor tesExecutor = getExecutorFromTesExecutorsList(tesTask.getExecutors());
+
+
         Assert.notNull(tesExecutor.getImage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE));
         Tool pipelineTool = loadToolByTesImage(tesExecutor.getImage());
@@ -75,9 +84,10 @@ public class TaskMapper {
         pipelineStart.setCmdTemplate(String.join(SEPARATOR, tesExecutor.getCommand()));
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
-        pipelineStart.setHddSize(tesTask.getResources().getDiskGb() != null ?
-                tesTask.getResources().getDiskGb().intValue() : defaultHddSize);
-        pipelineStart.setIsSpot(tesTask.getResources().getPreemptible());
+        pipelineStart.setHddSize(Optional.ofNullable(tesTask.getResources())
+                .map(tesResources -> tesResources.getDiskGb().intValue()).orElse(defaultHddSize));
+        pipelineStart.setIsSpot(Optional.ofNullable(tesTask.getResources())
+                .map(TesResources::getPreemptible).orElse(defaultPreemptible));
         pipelineStart.setForce(false);
         pipelineStart.setNonPause(true);
         ListUtils.emptyIfNull(tesTask.getInputs()).forEach(tesInput ->
@@ -98,9 +108,9 @@ public class TaskMapper {
 
     private String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
         Double ramGb =
-                tesTask.getResources().getRamGb() != null ? tesTask.getResources().getRamGb() : defaultRamGb;
+                Optional.ofNullable(tesTask.getResources()).map(TesResources::getRamGb).orElse(defaultRamGb);
         Long cpuCores =
-                tesTask.getResources().getCpuCores() != null ? tesTask.getResources().getCpuCores() : defaultCpuCore;
+                Optional.ofNullable(tesTask.getResources()).map(TesResources::getCpuCores).orElse(defaultCpuCore);
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(tesTask.getResources().getZones());
         Boolean spot = tesTask.getResources().getPreemptible();
