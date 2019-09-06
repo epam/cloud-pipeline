@@ -83,6 +83,26 @@ def get_conn_info(run_id):
                          ssh_pass=run_model.ssh_pass)
 
 
+def establish_ssh(run_id):
+    # Grab the run information from the API to setup the run's IP and EDGE proxy address
+    conn_info = get_conn_info(run_id)
+
+    # Initialize Paramiko SSH client
+    socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
+    setup_paramiko_logging()
+    transport = paramiko.Transport(socket)
+    transport.start_client()
+    # User password authentication, which available only to the OWNER and ROLE_ADMIN users
+    try:
+        transport.auth_password(DEFAULT_SSH_USER, conn_info.ssh_pass)
+    except paramiko.ssh_exception.AuthenticationException:
+        # Reraise authentication error to provide more details
+        raise PermissionError('Authentication failed for {}@{}'.format(
+            DEFAULT_SSH_USER, conn_info.ssh_endpoint[0]))
+    channel = transport.open_session()
+
+    return channel
+
 def run_ssh_command(channel, command):
     channel.exec_command(command)
     plain_shell(channel)
@@ -93,25 +113,11 @@ def run_ssh_session(channel):
     interactive_shell(channel)
 
 def run_ssh(run_id, command):
-    # Grab the run information from the API to setup the run's IP and EDGE proxy address
-    conn_info = get_conn_info(run_id)
-
-    # Initialize Paramiko SSH client
     channel = None
     transport = None
     try:
-        socket = http_proxy_tunnel_connect(conn_info.ssh_proxy, conn_info.ssh_endpoint, 5)
-        setup_paramiko_logging()
-        transport = paramiko.Transport(socket)
-        transport.start_client()
-        # User password authentication, which available only to the OWNER and ROLE_ADMIN users
-        try:
-            transport.auth_password(DEFAULT_SSH_USER, conn_info.ssh_pass)
-        except paramiko.ssh_exception.AuthenticationException:
-            # Reraise authentication error to provide more details
-            raise PermissionError('Authentication failed for {}@{}'.format(
-                DEFAULT_SSH_USER, conn_info.ssh_endpoint[0]))
-        channel = transport.open_session()
+        channel = establish_ssh(run_id)
+        transport = channel.get_transport()
         # "get_pty" is used for non-interactive commands too
         # This allows to get stdout and stderr in a correct order
         # Otherwise we'll need to combine them somehow
@@ -123,6 +129,20 @@ def run_ssh(run_id, command):
             # Open a remote shell
             run_ssh_session(channel)
             return 0
+        
+    finally:
+        if channel:
+            channel.close()
+        if transport:
+            transport.close()
+
+def run_scp(source, target, is_recursive):
+    channel = None
+    transport = None
+    try:
+        channel = establish_ssh(run_id)
+        transport = channel.get_transport()
+        sftp = paramiko.sftp_client.SFTPClient.from_transport(transport)
         
     finally:
         if channel:

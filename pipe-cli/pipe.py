@@ -1044,6 +1044,23 @@ def ssh(ctx, run_id):
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
         sys.exit(1)
 
+@cli.command(name='scp')
+@click.argument('source', required=True, type=str)
+@click.argument('target', required=True, type=str)
+@click.option('-r', '--recursive', is_flag=True, help='Recursive copy')
+@Config.validate_access_token
+def scp(source, target, recursive):
+    """Copies a file or a directory from SOURCE and TARGET.\n
+    Both SOURCE and TARGET can represent a local path or a remote running instance.
+    The following format for the remote runs shall be used: "RUN_ID:directory/file".
+    E.g.: pipe scp 12345:/opt/data/file ./file\n
+    NOTE: At least one of the arguments shall point to the job run\n
+    Arguments:\n
+    - source: source location of the file/directory to be copied to the target
+    - target: target location, where the source will be copied
+    """
+    pass
+
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
     cli(sys.argv[1:])
