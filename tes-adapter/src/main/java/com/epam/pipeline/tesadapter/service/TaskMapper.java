@@ -76,16 +76,16 @@ public class TaskMapper {
     }
 
     public TesTask mapToTesTask(PipelineRun run) {
-        final TesTask tesTask = new TesTask();
-        tesTask.setId(String.valueOf(run.getId()));
-        tesTask.setState(createTesState(run.getStatus()));
-        tesTask.setName(run.getPodId());
-        tesTask.setResources(createTesResources(run));
-        tesTask.setExecutors(createListExecutor(run));
-        tesTask.setInputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())));
-        tesTask.setOutputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())));
-        tesTask.setCreationTime(run.getStartDate().toString());
-        return tesTask;
+        return TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(createTesState(run.getStatus()))
+                .name(run.getPodId())
+                .resources(createTesResources(run))
+                .executors(createListExecutor(run))
+                .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .creationTime(run.getStartDate().toString())
+                .build();
     }
 
     private TesState createTesState(TaskStatus status) {
@@ -128,16 +128,16 @@ public class TaskMapper {
     }
 
     private TesResources createTesResources(PipelineRun run){
-        final TesResources tesResources = new TesResources();
-        tesResources.setPreemptible(run.getInstance().getSpot());
-        tesResources.setDiskGb(new Double(run.getInstance().getNodeDisk()));
-        return tesResources;
+        return TesResources.builder()
+                .preemptible(run.getInstance().getSpot())
+                .diskGb(new Double(run.getInstance().getNodeDisk()))
+                .build();
     }
 
     private List<TesExecutor> createListExecutor(PipelineRun run){
-        final TesExecutor tesExecutor = new TesExecutor();
-        tesExecutor.setCommand(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))));
-        tesExecutor.setEnv(run.getEnvVars());
-        return ListUtils.emptyIfNull(Arrays.asList(tesExecutor));
+        return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
+                .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
+                .env(run.getEnvVars())
+                .build()));
     }
 }

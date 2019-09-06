@@ -3,12 +3,14 @@ package com.epam.pipeline.tesadapter.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
+@Builder
 @ApiModel(description = "Executor describes a command to be executed, and its environment.")
 public class TesExecutor {
     @ApiModelProperty(value = "Name of the container image, for example: " +
@@ -29,7 +31,7 @@ public class TesExecutor {
     @ApiModelProperty(value = "Path inside the container to a file which will " +
             "be piped to the executor's stdin. Must be an absolute path.")
     @JsonProperty("stdin")
-    private String stdin = null;
+    private String stdin;
 
     @ApiModelProperty(value = "Path inside the container to a file where the " +
             "executor's stdout will be written to. Must be an absolute path.")
