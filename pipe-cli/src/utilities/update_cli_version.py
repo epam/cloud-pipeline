@@ -15,48 +15,118 @@
 import os
 import stat
 import sys
+from abc import ABCMeta
 import requests
+import platform
+import zipfile
+import subprocess
+import uuid
 
 from src.config import Config
 
 
-CP_RESTAPI_SUFFIX = 'restapi/'
-CP_CLI_DOWNLOAD_SUFFIX = 'pipe'
-
-
 class UpdateCLIVersionManager(object):
 
-    def __init__(self, path=None):
-        if path:
-            self.path = path
-        else:
-            config = Config.instance()
-            self.path = str(config.api)
-            if not self.path:
-                raise RuntimeError("Failed to find Cloud Pipeline CLI download url")
-        self.path = self.path.replace(CP_RESTAPI_SUFFIX, CP_CLI_DOWNLOAD_SUFFIX)
+    def __init__(self):
+        pass
 
-    def update(self):
-        path_to_script = os.path.realpath(sys.argv[0])
+    def update(self, path=None):
+        updater = self.get_updater()
+
+        if not path:
+            path = updater.build_path_from_api()
         requests.urllib3.disable_warnings()
-        self.download_executable(path_to_script)
-        self.set_x_permission(path_to_script)
+        if not self.is_downloadable(path):
+            raise RuntimeError("Provided url '%s' not downloadable or invalid." % path)
 
-    def download_executable(self, path_to_script):
-        is_d = self.is_downloadable()
-        if is_d:
-            os.remove(path_to_script)
-            request = requests.get(self.path, verify=False)
-            open(path_to_script, 'wb').write(request.content)
+        updater.update_version(path)
+
+    @staticmethod
+    def get_updater():
+        if platform.system() == 'Windows':
+            return WindowsUpdater()
         else:
-            raise RuntimeError("Provided url '%s' not downloadable or invalid." % self.path)
+            return LinuxUpdater()
 
-    def is_downloadable(self):
-        header = requests.head(self.path, verify=False, allow_redirects=True).headers
+    @staticmethod
+    def is_downloadable(url):
+        header = requests.head(url, verify=False, allow_redirects=True).headers
         content_type = header.get('content-type')
         return content_type is None or 'html' not in content_type.lower()
+
+
+class CLIVersionUpdater:
+    __metaclass__ = ABCMeta
+
+    CP_RESTAPI_SUFFIX = 'restapi/'
+
+    def update_version(self, path):
+        pass
+
+    def get_download_suffix(self):
+        return ""
+
+    def build_path_from_api(self):
+        config = Config.instance()
+        api_path = str(config.api)
+        if not api_path:
+            raise RuntimeError("Failed to find Cloud Pipeline CLI download url")
+        return api_path.replace(self.CP_RESTAPI_SUFFIX, self.get_download_suffix())
+
+
+class LinuxUpdater(CLIVersionUpdater):
+
+    def get_download_suffix(self):
+        return 'pipe'
+
+    def update_version(self, path):
+        path_to_script = os.path.realpath(sys.argv[0])
+        self.replace_executable(path_to_script, path)
+        self.set_x_permission(path_to_script)
+
+    @staticmethod
+    def replace_executable(path_to_script, path):
+        os.remove(path_to_script)
+        request = requests.get(path, verify=False)
+        open(path_to_script, 'wb').write(request.content)
 
     @staticmethod
     def set_x_permission(path_to_script):
         st = os.stat(path_to_script)
         os.chmod(path_to_script, st.st_mode | stat.S_IEXEC)
+
+
+class WindowsUpdater(CLIVersionUpdater):
+    WINDOWS_SRC_ZIP = 'pipe.zip'
+
+    def get_download_suffix(self):
+        return self.WINDOWS_SRC_ZIP
+
+    def update_version(self, path):
+        path_to_src_dir = os.path.dirname(sys.executable)
+        tmp_src_dir = self.download_new_src(path)
+        subprocess.Popen('timeout 1 > nul '  # sleep 1 sec to complete current execution 
+                         '& rd /s /q "{src_dir}" '  # remove old src folder
+                         '& xcopy "{tmp_dir}/pipe" "{src_dir}" /s /i > nul '  # copy new src to old path
+                         '& rd /s /q "{tmp_dir}"'  # remove tmp src folder
+                         .format(src_dir=path_to_src_dir, tmp_dir=tmp_src_dir), shell=True)
+        sys.exit(0)
+
+    def download_new_src(self, path):
+        tmp_folder = self.get_tmp_folder()
+        path_to_zip = os.path.join(tmp_folder, self.WINDOWS_SRC_ZIP)
+        request = requests.get(path, verify=False)
+        open(path_to_zip, 'wb').write(request.content)
+        tmp_src_dir = os.path.join(tmp_folder, str(uuid.uuid4()).replace("-", ""))
+        with zipfile.ZipFile(path_to_zip, 'r') as zip_ref:
+            zip_ref.extractall(tmp_src_dir)
+        os.remove(path_to_zip)
+        return tmp_src_dir
+
+    @staticmethod
+    def get_tmp_folder():
+        home = os.path.expanduser("~")
+        tmp_folder = os.path.join(home, '.pipe', 'tmp')
+        if not os.path.exists(tmp_folder):
+            os.makedirs(tmp_folder)
+        return tmp_folder

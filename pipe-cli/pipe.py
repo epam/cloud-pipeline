@@ -1104,9 +1104,9 @@ def update_cli_version(path):
     """
     if is_frozen():
         try:
-            UpdateCLIVersionManager(path).update()
+            UpdateCLIVersionManager().update(path)
         except Exception as e:
-            click.echo("Error: %s" % e.message, err=True)
+            click.echo("Error: %s" % e, err=True)
     else:
         click.echo("Updating Cloud Pipeline CLI is not available")
 
