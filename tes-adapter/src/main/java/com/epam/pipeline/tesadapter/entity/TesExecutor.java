@@ -3,14 +3,18 @@ package com.epam.pipeline.tesadapter.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @ApiModel(description = "Executor describes a command to be executed, and its environment.")
 public class TesExecutor {
     @ApiModelProperty(value = "Name of the container image, for example: " +
