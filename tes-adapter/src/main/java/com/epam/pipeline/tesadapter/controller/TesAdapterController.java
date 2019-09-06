@@ -7,6 +7,7 @@ import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.tesadapter.service.TesTaskService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 public class TesAdapterController {
     private TesTaskService tesTaskService;
@@ -48,8 +50,7 @@ public class TesAdapterController {
     @GetMapping("/v1/tasks/{id}")
     ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
             defaultValue = "MINIMAL") TaskView view) {
-        tesTaskService.stub();
-        return new ResponseEntity<TesTask>(new TesTask(), HttpStatus.NOT_IMPLEMENTED);
+        return ResponseEntity.ok().body(tesTaskService.getTesTask(id));
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
