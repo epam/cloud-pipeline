@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ public class TaskMapper {
     private final Double defaultRamGb;
     private final Long defaultCpuCore;
     private final Boolean defaultPreemptible;
+    private final String defaultRegion;
     private MessageHelper messageHelper;
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
 
@@ -59,6 +61,7 @@ public class TaskMapper {
                       @Value("${cloud.pipeline.ramGb}") Double defaultRamGb,
                       @Value("${cloud.pipeline.cpuCore}") Long defaultCpuCore,
                       @Value("${cloud.pipeline.preemtible}") Boolean defaultPreemptible,
+                      @Value("${cloud.pipeline.region}") String defaultRegion,
                       CloudPipelineAPIClient cloudPipelineAPIClient, MessageHelper messageHelper) {
         this.defaultHddSize = hddSize;
         this.defaultRamGb = defaultRamGb;
@@ -66,6 +69,7 @@ public class TaskMapper {
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.messageHelper = messageHelper;
         this.defaultPreemptible = defaultPreemptible;
+        this.defaultRegion = defaultRegion;
     }
 
     public PipelineStart mapToPipelineStart(TesTask tesTask) {
@@ -112,8 +116,11 @@ public class TaskMapper {
         Long cpuCores =
                 Optional.ofNullable(tesTask.getResources()).map(TesResources::getCpuCores).orElse(defaultCpuCore);
         Long toolId = pipelineTool.getId();
-        Long regionId = getProperRegionIdInCloudRegionsByTesZone(tesTask.getResources().getZones());
-        Boolean spot = tesTask.getResources().getPreemptible();
+        Long regionId = getProperRegionIdInCloudRegionsByTesZone(Optional.ofNullable(tesTask.getResources())
+                .map(TesResources::getZones).orElse(Collections.singletonList(defaultRegion)));
+        Boolean spot = Optional.ofNullable(tesTask.getResources())
+                .map(TesResources::getPreemptible).orElse(defaultPreemptible);
+        ;
 
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
                 .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
