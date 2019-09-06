@@ -11,9 +11,12 @@ public interface TesTaskService {
     TesCreateTaskResponse submitTesTask(TesTask body);
 
     TesListTasksResponse listTesTask();
+
     void stub();
 
     TesCancelTaskResponse cancelTesTask(String id);
+
+    TesTask getTesTask(String id);
 
     TesServiceInfo getServiceInfo();
 }
