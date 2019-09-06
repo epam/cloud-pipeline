@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox} from 'antd';
+import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox, Tabs} from 'antd';
+import NotificationView from '../../../special/notifications/controls/NotificationView';
 import styles from './EditSystemNotificationForm.css';
 
 @Form.create()
@@ -61,7 +62,7 @@ export default class EditSystemNotificationForm extends React.Component {
   };
 
   renderForm = () => {
-    const {getFieldDecorator} = this.props.form;
+    const {getFieldDecorator, getFieldValue} = this.props.form;
     const formItems = [];
     if (this.props.notification) {
       formItems.push((
@@ -101,16 +102,30 @@ export default class EditSystemNotificationForm extends React.Component {
         key="notification body"
         className="edit-notification-form-body-container"
         {...this.formItemLayout} label="Body">
-        {getFieldDecorator('body',
-          {
-            initialValue: `${this.props.notification && this.props.notification.body
-              ? this.props.notification.body : ''}`
-          })(
-          <Input
-            type="textarea"
-            autosize={{minRows: 2, maxRows: 6}}
-            disabled={this.props.pending} />
-        )}
+        <Tabs type="card" className={styles.notificationBodyTabs}>
+          <Tabs.TabPane tab="Write" key="write">
+            {getFieldDecorator('body',
+              {
+                initialValue: `${this.props.notification && this.props.notification.body
+                  ? this.props.notification.body : ''}`
+              })(
+              <Input
+                type="textarea"
+                autosize={{minRows: 2, maxRows: 6}}
+                className={styles.notificationBodyInput}
+                disabled={this.props.pending}
+                placeholder="Notification text"
+              />
+            )}
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="Preview" key="preview">
+            <div className={styles.notificationPreviewContainer}>
+              <NotificationView
+                text={getFieldValue('body')}
+              />
+            </div>
+          </Tabs.TabPane>
+        </Tabs>
       </Form.Item>
     ));
     formItems.push((
