@@ -18,6 +18,7 @@ import os
 from future.utils import iteritems
 import datetime
 import requests
+import platform
 import sys
 import prettytable
 from botocore.exceptions import BotoCoreError
@@ -30,6 +31,8 @@ from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.config import ConfigNotFoundError
 from src.utilities.patterns import PatternMatcher
+from src.utilities.storage.mount import Mount
+from src.utilities.storage.umount import Umount
 
 ALL_ERRORS = ConfigNotFoundError, requests.exceptions.RequestException, RuntimeError, ValueError, AzureException, \
              Boto3Error, BotoCoreError
@@ -432,3 +435,33 @@ class DataStorageOperations(object):
                 path = splitted[0]
                 size = long(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
+
+    @classmethod
+    def mount_storage(cls, mountpoint, options=None, quiet=False):
+        try:
+            cls.check_platform("mount")
+            Mount().mount_storages(mountpoint, options, quiet=quiet)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)
+
+    @classmethod
+    def umount_storage(cls, mountpoint, quiet=False):
+        try:
+            cls.check_platform("umount")
+            if not os.path.isdir(mountpoint):
+                click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
+                sys.exit(1)
+            if not os.path.ismount(mountpoint):
+                click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
+                sys.exit(1)
+            Umount().umount_storages(mountpoint, quiet=quiet)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)
+
+    @classmethod
+    def check_platform(self, command):
+        if platform.system() == 'Windows':
+            click.echo('%s command is not supported for Windows OS.' % command, err=True)
+            sys.exit(1)
