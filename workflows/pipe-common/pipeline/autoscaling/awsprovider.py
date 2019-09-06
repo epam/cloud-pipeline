@@ -37,6 +37,7 @@ ROOT_DEVICE_DEFAULT = {
 }
 
 BOTO3_RETRY_COUNT = 6
+SPOT_UNAVAILABLE_EXIT_CODE = 5
 
 class AWSInstanceProvider(AbstractInstanceProvider):
 
@@ -361,7 +362,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
             utils.pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                            status=TaskStatus.FAILURE)
-            sys.exit(5)
+            sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
     def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
                              kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size):
@@ -499,6 +500,9 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 break
             last_status = status
             utils.pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
+            # TODO: review all this logic, it is difficult to read and maintain
+            if rep >= num_rep:
+                self.exit_if_spot_unavailable(run_id, last_status)
             rep = self.__increment_or_fail(num_rep, rep,
                                            'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'.format(num_rep, status),
                                            kill_instance_id_on_fail=ins_id)
@@ -509,7 +513,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         return ins_id, ins_ip
 
     @staticmethod
-    def tag_name_is_present(instance):
+    def tag_name_is_present(instance) :
         return 'Tags' in instance and len([tag for tag in instance['Tags'] if tag['Key'] == 'Name']) > 0
 
     @staticmethod
