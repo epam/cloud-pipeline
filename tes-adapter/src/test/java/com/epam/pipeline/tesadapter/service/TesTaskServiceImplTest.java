@@ -1,6 +1,5 @@
 package com.epam.pipeline.tesadapter.service;
 
-
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +13,7 @@ class TesTaskServiceImplTest {
     @BeforeEach
     public void setUp() {
         cloudPipelineAPIClient = Mockito.mock(CloudPipelineAPIClient.class);
-        TaskMapper taskMapper = Mockito.mock(TaskMapper.class);
-        MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
-        tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, taskMapper, messageHelper);
+        tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, Mockito.mock(TaskMapper.class), Mockito.mock(MessageHelper.class));
     }
 
     @Test

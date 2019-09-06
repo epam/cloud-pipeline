@@ -5,12 +5,18 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesInput;
+import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
+import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -20,8 +26,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+
 import java.util.Collections;
 import java.util.Comparator;
+
+import java.util.Arrays;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +120,7 @@ public class TaskMapper {
         return tesExecutors.get(FIRST);
     }
 
+
     private String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
         Double ramGb =
                 Optional.ofNullable(tesTask.getResources()).map(TesResources::getRamGb).orElse(defaultRamGb);
@@ -180,5 +191,71 @@ public class TaskMapper {
             }
         }
         return GIB_TO_GIB;
+
+    public TesTask mapToTesTask(PipelineRun run) {
+        return TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(createTesState(run.getStatus()))
+                .name(run.getPodId())
+                .resources(createTesResources(run))
+                .executors(createListExecutor(run))
+                .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .creationTime(run.getStartDate().toString())
+                .build();
+    }
+
+    private TesState createTesState(TaskStatus status) {
+        switch (status) {
+            case RUNNING:
+                return TesState.RUNNING;
+            case PAUSED:
+                return TesState.PAUSED;
+            case SUCCESS:
+                return TesState.COMPLETE;
+            case FAILURE:
+                return TesState.EXECUTOR_ERROR;
+            case STOPPED:
+                return TesState.CANCELED;
+            default:
+                return TesState.UNKNOWN;
+        }
+    }
+
+    private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
+        final TesInput tesInput = new TesInput();
+        parameters.stream()
+                .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
+                .forEach(pipelineRunParameter -> {
+                    tesInput.setName(pipelineRunParameter.getName());
+                    tesInput.setUrl(pipelineRunParameter.getValue());
+                });
+        return ListUtils.emptyIfNull(Arrays.asList(tesInput));
+    }
+
+    private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
+        final TesOutput tesOutput = new TesOutput();
+        parameters.stream()
+                .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
+                .forEach(pipelineRunParameter -> {
+                    tesOutput.setName(pipelineRunParameter.getName());
+                    tesOutput.setUrl(pipelineRunParameter.getValue());
+                });
+        return ListUtils.emptyIfNull(Arrays.asList(tesOutput));
+    }
+
+    private TesResources createTesResources(PipelineRun run){
+        return TesResources.builder()
+                .preemptible(run.getInstance().getSpot())
+                .diskGb(new Double(run.getInstance().getNodeDisk()))
+                .build();
+    }
+
+    private List<TesExecutor> createListExecutor(PipelineRun run){
+        return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
+                .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
+                .env(run.getEnvVars())
+                .build()));
+
     }
 }
