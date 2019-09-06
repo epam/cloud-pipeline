@@ -191,7 +191,8 @@ public class TaskMapper {
             }
         }
         return GIB_TO_GIB;
-
+    }
+    
     public TesTask mapToTesTask(PipelineRun run) {
         return TesTask.builder()
                 .id(String.valueOf(run.getId()))
