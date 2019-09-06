@@ -10,15 +10,11 @@ import org.mockito.Mockito;
 class TesTaskServiceImplTest {
     private CloudPipelineAPIClient cloudPipelineAPIClient;
     private TesTaskServiceImpl tesTaskService;
-    private TaskMapper taskMapper;
-    private MessageHelper messageHelper;
 
     @BeforeEach
     public void setUp() {
         cloudPipelineAPIClient = Mockito.mock(CloudPipelineAPIClient.class);
-        taskMapper = Mockito.mock(TaskMapper.class);
-        messageHelper = Mockito.mock(MessageHelper.class);
-        tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, taskMapper, messageHelper);
+        tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, Mockito.mock(TaskMapper.class), Mockito.mock(MessageHelper.class));
     }
 
     @Test
