@@ -31,6 +31,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
+from src.utilities.ssh_operations import run_ssh
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -883,7 +884,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-v', '--version', required=False, help='Restore specified version')
 @Config.validate_access_token
 def storage_restore_item(path, version):
-    """ Restores file version in a datastorage.
+    """ Restores file version in a datastorage.\n
     If version is not specified it will try to restore the latest non deleted version.
     Otherwise a specified version will be restored.
     """
@@ -896,9 +897,9 @@ def storage_restore_item(path, version):
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
 @Config.validate_access_token
 def storage_set_object_tags(path, tags, version):
-    """ Sets tags for a specified object
-        - path - full path to an object in data storage starting with 'cp://' scheme
-        - tags - specified as single KEY=VALUE pair or a list of them
+    """ Sets tags for a specified object\n
+        - path - full path to an object in data storage starting with 'cp://' scheme\n
+        - tags - specified as single KEY=VALUE pair or a list of them\n
         - If a specific tag key already exists for an object - it will be overwritten
     """
     DataStorageOperations.set_object_tags(path, tags, version)
@@ -909,7 +910,7 @@ def storage_set_object_tags(path, tags, version):
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
 @Config.validate_access_token
 def storage_get_object_tags(path, version):
-    """ Gets tags for a specified object
+    """ Gets tags for a specified object\n
         - path - full path to an object in data storage starting with 'cp://' scheme
     """
     DataStorageOperations.get_object_tags(path, version)
@@ -921,8 +922,8 @@ def storage_get_object_tags(path, version):
 @click.option('-v', '--version', required=False, help='Set tags to specified version')
 @Config.validate_access_token
 def storage_delete_object_tags(path, tags, version):
-    """ Sets tags for a specified object
-        - path - full path to an object in data storage starting with 'cp://' scheme
+    """ Sets tags for a specified object\n
+        - path - full path to an object in data storage starting with 'cp://' scheme\n
         - tags - list of tags to delete
     """
     DataStorageOperations.delete_object_tags(path, tags, version)
@@ -976,10 +977,10 @@ def tag():
 @click.argument('data', required=True, nargs=-1)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
-    """ Sets tags for a specified object
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
-    - identifier - define name or id of an object of a specified class
-    - Tags can be specified as single KEY=VALUE pair or a list of them
+    """ Sets tags for a specified object\n
+    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.\n
+    - identifier - define name or id of an object of a specified class\n
+    - Tags can be specified as single KEY=VALUE pair or a list of them\n
     - If a specific tag key already exists for an object - it will be overwritten
     """
     MetadataOperations.set_metadata(entity_class, entity_id, data)
@@ -990,8 +991,8 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_id', required=True)
 @Config.validate_access_token
 def get_tag(entity_class, entity_id):
-    """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.
+    """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:\n
+    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.\n
     - identifier - define name or id of an object of a specified class
     """
     MetadataOperations.get_metadata(entity_class, entity_id)
@@ -1003,9 +1004,9 @@ def get_tag(entity_class, entity_id):
 @click.argument('keys', required=False, nargs=-1)
 @Config.validate_access_token
 def delete_tag(entity_class, entity_id, keys):
-    """ Deletes specified tags for a specified object
-    - Tags can be specified as single KEY=VALUE pair or a list of them
-    - If a specific tag key already exists for an object - it will be overwritten
+    """ Deletes specified tags for a specified object\n
+    - Tags can be specified as single KEY=VALUE pair or a list of them\n
+    - If a specific tag key already exists for an object - it will be overwritten\n
     """
     MetadataOperations.delete_metadata(entity_class, entity_id, keys)
 
@@ -1017,13 +1018,31 @@ def delete_tag(entity_class, entity_id, keys):
 @Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
     """
-    Changes current owner to specified.
-     - user_name: desired object owner
+    Changes current owner to specified\n
+     - user_name: desired object owner\n
      - entity_class: name of the object class. Possible values: PIPELINE, FOLDER, DATA_STORAGE, DOCKER_REGISTRY, TOOL,
-     TOOL_GROUP, CONFIGURATION, METADATA_ENTITY
+     TOOL_GROUP, CONFIGURATION, METADATA_ENTITY\n
      - entity_name: name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
+
+@cli.command(name='ssh', context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True))
+@click.argument('run-id', required=True, type=int)
+@click.pass_context
+@Config.validate_access_token
+def ssh(ctx, run_id):
+    """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
+    Arguments:\n
+    - run-id: ID of the job running in the platform to establish SSH connection with
+    """
+    try:
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
+        sys.exit(ssh_exit_code)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        sys.exit(1)
 
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
