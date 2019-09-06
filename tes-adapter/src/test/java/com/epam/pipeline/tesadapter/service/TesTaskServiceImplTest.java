@@ -1,6 +1,5 @@
 package com.epam.pipeline.tesadapter.service;
 
-
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
