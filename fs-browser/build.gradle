@@ -1,0 +1,16 @@
+
+task build(type: Tar, dependsOn: ":fs-browser:fs-browser-client:build") {
+    group = 'build'
+    from("$project.rootDir/fs-browser/fsbrowser/")
+    baseName = 'fsbrowser'
+    destinationDir = file("$project.rootDir/dist/")
+    extension = 'tar.gz'
+    compression = Compression.GZIP
+    doLast {
+        delete "$project.rootDir/api/src/main/resources/static/fsbrowser.tar.gz"
+        copy {
+            from "$project.rootDir/dist/fsbrowser.tar.gz"
+            into "$project.rootDir/api/src/main/resources/static/"
+        }
+    }
+}

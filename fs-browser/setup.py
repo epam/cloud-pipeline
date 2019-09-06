@@ -16,9 +16,9 @@ from setuptools import setup, find_packages
 from fsbrowser.version import __version__
 
 setup(
-    name='fs-browser',
+    name='fsbrowser',
     version=__version__,
-    py_modules=['fs-browser'],
+    py_modules=['fsbrowser'],
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
