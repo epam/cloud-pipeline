@@ -16,4 +16,7 @@ PyJWT==1.6.1
 pypac==0.8.1
 beautifulsoup4==4.6.1
 azure-storage-blob==1.5.0
+paramiko==2.6.0
+colorama==0.4.1
+pyopenssl==19.0.0
 setuptools

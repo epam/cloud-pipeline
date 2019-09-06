@@ -799,6 +799,15 @@ then
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
+    # Allow clients to be idle for 1 hour (30 sec * 120 times)
+    CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
+    sed -i '/ClientAliveInterval/d' /etc/ssh/sshd_config
+    echo "ClientAliveInterval $CP_CAP_SSH_CLIENT_ALIVE_INTERVAL" >> /etc/ssh/sshd_config
+    
+    CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX=${CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX:-120}
+    sed -i '/ClientAliveCountMax/d' /etc/ssh/sshd_config
+    echo "ClientAliveCountMax $CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX" >> /etc/ssh/sshd_config
+
     eval "$SSH_SERVER_EXEC_PATH"
     echo "SSH server is started"
 else
