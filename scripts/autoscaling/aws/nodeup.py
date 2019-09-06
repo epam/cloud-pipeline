@@ -34,9 +34,11 @@ import fnmatch
 import sys
 import math
 
+SPOT_UNAVAILABLE_EXIT_CODE = 5
+LIMIT_EXCEEDED_EXIT_CODE = 6
+
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
-LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 BOTO3_RETRY_COUNT = 6
 MIN_SWAP_DEVICE_SIZE = 5
@@ -726,7 +728,7 @@ def exit_if_spot_unavailable(run_id, last_status):
     if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
         pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                  status=TaskStatus.FAILURE)
-        sys.exit(5)
+        sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
@@ -868,9 +870,12 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
         pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
+        # TODO: review all this logic, it is difficult to read and maintain
+        if rep >= num_rep:
+            exit_if_spot_unavailable(run_id, last_status)
         rep = increment_or_fail(num_rep, rep,
                                 'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'
-                                .format(num_rep, status))
+                                 .format(num_rep, status))
         sleep(time_rep)
 
     exit_if_spot_unavailable(run_id, last_status)
