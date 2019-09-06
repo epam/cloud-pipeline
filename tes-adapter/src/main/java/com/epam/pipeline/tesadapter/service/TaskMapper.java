@@ -43,6 +43,12 @@ public class TaskMapper {
     private static final String ZONES = "zones";
     private static final Integer FIRST = 0;
     private static final Integer ONLY_ONE = 1;
+    private static final Double KIB_TO_GIB = 0.00000095367432;
+    private static final Double MIB_TO_GIB = 0.0009765625;
+    private static final Double GIB_TO_GIB = 1.0;
+    private static final Double TIB_TO_GIB = 1024.0;
+    private static final Double PIB_TO_GIB = 1048576.0;
+    private static final Double EIB_TO_GIB = 1073741824.0;
 
 
     @Autowired
@@ -145,17 +151,17 @@ public class TaskMapper {
     private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
         if (memoryUnit != null) {
             if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
-                return Double.valueOf(PipelineDiskMemoryTypes.KIB_TO_GIB.getValue());
+                return KIB_TO_GIB;
             } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.MIB.getValue())) {
-                return Double.valueOf(PipelineDiskMemoryTypes.MIB_TO_GIB.getValue());
+                return MIB_TO_GIB;
             } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.TIB.getValue())) {
-                return Double.valueOf(PipelineDiskMemoryTypes.TIB_TO_GIB.getValue());
+                return TIB_TO_GIB;
             } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.PIB.getValue())) {
-                return Double.valueOf(PipelineDiskMemoryTypes.PIB_TO_GIB.getValue());
+                return PIB_TO_GIB;
             } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.EIB.getValue())) {
-                return Double.valueOf(PipelineDiskMemoryTypes.EIB_TO_GIB.getValue());
+                return EIB_TO_GIB;
             }
         }
-        return Double.valueOf(PipelineDiskMemoryTypes.GIB_TO_GIB.getValue());
+        return GIB_TO_GIB;
     }
 }
