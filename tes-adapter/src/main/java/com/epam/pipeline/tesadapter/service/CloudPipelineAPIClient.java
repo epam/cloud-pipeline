@@ -3,6 +3,7 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -48,5 +49,9 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractCloudRegion> loadAllRegions(){
         return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
+    }
+
+    public List<AbstractDataStorage> loadAllDataStorages(){
+        return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
     }
 }
