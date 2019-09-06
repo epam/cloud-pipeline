@@ -8,6 +8,7 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
+import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 @Service
 public class TaskMapper {
     private final Integer defaultHddSize;
+    private final Double defaultRamGb;
+    private final Long defaultCpuCore;
     private MessageHelper messageHelper;
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
 
@@ -38,17 +41,18 @@ public class TaskMapper {
     private static final String IMAGE = "image";
     private static final String EXECUTORS = "executors";
     private static final String ZONES = "zones";
-    private static final String MiB = "MiB";
     private static final Integer FIRST = 0;
     private static final Integer ONLY_ONE = 1;
-    private static final Double GiB_TO_GiB = 1.0;
-    private static final Double MiB_TO_GiB = 0.0009765625;
 
 
     @Autowired
     public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
+                      @Value("${cloud.pipeline.ramGb}") Double defaultRamGb,
+                      @Value("${cloud.pipeline.cpuCore}") Long defaultCpuCore,
                       CloudPipelineAPIClient cloudPipelineAPIClient, MessageHelper messageHelper) {
         this.defaultHddSize = hddSize;
+        this.defaultRamGb = defaultRamGb;
+        this.defaultCpuCore = defaultCpuCore;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.messageHelper = messageHelper;
     }
@@ -65,7 +69,8 @@ public class TaskMapper {
         pipelineStart.setCmdTemplate(String.join(SEPARATOR, tesExecutor.getCommand()));
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
-        pipelineStart.setHddSize(defaultHddSize);
+        pipelineStart.setHddSize(tesTask.getResources().getDiskGb() != null ?
+                tesTask.getResources().getDiskGb().intValue() : defaultHddSize);
         pipelineStart.setIsSpot(tesTask.getResources().getPreemptible());
         pipelineStart.setForce(false);
         pipelineStart.setNonPause(true);
@@ -86,15 +91,17 @@ public class TaskMapper {
     }
 
     private String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
-        Double ramGb = tesTask.getResources().getRamGb();
-        Long cpuCores = tesTask.getResources().getCpuCores();
+        Double ramGb =
+                tesTask.getResources().getRamGb() != null ? tesTask.getResources().getRamGb() : defaultRamGb;
+        Long cpuCores =
+                tesTask.getResources().getCpuCores() != null ? tesTask.getResources().getCpuCores() : defaultCpuCore;
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(tesTask.getResources().getZones());
         Boolean spot = tesTask.getResources().getPreemptible();
 
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
                 .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
-        Assert.isTrue(allowedInstanceAndPriceTypes.getAllowedInstanceTypes() != null, messageHelper.getMessage(
+        Assert.notEmpty(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, allowedInstanceAndPriceTypes));
         return evaluateMostProperInstanceType(allowedInstanceAndPriceTypes, ramGb, cpuCores);
     }
@@ -114,20 +121,41 @@ public class TaskMapper {
     private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
                                                   Double ramGb, Long cpuCores) {
         return allowedInstanceAndPriceTypes.getAllowedInstanceTypes().stream()
-                .collect(Collectors.toMap(InstanceType::getName, instancaType ->
-                        calculateInstanceCoef(instancaType, ramGb, cpuCores))).entrySet().stream()
-                .min(Comparator.comparing(Map.Entry::getValue)).orElseThrow(NullPointerException::new).getKey();
+                .min(Comparator.comparing(i -> calculateInstanceCoef(i, ramGb, cpuCores)))
+                .orElseThrow(IllegalArgumentException::new)
+                .getName();
     }
 
+    /**
+     * Calculates the effective coefficient for {@code instanceType}.The result
+     * depends on the level of difference between the used values {@code memory} and
+     * {@code vCPU} in {@code instanceType} and the entered values {@code ramGb} and
+     * {@code cpuCores}, respectively. From greater difference, comes greater coefficient.
+     *
+     * @param instanceType InstanceType - a set of using parameters
+     * @param ramGb        double - entered RAM (Gb) as resource parameter
+     * @param cpuCores     long - entered CPU (Cores) as resource parameter
+     * @return double - correspond coefficient for {@code instanceType}
+     */
     private Double calculateInstanceCoef(InstanceType instanceType, Double ramGb, Long cpuCores) {
-        return Math.abs((instanceType.getMemory() * parseInstanceMemoryUnit(instanceType.getMemoryUnit())
-                / ramGb + instanceType.getVCPU() / cpuCores) / 2 - 1);
+        return Math.abs((convertMemoryUnitTypeToGiB(instanceType.getMemoryUnit()) * instanceType.getMemory()
+                / ramGb + (double) instanceType.getVCPU() / (double) cpuCores) / 2 - 1);
     }
 
-    private Double parseInstanceMemoryUnit(String memoryUnit) {
-        if (memoryUnit != null && memoryUnit.equalsIgnoreCase(MiB)) {
-            return MiB_TO_GiB;
+    private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
+        if (memoryUnit != null) {
+            if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
+                return Double.valueOf(PipelineDiskMemoryTypes.KIB_TO_GIB.getValue());
+            } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.MIB.getValue())) {
+                return Double.valueOf(PipelineDiskMemoryTypes.MIB_TO_GIB.getValue());
+            } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.TIB.getValue())) {
+                return Double.valueOf(PipelineDiskMemoryTypes.TIB_TO_GIB.getValue());
+            } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.PIB.getValue())) {
+                return Double.valueOf(PipelineDiskMemoryTypes.PIB_TO_GIB.getValue());
+            } else if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.EIB.getValue())) {
+                return Double.valueOf(PipelineDiskMemoryTypes.EIB_TO_GIB.getValue());
+            }
         }
-        return GiB_TO_GiB;
+        return Double.valueOf(PipelineDiskMemoryTypes.GIB_TO_GIB.getValue());
     }
 }
