@@ -3,7 +3,7 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -34,6 +34,8 @@ public class TaskMapper {
     private final Integer defaultHddSize;
     @Autowired
     private MessageHelper messageHelper;
+    @Autowired
+    private CloudPipelineAPIClient cloudPipelineAPIClient;
     private static final String SEPARATOR = " ";
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
@@ -78,18 +80,27 @@ public class TaskMapper {
     public TesTask mapToTesTask(PipelineRun run) {
         return TesTask.builder()
                 .id(String.valueOf(run.getId()))
-                .state(createTesState(run.getStatus()))
                 .name(run.getPodId())
                 .resources(createTesResources(run))
                 .executors(createListExecutor(run))
                 .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .creationTime(run.getStartDate().toString())
+                .state(createTesState(run))
                 .build();
     }
 
-    private TesState createTesState(TaskStatus status) {
-        switch (status) {
+    private TesState createTesState(PipelineRun run) {
+        List<PipelineTask> pipelineTaskList = cloudPipelineAPIClient.loadPipelineTasks(run.getId());
+        for(PipelineTask p: pipelineTaskList){
+            if((p.getName().equalsIgnoreCase("Console")) && (pipelineTaskList.size() == 1)){
+                return TesState.QUEUED;
+            } else if( (p.getName().equalsIgnoreCase("Console")) && (pipelineTaskList.size() > 1) &&
+                    (!p.getName().equalsIgnoreCase("InitializeEnvironment"))){
+                return TesState.INITIALIZING;
+            }
+        }
+        switch (run.getStatus()) {
             case RUNNING:
                 return TesState.RUNNING;
             case PAUSED:
