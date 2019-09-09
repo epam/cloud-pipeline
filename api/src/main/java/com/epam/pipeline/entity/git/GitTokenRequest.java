@@ -16,25 +16,21 @@
 
 package com.epam.pipeline.entity.git;
 
-import java.util.Date;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class GitToken {
-    private Long id;
-    private String token;
-    private boolean active;
-    private boolean impersonation;
+public class GitTokenRequest {
+    private String name;
     @JsonProperty(value = "expires_at")
-    private Date expires;
+    private String expires;
+    private List<String> scopes;
 }

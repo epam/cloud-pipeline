@@ -16,9 +16,6 @@
 
 package com.epam.pipeline.entity.git;
 
-import java.util.Date;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,12 +26,20 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class GitToken {
-    private Long id;
-    private String token;
-    private boolean active;
-    private boolean impersonation;
-    @JsonProperty(value = "expires_at")
-    private Date expires;
+public class GitHookRequest {
+
+    @JsonProperty("url")
+    private String hookUrl;
+
+    @JsonProperty("push_events")
+    private boolean pushEvents;
+
+    @JsonProperty("push_events_branch_filter")
+    private String branch;
+
+    @JsonProperty("tag_push_events")
+    private boolean tagPushEvents;
+
+    @JsonProperty("enable_ssl_verification")
+    private boolean sslVerify;
 }

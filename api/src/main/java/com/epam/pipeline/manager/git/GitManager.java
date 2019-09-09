@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -130,7 +131,7 @@ public class GitManager {
                                         Long gitAdminId,
                                         String gitAdminName) {
         return GitlabClient
-            .initializeGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
@@ -473,7 +474,7 @@ public class GitManager {
         boolean fileExists = false;
         try {
             fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (HttpClientErrorException exception) {
+        } catch (UnexpectedResponseStatusException exception) {
             LOGGER.debug(exception.getMessage(), exception);
         }
 
@@ -723,7 +724,7 @@ public class GitManager {
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         return GitlabClient
-                .initializeGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
     }
 
     public GitProject createRepository(String templateId,

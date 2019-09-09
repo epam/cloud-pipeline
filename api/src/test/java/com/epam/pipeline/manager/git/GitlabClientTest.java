@@ -43,17 +43,6 @@ public class GitlabClientTest {
         testBuildCloneUrl(USER, URL_WITHOUT_USER);
     }
 
-    @Test
-    public void testBuildCloneCredentialsWithoutToken() {
-        GitlabClient client =
-                GitlabClient.initializeGitlabClientFromRepositoryAndToken(USER, URL_WITH_USER, "", null, null, false);
-        GitCredentials credentials = client.buildCloneCredentials(true, DURATION);
-        Assert.assertNotNull(credentials);
-        Assert.assertNull(credentials.getUserName());
-        Assert.assertNull(credentials.getToken());
-        Assert.assertEquals(URL_WITH_USER, credentials.getUrl());
-    }
-
     private void testBuildCloneUrl(String user, String url) {
         GitlabClient client =
                 GitlabClient.initializeGitlabClientFromRepositoryAndToken(user, url, TOKEN, null, null, false);
