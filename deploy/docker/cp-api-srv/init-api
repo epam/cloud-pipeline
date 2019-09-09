@@ -222,13 +222,15 @@ fi
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
-echo "Importing IdP signing cert into API keystore"
+CP_API_SRV_IDP_CERT_PATH="${CP_API_SRV_IDP_CERT_PATH:-$CP_IDP_CERT_DIR}"
+IDP_CERT_PATH=$CP_API_SRV_IDP_CERT_PATH/idp-public-cert.pem
+echo "Importing IdP signing cert into API keystore from $IDP_CERT_PATH"
 keytool  -import \
          -keystore $CP_API_HOME/keystore/store.jks \
          -storepass changeit \
          -noprompt \
          -alias idp \
-         -file $CP_IDP_CERT_DIR/idp-public-cert.pem
+         -file $IDP_CERT_PATH
 
 # Update pipe/folder/error templates with any specific values (e.g. instance/vm size)
 update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"

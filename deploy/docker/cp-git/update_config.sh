@@ -13,10 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-IDP_CERT_PATH=$CP_IDP_CERT_DIR/idp-public-cert.pem 
+CP_GITLAB_IDP_CERT_PATH="${CP_GITLAB_IDP_CERT_PATH:-$CP_IDP_CERT_DIR}"
+IDP_CERT_PATH=$CP_GITLAB_IDP_CERT_PATH/idp-public-cert.pem
 GIT_SSO_CERT_PATH=$CP_GITLAB_CERT_DIR/sso-public-cert.pem
 GIT_SSO_KEY_PATH=$CP_GITLAB_CERT_DIR/sso-private-key.pem
+
+echo
+echo "IDP_CERT_PATH:     $IDP_CERT_PATH"
+echo "GIT_SSO_CERT_PATH: $GIT_SSO_CERT_PATH"
+echo "GIT_SSO_KEY_PATH:  $GIT_SSO_KEY_PATH"
+echo
 
 if [ ! -f $IDP_CERT_PATH ]; then
     echo "IdP certificate not found at $IDP_CERT_PATH - gitlab cannot initialize SAML SSO and will not start"
