@@ -637,7 +637,7 @@ export default class Metadata extends React.Component {
             metadataClassName={this.props.metadataClass}
           />
         </Row>
-      ) : undefined;
+      ) : null;
     };
 
     const onPanelClose = (key) => {
@@ -885,7 +885,7 @@ export default class Metadata extends React.Component {
           </Row>
         );
       } else {
-        return undefined;
+        return null;
       }
     };
 
