@@ -28,6 +28,9 @@
 - [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
 - [Estimation run's disk size according to the input/common parameters](#estimation-runs-disk-size-according-to-the-inputcommon-parameters)
 - [Disabling of the Global Search form if a corresponding service is not installed](#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed)
+- [Disabling of the FS mounts creation if no FS mount points are registered](#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered)
+- [Displaying resource limit errors during run resuming](#displaying-resource-limit-errors-during-run-resuming)
+- [Object storage creation in despite of that the CORS/Policies could not be applied](#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied)
 
 ***
 
@@ -46,6 +49,11 @@
     - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
     - [JWT token shall be updated for the jobs being resumed](#jwt-token-shall-be-updated-for-the-jobs-being-resumed)
     - [Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error](#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error)
+    - [Invalid layout for global search](#invalid-layout-for-global-search)
+    - [Cluster run cannot be launched with a Pretty URL](#cluster-run-cannot-be-launched-with-a-pretty-url)
+    - [Cloning of large repositories might fail](#cloning-of-large-repositories-might-fail)
+    - [System events HTML overflow](#system-events-html-overflow)
+    - [AWS: Pipeline run `InitializeNode` task fails](#aws-pipeline-run-initializenode-task-fails)
 
 ***
 
@@ -543,6 +551,44 @@ In current version, a small enhancement for the Global Search is implemented. No
 - the "Search" button will be hidden from the left menu
 - keyboard search shortcut will be disabled
 
+## Disabling of the FS mounts creation if no FS mount points are registered
+
+In the `Cloud Pipeline`, along with the regular data storages user can also create [FS mounts](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md) - data storages based on the network file system:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DisablingFSmounts_1.png)
+
+For the correct FS mount creation, at least one mount point shall be registered in the `Cloud Pipeline` Preferences.  
+Now, if no FS mount points are registered for any Cloud Region in the System Preferences - user can not create a new FS mount, the corresponding button becomes invisible:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DisablingFSmounts_2.png)
+
+## Displaying resource limit errors during run resuming
+
+User may hit a situation of resource limits while trying to resume previously paused run. E.g. instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type. Previously, in this case run could be failed with an error of insufficient resources.
+
+In **`v0.15`** the following approach is implemented for such cases:
+
+- resuming run doesn't fail if resource limits are hit. That run returns to the `Paused` state
+- log message that contains a reason for resume failure and returning back to the `Paused` state is being added to the `ResumeRun` task
+- user is notified about such event. The corresponding warning messages are displayed:
+    - at the **Run logs** page  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_1.png)
+    - at the **ACTIVE RUNS** page (hint message while hovering the **RESUME** button)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_3.png)
+    - at the **ACTIVE RUNS** panel of the Dashboard (hint message while hovering the **RESUME** button)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_2.png)
+
+## Object storage creation in despite of that the CORS/Policies could not be applied
+
+Previously, if the Cloud service account/role had permissions to create object storages, but lacked permissions to apply `CORS` or other policies - object storage was created, but the `Cloud Pipeline API` threw an exception and storage was not being registered.  
+This led to the creation of a "zombie" storage, which was not available via GUI, but existed in the Cloud.
+
+Currently, the `Cloud Pipeline API` doesn't fail such requests and storage is being registered normally.  
+But the corresponding warning will be displayed to the user like this:
+
+```
+The storage {storage_name} was created, but certain policies were not applied.
+This can be caused by insufficient permissions.
+```
+
 ***
 
 ## Notable Bug fixes
@@ -551,7 +597,7 @@ In current version, a small enhancement for the Global Search is implemented. No
 
 [#221](https://github.com/epam/cloud-pipeline/issues/221)
 
-When user was searching for an entry, that may belong to different classes (e.g. `issues` and `folders`) - user was not able to filter the results by the class
+When user was searching for an entry, that may belong to different classes (e.g. `issues` and `folders`) - user was not able to filter the results by the class.
 
 ### "COMMITTING..." status hangs
 
@@ -572,11 +618,9 @@ Metadata entities (i.e. project-related metadata) sorting was faulty:
 
 [#144](https://github.com/epam/cloud-pipeline/issues/144)
 
-If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.
-
-It works fine if the child tools are dropped beforehand.
-
-Now it is possible to delete such a group if a `force` flag is set in the confirmation dialog.
+If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.  
+It works fine if the child tools are dropped beforehand.  
+Now, it is possible to delete such a group if a `force` flag is set in the confirmation dialog.
 
 ### Missing region while estimating a run price
 
@@ -594,9 +638,8 @@ Web GUI interface was not providing an option to select a region when adding an 
 
 [#265](https://github.com/epam/cloud-pipeline/issues/265)
 
-All authorized users were permitted to browse the metadata of `users` and `roles` entities. But those entries may contain a sensitive data, that shall not be shared across users.
-
-Now a general user may list only personal `user-level` metadata. Administrators may list both `users` and `roles` metadata across all entries.
+All authorized users were permitted to browse the metadata of `users` and `roles` entities. But those entries may contain a sensitive data, that shall not be shared across users.  
+Now, a general user may list only personal `user-level` metadata. Administrators may list both `users` and `roles` metadata across all entries.
 
 ### Getting logs from Kubernetes may cause `OutOfMemory` error
 
@@ -621,7 +664,7 @@ Previously, in a situation when an `AWS` spot instance created after some timeou
 
 [#557](https://github.com/epam/cloud-pipeline/issues/557)
 
-Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).
+Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).  
 In current version, `autopause` daemon doesn't handle any clusters ("Static" or "Autoscaled").  
 Also now, if the cluster is configured - **Auto pause** checkbox doesn't display in the **Launch Form** for the `On-Demand` node types.
 
@@ -635,12 +678,48 @@ Previously, `pipe` CLI version displayed incorrectly for the `pipe` CLI installa
 
 [#579](https://github.com/epam/cloud-pipeline/issues/579)
 
-In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.
-
-Now, the JWT token (and other variables as well) are being updated when a job is being resumed.
+In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.  
+Now, the JWT token and other variables as well are being updated when a job is being resumed.
 
 ### Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error
 
 [#520](https://github.com/epam/cloud-pipeline/issues/520)
 
 Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.
+
+### Invalid layout for global search
+
+[#619](https://github.com/epam/cloud-pipeline/issues/619)
+
+Global search page was not rendered correctly when the search results table had too many records.
+
+### Cluster run cannot be launched with a Pretty URL
+
+[#620](https://github.com/epam/cloud-pipeline/issues/620)
+
+Previously, if user tried to launch any interactive tool with [Pretty URL](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-friendly-url) and configured cluster - an error appeared `URL {Pretty URL} is already used for run {Run ID}`.  
+Now, pretty URL could be set only for the parent runs, for the child runs regular URLs are set.
+
+### Cloning of large repositories might fail
+
+[#626](https://github.com/epam/cloud-pipeline/issues/626)
+
+When large repository (> 1Gb) was cloned (e.g. when a pipeline was being run) - `git clone` could fail with the OOM error happened at the GitLab server if it is not powerful enough. OOM was produced by the `git pack-objects` process, which tries to pack all the data in-memory.  
+Now, `git pack-objects` memory usage is limited to avoid errors in cases described above.
+
+### System events HTML overflow
+
+[#630](https://github.com/epam/cloud-pipeline/issues/630)
+
+If admin set a quite long text (without separators) into the message body of the [system event notifications](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-events) - the resulting notification text "overflowed" the browser window.  
+Now, text wrapping is considered for such cases.
+
+Also, support of [Markdown](https://en.wikipedia.org/wiki/Markdown) was added for the system notification messages:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_NotificationsMarkdown.png)
+
+### AWS: Pipeline run `InitializeNode` task fails
+
+[#635](https://github.com/epam/cloud-pipeline/issues/635)
+
+Previously, if `AWS` spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: `Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available`.  
+Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to `on-demand` and run initialization continues.
