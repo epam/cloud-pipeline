@@ -82,8 +82,10 @@ def is_run_id_int(run_id):
 
     return True
 
-def get_conn_info(run_id, port_number=None):
+def get_conn_info(run_id, port_number=None, tunnel_proxy=None):
     ssh_user = DEFAULT_SSH_USER
+    ssh_proxy_host = None
+    ssh_proxy_port = None
     if not port_number:
         port_number = DEFAULT_SSH_PORT
 
@@ -110,16 +112,21 @@ def get_conn_info(run_id, port_number=None):
     run_model = PipelineRun.get(run_id)
     if not run_model.is_initialized:
         raise RuntimeError("The specified Run ID #{} is not initialized for the SSH session".format(run_id))
-    ssh_url = PipelineRun.get_ssh_url(run_id)
-    if not ssh_url:
-        raise RuntimeError("Cannot get the SSH proxy endpoint for the specified Run ID #{}".format(run_id))
-    ssh_url_parts = urlparse(ssh_url)
-    ssh_proxy_host = ssh_url_parts.hostname
-    if not ssh_proxy_host:
-        raise RuntimeError("Cannot get the SSH proxy hostname from the endpoint {} for the specified Run ID #{}".format(ssh_url, run_id))
-    ssh_proxy_port = ssh_url_parts.port
-    if not ssh_proxy_port:
-        ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
+    if tunnel_proxy:
+        ssh_proxy_parts = tunnel_proxy.split(':')
+        ssh_proxy_host = ssh_proxy_parts[0]
+        ssh_proxy_port = int(ssh_proxy_parts[1] if len(ssh_proxy_parts) > 1 else 443)
+    else:
+        ssh_url = PipelineRun.get_ssh_url(run_id)
+        if not ssh_url:
+            raise RuntimeError("Cannot get the SSH proxy endpoint for the specified Run ID #{}".format(run_id))
+        ssh_url_parts = urlparse(ssh_url)
+        ssh_proxy_host = ssh_url_parts.hostname
+        if not ssh_proxy_host:
+            raise RuntimeError("Cannot get the SSH proxy hostname from the endpoint {} for the specified Run ID #{}".format(ssh_url, run_id))
+        ssh_proxy_port = ssh_url_parts.port
+        if not ssh_proxy_port:
+            ssh_proxy_port = 80 if ssh_url_parts.scheme == "http" else 443
 
     run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass ssh_user')
     return run_conn_info(ssh_proxy=(ssh_proxy_host, ssh_proxy_port),
@@ -136,7 +143,7 @@ def run_ssh_session(channel):
     channel.invoke_shell()
     interactive_shell(channel)
 
-def run_ssh(run_id, command, user=None, identity_file=None, port_number=None, verbose=False):
+def run_ssh(run_id, command, tunnel_proxy=None, user=None, identity_file=None, port_number=None, verbose=False):
     if verbose:
         click.echo('Run ID:   {}'.format(run_id))
         click.echo('Command:  {}'.format(command))
@@ -146,7 +153,7 @@ def run_ssh(run_id, command, user=None, identity_file=None, port_number=None, ve
             os.environ['PARAMIKO_LOG_LEVEL'] = 'ssh_session.log'
 
     # Grab the run information from the API to setup the run's IP and EDGE proxy address
-    conn_info = get_conn_info(run_id, port_number)
+    conn_info = get_conn_info(run_id, port_number=port_number, tunnel_proxy=tunnel_proxy)
 
     # If a use is specific in the host string (e.g. user1@run_id) and it is also set explicitly
     # then we prefer the latter
@@ -173,7 +180,11 @@ def run_ssh(run_id, command, user=None, identity_file=None, port_number=None, ve
                 transport.auth_publickey(ssh_user, identity_key)
             else:
                 # Otherwise - use password authentication, which is available only to the OWNER and ROLE_ADMIN users
-                transport.auth_password(ssh_user, conn_info.ssh_pass)
+                try:
+                    transport.auth_password(ssh_user, conn_info.ssh_pass)
+                except paramiko.ssh_exception.AuthenticationException:
+                    # if the "secret" has failed - there are also cases when the pass will be equal to the username
+                    transport.auth_password(ssh_user, ssh_user)
         except paramiko.ssh_exception.AuthenticationException:
             # Reraise authentication error to provide more details
             raise PermissionError('Authentication failed for {}@{}'.format(

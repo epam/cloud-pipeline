@@ -1044,6 +1044,8 @@ def chown(user_name, entity_class, entity_name):
     ignore_unknown_options=True,
     allow_extra_args=True))
 @click.argument('run-id', required=True)
+@click.option('--tunnel-proxy', 'tunnel_proxy', required=False, help='Allows to specify the HTTP tunnel proxy address')
+# OpenSSH alike
 @click.option('-l', 'login_name', required=False, help='Specifies the user to log in as. Will override the value in the RUN_ID')
 @click.option('-i', 'identity_file', required=False, help='Sets the path to the SSH private key file. If not set - Cloud Pipeline''s authentication is performed')
 @click.option('-p', 'port', required=False, type=int, help='Overrides a default SSH port (22)')
@@ -1058,7 +1060,7 @@ def chown(user_name, entity_class, entity_name):
     help='These options will be ignored', metavar='')
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id, login_name, identity_file, port, verbose, swallow_flags, swallow_values):
+def ssh(ctx, run_id, tunnel_proxy, login_name, identity_file, port, verbose, swallow_flags, swallow_values):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
     - run-id: ID of the job running in the platform to establish SSH connection with.
@@ -1067,8 +1069,8 @@ def ssh(ctx, run_id, login_name, identity_file, port, verbose, swallow_flags, sw
     
     try:
         ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), 
-                                user=login_name, identity_file=identity_file, 
-                                verbose=verbose)
+                                tunnel_proxy=tunnel_proxy, user=login_name,
+                                identity_file=identity_file, verbose=verbose)
         sys.exit(ssh_exit_code)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
