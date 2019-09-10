@@ -3,15 +3,19 @@ package com.epam.pipeline.tesadapter.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
 import java.util.List;
 
-@ApiModel(description = "Resources describes the resources requested by a task.")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@ApiModel(description = "Resources describes the resources requested by a task.")
 public class TesResources {
     @ApiModelProperty(value = "Requested number of CPUs")
     @JsonProperty("cpu_cores")
