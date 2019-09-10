@@ -92,11 +92,14 @@ public class TaskMapper {
 
     private TesState createTesState(PipelineRun run) {
         List<PipelineTask> pipelineTaskList = cloudPipelineAPIClient.loadPipelineTasks(run.getId());
-        for(PipelineTask p: pipelineTaskList){
-            if((p.getName().equalsIgnoreCase("Console")) && (pipelineTaskList.size() == 1)){
+        for (PipelineTask p : pipelineTaskList) {
+            if (p.getName().equalsIgnoreCase("Console") && pipelineTaskList.size() == 1) {
                 return TesState.QUEUED;
-            } else if( (p.getName().equalsIgnoreCase("Console")) && (pipelineTaskList.size() > 1) &&
-                    (!p.getName().equalsIgnoreCase("InitializeEnvironment"))){
+            } else if (p.getName().equalsIgnoreCase("InitializeEnvironment")) {
+                break;
+            } else if ((p.getName().equalsIgnoreCase("Console") &&
+                    !p.getName().equalsIgnoreCase("InitializeEnvironment"))
+                    && pipelineTaskList.size() > 1) {
                 return TesState.INITIALIZING;
             }
         }
