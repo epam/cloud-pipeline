@@ -4,9 +4,9 @@ import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
-import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -26,12 +26,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-
-import java.util.Arrays;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +114,7 @@ public class TaskMapper {
         return pipelineStart;
     }
 
-    private TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
+    public TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
         Assert.isTrue(tesExecutors.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS, tesExecutors));
         return tesExecutors.get(FIRST);
@@ -139,9 +136,8 @@ public class TaskMapper {
                         .orElse(Collections.singletonList(defaultRegion)))
                 .orElse(Collections.singletonList(defaultRegion)));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
-                .map(TesResources::getPreemptible).orElse(defaultPreemptible);
-        ;
-
+                .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
+                .orElse(defaultPreemptible);
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
                 .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
         Assert.notEmpty(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), messageHelper.getMessage(
@@ -170,7 +166,7 @@ public class TaskMapper {
     }
 
     /**
-     * Calculates the effective coefficient for {@code instanceType}.The result
+     * Calculates the coefficient of deviation for {@code instanceType}.The result
      * depends on the level of difference between the used values {@code memory} and
      * {@code vCPU} in {@code instanceType} and the entered values {@code ramGb} and
      * {@code cpuCores}, respectively. From greater difference, comes greater coefficient.
@@ -201,7 +197,7 @@ public class TaskMapper {
         }
         return GIB_TO_GIB;
     }
-    
+
     public TesTask mapToTesTask(PipelineRun run) {
         return TesTask.builder()
                 .id(String.valueOf(run.getId()))
@@ -254,14 +250,14 @@ public class TaskMapper {
         return ListUtils.emptyIfNull(Arrays.asList(tesOutput));
     }
 
-    private TesResources createTesResources(PipelineRun run){
+    private TesResources createTesResources(PipelineRun run) {
         return TesResources.builder()
                 .preemptible(run.getInstance().getSpot())
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
                 .build();
     }
 
-    private List<TesExecutor> createListExecutor(PipelineRun run){
+    private List<TesExecutor> createListExecutor(PipelineRun run) {
         return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
