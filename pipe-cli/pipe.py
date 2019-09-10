@@ -31,7 +31,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh
+from src.utilities.ssh_operations import run_ssh, ssh_swallowed_options_flags, ssh_swallowed_options_values
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -1043,16 +1043,32 @@ def chown(user_name, entity_class, entity_name):
 @cli.command(name='ssh', context_settings=dict(
     ignore_unknown_options=True,
     allow_extra_args=True))
-@click.argument('run-id', required=True, type=int)
+@click.argument('run-id', required=True)
+@click.option('-l', 'login_name', required=False, help='Specifies the user to log in as. Will override the value in the RUN_ID')
+@click.option('-i', 'identity_file', required=False, help='Sets the path to the SSH private key file. If not set - Cloud Pipeline''s authentication is performed')
+@click.option('-p', 'port', required=False, type=int, help='Overrides a default SSH port (22)')
+@click.option('-v', 'verbose', is_flag=True, help='Prints debug information')
+# Here we get a list of ignored OpenSSH options and append a "name" to them
+# so any of them will will result into ignorance
+# The "ignored" options are split into "flags" and "values" to overcome the "click's" limitation for the value type
+# E.g. if an option is defined as flag - click will complain about an extra value and vice-versa
+@click.option(*ssh_swallowed_options_flags() + ['swallow_flags'], is_flag=True,
+    help='These options will be ignored', metavar='')
+@click.option(*ssh_swallowed_options_values() + ['swallow_values'], required=False, default=None, 
+    help='These options will be ignored', metavar='')
 @click.pass_context
 @Config.validate_access_token
-def ssh(ctx, run_id):
+def ssh(ctx, run_id, login_name, identity_file, port, verbose, swallow_flags, swallow_values):
     """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
     Arguments:\n
-    - run-id: ID of the job running in the platform to establish SSH connection with
+    - run-id: ID of the job running in the platform to establish SSH connection with.
+    This argument may appear as: integer id (12345), job name (pipeline-12345), include username (user1@12345)
     """
+    
     try:
-        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args), 
+                                user=login_name, identity_file=identity_file, 
+                                verbose=verbose)
         sys.exit(ssh_exit_code)
     except Exception as runtime_error:
         click.echo('Error: {}'.format(str(runtime_error)), err=True)
