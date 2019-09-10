@@ -2,7 +2,6 @@ package com.epam.pipeline.tesadapter.service;
 
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
@@ -13,8 +12,8 @@ import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

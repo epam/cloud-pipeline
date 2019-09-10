@@ -198,6 +198,6 @@ public interface CloudPipelineAPI {
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
-    @GET("/run/{runId}/tasks")
+    @GET("run/{runId}/tasks")
     Call<Result<List<PipelineTask>>> loadPipelineTasks(@Path(RUN_ID) Long runId);
 }
