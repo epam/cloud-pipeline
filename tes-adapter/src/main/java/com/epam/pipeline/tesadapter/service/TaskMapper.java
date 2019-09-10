@@ -3,17 +3,20 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesExecutorLog;
 import com.epam.pipeline.tesadapter.entity.TesInput;
 import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
 import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
+import com.epam.pipeline.tesadapter.entity.TesTaskLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -22,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +38,7 @@ public class TaskMapper {
     private final Integer defaultHddSize;
     @Autowired
     private MessageHelper messageHelper;
+    private CloudPipelineAPIClient cloudPipelineAPIClient;
     private static final String SEPARATOR = " ";
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
@@ -85,6 +90,7 @@ public class TaskMapper {
                 .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .creationTime(run.getStartDate().toString())
+                .logs(createTesTaskLog(run.getId()))
                 .build();
     }
 
@@ -134,10 +140,30 @@ public class TaskMapper {
                 .build();
     }
 
-    private List<TesExecutor> createListExecutor(PipelineRun run){
+    private List<TesExecutor> createListExecutor(PipelineRun run) {
         return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
                 .build()));
+    }
+
+    private List<TesTaskLog> createTesTaskLog(final Long runId) {
+        List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
+        List<TesExecutorLog> tesExecutorLogList = new ArrayList<TesExecutorLog>();
+        tesExecutorLogList.add(TesExecutorLog.builder()
+                .stdout(runLogList.stream().map(RunLog::getDate).findAny().toString() +
+                        runLogList.stream().map(RunLog::getTaskName).iterator().next() +
+                        runLogList.stream().map(RunLog::getLogText).iterator().next())
+                .build());
+        List<TesTaskLog> tesTaskLogs = new ArrayList<>();
+        tesTaskLogs.add(TesTaskLog.builder()
+                .logs(tesExecutorLogList)
+                .build());
+        return ListUtils.emptyIfNull(tesTaskLogs);
+    }
+
+    @Autowired
+    public void setCloudPipelineAPIClient(CloudPipelineAPIClient cloudPipelineAPIClient) {
+        this.cloudPipelineAPIClient = cloudPipelineAPIClient;
     }
 }
