@@ -88,20 +88,23 @@ public class TaskMapper {
         PipelineStart pipelineStart = new PipelineStart();
         Map<String, PipeConfValueVO> params = new HashMap<>();
         TesExecutor tesExecutor = getExecutorFromTesExecutorsList(tesTask.getExecutors());
-
-
         Assert.notNull(tesExecutor.getImage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE));
         Tool pipelineTool = loadToolByTesImage(tesExecutor.getImage());
-
         pipelineStart.setInstanceType(getProperInstanceType(tesTask, pipelineTool));
         pipelineStart.setCmdTemplate(String.join(SEPARATOR, tesExecutor.getCommand()));
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
         pipelineStart.setHddSize(Optional.ofNullable(tesTask.getResources())
-                .map(tesResources -> tesResources.getDiskGb().intValue()).orElse(defaultHddSize));
+                .map(tesResources -> {
+                    if (Optional.ofNullable(tesResources.getDiskGb()).isPresent()) {
+                        return tesResources.getDiskGb().intValue();
+                    }
+                    return defaultHddSize;
+                }).orElse(defaultHddSize));
         pipelineStart.setIsSpot(Optional.ofNullable(tesTask.getResources())
-                .map(TesResources::getPreemptible).orElse(defaultPreemptible));
+                .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
+                .orElse(defaultPreemptible));
         pipelineStart.setForce(false);
         pipelineStart.setNonPause(true);
         ListUtils.emptyIfNull(tesTask.getInputs()).forEach(tesInput ->
@@ -121,14 +124,20 @@ public class TaskMapper {
     }
 
 
-    private String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
+    public String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
         Double ramGb =
-                Optional.ofNullable(tesTask.getResources()).map(TesResources::getRamGb).orElse(defaultRamGb);
+                Optional.ofNullable(tesTask.getResources())
+                        .map(tesResources -> Optional.ofNullable(tesResources.getRamGb()).orElse(defaultRamGb))
+                        .orElse(defaultRamGb);
         Long cpuCores =
-                Optional.ofNullable(tesTask.getResources()).map(TesResources::getCpuCores).orElse(defaultCpuCore);
+                Optional.ofNullable(tesTask.getResources())
+                        .map(tesResources -> Optional.ofNullable(tesResources.getCpuCores()).orElse(defaultCpuCore))
+                        .orElse(defaultCpuCore);
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(Optional.ofNullable(tesTask.getResources())
-                .map(TesResources::getZones).orElse(Collections.singletonList(defaultRegion)));
+                .map(tesResources -> Optional.ofNullable(tesResources.getZones())
+                        .orElse(Collections.singletonList(defaultRegion)))
+                .orElse(Collections.singletonList(defaultRegion)));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getPreemptible).orElse(defaultPreemptible);
         ;
