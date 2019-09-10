@@ -3,10 +3,16 @@ package com.epam.pipeline.tesadapter.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @ApiModel(description = "ExecutorLog describes logging information related to an Executor.")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TesExecutorLog {
     @ApiModelProperty(value = "Time the executor started, in RFC 3339 format.")
     @JsonProperty("start_time")
