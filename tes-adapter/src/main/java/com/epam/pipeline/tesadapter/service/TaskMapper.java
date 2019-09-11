@@ -154,14 +154,15 @@ public class TaskMapper {
     public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES, zones));
-        return cloudPipelineAPIClient.loadAllRegions().stream().filter(
+        return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
                 region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
-                .collect(Collectors.toList()).get(FIRST).getId();
+                .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(IllegalArgumentException::new);
     }
 
     private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
                                                   Double ramGb, Long cpuCores) {
-        return allowedInstanceAndPriceTypes.getAllowedInstanceTypes().stream()
+        return Optional.ofNullable(allowedInstanceAndPriceTypes.getAllowedInstanceTypes())
+                .orElseThrow(IllegalArgumentException::new).stream()
                 .min(Comparator.comparing(i -> calculateInstanceCoef(i, ramGb, cpuCores)))
                 .orElseThrow(IllegalArgumentException::new)
                 .getName();
