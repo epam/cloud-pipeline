@@ -92,20 +92,17 @@ public class TaskMapper {
 
     private TesState createTesState(PipelineRun run) {
         List<PipelineTask> pipelineTaskList = cloudPipelineAPIClient.loadPipelineTasks(run.getId());
-        for (PipelineTask p : pipelineTaskList) {
-            if (p.getName().equalsIgnoreCase("Console") && pipelineTaskList.size() == 1) {
-                return TesState.QUEUED;
-            } else if (p.getName().equalsIgnoreCase("InitializeEnvironment")) {
-                break;
-            } else if ((p.getName().equalsIgnoreCase("Console") &&
-                    !p.getName().equalsIgnoreCase("InitializeEnvironment"))
-                    && pipelineTaskList.size() > 1) {
-                return TesState.INITIALIZING;
-            }
-        }
         switch (run.getStatus()) {
             case RUNNING:
-                return TesState.RUNNING;
+                if (pipelineTaskList.size() == 1 &&
+                        pipelineTaskList.stream().findFirst().get().getName().equalsIgnoreCase("Console")) {
+                    return TesState.QUEUED;
+                } else if (pipelineTaskList.size() > 1 && pipelineTaskList.stream()
+                        .noneMatch(p -> p.getName().equalsIgnoreCase("InitializeEnvironment"))) {
+                    return TesState.INITIALIZING;
+                } else {
+                    return TesState.RUNNING;
+                }
             case PAUSED:
                 return TesState.PAUSED;
             case SUCCESS:
