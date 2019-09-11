@@ -98,26 +98,41 @@ class LinuxUpdater(CLIVersionUpdater):
 
 class WindowsUpdater(CLIVersionUpdater):
     WINDOWS_SRC_ZIP = 'pipe.zip'
+    ATTEMPTS_COUNT = 10
 
     def get_download_suffix(self):
         return self.WINDOWS_SRC_ZIP
 
     def update_version(self, path):
         path_to_src_dir = os.path.dirname(sys.executable)
-        tmp_src_dir = self.download_new_src(path)
-        subprocess.Popen('timeout 1 > nul '  # sleep 1 sec to complete current execution 
-                         '& rd /s /q "{src_dir}" '  # remove old src folder
-                         '& xcopy "{tmp_dir}/pipe" "{src_dir}" /s /i > nul '  # copy new src to old path
-                         '& rd /s /q "{tmp_dir}"'  # remove tmp src folder
-                         .format(src_dir=path_to_src_dir, tmp_dir=tmp_src_dir), shell=True)
-        sys.exit(0)
+        random_prefix = str(uuid.uuid4()).replace("-", "")
+        tmp_src_dir = self.download_new_src(path, random_prefix)
+        tmp_folder = self.get_tmp_folder()
+        path_to_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
+        with open(path_to_bat, 'a') as bat_file:
+            bat_file.write('@echo off\n')
+            bat_file.write('for /L %%a in (1,1,{}) do (\n'.format(self.ATTEMPTS_COUNT))
+            bat_file.write('\ttasklist | find /i "{}" > nul\n'.format(os.getpid()))
+            bat_file.write('\tif errorlevel 1 (\n')
+            bat_file.write('\t\trd /s /q "{src_dir}" '  # remove old src folder
+                           '& xcopy "{tmp_dir}/pipe" "{src_dir}" /s /i > nul '  # copy new src to old path
+                           '& rd /s /q "{tmp_dir}"\n'  # remove tmp src folder)
+                           .format(src_dir=path_to_src_dir, tmp_dir=tmp_src_dir))
+            bat_file.write('\t\tgoto end\n')
+            bat_file.write('\t) else (\n')
+            bat_file.write('\t\ttimeout /T 2 > nul\n')
+            bat_file.write('\t)\n')
+            bat_file.write(')\n')
+            bat_file.write(':end\n')
+            bat_file.write('(goto) 2>nul & del "%~f0"\n')
+        subprocess.Popen(path_to_bat, shell=True)
 
-    def download_new_src(self, path):
+    def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
         path_to_zip = os.path.join(tmp_folder, self.WINDOWS_SRC_ZIP)
         request = requests.get(path, verify=False)
         open(path_to_zip, 'wb').write(request.content)
-        tmp_src_dir = os.path.join(tmp_folder, str(uuid.uuid4()).replace("-", ""))
+        tmp_src_dir = os.path.join(tmp_folder, prefix)
         with zipfile.ZipFile(path_to_zip, 'r') as zip_ref:
             zip_ref.extractall(tmp_src_dir)
         os.remove(path_to_zip)
