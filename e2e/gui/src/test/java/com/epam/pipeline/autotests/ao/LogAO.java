@@ -46,6 +46,7 @@ public class LogAO implements AccessObject<LogAO> {
     public static final long BUCKETS_MOUNTING_TIMEOUT = C.BUCKETS_MOUNTING_TIMEOUT;
 
     private static Condition completed = Condition.or("finished", Status.SUCCESS.reached, Status.STOPPED.reached, Status.FAILURE.reached);
+    private static Condition running = Condition.or("running", Status.LOADING.reached, Status.WORKING.reached);
 
     private final Map<Primitive,SelenideElement> elements = initialiseElements(
             entry(STATUS, $(byClassName("log__run-title"))),
@@ -90,6 +91,11 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO shouldHaveStatus(Status status) {
         get(STATUS).shouldHave(status.reached);
+        return this;
+    }
+
+    public LogAO shouldHaveRunningStatus() {
+        get(STATUS).shouldHave(running);
         return this;
     }
 

@@ -251,7 +251,7 @@ public class DockerCommitTest
                 .setDefaultLaunchOptions()
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
-                .shouldHaveStatus(LOADING);
+                .shouldHaveRunningStatus();
 
         runsMenu()
                 .stopRun(getLastRunId());
