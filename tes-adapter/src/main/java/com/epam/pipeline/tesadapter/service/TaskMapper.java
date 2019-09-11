@@ -27,9 +27,11 @@ import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -149,17 +151,12 @@ public class TaskMapper {
 
     private List<TesTaskLog> createTesTaskLog(final Long runId) {
         List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
-        List<TesExecutorLog> tesExecutorLogList = new ArrayList<TesExecutorLog>();
-        tesExecutorLogList.add(TesExecutorLog.builder()
-                .stdout(runLogList.stream().map(RunLog::getDate).findAny().toString() +
-                        runLogList.stream().map(RunLog::getTaskName).iterator().next() +
-                        runLogList.stream().map(RunLog::getLogText).iterator().next())
+        List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
+                .stdout(runLogList.stream().map(i -> i.getDate()).collect(Collectors.toList()).toString())
                 .build());
-        List<TesTaskLog> tesTaskLogs = new ArrayList<>();
-        tesTaskLogs.add(TesTaskLog.builder()
+        return Collections.singletonList(TesTaskLog.builder()
                 .logs(tesExecutorLogList)
                 .build());
-        return ListUtils.emptyIfNull(tesTaskLogs);
     }
 
     @Autowired
