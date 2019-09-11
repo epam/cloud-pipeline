@@ -25,7 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,10 +35,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TaskMapper {
+
     private final String defaultInstanceType;
     private final Integer defaultHddSize;
+
     @Autowired
     private MessageHelper messageHelper;
+
     private CloudPipelineAPIClient cloudPipelineAPIClient;
     private static final String SEPARATOR = " ";
     private static final String INPUT_TYPE = "input";
@@ -152,7 +154,12 @@ public class TaskMapper {
     private List<TesTaskLog> createTesTaskLog(final Long runId) {
         List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
         List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
-                .stdout(runLogList.stream().map(i -> i.getDate()).collect(Collectors.toList()).toString())
+                .stdout(runLogList.stream()
+                        .map(i -> i.getDate() +
+                                i.getTaskName() +
+                                i.getLogText())
+                        .collect(Collectors.toList())
+                        .toString())
                 .build());
         return Collections.singletonList(TesTaskLog.builder()
                 .logs(tesExecutorLogList)
