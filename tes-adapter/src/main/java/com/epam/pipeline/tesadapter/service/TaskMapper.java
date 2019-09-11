@@ -30,12 +30,16 @@ import java.util.Map;
 @Slf4j
 @Service
 public class TaskMapper {
+
     private final String defaultInstanceType;
     private final Integer defaultHddSize;
+
     @Autowired
     private MessageHelper messageHelper;
+
     @Autowired
     private CloudPipelineAPIClient cloudPipelineAPIClient;
+
     private static final String SEPARATOR = " ";
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
@@ -95,7 +99,7 @@ public class TaskMapper {
         switch (run.getStatus()) {
             case RUNNING:
                 if (pipelineTaskList.size() == 1 &&
-                        pipelineTaskList.stream().findFirst().get().getName().equalsIgnoreCase("Console")) {
+                        pipelineTaskList.get(0).getName().equalsIgnoreCase("Console")) {
                     return TesState.QUEUED;
                 } else if (pipelineTaskList.size() > 1 && pipelineTaskList.stream()
                         .noneMatch(p -> p.getName().equalsIgnoreCase("InitializeEnvironment"))) {
