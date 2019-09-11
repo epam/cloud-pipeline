@@ -145,11 +145,13 @@ public class TaskMapper {
         return evaluateMostProperInstanceType(allowedInstanceAndPriceTypes, ramGb, cpuCores);
     }
 
-    private Tool loadToolByTesImage(String image) {
-        return cloudPipelineAPIClient.loadTool(image);
+    public Tool loadToolByTesImage(String image) {
+        Assert.hasText(image, messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, image));
+        return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(IllegalArgumentException::new);
     }
 
-    private Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
+    public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES, zones));
         return cloudPipelineAPIClient.loadAllRegions().stream().filter(
@@ -177,8 +179,8 @@ public class TaskMapper {
      * @return double - correspond coefficient for {@code instanceType}
      */
     private Double calculateInstanceCoef(InstanceType instanceType, Double ramGb, Long cpuCores) {
-        return Math.abs((convertMemoryUnitTypeToGiB(instanceType.getMemoryUnit()) * instanceType.getMemory()
-                / ramGb + (double) instanceType.getVCPU() / (double) cpuCores) / 2 - 1);
+        return Math.abs(convertMemoryUnitTypeToGiB(instanceType.getMemoryUnit()) * instanceType.getMemory()
+                - ramGb) / ramGb + Math.abs((double) (instanceType.getVCPU() - cpuCores)) / cpuCores;
     }
 
     private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
