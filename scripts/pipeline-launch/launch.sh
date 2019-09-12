@@ -853,7 +853,20 @@ else
 fi
 
 #install pipe CLI
-install_pip_package PipelineCLI
+if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+      install_pip_package PipelineCLI
+else
+      echo "Installing 'pipe' CLI"
+      echo "-"
+      CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] 'pipe' CLI download failed. Exiting"
+            exit 1
+      fi
+      mv pipe /usr/bin/
+      chmod +x /usr/bin/pipe
+fi
 
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
