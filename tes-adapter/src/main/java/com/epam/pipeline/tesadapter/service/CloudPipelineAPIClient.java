@@ -6,6 +6,7 @@ import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.utils.QueryUtils;
@@ -53,5 +54,9 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractDataStorage> loadAllDataStorages(){
         return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
+    public List<PipelineTask> loadPipelineTasks(final Long id){
+        return QueryUtils.execute(cloudPipelineAPI.loadPipelineTasks(id));
     }
 }
