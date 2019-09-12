@@ -125,7 +125,7 @@ class WindowsUpdater(CLIVersionUpdater):
             bat_file.write(')\n')
             bat_file.write(':end\n')
             bat_file.write('(goto) 2>nul & del "%~f0"\n')
-        subprocess.Popen(path_to_bat, shell=True)
+        subprocess.Popen("{}".format(path_to_bat), shell=True)
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
