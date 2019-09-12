@@ -129,7 +129,7 @@ class TaskMapperTest {
         IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.loadToolByTesImage(null));
         assertTrue(exception2.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, null)));
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "null")));
     }
 
     @Test
