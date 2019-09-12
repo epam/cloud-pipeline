@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -206,4 +207,7 @@ public interface CloudPipelineAPI {
     //Notification methods
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
+
+    @GET("run/{runId}/tasks")
+    Call<Result<List<PipelineTask>>> loadPipelineTasks(@Path(RUN_ID) Long runId);
 }
