@@ -19,7 +19,18 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Link} from 'react-router';
-import {Alert, Checkbox, Icon, Input, message, Modal, Popover, Row, Table} from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Col,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Popover,
+  Row,
+  Table
+} from 'antd';
 import UserAutoComplete from '../special/UserAutoComplete';
 import StopPipeline from '../../models/pipelines/StopPipeline';
 import PausePipeline from '../../models/pipelines/PausePipeline';
@@ -30,6 +41,7 @@ import {
 } from '../../models/pipelines/PipelineRunCommitCheck';
 import {stopRun, canPauseRun, canStopRun, runPipelineActions, terminateRun} from './actions';
 import StatusIcon from '../special/run-status-icon';
+import AWSRegionTag from '../special/AWSRegionTag';
 import UserName from '../special/UserName';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
@@ -886,12 +898,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const endDateFilter = this.props.useFilter ? this.getDateFilter('completed') : {};
     const ownersFilter = this.props.useFilter ? this.getOwnersFilter() : {};
 
+    const expandIconColumn = {
+      title: '',
+      dataIndex: '',
+      key: 'expandIcon',
+      className: styles.expandIconColumn,
+    };
     const runColumn = {
-      title: this.containsNestedChildren() ? (
-        <span style={{paddingLeft: 25}}>Run</span>
-      ) : (
-        <span>Run</span>
-      ),
+      title: <span>Run</span>,
       dataIndex: 'podId',
       key: 'statuses',
       className: styles.runRowName,
@@ -900,10 +914,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.nodeCount > 0) {
           clusterIcon = <Icon type="database" />;
         }
+        const style = {
+          display: 'inline-table',
+          marginLeft: run.parentRunId ? '10px' : 0,
+        };
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
-            <span>
+            <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
               <Popover
                 mouseEnterDelay={1}
@@ -923,10 +941,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 trigger="hover">
                 {clusterIcon} <Icon type="export" /> {text}
               </Popover>
-            </span>
+            </div>
           );
         } else {
-          return (<span><StatusIcon run={run} small /> {clusterIcon} {text}</span>);
+          return (
+            <div style={style}>
+              <StatusIcon run={run} small /> {clusterIcon} {text}
+            </div>
+          );
         }
       },
       ...statusesFilter
@@ -1108,6 +1130,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     };
 
     return [
+      expandIconColumn,
       runColumn,
       parentRunColumn,
       pipelineColumn,
@@ -1134,13 +1157,6 @@ export default class RunTable extends localization.LocalizedReactComponent {
       item.children = item.childRuns.map(this.prepareSourceItem);
     }
     return mapResumeFailureReason(item);
-  };
-
-  containsNestedChildren = () => {
-    if (this.props.dataSource) {
-      return this.props.dataSource.map(this.prepareSourceItem).filter(i => i.children && i.children.length).length > 0;
-    }
-    return false;
   };
 
   render () {
