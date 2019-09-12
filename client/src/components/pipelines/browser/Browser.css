@@ -25,6 +25,10 @@ th.metadata-column-value {
   white-space: nowrap;
 }
 
+.metadata-folder-item-name {
+  width: unset;
+}
+
 .tree-item-no-wrap {
   white-space: nowrap;
 }
