@@ -5,6 +5,8 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
@@ -13,11 +15,13 @@ import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesExecutorLog;
 import com.epam.pipeline.tesadapter.entity.TesInput;
 import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
 import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
+import com.epam.pipeline.tesadapter.entity.TesTaskLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -58,6 +62,8 @@ public class TaskMapper {
     private static final String EXECUTORS = "executors";
     private static final String ZONES = "zones";
     private static final Integer FIRST = 0;
+    private static final String OUTPUT_LOG_STRING_FORMAT = "%s - %s - %s";
+    private static final String CARRIAGE_RETURN = "\n";
     private static final Integer ONLY_ONE = 1;
     private static final Double KIB_TO_GIB = 0.00000095367432;
     private static final Double MIB_TO_GIB = 0.0009765625;
@@ -216,6 +222,7 @@ public class TaskMapper {
                 .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .creationTime(run.getStartDate().toString())
+                .logs(createTesTaskLog(run.getId()))
                 .state(createTesState(run))
                 .build();
     }
@@ -280,5 +287,17 @@ public class TaskMapper {
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
                 .build()));
+    }
+
+    private List<TesTaskLog> createTesTaskLog(final Long runId) {
+        List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
+        List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
+                .stdout(runLogList.stream()
+                        .map(i -> String.format(OUTPUT_LOG_STRING_FORMAT, i.getDate(), i.getTaskName(), i.getLogText()))
+                        .collect(Collectors.joining(CARRIAGE_RETURN)))
+                .build());
+        return Collections.singletonList(TesTaskLog.builder()
+                .logs(tesExecutorLogList)
+                .build());
     }
 }
