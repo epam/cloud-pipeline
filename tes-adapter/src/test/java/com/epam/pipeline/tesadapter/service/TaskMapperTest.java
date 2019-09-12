@@ -61,13 +61,13 @@ class TaskMapperTest {
     private TesTask tesTask = mock(TesTask.class);
 
     @BeforeAll
-    static void setUpAll() {
+    public static void setUpAll() {
         allowedInstanceTypes = new ArrayList<>();
         fillWithAllowedInstanceTypes(allowedInstanceTypes);
     }
 
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         when(abstractCloudRegion.getName()).thenReturn(DEFAULT_REGION_NAME);
         when(abstractCloudRegion.getId()).thenReturn(STUBBED_REGION_ID);
         when(cloudPipelineAPIClient.loadAllRegions()).thenReturn(abstractCloudRegions);
@@ -84,7 +84,7 @@ class TaskMapperTest {
     }
 
     @Test()
-    void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
+    public void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
         List<TesExecutor> tesExecutors = new ArrayList<>();
         tesExecutors.add(new TesExecutor());
         tesExecutors.add(new TesExecutor());
@@ -96,7 +96,7 @@ class TaskMapperTest {
 
     @ParameterizedTest
     @MethodSource("provideInputForGetProperInstanceTypeTest")
-    void getProperInstanceTypeShouldReturnProperInstanceName(String instanceTypeName, Double ramGb, Long cpuCore) {
+    public void getProperInstanceTypeShouldReturnProperInstanceName(String instanceTypeName, Double ramGb, Long cpuCore) {
         when(tesTask.getResources().getRamGb()).thenReturn(ramGb);
         when(tesTask.getResources().getCpuCores()).thenReturn(cpuCore);
         when(tesTask.getResources().getZones()).thenReturn(zones);
@@ -105,7 +105,7 @@ class TaskMapperTest {
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunGetProperRegionIdInCloudRegionsByTesZone() {
+    public void expectIllegalArgExceptionWhenRunGetProperRegionIdInCloudRegionsByTesZone() {
         zones.add("Second zone");
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
@@ -114,12 +114,12 @@ class TaskMapperTest {
     }
 
     @Test
-    void getProperRegionIdInCloudRegionsByTesZoneShouldReturnRegionId() {
+    public void getProperRegionIdInCloudRegionsByTesZoneShouldReturnRegionId() {
         assertEquals(STUBBED_REGION_ID, taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullImage() {
+    public void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullImage() {
         IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.loadToolByTesImage(""));
         assertTrue(exception1.getMessage().contains(messageHelper.getMessage(
@@ -132,7 +132,7 @@ class TaskMapperTest {
     }
 
     @Test
-    void loadToolByTesImageShouldReturnToolByRequestingImage() {
+    public void loadToolByTesImageShouldReturnToolByRequestingImage() {
         assertEquals(tool, taskMapper.loadToolByTesImage(STUBBED_IMAGE));
     }
 
