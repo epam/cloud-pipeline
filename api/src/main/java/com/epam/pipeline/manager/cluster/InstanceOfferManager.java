@@ -216,13 +216,14 @@ public class InstanceOfferManager {
 
     public InstancePrice getInstanceEstimatedPrice(
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
+        final boolean isSpot = isSpotRequest(spot);
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, spot),
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, isSpot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
-                getPricePerHourForInstance(instanceType, isSpotRequest(spot), actualRegionId);
-        double pricePerDisk = getPriceForDisk(instanceDisk, actualRegionId, instanceType, spot);
+                getPricePerHourForInstance(instanceType, isSpot, actualRegionId);
+        double pricePerDisk = getPriceForDisk(instanceDisk, actualRegionId, instanceType, isSpot);
         double pricePerHour = pricePerDisk + pricePerHourForInstance;
         return new InstancePrice(instanceType, instanceDisk, pricePerHour);
     }
