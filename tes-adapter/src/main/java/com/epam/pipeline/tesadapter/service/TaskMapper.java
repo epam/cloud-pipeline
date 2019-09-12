@@ -5,9 +5,8 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunLog;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
@@ -38,10 +37,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
 public class TaskMapper {
+
     private final Integer defaultHddSize;
     private final Double defaultRamGb;
     private final Long defaultCpuCore;
@@ -71,7 +72,6 @@ public class TaskMapper {
     private static final Double TIB_TO_GIB = 1024.0;
     private static final Double PIB_TO_GIB = 1048576.0;
     private static final Double EIB_TO_GIB = 1073741824.0;
-
 
     @Autowired
     public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
@@ -279,6 +279,8 @@ public class TaskMapper {
         return TesResources.builder()
                 .preemptible(run.getInstance().getSpot())
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
+                .ramGb(getInstanceType(run).getMemory() * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
+                .cpuCores((long) getInstanceType(run).getVCPU())
                 .build();
     }
 
@@ -299,5 +301,22 @@ public class TaskMapper {
         return Collections.singletonList(TesTaskLog.builder()
                 .logs(tesExecutorLogList)
                 .build());
+    }
+
+    private InstanceType getInstanceType(PipelineRun run) {
+        Long regionId = run.getInstance().getCloudRegionId();
+        Boolean spot = run.getInstance().getSpot();
+        Tool pipeLineTool = loadToolByTesImage(run.getDockerImage());
+        String nodeType = run.getInstance().getNodeType();
+        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
+                cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(pipeLineTool.getId(), regionId, spot);
+        return Stream.of(allowedInstanceAndPriceTypes)
+                .map(instance -> instance.getAllowedInstanceTypes())
+                .flatMap(instanceType -> instanceType
+                        .stream()
+                        .filter(instance -> instance
+                                .getName()
+                                .equalsIgnoreCase(nodeType)))
+                .findFirst().get();
     }
 }
