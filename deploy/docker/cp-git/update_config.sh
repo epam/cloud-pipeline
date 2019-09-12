@@ -47,6 +47,7 @@ CP_GITLAB_SSO_TARGET_URL="${CP_GITLAB_SSO_TARGET_URL:-"https://${CP_IDP_EXTERNAL
 CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"}"
 CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
 CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
+CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -62,9 +63,10 @@ gitlab_rails['db_port'] = ${GITLAB_DATABASE_PORT}
 gitlab_rails['db_username'] = '${GITLAB_DATABASE_USERNAME}'
 gitlab_rails['db_password'] = '${GITLAB_DATABASE_PASSWORD}'
 
-external_url 'https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}'
+external_url '${CP_GITLAB_EXTERNAL_URL}'
 nginx['ssl_certificate'] = "/opt/gitlab/pki/ssl-public-cert.pem"
 nginx['ssl_certificate_key'] = "/opt/gitlab/pki/ssl-private-key.pem"
+nginx['listen_port'] = ${CP_GITLAB_INTERNAL_PORT}
 prometheus_monitoring['enable'] = false
 
 omnibus_gitconfig['system'] = { "pack" => ["windowMemory = ${CP_GITLAB_WINDOW_MEMORY}", "packSizeLimit = ${CP_GITLAB_PACK_SIZE_LIMIT}"]}

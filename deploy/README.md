@@ -68,6 +68,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_GITLAB_SSO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_sso_target_url (default: "/saml/sso")
                 -env CP_GITLAB_SLO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_slo_target_url (default: "/saml/sso")
                 -env CP_GITLAB_IDP_CERT_PATH= \                     # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+                -env CP_GITLAB_EXTERNAL_URL= \                      # Allows to specify a custom value for the gitlab's "external_url". This is used as a base URL for the repositories clone URLs. This value does not affect the gitlab's listen port. It will listen on $CP_GITLAB_INTERNAL_PORT(Default: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT})
 
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
