@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -30,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
@@ -72,6 +74,10 @@ public interface CloudPipelineAPI {
     String TOOL_IDENTIFIER = "image";
     String VERSION = "version";
     String PATH = "path";
+    String TOOL_ID = "toolId";
+    String REGION_ID = "regionId";
+    String SPOT = "spot";
+
 
     @POST("run")
     Call<Result<PipelineRun>> runPipeline(@Body PipelineStart runVo);
@@ -193,7 +199,15 @@ public interface CloudPipelineAPI {
     @POST("cluster/node/filter")
     Call<Result<List<NodeInstance>>> findNodes(@Body FilterNodesVO filterNodesVO);
 
+    @GET("cluster/instance/allowed")
+    Call<Result<AllowedInstanceAndPriceTypes>> loadAllowedInstanceAndPriceTypes(@Query(TOOL_ID) Long toolId,
+                                                                                @Query(REGION_ID) Long regionId,
+                                                                                @Query(SPOT) Boolean spot);
+
     //Notification methods
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
+
+    @GET("run/{runId}/tasks")
+    Call<Result<List<PipelineTask>>> loadPipelineTasks(@Path(RUN_ID) Long runId);
 }
