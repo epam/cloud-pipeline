@@ -48,6 +48,8 @@ public class TaskMapper {
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
     private static final Integer FIRST = 0;
+    private static final String OUTPUT_LOG_STRING_FORMAT = "%s - %s - %s";
+    private static final String CARRIAGE_RETURN = "\n";
 
     public TaskMapper(@Value("${cloud.pipeline.instanceType}") String instanceType,
                       @Value("${cloud.pipeline.hddSize}") Integer hddSize) {
@@ -155,11 +157,8 @@ public class TaskMapper {
         List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
         List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
                 .stdout(runLogList.stream()
-                        .map(i -> i.getDate() +
-                                i.getTaskName() +
-                                i.getLogText())
-                        .collect(Collectors.toList())
-                        .toString())
+                        .map(i -> String.format(OUTPUT_LOG_STRING_FORMAT, i.getDate(), i.getTaskName(), i.getLogText()))
+                        .collect(Collectors.joining(CARRIAGE_RETURN)))
                 .build());
         return Collections.singletonList(TesTaskLog.builder()
                 .logs(tesExecutorLogList)
