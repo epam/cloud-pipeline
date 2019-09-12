@@ -47,7 +47,6 @@ class TaskMapperTest {
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
     private static List<InstanceType> allowedInstanceTypes;
 
-
     @Autowired
     private MessageHelper messageHelper;
 

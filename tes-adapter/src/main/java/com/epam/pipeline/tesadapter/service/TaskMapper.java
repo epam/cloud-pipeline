@@ -5,9 +5,8 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.TaskStatus;
-import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -281,6 +280,5 @@ public class TaskMapper {
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
                 .build()));
-
     }
 }
