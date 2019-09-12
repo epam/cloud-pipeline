@@ -11,11 +11,11 @@ import lombok.NoArgsConstructor;
 import javax.validation.Valid;
 import java.util.List;
 
-@ApiModel(description = "Resources describes the resources requested by a task.")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ApiModel(description = "Resources describes the resources requested by a task.")
 public class TesResources {
     @ApiModelProperty(value = "Requested number of CPUs")
     @JsonProperty("cpu_cores")
