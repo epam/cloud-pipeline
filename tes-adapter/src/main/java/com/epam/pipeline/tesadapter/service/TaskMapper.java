@@ -50,6 +50,10 @@ public class TaskMapper {
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
+    private static final String TOOL = "tool";
+    private static final String INSTANCE_TYPES = "instanceList";
+    private static final String MIN_INSTANCE = "instance";
+    private static final String REGION_ID = "id";
     private static final String IMAGE = "image";
     private static final String EXECUTORS = "executors";
     private static final String ZONES = "zones";
@@ -122,22 +126,16 @@ public class TaskMapper {
 
 
     public String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
-        Double ramGb =
-                Optional.ofNullable(tesTask.getResources())
-                        .map(tesResources -> Optional.ofNullable(tesResources.getRamGb()).orElse(defaultRamGb))
-                        .orElse(defaultRamGb);
-        Long cpuCores =
-                Optional.ofNullable(tesTask.getResources())
-                        .map(tesResources -> Optional.ofNullable(tesResources.getCpuCores()).orElse(defaultCpuCore))
-                        .orElse(defaultCpuCore);
+        Double ramGb = Optional.ofNullable(tesTask.getResources())
+                .map(TesResources::getRamGb).orElse(defaultRamGb);
+        Long cpuCores = Optional.ofNullable(tesTask.getResources())
+                .map(TesResources::getCpuCores).orElse(defaultCpuCore);
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(Optional.ofNullable(tesTask.getResources())
-                .map(tesResources -> Optional.ofNullable(tesResources.getZones())
-                        .orElse(Collections.singletonList(defaultRegion)))
+                .map(TesResources::getZones)
                 .orElse(Collections.singletonList(defaultRegion)));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
-                .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
-                .orElse(defaultPreemptible);
+                .map(TesResources::getPreemptible).orElse(defaultPreemptible);
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
                 .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
         Assert.notEmpty(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), messageHelper.getMessage(
@@ -148,7 +146,9 @@ public class TaskMapper {
     public Tool loadToolByTesImage(String image) {
         Assert.hasText(image, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, image));
-        return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(IllegalArgumentException::new);
+        return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(() ->
+                new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, TOOL)));
     }
 
     public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
@@ -156,15 +156,21 @@ public class TaskMapper {
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES, zones));
         return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
                 region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
-                .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(IllegalArgumentException::new);
+                .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(() ->
+                new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION_ID)));
     }
 
     private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
                                                   Double ramGb, Long cpuCores) {
         return Optional.ofNullable(allowedInstanceAndPriceTypes.getAllowedInstanceTypes())
-                .orElseThrow(IllegalArgumentException::new).stream()
+                .orElseThrow(() ->
+                        new IllegalArgumentException(messageHelper
+                                .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES))).stream()
                 .min(Comparator.comparing(i -> calculateInstanceCoef(i, ramGb, cpuCores)))
-                .orElseThrow(IllegalArgumentException::new)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(messageHelper
+                                .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, MIN_INSTANCE)))
                 .getName();
     }
 
