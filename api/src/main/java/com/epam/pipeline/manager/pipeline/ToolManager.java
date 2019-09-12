@@ -643,7 +643,10 @@ public class ToolManager implements SecuredEntityManager {
 
     private Tool fetchTool(String registry, String image) {
         Long registryId = !StringUtils.isEmpty(registry)
-                ? dockerRegistryManager.loadByNameOrId(registry).getId()
+                ? Optional.ofNullable(dockerRegistryManager.loadByNameOrId(registry))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_DOCKER_REGISTRY_NOT_FOUND, registry))
+                ).getId()
                 : null;
         Tool tool = toolDao.loadTool(registryId, getImageWithoutTag(image));
         Assert.notNull(tool, messageHelper.getMessage(MessageConstants.ERROR_TOOL_NOT_FOUND, image));

@@ -92,6 +92,7 @@ public final class MessageConstants {
     public static final String ERROR_DOCKER_REGISTRY_NO_EXTERNAL = "error.docker.registry.no.external";
     public static final String ERROR_DOCKER_REGISTRY_AUTHENTICATION_REQUIRED =
             "error.docker.registry.authentication.required";
+    public static final String ERROR_DOCKER_REGISTRY_NOT_FOUND = "error.docker.registry.not.found";
     // Registry access
     public static final String ERROR_REGISTRY_IS_NOT_ALLOWED = "error.registry.not.allowed";
     public static final String ERROR_REGISTRY_ACTION_IS_NOT_ALLOWED = "error.registry.action.not.allowed";
