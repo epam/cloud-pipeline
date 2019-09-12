@@ -25,16 +25,16 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
+
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
+
     @Value("${cloud.pipeline.doc}")
     private String doc;
+
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private final TaskMapper taskMapper;
-
     private final MessageHelper messageHelper;
-
     private final static String ID = "id";
 
     @Autowired
