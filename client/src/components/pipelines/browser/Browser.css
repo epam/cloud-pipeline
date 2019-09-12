@@ -26,6 +26,7 @@ th.metadata-column-value {
 }
 
 .metadata-folder-item-name {
+  cursor: pointer;
   width: unset;
 }
 
