@@ -133,6 +133,12 @@ class GitServer(object):
             if git_user is not None:
                 pipeline_user = self.__pipeline_server_.find_user_by_email(git_user.email)
                 if pipeline_user is not None:
+                    if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                        print 'User {} ({}) has duplicated email set and wont be synchronized'.format(
+                            pipeline_user.friendly_name,
+                            pipeline_user.email
+                        )
+                        continue
                     permission = find_user_permission(pipeline_user.username)
                     if permission is None:
                         try:
@@ -290,6 +296,12 @@ class GitServer(object):
                 else:
                     pipeline_user = self.__pipeline_server_.find_user_by_username(permission.name)
                     if pipeline_user is not None:
+                        if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                            print 'User {} ({}) has duplicated email set and wont be synchornized'.format(
+                                pipeline_user.friendly_name,
+                                pipeline_user.email
+                            )
+                            continue
                         git_user = self.find_user_by_email(pipeline_user.email)
                         if git_user is not None:
                             member = find_member(git_user.id)
@@ -434,7 +446,13 @@ class GitServer(object):
                 print 'Unknown user {}'.format(username)
                 return None
             if pipeline_user.email is None:
-                print 'User {} has no email set and wouldn\'t be created'.format(username)
+                print 'User {} has no email set and wont be created'.format(username)
+                return None
+            if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                print 'User {} ({}) has duplicated email set and wont be created'.format(
+                    pipeline_user.friendly_name,
+                    pipeline_user.email
+                )
                 return None
             git_user = self.find_user_by_email(pipeline_user.email)
             if git_user is not None:
@@ -549,6 +567,11 @@ class GitServer(object):
             for user_id in unused_users:
                 git_user = self.find_user_by_id(user_id)
                 if git_user is not None:
+                    if self.__pipeline_server_.user_skipped(git_user.email):
+                        print 'User {} has duplicated email set and wont be synchronized'.format(
+                            git_user.email
+                        )
+                        continue
                     print 'Removing user {} from group {}'.format(git_user.name, group)
                     try:
                         self.__api__.remove_user_from_group(git_group.id, user_id)
@@ -572,6 +595,12 @@ class GitServer(object):
             return None
         if pipeline_user.email is None:
             print 'User {} has no email set'.format(username)
+            return None
+        if self.__pipeline_server_.user_skipped(pipeline_user.email):
+            print 'User {} ({}) has duplicated email set'.format(
+                pipeline_user.friendly_name,
+                pipeline_user.email
+            )
             return None
         git_user = self.find_user_by_email(pipeline_user.email)
         if git_user is None:
