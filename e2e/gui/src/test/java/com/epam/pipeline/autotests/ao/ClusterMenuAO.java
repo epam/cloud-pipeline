@@ -64,7 +64,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
             public boolean apply(final WebElement element) {
                 return contains(nodeLabel("MASTER"))
                         .or(contains(nodeLabel("EDGE")))
-                        .or(contains(nodeLabel("ELASTICSEARCH")))
+                        .or(contains(nodeLabel("CP-SEARCH-ELK")))
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
                         .test(element);
@@ -177,6 +177,12 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public ClusterMenuAO validateThereIsNoNode(String runId) {
+        for (int i = 0; i < 5; i++) {
+            if ($(byText(runIdLabelText(runId))).is(not(exist))) {
+                break;
+            }
+            sleep(2, SECONDS);
+        }
         $(byText(runIdLabelText(runId))).shouldNot(exist);
         return this;
     }

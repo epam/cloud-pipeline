@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -31,13 +32,14 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -95,7 +97,7 @@ public class DataStorageApiService {
 
     @PostFilter("hasRole('ADMIN') OR (hasPermission(filterObject.storage, 'READ') OR "
             + "hasPermission(filterObject.storage, 'WRITE'))")
-    @AclMaskList
+    @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount() {
         return dataStorageManager.getDataStoragesWithShareMountObject();
     }
@@ -205,7 +207,7 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public AbstractDataStorage create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
+    public SecuredEntityWithAction<AbstractDataStorage> create(DataStorageVO dataStorageVO, Boolean proceedOnCloud) {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true);
     }
 
@@ -319,7 +321,7 @@ public class DataStorageApiService {
                 .loadAllEntitiesPermissions(AclClass.DATA_STORAGE, page, pageSize, true, mask);
     }
 
-    @PostAuthorize(AclExpressions.STORAGE_PATHS_WRITE)
+    @PostAuthorize(AclExpressions.STORAGE_PATHS_READ)
     public List<PathDescription> getDataSizes(final List<String> paths) {
         return dataStorageManager.getDataSizes(paths);
     }

@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -220,6 +221,20 @@ public class UserController extends AbstractRestController {
             })
     public Result<List<CustomControl>> getUserControls() {
         return Result.success(userApiService.getUserControls());
+    }
+
+    @PutMapping(value = "/user/{id}/block")
+    @ResponseBody
+    @ApiOperation(
+            value = "Changes the block status of a user.",
+            notes = "Changes the block status of a user. If the user is blocked, he can't access his account.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<PipelineUser> updateUserBlockingStatus(@PathVariable final Long id,
+                                                         @RequestParam final Boolean blockStatus) {
+        return Result.success(userApiService.updateUserBlockingStatus(id, blockStatus));
     }
 
     @RequestMapping(value = "/user/{id}/update", method = RequestMethod.POST)

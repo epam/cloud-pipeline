@@ -69,11 +69,18 @@ fi
 
 echo "$_FUSE_TYPE is NOT installed, proceeding with installation from package repository"
 
-install_from_package_repository
-_IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
-if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
-    echo "${_FUSE_TYPE} installed from package repository"
+_DISTR_URL_PATH="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/gcsfuse/gcsfuse.tar"
+
+local_package_install $_DISTR_URL_PATH "gcsfuse"
+if [ $? -ne 0 ]; then
+    install_from_package_repository
+    _IS_INSTALLED_FROM_PACKAGE_REPOSITORY=$?
+    if [ $_IS_INSTALLED_FROM_PACKAGE_REPOSITORY -eq 0 ]; then
+        echo "${_FUSE_TYPE} installed from package repository"
+    else
+        echo "${_FUSE_TYPE} installation from package repository failed"
+        exit 1
+    fi
 else
-    echo "${_FUSE_TYPE} installation from package repository failed"
-    exit 1
+    echo "${_FUSE_TYPE} installed from local repository"
 fi

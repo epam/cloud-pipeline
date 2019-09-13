@@ -53,6 +53,7 @@ import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
+import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -733,9 +734,37 @@ export default class RunTable extends localization.LocalizedReactComponent {
           }
           break;
         case 'paused':
-          return <a
-            id={`run-${record.id}-resume-button`}
-            onClick={(e) => this.showResumeConfirmDialog(e, record)}>RESUME</a>;
+          const {resumeFailureReason} = record;
+          return (
+            <a
+              id={`run-${record.id}-resume-button`}
+              onClick={(e) => this.showResumeConfirmDialog(e, record)}>
+              {
+                resumeFailureReason
+                  ? (
+                    <Popover
+                      title={null}
+                      placement="left"
+                      content={
+                        <div style={{maxWidth: '40vw'}}>
+                          {resumeFailureReason}
+                        </div>
+                      }
+                    >
+                      <Icon
+                        type="exclamation-circle-o"
+                        style={{
+                          marginRight: 5,
+                          color: 'orange'
+                        }}
+                      />
+                    </Popover>
+                  )
+                  : null
+              }
+              RESUME
+            </a>
+          );
       }
     }
     return <div />;
@@ -869,12 +898,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
     const endDateFilter = this.props.useFilter ? this.getDateFilter('completed') : {};
     const ownersFilter = this.props.useFilter ? this.getOwnersFilter() : {};
 
+    const expandIconColumn = {
+      title: '',
+      dataIndex: '',
+      key: 'expandIcon',
+      className: styles.expandIconColumn,
+    };
     const runColumn = {
-      title: this.containsNestedChildren() ? (
-        <span style={{paddingLeft: 25}}>Run</span>
-      ) : (
-        <span>Run</span>
-      ),
+      title: <span>Run</span>,
       dataIndex: 'podId',
       key: 'statuses',
       className: styles.runRowName,
@@ -883,6 +914,10 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.nodeCount > 0) {
           clusterIcon = <Icon type="database" />;
         }
+        const style = {
+          display: 'inline-table',
+          marginLeft: run.parentRunId ? '10px' : 0,
+        };
         let instance;
         if (run.instance) {
           instance = (
@@ -897,7 +932,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
-            <div style={{display: 'inline-table'}}>
+            <div style={style}>
               <StatusIcon run={run} small additionalStyle={{marginRight: 5}} />
               <Popover
                 mouseEnterDelay={1}
@@ -928,7 +963,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
           );
         } else {
           return (
-            <div style={{display: 'inline-table'}}>
+            <div style={style}>
               <StatusIcon
                 run={run}
                 small
@@ -1125,6 +1160,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     };
 
     return [
+      expandIconColumn,
       runColumn,
       parentRunColumn,
       pipelineColumn,
@@ -1150,14 +1186,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     if (item.childRuns) {
       item.children = item.childRuns.map(this.prepareSourceItem);
     }
-    return item;
-  };
-
-  containsNestedChildren = () => {
-    if (this.props.dataSource) {
-      return this.props.dataSource.map(this.prepareSourceItem).filter(i => i.children && i.children.length).length > 0;
-    }
-    return false;
+    return mapResumeFailureReason(item);
   };
 
   render () {

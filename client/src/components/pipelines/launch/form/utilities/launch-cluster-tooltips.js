@@ -63,6 +63,16 @@ const ENABLE_GRID_ENGINE_TOOLTIP = (
     </Row>
   </div>
 );
+const ENABLE_SPARK_TOOLTIP = (
+  <div>
+    <Row>
+      Setting this checkbox will enable the <b>Apache Spark</b> for the cluster, with the access to <b>File/Object Storages</b> from the Spark Applications.
+    </Row>
+    <Row>
+      This checkbox is a convenience option for the <b>"CP_CAP_SPARK=true"</b> parameter.
+    </Row>
+  </div>
+);
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (
   <div>
     <Row>
@@ -92,7 +102,8 @@ const AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP = (
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
   cluster: {
-    enableGridEngine: 'enable grid engine'
+    enableGridEngine: 'enable grid engine',
+    enableSpark: 'enable spark'
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
@@ -105,6 +116,8 @@ const tooltips = {
     CLUSTER_MODES_TOOLTIP,
   [LaunchClusterTooltip.cluster.enableGridEngine]:
     ENABLE_GRID_ENGINE_TOOLTIP,
+  [LaunchClusterTooltip.cluster.enableSpark]:
+    ENABLE_SPARK_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:

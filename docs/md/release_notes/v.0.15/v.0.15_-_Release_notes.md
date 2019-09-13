@@ -23,6 +23,11 @@
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
 - [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
+- [Verification of docker/storage permissions when launching a run](#verification-of-dockerstorage-permissions-when-launching-a-run)
+- [Ability to override the queue/PE configuration in the GE configuration](#ability-to-override-the-queuepe-configuration-in-the-ge-configuration)
+- [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
+- [Estimation run's disk size according to the input/common parameters](#estimation-runs-disk-size-according-to-the-inputcommon-parameters)
+- [Disabling of the Global Search form if a corresponding service is not installed](#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed)
 
 ***
 
@@ -35,6 +40,12 @@
     - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
     - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipeline_user-and-role-entities-for-metadata-api)
     - [Getting logs from Kubernetes may cause `OutOfMemory` error](#getting-logs-from-kubernetes-may-cause-outofmemory-error)
+    - [Layout is broken for pipeline's versions table](#layout-is-broken-for-pipelines-versions-table)
+    - [AWS: Incorrect `nodeup` handling of spot request status](#aws-incorrect-nodeup-handling-of-spot-request-status)
+    - [Not handling clusters in `autopause` daemon](#not-handling-clusters-in-autopause-daemon)
+    - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
+    - [JWT token shall be updated for the jobs being resumed](#jwt-token-shall-be-updated-for-the-jobs-being-resumed)
+    - [Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error](#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error)
 
 ***
 
@@ -228,10 +239,10 @@ This feature is addresses the same issues as the previous **Notifications about 
 
 In certain cases jobs may fail with unexpected errors if the compute node runs `Out Of Memory`.
 
-**`v0.15`** provides an ability for admin users to configure a default `swap` file to the compute node being created.
-This allow to avoid runs failures due to memory limits.
+**`v0.15`** provides an ability for admin users to configure a default `swap` volume to the compute node being created.
+This allows to avoid runs failures due to memory limits.
 
-The size and the location of the `swap` can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
+The size of the `swap` volume can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_SwapFiles_1.png)
 
 Options that can be used to configure `swap`:
@@ -452,16 +463,85 @@ As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#
     - "Share with: ..." parameter, within a run log form, can be used for this  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
     - Specific users or whole groups can be set for sharing  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
     - Once this is set - other users will be able to access run's endpoints
     - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
 2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
 To open shared instance application user should click the service name.  
 To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
-    ![CP_v.0.13_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
 
 For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
+
+## Verification of docker/storage permissions when launching a run
+
+Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding **permission** for that executable.  
+But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.
+
+In **`v0.15`** additional verification implemented that checks if:
+
+- `execution` is allowed for specified docker image;
+- `read` operations are allowed for **input** and **common** path parameters;
+- `write` operations are allowed for **output** path parameters.
+
+If there are such permission issues, run won't be launched and special warning notifications will be shown to a user, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_1.png)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_2.png)
+
+For more details see sections [6.2. Launch a pipeline](../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md), [7.2. Launch Detached Configuration](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md) and [10.5. Launch a Tool](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md).
+
+## Ability to override the `queue`/`PE` configuration in the GE configuration
+
+Previously, if the Grid Engine was enabled, the following was configured:
+
+- a single `queue` with all the hosts was creating, named "**main.q**"
+- a single `PE` (Parallel Environment) was creating, named "**local**"
+
+In **`v0.15`**, the overriding of the names of the `queue`/`PE` is implemented to be compatible with any existing scripts, that rely on a specific GE configuration (e.g. hardcoded).  
+You can do it using two new System Parameters at the Launch or the Configuration forms:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_GE_QueueAndPeRenaming_1.png)
+
+- **`CP_CAP_SGE_QUEUE_NAME`** _(string)_ - allows to override the GE's `queue` name (default: "**main.q**")
+- **`CP_CAP_SGE_PE_NAME`** _(string)_ - allows to override the GE's `PE` name (default: "**local**")
+
+More information how to use System Parameters when a job is launched see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-create-a-configuration-that-uses-system-parameter).
+
+## Execution of files uploading via `pipe` without failures in case of lacks read permissions
+
+Previously, `pipe storage cp`/`mv` commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the `pipe` process had reached one of files that was not readable for the `pipe` process, then the whole command was being failed, remaining files did not upload.
+
+In current version, the `pipe` process checks read permission for the "local" source (directories and files) and skip those that are not readable:
+
+![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeCPforNotReadable_1.png)
+
+## Estimation run's disk size according to the input/common parameters
+
+Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using `STAR` aligner, where the genome index file is 20Gb).
+
+In **`v0.15`**, an attempt to handle some of such cases is implemented. Now, the Cloud Pipeline try to estimate the required disk size using the input/common parameters and warn the user if the requested disk is not enough.
+
+When a job is launching, the system try to get the size of all input/common parameters. The time of the size getting for all files is limited, as this may take too much for lots of small files. Limit for this time is set by the **`storage.listing.time.limit`** system preference (in milliseconds). Default: 3 sec (3000 milliseconds). If computation doesn't end in this timeout, accumulated size will return as is.
+
+If the resulting size of all input/common parameters is greater than requested disk size (considering cluster configuration) - the user will be warned:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EstimateDiskSize_1.png)  
+    User can set suggested disk size or launch a job at user's own risk with the requested size.
+
+If calculated suggested disk size exceeds 16Tb (hard limit) a different warning message will be shown:
+
+``` text
+The requested disk size for this run is <N> Gb, but the data that is going to be processed exceeds 16 Tb (which is a hard limit).
+Please use the cluster run configuration to scale the disks horizontally or reduce the input data volume.
+Do you want to use the maximum disk size 16 Tb anyway?
+```
+
+## Disabling of the Global Search form if a corresponding service is not installed
+
+Version **`0.14`** introduced the [Global Search](../v.0.14/v.0.14_-_Release_notes.md#global-search) feature over all Cloud Pipeline objects.  
+In current version, a small enhancement for the Global Search is implemented. Now, if the **`search.elastic.host`** system preference is not set by admin - other users will not be able to try search performing:
+
+- the "Search" button will be hidden from the left menu
+- keyboard search shortcut will be disabled
 
 ***
 
@@ -524,3 +604,43 @@ Now a general user may list only personal `user-level` metadata. Administrators 
 
 For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause `OutOfMemory` error, since Kubernetes library tries to load it into a single String object.  
 In current version, a new system preference was introduced: **`system.logs.line.limit`**. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.
+
+### Layout is broken for pipeline's versions table
+
+[#553](https://github.com/epam/cloud-pipeline/issues/553)
+
+Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.
+
+### AWS: Incorrect `nodeup` handling of spot request status
+
+[#556](https://github.com/epam/cloud-pipeline/issues/556)
+
+Previously, in a situation when an `AWS` spot instance created after some timeout - spot status wasn't updated correctly in the handling of `spot request status`. It might cause errors while getting spot instance info.
+
+### Not handling clusters in `autopause` daemon
+
+[#557](https://github.com/epam/cloud-pipeline/issues/557)
+
+Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).
+In current version, `autopause` daemon doesn't handle any clusters ("Static" or "Autoscaled").  
+Also now, if the cluster is configured - **Auto pause** checkbox doesn't display in the **Launch Form** for the `On-Demand` node types.
+
+### Incorrect `pipe` CLI version displaying
+
+[#561](https://github.com/epam/cloud-pipeline/issues/561)
+
+Previously, `pipe` CLI version displayed incorrectly for the `pipe` CLI installations performed via hints from the **Cloud Pipeline** System Settings menu.
+
+### JWT token shall be updated for the jobs being resumed
+
+[#579](https://github.com/epam/cloud-pipeline/issues/579)
+
+In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.
+
+Now, the JWT token (and other variables as well) are being updated when a job is being resumed.
+
+### Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error
+
+[#520](https://github.com/epam/cloud-pipeline/issues/520)
+
+Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.

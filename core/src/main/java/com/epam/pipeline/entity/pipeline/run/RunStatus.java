@@ -32,6 +32,7 @@ public class RunStatus {
 
     private Long runId;
     private TaskStatus status;
+    private String reason;
     private LocalDateTime timestamp;
 
 }

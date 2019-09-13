@@ -29,6 +29,7 @@ from pipeline.autoscaling import utils
 OS_DISK_SIZE = 10
 INSTANCE_USER_NAME = "pipeline"
 NO_BOOT_DEVICE_NAME = 'sdb1'
+SWAP_DEVICE_NAME = 'sdb2'
 
 # custom instance format
 GPU_CUSTOM_INSTANCE_PARTS = 5
@@ -48,7 +49,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
         ssh_pub_key = utils.read_ssh_key(ins_key)
-        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+        swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
+        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img,
+                                                      kube_ip, kubeadm_token, swap_size)
 
         allowed_networks = utils.get_networks_config(self.cloud_region)
         subnet_id = 'default'
@@ -67,7 +70,6 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
-
         body = {
             'name': instance_name,
             'machineType': machine_type,
@@ -75,10 +77,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 'preemptible': is_spot
             },
             'canIpForward': True,
-            'disks': [
-                self.__get_boot_device(OS_DISK_SIZE, ins_img),
-                self.__get_device(ins_hdd)
-            ],
+            'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': [
                 {
                     'accessConfigs': [
@@ -270,11 +269,18 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'type': 'PERSISTENT'
         }
 
-    def __get_device(self, ins_hdd):
+    def __get_disk_devices(self, ins_img, os_disk_size, ins_hdd, swap_size):
+        disks = [self.__get_boot_device(os_disk_size, ins_img),
+                 self.__get_device(ins_hdd, NO_BOOT_DEVICE_NAME)]
+        if swap_size is not None and swap_size > 0:
+            disks.append(self.__get_device(swap_size, SWAP_DEVICE_NAME))
+        return disks
+
+    def __get_device(self, ins_hdd, device_name):
         return {
             'boot': False,
             'autoDelete': True,
-            'deviceName': NO_BOOT_DEVICE_NAME,
+            'deviceName': device_name,
             'mode': 'READ_WRITE',
             'type': 'PERSISTENT',
             'initializeParams': {

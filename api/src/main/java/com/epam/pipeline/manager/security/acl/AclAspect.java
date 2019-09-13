@@ -17,16 +17,19 @@
 package com.epam.pipeline.manager.security.acl;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
+import com.epam.pipeline.entity.SecuredEntityDelegate;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import org.apache.commons.collections4.ListUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -54,17 +57,15 @@ public class AclAspect {
     @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
             + "execution(* *.create(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
-    public void createAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {
-        if (entity.getOwner().equals(AuthManager.UNAUTHORIZED_USER)) {
-            return;
+    public void createAclIdentity(JoinPoint joinPoint, Object entity) {
+        if (entity instanceof AbstractSecuredEntity) {
+            createEntity((AbstractSecuredEntity)entity);
+        } else if (entity instanceof SecuredEntityDelegate) {
+            SecuredEntityDelegate delegate = (SecuredEntityDelegate) entity;
+            Optional.ofNullable(delegate.toDelegate()).ifPresent(this::createEntity);
+        } else {
+            LOGGER.debug("Unexpected class for ACL synchronization: {}.", entity.getClass());
         }
-        LOGGER.debug("Creating ACL Object {} {}", entity.getName(), entity.getClass());
-        MutableAcl acl = aclService.createAcl(entity);
-        if (entity.getParent() != null) {
-            updateParent(entity, acl);
-        }
-        // owner has all permissions for a new object
-        entity.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
     }
 
     @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
@@ -114,6 +115,16 @@ public class AclAspect {
                 entity.setMask(permissionManager.getPermissionsMask(entity, true, true)));
     }
 
+    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskDelegateList)",
+            returning = "list")
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setMaskForDelegateList(JoinPoint joinPoint, List<? extends SecuredEntityDelegate> list) {
+        ListUtils.emptyIfNull(list).forEach(delegate ->
+                Optional.ofNullable(delegate.toDelegate())
+                        .ifPresent(entity -> entity.setMask(
+                                permissionManager.getPermissionsMask(entity, true, true))));
+    }
+
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskPage)",
             returning = "page")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -134,6 +145,18 @@ public class AclAspect {
         permissionManager.extendFilter(filter);
     }
 
+    private void createEntity(final AbstractSecuredEntity entity) {
+        if (entity.getOwner().equals(AuthManager.UNAUTHORIZED_USER)) {
+            return;
+        }
+        LOGGER.debug("Creating ACL Object {} {}", entity.getName(), entity.getClass());
+        MutableAcl acl = aclService.createAcl(entity);
+        if (entity.getParent() != null) {
+            updateParent(entity, acl);
+        }
+        // owner has all permissions for a new object
+        entity.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
+    }
 
     private void updateParent(AbstractSecuredEntity entity, MutableAcl acl) {
         MutableAcl parentAcl = aclService.getOrCreateObjectIdentity(entity.getParent());

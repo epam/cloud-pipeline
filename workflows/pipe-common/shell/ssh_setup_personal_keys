@@ -14,6 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function add_ssh_config {
+    local config_path="$1"
+    local external_host="$2"
+    local internal_host="$3"
+    local private_key_path="$4"
+
+#### Remove any existing section (in case of commits/pauses)
+sed -i '/# START GIT SSH CONFIG/,/# END GIT SSH CONFIG/d' $config_path
+#### Add a new section back
+cat >>$config_path <<EOF
+# START GIT SSH CONFIG
+host $external_host
+ HostName $internal_host
+ IdentityFile $private_key_path
+ User git
+host $internal_host
+ HostName $internal_host
+ IdentityFile $private_key_path
+ User git
+# END GIT SSH CONFIG
+EOF
+}
+
 ## Common
 if [ -z "$OWNER" ]; then
     echo "OWNER is not set, cannot configure personal SSH keys"
@@ -121,28 +144,16 @@ mkdir -p $ROOT_SSH_DIR
 \cp $OWNER_SSH_PUB_LOCATION $ROOT_SSH_DIR/
 
 ### Configure keys to be used for the gitlab by OWNER
-cat >>$OWNER_SSH_CONFIG_LOCATION <<EOF
-host $GIT_HOST_EXTERNAL_PREF
- HostName $GIT_HOST_PREF
- IdentityFile $OWNER_SSH_PRV_LOCATION
- User git
-host $GIT_HOST_PREF
- HostName $GIT_HOST_PREF
- IdentityFile $OWNER_SSH_PRV_LOCATION
- User git
-EOF
+add_ssh_config  "$OWNER_SSH_CONFIG_LOCATION" \
+                "$GIT_HOST_EXTERNAL_PREF" \
+                "$GIT_HOST_PREF" \
+                "$OWNER_SSH_PRV_LOCATION"
 
 ### Configure keys to be used for the gitlab by root
-cat >>$ROOT_SSH_DIR/config <<EOF
-host $GIT_HOST_EXTERNAL_PREF
- HostName $GIT_HOST_PREF
- IdentityFile $ROOT_SSH_DIR/id_${OWNER}
- User git
-host $GIT_HOST_PREF
- HostName $GIT_HOST_PREF
- IdentityFile $ROOT_SSH_DIR/id_${OWNER}
- User git
-EOF
+add_ssh_config  "$ROOT_SSH_DIR/config" \
+                "$GIT_HOST_EXTERNAL_PREF" \
+                "$GIT_HOST_PREF" \
+                "$ROOT_SSH_DIR/id_${OWNER}"
 
 chown -R root:root $ROOT_SSH_DIR
 chmod -R 600 $ROOT_SSH_DIR

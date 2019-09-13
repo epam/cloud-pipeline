@@ -16,6 +16,18 @@
 
 set -e
 
+# Check that we have enough disk space for the master compononents (root fs, docker, etcd)
+check_enough_disk "${CP_COMMON_ROOT_FS_MIN_DISK_MB:-20480}" \
+                  "/"
+
+check_enough_disk "${CP_KUBE_MASTER_DOCKER_MIN_DISK_MB:-102400}" \
+                  "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/docker"
+
+check_enough_disk "${CP_KUBE_MASTER_ETCD_MIN_DISK_MB:-20480}" \
+                  "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/etcd"
+
+
+
 # 1
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -97,7 +109,7 @@ systemctl enable kubelet
 systemctl start docker
 systemctl start kubelet
 
-# TODO: here and further - implement a smarter approach to wait for the kube service to init
+# FIXME: here and further - implement a smarter approach to wait for the kube service to init
 sleep 10
 
 #9
@@ -126,7 +138,7 @@ if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
 fi
 
 FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
-kubeadm init --pod-network-cidr="$FLANNEL_CIDR" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
+kubeadm init --pod-network-cidr="10.244.0.0/16" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
 
 sleep 30
 

@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -247,8 +248,10 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public AbstractDataStorage create(DataStorageVO dataStorageVO, Boolean proceedOnCloud, Boolean checkExistence,
-                                      boolean replaceStoragePath)
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final Boolean proceedOnCloud,
+                                                               final Boolean checkExistence,
+                                                               final boolean replaceStoragePath)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -270,6 +273,8 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
+        final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
+        createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
@@ -281,6 +286,8 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             String created = storageProviderManager.createBucket(dataStorage);
             dataStorage.setPath(created);
+
+            createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
         } else if (checkExistence && !storageProviderManager.checkStorage(dataStorage)) {
             throw new IllegalStateException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, dataStorage.getName(),
@@ -299,7 +306,8 @@ public class DataStorageManager implements SecuredEntityManager {
         if (dataStorage.isPolicySupported()) {
             storageProviderManager.applyStoragePolicy(dataStorage);
         }
-        return dataStorage;
+
+        return createdStorage;
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -610,7 +618,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private Collection<String> getRootPaths(final List<String> paths) {
         final Set<String> initialPaths = new HashSet<>(paths);
         final List<String> childPaths = initialPaths.stream()
-                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) && p.startsWith(path)))
+                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) &&
+                        p.startsWith(ProviderUtils.withTrailingDelimiter(path))))
                 .flatMap(Function.identity())
                 .collect(Collectors.toList());
         return CollectionUtils.subtract(initialPaths, childPaths);
@@ -636,14 +645,16 @@ public class DataStorageManager implements SecuredEntityManager {
 
             final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
             Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
-                    String.format("The specified path %s has incorrect state. Expected path mask: %s",
-                            path, dataStorage.getPathMask()));
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_INVALID_SCHEMA, path,
+                            dataStorage.getPathMask()));
 
             pathDescription.setDataStorageId(dataStorage.getId());
             pathDescription.setSize(0L);
             storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
         } catch (Exception e) {
-            LOGGER.debug("An error occurred during processing path {}. {}", path, e.getMessage());
+            LOGGER.error(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCCESSING, path, e.getMessage()));
+            LOGGER.error(e.getMessage(), e);
         }
     }
 

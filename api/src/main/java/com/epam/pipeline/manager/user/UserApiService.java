@@ -55,6 +55,17 @@ public class UserApiService {
         return userManager.updateUser(id, userVO);
     }
 
+    /**
+     * Updates `blocked` field of given user
+     * @param id id of the user to be updated
+     * @param blockStatus boolean condition of user (true - blocked, false - not blocked)
+     * @return updated user
+     */
+    @PreAuthorize(ADMIN_ONLY)
+    public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
+        return userManager.updateUserBlockingStatus(id, blockStatus);
+    }
+
     @PreAuthorize(ADMIN_ONLY)
     public PipelineUser loadUser(Long id) {
         return userManager.loadUserById(id);

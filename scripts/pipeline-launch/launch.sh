@@ -205,6 +205,24 @@ function cp_cap_publish {
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_SPARK"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _SPARK_MASTER_INIT="spark_setup_master"
+            _SPARK_WORKER_INIT="spark_setup_worker"
+            echo "Requested Spark capability, setting init scripts:"
+            echo "--> Master: $_SPARK_MASTER_INIT"
+            echo "--> Worker: $_SPARK_WORKER_INIT"
+
+            sed -i "/$_SPARK_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_SPARK_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_SPARK_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_SPARK_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -781,6 +799,15 @@ then
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
+    # Allow clients to be idle for 1 hour (30 sec * 120 times)
+    CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
+    sed -i '/ClientAliveInterval/d' /etc/ssh/sshd_config
+    echo "ClientAliveInterval $CP_CAP_SSH_CLIENT_ALIVE_INTERVAL" >> /etc/ssh/sshd_config
+    
+    CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX=${CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX:-120}
+    sed -i '/ClientAliveCountMax/d' /etc/ssh/sshd_config
+    echo "ClientAliveCountMax $CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX" >> /etc/ssh/sshd_config
+
     eval "$SSH_SERVER_EXEC_PATH"
     echo "SSH server is started"
 else
@@ -826,12 +853,28 @@ else
 fi
 
 #install pipe CLI
-install_pip_package PipelineCLI
+if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+      install_pip_package PipelineCLI
+else
+      echo "Installing 'pipe' CLI"
+      echo "-"
+      CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] 'pipe' CLI download failed. Exiting"
+            exit 1
+      fi
+      mv pipe /usr/bin/
+      chmod +x /usr/bin/pipe
+fi
 
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then
       echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
 else
       # clone current pipeline repo
       clone_repository $GIT_REPO $SCRIPTS_DIR 3 10
@@ -942,27 +985,29 @@ echo
 ######################################################
 
 
-
-
-
-######################################################
-echo "Checking if remote data needs localizing"
-echo "-"
-######################################################
-LOCALIZATION_TASK_NAME="InputData"
-INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
-
-upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
-
-if [ $? -ne 0 ];
+if [ "$RESUMED_RUN" == true ];
 then
-    echo "Failed to upload input data"
-    exit 1
+    echo "Skipping data localization for resumed run"
+else
+    ######################################################
+    echo "Checking if remote data needs localizing"
+    echo "-"
+    ######################################################
+    LOCALIZATION_TASK_NAME="InputData"
+    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+
+    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+
+    if [ $? -ne 0 ];
+    then
+        echo "Failed to upload input data"
+        exit 1
+    fi
+    echo
+
+    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
 fi
-echo
-
-[ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
-
 echo "------"
 echo
 ######################################################

@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -33,9 +35,9 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.execution.PipelineExecutor;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
@@ -43,7 +45,8 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import io.fabric8.kubernetes.api.model.EnvVar;
+import com.epam.pipeline.utils.CommonUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +58,7 @@ import org.springframework.util.Assert;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -104,7 +108,10 @@ public class DockerContainerOperationManager {
     private CloudFacade cloudFacade;
 
     @Autowired
-    private PipelineExecutor executor;
+    private PipelineLauncher launcher;
+
+    @Autowired
+    private PipelineConfigurationManager configurationManager;
 
     @Autowired
     private NodesManager nodesManager;
@@ -123,9 +130,6 @@ public class DockerContainerOperationManager {
 
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
-
-    @Value("${launch.script.url}")
-    private String launchScriptUrl;
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
@@ -257,6 +261,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
@@ -266,27 +271,57 @@ public class DockerContainerOperationManager {
     @Async("pauseRunExecutor")
     public void resumeRun(PipelineRun run, List<String> endpoints) {
         try {
-
-            AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
-            cloudFacade.startInstance(cloudRegion.getId(), run.getInstance().getNodeId());
-
+            final AbstractCloudRegion cloudRegion = regionManager.load(run.getInstance().getCloudRegionId());
+            final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(cloudRegion.getId(),
+                    run.getInstance().getNodeId());
+            if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                rollbackRunToPausedState(run, startInstanceResult);
+                return;
+            }
             kubernetesManager.waitForNodeReady(run.getInstance().getNodeName(),
                     run.getId().toString(), cloudRegion.getRegionCode());
-            String cmd = String.format(PipelineLauncher.LAUNCH_TEMPLATE, launchScriptUrl,
-                    launchScriptUrl, "", "", run.getActualCmd());
-            List<EnvVar> envVars = Collections.singletonList(
-                    new EnvVar(SystemParams.RESUMED_RUN.getEnvName(), "true", null));
-            executor.launchRootPod(cmd, run, envVars, endpoints,
-                    run.getPodId(), run.getId().toString(), null, null, false);
+            PipelineConfiguration configuration = getResumeConfiguration(run);
+            launcher.launch(run, configuration, endpoints,  run.getId().toString(),
+                    true, run.getPodId(), null, false);
             kubernetesManager.removeNodeLabel(run.getInstance().getNodeName(),
                     KubernetesConstants.PAUSED_NODE_LABEL);
             run.setStatus(TaskStatus.RUNNING);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
+    }
+
+    private PipelineConfiguration getResumeConfiguration(final PipelineRun run) {
+        final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
+        final Map<String, String> envs = getResumeRunEnvVars(configuration);
+        configuration.setEnvironmentParams(envs);
+        return configuration;
+    }
+
+    private Map<String,String> getResumeRunEnvVars(final PipelineConfiguration configuration) {
+        final Map<String, String> envs = configuration.getEnvironmentParams();
+        final Map<String, String> resumeEnvVar = Collections.singletonMap(SystemParams.RESUMED_RUN.getEnvName(), "true");
+        if (MapUtils.isEmpty(envs)) {
+            return resumeEnvVar;
+        }
+        return CommonUtils.mergeMaps(envs, resumeEnvVar);
+    }
+
+    private void rollbackRunToPausedState(final PipelineRun run,
+                                          final CloudInstanceOperationResult startInstanceResult) {
+        final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
+                startInstanceResult.getMessage());
+        addRunLog(run, msg, RESUME_RUN_TASK);
+        LOGGER.warn(msg);
+        run.setStatus(TaskStatus.PAUSED);
+        // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
+        // but would be passed to aspect and used for RunStatus update
+        run.setStateReasonMessage(msg);
+        runManager.updatePipelineStatus(run);
     }
 
     private Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {

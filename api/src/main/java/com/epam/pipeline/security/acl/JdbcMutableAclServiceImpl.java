@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.security.acl;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,7 @@ import javax.sql.DataSource;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
@@ -50,6 +52,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     private String deleteSidByIdQuery = "delete from acl_sid where id=?";
     private String deleteEntriesBySidQuery = "delete from acl_entry where sid=?";
+    private String loadEntriesBySidsCountQuery = "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -169,5 +172,10 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
         final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
+    }
+
+    public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {
+        final String query = DaoHelper.replaceInClause(loadEntriesBySidsCountQuery, sidIds.size());
+        return jdbcTemplate.queryForObject(query, sidIds.toArray(), Integer.class);
     }
 }

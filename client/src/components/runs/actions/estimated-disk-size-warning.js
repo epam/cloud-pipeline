@@ -130,7 +130,8 @@ class EstimatedDiskSizeWarning extends React.Component {
       return (
         <Alert
           type="error"
-          message={sizeRequest.message}
+          style={{margin: 2}}
+          message={`Required disk size estimation error: ${sizeRequest.error}`}
         />
       );
     }

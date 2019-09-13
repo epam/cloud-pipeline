@@ -53,7 +53,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
     @Test
     @TestCase("EPMCMBIBPC-360")
     public void launchPipelineWithJSONParameter() {
-        final String pathToFile = String.format("%s://%s/%s/%s", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
+        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
                 getPipelineName());
         final String pipelineScript = Utils.getFileNameFromPipelineName(getPipelineName(), "sh");
         final String parameterName = "result";
@@ -76,6 +76,7 @@ public class Launch_JsonOutputFileTest extends AbstractAutoRemovingPipelineRunni
             .saveAndCommitWithMessage("test: Add required output parameter named result")
             .runPipeline()
             .validateThereIsParameterOfType(parameterName, pathToFile, ParameterType.OUTPUT, true)
+            .waitUntilLaunchButtonAppear()
             .launchAndWaitUntilFinished(this);
     }
 

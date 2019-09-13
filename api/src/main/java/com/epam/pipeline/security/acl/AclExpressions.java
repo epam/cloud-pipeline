@@ -62,8 +62,8 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
             + "AND @grantPermissionManager.checkStorageShared(#id)";
 
-    public static final String STORAGE_PATHS_WRITE = ADMIN_ONLY + OR +
-            "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'WRITE')";
+    public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
 
     public static final String RUN_COMMIT_EXECUTE =
         "hasRole('ADMIN') OR (@grantPermissionManager.runPermission(#runId, 'EXECUTE')"

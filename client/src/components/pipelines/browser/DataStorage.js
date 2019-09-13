@@ -91,6 +91,7 @@ const PAGE_SIZE = 40;
     showVersions: showVersions,
     storage: new DataStorageRequest(params.id, queryParameters.path, showVersions, PAGE_SIZE),
     info: dataStorages.load(params.id),
+    dataStorages,
     pipelinesLibrary,
     folders,
     preferences
@@ -262,6 +263,7 @@ export default class DataStorage extends React.Component {
     if (request.error) {
       message.error(request.error, 5);
     } else {
+      await this.props.dataStorages.fetch();
       if (this.props.info.value.parentFolderId) {
         this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
       } else {

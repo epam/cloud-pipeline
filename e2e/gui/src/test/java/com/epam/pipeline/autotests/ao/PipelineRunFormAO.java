@@ -203,6 +203,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunsMenuAO();
     }
 
+    public PipelineRunFormAO waitUntilLaunchButtonAppear() {
+        $(button("Launch")).waitUntil(enabled, C.DEFAULT_TIMEOUT * 2);
+        return this;
+    }
+
     /**
      * Launch tool and add runId to the given test.
      */

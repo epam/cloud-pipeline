@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.exception.cloud.gcp.GCPException;
 import com.google.api.services.compute.model.Instance;
@@ -52,7 +53,7 @@ public class GCPVMService {
     private final GCPClient gcpClient;
     private final MessageHelper messageHelper;
 
-    public void startInstance(final GCPRegion region, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final GCPRegion region, final String instanceId) {
         try {
             gcpClient.buildComputeClient(region).instances()
             .start(region.getProject(), region.getRegionCode(), instanceId).execute();
@@ -60,6 +61,9 @@ public class GCPVMService {
             log.error(e.getMessage(), e);
             throw new GCPException(e);
         }
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final GCPRegion region, final String instanceId) {

@@ -66,12 +66,15 @@ import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
+  CP_CAP_SPARK,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
-  gridEngineEnabled
+  gridEngineEnabled,
+  sparkEnabled,
+  setClusterParameterValue,
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -82,6 +85,11 @@ import {
 } from './utilities/launch-form-sections';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
+import {
+  SubmitButton,
+  getInputPaths,
+  getOutputPaths
+} from '../../../runs/actions';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -191,6 +199,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     launchCluster: false,
     autoScaledCluster: false,
     gridEngineEnabled: false,
+    sparkEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
@@ -300,10 +309,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   prevParameters = {};
 
   @observable modified = false;
+  @observable inputPaths = [];
+  @observable outputPaths = [];
+  @observable dockerImage = null;
   @observable cmdTemplateValue;
 
   @action
-  formFieldsChanged = () => {
+  formFieldsChanged = async () => {
     this.modified = checkModifiedState(
       this.props,
       this.state,
@@ -315,6 +327,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     );
     this.props.onModified && this.props.onModified(this.modified);
+    const {form, parameters} = this.props;
+    this.inputPaths = getInputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.outputPaths = getOutputPaths(
+      form.getFieldValue(PARAMETERS),
+      (parameters || {}).parameters
+    );
+    this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
+      this.getDefaultValue('docker_image');
   };
 
   @observable
@@ -673,6 +696,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
+    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -685,6 +709,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
+        sparkEnabled: sparkEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -729,6 +754,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
+        sparkEnabled: sparkEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -860,6 +886,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.state.launchCluster && this.state.sparkEnabled) {
+        payload[PARAMETERS][CP_CAP_SPARK] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
@@ -913,6 +945,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
+      !this.state.autoScaledCluster &&
+      !this.state.launchCluster &&
       !this.state.autoPause) {
       payload.nonPause = true;
     }
@@ -980,6 +1014,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.sparkEnabled) {
+      payload.params[CP_CAP_SPARK] = {
         type: 'boolean',
         value: true
       };
@@ -1110,10 +1150,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   prepare = (updateFireCloud = false) => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
+    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
       gridEngineEnabled: gridEngineEnabledValue,
+      sparkEnabled: sparkEnabledValue,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -2757,17 +2799,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onChangeClusterConfiguration = (configuration) => {
+    setClusterParameterValue(this.props.form, SYSTEM_PARAMETERS, configuration);
     const {
       launchCluster,
       autoScaledCluster,
       nodesCount,
       maxNodesCount,
-      gridEngineEnabled
+      gridEngineEnabled,
+      sparkEnabled
     } = configuration;
     this.setState({
       launchCluster,
       autoScaledCluster,
       gridEngineEnabled,
+      sparkEnabled,
       nodesCount,
       maxNodesCount
     }, this.closeConfigureClusterDialog);
@@ -3005,7 +3050,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.disableAutoPauseEnabled) {
       const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
         this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
-      if (!isSpot) {
+      const {
+        autoScaledCluster,
+        launchCluster
+      } = this.state;
+      if (!isSpot && !autoScaledCluster && !launchCluster) {
         const onChange = (e) => {
           this.setState({
             autoPause: e.target.checked
@@ -3234,19 +3283,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           overlay={dropDownMenu}
           placement="bottomRight"
           trigger={['click']}>
-          <Button
+          <SubmitButton
             size="small"
-            id="run-configuration-button" type="primary" style={{marginRight: 10}}>
+            id="run-configuration-button" type="primary" style={{marginRight: 10}}
+            inputs={this.inputPaths}
+            outputs={this.outputPaths}
+            dockerImage={this.dockerImage}>
             Run <Icon type="down" />
-          </Button>
+          </SubmitButton>
         </Dropdown>
       );
     } else {
       return (
-        <Button
+        <SubmitButton
           size="small"
           id="run-configuration-button"
           type="primary"
+          inputs={this.inputPaths}
+          outputs={this.outputPaths}
+          dockerImage={this.dockerImage}
           onClick={() => {
             if (this.validateFireCloudConnections()) {
               if (this.state.currentProjectId && this.state.rootEntityId) {
@@ -3259,7 +3314,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }}
           style={{marginRight: 10}}>
           Run
-        </Button>
+        </SubmitButton>
       );
     }
   };
@@ -3327,17 +3382,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.getDefaultValue('docker_image')
           )
         );
-        if (this.state.launchCluster && !this.state.autoScaledCluster) {
+        if (this.state.launchCluster) {
           const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
             this.getDefaultValue('instance_size');
           descriptions.push(
-            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this).toLowerCase()}`
-          );
-        } else if (this.state.launchCluster && this.state.autoScaledCluster) {
-          const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
-            this.getDefaultValue('instance_size');
-          descriptions.push(
-            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this).toLowerCase()}`
+            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this, true)}`
           );
         } else {
           descriptions.push(this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
@@ -3652,13 +3701,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
-              <Button
+              <SubmitButton
                 id="launch-pipeline-button"
+                inputs={this.inputPaths}
+                outputs={this.outputPaths}
+                dockerImage={this.dockerImage}
                 type="primary"
                 htmlType="submit"
                 style={{verticalAlign: 'middle'}}>
                 Launch
-              </Button>
+              </SubmitButton>
             </FormItem>
           </td>
         );
@@ -3859,6 +3911,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       launchCluster={this.state.launchCluster}
                       autoScaledCluster={this.state.autoScaledCluster}
                       gridEngineEnabled={this.state.gridEngineEnabled}
+                      sparkEnabled={this.state.sparkEnabled}
                       nodesCount={this.state.nodesCount}
                       maxNodesCount={this.state.maxNodesCount || 1}
                       onClose={this.closeConfigureClusterDialog}

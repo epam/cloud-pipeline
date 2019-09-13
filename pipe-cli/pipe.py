@@ -31,6 +31,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
+from src.utilities.ssh_operations import run_ssh
 from src.version import __version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -883,7 +884,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @click.option('-v', '--version', required=False, help='Restore specified version')
 @Config.validate_access_token
 def storage_restore_item(path, version):
-    """ Restores file version in a datastorage.
+    """ Restores file version in a datastorage.\n
     If version is not specified it will try to restore the latest non deleted version.
     Otherwise a specified version will be restored.
     """
@@ -933,6 +934,34 @@ def storage_delete_object_tags(path, tags, version):
         - TAGS: list of the file tag KEYs to delete
     """
     DataStorageOperations.delete_object_tags(path, tags, version)
+
+
+@storage.command('mount')
+@click.argument('mountpoint', required=True)
+@click.option('-o', '--options', required=False, help='Specify mount options')
+@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@Config.validate_access_token
+def mount_storage(mountpoint, options, quiet):
+    """ Mounts all available storages into a local folder.
+        Command is supported for Linux distributions and MacOS and requires
+        FUSE installed.
+        - mountpoint - destination for mount
+        - options - any mount options supported by underlying FUSE implementation.
+    """
+    DataStorageOperations.mount_storage(mountpoint, options=options, quiet=quiet)
+
+
+@storage.command('umount')
+@click.argument('mountpoint', required=True)
+@click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
+@Config.validate_access_token
+def umount_storage(mountpoint, quiet):
+    """ Unmounts a mountpoint.
+        Command is supported for Linux distributions and MacOS and requires
+        FUSE installed.
+        - mountpoint - destination for unmount
+    """
+    DataStorageOperations.umount_storage(mountpoint, quiet=quiet)
 
 
 @cli.command(name='view-acl')
@@ -985,8 +1014,8 @@ def tag():
 @click.argument('data', required=True, nargs=-1)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
-    """ Sets tags for a specified object. If a specific tag key already
-    exists for an object - it will be overwritten\n
+    """ Sets tags for a specified object.\n
+    If a specific tag key already exists for an object - it will be overwritten\n
     - ENTITY_CLASS: defines an object class. Possible values: data_storage,
     docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
     configuration\n
@@ -1041,6 +1070,24 @@ def chown(user_name, entity_class, entity_name):
     - ENTITY_NAME: defines name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
+
+@cli.command(name='ssh', context_settings=dict(
+    ignore_unknown_options=True,
+    allow_extra_args=True))
+@click.argument('run-id', required=True, type=int)
+@click.pass_context
+@Config.validate_access_token
+def ssh(ctx, run_id):
+    """Runs a single command or an interactive session over the SSH protocol for the specified job run\n
+    Arguments:\n
+    - run-id: ID of the job running in the platform to establish SSH connection with
+    """
+    try:
+        ssh_exit_code = run_ssh(run_id, ' '.join(ctx.args))
+        sys.exit(ssh_exit_code)
+    except Exception as runtime_error:
+        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        sys.exit(1)
 
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
