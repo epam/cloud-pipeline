@@ -23,5 +23,9 @@ setup(
     include_package_data=True,
     install_requires=[
         'flask==1.1.1'
-    ]
+    ],
+    entry_points='''
+        [console_scripts]
+        fsbrowser=fsbrowser.app:main
+    '''
 )
