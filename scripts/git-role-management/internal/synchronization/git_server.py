@@ -133,46 +133,159 @@ class GitServer(object):
             if git_user is not None:
                 pipeline_user = self.__pipeline_server_.find_user_by_email(git_user.email)
                 if pipeline_user is not None:
+                    if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                        print 'User {} ({}) has duplicated email set and wont be synchronized'.format(
+                            pipeline_user.friendly_name,
+                            pipeline_user.email
+                        )
+                        continue
                     permission = find_user_permission(pipeline_user.username)
                     if permission is None:
-                        self.__api__.remove_user_from_project(project, member.id)
-                        print 'User {} ({}) removed from project'.format(
-                            pipeline_user.friendly_name,
-                            git_user.email
-                        )
+                        try:
+                            self.__api__.remove_user_from_project(project, member.id)
+                            print 'User {} ({}) removed from project'.format(
+                                pipeline_user.friendly_name,
+                                git_user.email
+                            )
+                        except GitLabException as error:
+                            print 'Error removing user {} ({}) from project: {}'.format(
+                                pipeline_user.friendly_name,
+                                git_user.email,
+                                error.message
+                            )
+                        except ConnectionError as error:
+                            print 'Connection error while removing user {} ({}) from project: {}'.format(
+                                pipeline_user.friendly_name,
+                                git_user.email,
+                                error.message
+                            )
+                        except KeyboardInterrupt:
+                            raise
+                        except:
+                            print 'General error removing user {} ({}) from project.'.format(
+                                pipeline_user.friendly_name,
+                                git_user.email
+                            )
 
         if project_info is not None:
             for shared_group in project_info.shared_with_groups:
                 permission = find_group_permission(shared_group.group_name)
                 if permission is None:
-                    self.__api__.remove_group_from_project(project, shared_group.group_id)
-                    print 'Shared group {} removed from project'.format(
-                        shared_group.group_name
-                    )
+                    try:
+                        self.__api__.remove_group_from_project(project, shared_group.group_id)
+                        print 'Shared group {} removed from project'.format(
+                            shared_group.group_name
+                        )
+                    except GitLabException as error:
+                        print 'Error removing shared group {} from project: {}'.format(
+                            shared_group.group_name,
+                            error.message
+                        )
+                    except ConnectionError as error:
+                        print 'Connection error while removing shared group {} from project: {}'.format(
+                            shared_group.group_name,
+                            error.message
+                        )
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        print 'General error removing shared group {} from project.'.format(
+                            shared_group.group_name,
+                        )
             for permission in pipeline.permissions:
                 if not permission.principal:
                     git_group = self.find_git_group(permission.name)
                     if git_group is not None:
                         shared_group = find_shared_group(git_group.id)
                         if shared_group is not None and shared_group.group_access_level != permission.access_level:
-                            self.__api__.remove_group_from_project(project, git_group.id)
-                            self.__api__.add_group_to_project(project, git_group.id, permission.access_level)
-                            print 'Shared group {} ({}) changed access level from {} ({}) to {} ({})'.format(
-                                permission.name,
-                                git_group.name,
-                                shared_group.group_access_level,
-                                GitServer.access_level_description(shared_group.group_access_level).lower(),
-                                permission.access_level,
-                                GitServer.access_level_description(permission.access_level).lower()
-                            )
+                            try:
+                                self.__api__.remove_group_from_project(project, git_group.id)
+                                self.__api__.add_group_to_project(project, git_group.id, permission.access_level)
+                                print 'Shared group {} ({}) changed access level from {} ({}) to {} ({})'.format(
+                                    permission.name,
+                                    git_group.name,
+                                    shared_group.group_access_level,
+                                    GitServer.access_level_description(shared_group.group_access_level).lower(),
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower()
+                                )
+                            except GitLabException as error:
+                                message_format = 'Error changing access level for shared group {} ({}) ' \
+                                      'from {} ({}) to {} ({}): {}'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    shared_group.group_access_level,
+                                    GitServer.access_level_description(shared_group.group_access_level).lower(),
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower(),
+                                    error.message
+                                )
+                            except ConnectionError as error:
+                                message_format = 'Connection error while changing access level ' \
+                                                 'for shared group {} ({}) from {} ({}) to {} ({}): {}'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    shared_group.group_access_level,
+                                    GitServer.access_level_description(shared_group.group_access_level).lower(),
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower(),
+                                    error.message
+                                )
+                            except KeyboardInterrupt:
+                                raise
+                            except:
+                                message_format = 'General error changing access level ' \
+                                                 'for shared group {} ({}) from {} ({}) to {} ({})'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    shared_group.group_access_level,
+                                    GitServer.access_level_description(shared_group.group_access_level).lower(),
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower()
+                                )
                         elif shared_group is None:
-                            self.__api__.add_group_to_project(project, git_group.id, permission.access_level)
-                            print 'Shared group {} ({}) added to project with access level {} ({})'.format(
-                                permission.name,
-                                git_group.name,
-                                permission.access_level,
-                                GitServer.access_level_description(permission.access_level).lower()
-                            )
+                            try:
+                                self.__api__.add_group_to_project(project, git_group.id, permission.access_level)
+                                print 'Shared group {} ({}) added to project with access level {} ({})'.format(
+                                    permission.name,
+                                    git_group.name,
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower()
+                                )
+                            except GitLabException as error:
+                                message_format = 'Error adding shared group {} ({}) to project ' \
+                                      'with access level {} ({}): {}'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower(),
+                                    error.message
+                                )
+                            except ConnectionError as error:
+                                message_format = 'Connection error adding shared group {} ({}) to project ' \
+                                                 'with access level {} ({}): {}'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower(),
+                                    error.message
+                                )
+                            except KeyboardInterrupt:
+                                raise
+                            except:
+                                message_format = 'General error adding shared group {} ({}) to project ' \
+                                                 'with access level {} ({})'
+                                print message_format.format(
+                                    permission.name,
+                                    git_group.name,
+                                    permission.access_level,
+                                    GitServer.access_level_description(permission.access_level).lower()
+                                )
                         else:
                             print 'Group {} ({}) already shared with access level {} ({})'.format(
                                 permission.name,
@@ -183,28 +296,104 @@ class GitServer(object):
                 else:
                     pipeline_user = self.__pipeline_server_.find_user_by_username(permission.name)
                     if pipeline_user is not None:
+                        if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                            print 'User {} ({}) has duplicated email set and wont be synchornized'.format(
+                                pipeline_user.friendly_name,
+                                pipeline_user.email
+                            )
+                            continue
                         git_user = self.find_user_by_email(pipeline_user.email)
                         if git_user is not None:
                             member = find_member(git_user.id)
                             if member is not None and member.access_level != permission.access_level:
-                                self.__api__.remove_user_from_project(project, member.id)
-                                self.__api__.add_user_to_project(project, member.id, permission.access_level)
-                                print 'User {} ({}) changed access level from {} ({}) to {} ({})'.format(
-                                    pipeline_user.friendly_name,
-                                    git_user.email,
-                                    member.access_level,
-                                    GitServer.access_level_description(member.access_level).lower(),
-                                    permission.access_level,
-                                    GitServer.access_level_description(permission.access_level).lower()
-                                )
+                                try:
+                                    self.__api__.remove_user_from_project(project, member.id)
+                                    self.__api__.add_user_to_project(project, member.id, permission.access_level)
+                                    print 'User {} ({}) changed access level from {} ({}) to {} ({})'.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        member.access_level,
+                                        GitServer.access_level_description(member.access_level).lower(),
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower()
+                                    )
+                                except GitLabException as error:
+                                    message_format = 'Error changing access level for user {} ({}) ' \
+                                                     'from {} ({}) to {} ({}): {}'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        member.access_level,
+                                        GitServer.access_level_description(member.access_level).lower(),
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower(),
+                                        error.message
+                                    )
+                                except ConnectionError as error:
+                                    message_format = 'Connection error while changing access level ' \
+                                                     'for user {} ({}) from {} ({}) to {} ({}): {}'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        member.access_level,
+                                        GitServer.access_level_description(member.access_level).lower(),
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower(),
+                                        error.message
+                                    )
+                                except KeyboardInterrupt:
+                                    raise
+                                except:
+                                    message_format = 'General error changing access level ' \
+                                                     'for user {} ({}) from {} ({}) to {} ({})'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        member.access_level,
+                                        GitServer.access_level_description(member.access_level).lower(),
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower()
+                                    )
                             elif member is None:
-                                self.__api__.add_user_to_project(project, git_user.id, permission.access_level)
-                                print 'User {} ({}) added to project with access level {} ({})'.format(
-                                    pipeline_user.friendly_name,
-                                    git_user.email,
-                                    permission.access_level,
-                                    GitServer.access_level_description(permission.access_level).lower()
-                                )
+                                try:
+                                    self.__api__.add_user_to_project(project, git_user.id, permission.access_level)
+                                    print 'User {} ({}) added to project with access level {} ({})'.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower()
+                                    )
+                                except GitLabException as error:
+                                    message_format = 'Error adding user {} ({}) to project ' \
+                                                     'with access level {} ({}): {}'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower(),
+                                        error.message
+                                    )
+                                except ConnectionError as error:
+                                    message_format = 'Connection error while adding user {} ({}) to project ' \
+                                                     'with access level {} ({}): {}'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower(),
+                                        error.message
+                                    )
+                                except KeyboardInterrupt:
+                                    raise
+                                except:
+                                    message_format = 'General error adding user {} ({}) to project ' \
+                                                     'with access level {} ({}): {}'
+                                    print message_format.format(
+                                        pipeline_user.friendly_name,
+                                        git_user.email,
+                                        permission.access_level,
+                                        GitServer.access_level_description(permission.access_level).lower()
+                                    )
                             else:
                                 print 'User {} ({}) already belongs to project with access level {} ({})'.format(
                                     pipeline_user.friendly_name,
@@ -251,29 +440,44 @@ class GitServer(object):
         return matches[0]
 
     def synchronize_user(self, username):
-        pipeline_user = self.__pipeline_server_.find_user_by_username(username)
-        if pipeline_user is None:
-            print 'Unknown user {}'.format(username)
-            return None
-        if pipeline_user.email is None:
-            print 'User {} has no email set and wouldn\'t be created'.format(username)
-            return None
-        git_user = self.find_user_by_email(pipeline_user.email)
-        if git_user is not None:
-            print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
-            self.synchronize_ssh_keys(pipeline_user, git_user)
-            return git_user
-        if pipeline_user.friendly_name is not None:
-            print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
-            result = self.__api__.create_user(
-                pipeline_user.git_username,
-                pipeline_user.friendly_name,
-                pipeline_user.email,
-                GitServer.generate_password(100)
-            )
-            self.__users__.append(result)
-            self.create_ssh_keys(pipeline_user, result)
-            return result
+        try:
+            pipeline_user = self.__pipeline_server_.find_user_by_username(username)
+            if pipeline_user is None:
+                print 'Unknown user {}'.format(username)
+                return None
+            if pipeline_user.email is None:
+                print 'User {} has no email set and wont be created'.format(username)
+                return None
+            if self.__pipeline_server_.user_skipped(pipeline_user.email):
+                print 'User {} ({}) has duplicated email set and wont be created'.format(
+                    pipeline_user.friendly_name,
+                    pipeline_user.email
+                )
+                return None
+            git_user = self.find_user_by_email(pipeline_user.email)
+            if git_user is not None:
+                print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
+                self.synchronize_ssh_keys(pipeline_user, git_user)
+                return git_user
+            if pipeline_user.friendly_name is not None:
+                print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
+                result = self.__api__.create_user(
+                    pipeline_user.git_username,
+                    pipeline_user.friendly_name,
+                    pipeline_user.email,
+                    GitServer.generate_password(100)
+                )
+                self.__users__.append(result)
+                self.create_ssh_keys(pipeline_user, result)
+                return result
+        except GitLabException as error:
+            print 'Error synchronizing user {}: {}'.format(username, error.message)
+        except ConnectionError as error:
+            print 'Connection error while synchronizing user {}: {}'.format(username, error.message)
+        except KeyboardInterrupt:
+            raise
+        except:
+            print 'General error synchronizing user {}.'.format(username)
         return None
 
     def synchronize_ssh_keys(self, pipeline_user, git_user):
@@ -326,18 +530,36 @@ class GitServer(object):
     def synchronize_group(self, group, members):
         git_group = self.find_git_group(group)
         if git_group is None:
-            print 'Creating group {}.'.format(group)
-            git_group = self.__api__.create_group('{}{}'.format(
-                self.__config__.git_group_prefix,
-                group
-            ))
-            self.__groups__.append(git_group)
+            try:
+                print 'Creating group {}.'.format(group)
+                git_group = self.__api__.create_group('{}{}'.format(
+                    self.__config__.git_group_prefix,
+                    group
+                ))
+                self.__groups__.append(git_group)
+            except GitLabException as error:
+                print 'Error creating a group {}: {}'.format(group, error.message)
+            except ConnectionError as error:
+                print 'Connection error while creating a group {}: {}'.format(group, error.message)
+            except KeyboardInterrupt:
+                raise
+            except:
+                print 'General error creating a group {}.'.format(group)
         if git_group is not None:
             print 'Appending users to group {}'.format(group)
-            group_users = self.__api__.get_group_members(git_group.id)
-            unused_users = map(lambda x: x.id,
-                               filter(lambda x: x.username is not None and x.username.lower() != self.__root_user_name__,
-                                      group_users))
+            try:
+                group_users = self.__api__.get_group_members(git_group.id)
+                unused_users = map(lambda x: x.id,
+                                   filter(lambda x: x.username is not None and x.username.lower() != self.__root_user_name__,
+                                          group_users))
+            except GitLabException as error:
+                print 'Error fetching group users: {}'.format(error.message)
+            except ConnectionError as error:
+                print 'Connection error while fetching group users: {}'.format(error.message)
+            except KeyboardInterrupt:
+                raise
+            except:
+                print 'General error (while fetching group users) occurred.'
             for user in members:
                 user_id = self.add_user_to_group(git_group, user, unused_users, group)
                 if user_id in unused_users:
@@ -345,8 +567,26 @@ class GitServer(object):
             for user_id in unused_users:
                 git_user = self.find_user_by_id(user_id)
                 if git_user is not None:
+                    if self.__pipeline_server_.user_skipped(git_user.email):
+                        print 'User {} has duplicated email set and wont be synchronized'.format(
+                            git_user.email
+                        )
+                        continue
                     print 'Removing user {} from group {}'.format(git_user.name, group)
-                    self.__api__.remove_user_from_group(git_group.id, user_id)
+                    try:
+                        self.__api__.remove_user_from_group(git_group.id, user_id)
+                    except GitLabException as error:
+                        print 'Error removing user {} from group {}: {}'.format(git_user.name, group, error.message)
+                    except ConnectionError as error:
+                        print 'Connection error while removing user {} from group {}: {}'.format(
+                            git_user.name,
+                            group,
+                            error.message
+                        )
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        print 'General error removing user {} from group {}.'.format(git_user.name, group)
 
     def add_user_to_group(self, group, username, group_members_ids, group_friendly_name):
         pipeline_user = self.__pipeline_server_.find_user_by_username(username)
@@ -356,10 +596,17 @@ class GitServer(object):
         if pipeline_user.email is None:
             print 'User {} has no email set'.format(username)
             return None
+        if self.__pipeline_server_.user_skipped(pipeline_user.email):
+            print 'User {} ({}) has duplicated email set'.format(
+                pipeline_user.friendly_name,
+                pipeline_user.email
+            )
+            return None
         git_user = self.find_user_by_email(pipeline_user.email)
         if git_user is None:
             git_user = self.synchronize_user(username)
         if git_user is not None:
+            error_occurred = False
             if git_user.id not in group_members_ids:
                 print 'Appending user {} ({}) to group {} ({})'.format(
                     pipeline_user.friendly_name,
@@ -367,7 +614,23 @@ class GitServer(object):
                     group_friendly_name,
                     group.name
                 )
-                self.__api__.append_user_to_group(group.id, git_user.id, 40)
+                try:
+                    self.__api__.append_user_to_group(group.id, git_user.id, 40)
+                except GitLabException as error:
+                    error_occurred = True
+                    print 'Error appending user {} to group {}: {}'.format(username, group.name, error.message)
+                except ConnectionError as error:
+                    error_occurred = True
+                    print 'Connection error while appending user {} to group {}: {}'.format(
+                        username,
+                        group.name,
+                        error.message
+                    )
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    error_occurred = True
+                    print 'General error appending user {} to group.'.format(username, group.name)
             else:
                 print 'User {} ({}) already belongs to group {} ({})'.format(
                     pipeline_user.friendly_name,
@@ -375,7 +638,28 @@ class GitServer(object):
                     group_friendly_name,
                     group.name
                 )
-            self.synchronize_ssh_keys(pipeline_user, git_user)
+            if not error_occurred:
+                try:
+                    self.synchronize_ssh_keys(pipeline_user, git_user)
+                except GitLabException as error:
+                    print 'Error synchronizing ssh keys for user {} ({}): {}'.format(
+                        git_user.name,
+                        git_user.email,
+                        error.message
+                    )
+                except ConnectionError as error:
+                    print 'Connection error while synchronizing ssh keys for user {} ({}): {}'.format(
+                        git_user.name,
+                        git_user.email,
+                        error.message
+                    )
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    print 'General error synchronizing ssh keys for user {} ({}).'.format(
+                        git_user.name,
+                        git_user.email
+                    )
             return git_user.id
         return None
 
