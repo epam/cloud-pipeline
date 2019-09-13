@@ -17,6 +17,7 @@ npmSetup.dependsOn clean
 
 task build(type: NpmTask, dependsOn: npmInstall) {
   group = 'build'
+  environment = ['CI': 'false']
   doFirst {
     delete fileTree("$rootDir/fs-browser/fs-browser/static")
   }
