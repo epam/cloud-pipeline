@@ -311,12 +311,11 @@ public class TaskMapper {
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
                 cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(pipeLineTool.getId(), regionId, spot);
         return Stream.of(allowedInstanceAndPriceTypes)
-                .map(instance -> instance.getAllowedInstanceTypes())
-                .flatMap(instanceType -> instanceType
-                        .stream()
-                        .filter(instance -> instance
-                                .getName()
-                                .equalsIgnoreCase(nodeType)))
-                .findFirst().get();
+                .flatMap(instance -> instance.getAllowedInstanceTypes().stream())
+                .filter(instance -> instance
+                        .getName()
+                        .equalsIgnoreCase(nodeType))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY)));
     }
 }
