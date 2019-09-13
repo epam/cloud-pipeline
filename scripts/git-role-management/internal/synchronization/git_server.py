@@ -577,6 +577,7 @@ class GitServer(object):
         if git_user is None:
             git_user = self.synchronize_user(username)
         if git_user is not None:
+            error_occurred = False
             if git_user.id not in group_members_ids:
                 print 'Appending user {} ({}) to group {} ({})'.format(
                     pipeline_user.friendly_name,
@@ -587,8 +588,10 @@ class GitServer(object):
                 try:
                     self.__api__.append_user_to_group(group.id, git_user.id, 40)
                 except GitLabException as error:
+                    error_occurred = True
                     print 'Error appending user {} to group {}: {}'.format(username, group.name, error.message)
                 except ConnectionError as error:
+                    error_occurred = True
                     print 'Connection error while appending user {} to group {}: {}'.format(
                         username,
                         group.name,
@@ -597,6 +600,7 @@ class GitServer(object):
                 except KeyboardInterrupt:
                     raise
                 except:
+                    error_occurred = True
                     print 'General error appending user {} to group.'.format(username, group.name)
             else:
                 print 'User {} ({}) already belongs to group {} ({})'.format(
@@ -605,27 +609,28 @@ class GitServer(object):
                     group_friendly_name,
                     group.name
                 )
-            try:
-                self.synchronize_ssh_keys(pipeline_user, git_user)
-            except GitLabException as error:
-                print 'Error synchronizing ssh keys for user {} ({}): {}'.format(
-                    git_user.name,
-                    git_user.email,
-                    error.message
-                )
-            except ConnectionError as error:
-                print 'Connection error while synchronizing ssh keys for user {} ({}): {}'.format(
-                    git_user.name,
-                    git_user.email,
-                    error.message
-                )
-            except KeyboardInterrupt:
-                raise
-            except:
-                print 'General error synchronizing ssh keys for user {} ({}).'.format(
-                    git_user.name,
-                    git_user.email
-                )
+            if not error_occurred:
+                try:
+                    self.synchronize_ssh_keys(pipeline_user, git_user)
+                except GitLabException as error:
+                    print 'Error synchronizing ssh keys for user {} ({}): {}'.format(
+                        git_user.name,
+                        git_user.email,
+                        error.message
+                    )
+                except ConnectionError as error:
+                    print 'Connection error while synchronizing ssh keys for user {} ({}): {}'.format(
+                        git_user.name,
+                        git_user.email,
+                        error.message
+                    )
+                except KeyboardInterrupt:
+                    raise
+                except:
+                    print 'General error synchronizing ssh keys for user {} ({}).'.format(
+                        git_user.name,
+                        git_user.email
+                    )
             return git_user.id
         return None
 
