@@ -43,17 +43,16 @@
     - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
     - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipeline_user-and-role-entities-for-metadata-api)
     - [Getting logs from Kubernetes may cause `OutOfMemory` error](#getting-logs-from-kubernetes-may-cause-outofmemory-error)
-    - [Layout is broken for pipeline's versions table](#layout-is-broken-for-pipelines-versions-table)
     - [AWS: Incorrect `nodeup` handling of spot request status](#aws-incorrect-nodeup-handling-of-spot-request-status)
     - [Not handling clusters in `autopause` daemon](#not-handling-clusters-in-autopause-daemon)
     - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
     - [JWT token shall be updated for the jobs being resumed](#jwt-token-shall-be-updated-for-the-jobs-being-resumed)
     - [Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error](#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error)
-    - [Invalid layout for global search](#invalid-layout-for-global-search)
     - [Cluster run cannot be launched with a Pretty URL](#cluster-run-cannot-be-launched-with-a-pretty-url)
     - [Cloning of large repositories might fail](#cloning-of-large-repositories-might-fail)
     - [System events HTML overflow](#system-events-html-overflow)
     - [AWS: Pipeline run `InitializeNode` task fails](#aws-pipeline-run-initializenode-task-fails)
+    - [Broken layouts](#broken-layouts)
 
 ***
 
@@ -648,12 +647,6 @@ Now, a general user may list only personal `user-level` metadata. Administrators
 For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause `OutOfMemory` error, since Kubernetes library tries to load it into a single String object.  
 In current version, a new system preference was introduced: **`system.logs.line.limit`**. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.
 
-### Layout is broken for pipeline's versions table
-
-[#553](https://github.com/epam/cloud-pipeline/issues/553)
-
-Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.
-
 ### AWS: Incorrect `nodeup` handling of spot request status
 
 [#556](https://github.com/epam/cloud-pipeline/issues/556)
@@ -687,12 +680,6 @@ Now, the JWT token and other variables as well are being updated when a job is b
 
 Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.
 
-### Invalid layout for global search
-
-[#619](https://github.com/epam/cloud-pipeline/issues/619)
-
-Global search page was not rendered correctly when the search results table had too many records.
-
 ### Cluster run cannot be launched with a Pretty URL
 
 [#620](https://github.com/epam/cloud-pipeline/issues/620)
@@ -704,7 +691,8 @@ Now, pretty URL could be set only for the parent runs, for the child runs regula
 
 [#626](https://github.com/epam/cloud-pipeline/issues/626)
 
-When large repository (> 1Gb) was cloned (e.g. when a pipeline was being run) - `git clone` could fail with the OOM error happened at the GitLab server if it is not powerful enough. OOM was produced by the `git pack-objects` process, which tries to pack all the data in-memory.  
+When large repository (> 1Gb) was cloned (e.g. when a pipeline was being run) - `git clone` could fail with the OOM error happened at the GitLab server if it is not powerful enough.  
+OOM was produced by the `git pack-objects` process, which tries to pack all the data in-memory.  
 Now, `git pack-objects` memory usage is limited to avoid errors in cases described above.
 
 ### System events HTML overflow
@@ -723,3 +711,11 @@ Also, support of [Markdown](https://en.wikipedia.org/wiki/Markdown) was added fo
 
 Previously, if `AWS` spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: `Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available`.  
 Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to `on-demand` and run initialization continues.
+
+### Broken layouts
+
+[#553](https://github.com/epam/cloud-pipeline/issues/553), [#619](https://github.com/epam/cloud-pipeline/issues/619), [#643](https://github.com/epam/cloud-pipeline/issues/643), [#644](https://github.com/epam/cloud-pipeline/issues/644)
+
+Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.  
+**Global search page** was not rendered correctly when the search results table had too many records.  
+Some of the other page layouts also were broken.
