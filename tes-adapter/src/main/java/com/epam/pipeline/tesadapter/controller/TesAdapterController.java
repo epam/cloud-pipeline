@@ -50,7 +50,7 @@ public class TesAdapterController {
     @GetMapping("/v1/tasks/{id}")
     ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
             defaultValue = "MINIMAL") TaskView view) {
-        return ResponseEntity.ok().body(tesTaskService.getTesTask(id));
+        return ResponseEntity.ok().body(tesTaskService.getTesTask(id, view));
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
