@@ -13,6 +13,9 @@ import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.filter.FilterExpression;
+import com.epam.pipeline.vo.filter.FilterExpressionType;
+import com.epam.pipeline.vo.filter.FilterOperandType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -39,11 +42,9 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final MessageHelper messageHelper;
 
     private static final String ID = "id";
-    private static final String NAME_PREFIX = "namePrefix";
-    private static final String VIEW = "view";
+    private static final String NAME_PREFIX = "pod.id";
     private static final String DEFAULT_PAGE_TOKEN = "1";
     private static final Long DEFAULT_PAGE_SIZE = 256L;
-    private static final TaskView DEFAULT_TASK_VIEW = TaskView.BASIC;
 
     @Autowired
     public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
@@ -67,20 +68,22 @@ public class TesTaskServiceImpl implements TesTaskService {
     public TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view) {
         TesListTasksResponse tesListTasksResponse = new TesListTasksResponse();
         PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
-
         filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
-        filterExpressionVO.getFilterExpression().setField(VIEW);
-        filterExpressionVO.getFilterExpression().setValue(Optional.ofNullable(view).orElse(DEFAULT_TASK_VIEW).toString());
-        Optional.ofNullable(namePrefix).ifPresent((name) -> {
-            filterExpressionVO.getFilterExpression().setField(NAME_PREFIX);
-            filterExpressionVO.getFilterExpression().setValue(name);
-        });
+        if (StringUtils.isNotEmpty(namePrefix)) {
+            FilterExpression expression = new FilterExpression();
+            expression.setField(NAME_PREFIX);
+            expression.setValue(namePrefix);
+            expression.setOperand(FilterOperandType.EQUALS.getOperand());
+            expression.setFilterExpressionType(FilterExpressionType.LOGICAL);
+            filterExpressionVO.setFilterExpression(expression);
+        }
         List<PipelineRun> pipelineRunList = cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements();
         tesListTasksResponse.setTasks(pipelineRunList.stream().map(taskMapper::mapToTesTask)
                 .collect(Collectors.toList()));
         return tesListTasksResponse;
     }
+
 
     @Override
     public void stub() {

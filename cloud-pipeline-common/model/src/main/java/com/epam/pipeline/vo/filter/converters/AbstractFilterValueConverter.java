@@ -17,16 +17,16 @@
 package com.epam.pipeline.vo.filter.converters;
 
 
-import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.vo.filter.FilterOperandType;
 import com.epam.pipeline.vo.filter.WrongFilterException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 
 public abstract class AbstractFilterValueConverter {
 
     String clearQuotes(String value) {
-        if (!StringUtils.isNullOrEmpty(value) && ((value.startsWith("\"") && value.endsWith("\"")) ||
+        if (StringUtils.isNotEmpty(value) && ((value.startsWith("\"") && value.endsWith("\"")) ||
                 (value.startsWith("'") && value.endsWith("'")))) {
             return value.substring(1, value.length() - 1);
         }
