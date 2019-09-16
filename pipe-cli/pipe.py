@@ -56,7 +56,7 @@ def print_version(ctx, param, value):
     help='Show the version and exit'
 )
 def cli():
-    """pipe is command line interface to Bfx Pipeline engine
+    """pipe is a command line interface to the Cloud Pipeline engine.
     It allows run pipelines as well as viewing runs and cluster state
     """
     pass
@@ -124,7 +124,7 @@ def echo_title(title, line=True):
 @click.option('-v', '--versions', help='List versions of a pipeline', is_flag=True)
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
 @click.option('-s', '--storage-rules', help='List storage rules of a pipeline', is_flag=True)
-@click.option('-r', '--permissions', help='List user permissions of a pipeline', is_flag=True)
+@click.option('-r', '--permissions', help='List user permissions for a pipeline', is_flag=True)
 @Config.validate_access_token
 def view_pipes(pipeline, versions, parameters, storage_rules, permissions):
     """Lists pipelines definitions
@@ -249,16 +249,16 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 
 @cli.command(name='view-runs')
 @click.argument('run-id', required=False, type=int)
-@click.option('-s', '--status', help='List pipelines with a specific status [ANY/FAILURE/SUCCESS/STOPPED/RUNNING]')
-@click.option('-df', '--date-from', help='List pipeline runs started after date')
-@click.option('-dt', '--date-to', help='List pipeline runs started before date')
-@click.option('-p', '--pipeline', help='List runs for a specific pipeline type@version')
+@click.option('-s', '--status', help='List pipelines with a specific status [ANY/FAILURE/PAUSED/PAUSING/RESUMING/RUNNING/STOPPED/SUCCESS]')
+@click.option('-df', '--date-from', help='List pipeline runs started after specified date')
+@click.option('-dt', '--date-to', help='List pipeline runs started before specified date')
+@click.option('-p', '--pipeline', help='List history of runs for a specific pipeline. Pipeline name shall be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
 @click.option('-pid', '--parent-id', help='List runs for a specific parent pipeline run', type=int)
-@click.option('-f', '--find', help='Search runs with a specific substring in a run parameters')
-@click.option('-t', '--top', help='Display top N records', type=int)
-@click.option('-nd', '--node-details', help='Display node details', is_flag=True)
-@click.option('-pd', '--parameters-details', help='Display parameters', is_flag=True)
-@click.option('-td', '--tasks-details', help='Display tasks', is_flag=True)
+@click.option('-f', '--find', help='Search runs with a specific substring in run parameters values')
+@click.option('-t', '--top', help='Display top <N> records', type=int)
+@click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
+@click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
+@click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @Config.validate_access_token
 def view_runs(run_id,
               status,
@@ -271,7 +271,7 @@ def view_runs(run_id,
               node_details,
               parameters_details,
               tasks_details):
-    """Lists pipelines runs
+    """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
@@ -433,7 +433,7 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
                         [task.name, state_utilities.color_state(task.status), scheduled, started, finished])
                 click.echo(tasks_table)
             else:
-                click.echo('No tasks are available for run')
+                click.echo('No tasks are available for the run')
             click.echo()
     except ConfigNotFoundError as config_not_found_error:
         click.echo(str(config_not_found_error), err=True)
@@ -595,7 +595,7 @@ def view_cluster_for_node(node_name):
 
 
 @cli.command(name='run', context_settings=dict(ignore_unknown_options=True))
-@click.option('-n', '--pipeline', required=False)
+@click.option('-n', '--pipeline', required=False, help='Pipeline name or ID. Pipeline name could be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
 @click.option('-c', '--config', required=False, type=str, help='Pipeline configuration name')
 @click.argument('run-params', nargs=-1, type=click.UNPROCESSED)
 @click.option('-p', '--parameters', help='List parameters of a pipeline', is_flag=True)
@@ -604,17 +604,17 @@ def view_cluster_for_node(node_name):
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
-@click.option('-t', '--timeout', help='Timeout, when elapsed - run will be stopped', type=int)
+@click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
-@click.option('-ic', '--instance-count', help='Number of instances to launch',
+@click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(1, MAX_INSTANCE_COUNT, clamp=True), required=False)
 @click.option('-nc', '--cores', help='Number cores that a cluster shall contain',
               type=click.IntRange(2, MAX_CORES_COUNT, clamp=True), required=False)
-@click.option('-s', '--sync', is_flag=True, help='Allow to be run in a sync mode.')
-@click.option('-pt', '--price-type', help='Instance price type',
+@click.option('-s', '--sync', is_flag=True, help='Allow a pipeline to be run in a sync mode. When set - terminal will be blocked until the finish status of the launched pipeline won\'t be returned')
+@click.option('-pt', '--price-type', help='Instance price type [on-demand/spot]',
               type=click.Choice([PriceType.SPOT, PriceType.ON_DEMAND]), required=False)
 @click.option('-r', '--region-id', help='Instance cloud region', type=int, required=False)
-@click.option('-pn', '--parent-node', help='Parent instance id', type=int, required=False)
+@click.option('-pn', '--parent-node', help='Parent instance Run ID. That allows to run a pipeline as a child job on the existing running instance', type=int, required=False)
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def run(pipeline,
         config,
@@ -633,7 +633,7 @@ def run(pipeline,
         price_type,
         region_id,
         parent_node):
-    """Schedules a pipeline/version execution
+    """Schedules a pipeline execution
     """
     PipelineRunOperations.run(pipeline, config, parameters, yes, run_params, instance_disk, instance_type,
                               docker_image, cmd_template, timeout, quiet, instance_count, cores, sync, price_type,
@@ -655,14 +655,14 @@ def stop(run_id, yes):
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @Config.validate_access_token
 def terminate_node(node_name, yes):
-    """Terminates calculation node
+    """Terminates a calculation node
     """
     terminate_node_calculation(node_name, yes)
 
 
 def terminate_node_calculation(node_name, yes):
     if not yes:
-        click.confirm('Are you sure you want to terminate node {}?'.format(node_name), abort=True)
+        click.confirm('Are you sure you want to terminate the node {}?'.format(node_name), abort=True)
     try:
         node_model = Cluster.get(node_name)
         if node_model.is_master:
@@ -689,38 +689,38 @@ def storage():
 
 @storage.command(name='create')
 @click.option('-n', '--name', required=True,
-              help='Name of the new storage',  prompt='Name of the new storage',)
+              help='Name (alias) of the new object storage',  prompt='Name (alias) of the new object storage',)
 @click.option('-d', '--description', default='', show_default=False,
-              prompt='Write down some description of this datastorage',
-              help='Description of the datastorage')
+              prompt='Write down some description of this storage',
+              help='Description of the object storage')
 @click.option('-sts', '--short_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the short term storage?',
+              prompt='How many days data in this datastorage will be stored in the short term storage?',
               help='Number of days for storing data in the short term storage')
 @click.option('-lts', '--long_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the long term storage?',
+              prompt='How many days data in this datastorage will be stored in the long term storage?',
               help='Number of days for storing data in the long term storage')
 @click.option('-v', '--versioning', default=False, show_default=False, is_flag=True,
               help='Enable versioning for this datastorage')
 @click.option('-b', '--backup_duration',  default='', show_default=False,
-              prompt='How many days backups of the bucket will be stored?',
-              help='Number of days for storing backups of the bucket')
+              prompt='How many days backups of the datastorage will be stored?',
+              help='Number of days for storing backups of the datastorage')
 @click.option('-t', '--type',  default='S3',
-              prompt='Type of the cloud for datastorage',
-              help='type of the cloud for datastorage')
+              prompt='Type of the Cloud for the storage',
+              help='Type of the Cloud for the storage')
 @click.option('-f', '--parent_folder',  default='', show_default=False,
-              prompt='Name of the folder which will contain this datastorage, nothing for root of the hierarchy',
-              help='Name of the folder which will contain this datastorage')
+              prompt='Name/ID of the folder which will contain this object storage, nothing - for root of the hierarchy',
+              help='Name/ID of the folder which will contain this object storage')
 @click.option('-c', '--on_cloud',
-              prompt='Do you want to create this storage on a cloud?',
-              help='Create bucket on a cloud', default=False, is_flag=True)
-@click.option('-p', '--path', required=False, default='', help='The name of the new bucket.',
-              prompt='The name of the new bucket.')
-@click.option('-r', '--region_id', required=False, type=int, help='Cloud region id where storage shall be created.',
-              prompt='Cloud region id where storage shall be created.')
+              prompt='Do you want to create this storage on the Cloud?',
+              help='Create datastorage on the Cloud', default=False, is_flag=True)
+@click.option('-p', '--path', default='', help='Datastorage path',
+              prompt='Datastorage path')
+@click.option('-r', '--region_id', default='default', help='Cloud Region ID where the datastorage shall be created',
+              prompt='Cloud Region ID where the datastorage shall be created')
 @Config.validate_access_token
 def create(name, description, short_term_storage, long_term_storage, versioning, backup_duration, type,
            parent_folder, on_cloud, path, region_id):
-    """Creates a new datastorage
+    """Creates a new object storage
     """
     DataStorageOperations.save_data_storage(name, description, short_term_storage, long_term_storage, versioning,
                                             backup_duration, type, parent_folder, on_cloud, path, region_id)
@@ -728,34 +728,34 @@ def create(name, description, short_term_storage, long_term_storage, versioning,
 
 @storage.command(name='delete')
 @click.option('-n', '--name', required=True, help='Name of the storage to delete')
-@click.option('-c', '--on_cloud', help='Delete bucket on a cloud', is_flag=True)
+@click.option('-c', '--on_cloud', help='Delete a datastorage from the Cloud', is_flag=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
 @Config.validate_access_token
 def delete(name, on_cloud, yes):
-    """Deletes a datastorage
+    """Deletes an object storage
     """
     DataStorageOperations.delete(name, on_cloud, yes)
 
 
 @storage.command(name='policy')
-@click.option('-n', '--name', required=True, help='Name of the storage to update the policy of')
+@click.option('-n', '--name', required=True, help='Name/path of the storage to update the policy')
 @click.option('-sts', '--short_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the short term storage? (Empty means deletion of the current rule)',
+              prompt='How many days data in this datastorage will be stored in the short term storage? (Empty means deletion of the current rule)',
               help='Number of days for storing data in the short term storage')
 @click.option('-lts', '--long_term_storage', default='', show_default=False,
-              prompt='How many days data in this bucket will be stored in the long term storage? (Empty means for deletion of the current rule)',
+              prompt='How many days data in this datastorage will be stored in the long term storage? (Empty means deletion of the current rule)',
               help='Number of days for storing data in the long term storage')
 @click.option('-v', '--versioning', default=False, show_default=False, is_flag=True,
               prompt='Do you want to enable versioning for this datastorage?',
               help='Enable versioning for this datastorage')
-@click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the bucket')
+@click.option('-b', '--backup_duration', default='', help='Number of days for storing backups of the datastorage')
 @Config.validate_access_token
 def update_policy(name, short_term_storage, long_term_storage, versioning, backup_duration):
-    """Update the policy of the given datastorage
+    """Updates the policy of the datastorage
     """
     if not backup_duration and versioning:
         backup_duration = click.prompt(
-            "How many days backups of the bucket will be stored? (Empty means deletion of the current rule)",
+            "How many days backups of the datastorage will be stored? (Empty means deletion of the current rule)",
             default="")
     DataStorageOperations.policy(name, short_term_storage, long_term_storage, backup_duration, versioning)
 
@@ -764,7 +764,7 @@ def update_policy(name, short_term_storage, long_term_storage, versioning, backu
 @click.argument('name', required=True)
 @click.argument('directory', required=True)
 def mvtodir(name, directory):
-    """Moves a datastorage to a new parent folder
+    """Moves an object storage to a new parent folder
     """
     DataStorageOperations.mvtodir(name, directory)
 
@@ -787,7 +787,7 @@ def storage_list(path, show_details, show_versions, recursive, page, all):
 @click.argument('folders', required=True, nargs=-1)
 @Config.validate_access_token
 def storage_mk_dir(folders):
-    """ Creates a directory in a datastorage
+    """ Creates a directory in a storage
     """
     DataStorageOperations.storage_mk_dir(folders)
 
@@ -795,8 +795,8 @@ def storage_mk_dir(folders):
 @storage.command('rm')
 @click.argument('path', required=True)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
-@click.option('-v', '--version', required=False, help='Delete a specified version of object')
-@click.option('-d', '--hard-delete', is_flag=True, help='Completely delete a path form bucket')
+@click.option('-v', '--version', required=False, help='Delete a specified version of an object')
+@click.option('-d', '--hard-delete', is_flag=True, help='Completely delete a path from the storage')
 @click.option('-r', '--recursive', is_flag=True, help='Recursive deletion (required for deleting folders)')
 @click.option('-e', '--exclude', required=False, multiple=True,
               help='Exclude all files matching this pattern from processing')
@@ -859,7 +859,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @Config.validate_access_token(quiet_flag_property_name='quiet')
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list):
     """ Copies files from one datastorage to another one
-    or between local filesystem and a datastorage (in both directions)
+    or between the local filesystem and a datastorage (in both directions)
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, skip_existing=skip_existing)
@@ -880,24 +880,29 @@ def storage_restore_item(path, version):
 @storage.command('set-object-tags')
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Set tags for a specified version')
 @Config.validate_access_token
 def storage_set_object_tags(path, tags, version):
-    """ Sets tags for a specified object\n
-        - path - full path to an object in data storage starting with 'cp://' scheme\n
-        - tags - specified as single KEY=VALUE pair or a list of them\n
-        - If a specific tag key already exists for an object - it will be overwritten
+    """ Sets tags for a specified object.\n
+        If a specific tag key already exists for an object - it will
+        be overwritten.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
+        - TAGS: specified as single KEY=VALUE pair or a list of them
     """
     DataStorageOperations.set_object_tags(path, tags, version)
 
 
 @storage.command('get-object-tags')
 @click.argument('path', required=True)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Get tags for a specified version')
 @Config.validate_access_token
 def storage_get_object_tags(path, version):
-    """ Gets tags for a specified object\n
-        - path - full path to an object in data storage starting with 'cp://' scheme
+    """ Gets tags for a specified object.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
     """
     DataStorageOperations.get_object_tags(path, version)
 
@@ -905,12 +910,14 @@ def storage_get_object_tags(path, version):
 @storage.command('delete-object-tags')
 @click.argument('path', required=True)
 @click.argument('tags', required=True, nargs=-1)
-@click.option('-v', '--version', required=False, help='Set tags to specified version')
+@click.option('-v', '--version', required=False, help='Delete tags for a specified version')
 @Config.validate_access_token
 def storage_delete_object_tags(path, tags, version):
-    """ Sets tags for a specified object\n
-        - path - full path to an object in data storage starting with 'cp://' scheme\n
-        - tags - list of tags to delete
+    """ Deletes tags for a specified object.\n
+        - PATH: full path to an object in a datastorage starting
+        with a Cloud prefix ('s3://' for AWS, 'az://' for MS Azure,
+        'gs://' for GCP) or common 'cp://' scheme\n
+        - TAGS: list of the file tag KEYs to delete
     """
     DataStorageOperations.delete_object_tags(path, tags, version)
 
@@ -953,7 +960,8 @@ def umount_storage(mountpoint, quiet):
 )
 @Config.validate_access_token
 def view_acl(identifier, object_type):
-    """ View object permissions
+    """ View object permissions.\n
+    - IDENTIFIER: defines name or id of an object
     """
     ACLOperations.view_acl(identifier, object_type)
 
@@ -967,13 +975,14 @@ def view_acl(identifier, object_type):
     type=click.Choice(['pipeline', 'folder', 'data_storage'])
 )
 @click.option('-s', '--sid', help='User or group name', required=True)
-@click.option('-g', '--group', help='Group', is_flag=True)
+@click.option('-g', '--group', help='Group flag', is_flag=True)
 @click.option('-a', '--allow', help='Allow permissions')
 @click.option('-d', '--deny', help='Deny permissions')
 @click.option('-i', '--inherit', help='Inherit permissions')
 @Config.validate_access_token
 def set_acl(identifier, object_type, sid, group, allow, deny, inherit):
-    """ Set object permissions
+    """ Set object permissions.\n
+    - IDENTIFIER: defines name or id of an object
     """
     ACLOperations.set_acl(identifier, object_type, sid, group, allow, deny, inherit)
 
@@ -991,11 +1000,14 @@ def tag():
 @click.argument('data', required=True, nargs=-1)
 @Config.validate_access_token
 def set_tag(entity_class, entity_id, data):
-    """ Sets tags for a specified object\n
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.\n
-    - identifier - define name or id of an object of a specified class\n
-    - Tags can be specified as single KEY=VALUE pair or a list of them\n
-    - If a specific tag key already exists for an object - it will be overwritten
+    """ Sets tags for a specified object.\n
+    If a specific tag key already exists for an object - it will be overwritten\n
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration\n
+    - ENTITY_ID: defines name or id of an object of a specified class\n
+    - DATA: defines a list of tags to set. Can be specified as a single
+    "KEY"="VALUE" pair or a list of them
     """
     MetadataOperations.set_metadata(entity_class, entity_id, data)
 
@@ -1005,9 +1017,11 @@ def set_tag(entity_class, entity_id, data):
 @click.argument('entity_id', required=True)
 @Config.validate_access_token
 def get_tag(entity_class, entity_id):
-    """ Lists all tags for a specific object or list of objects. Two parameters shall be specified:\n
-    - class - define: Folder, Pipeline, Storage, Registry, Tool, etc.\n
-    - identifier - define name or id of an object of a specified class
+    """ Lists all tags for a specific object or list of objects.\n
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration\n
+    - ENTITY_ID: defines name or id of an object of a specified class
     """
     MetadataOperations.get_metadata(entity_class, entity_id)
 
@@ -1018,9 +1032,12 @@ def get_tag(entity_class, entity_id):
 @click.argument('keys', required=False, nargs=-1)
 @Config.validate_access_token
 def delete_tag(entity_class, entity_id, keys):
-    """ Deletes specified tags for a specified object\n
-    - Tags can be specified as single KEY=VALUE pair or a list of them\n
-    - If a specific tag key already exists for an object - it will be overwritten\n
+    """ Deletes specified tags for a specified object.\n
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration\n
+    - ENTITY_ID: defines name or id of an object of a specified class\n
+    - KEYS: defines a list of attribute keys to delete
     """
     MetadataOperations.delete_metadata(entity_class, entity_id, keys)
 
@@ -1031,12 +1048,12 @@ def delete_tag(entity_class, entity_id, keys):
 @click.argument('entity_name', required=True)
 @Config.validate_access_token
 def chown(user_name, entity_class, entity_name):
-    """
-    Changes current owner to specified\n
-     - user_name: desired object owner\n
-     - entity_class: name of the object class. Possible values: PIPELINE, FOLDER, DATA_STORAGE, DOCKER_REGISTRY, TOOL,
-     TOOL_GROUP, CONFIGURATION, METADATA_ENTITY\n
-     - entity_name: name or id of the object
+    """ Changes current owner to specified.\n
+    - USER_NAME: desired object owner\n
+    - ENTITY_CLASS: defines an object class. Possible values: data_storage,
+    docker_registry, folder, metadata_entity, pipeline, tool, tool_group,
+    configuration\n
+    - ENTITY_NAME: defines name or id of the object
     """
     PermissionsOperations.chown(user_name, entity_class, entity_name)
 
