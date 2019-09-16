@@ -339,6 +339,16 @@ export default class UserManagementForm extends React.Component {
         sorter: this.alphabeticNameSorter,
         className: styles.userNameColumn,
         render: (name, user) => {
+          let blockedSpan;
+          if (user.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
           if (user.attributes) {
             const getAttributesValues = () => {
               const values = [];
@@ -352,12 +362,14 @@ export default class UserManagementForm extends React.Component {
             const attributesString = getAttributesValues().join(', ');
             return (
               <Row type="flex" style={{flexDirection: 'column'}}>
-                <Row>{name}</Row>
+                <Row>{name}{blockedSpan}</Row>
                 <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
               </Row>
             );
           } else {
-            return name;
+            return (
+              <Row>{name}{blockedSpan}</Row>
+            );
           }
         }
       },

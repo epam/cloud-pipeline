@@ -24,6 +24,7 @@ import Roles from '../../../../models/user/Roles';
 import RoleAssign from '../../../../models/user/RoleAssign';
 import RoleRemove from '../../../../models/user/RoleRemoveFromUser';
 import UserUpdate from '../../../../models/user/UserUpdate';
+import UserBlock from '../../../../models/user/UserBlock';
 import styles from './UserManagement.css';
 import roleModel from '../../../../utils/roleModel';
 import {
@@ -139,13 +140,20 @@ export default class EditUserRolesDialog extends React.Component {
     if (!this.props.userInfo || !this.props.userInfo.loaded) {
       return null;
     }
+    const {blocked} = this.props.userInfo.value;
     const roles = (this.props.userInfo.value.roles || []).map(r => r);
     return this.renderRolesList(
       roles,
       (role) => {
         return (
           <Row type="flex" justify="end">
-            <Button id="delete-role-button" size="small" type="danger" onClick={() => this.removeRole(role.id)}>
+            <Button
+              id="delete-role-button"
+              size="small"
+              type="danger"
+              onClick={() => this.removeRole(role.id)}
+              disabled={this.state.operationInProgress || blocked}
+            >
               <Icon type="delete" />
             </Button>
           </Row>
@@ -200,6 +208,32 @@ export default class EditUserRolesDialog extends React.Component {
     });
   };
 
+  onBlockUnBlock = (block) => {
+    const blockUser = async () => {
+      const hide = message.loading(
+        `${block ? 'Blocking' : 'Unblocking'} user ${this.props.user.userName}...`
+      );
+      const request = new UserBlock(this.props.userId, block);
+      await request.fetch();
+      if (request.error) {
+        hide();
+        message.error(request.error, 5);
+      } else {
+        await this.props.userInfo.fetch();
+        hide();
+      }
+    };
+    Modal.confirm({
+      title: `Are you sure you want to ${block ? 'block' : 'unblock'} user ${this.props.user.userName}?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        blockUser();
+      }
+    });
+  };
+
   operationWrapper = (fn) => {
     return (...opts) => {
       this.setState({
@@ -232,17 +266,45 @@ export default class EditUserRolesDialog extends React.Component {
     if (!this.props.userInfo) {
       return null;
     }
+    let blocked = false;
+    if (this.props.userInfo.loaded) {
+      blocked = this.props.userInfo.value.blocked;
+    }
     return (
       <Modal
         width="50%"
         closable={false}
-        title={this.props.user.userName}
+        title={(
+          <div>
+            <span>
+              {this.props.user.userName}
+            </span>
+            {
+              blocked &&
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            }
+          </div>
+        )}
         footer={
           <Row type="flex" justify="space-between">
-            <Button
-              id="delete-user-button"
-              type="danger"
-              onClick={this.onDelete}>DELETE</Button>
+            <div>
+              <Button
+                id="delete-user-button"
+                type="danger"
+                onClick={this.onDelete}>DELETE</Button>
+              <Button
+                type="danger"
+                onClick={() => this.onBlockUnBlock(!blocked)}
+              >
+                {
+                  blocked ? 'UNBLOCK' : 'BLOCK'
+                }
+              </Button>
+            </div>
             <Button
               id="close-edit-user-form"
               type="primary"
@@ -284,7 +346,7 @@ export default class EditUserRolesDialog extends React.Component {
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress}
+                disabled={this.state.operationInProgress || blocked}
                 value={
                   this.props.userInfo.loaded && this.props.userInfo.value.defaultStorageId
                     ? `${this.props.userInfo.value.defaultStorageId}`
@@ -319,6 +381,7 @@ export default class EditUserRolesDialog extends React.Component {
               </span>
               <div style={{flex: 1}} id="find-role-select-container">
                 <Select
+                  disabled={this.state.operationInProgress || blocked}
                   value={this.state.selectedRole}
                   size="small"
                   showSearch
@@ -346,7 +409,12 @@ export default class EditUserRolesDialog extends React.Component {
                   id="add-role-button"
                   size="small"
                   onClick={this.assignRole}
-                  disabled={this.state.selectedRole === null || this.state.selectedRole === undefined}>
+                  disabled={
+                    this.state.selectedRole === null ||
+                    this.state.selectedRole === undefined ||
+                    this.state.operationInProgress ||
+                    blocked
+                  }>
                   <Icon type="plus" /> Add
                 </Button>
               </div>
@@ -390,10 +458,12 @@ export default class EditUserRolesDialog extends React.Component {
               }
             ]}>
             <Metadata
+              readOnly={this.state.operationInProgress || blocked}
               key={METADATA_PANEL_KEY}
               entityId={this.props.userId}
               entityClass="PIPELINE_USER" />
             <InstanceTypesManagementForm
+              disabled={this.state.operationInProgress || blocked}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.userId}
               level="USER" />
