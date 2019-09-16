@@ -83,7 +83,7 @@ function sign_win_executable() {
 
     local signed_exec_path="signed-$(basename "$exec_path")"
     if [ "$cert_pass" ]; then
-        local sign_with_pass_opt="-pass \"$cert_pass\""
+        local sign_with_pass_opt=(-pass "$cert_pass")
     fi
     
     # osslsigncode requires openssl v1.1.x which is not available in the system by default.
@@ -97,7 +97,8 @@ function sign_win_executable() {
                 -n "$cert_desc" \
                 -i "$cert_url" \
                 -in "$exec_path" \
-                -out "$signed_exec_path" $sign_with_pass_opt
+                -out "$signed_exec_path" \
+                "${sign_with_pass_opt[@]}"
 
     if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
         echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
