@@ -53,6 +53,10 @@ task buildWin(type: Exec, dependsOn: ':pipe-cli:test') {
     }
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_WIN_DIST_DIR": "$project.rootDir/pipe-cli/dist/win"
+    environment "PIPE_CLI_MAJOR_VERSION": "$version.major"
+    environment "PIPE_CLI_MINOR_VERSION": "$version.minor"
+    environment "PIPE_CLI_PATCH_VERSION": "$version.patch"
+    environment "PIPE_CLI_BUILD_VERSION": "$version.build"
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_windows.sh"
     doLast {
