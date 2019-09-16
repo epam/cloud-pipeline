@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
-
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
 
@@ -38,9 +37,13 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final TaskMapper taskMapper;
     private final MessageHelper messageHelper;
-    private final static String ID = "id";
-    private static final String defaultPageToken = "1";
-    private static final Long defaultPageSize = 256L;
+
+    private static final String ID = "id";
+    private static final String NAME_PREFIX = "namePrefix";
+    private static final String VIEW = "view";
+    private static final String DEFAULT_PAGE_TOKEN = "1";
+    private static final Long DEFAULT_PAGE_SIZE = 256L;
+    private static final TaskView DEFAULT_TASK_VIEW = TaskView.BASIC;
 
     @Autowired
     public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
@@ -62,15 +65,17 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view) {
-        //TODO implement "namePrefix" and "view" in "filter"
         TesListTasksResponse tesListTasksResponse = new TesListTasksResponse();
         PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
 
-        String optionalPageToken = Optional.ofNullable(pageToken)
-                .orElse(defaultPageToken);
-        filterExpressionVO.setPage(Integer.parseInt(optionalPageToken));
-        Long optionalPageSize = Optional.ofNullable(pageSize).orElse(defaultPageSize);
-        filterExpressionVO.setPageSize(optionalPageSize.intValue());
+        filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
+        filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
+        filterExpressionVO.getFilterExpression().setField(VIEW);
+        filterExpressionVO.getFilterExpression().setValue(Optional.ofNullable(view).orElse(DEFAULT_TASK_VIEW).toString());
+        Optional.ofNullable(namePrefix).ifPresent((name) -> {
+            filterExpressionVO.getFilterExpression().setField(NAME_PREFIX);
+            filterExpressionVO.getFilterExpression().setValue(name);
+        });
         List<PipelineRun> pipelineRunList = cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements();
         tesListTasksResponse.setTasks(pipelineRunList.stream().map(taskMapper::mapToTesTask)
                 .collect(Collectors.toList()));
