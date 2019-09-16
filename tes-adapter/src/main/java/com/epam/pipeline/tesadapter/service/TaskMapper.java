@@ -219,37 +219,26 @@ public class TaskMapper {
     }
 
     private TesTask filterTesTaskWithView(PipelineRun run, TaskView view) {
-        switch (view) {
-            case MINIMAL:
-                return TesTask.builder()
-                        .id(String.valueOf(run.getId()))
-                        .state(createTesState(run))
-                        .build();
-            case BASIC:
-                return TesTask.builder()
-                        .id(String.valueOf(run.getId()))
-                        .name(run.getPodId())
-                        .resources(createTesResources(run))
-                        .executors(createListExecutor(run))
-                        .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
-                        .creationTime(run.getStartDate().toString())
-                        .state(createTesState(run))
-                        .build();
-            case FULL:
-                return TesTask.builder()
-                        .id(String.valueOf(run.getId()))
-                        .name(run.getPodId())
-                        .resources(createTesResources(run))
-                        .executors(createListExecutor(run))
-                        .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
-                        .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
-                        .creationTime(run.getStartDate().toString())
-                        .logs(createTesTaskLog(run.getId()))
-                        .state(createTesState(run))
-                        .build();
-            default:
-                throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.
-                        ERROR_PARAMETER_REQUIRED));
+        final TesTask.TesTaskBuilder tesTask = TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(createTesState(run));
+        if (view == TaskView.MINIMAL) {
+            return tesTask.build();
+        }
+        tesTask.name(run.getPodId())
+                .resources(createTesResources(run))
+                .executors(createListExecutor(run))
+                .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .creationTime(run.getStartDate().toString());
+        if (view == TaskView.BASIC) {
+            return tesTask.build();
+        }
+        tesTask.inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .logs(createTesTaskLog(run.getId()));
+        if (view == TaskView.FULL) {
+            return tesTask.build();
+        } else {
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED));
         }
     }
 
