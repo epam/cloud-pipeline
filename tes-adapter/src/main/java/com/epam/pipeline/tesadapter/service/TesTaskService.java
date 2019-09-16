@@ -1,5 +1,6 @@
 package com.epam.pipeline.tesadapter.service;
 
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
@@ -10,7 +11,7 @@ public interface TesTaskService {
 
     TesCreateTaskResponse submitTesTask(TesTask body);
 
-    TesListTasksResponse listTesTask();
+    TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view);
 
     void stub();
 

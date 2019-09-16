@@ -61,6 +61,15 @@ dependencies {
 
     compile 'io.fabric8:kubernetes-model:1.0.67'
 
+//AWS
+    compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.11.377"
+    // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
+    compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.11.301"
+    // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-sts
+    compile group: "com.amazonaws", name: "aws-java-sdk-sts", version: "1.11.211"
+    // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-iam
+    compile group: "com.amazonaws", name: "aws-java-sdk-iam", version: "1.11.211"
+
     // Retrofit
     compile group: 'com.squareup.retrofit2', name: 'retrofit', version: '2.3.0'
     compile group: 'com.squareup.retrofit2', name: 'converter-jackson', version: '2.3.0'

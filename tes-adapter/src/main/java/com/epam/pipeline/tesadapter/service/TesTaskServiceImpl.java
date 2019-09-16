@@ -5,21 +5,24 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,6 +39,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final TaskMapper taskMapper;
     private final MessageHelper messageHelper;
     private final static String ID = "id";
+    private static final String defaultPageToken = "1";
+    private static final Long defaultPageSize = 256L;
 
     @Autowired
     public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
@@ -56,8 +61,20 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesListTasksResponse listTesTask() {
-        return new TesListTasksResponse();
+    public TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view) {
+        //TODO implement "namePrefix" and "view" in "filter"
+        TesListTasksResponse tesListTasksResponse = new TesListTasksResponse();
+        PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
+
+        String optionalPageToken = Optional.ofNullable(pageToken)
+                .orElse(defaultPageToken);
+        filterExpressionVO.setPage(Integer.parseInt(optionalPageToken));
+        Long optionalPageSize = Optional.ofNullable(pageSize).orElse(defaultPageSize);
+        filterExpressionVO.setPageSize(optionalPageSize.intValue());
+        List<PipelineRun> pipelineRunList = cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements();
+        tesListTasksResponse.setTasks(pipelineRunList.stream().map(taskMapper::mapToTesTask)
+                .collect(Collectors.toList()));
+        return tesListTasksResponse;
     }
 
     @Override
