@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.vo.filter;
 
-import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.vo.filter.composers.AbstractFilterComposer;
 import com.epam.pipeline.vo.filter.converters.AbstractFilterValueConverter;
 import com.epam.pipeline.vo.filter.converters.DateConverter;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.lang.reflect.Constructor;
@@ -60,8 +60,8 @@ public class LogicalExpression extends FilterExpression {
     }
 
     public String generateSQLStatement() throws WrongFilterException {
-        if (StringUtils.isNullOrEmpty(this.databaseFieldName)
-                || StringUtils.isNullOrEmpty(this.databaseValuePlaceholder)) {
+        if (StringUtils.isEmpty(this.databaseFieldName)
+                || StringUtils.isEmpty(this.databaseValuePlaceholder)) {
             throw new WrongFilterException();
         }
         return String.format("(%s %s :%s)",
@@ -114,10 +114,10 @@ public class LogicalExpression extends FilterExpression {
             );
         }
         String dbFieldName = filterField.databaseFieldName();
-        if (StringUtils.isNullOrEmpty(dbFieldName)) {
+        if (StringUtils.isEmpty(dbFieldName)) {
             dbFieldName = field.getName();
         }
-        if (StringUtils.isNullOrEmpty(filterField.databaseTableAlias())) {
+        if (StringUtils.isEmpty(filterField.databaseTableAlias())) {
             this.databaseFieldName = dbFieldName;
         } else {
             this.databaseFieldName = String.format("%s.%s",

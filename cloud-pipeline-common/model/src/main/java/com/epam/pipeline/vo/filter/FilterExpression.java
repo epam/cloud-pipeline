@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.vo.filter;
 
-import com.amazonaws.util.StringUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.util.ArrayList;
@@ -72,8 +72,8 @@ public class FilterExpression {
     static FilterExpression generate(FilterExpression rootExpression,
                                      List<Long> allowedPipelines,
                                      String ownership)
-        throws WrongFilterException {
-        boolean containsOwnershipFilter = !StringUtils.isNullOrEmpty(ownership);
+            throws WrongFilterException {
+        boolean containsOwnershipFilter = StringUtils.isNotEmpty(ownership);
         boolean containsPipelineIdsFilter = allowedPipelines != null && allowedPipelines.size() > 0;
         if (containsPipelineIdsFilter && containsOwnershipFilter) {
             AndFilterExpression mainExpression = new AndFilterExpression();
@@ -120,9 +120,9 @@ public class FilterExpression {
                     );
                 }
                 result = new LogicalExpression(
-                    expression.getField(),
-                    expression.getValue(),
-                    FilterOperandType.getByString(expression.getOperand()));
+                        expression.getField(),
+                        expression.getValue(),
+                        FilterOperandType.getByString(expression.getOperand()));
                 break;
             case OR:
                 result = new OrFilterExpression();

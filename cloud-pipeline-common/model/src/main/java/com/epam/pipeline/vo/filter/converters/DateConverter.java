@@ -17,10 +17,10 @@
 package com.epam.pipeline.vo.filter.converters;
 
 
-import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.vo.filter.FilterOperandType;
 import com.epam.pipeline.vo.filter.WrongFilterException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -57,7 +57,7 @@ public class DateConverter extends AbstractFilterValueConverter {
         if (params != null && params.containsKey(TIMEZONE_OFFSET_PARAMETER)) {
             timezoneOffset = Integer.parseInt(params.get(TIMEZONE_OFFSET_PARAMETER).toString());
         }
-        if (!StringUtils.isNullOrEmpty(dateValue)) {
+        if (StringUtils.isNotEmpty(dateValue)) {
             try {
                 result = dateFormat.parse(dateValue);
                 if (!dateValue.equals(dateFormat.format(result))) {
