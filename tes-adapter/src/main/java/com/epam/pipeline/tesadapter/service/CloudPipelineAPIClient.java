@@ -10,7 +10,9 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.utils.QueryUtils;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -64,5 +66,9 @@ public class CloudPipelineAPIClient {
 
     public List<PipelineTask> loadPipelineTasks(final Long id){
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineTasks(id));
+    }
+
+    public PagedResult<List<PipelineRun>> searchRuns(PagingRunFilterExpressionVO filterVO) {
+        return QueryUtils.execute(cloudPipelineAPI.searchRuns(filterVO));
     }
 }

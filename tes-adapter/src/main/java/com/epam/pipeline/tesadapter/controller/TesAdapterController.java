@@ -36,10 +36,11 @@ public class TesAdapterController {
     @GetMapping("/v1/tasks")
     public ResponseEntity<TesListTasksResponse> listTesTasks(
             @RequestParam(name = "name_prefix", required = false) String namePrefix,
-            @RequestParam(name = "page_size", required = false) long pageSize,
+            @RequestParam(name = "page_size", required = false) Long pageSize,
             @RequestParam(name = "page_token", required = false) String pageToken,
             @RequestParam(name = "view", required = false, defaultValue = "MINIMAL") TaskView view) {
-        return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.listTesTask());
+        return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.listTesTask(namePrefix, pageSize, pageToken,
+                view));
     }
 
     @PostMapping("/v1/tasks")
