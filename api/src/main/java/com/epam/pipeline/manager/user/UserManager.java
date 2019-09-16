@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -191,7 +192,7 @@ public class UserManager {
     }
 
     public List<GroupStatus> loadGroupBlockingStatus(final List<String> groupNames) {
-        return groupStatusDao.loadGroupsBlockingStatus(groupNames);
+        return ListUtils.emptyIfNull(groupStatusDao.loadGroupsBlockingStatus(groupNames));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
