@@ -65,4 +65,8 @@ public class CloudPipelineAPIClient {
     public List<PipelineTask> loadPipelineTasks(final Long id){
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineTasks(id));
     }
+
+    public AbstractCloudRegion loadRegion(final Long regionId){
+        return QueryUtils.execute(cloudPipelineAPI.loadRegion(regionId));
+    }
 }
