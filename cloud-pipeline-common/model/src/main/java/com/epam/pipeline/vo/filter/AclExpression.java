@@ -47,7 +47,7 @@ class AclExpression extends LogicalExpression {
     }
 
     @Override
-    boolean filterFieldMatches(FilterField filterField) {
+    public boolean filterFieldMatches(FilterField filterField) {
         return filterField.aclField() == this.getAclExpressionType();
     }
 }

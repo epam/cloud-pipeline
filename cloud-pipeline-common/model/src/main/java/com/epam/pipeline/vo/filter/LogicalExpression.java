@@ -230,7 +230,7 @@ public class LogicalExpression extends FilterExpression {
         }
     }
 
-    boolean filterFieldMatches(FilterField filterField) {
+    public boolean filterFieldMatches(FilterField filterField) {
         return Pattern.matches(filterField.displayName(), this.getField()) ||
                 filterField.displayName().equalsIgnoreCase(this.getField());
     }

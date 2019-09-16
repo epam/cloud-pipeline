@@ -69,7 +69,7 @@ public class FilterExpression {
         return this;
     }
 
-    static FilterExpression generate(FilterExpression rootExpression,
+    public static FilterExpression generate(FilterExpression rootExpression,
                                      List<Long> allowedPipelines,
                                      String ownership)
             throws WrongFilterException {
