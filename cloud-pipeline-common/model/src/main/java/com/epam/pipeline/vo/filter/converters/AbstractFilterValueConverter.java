@@ -25,7 +25,7 @@ import java.util.Map;
 
 public abstract class AbstractFilterValueConverter {
 
-    String clearQuotes(String value) {
+    public String clearQuotes(String value) {
         if (StringUtils.isNotEmpty(value) && ((value.startsWith("\"") && value.endsWith("\"")) ||
                 (value.startsWith("'") && value.endsWith("'")))) {
             return value.substring(1, value.length() - 1);
