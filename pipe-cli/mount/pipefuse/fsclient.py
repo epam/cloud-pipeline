@@ -69,3 +69,6 @@ class FileSystemClient:
 
     def flush(self, path):
         pass
+
+    def utimens(self, path, times=None):
+        pass

@@ -143,7 +143,7 @@ class PipeFS(Operations):
         raise UnsupportedOperationException("link")
 
     def utimens(self, path, times=None):
-        raise UnsupportedOperationException("utimens")
+        self.client.utimens(path, times)
 
     # File methods
     # ============
