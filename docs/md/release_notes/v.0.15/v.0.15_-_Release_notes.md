@@ -52,6 +52,7 @@
     - [Cloning of large repositories might fail](#cloning-of-large-repositories-might-fail)
     - [System events HTML overflow](#system-events-html-overflow)
     - [AWS: Pipeline run `InitializeNode` task fails](#aws-pipeline-run-initializenode-task-fails)
+    - [`git-sync` shall not fail the whole object synchronization if a single entry errors](#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors)
     - [Broken layouts](#broken-layouts)
 
 ***
@@ -711,6 +712,13 @@ Also, support of [Markdown](https://en.wikipedia.org/wiki/Markdown) was added fo
 
 Previously, if `AWS` spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: `Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available`.  
 Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to `on-demand` and run initialization continues.
+
+### `git-sync` shall not fail the whole object synchronization if a single entry errors
+
+[#648](https://github.com/epam/cloud-pipeline/issues/648)
+
+When the `git-sync` script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.  
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issue with the synchronization of users with duplicate email addresses was resolved.
 
 ### Broken layouts
 
