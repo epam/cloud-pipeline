@@ -80,6 +80,10 @@ class PipelineRunOperations(object):
             instance_type = nodes_spec["name"]
 
         try:
+            if not pipeline and docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk,
+                                                                           cmd_template):
+                instance_disk, instance_type, cmd_template = cls.load_missing_args(docker_image, instance_disk,
+                                                                                   instance_type, cmd_template)
             if pipeline:
                 parts = pipeline.split('@')
                 pipeline_name = parts[0]
@@ -196,11 +200,8 @@ class PipelineRunOperations(object):
             elif parameters:
                 if not quiet:
                     click.echo('You must specify pipeline for listing parameters', err=True)
-            elif docker_image and cls.required_args_missing(parent_node, instance_type, instance_disk, cmd_template):
-                instance_disk, instance_type, cmd_template = cls.load_missing_args(docker_image, instance_disk,
-                                                                                   instance_type, cmd_template)
-            if docker_image is None or cls.required_args_missing(parent_node, instance_type, instance_disk,
-                                                                 cmd_template):
+            elif docker_image is None or cls.required_args_missing(parent_node, instance_type, instance_disk,
+                                                                   cmd_template):
                 if not quiet:
                     click.echo('Docker image, instance type, instance disk and cmd template '
                                'are required parameters if pipeline was not provided.')
@@ -247,6 +248,8 @@ class PipelineRunOperations(object):
                         if pipeline_processed_status != 'SUCCESS':
                             sys.exit(1)
 
+        except click.exceptions.Abort:
+            sys.exit(0)
         except ConfigNotFoundError as config_not_found_error:
             click.echo(str(config_not_found_error), err=True)
             if quiet:
