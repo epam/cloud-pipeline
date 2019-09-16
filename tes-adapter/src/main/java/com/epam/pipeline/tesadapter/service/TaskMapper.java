@@ -254,25 +254,23 @@ public class TaskMapper {
     }
 
     private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
-        final TesInput tesInput = new TesInput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesInput.setName(pipelineRunParameter.getName());
-                    tesInput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesInput));
+                .map(pipelineRunParameter ->
+                        TesInput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
-        final TesOutput tesOutput = new TesOutput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesOutput.setName(pipelineRunParameter.getName());
-                    tesOutput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesOutput));
+                .map(pipelineRunParameter ->
+                        TesOutput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private TesResources createTesResources(PipelineRun run) {
