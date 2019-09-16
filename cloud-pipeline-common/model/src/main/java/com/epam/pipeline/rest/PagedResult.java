@@ -16,6 +16,11 @@
 
 package com.epam.pipeline.rest;
 
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Setter
+@NoArgsConstructor
 public class PagedResult<T> { // TODO: refactor to extend Result class
     private T elements; // TODO; refactor to contain a list of T
     private int totalCount;
