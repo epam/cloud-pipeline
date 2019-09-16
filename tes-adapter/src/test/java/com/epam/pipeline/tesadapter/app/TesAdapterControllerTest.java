@@ -2,6 +2,7 @@ package com.epam.pipeline.tesadapter.app;
 
 
 import com.epam.pipeline.tesadapter.controller.TesAdapterController;
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
@@ -23,7 +24,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -32,7 +32,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
 public class TesAdapterControllerTest {
     private static final String STUBBED_TASK_ID = "5";
-    private static final Long STUBBED_PAGE_SIZE = 55L;
+    private static final String PAGE_TOKEN = "1";
+    private static final String NAME_PREFIX = "pipeline";
+    private static final Long PAGE_SIZE = 20L;
+    private static final TaskView DEFAULT_VIEW = TaskView.BASIC;
     private static final String STUBBED_SUBMIT_JSON_REQUEST = "{}";
     private static final String STUBBED_SUBMIT_JSON_RESPONSE = "{\"id\":\"5\"}";
 
@@ -64,8 +67,11 @@ public class TesAdapterControllerTest {
 
     @Test
     void listTesTaskWhenRequestingReturnTesListTasksResponse() throws Exception {
-        when(tesTaskService.listTesTask()).thenReturn(new TesListTasksResponse());
-        this.mockMvc.perform(get("/v1/tasks?page_size={size}", STUBBED_PAGE_SIZE))
+        when(tesTaskService.listTesTask(NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW))
+                .thenReturn(new TesListTasksResponse());
+        this.mockMvc.perform(get("/v1/tasks?name_prefix={name_prefix}?page_size={page_size}" +
+                        "?page_token={page_token}?view={view}",
+                NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW))
                 .andDo(print()).andExpect(status().isOk());
     }
 }
