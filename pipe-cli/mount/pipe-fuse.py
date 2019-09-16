@@ -30,7 +30,7 @@ from pipefuse.pipefs import PipeFS
 from fuse import FUSE
 
 _allowed_logging_level_names = logging._levelNames
-_allowed_logging_levels = filter(lambda name: type(name) == str, _allowed_logging_level_names.keys())
+_allowed_logging_levels = filter(lambda name: isinstance(name, str), _allowed_logging_level_names.keys())
 _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = logging.ERROR
 

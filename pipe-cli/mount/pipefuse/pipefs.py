@@ -15,6 +15,7 @@
 import datetime
 import errno
 import io
+import logging
 import os
 import platform
 import stat
@@ -87,8 +88,8 @@ class PipeFS(Operations):
             if props.ctime:
                 attrs['st_ctime'] = props.ctime
             return attrs
-        except Exception as e:
-            # TODO 05.09.2019: Log error
+        except Exception:
+            logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
@@ -115,8 +116,8 @@ class PipeFS(Operations):
     def mkdir(self, path, mode):
         try:
             self.client.mkdir(path)
-        except Exception as e:
-            # TODO 05.09.2019: Log error
+        except Exception:
+            logging.exception('Error occurred while creating directory %s' % path)
             raise FuseOSError(errno.EACCES)
 
     def statfs(self, path):
