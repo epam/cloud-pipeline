@@ -134,6 +134,16 @@ public class SystemPreferences {
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
             new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
 
+    /**
+     * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
+     */
+    public static final IntPreference STORAGE_FSBROWSER_PORT =
+            new IntPreference("storage.fsbrowser.port",8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
+    public static final StringPreference STORAGE_FSBROWSER_WD =
+            new StringPreference("storage.fsbrowser.wd","/", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
+            new StringPreference("storage.fsbrowser.transfer",null, DATA_STORAGE_GROUP, pass);
+
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
     public static final StringPreference GIT_EXTERNAL_URL =
