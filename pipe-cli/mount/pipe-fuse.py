@@ -55,11 +55,17 @@ def start(mountpoint, webdav, bucket, buffer, cache_ttl, cache_size, default_mod
             raise RuntimeError("Cloud Pipeline API should be specified.")
         pipe = CloudPipelineClient(api=api, token=bearer)
         client = S3Client(bucket, pipe=pipe)
-    cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
-    caching_client = CachingFileSystemClient(client, cache)
-    buffered_client = BufferedFileSystemClient(caching_client, capacity=buffer)
-    fs = PipeFS(client=buffered_client, mode=int(default_mode, 8))
-    FUSE(fs, mountpoint, nothreads=True, foreground=True, **mount_options)
+    if cache_ttl > 0 and cache_size > 0:
+        cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
+        client = CachingFileSystemClient(client, cache)
+    else:
+        logging.info('Caching is disabled.')
+    if buffer > 0:
+        client = BufferedFileSystemClient(client, capacity=buffer)
+    else:
+        logging.info('Buffering is disabled.')
+    fs = PipeFS(client=client, mode=int(default_mode, 8))
+    FUSE(fs, mountpoint, nothreads=True, foreground=True, ro=client.is_read_only(), **mount_options)
 
 
 def parse_mount_options(options_string):
@@ -96,7 +102,7 @@ if __name__ == '__main__':
 
     if not args.webdav and not args.bucket:
         parser.error('Either --webdav or --bucket parameter should be specified.')
-    if args.buffer < 5:
+    if args.bucket and 0 < args.buffer < 5:
         parser.error('Writing buffer size should be more than 5 MB. '
                      'It is required by AWS S3 multipart upload minimal part size.')
     if args.logging_level not in _allowed_logging_level_names:

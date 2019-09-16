@@ -1,3 +1,17 @@
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections import namedtuple
 
 from abc import ABCMeta, abstractmethod
@@ -10,6 +24,10 @@ class FileSystemClient:
 
     @abstractmethod
     def is_available(self):
+        pass
+
+    @abstractmethod
+    def is_read_only(self):
         pass
 
     @abstractmethod
@@ -60,12 +78,38 @@ class FileSystemClient:
         pass
 
     @abstractmethod
-    def download_range(self, buf, path, offset, length):
+    def download_range(self, fh, buf, path, offset, length):
+        """
+        Downloads a range of data by the given path into the given buffer.
+
+        :param fh: File handle.
+        :param buf: Buffer to write downloaded data to.
+        :param path: Path to read data from.
+        :param offset: Downloading data offset.
+        :param length: Downloading data length.
+        """
         pass
 
     @abstractmethod
-    def upload_range(self, buf, path, offset):
+    def upload_range(self, fh, buf, path, offset):
+        """
+        Uploads the given buffer to the given path.
+
+        :param fh: File handle.
+        :param buf: Buffer to read uploading data from.
+        :param path: Path to write data to.
+        :param offset: Uploading data offset.
+        """
         pass
 
-    def flush(self, path):
+    def flush(self, fh, path):
+        """
+        Flushes downloading or uploading data for the given path.
+
+        :param fh: File handle.
+        :param path: Path to flush data for.
+        """
+        pass
+
+    def utimens(self, path, times=None):
         pass

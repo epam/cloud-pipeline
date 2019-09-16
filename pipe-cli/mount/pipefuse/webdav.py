@@ -26,7 +26,7 @@ import urllib3
 from requests import cookies
 
 import fuseutils
-from pipefuse.fsclient import FileSystemClient, File
+from fsclient import FileSystemClient, File
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
@@ -90,6 +90,9 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             logging.error('WevDav is not available: %s' % str(e.message))
             return False
 
+    def is_read_only(self):
+        return False
+
     def get_elem_value(self, elem, name):
         return elem.find('.//{DAV:}' + name)
 
@@ -123,19 +126,19 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             self.prop_exists(elem, 'collection')
         )
 
-    def download_range(self, data, remote_path, offset=0, length=0):
+    def download_range(self, fh, data, remote_path, offset=0, length=0):
         headers = None
         if offset >= 0 and length >= 0:
             headers = {'Range': 'bytes=%d-%d' % (offset, offset + length - 1)}
         response = self._send('GET', remote_path, (200, 206), stream=True, headers=headers)
         self._download(data, response)
 
-    def upload_range(self, data, remote_path, offset=0):
+    def upload_range(self, fh, data, remote_path, offset=0):
         end = offset + len(data) - 1
         if end < offset:
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=data, headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}

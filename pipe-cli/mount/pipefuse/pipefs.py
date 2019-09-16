@@ -30,18 +30,40 @@ class UnsupportedOperationException(Exception):
     pass
 
 
-class PipeFS(Operations):
+class FileHandleContainer(object):
     FH_START = 2
+    FH_END = 10000
+
+    def __init__(self):
+        self._container = set()
+        try:
+            self._range = xrange(self.FH_START, self.FH_END)
+        except NameError:
+            self._range = range(self.FH_START, self.FH_END)
+
+    def get(self):
+        for fh in self._range:
+            if fh not in self._container:
+                self._container.add(fh)
+                return fh
+
+    def release(self, fh):
+        if fh in self._container:
+            self._container.remove(fh)
+
+
+class PipeFS(Operations):
 
     def __init__(self, client, mode=0o755):
         self.client = client
         if not self.client.is_available():
             raise RuntimeError("File system server is not available.")
-        self.fd = self.FH_START
+        self.container = FileHandleContainer()
         self.mode = mode
         self.delimiter = '/'
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
+        self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
 
     def is_skipped_mac_files(self, path):
         if not self.is_mac:
@@ -89,7 +111,8 @@ class PipeFS(Operations):
                 attrs['st_ctime'] = props.ctime
             return attrs
         except Exception:
-            logging.exception('Error occurred while getting attributes for %s' % path)
+            if path not in self._system_files:
+                logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
@@ -143,29 +166,27 @@ class PipeFS(Operations):
         raise UnsupportedOperationException("link")
 
     def utimens(self, path, times=None):
-        raise UnsupportedOperationException("utimens")
+        self.client.utimens(path, times)
 
     # File methods
     # ============
 
     def open(self, path, flags):
         if self.client.exists(path):
-            self.fd += 1
-            return self.fd
+            return self.container.get()
         raise FuseOSError(errno.ENOENT)
 
     def create(self, path, mode, fi=None):
         self.client.upload([], path)
-        self.fd += 1
-        return self.fd
+        return self.container.get()
 
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
-            self.client.download_range(file_buff, path, offset=offset, length=length)
+            self.client.download_range(fh, file_buff, path, offset=offset, length=length)
             return file_buff.getvalue()
 
     def write(self, path, buf, offset, fh):
-        self.client.upload_range(buf, path, offset=offset)
+        self.client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
     def truncate(self, path, length, fh=None):
@@ -173,16 +194,15 @@ class PipeFS(Operations):
         if file_size > 0 and length == 0:
             self.create(path, self.mode)
         elif length > file_size:
-            self.client.upload_range([], path, offset=(length - 1))
+            self.client.upload_range(fh, [], path, offset=(length - 1))
         elif length != file_size:
             raise FuseOSError(errno.ERANGE)
 
     def flush(self, path, fh):
-        self.client.flush(path)
+        self.client.flush(fh, path)
 
     def release(self, path, fh):
-        if self.fd > self.FH_START:
-            self.fd -= 1
+        self.container.release(fh)
 
     def fsync(self, path, fdatasync, fh):
         raise UnsupportedOperationException("fsync")

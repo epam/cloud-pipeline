@@ -1,7 +1,22 @@
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import io
 import logging
 
-from pipefuse.fsclient import FileSystemClient
+from fsclient import FileSystemClient
+from fuseutils import MB
 
 
 class _FileBuffer(object):
@@ -11,6 +26,14 @@ class _FileBuffer(object):
         self._current_offset = self._offset
         self._capacity = capacity
         self._buffs = []
+
+    @property
+    def offset(self):
+        return self._current_offset
+
+    @property
+    def capacity(self):
+        return self._capacity
 
     def append(self, buf, offset=None):
         if offset and offset != self._current_offset:
@@ -37,10 +60,6 @@ class _WriteBuffer(_FileBuffer):
 
 
 class _ReadBuffer(_FileBuffer):
-
-    @property
-    def offset(self):
-        return self._current_offset
 
     def view(self, offset, length):
         start = offset
@@ -72,7 +91,7 @@ class _ReadBuffer(_FileBuffer):
 
 class BufferedFileSystemClient(FileSystemClient):
 
-    _READ_AHEAD_SIZE = 20 * 1024 * 1024
+    _READ_AHEAD_SIZE = 20 * MB
 
     def __init__(self, inner, capacity):
         """
@@ -90,6 +109,9 @@ class BufferedFileSystemClient(FileSystemClient):
 
     def is_available(self):
         return self._inner.is_available()
+
+    def is_read_only(self):
+        return self._inner.is_read_only()
 
     def exists(self, path):
         return self._inner.exists(path)
@@ -115,46 +137,56 @@ class BufferedFileSystemClient(FileSystemClient):
     def rmdir(self, path):
         self._inner.rmdir(path)
 
-    def download_range(self, buf, path, offset=0, length=0):
-        file_buf = self._read_file_buffs.get(path)
+    def download_range(self, fh, buf, path, offset=0, length=0):
+        buf_key = fh, path
+        file_buf = self._read_file_buffs.get(buf_key)
         if not file_buf:
             file_size = self.attrs(path).size
             if not file_size:
                 return
-            file_buf = _ReadBuffer(offset, file_size)
-            file_buf.append(self._read_ahead(offset, path))
-            self._read_file_buffs[path] = file_buf
+            file_buf = self._new_read_buf(fh, path, file_size, offset)
+            self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
-            file_buf.append(self._read_ahead(file_buf.offset, path))
+            file_buf.append(self._read_ahead(fh, path, file_buf.offset))
             file_buf.shrink()
+            if not file_buf.suits(offset, length):
+                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
+                self._read_file_buffs[buf_key] = file_buf
         buf.write(file_buf.view(offset, length))
 
-    def _read_ahead(self, offset, path):
+    def _new_read_buf(self, fh, path, file_size, offset):
+        file_buf = _ReadBuffer(offset, file_size)
+        file_buf.append(self._read_ahead(fh, path, offset))
+        return file_buf
+
+    def _read_ahead(self, fh, path, offset):
         with io.BytesIO() as read_ahead_buf:
-            self._inner.download_range(read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
+            self._inner.download_range(fh, read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
             return read_ahead_buf.getvalue()
 
-    def upload_range(self, buf, path, offset=0):
-        file_buf = self._download_file_buffs.get(path)
+    def upload_range(self, fh, buf, path, offset=0):
+        buf_key = fh, path
+        file_buf = self._download_file_buffs.get(buf_key)
         if not file_buf:
             file_buf = _WriteBuffer(offset, self._capacity)
-            self._download_file_buffs[path] = file_buf
+            self._download_file_buffs[buf_key] = file_buf
         file_buf.append(buf, offset)
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
-            write_buf = self._download_file_buffs.pop(path, None)
+            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
+            write_buf = self._download_file_buffs.pop(buf_key, None)
             if write_buf:
                 collected_buf, collected_offset = write_buf.collect()
-                self._inner.upload_range(collected_buf, path, collected_offset)
+                self._inner.upload_range(fh, collected_buf, path, collected_offset)
 
-    def flush(self, path):
-        self._read_file_buffs.pop(path, None)
-        write_buf = self._download_file_buffs.pop(path, None)
-        logging.info('Flushing buffers for %s' % path)
+    def flush(self, fh, path):
+        buf_key = fh, path
+        self._read_file_buffs.pop(buf_key, None)
+        write_buf = self._download_file_buffs.pop(buf_key, None)
+        logging.info('Flushing buffers for %d:%s' % (fh, path))
         if write_buf:
             buf, offset = write_buf.collect()
-            self._inner.upload_range(buf, path, offset)
-        self._inner.flush(path)
+            self._inner.upload_range(fh, buf, path, offset)
+        self._inner.flush(fh, path)
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):
