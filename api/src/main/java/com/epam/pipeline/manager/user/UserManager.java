@@ -192,7 +192,9 @@ public class UserManager {
     }
 
     public List<GroupStatus> loadGroupBlockingStatus(final List<String> groupNames) {
-        return ListUtils.emptyIfNull(groupStatusDao.loadGroupsBlockingStatus(groupNames));
+        return ListUtils.emptyIfNull(CollectionUtils.isEmpty(groupNames)
+                ? null
+                : groupStatusDao.loadGroupsBlockingStatus(groupNames));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
