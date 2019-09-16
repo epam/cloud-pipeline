@@ -251,7 +251,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.argument('run-id', required=False, type=int)
 @click.option('-s', '--status', help='List pipelines with a specific status [ANY/FAILURE/PAUSED/PAUSING/RESUMING/RUNNING/STOPPED/SUCCESS]')
 @click.option('-df', '--date-from', help='List pipeline runs started after specified date')
-@click.option('-dt', '--date-to', help='List pipeline runs started before specified date')
+@click.option('-dt', '--date-to', help='List pipeline runs completed before specified date')
 @click.option('-p', '--pipeline', help='List history of runs for a specific pipeline. Pipeline name shall be specified as <pipeline_name>@<version_name> or just <pipeline_name> for the latest pipeline version')
 @click.option('-pid', '--parent-id', help='List runs for a specific parent pipeline run', type=int)
 @click.option('-f', '--find', help='Search runs with a specific substring in run parameters values')
@@ -286,6 +286,9 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
     runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started"]
     runs_table.align = "r"
     try:
+        if date_to and not status:
+            click.echo("The run status shall be specified for viewing completed before specified date runs")
+            sys.exit(1)
         statuses = []
         if status is not None:
             if status.upper() != 'ANY':
