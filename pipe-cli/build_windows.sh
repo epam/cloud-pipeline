@@ -25,8 +25,11 @@ if [ $? -ne 0 ]; then
 fi
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win32_py2_$(date +%s).sh
+export PIPE_CLI_BUILD_VERSION="${PIPE_CLI_BUILD_VERSION:-0}"
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
+
+cat > /tmp/ntlmp-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/ntlmp-win-version-info.txt)"
 
 pip install --upgrade setuptools && \
 pip install -r /pipe-cli/requirements.txt
@@ -41,7 +44,8 @@ pyinstaller main.py -y \
         --distpath /tmp/ntlmaps/dist \
         -p /tmp/ntlmaps/lib \
         --add-data "./server.cfg;./" \
-        --name ntlmaps
+        --name ntlmaps \
+        --version-file /tmp/ntlmp-win-version-info.txt
 
 cp -r /tmp/ntlmaps/dist/ntlmaps /pipe-cli/
 EOL
@@ -49,6 +53,10 @@ EOL
 docker run -i --rm \
            -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           -e PIPE_CLI_MAJOR_VERSION=$PIPE_CLI_MAJOR_VERSION \
+           -e PIPE_CLI_MINOR_VERSION=$PIPE_CLI_MINOR_VERSION \
+           -e PIPE_CLI_PATCH_VERSION=$PIPE_CLI_PATCH_VERSION \
+           -e PIPE_CLI_BUILD_VERSION=$(cut -d. -f1 <<< "$PIPE_CLI_BUILD_VERSION") \
            $CP_PYINSTALL_WIN32_PY2_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 
@@ -58,7 +66,6 @@ rm -f $_BUILD_SCRIPT_NAME
 #######################################
 # Step 2: pipe CLI
 #######################################
-
 
 CP_PYINSTALL_WIN64_DOCKER="lifescience/cloud-pipeline:pyinstaller-win64"
 docker pull $CP_PYINSTALL_WIN64_DOCKER
@@ -70,6 +77,7 @@ fi
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
+cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
 pip install -r /pipe-cli/requirements.txt && \
 pip install pywin32 && \
 pip install --upgrade setuptools && \
@@ -99,7 +107,8 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --workpath /tmp \
             --distpath /pipe-cli/dist/win64 \
             pipe.py \
-            --add-data "/pipe-cli/ntlmaps;ntlmaps" && \
+            --add-data "/pipe-cli/ntlmaps;ntlmaps" \
+            --version-file /tmp/pipe-win-version-info.txt && \
 cd /pipe-cli/dist/win64 && \
 zip -r -q pipe.zip pipe
 EOL
@@ -108,6 +117,10 @@ docker run -i --rm \
            -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
            -v $PIPE_CLI_WIN_DIST_DIR:/pipe-cli/dist/win64 \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           -e PIPE_CLI_MAJOR_VERSION=$PIPE_CLI_MAJOR_VERSION \
+           -e PIPE_CLI_MINOR_VERSION=$PIPE_CLI_MINOR_VERSION \
+           -e PIPE_CLI_PATCH_VERSION=$PIPE_CLI_PATCH_VERSION \
+           -e PIPE_CLI_BUILD_VERSION=$(cut -d. -f1 <<< "$PIPE_CLI_BUILD_VERSION") \
            $CP_PYINSTALL_WIN64_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 

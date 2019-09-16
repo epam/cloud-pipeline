@@ -32,7 +32,7 @@ ARG PYINSTALLER_VERSION=3.4
 RUN set -x \
     && dpkg --add-architecture i386 \
     && apt-get update -qy \
-    && apt-get install --no-install-recommends -qfy apt-transport-https software-properties-common wget zip \
+    && apt-get install --no-install-recommends -qfy apt-transport-https software-properties-common wget zip gettext \
     && wget -nv https://dl.winehq.org/wine-builds/winehq.key \
     && apt-key add winehq.key \
     && add-apt-repository 'https://dl.winehq.org/wine-builds/ubuntu/' \
