@@ -1,5 +1,4 @@
 .container {
-  width: 100%;
   flex: 1;
   padding: 5px;
 }
@@ -18,7 +17,6 @@
 }
 
 .upload-button {
-  margin: 10px;
   background-color: white;
   border-radius: 0;
 }

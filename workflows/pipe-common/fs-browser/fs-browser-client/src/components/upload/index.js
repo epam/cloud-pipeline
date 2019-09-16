@@ -9,6 +9,15 @@ import styles from './upload.css';
 class Upload extends React.Component {
   static propTypes = {
     path: PropTypes.string.isRequired,
+    showButton: PropTypes.bool,
+    showUploadArea: PropTypes.bool,
+    uploadAreaClassName: PropTypes.string,
+  };
+
+  static defaultProps = {
+    showButton: false,
+    showUploadArea: true,
+    uploadAreaClassName: null,
   };
 
   state = {
@@ -54,30 +63,55 @@ class Upload extends React.Component {
   };
 
   render() {
-    const {children} = this.props;
+    const {
+      children,
+      showButton,
+      showUploadArea,
+      uploadAreaClassName,
+    } = this.props;
     const {drop} = this.state;
-    return (
-      <div
-        className={
-          classNames(
-            styles.container,
-            {
-              [styles.drop]: !!drop,
-            },
-          )
-        }
-        onDragLeave={this.onDragLeave}
-        onDragOver={this.onDragOver}
-        onDrop={this.onDrop}
-      >
-        <div className={styles.uploadArea}>
-          {children}
-          <UploadButton
-            className={styles.uploadButton}
-            onUpload={this.onFilesChanged}
-          />
+    const Wrapper = ({content}) => {
+      if (showUploadArea) {
+        return (
+          <div
+            className={
+              classNames(
+                styles.container,
+                {
+                  [styles.drop]: !!drop,
+                }
+              )
+            }
+            onDragLeave={this.onDragLeave}
+            onDragOver={this.onDragOver}
+            onDrop={this.onDrop}
+          >
+            {content}
+          </div>
+        );
+      }
+      return (
+        <div
+          className={styles.container}
+        >
+          {content}
         </div>
-      </div>
+      );
+    };
+    return (
+      <Wrapper
+        content={(
+          <div className={classNames(styles.uploadArea, uploadAreaClassName)}>
+            {children}
+            {showButton && (
+              <UploadButton
+                className={styles.uploadButton}
+                onUpload={this.onFilesChanged}
+              />
+            )}
+          </div>
+        )}
+      />
     );
   }
 }

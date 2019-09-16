@@ -26,8 +26,9 @@ export default function () {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            width: '100%',
+            width: '100vw',
             height: '100vh',
+            position: 'relative',
           }}
         >
           <AlertsContainer />

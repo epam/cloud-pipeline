@@ -1,6 +1,7 @@
 import React from 'react';
 import {parse} from '../../utilities/query-parameters';
 import PathInput from './path-input';
+import Upload from '../upload';
 import styles from './header.css';
 
 function header({disabled, history}) {
@@ -17,11 +18,19 @@ function header({disabled, history}) {
     <div
       className={styles.header}
     >
-      <PathInput
-        disabled={disabled}
+      <Upload
         path={path}
-        onNavigate={onNavigate}
-      />
+        showUploadArea={false}
+        showButton
+        uploadAreaClassName={styles.uploadArea}
+      >
+        <PathInput
+          className={styles.pathInput}
+          disabled={disabled}
+          path={path}
+          onNavigate={onNavigate}
+        />
+      </Upload>
     </div>
   );
 }

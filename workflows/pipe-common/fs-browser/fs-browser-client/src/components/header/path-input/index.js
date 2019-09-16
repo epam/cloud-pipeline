@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {observer} from 'mobx-react';
 import {Link} from 'react-router-dom';
 import styles from './path-input.css';
@@ -7,12 +8,14 @@ import styles from './path-input.css';
 @observer
 class PathInput extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
     disabled: PropTypes.bool,
     onNavigate: PropTypes.func,
     path: PropTypes.string,
   };
 
   static defaultProps = {
+    className: null,
     disabled: false,
     onNavigate: null,
     path: null,
@@ -112,10 +115,11 @@ class PathInput extends React.Component {
   };
 
   render() {
+    const {className} = this.props;
     return (
       // eslint-disable-next-line
       <div
-        className={styles.container}
+        className={classNames(styles.container, className)}
         onClick={() => this.toggleEditMode(true)}
       >
         {this.renderBreadcrumbs()}
