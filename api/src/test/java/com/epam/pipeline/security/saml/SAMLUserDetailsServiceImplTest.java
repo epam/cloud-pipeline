@@ -21,8 +21,8 @@ import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.exception.AuthenticationException;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -52,6 +52,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,6 +164,26 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @WithMockUser(username = USER_NAME)
+    public void shouldAuthorizeRegisteredUserIfHisGroupsHaveValidGroupStatus() {
+        setValidGroupsStatusForUser();
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @WithMockUser(username = USER_NAME)
+    public void shouldAuthorizeRegisteredUserIfHisGroupsAreNotAtGroupStatus() {
+        setEmptyGroupsStatusListForUser();
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+    }
+
     @Test(expected = UsernameNotFoundException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
@@ -220,10 +241,40 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         userDetailsService.loadUserBySAML(credential);
     }
 
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
+        blockOneGroupForCurrentUser();
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void blockOneGroupForCurrentUser() {
+        user.setUserName(USER_NAME);
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
+        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true);
+        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+                .thenReturn(Collections.singletonList(blockedGroupStatus));
+    }
+
     private void blockCurrentUser() {
         user.setUserName(USER_NAME);
         user.setBlocked(true);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
+    }
+
+    private void setValidGroupsStatusForUser() {
+        user.setUserName(USER_NAME);
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
+        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
+        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+                .thenReturn(Collections.singletonList(validGroupStatus));
+    }
+
+    private void setEmptyGroupsStatusListForUser() {
+        user.setUserName(USER_NAME);
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
+        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+                .thenReturn(Collections.emptyList());
     }
 
     private void switchToExplicitGroupMode() {

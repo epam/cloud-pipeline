@@ -18,6 +18,7 @@ package com.epam.pipeline.security.saml;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -87,9 +88,10 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             List<Long> roles = roleManager.getDefaultRolesIds();
             PipelineUser createdUser = userManager.createUser(userName,
                     roles, groups, attributes, null);
+            LOGGER.debug("Created user {} with groups {}", userName, groups);
+            validateGroupsBlockingStatus(groups, userName);
             UserContext userContext = new UserContext(createdUser.getId(), userName);
             userContext.setGroups(createdUser.getGroups());
-            LOGGER.debug("Created user {} with groups {}", userName, groups);
             userContext.setRoles(createdUser.getRoles());
             return userContext;
         } else {
@@ -104,7 +106,17 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                 loadedUser = userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
                 LOGGER.debug("Updated user groups {} ", groups);
             }
+            validateGroupsBlockingStatus(groups, userName);
             return new UserContext(loadedUser);
+        }
+    }
+
+    private void validateGroupsBlockingStatus(final List<String> groups, final String userName) {
+        final boolean isValidGroupList = userManager.loadGroupBlockingStatus(groups).stream()
+                .noneMatch(GroupStatus::isBlocked);
+        if (!isValidGroupList) {
+            LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
+            throw new LockedException("User is blocked!");
         }
     }
 

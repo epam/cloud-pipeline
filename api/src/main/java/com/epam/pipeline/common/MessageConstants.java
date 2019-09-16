@@ -254,6 +254,7 @@ public final class MessageConstants {
     public static final String USER_GROUP_IS_REQUIRED = "user.group.is.required";
     public static final String ERROR_MUTABLE_ACL_RETURN = "error.mutable.acl.return";
     public static final String ERROR_NO_GROUP_WAS_FOUND = "error.no.group.was.found";
+    public static final String ERROR_GROUP_STATUS_EXISTS = "group.status.exists";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";

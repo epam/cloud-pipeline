@@ -22,7 +22,9 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class UserManagerTest extends AbstractSpringTest {
@@ -41,7 +44,8 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String BODY = "Body";
     private static final Long DEFAULT_STORAGE_ID = null;
     private static final List<Long> DEFAULT_USER_ROLES = Collections.singletonList(2L);
-    private static final List<String> DEFAULT_USER_GROUPS = Collections.emptyList();
+    private static final String TEST_GROUP_NAME_1 = "test_group_1";
+    private static final List<String> DEFAULT_USER_GROUPS = Collections.singletonList(TEST_GROUP_NAME_1);
     private static final Map<String, String> DEFAULT_USER_ATTRIBUTE = Collections.emptyMap();
 
     @Autowired
@@ -52,9 +56,31 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateUser() {
+    public void createUser() {
         Assert.assertNull(userManager.loadUserByName(TEST_USER));
+        final PipelineUser newUser = createDefaultPipelineUser();
+        Assert.assertEquals(TEST_USER.toUpperCase(), newUser.getUserName());
+        Assert.assertEquals(DEFAULT_USER_GROUPS, newUser.getGroups());
+        Assert.assertEquals(DEFAULT_USER_ATTRIBUTE, newUser.getAttributes());
+        Assert.assertEquals(DEFAULT_USER_ROLES, newUser.getRoles()
+                                                       .stream()
+                                                       .map(Role::getId)
+                                                       .collect(Collectors.toList()));
+        Assert.assertEquals(DEFAULT_STORAGE_ID, newUser.getDefaultStorageId());
+    }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void readUser() {
+        Assert.assertNull(userManager.loadUserByName(TEST_USER));
+        final PipelineUser newUser = createDefaultPipelineUser();
+        final PipelineUser loadedUser = userManager.loadUserById(newUser.getId());
+        compareAllFieldOfUsers(newUser, loadedUser);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateUser() {
         final PipelineUser user = createDefaultPipelineUser();
         Assert.assertFalse(user.isBlocked());
 
@@ -85,6 +111,57 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertFalse(notificationDao.loadAllNotifications().isEmpty());
         userManager.deleteUser(user.getId());
         Assert.assertTrue(notificationDao.loadAllNotifications().isEmpty());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void createGroupStatus() {
+        Assert.assertNotNull(userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false));
+        Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateGroupStatus() {
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, true);
+        Assert.assertTrue(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+    }
+
+    private GroupStatus getGroupStatus(final String groupName) {
+        return userManager.loadGroupBlockingStatus(Collections.singletonList(groupName))
+                          .stream()
+                          .findFirst()
+                          .orElse(null);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteGroupStatus() {
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
+        userManager.deleteGroupBlockingStatus(TEST_GROUP_NAME_1);
+        Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void loadGroupStatusForNonexistentGroup() {
+        Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
+    }
+
+    private void compareAllFieldOfUsers(PipelineUser firstUser, PipelineUser secondUser) {
+        Assert.assertEquals(firstUser.getUserName(), secondUser.getUserName());
+        Assert.assertEquals(firstUser.getEmail(), secondUser.getEmail());
+        Assert.assertEquals(firstUser.getId(), secondUser.getId());
+        Assert.assertEquals(firstUser.getGroups(), secondUser.getGroups());
+        Assert.assertEquals(firstUser.getAttributes(), secondUser.getAttributes());
+        Assert.assertEquals(firstUser.getAuthorities(), secondUser.getAuthorities());
+        Assert.assertEquals(firstUser.getRoles(), secondUser.getRoles());
+        Assert.assertEquals(firstUser.getDefaultStorageId(), secondUser.getDefaultStorageId());
     }
 
     private PipelineUser createDefaultPipelineUser() {

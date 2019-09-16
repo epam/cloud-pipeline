@@ -174,7 +174,6 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteUserRolesQuery, id);
     }
 
-
     @Transactional(propagation = Propagation.MANDATORY)
     public void assignRoleToUsers(Long roleId, List<Long> userIds) {
         processBatchQuery(addRoleToUserQuery, roleId, userIds);
