@@ -19,18 +19,19 @@
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
 - [Displaying information on the nested runs](#displaying-information-on-the-nested-runs-within-a-parent-log-form)
-- [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
-- [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
 - [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
 - [Verification of docker/storage permissions when launching a run](#verification-of-dockerstorage-permissions-when-launching-a-run)
 - [Ability to override the queue/PE configuration in the GE configuration](#ability-to-override-the-queuepe-configuration-in-the-ge-configuration)
-- [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
 - [Estimation run's disk size according to the input/common parameters](#estimation-runs-disk-size-according-to-the-inputcommon-parameters)
 - [Disabling of the Global Search form if a corresponding service is not installed](#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed)
 - [Disabling of the FS mounts creation if no FS mount points are registered](#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered)
 - [Displaying resource limit errors during run resuming](#displaying-resource-limit-errors-during-run-resuming)
 - [Object storage creation in despite of that the CORS/Policies could not be applied](#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied)
+- [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
+- [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
+- [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
+- [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
 
 ***
 
@@ -398,55 +399,6 @@ That feature is implemented for the comleted runs too:
 
 More information about nested runs displaying see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-cluster-runs) and [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#general-information).
 
-## `pipe` CLI warnings on the JWT expiration
-
-By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
-
-In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an information on the JWT token expiration:
-
-- When `pipe configure` command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:  
-![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_1.png)
-- When `--version` option is specified - `pipe` prints dates of issue and expiration for the currently used token:  
-![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_2.png)
-- When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
-![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
-
-See more information about `pipe` CLI installation [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
-
-## `pipe` configuration for using NTLM Authentication Proxy
-
-For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
-
-For that, several new options were added to `pipe configure` command:
-
-- `-nt` or `--proxy-ntlm` - flag that enable NTLM proxy support
-- `-nu` or `--proxy-ntlm-user` - username for NTLM proxy authorization
-- `-np` or `--proxy-ntlm-pass` - password for NTLM proxy authorization
-- `-nd` or `--proxy-ntlm-domain` - domain for NTLM proxy authorization
-
-If `--proxy-ntlm` is set, `pipe` will try to get the proxy value from the environment variables or `--proxy` option (`--proxy` option has a higher priority).  
-If `--proxy-ntlm-user` and `--proxy-ntlm-pass` options are not set - user will be prompted for username/password in an interactive manner.  
-
-Valid configuration examples:
-
-- User will be prompted for NTLM Proxy Username, Password and Domain:
-
-```bash
-pipe configure --proxy-ntlm
-...
-Username for the proxy NTLM authentication: user1
-Domain of the user1 user: ''
-Password of the user1 user:
-```
-
-- Use `http://myproxy:3128` as the "original" proxy address. User will not be prompted for NTLM credentials:
-
-```bash
-pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
-```
-
-See more information about `pipe` CLI installation and configure [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md).
-
 ## Environment Modules support for the Cloud Pipeline runs
 
 The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
@@ -515,14 +467,6 @@ You can do it using two new System Parameters at the Launch or the Configuration
 
 More information how to use System Parameters when a job is launched see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-create-a-configuration-that-uses-system-parameter).
 
-## Execution of files uploading via `pipe` without failures in case of lacks read permissions
-
-Previously, `pipe storage cp`/`mv` commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the `pipe` process had reached one of files that was not readable for the `pipe` process, then the whole command was being failed, remaining files did not upload.
-
-In current version, the `pipe` process checks read permission for the "local" source (directories and files) and skip those that are not readable:
-
-![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeCPforNotReadable_1.png)
-
 ## Estimation run's disk size according to the input/common parameters
 
 Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using `STAR` aligner, where the genome index file is 20Gb).
@@ -588,6 +532,73 @@ But the corresponding warning will be displayed to the user like this:
 The storage {storage_name} was created, but certain policies were not applied.
 This can be caused by insufficient permissions.
 ```
+
+## `pipe` CLI warnings on the JWT expiration
+
+By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
+
+In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an information on the JWT token expiration:
+
+- When `pipe configure` command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_1.png)
+- When `--version` option is specified - `pipe` prints dates of issue and expiration for the currently used token:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_2.png)
+- When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
+![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
+
+See more information about `pipe` CLI installation [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## `pipe` configuration for using NTLM Authentication Proxy
+
+For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
+
+For that, several new options were added to `pipe configure` command:
+
+- `-nt` or `--proxy-ntlm` - flag that enable NTLM proxy support
+- `-nu` or `--proxy-ntlm-user` - username for NTLM proxy authorization
+- `-np` or `--proxy-ntlm-pass` - password for NTLM proxy authorization
+- `-nd` or `--proxy-ntlm-domain` - domain for NTLM proxy authorization
+
+If `--proxy-ntlm` is set, `pipe` will try to get the proxy value from the environment variables or `--proxy` option (`--proxy` option has a higher priority).  
+If `--proxy-ntlm-user` and `--proxy-ntlm-pass` options are not set - user will be prompted for username/password in an interactive manner.  
+
+Valid configuration examples:
+
+- User will be prompted for NTLM Proxy Username, Password and Domain:
+
+```bash
+pipe configure --proxy-ntlm
+...
+Username for the proxy NTLM authentication: user1
+Domain of the user1 user: ''
+Password of the user1 user:
+```
+
+- Use `http://myproxy:3128` as the "original" proxy address. User will not be prompted for NTLM credentials:
+
+```bash
+pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
+```
+
+See more information about `pipe` CLI installation and configure [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md).
+
+## Execution of files uploading via `pipe` without failures in case of lacks read permissions
+
+Previously, `pipe storage cp`/`mv` commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the `pipe` process had reached one of files that was not readable for the `pipe` process, then the whole command was being failed, remaining files did not upload.
+
+In current version, the `pipe` process checks read permission for the "local" source (directories and files) and skip those that are not readable:
+
+![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeCPforNotReadable_1.png)
+
+## Run a single command or an interactive session over the SSH protocol via `pipe`
+
+For the certain purposes, it could be conveniently to start an interactive session over the SSH protocol for the job run via the `pipe` CLI.
+
+For such cases, in **`v0.15`** the `pipe ssh` command was implemented. It allows to perform a single command or launch an interactive session for the specified job run:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_1.png)
+
+Or, for example, perform the same single command without launching an interactive session:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)
 
 ***
 
