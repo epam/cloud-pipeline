@@ -35,7 +35,7 @@ _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = logging.ERROR
 
 
-def start(mountpoint, webdav, bucket, buffer, hash_ttl, hash_size, default_mode, mount_options=None):
+def start(mountpoint, webdav, bucket, buffer, cache_ttl, cache_size, default_mode, mount_options=None):
     if mount_options is None:
         mount_options = {}
     try:
@@ -55,7 +55,7 @@ def start(mountpoint, webdav, bucket, buffer, hash_ttl, hash_size, default_mode,
             raise RuntimeError("Cloud Pipeline API should be specified.")
         pipe = CloudPipelineClient(api=api, token=bearer)
         client = S3Client(bucket, pipe=pipe)
-    cache = TTLCache(maxsize=hash_size, ttl=hash_ttl)
+    cache = TTLCache(maxsize=cache_size, ttl=cache_ttl)
     caching_client = CachingFileSystemClient(client, cache)
     buffered_client = BufferedFileSystemClient(caching_client, capacity=buffer)
     fs = PipeFS(client=buffered_client, mode=int(default_mode, 8))
@@ -82,10 +82,10 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--bucket", type=str, required=False, help="Bucket name")
     parser.add_argument("-f", "--buffer", type=int, required=False, default=512,
                         help="Writing buffer size for a single file, MB")
-    parser.add_argument("-t", "--hash-ttl", type=int, required=False, default=60,
-                        help="Listing hash time to live, seconds")
-    parser.add_argument("-s", "--hash-size", type=int, required=False, default=100,
-                        help="Number of simultaneous listing hashes")
+    parser.add_argument("-t", "--cache-ttl", type=int, required=False, default=60,
+                        help="Listing cache time to live, seconds")
+    parser.add_argument("-s", "--cache-size", type=int, required=False, default=100,
+                        help="Number of simultaneous listing caches")
     parser.add_argument("-m", "--mode", type=str, required=False, default="775",
                         help="Default mode for webdav files")
     parser.add_argument("-o", "--options", type=str, required=False,
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer=args.buffer * MB,
-              hash_ttl=args.hash_ttl, hash_size=args.hash_size, default_mode=args.mode,
+              cache_ttl=args.cache_ttl, cache_size=args.cache_size, default_mode=args.mode,
               mount_options=parse_mount_options(args.options))
     except BaseException as e:
         logging.error('Unhandled error: %s' % e.message)
