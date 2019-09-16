@@ -281,13 +281,19 @@ public class TaskMapper {
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
                 .ramGb(getInstanceType(run).getMemory() * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
                 .cpuCores((long) getInstanceType(run).getVCPU())
+                .zones(getPipelineRunZone(run))
                 .build();
     }
 
+    private List<String> getPipelineRunZone(PipelineRun run) {
+        return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
+    }
+
     private List<TesExecutor> createListExecutor(PipelineRun run) {
-        return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
+        return ListUtils.emptyIfNull(Collections.singletonList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
+                .image(run.getDockerImage())
                 .build()));
     }
 
