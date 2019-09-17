@@ -114,8 +114,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesTask getTesTask(String id) {
-        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)));
+    public TesTask getTesTask(String id, TaskView view) {
+        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)), view);
     }
 
     private Long parseRunId(String id) {

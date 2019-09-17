@@ -17,7 +17,7 @@ public interface TesTaskService {
 
     TesCancelTaskResponse cancelTesTask(String id);
 
-    TesTask getTesTask(String id);
+    TesTask getTesTask(String id, TaskView view);
 
     TesServiceInfo getServiceInfo();
 }
