@@ -240,6 +240,16 @@ public class PipelineLauncher {
         if (run.getParentRunId() != null) {
             systemParamsWithValue.put(SystemParams.PARENT_ID, String.valueOf(run.getParentRunId()));
         }
+
+        putIfStringValuePresent(systemParamsWithValue,
+                SystemParams.FSBROWSER_PORT,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_PORT).getValue());
+        putIfStringValuePresent(systemParamsWithValue,
+                SystemParams.FSBROWSER_WD,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_WD).getValue());
+        putIfStringValuePresent(systemParamsWithValue,
+                SystemParams.FSBROWSER_STORAGE,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_TRANSFER).getValue());
         return systemParamsWithValue;
     }
 

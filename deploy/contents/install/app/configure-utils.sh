@@ -1124,7 +1124,7 @@ EOF
         echo "========"
     else
         print_ok "System storage $CP_PREF_STORAGE_SYSTEM_STORAGE_NAME is registered"
-        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "false"
+        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "true"
     fi
     return $call_api_register_system_storage_result
 }

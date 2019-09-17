@@ -1,0 +1,36 @@
+
+plugins {
+  id "com.moowork.node" version "1.1.1"
+}
+
+task npmPrune(type: NpmTask) {
+  args = ['prune']
+}
+
+task clean(type: Delete) {
+  delete("$project.buildDir")
+}
+
+npmInstall.dependsOn npmPrune
+nodeSetup.dependsOn clean
+npmSetup.dependsOn clean
+
+task build(type: NpmTask, dependsOn: npmInstall) {
+  group = 'build'
+  environment = ['CI': 'false']
+  doFirst {
+    delete fileTree("$rootDir/fs-browser/fs-browser/static")
+  }
+  args = ['run', 'build']
+  doLast {
+    copy {
+      from "${project.buildDir}"
+      into "$rootDir/fs-browser/fsbrowser/static"
+    }
+    copy {
+      from "$rootDir/fs-browser/fsbrowser/static/static"
+      into "$rootDir/fs-browser/fsbrowser/static"
+    }
+    delete "$rootDir/fs-browser/fsbrowser/static/static"
+  }
+}

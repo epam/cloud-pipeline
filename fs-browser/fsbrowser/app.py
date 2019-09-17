@@ -14,7 +14,7 @@
 
 import argparse
 import traceback
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 
 from fsbrowser.src.fs_browser_manager import FsBrowserManager
 from fsbrowser.src.logger import BrowserLogger
@@ -34,6 +34,16 @@ def error(message):
         "message": message,
         "status": "ERROR"
     }
+
+
+@app.route('/')
+def root():
+    return app.send_static_file('index.html')
+
+
+@app.route('/<path:path>')
+def static_files(path):
+    return app.send_static_file(path)
 
 
 @app.route('/view')
