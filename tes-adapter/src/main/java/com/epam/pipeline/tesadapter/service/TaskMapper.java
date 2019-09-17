@@ -13,6 +13,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
 import com.epam.pipeline.tesadapter.entity.TesExecutorLog;
 import com.epam.pipeline.tesadapter.entity.TesInput;
@@ -213,18 +214,32 @@ public class TaskMapper {
         return GIB_TO_GIB;
     }
 
-    public TesTask mapToTesTask(PipelineRun run) {
-        return TesTask.builder()
+    public TesTask mapToTesTask(PipelineRun run, TaskView view) {
+        return filterTesTaskWithView(run, view);
+    }
+
+    private TesTask filterTesTaskWithView(PipelineRun run, TaskView view) {
+        final TesTask.TesTaskBuilder tesTask = TesTask.builder()
                 .id(String.valueOf(run.getId()))
-                .name(run.getPodId())
+                .state(createTesState(run));
+        if (view == TaskView.MINIMAL) {
+            return tesTask.build();
+        }
+        tesTask.name(run.getPodId())
                 .resources(createTesResources(run))
                 .executors(createListExecutor(run))
-                .inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
                 .outputs(createTesOutput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
-                .creationTime(run.getStartDate().toString())
-                .logs(createTesTaskLog(run.getId()))
-                .state(createTesState(run))
-                .build();
+                .creationTime(run.getStartDate().toString());
+        if (view == TaskView.BASIC) {
+            return tesTask.build();
+        }
+        tesTask.inputs(createTesInput(ListUtils.emptyIfNull(run.getPipelineRunParameters())))
+                .logs(createTesTaskLog(run.getId()));
+        if (view == TaskView.FULL) {
+            return tesTask.build();
+        } else {
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED));
+        }
     }
 
     private TesState createTesState(PipelineRun run) {
@@ -254,25 +269,23 @@ public class TaskMapper {
     }
 
     private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
-        final TesInput tesInput = new TesInput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesInput.setName(pipelineRunParameter.getName());
-                    tesInput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesInput));
+                .map(pipelineRunParameter ->
+                        TesInput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
-        final TesOutput tesOutput = new TesOutput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesOutput.setName(pipelineRunParameter.getName());
-                    tesOutput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesOutput));
+                .map(pipelineRunParameter ->
+                        TesOutput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private TesResources createTesResources(PipelineRun run) {
@@ -281,13 +294,19 @@ public class TaskMapper {
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
                 .ramGb(getInstanceType(run).getMemory() * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
                 .cpuCores((long) getInstanceType(run).getVCPU())
+                .zones(getPipelineRunZone(run))
                 .build();
     }
 
+    private List<String> getPipelineRunZone(PipelineRun run) {
+        return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
+    }
+
     private List<TesExecutor> createListExecutor(PipelineRun run) {
-        return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
+        return ListUtils.emptyIfNull(Collections.singletonList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
+                .image(run.getDockerImage())
                 .build()));
     }
 

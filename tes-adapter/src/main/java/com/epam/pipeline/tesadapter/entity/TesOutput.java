@@ -3,12 +3,18 @@ package com.epam.pipeline.tesadapter.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.validation.Valid;
 
 @ApiModel(description = "Output describes Task output files.")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class TesOutput {
     @ApiModelProperty(value = "")
     @JsonProperty("name")

@@ -76,4 +76,8 @@ public class CloudPipelineAPIClient {
     public PagedResult<List<PipelineRun>> filterRuns(PagingRunFilterVO filterVO, Boolean loadStorageLinks) {
         return QueryUtils.execute(cloudPipelineAPI.filterRuns(filterVO, loadStorageLinks));
     }
+
+    public AbstractCloudRegion loadRegion(final Long regionId){
+        return QueryUtils.execute(cloudPipelineAPI.loadRegion(regionId));
+    }
 }
