@@ -5,6 +5,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
@@ -74,8 +75,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     }
 
     @Override
-    public TesTask getTesTask(String id) {
-        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)));
+    public TesTask getTesTask(String id, TaskView view) {
+        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)), view);
     }
 
     private Long parseRunId(String id) {
