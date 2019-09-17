@@ -108,7 +108,8 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --distpath /pipe-cli/dist/win64 \
             pipe.py \
             --add-data "/pipe-cli/ntlmaps;ntlmaps" \
-            --version-file /tmp/pipe-win-version-info.txt && \
+            --version-file /tmp/pipe-win-version-info.txt \
+            --icon /pipe-cli/res/cloud-pipeline.ico && \
 cd /pipe-cli/dist/win64 && \
 zip -r -q pipe.zip pipe
 EOL
