@@ -41,7 +41,7 @@ public class TesTaskServiceImpl implements TesTaskService {
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final TaskMapper taskMapper;
     private final MessageHelper messageHelper;
-
+    private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
     private static final String DEFAULT_PAGE_TOKEN = "1";
@@ -76,7 +76,8 @@ public class TesTaskServiceImpl implements TesTaskService {
             pipelineRunList = filterRunsWithOutNamePrefix(pageSize, pageToken);
         }
         tesListTasksResponse.setTasks(pipelineRunList.stream().map(pipelineRun ->
-                taskMapper.mapToTesTask(pipelineRun, view)).collect(Collectors.toList()));
+                taskMapper.mapToTesTask(pipelineRun, Optional.ofNullable(view).orElse(DEFAULT_TASK_VIEW)))
+                .collect(Collectors.toList()));
         return tesListTasksResponse;
     }
 
