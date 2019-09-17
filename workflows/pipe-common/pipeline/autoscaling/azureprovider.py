@@ -56,17 +56,19 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                      num_rep, time_rep, kube_ip, kubeadm_token):
         try:
             ins_key = utils.read_ssh_key(ins_key)
-            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token)
+            swap_size = utils.get_swap_size(self.zone, ins_type, is_spot, "AZURE")
+            user_data_script = utils.get_user_data_script(self.zone, ins_type, ins_img, kube_ip, kubeadm_token,
+                                                          swap_size)
             instance_name = "az-" + uuid.uuid4().hex[0:16]
 
             if not is_spot:
                 self.__create_public_ip_address(instance_name, run_id)
                 self.__create_nic(instance_name, run_id)
                 return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
-                                        ins_key, "pipeline", kms_encyr_key_id)
+                                        ins_key, "pipeline", swap_size)
             else:
                 return self.__create_low_priority_vm(instance_name, run_id, ins_type, ins_img, ins_hdd,
-                                                     user_data_script, ins_key, "pipeline")
+                                                     user_data_script, ins_key, "pipeline", swap_size)
         except Exception as e:
             self.__delete_all_by_run_id(run_id)
             raise RuntimeError(e)
@@ -277,7 +279,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         return disk_type
 
     def __create_vm(self, instance_name, run_id, instance_type, instance_image, disk, user_data_script,
-                  ssh_pub_key, user, kms_encyr_key_id):
+                  ssh_pub_key, user, swap_size):
         nic = self.network_client.network_interfaces.get(
             self.resource_group_name,
             instance_name + '-nic'
@@ -289,9 +291,8 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             image_name
         )
 
-        storage_profile = self.__get_storage_profile(disk, image, instance_type)
-        storage_profile["dataDisks"][0]["name"] = instance_name + "-data"
-
+        storage_profile = self.__get_storage_profile(disk, image, instance_type,
+                                                     instance_name=instance_name, swap_size=swap_size)
         vm_parameters = {
             'location': self.zone,
             'os_profile': self.__get_os_profile(instance_name, ssh_pub_key, user, user_data_script, 'computer_name'),
@@ -315,7 +316,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         return instance_name, private_ip
 
     def __create_low_priority_vm(self, scale_set_name, run_id, instance_type, instance_image,
-                                 disk, user_data_script, ssh_pub_key, user):
+                                 disk, user_data_script, ssh_pub_key, user, swap_size):
 
         resource_group, image_name = AzureInstanceProvider.get_res_grp_and_res_name_from_string(instance_image, 'images')
 
@@ -336,11 +337,12 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 "automaticOSUpgrade": False
             },
             "properties": {
+                "overprovision": False,
                 "virtualMachineProfile": {
                     'priority': 'Low',
                     'evictionPolicy': 'delete',
                     'os_profile': self.__get_os_profile(scale_set_name, ssh_pub_key, user, user_data_script, 'computer_name_prefix'),
-                    'storage_profile': self.__get_storage_profile(disk, image, instance_type),
+                    'storage_profile': self.__get_storage_profile(disk, image, instance_type, swap_size=swap_size),
                     "network_profile": {
                         "networkInterfaceConfigurations": [
                             {
@@ -387,9 +389,6 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 node_parameters
             )
             creation_result.result()
-
-            start_result = service.start(self.resource_group_name, instance_name)
-            start_result.wait()
         except CloudError as client_error:
             self.__delete_all_by_run_id(node_parameters['tags']['Name'])
             error_message = client_error.__str__()
@@ -418,7 +417,14 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         }
         return profile
 
-    def __get_storage_profile(self, disk, image, instance_type):
+    def __get_storage_profile(self, disk, image, instance_type, instance_name=None, swap_size=None):
+        disk_type = self.__get_disk_type(instance_type)
+        disk_name = None if instance_name is None else instance_name + "-data"
+        disk_lun = 62
+        data_disks = [self.__get_data_disk(disk, disk_type, disk_lun, disk_name=disk_name)]
+        if swap_size is not None and swap_size > 0:
+            swap_name = None if instance_name is None else instance_name + "-swap"
+            data_disks.append(self.__get_data_disk(swap_size, disk_type, disk_lun + 1, disk_name=swap_name))
         return {
             'image_reference': {
                 'id': image.id
@@ -426,21 +432,25 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             "osDisk": {
                 "caching": "ReadWrite",
                 "managedDisk": {
-                    "storageAccountType": self.__get_disk_type(instance_type)
+                    "storageAccountType": disk_type
                 },
                 "createOption": "FromImage"
             },
-            "dataDisks": [
-                {
-                    "diskSizeGB": disk,
-                    "lun": 63,
-                    "createOption": "Empty",
-                    "managedDisk": {
-                        "storageAccountType": self.__get_disk_type(instance_type)
-                    }
-                }
-            ]
+            "dataDisks": data_disks
         }
+
+    def __get_data_disk(self, size, disk_type, lun, disk_name=None):
+        disk = {
+            "diskSizeGB": size,
+            "lun": lun,
+            "createOption": "Empty",
+            "managedDisk": {
+                "storageAccountType": disk_type
+            }
+        }
+        if disk_name is not None:
+            disk["name"] = disk_name
+        return disk
 
     def __get_instance_name_and_private_ip_from_vmss(self, scale_set_name):
         vm_vmss_id = None

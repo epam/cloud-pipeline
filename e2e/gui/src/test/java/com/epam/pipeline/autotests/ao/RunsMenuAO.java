@@ -164,7 +164,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .find(withText(runId))
                 .closest(".ant-table-row")
                 .findAll("td")
-                .get(0)
+                .get(1)
                 .find("i")
                 .shouldHave(cssClass("status-icon__icon-yellow"));
         return this;

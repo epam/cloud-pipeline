@@ -64,7 +64,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
             public boolean apply(final WebElement element) {
                 return contains(nodeLabel("MASTER"))
                         .or(contains(nodeLabel("EDGE")))
-                        .or(contains(nodeLabel("ELASTICSEARCH")))
+                        .or(contains(nodeLabel("CP-SEARCH-ELK")))
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
                         .test(element);

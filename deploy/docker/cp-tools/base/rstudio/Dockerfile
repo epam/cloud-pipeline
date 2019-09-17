@@ -91,3 +91,6 @@ RUN rm -f /etc/cont-init.d/userconf
 
 ADD    post_commit.sh /root/post_commit.sh
 RUN    chmod +x /root/post_commit.sh
+
+# Install some of the common R libraries
+RUN R -e 'install.packages(c("sparklyr", "tidyverse", "magrittr"))' ;

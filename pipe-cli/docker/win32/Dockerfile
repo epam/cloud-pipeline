@@ -32,7 +32,7 @@ ARG PYINSTALLER_VERSION=3.3
 RUN set -x \
     && dpkg --add-architecture i386 \
     && apt-get update -qy \
-    && apt-get install --no-install-recommends -qfy software-properties-common git \
+    && apt-get install --no-install-recommends -qfy software-properties-common git gettext \
     && add-apt-repository ppa:wine/wine-builds \
     && apt-get update -qy \
     && apt-get install --no-install-recommends -qfy $WINE_VERSION winetricks wget \

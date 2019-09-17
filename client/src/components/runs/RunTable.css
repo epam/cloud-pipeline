@@ -106,3 +106,13 @@ td.run-row {
 .table th {
   white-space: nowrap;
 }
+
+.expand-icon-column {
+  padding: 0 !important;
+  max-width: 23px;
+}
+
+.expand-icon-column span[class*=ant-table-row-expand-icon]{
+  margin-left: 4px;
+  margin-right: 4px !important;
+}

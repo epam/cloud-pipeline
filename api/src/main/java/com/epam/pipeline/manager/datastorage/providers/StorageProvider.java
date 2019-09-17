@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -37,6 +38,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
 
     String createStorage(T storage) throws DataStorageException;
+
+    ActionStatus postCreationProcessing(T storage);
 
     void deleteStorage(T dataStorage) throws DataStorageException;
 

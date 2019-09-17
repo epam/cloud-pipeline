@@ -23,10 +23,6 @@
                 {
                     "name": "swap_ratio",
                     "path": "0.01"
-                },
-                {
-                    "name": "swap_location",
-                    "path": "/ebs/swap/swapfile"
                 }
             ],
             "security_group_ids": [

@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment';
+import NotificationView from '../../special/notifications/controls/NotificationView';
 import styles from './SystemNotification.css';
 
 @inject(({notifications}) => ({
@@ -218,7 +219,11 @@ export default class NotificationCenter extends React.Component {
           }
           visible={!!blockingNotification}>
           {
-            blockingNotification ? blockingNotification.body : null
+            blockingNotification ? (
+              <NotificationView
+                text={blockingNotification.body}
+              />
+            ) : null
           }
         </Modal>
       </div>

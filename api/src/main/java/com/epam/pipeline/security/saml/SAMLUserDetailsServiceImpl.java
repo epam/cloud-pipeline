@@ -18,8 +18,10 @@ package com.epam.pipeline.security.saml;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
@@ -31,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.saml.SAMLCredential;
 import org.springframework.security.saml.userdetails.SAMLUserDetailsService;
@@ -56,8 +59,8 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     @Value("#{'${saml.user.attributes}'.split(',')}")
     private Set<String> samlAttributes;
 
-    @Value("${saml.user.auto.create: false}")
-    private boolean autoCreateUsers;
+    @Value("${saml.user.auto.create: EXPLICIT}")
+    private SamlUserRegisterStrategy autoCreateUsers;
 
     @Autowired
     private UserManager userManager;
@@ -68,6 +71,9 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
     @Override
     public UserContext loadUserBySAML(SAMLCredential credential) {
         String userName = credential.getNameID().getValue().toUpperCase();
@@ -77,27 +83,40 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         PipelineUser loadedUser = userManager.loadUserByName(userName);
         if (loadedUser == null) {
             String message = messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName);
-            if (!autoCreateUsers) {
-                throw new UsernameNotFoundException(message);
-            }
+            checkAbilityToCreate(userName, groups);
             LOGGER.debug(message);
             List<Long> roles = roleManager.getDefaultRolesIds();
             PipelineUser createdUser = userManager.createUser(userName,
                     roles, groups, attributes, null);
+            LOGGER.debug("Created user {} with groups {}", userName, groups);
+            validateGroupsBlockingStatus(groups, userName);
             UserContext userContext = new UserContext(createdUser.getId(), userName);
             userContext.setGroups(createdUser.getGroups());
-            LOGGER.debug("Created user {} with groups {}", userName, groups);
             userContext.setRoles(createdUser.getRoles());
             return userContext;
         } else {
             LOGGER.debug("Found user by name {}", userName);
+            if (loadedUser.isBlocked()) {
+                LOGGER.debug("User {} is blocked!", userName);
+                throw new LockedException("User is blocked!");
+            }
             loadedUser.setUserName(userName);
             List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
             if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
                 loadedUser = userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
                 LOGGER.debug("Updated user groups {} ", groups);
             }
+            validateGroupsBlockingStatus(groups, userName);
             return new UserContext(loadedUser);
+        }
+    }
+
+    private void validateGroupsBlockingStatus(final List<String> groups, final String userName) {
+        final boolean isValidGroupList = userManager.loadGroupBlockingStatus(groups).stream()
+                .noneMatch(GroupStatus::isBlocked);
+        if (!isValidGroupList) {
+            LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
+            throw new LockedException("User is blocked!");
         }
     }
 
@@ -143,5 +162,21 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             }
         }
         return parsedAttributes;
+    }
+
+    private void checkAbilityToCreate(final String userName, final List<String> groups) {
+        switch (autoCreateUsers) {
+            case EXPLICIT:
+                throw new UsernameNotFoundException(
+                        messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+            case EXPLICIT_GROUP:
+                if (!permissionManager.isGroupRegistered(groups)) {
+                    throw new UsernameNotFoundException(
+                            messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, userName));
+                }
+                break;
+            default:
+                break;
+        }
     }
 }

@@ -29,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opensaml.common.SAMLException;
 import org.opensaml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.core.Authentication;
@@ -42,7 +43,9 @@ import com.epam.pipeline.security.ExternalServiceEndpoint;
 public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
 
     private static final int RESPONSE_SKEW = 1200;
-    private static final int MAX_AUTHENTICATION_AGE = 93600;
+
+    @Value("${saml.authn.max.authentication.age:93600}")
+    private Long maxAuthentificationAge;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -88,8 +91,8 @@ public class SAMLProxyAuthenticationProvider implements AuthenticationProvider {
             CustomSamlClient client = CustomSamlClient.fromMetadata(endpointId, metadataReader,
                                                                     RESPONSE_SKEW);
 
+            client.setMaxAuthenticationAge(maxAuthentificationAge);
             client.validate(decoded);
-            client.setMaxAuthenticationAge(MAX_AUTHENTICATION_AGE);
             return auth;
 
         } catch (IOException e) {

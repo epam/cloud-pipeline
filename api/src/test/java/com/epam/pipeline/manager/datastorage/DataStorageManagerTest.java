@@ -106,7 +106,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
     }
@@ -123,7 +123,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                 DataStorageType.S3, PATH, STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS
         );
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
         Folder newFolder = new Folder();
         newFolder.setName("newtestfolder");
@@ -151,7 +151,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                                                                             PATH, WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
     }
@@ -213,7 +213,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setShared(true);
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         String url = storageManager.generateSharedUrlForStorage(saved.getId());
         Assert.assertEquals(SHARED_BASE_URL + saved.getId(), url);
     }
@@ -224,7 +224,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
                 PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageManager.generateSharedUrlForStorage(saved.getId());
     }
 
@@ -234,7 +234,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.NFS,
                 PATH, WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
-        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false);
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageVO.setId(saved.getId());
         storageVO.setMountPoint(FORBIDDEN_MOUNT_POINT);
         storageManager.update(storageVO);

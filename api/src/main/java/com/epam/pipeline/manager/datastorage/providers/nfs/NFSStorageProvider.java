@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -153,6 +154,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         }
 
         return storage.getPath();
+    }
+
+    @Override
+    public ActionStatus postCreationProcessing(final NFSDataStorage storage) {
+        return ActionStatus.notSupported();
     }
 
     private synchronized File mount(NFSDataStorage dataStorage) {

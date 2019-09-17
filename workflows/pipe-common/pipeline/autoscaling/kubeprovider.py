@@ -211,32 +211,3 @@ class KubeProvider(object):
         node.labels[RUN_ID_LABEL] = new_id
         node.labels[CLOUD_REGION_LABEL] = cloud_region
         node.update()
-
-    # There is a strange behavior, when you create scale set with one node,
-    # several node will be created at first and then only one of it will stay as running
-    # Some times other nodes can rich startup script before it will be terminated, so nodes will join a kube cluster
-    # In order to get rid of this 'phantom' nodes
-    # this method will delete nodes with name like computerNamePrefix + 000000
-    def delete_phantom_low_priority_kubernetes_node(self, ins_id):
-        low_priority_search = re.search(LOW_PRIORITY_INSTANCE_ID_TEMPLATE, ins_id)
-        if low_priority_search:
-            scale_set_name = low_priority_search.group(1)
-
-            # according to naming of azure scale set nodes: computerNamePrefix + hex postfix (like 000000)
-            # delete node that opposite to ins_id
-            nodes_to_delete = [scale_set_name + '%0*x' % (6, x) for x in range(0, 15)]
-            for node_to_delete in nodes_to_delete:
-
-                if node_to_delete == ins_id:
-                    continue
-
-                nodes = pykube.Node.objects(self.api).filter(field_selector={'metadata.name': node_to_delete})
-                for node in nodes.response['items']:
-                    obj = {
-                        "apiVersion": "v1",
-                        "kind": "Node",
-                        "metadata": {
-                            "name": node["metadata"]["name"]
-                        }
-                    }
-                    pykube.Node(self.api, obj).delete()

@@ -58,7 +58,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
                 # Core API
                 -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
-                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to aut register all users that passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions (default: false)
+                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
+                -env CP_API_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab
@@ -66,6 +67,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_GITLAB_SLO_TARGET_URL= \                    # Sets idp_slo_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"
                 -env CP_GITLAB_SSO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_sso_target_url (default: "/saml/sso")
                 -env CP_GITLAB_SLO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_slo_target_url (default: "/saml/sso")
+                -env CP_GITLAB_IDP_CERT_PATH= \                     # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+                -env CP_GITLAB_EXTERNAL_URL= \                      # Allows to specify a custom value for the gitlab's "external_url". This is used as a base URL for the repositories clone URLs. This value does not affect the gitlab's listen port. It will listen on $CP_GITLAB_INTERNAL_PORT(Default: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT})
 
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
@@ -93,6 +96,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Share Service
                 -env CP_SHARE_SRV_SAML_ID_TRAIL = \                 # SAML partner ID will for Share Service be constructed as {CP_SHARE_SRV_EXTERNAL_HOST}:{CP_SHARE_SRV_EXTERNAL_PORT} and this parameter 
                 -env CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS = \            # SAML claims that shall be used as ROLEs while parsing user info receinved from IDP
+                -env CP_SHARE_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
 
                 # EDGE Service
                 -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)

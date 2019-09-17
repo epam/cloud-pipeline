@@ -16,6 +16,7 @@ from functools import update_wrapper
 import base64
 import click
 import json
+import jwt
 import os
 import pytz
 import sys
@@ -153,14 +154,18 @@ class Config(object):
                     'https': self.proxy,
                     'ftp': self.proxy}
 
-    def build_ntlm_module_path(self):
+    @classmethod
+    def get_base_source_dir(cls):
+        return sys._MEIPASS if is_frozen() else os.path.dirname(os.path.abspath(__file__))
+
+    def build_inner_module_path(self, module):
         # Setup pipe executable path
         # Both frozen and plain distributions: https://stackoverflow.com/a/42615559
-        if is_frozen():
-            pipe_path = sys._MEIPASS
-        else:
-            pipe_path = os.path.dirname(os.path.abspath(__file__))
-        return os.path.join(pipe_path, "ntlmaps/ntlmaps")
+        pipe_path = self.get_base_source_dir()
+        return os.path.join(pipe_path, module)
+
+    def build_ntlm_module_path(self):
+        self.build_inner_module_path("ntlmaps/ntlmaps")
 
     @classmethod
     def store(cls, access_key, api, timezone, proxy,
@@ -224,6 +229,14 @@ class Config(object):
     @classmethod
     def instance(cls, raise_config_not_found_exception=True):
         return cls(raise_config_not_found_exception)
+
+    def get_current_user(self):
+        if not self.access_key:
+            raise RuntimeError('Access token is not specified. Cannot get user info.')
+        user_info = jwt.decode(self.access_key, verify=False)
+        if 'sub' in user_info:
+            return user_info['sub']
+        raise RuntimeError('User information is not specified to access token is invalid.')
 
     def timezone(self):
         if self.tz == 'utc':
