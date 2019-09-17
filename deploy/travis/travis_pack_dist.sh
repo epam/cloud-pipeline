@@ -54,6 +54,7 @@ cd ..
                     -x pipe-cli:build \
                     -x pipe-cli:buildLinux \
                     -x pipe-cli:buildWin \
+                    -x fs-browser:build \
                     -Pfast \
                     --no-daemon
 

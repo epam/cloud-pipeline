@@ -79,7 +79,7 @@ class Upload extends React.Component {
                 styles.container,
                 {
                   [styles.drop]: !!drop,
-                }
+                },
               )
             }
             onDragLeave={this.onDragLeave}
