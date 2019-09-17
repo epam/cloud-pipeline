@@ -80,7 +80,7 @@ if token then
     if not jwt_obj["verified"] then
         ngx.header['Set-Cookie'] = 'bearer=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
         ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.log(ngx.WARN, jwt_obj.reason)
+        ngx.log(ngx.ERR, 'Cannot verify a token: ' .. jwt_obj.reason)
         ngx.exit(ngx.HTTP_UNAUTHORIZED)
     end
 
@@ -93,6 +93,7 @@ if token then
     -- Fail if the initial URI does have "/fsbrowser/<RUN_ID>" parts
     local uri_parts_len = arr_length(uri_parts)
     if (uri_parts_len < 2) then
+        ngx.log(ngx.ERR, 'FSBrowser URI length is less then 2: ' .. uri_raw)
         ngx.status = ngx.HTTP_NOT_FOUND
         ngx.exit(ngx.HTTP_NOT_FOUND)
         return
@@ -101,6 +102,7 @@ if token then
     local run_id = uri_parts[2]
     -- Fail if the <RUN_ID> in the URI is not a number
     if not is_int(run_id) then
+        ngx.log(ngx.ERR, 'Run ID in the FSBrowser URI is not a number. Run ID: ' .. run_id .. ', URI: ' .. uri_raw)
         ngx.status = ngx.HTTP_NOT_FOUND
         ngx.exit(ngx.HTTP_NOT_FOUND)
         return
@@ -131,6 +133,7 @@ if token then
         local run_api_token = os.getenv("API_TOKEN")
         -- Fail if the API connection parameters cannot be retrieved from the environment
         if not run_api_url or not run_api_token then
+            ngx.log(ngx.ERR, 'Cannot get API or API_TOKEN environment variables')
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -150,7 +153,7 @@ if token then
 
         -- Fail if the request was not successful
         if not res then
-            ngx.log(ngx.ERR, err)
+            ngx.log(ngx.ERR, 'Failed to request API for the Pod IP and SSH Pass. API: ' .. run_api_url .. ', Error: ' .. err)
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -160,8 +163,9 @@ if token then
         local cjson = require "cjson"
         local data = cjson.decode(res.body)
         if not dict_contains(data, 'payload') or 
-        not dict_contains(data['payload'], 'sshPassword') or 
-        not dict_contains(data['payload'], 'podIP') then
+           not dict_contains(data['payload'], 'sshPassword') or 
+           not dict_contains(data['payload'], 'podIP') then
+            ngx.log(ngx.ERR, 'Cannot get podIP and sshPassword from the API response')
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
             return
@@ -176,9 +180,10 @@ if token then
     else
         -- If we still have Pod IP and SSH Pass cached - let's reuse it, before calling API
         -- Cookie is formatted as IP:PASS
-        local pod_cookie_parts =  split_str(pod_cookie_val, ':')
+        local pod_cookie_parts = split_str(pod_cookie_val, ':')
         local pod_cookie_parts_len = arr_length(pod_cookie_parts)
         if (pod_cookie_parts_len ~= 2) then
+            ngx.log(ngx.ERR, 'Cannot parse cookie ' .. pod_cookie_name .. ' value ' .. pod_cookie_val .. 'into IP and Pass')
             ngx.header['Set-Cookie'] = pod_cookie_name .. '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
             ngx.status = ngx.HTTP_UNAUTHORIZED
             ngx.exit(ngx.HTTP_UNAUTHORIZED)
