@@ -42,7 +42,7 @@ export default class AvailableStoragesBrowser extends Component {
     if (this.props.onSave) {
       this.props.onSave(
         this.state.selectedStorages.length === this.props.availableStorages.length
-          ? null : this.getStoragesIds(this.state.selectedStorages)
+          ? null : this.state.selectedStorages
       );
     }
   };
@@ -62,10 +62,10 @@ export default class AvailableStoragesBrowser extends Component {
     event.stopPropagation();
 
     const alreadySelected = this.state.selectedStorages
-      .filter(s => s.name === storage.name).length > 0;
+      .filter(s => +s === +(storage.id)).length > 0;
     const selectedStorages = this.state.selectedStorages;
     if (alreadySelected) {
-      selectedStorages.splice(selectedStorages.indexOf(storage), 1);
+      selectedStorages.splice(selectedStorages.indexOf(+(storage.id)), 1);
     } else {
       selectedStorages.push(storage);
     }
@@ -73,7 +73,10 @@ export default class AvailableStoragesBrowser extends Component {
   };
 
   selectAll = () => {
-    this.setState({selectedStorages: this.props.availableStorages, searchString: null});
+    this.setState({
+      selectedStorages: (this.props.availableStorages || []).map(s => +(s.id)),
+      searchString: null
+    });
   };
 
   clearSelection = () => {
@@ -82,11 +85,7 @@ export default class AvailableStoragesBrowser extends Component {
 
   itemIsSelected = (item) => {
     return this.state.selectedStorages &&
-      this.state.selectedStorages.filter(p => p.name === item.name).length > 0;
-  };
-
-  getStoragesIds = (storages) => {
-    return (storages || []).map(storage => storage.id);
+      this.state.selectedStorages.filter(p => p === +(item.id)).length > 0;
   };
 
   @computed
