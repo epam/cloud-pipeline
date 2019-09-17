@@ -28,14 +28,28 @@ export function plural (count, itemName) {
 
 export function parse (string) {
   try {
-    const obj = JSON.parse(string);
+    let obj = JSON.parse(string);
     if (!obj) {
       return null;
     }
-    if (Array.isArray(obj)) {
-      return obj;
+    if (!Array.isArray(obj)) {
+      obj = [obj];
     }
-    return [obj];
+    const keys = [];
+    for (let i = 0; i < obj.length; i++) {
+      const ownKeys = Object.keys(obj[i]);
+      for (let j = 0; j < ownKeys.length; j++) {
+        const key = ownKeys[j];
+        if (obj[i].hasOwnProperty(key) && keys.indexOf(key) === -1) {
+          keys.push(key);
+        }
+      }
+    }
+    return {
+      keys,
+      items: obj,
+      length: obj.length
+    };
   } catch (_) {}
   return null;
 }

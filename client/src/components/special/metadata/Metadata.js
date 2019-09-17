@@ -316,18 +316,19 @@ export default class Metadata extends localization.LocalizedReactComponent {
       addKey: null,
       editableKeyIndex: null,
       editableValueIndex: null,
-      editableText: null
+      editableText: null,
+      isJson: false,
     });
   };
 
-  onMetadataEditStarted = (field, index, value) => () => {
+  onMetadataEditStarted = (field, index, value, isJson = false) => () => {
     if (this.props.readOnly) {
       return;
     }
     if (field === 'key') {
-      this.setState({addKey: null, editableKeyIndex: index, editableValueIndex: null, editableText: value});
+      this.setState({addKey: null, isJson: false, editableKeyIndex: index, editableValueIndex: null, editableText: value});
     } else if (field === 'value') {
-      this.setState({addKey: null, editableKeyIndex: null, editableValueIndex: index, editableText: value});
+      this.setState({addKey: null, isJson, editableKeyIndex: null, editableValueIndex: index, editableText: value});
     }
   };
 
@@ -608,6 +609,18 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     }
     if (isJson(metadataItem.value)) {
+      const onEditModeChanged = (editMode) => {
+        if (editMode) {
+          this.onMetadataEditStarted(
+            'value',
+            metadataItem.index,
+            metadataItem.value,
+            true
+          )();
+        } else {
+          this.saveMetadata({index: metadataItem.index, field: 'value'})();
+        }
+      };
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
@@ -615,7 +628,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
               disabled={this.props.readOnly}
               value={metadataItem.value}
               editMode={this.state.editableValueIndex === metadataItem.index}
-              onEditModeChange={this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)}
+              onChange={this.onMetadataChange}
+              onEditModeChange={onEditModeChanged}
             />
           </td>
         </tr>

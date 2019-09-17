@@ -16,20 +16,24 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {
   Button,
-  Row,
+  Row
 } from 'antd';
 import {isJson, parse, plural} from './utilities';
 import styles from './items-table.css';
 
 export {isJson};
 
+@observer
 class ItemsTable extends React.Component {
   static propTypes = {
     disabled: PropTypes.bool,
     editMode: PropTypes.bool,
     value: PropTypes.string,
+    onChange: PropTypes.func,
     onEditModeChange: PropTypes.func.isRequired
   };
 
@@ -37,6 +41,7 @@ class ItemsTable extends React.Component {
     expanded: false
   };
 
+  @computed
   get items () {
     const {value} = this.props;
     return parse(value);
@@ -46,6 +51,51 @@ class ItemsTable extends React.Component {
     e.stopPropagation();
     e.preventDefault();
     this.setState({expanded: expand});
+  };
+
+  renderTable = () => {
+    if (this.items.length === 0) {
+      return null;
+    }
+    return (
+      <div
+        className={styles.tableContainer}
+      >
+        <table
+          className={styles.table}
+        >
+          <tbody>
+            <tr>
+              {
+                this.items.keys.map(key => (
+                  <th key={key}>
+                    {key}
+                  </th>
+                ))
+              }
+            </tr>
+            {
+              this.items.items.map((item, id) => (
+                <tr
+                  key={id}
+                  className={styles.item}
+                >
+                  {
+                    this.items.keys.map(key => (
+                      <td
+                        key={key}
+                      >
+                        <span>{item[key]}</span>
+                      </td>
+                    ))
+                  }
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    );
   };
 
   render () {
@@ -108,6 +158,7 @@ class ItemsTable extends React.Component {
             Close
           </Button>
         </Row>
+        {this.renderTable()}
       </div>
     );
   }
