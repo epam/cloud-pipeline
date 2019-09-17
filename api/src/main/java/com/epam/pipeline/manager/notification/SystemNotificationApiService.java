@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
 import com.epam.pipeline.entity.notification.SystemNotification;
+import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
+import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -70,5 +72,9 @@ public class SystemNotificationApiService {
 
     public List<SystemNotification> loadActiveNotifications(Date after) {
         return systemNotificationManager.loadActiveNotifications(after);
+    }
+
+    public SystemNotificationConfirmation confirmNotification(final SystemNotificationConfirmationRequest request) {
+        return systemNotificationManager.confirmNotification(request);
     }
 }

@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotBlank;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -450,6 +451,8 @@ public class SystemPreferences {
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
                                                                                      MISC_GROUP, isGreaterThan(0));
+    public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
+            "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP, isNotBlank);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",

@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern dataValuePatten = Pattern.compile("@VALUE@");
+    private Pattern dataValuePattern = Pattern.compile("@VALUE@");
     private Pattern entitiesValuePatten = Pattern.compile("@ENTITIES@");
 
     private String createMetadataItemQuery;
@@ -64,9 +64,14 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     public void uploadMetadataItemKey(EntityVO entityVO, String key, String value, String type) {
         String query = dataKeyPattern.matcher(uploadMetadataItemKeyQuery)
                 .replaceFirst(String.format("'{%s}'", key));
-        query = dataValuePatten.matcher(query)
-                .replaceFirst(String.format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
+        String escapedValue = escapeQuotes(escapeQuotes(value));
+        query = dataValuePattern.matcher(query)
+                .replaceFirst(String.format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, escapedValue));
         getNamedParameterJdbcTemplate().update(query, MetadataParameters.getParameters(entityVO));
+    }
+
+    private String escapeQuotes(final String value) {
+        return value.replaceAll("\"", "\\\\\"");
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
