@@ -28,6 +28,7 @@ import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageT
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
 import {Alert, Button, Col, Icon, Input, message, Modal, Row} from 'antd';
+import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel/SplitPanel';
 import localization from '../../../utils/localization';
@@ -606,7 +607,20 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </tr>
       );
     }
-    if (this.state.editableValueIndex === metadataItem.index) {
+    if (isJson(metadataItem.value)) {
+      valueElement = (
+        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+          <td colSpan={6}>
+            <ItemsTable
+              disabled={this.props.readOnly}
+              value={metadataItem.value}
+              editMode={this.state.editableValueIndex === metadataItem.index}
+              onEditModeChange={this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)}
+            />
+          </td>
+        </tr>
+      );
+    } else if (this.state.editableValueIndex === metadataItem.index) {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>

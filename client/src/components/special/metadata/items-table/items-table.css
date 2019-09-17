@@ -1,0 +1,15 @@
+.container {
+  padding: 5px;
+}
+
+.link,
+.link:hover,
+.link:visited,
+.link:active {
+  color: #108ee9;
+  text-decoration: underline;
+}
+
+.actions button {
+  margin-left: 5px;
+}

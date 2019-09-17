@@ -14,3 +14,28 @@
  * limitations under the License.
  */
 
+export function isJson (string) {
+  try {
+    const obj = JSON.parse(string);
+    return !!obj;
+  } catch (_) {}
+  return false;
+}
+
+export function plural (count, itemName) {
+  return `${count} ${itemName}${count !== 0 ? 's' : ''}`;
+}
+
+export function parse (string) {
+  try {
+    const obj = JSON.parse(string);
+    if (!obj) {
+      return null;
+    }
+    if (Array.isArray(obj)) {
+      return obj;
+    }
+    return [obj];
+  } catch (_) {}
+  return null;
+}
