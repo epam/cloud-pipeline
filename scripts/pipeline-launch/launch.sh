@@ -829,7 +829,7 @@ fi
 install_pip_package PipelineCLI
 
 #install FS Browser
-if [ ! "$CP_FSBROWSER_SKIP_INSTALL" ]; then
+if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo "Setup FSBrowser"
       echo "-"
 

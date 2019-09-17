@@ -241,6 +241,8 @@ public class PipelineLauncher {
             systemParamsWithValue.put(SystemParams.PARENT_ID, String.valueOf(run.getParentRunId()));
         }
 
+        systemParamsWithValue.put(SystemParams.FSBROWSER_ENABLED,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_ENABLED).getValue());
         putIfStringValuePresent(systemParamsWithValue,
                 SystemParams.FSBROWSER_PORT,
                 preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_PORT).getValue());

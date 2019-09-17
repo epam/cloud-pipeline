@@ -137,12 +137,14 @@ public class SystemPreferences {
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
      */
+    public static final BooleanPreference STORAGE_FSBROWSER_ENABLED =
+            new BooleanPreference("storage.fsbrowser.enabled", true, DATA_STORAGE_GROUP, pass);
     public static final IntPreference STORAGE_FSBROWSER_PORT =
-            new IntPreference("storage.fsbrowser.port",8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
+            new IntPreference("storage.fsbrowser.port", 8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
     public static final StringPreference STORAGE_FSBROWSER_WD =
-            new StringPreference("storage.fsbrowser.wd","/", DATA_STORAGE_GROUP, pass);
+            new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
-            new StringPreference("storage.fsbrowser.transfer",null, DATA_STORAGE_GROUP, pass);
+            new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);

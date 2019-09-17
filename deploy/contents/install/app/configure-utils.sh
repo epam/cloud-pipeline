@@ -1074,7 +1074,7 @@ function api_register_system_folder {
 
 function api_register_system_storage {
     if [ -z "$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME" ]; then
-        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
+        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments and FSBrowser will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
         return 1
     fi
 
@@ -1125,6 +1125,10 @@ EOF
     else
         print_ok "System storage $CP_PREF_STORAGE_SYSTEM_STORAGE_NAME is registered"
         api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "true"
+        api_set_preference "storage.fsbrowser.enabled" "${CP_PREF_STORAGE_FSBROWSER_ENABLED:-"true"}" "true"
+        api_set_preference "storage.fsbrowser.port" "${CP_PREF_STORAGE_FSBROWSER_PORT:-8091}" "true"
+        api_set_preference "storage.fsbrowser.wd" "${CP_PREF_STORAGE_FSBROWSER_WD:-"/"}" "true"
+        api_set_preference "storage.fsbrowser.transfer" "${CP_PREF_STORAGE_FSBROWSER_TRANSFER:-$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME/fsbrowser}" "true"
     fi
     return $call_api_register_system_storage_result
 }
