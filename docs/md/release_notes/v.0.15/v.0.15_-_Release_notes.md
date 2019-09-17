@@ -594,11 +594,13 @@ In current version, the `pipe` process checks read permission for the "local" so
 
 For the certain purposes, it could be conveniently to start an interactive session over the SSH protocol for the job run via the `pipe` CLI.
 
-For such cases, in **`v0.15`** the `pipe ssh` command was implemented. It allows to perform a single command or launch an interactive session for the specified job run:  
-    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_1.png)
+For such cases, in **`v0.15`** the `pipe ssh` command was implemented. It allows you, if you are the **ADMIN** or the run **OWNER**, to perform a single command or launch an interactive session for the specified job run.  
+Launching of an interactive session:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_1.png)  
+This session is similar to the [terminal access](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#using-terminal-access) that user can get via the GUI.
 
-Or, for example, perform the same single command without launching an interactive session:  
-    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)
+Performing the same single command without launching an interactive session:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)  
 
 ***
 
