@@ -22,7 +22,8 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'flask==1.1.1'
+        'flask==1.1.1',
+        'Flask-HTTPAuth==3.3.0'
     ],
     entry_points='''
         [console_scripts]

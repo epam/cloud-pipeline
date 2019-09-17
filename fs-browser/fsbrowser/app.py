@@ -15,11 +15,13 @@
 import argparse
 import traceback
 from flask import Flask, jsonify, send_from_directory
+from flask_httpauth import HTTPBasicAuth
 
 from fsbrowser.src.fs_browser_manager import FsBrowserManager
 from fsbrowser.src.logger import BrowserLogger
 
 app = Flask(__name__)
+auth = HTTPBasicAuth()
 
 
 def success(payload):
@@ -35,24 +37,31 @@ def error(message):
         "status": "ERROR"
     }
 
+@auth.verify_password
+def verify_password(username, password):
+    return password == os.getenv('SSH_PASS')
 
 @app.route('/')
+@auth.login_required
 def root():
     return app.send_static_file('index.html')
 
 
 @app.route('/<path:path>')
+@auth.login_required
 def static_files(path):
     return app.send_static_file(path)
 
 
 @app.route('/view')
 @app.route('/view/')
+@auth.login_required
 def view_root():
     return view("")
 
 
 @app.route('/view/<path:path>')
+@auth.login_required
 def view_path(path):
     return view(path)
 
@@ -68,6 +77,7 @@ def view(path):
 
 
 @app.route('/download/<path:path>')
+@auth.login_required
 def download(path):
     manager = app.config['fsbrowser']
     try:
@@ -79,6 +89,7 @@ def download(path):
 
 
 @app.route('/uploadUrl/<path:path>')
+@auth.login_required
 def get_upload_url(path):
     manager = app.config['fsbrowser']
     try:
@@ -90,6 +101,7 @@ def get_upload_url(path):
 
 
 @app.route('/upload/<task_id>')
+@auth.login_required
 def upload(task_id):
     manager = app.config['fsbrowser']
     try:
@@ -101,6 +113,7 @@ def upload(task_id):
 
 
 @app.route('/status/<task_id>')
+@auth.login_required
 def get_task_status(task_id):
     manager = app.config['fsbrowser']
     try:
@@ -111,6 +124,7 @@ def get_task_status(task_id):
 
 
 @app.route('/cancel/<task_id>')
+@auth.login_required
 def cancel_task(task_id):
     manager = app.config['fsbrowser']
     try:
@@ -121,6 +135,7 @@ def cancel_task(task_id):
 
 
 @app.route('/delete/<path:path>')
+@auth.login_required
 def delete(path):
     manager = app.config['fsbrowser']
     try:

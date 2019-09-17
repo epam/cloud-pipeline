@@ -54,6 +54,8 @@ RUN     cd /tmp && \
 
 # Install LUA JWT
 RUN opm get cdbattags/lua-resty-jwt
+# Install LUA HTTP Client
+RUN opm get pintsized/lua-resty-http
 
 # Configure cron and sync reoutes script
 ADD	crontab /etc/cron.d/sync-routes
