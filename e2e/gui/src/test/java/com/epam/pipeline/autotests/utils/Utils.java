@@ -147,6 +147,7 @@ public class Utils {
                 field.sendKeys(String.valueOf(character));
                 sleep(10, MILLISECONDS);
                 final String enteredText = field.getAttribute("value");
+                sleep(20, MILLISECONDS);
                 if (enteredText.charAt(charNumber) == character) {
                     break;
                 }
