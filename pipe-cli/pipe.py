@@ -611,7 +611,8 @@ def view_cluster_for_node(node_name):
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(1, MAX_INSTANCE_COUNT, clamp=True), required=False)
-@click.option('-nc', '--cores', help='Number cores that a cluster shall contain',
+@click.option('-nc', '--cores', help='Number of cores that a cluster shall contain. This option will be ignored '
+                                     'if -ic (--instance-count) option was specified',
               type=click.IntRange(2, MAX_CORES_COUNT, clamp=True), required=False)
 @click.option('-s', '--sync', is_flag=True, help='Allow a pipeline to be run in a sync mode. When set - terminal will be blocked until the finish status of the launched pipeline won\'t be returned')
 @click.option('-pt', '--price-type', help='Instance price type [on-demand/spot]',
