@@ -42,6 +42,7 @@ class PipeFS(Operations):
         self.delimiter = '/'
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
+        self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
 
     def is_skipped_mac_files(self, path):
         if not self.is_mac:
@@ -89,7 +90,8 @@ class PipeFS(Operations):
                 attrs['st_ctime'] = props.ctime
             return attrs
         except Exception:
-            logging.exception('Error occurred while getting attributes for %s' % path)
+            if path not in self._system_files:
+                logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
