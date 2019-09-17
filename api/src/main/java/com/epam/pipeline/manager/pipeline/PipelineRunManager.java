@@ -841,6 +841,20 @@ public class PipelineRunManager {
     }
 
     /**
+     * Updates run's tags
+     * @param run {@link PipelineRun} for pipeline run which tagsshould be updated
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateTags(final PipelineRun run) {
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        Assert.notNull(loadedRun,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, run.getId()));
+        pipelineRunDao.updateTags(run);
+        return run;
+    }
+
+    /**
      * Updates run state reason message which was retrieved from instance {@StateReason}
      * @param run {@link PipelineRun} for pipeline run which state reason message should be updated
      * @param stateReasonMessage message that should be updated

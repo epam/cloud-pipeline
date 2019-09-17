@@ -110,6 +110,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     @JsonIgnore
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
+    private Map<String, String> tags;
 
 
     public PipelineRun() {

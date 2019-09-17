@@ -53,6 +53,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -480,6 +481,28 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         final PipelineRun pipelineRun = launchPipeline(configurationWithParentId, new Pipeline(), INSTANCE_TYPE, null);
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
+    }
+
+    @Test (expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
+        final PipelineRun emptyRun = new PipelineRun();
+        pipelineRunManager.updateTags(emptyRun);
+    }
+
+    @Test
+    @WithMockUser
+    public void testUpdateRunTags() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
+        final PipelineRun loadedPipelineRun1 = pipelineRunManager.loadPipelineRun(pipelineRun.getId());
+        final Map<String, String> tags = loadedPipelineRun1.getTags();
+        assertThat(Collections.emptyMap(), CoreMatchers.is(tags));
+
+        tags.put("newKey", "newValue");
+        pipelineRun.setTags(tags);
+        pipelineRunManager.updateTags(pipelineRun);
+        final PipelineRun loadedPipelineRun2 = pipelineRunManager.loadPipelineRun(pipelineRun.getId());
+        assertThat(tags, CoreMatchers.is(loadedPipelineRun2.getTags()));
     }
 
     private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
