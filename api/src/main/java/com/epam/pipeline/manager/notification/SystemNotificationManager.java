@@ -44,11 +44,11 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -196,10 +196,11 @@ public class SystemNotificationManager {
         final String confirmationsKey = Optional.ofNullable(preferenceManager.getStringPreference(
                 SystemPreferences.MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY.getKey()))
                 .orElse(DEFAULT_SYSTEM_EVENTS_METADATA_KEY);
+        final SystemNotificationConfirmation escapedConfirmation = confirmation.escaped();
         final PipeConfValue updatedValue = Optional.ofNullable(metadataEntry.getData())
                 .map(data -> data.get(confirmationsKey))
-                .map(value -> appendMetadataValue(value, confirmation))
-                .orElseGet(() -> createMetadataValue(confirmation));
+                .map(value -> appendMetadataValue(value, escapedConfirmation))
+                .orElseGet(() -> createMetadataValue(escapedConfirmation));
         Optional.ofNullable(metadataEntry.getEntity())
                 .map(entityVO -> toMetadataVO(entityVO, confirmationsKey, updatedValue))
                 .ifPresent(metadataManager::updateMetadataItemKey);
@@ -217,7 +218,9 @@ public class SystemNotificationManager {
                                               final SystemNotificationConfirmation confirmation) {
         final List<SystemNotificationConfirmation> confirmations = JsonMapper.parseData(existingValue.getValue(),
                 new TypeReference<List<SystemNotificationConfirmation>>() {});
-        final List<SystemNotificationConfirmation> allConfirmations = new ArrayList<>(confirmations);
+        final List<SystemNotificationConfirmation> allConfirmations = confirmations.stream()
+                .map(SystemNotificationConfirmation::escaped)
+                .collect(Collectors.toList());
         allConfirmations.add(confirmation);
         return toMetadataValue(allConfirmations);
     }

@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -64,14 +65,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
     public void uploadMetadataItemKey(EntityVO entityVO, String key, String value, String type) {
         String query = dataKeyPattern.matcher(uploadMetadataItemKeyQuery)
                 .replaceFirst(String.format("'{%s}'", key));
-        String escapedValue = escapeQuotes(escapeQuotes(value));
+        String escapedValue = PipelineStringUtils.escapeQuotes(value);
         query = dataValuePattern.matcher(query)
                 .replaceFirst(String.format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, escapedValue));
         getNamedParameterJdbcTemplate().update(query, MetadataParameters.getParameters(entityVO));
-    }
-
-    private String escapeQuotes(final String value) {
-        return value.replaceAll("\"", "\\\\\"");
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

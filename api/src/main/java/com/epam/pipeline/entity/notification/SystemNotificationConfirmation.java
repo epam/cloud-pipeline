@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.notification;
 
+import com.epam.pipeline.utils.PipelineStringUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -31,4 +32,9 @@ public class SystemNotificationConfirmation {
     private final String body;
     private final String user;
     private final Date date;
+
+    public SystemNotificationConfirmation escaped() {
+        return new SystemNotificationConfirmation(notificationId, PipelineStringUtils.escapeQuotes(title),
+                PipelineStringUtils.escapeQuotes(body), user, date);
+    }
 }
