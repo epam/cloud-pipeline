@@ -261,6 +261,7 @@ public final class MessageConstants {
     public static final String UNSUPPORTED_SECURITY_CLASS = "unsupported.security.class";
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
+    public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
 
     // Metadata
     public static final String ERROR_METADATA_NOT_FOUND = "error.metadata.not.found";
@@ -296,6 +297,7 @@ public final class MessageConstants {
 
     //System notifications
     public static final String ERROR_NOTIFICATION_NOT_FOUND = "error.notification.not.found";
+    public static final String ERROR_NOTIFICATION_ID_REQUIRED = "error.notification.id.required";
     public static final String ERROR_NOTIFICATION_TITLE_REQUIRED = "error.notification.title.required";
     public static final String INFO_NOTIFICATION_SUBMITTED = "info.notification.submitted";
 
