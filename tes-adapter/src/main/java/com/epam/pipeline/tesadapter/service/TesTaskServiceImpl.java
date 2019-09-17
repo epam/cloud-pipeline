@@ -75,8 +75,8 @@ public class TesTaskServiceImpl implements TesTaskService {
         } else {
             pipelineRunList = filterRunsWithOutNamePrefix(pageSize, pageToken);
         }
-        tesListTasksResponse.setTasks(pipelineRunList.stream().map(taskMapper::mapToTesTask)
-                .collect(Collectors.toList()));
+        tesListTasksResponse.setTasks(pipelineRunList.stream().map(pipelineRun ->
+                taskMapper.mapToTesTask(pipelineRun, view)).collect(Collectors.toList()));
         return tesListTasksResponse;
     }
 
