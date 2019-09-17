@@ -269,25 +269,23 @@ public class TaskMapper {
     }
 
     private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
-        final TesInput tesInput = new TesInput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesInput.setName(pipelineRunParameter.getName());
-                    tesInput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesInput));
+                .map(pipelineRunParameter ->
+                        TesInput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
-        final TesOutput tesOutput = new TesOutput();
-        parameters.stream()
+        return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
-                .forEach(pipelineRunParameter -> {
-                    tesOutput.setName(pipelineRunParameter.getName());
-                    tesOutput.setUrl(pipelineRunParameter.getValue());
-                });
-        return ListUtils.emptyIfNull(Arrays.asList(tesOutput));
+                .map(pipelineRunParameter ->
+                        TesOutput.builder()
+                                .name(pipelineRunParameter.getName())
+                                .url(pipelineRunParameter.getValue())
+                                .build()).collect(Collectors.toList());
     }
 
     private TesResources createTesResources(PipelineRun run) {
@@ -296,13 +294,19 @@ public class TaskMapper {
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
                 .ramGb(getInstanceType(run).getMemory() * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
                 .cpuCores((long) getInstanceType(run).getVCPU())
+                .zones(getPipelineRunZone(run))
                 .build();
     }
 
+    private List<String> getPipelineRunZone(PipelineRun run) {
+        return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
+    }
+
     private List<TesExecutor> createListExecutor(PipelineRun run) {
-        return ListUtils.emptyIfNull(Arrays.asList(TesExecutor.builder()
+        return ListUtils.emptyIfNull(Collections.singletonList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
+                .image(run.getDockerImage())
                 .build()));
     }
 
