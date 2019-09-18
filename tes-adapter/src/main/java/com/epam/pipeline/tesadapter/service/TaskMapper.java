@@ -302,7 +302,7 @@ public class TaskMapper {
         return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
     }
 
-    private List<TesExecutor> createListExecutor(PipelineRun run) {
+    List<TesExecutor> createListExecutor(PipelineRun run) {
         return ListUtils.emptyIfNull(Collections.singletonList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
