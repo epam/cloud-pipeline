@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UtilsManager {
@@ -48,7 +49,17 @@ public class UtilsManager {
     }
 
     public String buildFSBrowserUrl(Long runId) {
-        return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
+        if (isFSBrowserEnabled()) {
+            return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
+        } else {
+            throw new IllegalArgumentException("Storage fsbrowser is not enabled.");
+        }
+    }
+
+    private Boolean isFSBrowserEnabled() {
+        return Optional.ofNullable(preferenceManager.getBooleanPreference(
+                SystemPreferences.STORAGE_FSBROWSER_ENABLED.getKey()))
+                .orElse(false);
     }
 
     private String buildUrl(String template, Long runId) {
