@@ -4,8 +4,10 @@ import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
@@ -27,6 +29,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -260,10 +265,67 @@ class TaskMapperTest {
     @Test
     public void testCreateTesInput() {
         assertNotNull(taskMapper.createTesInput(pipelineRun.getPipelineRunParameters()));
+        assertEquals("pipelineRunParameter", taskMapper.createTesInput(getListPipelineRunParameter()).get(0).getName());
+        assertEquals("www.url.ru", taskMapper.createTesInput(getListPipelineRunParameter()).get(0).getUrl());
+
+    }
+
+    private List<PipelineRunParameter> getListPipelineRunParameter() {
+        PipelineRunParameter pipelineRunParameterInput = new PipelineRunParameter();
+        pipelineRunParameterInput.setType("input");
+        pipelineRunParameterInput.setName("pipelineRunParameter");
+        pipelineRunParameterInput.setValue("www.url.ru");
+
+        PipelineRunParameter pipelineRunParameterOuput = new PipelineRunParameter();
+        pipelineRunParameterOuput.setType("output");
+        pipelineRunParameterOuput.setName("pipelineRunParameter");
+        pipelineRunParameterOuput.setValue("www.url.ru");
+
+        List<PipelineRunParameter> pipelineRunParameterList = new ArrayList<>();
+        pipelineRunParameterList.add(pipelineRunParameterInput);
+        pipelineRunParameterList.add(pipelineRunParameterOuput);
+        return pipelineRunParameterList;
     }
 
     @Test
-    public void testCreateTesOutput(){
+    public void testCreateTesOutput() {
         assertNotNull(taskMapper.createTesOutput(pipelineRun.getPipelineRunParameters()));
+        assertEquals("pipelineRunParameter", taskMapper.createTesOutput(getListPipelineRunParameter()).get(0).getName());
+        assertEquals("www.url.ru", taskMapper.createTesOutput(getListPipelineRunParameter()).get(0).getUrl());
+    }
+
+    @Test
+    public void testCreateListExecutor() {
+        List<TesExecutor> listTesExecutor = new ArrayList<>();
+        listTesExecutor.add(TesExecutor.builder()
+                .command(Collections.singletonList(getPipelineRun().getActualCmd()))
+                .env(getPipelineRun().getEnvVars())
+                .image(getPipelineRun().getDockerImage())
+                .build());
+        assertEquals(listTesExecutor, taskMapper.createListExecutor(getPipelineRun()));
+    }
+
+    private PipelineRun getPipelineRun() {
+        PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(1L);
+        pipelineRun.setStatus(TaskStatus.RUNNING);
+        pipelineRun.setPodIP("pipelineRun");
+        pipelineRun.setPipelineRunParameters(getListPipelineRunParameter());
+        pipelineRun.setStartDate(new Date(2000));
+        pipelineRun.setInstance(getRunInstance());
+        pipelineRun.setActualCmd("cmd");
+        HashMap<String, String> env = new HashMap<>();
+        env.put("env", "env");
+        pipelineRun.setEnvVars(env);
+        pipelineRun.setDockerImage("centos");
+        return pipelineRun;
+    }
+
+    private RunInstance getRunInstance() {
+        RunInstance runInstance = new RunInstance();
+        runInstance.setSpot(true);
+        runInstance.setNodeDisk(1000);
+        runInstance.setCloudRegionId(1L);
+        return runInstance;
     }
 }
