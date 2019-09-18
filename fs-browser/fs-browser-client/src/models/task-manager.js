@@ -49,7 +49,7 @@ class Task extends TaskStatus {
 
   @computed
   get isRunning() {
-    return (this.loaded && isRunning(this.value.status)) || this.canReFetch;
+    return (this.loaded && isRunning(this.value.status)) || (this.error && this.canReFetch);
   }
 
   constructor(id, item, callbacks, activeSession = false) {
