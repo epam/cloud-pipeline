@@ -242,7 +242,7 @@ public class TaskMapper {
         }
     }
 
-    private TesState createTesState(PipelineRun run) {
+     TesState createTesState(PipelineRun run) {
         List<PipelineTask> pipelineTaskList = cloudPipelineAPIClient.loadPipelineTasks(run.getId());
         switch (run.getStatus()) {
             case RUNNING:
@@ -268,7 +268,7 @@ public class TaskMapper {
         }
     }
 
-    private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
+    List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
         return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
                 .map(pipelineRunParameter ->
@@ -278,7 +278,7 @@ public class TaskMapper {
                                 .build()).collect(Collectors.toList());
     }
 
-    private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
+    List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
         return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
                 .map(pipelineRunParameter ->
