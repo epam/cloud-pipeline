@@ -124,7 +124,7 @@ public class GitlabClient {
         this.adminId = gitAdminId;
         this.adminName = adminName;
         this.externalHost = externalHost;
-        gitLabApi = new GitLabApiBuilder(host, adminToken, user).buildClient();
+        this.gitLabApi = new GitLabApiBuilder(host, adminToken, user).build();
     }
 
     public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,

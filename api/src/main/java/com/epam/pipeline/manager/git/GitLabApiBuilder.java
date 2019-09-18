@@ -67,24 +67,16 @@ public class GitLabApiBuilder {
         this.userName = userName;
     }
 
-    public GitLabApi buildClient() {
+    public GitLabApi build() {
         try {
-            String userToken = generateToken();
-            return new Retrofit.Builder()
-                    .baseUrl(normalizeUrl(apiHost))
-                    .addConverterFactory(JacksonConverterFactory
-                            .create(new JsonMapper()
-                                    .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
-                                    .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                    .client(buildHttpClient(new TokenInterceptor(userToken)))
-                    .build()
-                    .create(GitLabApi.class);
+            return initGitLabApi(generateToken());
         } catch (IOException e) {
             throw new RuntimeIOException(e.getMessage());
         }
     }
 
-    private OkHttpClient buildHttpClient(Interceptor interceptor) {
+    private OkHttpClient buildHttpClient(final String token) {
+
         final TrustManager[] trustAllCerts = new TrustManager[]{
             new X509TrustManager() {
                 @Override
@@ -101,6 +93,7 @@ public class GitLabApiBuilder {
                 }
             }
         };
+
         final SSLContext sslContext = buildSSLContext(trustAllCerts);
         final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -110,8 +103,8 @@ public class GitLabApiBuilder {
         builder.readTimeout(readTimeout, TimeUnit.SECONDS)
                 .connectTimeout(connectTimeout, TimeUnit.SECONDS)
                 .hostnameVerifier((s, sslSession) -> true);
-        if (interceptor != null) {
-            builder.addInterceptor(interceptor);
+        if (token != null) {
+            builder.addInterceptor(new TokenInterceptor(token));
         }
         return builder.build();
     }
@@ -128,15 +121,7 @@ public class GitLabApiBuilder {
     }
 
     private String generateToken() throws IOException {
-        GitLabApi gitLabApi = new Retrofit.Builder()
-                .baseUrl(normalizeUrl(apiHost))
-                .addConverterFactory(JacksonConverterFactory
-                        .create(new JsonMapper()
-                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
-                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                .client(buildHttpClient(null))
-                .build()
-                .create(GitLabApi.class);
+        GitLabApi gitLabApi = initGitLabApi(null);
 
         GitlabUser user = ListUtils.emptyIfNull(
                 gitLabApi.searchUser(userName).execute().body()).stream().findFirst().orElseThrow(
@@ -155,10 +140,22 @@ public class GitLabApiBuilder {
                 .orElseThrow(() -> new IllegalArgumentException("Problem with issuing of a userToken!")).getToken();
     }
 
+    private GitLabApi initGitLabApi(final String token) {
+        return new Retrofit.Builder()
+                .baseUrl(normalizeUrl(apiHost))
+                .addConverterFactory(JacksonConverterFactory
+                        .create(new JsonMapper()
+                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
+                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
+                .client(buildHttpClient(token))
+                .build()
+                .create(GitLabApi.class);
+    }
+
     @AllArgsConstructor
     public class TokenInterceptor implements Interceptor {
 
-        static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
+        private static final String PRIVATE_TOKEN = "PRIVATE-TOKEN";
 
         private final String userToken;
 
