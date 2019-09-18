@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
@@ -159,6 +160,12 @@ public class RunApiService {
     @AclMask
     public PipelineRun updatePrettyUrl(Long runId, String url) {
         return runManager.updatePrettyUrl(runId, url);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    @AclMask
+    public PipelineRun updateTags(final Long runId, final TagsVO tagsVO) {
+        return runManager.updateTags(runId, tagsVO);
     }
 
     @AclFilter

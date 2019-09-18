@@ -178,6 +178,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         updateTagsAndVerifySaveIsCorrect(run, tags);
         tags.remove(TAG_KEY_2);
         updateTagsAndVerifySaveIsCorrect(run, tags);
+        run.setTags(null);
+        loadTagsAndCompareWithExpected(run, Collections.emptyMap());
     }
 
     private void updateTagsAndVerifySaveIsCorrect(final PipelineRun run, final Map<String, String> tags) {
@@ -186,7 +188,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         loadTagsAndCompareWithExpected(run, tags);
     }
 
-    private void loadTagsAndCompareWithExpected(PipelineRun run, Map<String, String> tags) {
+    private void loadTagsAndCompareWithExpected(final PipelineRun run, final Map<String, String> tags) {
         final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(run.getId()).getTags();
         assertThat(loadedTags, CoreMatchers.is(tags));
     }
