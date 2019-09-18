@@ -1,7 +1,7 @@
 import io
 import logging
 
-from pipefuse.fsclient import FileSystemClient
+from fsclient import FileSystemClient
 
 
 class _FileBuffer(object):

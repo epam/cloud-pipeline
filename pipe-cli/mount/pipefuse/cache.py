@@ -6,7 +6,7 @@ from datetime import datetime
 import pytz
 
 from fsclient import FileSystemClient, File
-from pipefuse import fuseutils
+import fuseutils
 
 
 class CachingFileSystemClient(FileSystemClient):

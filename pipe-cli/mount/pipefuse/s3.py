@@ -23,9 +23,9 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
-from pipefuse import fuseutils
-from pipefuse.fsclient import File, FileSystemClient
-from pipefuse.fuseutils import MB
+import fuseutils
+from fsclient import File, FileSystemClient
+from fuseutils import MB
 
 _ANY_ERROR = Exception
 
