@@ -26,15 +26,15 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class FilterExpression {
+public class FilterExpressionVO {
 
     private String field;
     private String value;
     private String operand;
 
     @JsonIgnore
-    private FilterOperandType operandTypeVO;
+    private FilterOperandTypeVO operandType;
 
-    private List<FilterExpression> expressions;
-    private FilterExpressionType filterExpressionType;
+    private List<FilterExpressionVO> expressions;
+    private FilterExpressionTypeVO filterExpressionType;
 }

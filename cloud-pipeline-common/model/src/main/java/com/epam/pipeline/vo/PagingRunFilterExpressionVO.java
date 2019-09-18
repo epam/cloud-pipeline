@@ -17,7 +17,7 @@
 package com.epam.pipeline.vo;
 
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
-import com.epam.pipeline.vo.filter.FilterExpression;
+import com.epam.pipeline.vo.filter.FilterExpressionVO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,7 +33,7 @@ public class PagingRunFilterExpressionVO implements AclSecuredFilter {
     private int page;
     private int pageSize;
     private int timezoneOffsetInMinutes;
-    private FilterExpression filterExpression;
+    private FilterExpressionVO filterExpression;
 
     //these filter is used for ACL filtering
     @JsonIgnore

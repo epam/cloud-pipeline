@@ -15,9 +15,9 @@ import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
-import com.epam.pipeline.vo.filter.FilterExpressionType;
-import com.epam.pipeline.vo.filter.FilterExpression;
-import com.epam.pipeline.vo.filter.FilterOperandType;
+import com.epam.pipeline.vo.filter.FilterExpressionTypeVO;
+import com.epam.pipeline.vo.filter.FilterExpressionVO;
+import com.epam.pipeline.vo.filter.FilterOperandTypeVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -84,11 +84,11 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     private List<PipelineRun> searchRunsWithNamePrefix(String namePrefix, Long pageSize, String pageToken) {
         PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
-        FilterExpression expression = new FilterExpression();
+        FilterExpressionVO expression = new FilterExpressionVO();
         expression.setField(NAME_PREFIX);
         expression.setValue(namePrefix);
-        expression.setOperand(FilterOperandType.EQUALS.getOperand());
-        expression.setFilterExpressionType(FilterExpressionType.LOGICAL);
+        expression.setOperand(FilterOperandTypeVO.EQUALS.getOperand());
+        expression.setFilterExpressionType(FilterExpressionTypeVO.LOGICAL);
         filterExpressionVO.setFilterExpression(expression);
         filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
