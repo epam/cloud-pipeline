@@ -453,7 +453,25 @@ export default class UserManagementForm extends React.Component {
         dataIndex: 'name',
         key: 'name',
         title: 'Role',
-        sorter: this.alphabeticRoleNameSorter
+        sorter: this.alphabeticRoleNameSorter,
+        render: (name, role) => {
+          let blockedSpan;
+          if (role.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
+          return (
+            <span>
+              {name}
+              {blockedSpan}
+            </span>
+          )
+        }
       },
       {
         key: 'actions',
@@ -498,7 +516,25 @@ export default class UserManagementForm extends React.Component {
         dataIndex: 'displayName',
         key: 'name',
         title: 'Group',
-        sorter: this.alphabeticRoleNameSorter
+        sorter: this.alphabeticRoleNameSorter,
+        render: (name, group) => {
+          let blockedSpan;
+          if (group.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
+          return (
+            <span>
+              {name}
+              {blockedSpan}
+            </span>
+          )
+        }
       },
       {
         key: 'actions',

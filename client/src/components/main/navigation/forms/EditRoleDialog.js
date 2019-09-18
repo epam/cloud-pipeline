@@ -24,6 +24,7 @@ import UserFind from '../../../../models/user/UserFind';
 import RoleAssign from '../../../../models/user/RoleAssign';
 import RoleRemove from '../../../../models/user/RoleRemoveFromUser';
 import RoleUpdate from '../../../../models/user/RoleUpdate';
+import GroupBlock from '../../../../models/user/GroupBlock';
 import styles from './UserManagement.css';
 import roleModel from '../../../../utils/roleModel';
 import {
@@ -49,6 +50,7 @@ export default class EditRoleDialog extends React.Component {
         PropTypes.string,
         PropTypes.number
       ]),
+      blocked: PropTypes.bool,
       name: PropTypes.string,
       predefined: PropTypes.bool
     }),
@@ -165,6 +167,7 @@ export default class EditRoleDialog extends React.Component {
     if (!this.props.roleInfo || !this.props.roleInfo.loaded) {
       return null;
     }
+    const {blocked} = this.props.roleInfo.value;
     const usersSort = (userA, userB) => {
       if (userA.userName > userB.userName) {
         return 1;
@@ -189,7 +192,13 @@ export default class EditRoleDialog extends React.Component {
         render: (user) => {
           return (
             <Row type="flex" justify="end">
-              <Button id="delete-user-button" size="small" type="danger" onClick={() => this.removeRole(user.id)}>
+              <Button
+                id="delete-user-button"
+                size="small"
+                type="danger"
+                disabled={blocked}
+                onClick={() => this.removeRole(user.id)}
+              >
                 <Icon type="delete" />
               </Button>
             </Row>
@@ -264,17 +273,76 @@ export default class EditRoleDialog extends React.Component {
     }
   };
 
+  blockUnblockClicked = async () => {
+    if (!this.props.roleInfo || !this.props.roleInfo.loaded) {
+      return null;
+    }
+    const {blocked} = this.props.roleInfo.value;
+    const blockStatus = !blocked;
+    const blockGroup = async () => {
+      const hide = message.loading(
+        `${blockStatus ? 'Blocking' : 'Unblocking'} ${this.splitRoleName(this.props.role.name)}...`
+      );
+      const request = new GroupBlock(this.props.role.id, blockStatus);
+      await request.fetch();
+      if (request.error) {
+        hide();
+        message.error(request.error, 5);
+      } else {
+        await this.props.roleInfo.fetch();
+        hide();
+      }
+    };
+    Modal.confirm({
+      title: `Are you sure you want to ${blockStatus ? 'block' : 'unblock'} ${this.splitRoleName(this.props.role.name)}?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        blockGroup();
+      }
+    });
+    if (blocked) {
+      // unblock
+    } else {
+      // block
+    }
+  };
+
   render () {
     if (!this.props.roleInfo) {
       return null;
+    }
+    let blocked = false;
+    if (this.props.roleInfo.loaded) {
+      blocked = this.props.roleInfo.value.blocked;
     }
     return (
       <Modal
         width="50%"
         closable={false}
-        title={this.props.role.predefined ? this.props.role.name : this.splitRoleName(this.props.role.name)}
+        title={(
+          <Row>
+            {this.props.role.predefined ? this.props.role.name : this.splitRoleName(this.props.role.name)}
+            {
+              blocked && (
+                <span
+                  style={{fontStyle: 'italic', marginLeft: 5}}
+                >
+                  - blocked
+                </span>
+              )
+            }
+          </Row>
+        )}
         footer={
-          <Row type="flex" justify="end">
+          <Row type="flex" justify="space-between">
+            <Button
+              id="edit-user-form-block-unblock"
+              type="danger"
+              onClick={this.operationWrapper(this.blockUnblockClicked)}>
+              {blocked ? 'UNBLOCK' : 'BLOCK'}
+            </Button>
             <Button
               id="close-edit-user-form"
               type="primary"
@@ -314,7 +382,7 @@ export default class EditRoleDialog extends React.Component {
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress}
+                disabled={this.state.operationInProgress || blocked}
                 value={
                   this.props.roleInfo.loaded && this.props.roleInfo.value.defaultStorageId
                     ? `${this.props.roleInfo.value.defaultStorageId}`
@@ -342,6 +410,7 @@ export default class EditRoleDialog extends React.Component {
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <div style={{flex: 1}} id="find-user-autocomplete-container">
                 <AutoComplete
+                  disabled={blocked || this.state.operationInProgress}
                   size="small"
                   style={{width: '100%'}}
                   placeholder="Search user"
@@ -364,7 +433,10 @@ export default class EditRoleDialog extends React.Component {
                   size="small"
                   onClick={this.assignRole}
                   disabled={
-                    this.state.selectedUser === null || this.state.selectedUser === undefined
+                    this.state.selectedUser === null ||
+                    this.state.selectedUser === undefined ||
+                    blocked ||
+                    this.state.operationInProgress
                   }>
                   <Icon type="plus" /> Add user
                 </Button>
@@ -414,10 +486,12 @@ export default class EditRoleDialog extends React.Component {
               }
             ]}>
             <Metadata
+              readOnly={blocked || this.state.operationInProgress}
               key={METADATA_PANEL_KEY}
               entityId={this.props.role.id}
               entityClass="ROLE" />
             <InstanceTypesManagementForm
+              disabled={blocked || this.state.operationInProgress}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.roleId}
               level="ROLE" />
