@@ -60,14 +60,13 @@ export default class AvailableStoragesBrowser extends Component {
 
   onSelect = (event, storage) => {
     event.stopPropagation();
-
-    const alreadySelected = this.state.selectedStorages
-      .filter(s => +s === +(storage.id)).length > 0;
-    const selectedStorages = this.state.selectedStorages;
-    if (alreadySelected) {
-      selectedStorages.splice(selectedStorages.indexOf(+(storage.id)), 1);
+    const selectedStorageId = +(storage.id);
+    const {selectedStorages} = this.state;
+    const existingIndex = selectedStorages.indexOf(selectedStorageId);
+    if (existingIndex >= 0) {
+      selectedStorages.splice(existingIndex, 1);
     } else {
-      selectedStorages.push(storage);
+      selectedStorages.push(selectedStorageId);
     }
     this.setState({selectedStorages});
   };
