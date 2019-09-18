@@ -813,6 +813,18 @@ public class PipelineRunManager {
         return pipelineRun;
     }
 
+    public PipelineRun loadRunByPrettyUrl(final String url) {
+        final PipelineRun run = pipelineRunDao.loadRunByPrettyUrl(url)
+                .orElseThrow(() -> {
+                    throw new IllegalArgumentException(
+                            messageHelper.getMessage(MessageConstants.ERROR_RUN_PRETTY_NOT_FOUND, url));
+                });
+        if (permissionManager.isRunSshAllowed(run)) {
+            run.setSshPassword(pipelineRunDao.loadSshPassword(run.getId()));
+        }
+        return run;
+    }
+
     /**
      * Commits docker image and push it to a docker registry from specified run
      * @param id {@link PipelineRun} id for pipeline run which commit status should be updated

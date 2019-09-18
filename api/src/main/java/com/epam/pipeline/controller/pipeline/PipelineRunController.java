@@ -299,6 +299,16 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updatePrettyUrl(runId, url));
     }
 
+    @GetMapping(value = "/run/prettyUrl")
+    @ApiOperation(
+            value = "Finds pipeline run by pretty url.",
+            notes = "Finds pipeline run by pretty url.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun> getRunByPrettyUrl(@RequestParam String url) {
+        return Result.success(runApiService.getRunByPrettyUrl(url));
+    }
+
     @GetMapping(value = "/run/{runId}")
     @ApiOperation(
             value = "Loads pipeline run details with full list of it's restarted runs.",
