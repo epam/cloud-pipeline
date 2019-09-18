@@ -32,6 +32,7 @@ import java.util.List;
 public class UtilsManager {
 
     private static final String SSH_URL_TEMPLATE = "%s://%s:%d/ssh/pipeline/%d";
+    private static final String FSBROWSER_URL_TEMPLATE = "%s://%s:%d/fsbrowser/%d";
 
     @Autowired
     private KubernetesManager kubeManager;
@@ -43,11 +44,19 @@ public class UtilsManager {
     private String edgeLabel;
 
     public String buildSshUrl(Long runId) {
+        return buildUrl(SSH_URL_TEMPLATE, runId);
+    }
+
+    public String buildFSBrowserUrl(Long runId) {
+        return buildUrl(FSBROWSER_URL_TEMPLATE, runId);
+    }
+
+    private String buildUrl(String template, Long runId) {
         ServiceDescription service = kubeManager.getServiceByLabel(edgeLabel);
         if (service == null) {
             throw new IllegalArgumentException("Edge server is not registered in the cluster.");
         }
-        return String.format(SSH_URL_TEMPLATE, service.getScheme(), service.getIp(), service.getPort(), runId);
+        return String.format(template, service.getScheme(), service.getIp(), service.getPort(), runId);
     }
     
     public List<DefaultSystemParameter> getSystemParameters() {

@@ -194,6 +194,11 @@ public class RunApiService {
         return utilsManager.buildSshUrl(runId);
     }
 
+    @PreAuthorize("@grantPermissionManager.isRunSshAllowed(#runId)")
+    public String buildFSBrowserUrl(Long runId) {
+        return utilsManager.buildFSBrowserUrl(runId);
+    }
+
     @PreAuthorize("hasRole('ADMIN') OR (@grantPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND @grantPermissionManager.commitPermission(#registryId, #imageName, 'WRITE'))")
     @AclMask

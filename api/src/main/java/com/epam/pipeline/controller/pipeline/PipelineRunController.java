@@ -321,6 +321,19 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
+    @RequestMapping(value = "/run/{runId}/fsbrowser", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Return URL to access run fsbrowser client.",
+            notes = "Return URL to access run fsbrowser client.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.buildFSBrowserUrl(runId));
+    }
+
     @RequestMapping(value = "/run/filter", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
