@@ -22,6 +22,9 @@ from fsbrowser.src.fs_browser_manager import FsBrowserManager
 from fsbrowser.src.logger import BrowserLogger
 
 app = Flask(__name__)
+# Force FLASK to accept both "http://url and http://url/"
+app.url_map.strict_slashes = False
+
 auth = HTTPBasicAuth()
 
 
