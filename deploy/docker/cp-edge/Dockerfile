@@ -83,6 +83,7 @@ RUN	mkdir -p /etc/nginx/sites-enabled/
 ADD validate_cookie.lua /etc/nginx/validate_cookie.lua
 ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
+ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
 
 ## DAV auth page

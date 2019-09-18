@@ -880,6 +880,8 @@ if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
             exit 1
       fi
       fsbrowser_setup
+      echo "------"
+      echo
 fi
 
 # check whether we shall get code from repository before executing a command or not

@@ -19,7 +19,7 @@ echo "-"
 
 # Check jq is installed (used to parse the API responses)
 if ! jq --version > /dev/null 2>&1; then
-    pipe_log_info "Installing jq"
+    echo "Installing jq"
     wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
     chmod +x /usr/bin/jq
 fi
