@@ -19,7 +19,7 @@ package com.epam.pipeline.vo.filter;
 import java.util.HashMap;
 import java.util.Map;
 
-public enum FilterOperandTypeVO {
+public enum FilterOperandType {
     LESS("<"),
     LESS_OR_EQUALS("<="),
     EQUALS("="),
@@ -29,7 +29,7 @@ public enum FilterOperandTypeVO {
 
     private String operand;
 
-    private static Map<String, FilterOperandTypeVO> operandsMap = new HashMap<>();
+    private static Map<String, FilterOperandType> operandsMap = new HashMap<>();
 
     static {
         operandsMap.put(LESS.operand, LESS);
@@ -40,11 +40,11 @@ public enum FilterOperandTypeVO {
         operandsMap.put(MORE.operand, MORE);
     }
 
-    FilterOperandTypeVO(String operand) {
+    FilterOperandType(String operand) {
         this.operand = operand;
     }
 
-    public static FilterOperandTypeVO getByString(String operand) {
+    public static FilterOperandType getByString(String operand) {
         if (operand == null) {
             return null;
         }
