@@ -1,5 +1,5 @@
 .container {
-  padding: 2px;
+  padding: 2px 5px;
 }
 
 .link,
@@ -29,10 +29,11 @@
   background-color: #f0f0f0;
   padding: 2px 4px;
   border: 1px solid #e0e0e0;
+  text-align: left;
 }
 
 .table-container .table tr.item td {
-  padding: 2px;
+  padding: 2px 4px;
   border: 1px solid #e0e0e0;
 }
 
@@ -41,4 +42,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.code-editor {
+  max-height: 40vh;
+  overflow: auto;
+  border: 1px solid transparent;
+}
+
+.code-editor.invalid {
+  border: 1px solid red;
 }

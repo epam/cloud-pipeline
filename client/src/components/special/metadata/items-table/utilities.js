@@ -17,13 +17,13 @@
 export function isJson (string) {
   try {
     const obj = JSON.parse(string);
-    return !!obj;
+    return !!obj && typeof obj === 'object';
   } catch (_) {}
   return false;
 }
 
 export function plural (count, itemName) {
-  return `${count} ${itemName}${count !== 0 ? 's' : ''}`;
+  return `${count} ${itemName}${count !== 1 ? 's' : ''}`;
 }
 
 export function parse (string) {
@@ -52,4 +52,12 @@ export function parse (string) {
     };
   } catch (_) {}
   return null;
+}
+
+export function makePretty (json) {
+  try {
+    const obj = JSON.parse(json);
+    return JSON.stringify(obj, null, 2);
+  } catch (_) {}
+  return json;
 }

@@ -19,10 +19,13 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
-  Button,
-  Row
+  Modal,
+  Row,
+  Button
 } from 'antd';
-import {isJson, parse, plural} from './utilities';
+import {isJson, makePretty, parse, plural} from './utilities';
+import ValueRenderer from './property-value-renderers';
+import CodeEditor from '../../CodeEditor';
 import styles from './items-table.css';
 
 export {isJson};
@@ -30,15 +33,18 @@ export {isJson};
 @observer
 class ItemsTable extends React.Component {
   static propTypes = {
+    title: PropTypes.string,
     disabled: PropTypes.bool,
-    editMode: PropTypes.bool,
     value: PropTypes.string,
-    onChange: PropTypes.func,
-    onEditModeChange: PropTypes.func.isRequired
+    onChange: PropTypes.func
   };
 
   state = {
-    expanded: false
+    editMode: false,
+    expanded: false,
+    operationInProgress: false,
+    valid: true,
+    value: null
   };
 
   @computed
@@ -47,10 +53,47 @@ class ItemsTable extends React.Component {
     return parse(value);
   }
 
-  onExpandCollapse = (expand) => (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    this.setState({expanded: expand});
+  operationWrapper = fn => (...opts) => {
+    this.setState({
+      operationInProgress: true
+    }, async () => {
+      await fn(...opts);
+      this.setState({
+        operationInProgress: false
+      });
+    });
+  };
+
+  toggleExpandMode = (expanded) => (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    this.setState({expanded});
+  };
+
+  toggleEditMode = (editMode) => (e) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    this.setState({
+      editMode,
+      valid: isJson(this.props.value),
+      value: editMode ? makePretty(this.props.value) : null
+    });
+  };
+
+  saveChanges = async () => {
+    const {onChange} = this.props;
+    const {value} = this.state;
+    let result = true;
+    if (onChange) {
+      result = await onChange(value);
+    }
+    if (result) {
+      this.toggleEditMode(false)();
+    }
   };
 
   renderTable = () => {
@@ -85,7 +128,7 @@ class ItemsTable extends React.Component {
                       <td
                         key={key}
                       >
-                        <span>{item[key]}</span>
+                        <ValueRenderer value={item[key]} />
                       </td>
                     ))
                   }
@@ -98,67 +141,113 @@ class ItemsTable extends React.Component {
     );
   };
 
-  render () {
-    const {expanded} = this.state;
+  renderEditor = () => {
+    const {valid, value} = this.state;
+    const onChange = (code) => {
+      this.setState({value: code, valid: isJson(code)});
+    };
+    const classNames = [styles.codeEditor];
+    if (!valid) {
+      classNames.push(styles.invalid);
+    }
+    return (
+      <CodeEditor
+        className={classNames.join(' ')}
+        language="json"
+        defaultCode={value}
+        onChange={onChange}
+      />
+    );
+  };
+
+  renderFooter = () => {
+    const {disabled} = this.props;
     const {
       editMode,
-      onEditModeChange
-    } = this.props;
-    if (!expanded) {
+      operationInProgress,
+      valid
+    } = this.state;
+    if (editMode) {
       return (
-        <div
-          className={styles.container}
+        <Row
+          type="flex"
+          justify="space-between"
+          align="center"
         >
-          <a
-            className={styles.link}
-            onClick={this.onExpandCollapse(true)}
+          <Button
+            id="items-table-modal-edit-cancel"
+            onClick={this.toggleEditMode(false)}
+            disabled={operationInProgress}
           >
-            {plural(this.items.length, 'item')}
-          </a>
-        </div>
+            CANCEL
+          </Button>
+          <Button
+            disabled={!valid || operationInProgress}
+            id="items-table-modal-edit-save"
+            type="primary"
+            onClick={this.operationWrapper(this.saveChanges)}
+          >
+            SAVE
+          </Button>
+        </Row>
       );
     }
+    return (
+      <Row
+        type="flex"
+        justify="end"
+        align="center"
+      >
+        {
+          !disabled && (
+            <Button
+              id="items-table-modal-edit"
+              type="primary"
+              onClick={this.toggleEditMode(true)}
+              style={{marginRight: 5}}
+              disabled={disabled || operationInProgress}
+            >
+              EDIT
+            </Button>
+          )
+        }
+        <Button
+          id="items-table-modal-close"
+          onClick={this.toggleExpandMode(false)}
+        >
+          CLOSE
+        </Button>
+      </Row>
+    );
+  };
+
+  render () {
+    const {title} = this.props;
+    const {
+      editMode,
+      expanded
+    } = this.state;
     return (
       <div
         className={styles.container}
       >
-        <Row
-          className={styles.actions}
-          type="flex"
-          justify="end"
-          align="center"
+        <a
+          id="items-table-expand"
+          className={styles.link}
+          onClick={this.toggleExpandMode(true)}
         >
-          {
-            !editMode &&
-            (
-              <Button
-                size="small"
-                onClick={() => onEditModeChange(true)}
-              >
-                Edit
-              </Button>
-            )
-          }
-          {
-            editMode &&
-            (
-              <Button
-                size="small"
-                type="primary"
-                onClick={() => onEditModeChange(false)}
-              >
-                Save
-              </Button>
-            )
-          }
-          <Button
-            size="small"
-            onClick={this.onExpandCollapse(false)}
-          >
-            Close
-          </Button>
-        </Row>
-        {this.renderTable()}
+          {plural(this.items.length, 'item')}
+        </a>
+        <Modal
+          visible={expanded}
+          closable={false}
+          title={title}
+          footer={this.renderFooter()}
+          width="50%"
+        >
+          {!editMode && this.renderTable()}
+          {editMode && this.renderEditor()}
+        </Modal>
       </div>
     );
   }

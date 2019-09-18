@@ -316,19 +316,62 @@ export default class Metadata extends localization.LocalizedReactComponent {
       addKey: null,
       editableKeyIndex: null,
       editableValueIndex: null,
-      editableText: null,
-      isJson: false,
+      editableText: null
     });
   };
 
-  onMetadataEditStarted = (field, index, value, isJson = false) => () => {
+  saveItemsMetadata = (index) => async (value) => {
+    const metadata = this.metadata;
+    const [currentMetadataItem] = metadata.filter(m => m.index === index);
+    if (currentMetadataItem) {
+      if (currentMetadataItem.value === value) {
+        return;
+      }
+      currentMetadataItem.value = value;
+      let request;
+      if (this.props.dataStorageTags) {
+        const payload = {};
+        for (let i = 0; i < metadata.length; i++) {
+          payload[metadata[i].key] = metadata[i].value;
+        }
+        request = new DataStorageTagsUpdate(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
+        await request.send(payload);
+      } else {
+        const payload = {};
+        for (let i = 0; i < metadata.length; i++) {
+          payload[metadata[i].key] = {
+            value: metadata[i].value,
+            type: metadata[i].type
+          };
+        }
+        request = new MetadataUpdate();
+        await request.send({
+          entity: {
+            entityId: this.props.entityId,
+            entityClass: this.props.entityClass,
+          },
+          data: payload
+        });
+      }
+      if (request.error) {
+        message.error(request.error, 5);
+        return false;
+      } else {
+        this.props.metadata.fetch();
+      }
+      return true;
+    }
+    return false;
+  };
+
+  onMetadataEditStarted = (field, index, value) => () => {
     if (this.props.readOnly) {
       return;
     }
     if (field === 'key') {
-      this.setState({addKey: null, isJson: false, editableKeyIndex: index, editableValueIndex: null, editableText: value});
+      this.setState({addKey: null, editableKeyIndex: index, editableValueIndex: null, editableText: value});
     } else if (field === 'value') {
-      this.setState({addKey: null, isJson, editableKeyIndex: null, editableValueIndex: index, editableText: value});
+      this.setState({addKey: null, editableKeyIndex: null, editableValueIndex: index, editableText: value});
     }
   };
 
@@ -609,27 +652,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     }
     if (isJson(metadataItem.value)) {
-      const onEditModeChanged = (editMode) => {
-        if (editMode) {
-          this.onMetadataEditStarted(
-            'value',
-            metadataItem.index,
-            metadataItem.value,
-            true
-          )();
-        } else {
-          this.saveMetadata({index: metadataItem.index, field: 'value'})();
-        }
-      };
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
             <ItemsTable
+              title={metadataItem.key}
               disabled={this.props.readOnly}
               value={metadataItem.value}
-              editMode={this.state.editableValueIndex === metadataItem.index}
-              onChange={this.onMetadataChange}
-              onEditModeChange={onEditModeChanged}
+              onChange={this.saveItemsMetadata(metadataItem.index)}
             />
           </td>
         </tr>
@@ -669,7 +699,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   @computed
   get metadata () {
-    if (this.props.metadata.error || this.props.metadata.pending) {
+    if (!this.props.metadata.loaded) {
       return [];
     }
     const value = [];
@@ -1091,7 +1121,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   render () {
-    if (this.props.metadata.pending) {
+    if (this.props.metadata.pending && !this.props.metadata.loaded) {
       return <LoadingView />;
     }
     return (
