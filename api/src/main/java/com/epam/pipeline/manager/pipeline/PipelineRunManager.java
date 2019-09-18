@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
@@ -838,6 +839,22 @@ public class PipelineRunManager {
         pipelineRunDao.createRunSids(runId, runSids);
         pipelineRun.setRunSids(runSids);
         return pipelineRun;
+    }
+
+    /**
+     * Updates run's tags
+     * @param runId is ID of pipeline run which tags should be updated
+     * @param newTags object, containing a map with tags to set for a pipeline
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateTags(final Long runId, final TagsVO newTags) {
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        run.setTags(newTags.getTags());
+        pipelineRunDao.updateTags(run);
+        return run;
     }
 
     /**
