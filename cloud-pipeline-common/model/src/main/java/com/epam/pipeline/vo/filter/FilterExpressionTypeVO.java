@@ -16,47 +16,15 @@
 
 package com.epam.pipeline.vo.filter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public enum FilterExpressionTypeVO {
     LOGICAL(0),
     AND(1),
     OR(2);
 
     private long id;
-    private static Map<Long, FilterExpressionTypeVO> idMap = new HashMap<>();
-
-    static {
-        idMap.put(LOGICAL.id, LOGICAL);
-        idMap.put(AND.id, AND);
-        idMap.put(OR.id, OR);
-    }
-
-    private static Map<String, FilterExpressionTypeVO> namesMap = new HashMap<>();
-
-    static {
-        namesMap.put(LOGICAL.name(), LOGICAL);
-        namesMap.put(AND.name(), AND);
-        namesMap.put(OR.name(), OR);
-    }
 
     FilterExpressionTypeVO(long id) {
         this.id = id;
-    }
-
-    public static FilterExpressionTypeVO getById(Long id) {
-        if (id == null) {
-            return null;
-        }
-        return idMap.get(id);
-    }
-
-    public static FilterExpressionTypeVO getByName(String name) {
-        if (name == null) {
-            return null;
-        }
-        return namesMap.get(name);
     }
 
     public Long getId() {

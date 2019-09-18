@@ -69,17 +69,12 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view) {
-        TesListTasksResponse tesListTasksResponse = new TesListTasksResponse();
-        List<PipelineRun> pipelineRunList;
-        if (StringUtils.isNotEmpty(namePrefix)) {
-            pipelineRunList = searchRunsWithNamePrefix(namePrefix, pageSize, pageToken);
-        } else {
-            pipelineRunList = filterRunsWithOutNamePrefix(pageSize, pageToken);
-        }
-        tesListTasksResponse.setTasks(pipelineRunList.stream().map(pipelineRun ->
+        List<PipelineRun> pipelineRunList = StringUtils.isNotEmpty(namePrefix) ?
+                searchRunsWithNamePrefix(namePrefix, pageSize, pageToken)
+                : filterRunsWithOutNamePrefix(pageSize, pageToken);
+        return new TesListTasksResponse(pipelineRunList.stream().map(pipelineRun ->
                 taskMapper.mapToTesTask(pipelineRun, Optional.ofNullable(view).orElse(DEFAULT_TASK_VIEW)))
                 .collect(Collectors.toList()));
-        return tesListTasksResponse;
     }
 
     private List<PipelineRun> searchRunsWithNamePrefix(String namePrefix, Long pageSize, String pageToken) {
