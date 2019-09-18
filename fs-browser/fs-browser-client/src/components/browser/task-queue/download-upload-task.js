@@ -9,6 +9,19 @@ import autoDownloadFile from '../../../models/utilities/auto-download-file';
 import {TaskStatuses} from '../../../models';
 import styles from './task-queue.css';
 
+function getTaskStatus (task) {
+  if (task.loaded) {
+    return task.value.status;
+  }
+  if (task.isRunning) {
+    return TaskStatuses.pending;
+  }
+  if (task.error) {
+    return TaskStatuses.failure;
+  }
+  return TaskStatuses.pending;
+}
+
 @inject('messages')
 @observer
 class DownloadUploadTask extends React.Component {
@@ -36,6 +49,9 @@ class DownloadUploadTask extends React.Component {
 
   get defaultActionDescription() {
     const {task} = this.props;
+    if (task.error && !task.isRunning) {
+      return task.error;
+    }
     if (task && task.item) {
       switch (task.item.type) {
         case 'download': return 'Downloading...';
@@ -127,7 +143,7 @@ class DownloadUploadTask extends React.Component {
             className={styles.name}
           >
             <StatusIcon
-              status={task.loaded ? task.value.status : TaskStatuses.pending}
+              status={getTaskStatus(task)}
             />
             {itemName(task.item.path)}
           </div>

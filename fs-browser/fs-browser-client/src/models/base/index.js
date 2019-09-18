@@ -7,6 +7,8 @@ if (FS_BROWSER_API !== '/' && FS_BROWSER_API.endsWith('/')) {
   FS_BROWSER_API = FS_BROWSER_API.substring(0, FS_BROWSER_API.length - 1);
 }
 
+const MAX_RETRY_ATTEMPTS = 5;
+
 function buildUrl(prefix, url) {
   if (!url) {
     return prefix;
@@ -48,6 +50,10 @@ class Remote {
 
   @observable error = undefined;
 
+  @observable code = undefined;
+
+  @observable failedAttemptsCount = 0;
+
   constructor() {
     if (this.constructor.auto) {
       this.fetch();
@@ -68,6 +74,11 @@ class Remote {
   get loaded() {
     this._fetchIfNeeded();
     return this._loaded;
+  }
+
+  @computed
+  get canReFetch() {
+    return this.failedAttemptsCount < MAX_RETRY_ATTEMPTS;
   }
 
   @observable _value = this.constructor.defaultValue;
@@ -123,9 +134,14 @@ class Remote {
           }
           fetchOptions.headers = headers;
           const response = await fetch(buildUrl(prefix, this.url), fetchOptions);
+          this.code = response.status;
+          if (this.code !== 200) {
+            throw new Error(`${response.status} ${response.statusText}`);
+          }
           const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
           this.update(data);
         } catch (e) {
+          this.failedAttemptsCount += 1;
           this.failed = true;
           this.error = e.toString();
         }
@@ -172,10 +188,12 @@ class Remote {
       this._loaded = true;
       this.error = undefined;
       this.failed = false;
+      this.failedAttemptsCount = 0;
     } else {
       this.error = value.message;
       this.failed = true;
       this._loaded = false;
+      this.failedAttemptsCount += 1;
     }
   }
 }

@@ -10,7 +10,9 @@ import UploadUrl from './upload-url';
 import UploadToBucket from './upload-to-bucket';
 import autoDownloadFile from './utilities/auto-download-file';
 
-const UPDATE_INTERVAL = 500;
+const LOCAL_STORAGE_TASKS_KEY = `TASKS_${window.location.pathname}`;
+
+const UPDATE_INTERVAL = 5000;
 
 const isRunning = status => [
   TaskStatuses.pending,
@@ -47,7 +49,7 @@ class Task extends TaskStatus {
 
   @computed
   get isRunning() {
-    return !this.loaded || isRunning(this.value.status);
+    return (this.loaded && isRunning(this.value.status)) || this.canReFetch;
   }
 
   constructor(id, item, callbacks, activeSession = false) {
@@ -69,7 +71,7 @@ class Task extends TaskStatus {
       onStatusChanged(this);
     }
     this.stop();
-    if (this.loaded && isRunning(this.value.status)) {
+    if (this.isRunning) {
       this.timer = setTimeout(this.fetch, UPDATE_INTERVAL);
     } else if (this.loaded && onFinished) {
       if (this.item.type === 'download') {
@@ -102,7 +104,7 @@ class TaskManager {
 
   constructor() {
     this.items = JSON
-      .parse(localStorage.getItem('TASKS') || '[]')
+      .parse(localStorage.getItem(LOCAL_STORAGE_TASKS_KEY) || '[]')
       .map(Task.mapper({
         onFinished: this.onTaskFinished,
       }));
@@ -142,7 +144,10 @@ class TaskManager {
         true,
       );
       this.items.push(task);
-      localStorage.setItem('TASKS', JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)));
+      localStorage.setItem(
+        LOCAL_STORAGE_TASKS_KEY,
+        JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)),
+      );
     }
     return request;
   };
@@ -173,7 +178,10 @@ class TaskManager {
           );
           this.removeTask(task);
           this.items.push(taskStatus);
-          localStorage.setItem('TASKS', JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)));
+          localStorage.setItem(
+            LOCAL_STORAGE_TASKS_KEY,
+            JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)),
+          );
         } else if (uploadTask.error) {
           this.removeTask(task);
           console.error(uploadTask.error);
@@ -189,7 +197,10 @@ class TaskManager {
     if (item) {
       const index = this.items.indexOf(item);
       this.items.splice(index, 1);
-      localStorage.setItem('TASKS', JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)));
+      localStorage.setItem(
+        LOCAL_STORAGE_TASKS_KEY,
+        JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)),
+      );
     }
   };
 

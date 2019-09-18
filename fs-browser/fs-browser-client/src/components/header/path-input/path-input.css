@@ -14,8 +14,10 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.link {
-
+.link a,
+.link a:visited,
+.link a:active {
+  color: #108ee9;
 }
 
 .link::after {

@@ -62,56 +62,55 @@ class Upload extends React.Component {
     }
   };
 
-  render() {
+  renderChildren = () => {
     const {
       children,
       showButton,
-      showUploadArea,
       uploadAreaClassName,
     } = this.props;
+    return (
+      <div className={classNames(styles.uploadArea, uploadAreaClassName)}>
+        {children}
+        {showButton && (
+          <UploadButton
+            className={styles.uploadButton}
+            onUpload={this.onFilesChanged}
+          />
+        )}
+      </div>
+    );
+  };
+
+  render() {
+    const {
+      showUploadArea,
+    } = this.props;
     const {drop} = this.state;
-    const Wrapper = ({content}) => {
-      if (showUploadArea) {
-        return (
-          <div
-            className={
-              classNames(
-                styles.container,
-                {
-                  [styles.drop]: !!drop,
-                },
-              )
-            }
-            onDragLeave={this.onDragLeave}
-            onDragOver={this.onDragOver}
-            onDrop={this.onDrop}
-          >
-            {content}
-          </div>
-        );
-      }
+    if (showUploadArea) {
       return (
         <div
-          className={styles.container}
+          className={
+            classNames(
+              styles.container,
+              {
+                [styles.drop]: !!drop,
+              },
+            )
+          }
+          onDragLeave={this.onDragLeave}
+          onDragOver={this.onDragOver}
+          onDrop={this.onDrop}
         >
-          {content}
+          {this.renderChildren()}
         </div>
       );
-    };
+    }
     return (
-      <Wrapper
-        content={(
-          <div className={classNames(styles.uploadArea, uploadAreaClassName)}>
-            {children}
-            {showButton && (
-              <UploadButton
-                className={styles.uploadButton}
-                onUpload={this.onFilesChanged}
-              />
-            )}
-          </div>
-        )}
-      />
+      <div
+        className={styles.container}
+      >
+        {this.renderChildren()}
+      </div>
     );
   }
 }

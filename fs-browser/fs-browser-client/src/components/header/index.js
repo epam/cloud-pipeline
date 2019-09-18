@@ -19,7 +19,7 @@ function header({disabled, history}) {
       className={styles.header}
     >
       <Upload
-        path={path}
+        path={path || ''}
         showUploadArea={false}
         showButton
         uploadAreaClassName={styles.uploadArea}
