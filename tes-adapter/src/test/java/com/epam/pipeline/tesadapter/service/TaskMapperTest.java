@@ -2,6 +2,9 @@ package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -9,6 +12,7 @@ import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.configuration.AppConfiguration;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
 import com.epam.pipeline.tesadapter.entity.TesResources;
+import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,10 +26,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -59,6 +65,7 @@ class TaskMapperTest {
     private AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = mock(AllowedInstanceAndPriceTypes.class);
     private Tool tool = mock(Tool.class);
     private TesTask tesTask = mock(TesTask.class);
+    private PipelineRun pipelineRun = mock(PipelineRun.class);
 
     @BeforeAll
     public static void setUpAll() {
@@ -221,5 +228,42 @@ class TaskMapperTest {
         instanceType.setMemory(instanceRam.floatValue());
         instanceType.setVCPU(instanceCpu.intValue());
         return instanceType;
+    }
+
+    @Test
+    public void testCreateTesState() {
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.RUNNING);
+        assertEquals(TesState.RUNNING, taskMapper.createTesState(pipelineRun));
+
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.STOPPED);
+        assertEquals(TesState.CANCELED, taskMapper.createTesState(pipelineRun));
+
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.PAUSED);
+        assertEquals(TesState.PAUSED, taskMapper.createTesState(pipelineRun));
+
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.RUNNING);
+        List<PipelineTask> pipelineTaskList = Arrays.asList(mock(PipelineTask.class));
+        when(cloudPipelineAPIClient.loadPipelineTasks(pipelineRun.getId())).thenReturn(pipelineTaskList);
+        when(pipelineTaskList.get(0).getName()).thenReturn("Console");
+        assertEquals(TesState.QUEUED, taskMapper.createTesState(pipelineRun));
+
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.RUNNING);
+        when(pipelineTaskList.get(0).getName()).thenReturn("InitializeEnvironment");
+        assertEquals(TesState.RUNNING, taskMapper.createTesState(pipelineRun));
+
+        when(pipelineRun.getStatus()).thenReturn(TaskStatus.RESUMING);
+        assertEquals(TesState.UNKNOWN, taskMapper.createTesState(pipelineRun));
+
+        assertNotNull(taskMapper.createTesState(pipelineRun));
+    }
+
+    @Test
+    public void testCreateTesInput() {
+        assertNotNull(taskMapper.createTesInput(pipelineRun.getPipelineRunParameters()));
+    }
+
+    @Test
+    public void testCreateTesOutput(){
+        assertNotNull(taskMapper.createTesOutput(pipelineRun.getPipelineRunParameters()));
     }
 }
