@@ -946,7 +946,12 @@ export default class RunTable extends localization.LocalizedReactComponent {
         } else {
           return (
             <div style={style}>
-              <StatusIcon run={run} small /> {clusterIcon} {text}
+              <StatusIcon
+                run={run}
+                small
+                additionalStyle={{marginRight: 5}}
+              />
+              {clusterIcon} {text}
             </div>
           );
         }
