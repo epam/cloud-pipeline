@@ -28,10 +28,10 @@ def append_delimiter(path, delimiter=DEFAULT_DELIMITER):
 def split_path(path, delimiter=DEFAULT_DELIMITER):
     path_parts = path.rstrip(delimiter).rsplit(delimiter, 1)
     if len(path_parts) == 1:
-        return '', path_parts[0]
+        return delimiter, path_parts[0]
     else:
         parent_path, file_name = path_parts
-        return parent_path, __matching_delimiter(file_name, path)
+        return parent_path + delimiter, __matching_delimiter(file_name, path)
 
 
 def __matching_delimiter(path, reference_path, delimiter=DEFAULT_DELIMITER):
