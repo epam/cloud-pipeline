@@ -23,6 +23,8 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.SystemNotificationFilterVO;
 import com.epam.pipeline.entity.notification.SystemNotification;
+import com.epam.pipeline.entity.notification.SystemNotificationConfirmation;
+import com.epam.pipeline.entity.notification.SystemNotificationConfirmationRequest;
 import com.epam.pipeline.manager.notification.SystemNotificationApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -128,5 +130,20 @@ public class SystemNotificationController  extends AbstractRestController {
     )
     public Result<SystemNotification> deleteNotification(@PathVariable(value = ID) Long id) {
         return Result.success(systemNotificationApiService.deleteNotification(id));
+    }
+
+    @RequestMapping(value = "/notification/confirm", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Confirms notification.",
+            notes = "Confirms notification by identifier with the given title and body for the currently authorized " +
+                    "user.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<SystemNotificationConfirmation> confirmNotification(
+            @RequestBody final SystemNotificationConfirmationRequest request) {
+        return Result.success(systemNotificationApiService.confirmNotification(request));
     }
 }
