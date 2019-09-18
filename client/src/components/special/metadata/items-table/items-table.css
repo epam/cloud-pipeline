@@ -35,13 +35,11 @@
 .table-container .table tr.item td {
   padding: 2px 4px;
   border: 1px solid #e0e0e0;
+  vertical-align: top;
 }
 
 .table-container .table tr.item td span {
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .code-editor {
