@@ -4,6 +4,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TaskView;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,7 @@ class TesTaskServiceImplTest {
 
     @BeforeEach
     public void setUp() {
-        when(cloudPipelineAPIClient.searchRuns(any())).thenReturn(pagedPipelineRunList);
+        when(cloudPipelineAPIClient.searchRuns(any(PagingRunFilterExpressionVO.class))).thenReturn(pagedPipelineRunList);
         tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, mock(TaskMapper.class),
                 mock(MessageHelper.class));
     }

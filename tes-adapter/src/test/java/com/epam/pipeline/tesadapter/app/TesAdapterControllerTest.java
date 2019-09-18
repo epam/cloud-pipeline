@@ -6,6 +6,7 @@ import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesCancelTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesCreateTaskResponse;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
+import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.tesadapter.service.CloudPipelineAPIClient;
 import com.epam.pipeline.tesadapter.service.TesTaskServiceImpl;
@@ -56,6 +57,17 @@ public class TesAdapterControllerTest {
         this.mockMvc.perform(post("/v1/tasks").contentType(MediaType.APPLICATION_JSON_UTF8)
                 .content(STUBBED_SUBMIT_JSON_REQUEST))
                 .andDo(print()).andExpect(status().isOk()).andExpect(content().json(STUBBED_SUBMIT_JSON_RESPONSE));
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunSubmitTesTasWithNullId() throws Exception {
+        TesTask tesTask = new TesTask();
+        tesTask.setExecutors(null);
+        when(tesTaskService.submitTesTask(tesTask)).thenThrow(new IllegalArgumentException());
+        this.mockMvc.perform(post("/v1/tasks")
+                .contentType("application/json")
+                .content(STUBBED_SUBMIT_JSON_REQUEST))
+                .andDo(print()).andExpect(status().isInternalServerError());
     }
 
     @Test

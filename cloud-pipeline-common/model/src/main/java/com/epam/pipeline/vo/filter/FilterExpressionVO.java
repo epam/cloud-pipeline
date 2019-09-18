@@ -16,13 +16,23 @@
 
 package com.epam.pipeline.vo.filter;
 
-public class WrongFilterException extends Exception {
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-    public WrongFilterException() {
+import java.util.List;
 
-    }
+@Getter
+@Setter
+@NoArgsConstructor
+public class FilterExpressionVO {
 
-    public WrongFilterException(String message) {
-        super(message);
-    }
+    private String field;
+    private String value;
+    private String operand;
+    @JsonIgnore
+    private FilterOperandTypeVO operandTypeVO;
+    private List<FilterExpressionVO> expressions;
+    private FilterExpressionTypeVO filterExpressionTypeVO;
 }

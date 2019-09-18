@@ -1,6 +1,7 @@
 package com.epam.pipeline.tesadapter.service;
 
 
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
@@ -14,9 +15,9 @@ import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
-import com.epam.pipeline.vo.filter.FilterExpression;
-import com.epam.pipeline.vo.filter.FilterExpressionType;
-import com.epam.pipeline.vo.filter.FilterOperandType;
+import com.epam.pipeline.vo.filter.FilterExpressionTypeVO;
+import com.epam.pipeline.vo.filter.FilterExpressionVO;
+import com.epam.pipeline.vo.filter.FilterOperandTypeVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -83,12 +84,12 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     private List<PipelineRun> searchRunsWithNamePrefix(String namePrefix, Long pageSize, String pageToken) {
         PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
-        FilterExpression expression = new FilterExpression();
+        FilterExpressionVO expression = new FilterExpressionVO();
         expression.setField(NAME_PREFIX);
         expression.setValue(namePrefix);
-        expression.setOperand(FilterOperandType.EQUALS.getOperand());
-        expression.setFilterExpressionType(FilterExpressionType.LOGICAL);
-        filterExpressionVO.setFilterExpression(expression);
+        expression.setOperand(FilterOperandTypeVO.EQUALS.getOperand());
+        expression.setFilterExpressionTypeVO(FilterExpressionTypeVO.LOGICAL);
+        filterExpressionVO.setFilterExpressionVO(expression);
         filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
         return cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements();
@@ -136,7 +137,7 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     private List<String> getDataStorage() {
         return ListUtils.emptyIfNull(cloudPipelineAPIClient.loadAllDataStorages())
-                .stream().map(storage -> storage.getPath())
+                .stream().map(AbstractDataStorage::getPath)
                 .collect(Collectors.toList());
     }
 }
