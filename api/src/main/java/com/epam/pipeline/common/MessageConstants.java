@@ -162,6 +162,7 @@ public final class MessageConstants {
     public static final String ERROR_ACTUAL_CMD_NOT_FOUND = "error.actual.cmd.not.found";
     public static final String ERROR_PIPELINE_RUN_NOT_INITIALIZED = "error.pipeline.run.not.initialized";
     public static final String ERROR_RUN_PRETTY_URL_IN_USE = "error.pipeline.run.pretty.url.in.use";
+    public static final String ERROR_RUN_PRETTY_NOT_FOUND = "error.pipeline.run.pretty.not.found";
     public static final String ERROR_EXCEED_MAX_RESTART_RUN_COUNT = "error.exceed.max.restart.run.count";
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
