@@ -9,7 +9,7 @@ import autoDownloadFile from '../../../models/utilities/auto-download-file';
 import {TaskStatuses} from '../../../models';
 import styles from './task-queue.css';
 
-function getTaskStatus (task) {
+function getTaskStatus(task) {
   if (task.loaded) {
     return task.value.status;
   }
