@@ -1,0 +1,22 @@
+.container {
+  flex: 1;
+  padding: 5px;
+}
+
+.upload-area {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: 1px dashed transparent;
+}
+
+.container.drop .upload-area {
+  border: 1px dashed #1890ff;
+  border-radius: 5px;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.upload-button {
+  background-color: white;
+  border-radius: 0;
+}

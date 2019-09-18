@@ -868,6 +868,20 @@ else
       chmod +x /usr/bin/pipe
 fi
 
+#install FS Browser
+if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
+      echo "Setup FSBrowser"
+      echo "-"
+
+      echo "Installing fsbrowser"
+      install_pip_package fsbrowser
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Unable to install FSBrowser"
+            exit 1
+      fi
+      fsbrowser_setup
+fi
+
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then

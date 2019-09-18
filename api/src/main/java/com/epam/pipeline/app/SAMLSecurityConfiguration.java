@@ -160,9 +160,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getUnsecuredResources() {
         return new String[] {
-            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz", "/PipelineQSUB.tar.gz",
+            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz",
             "/pipe-common.tar.gz", "/commit-run-scripts/**", "/restapi/**", "/pipe",
-            "/pipe-mount", "/error", "/error/**", "/pipe.zip"
+            "/pipe-mount", "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip"
         };
     }
 

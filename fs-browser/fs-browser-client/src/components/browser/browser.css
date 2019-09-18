@@ -1,0 +1,80 @@
+.container {
+  padding: 5px;
+  position: relative;
+}
+
+.alert {
+  border: 1px solid #ff908e;
+  background-color: #ffe4e9;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.table {
+  width: 100%;
+}
+
+.table tr.item {
+  line-height: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.table tr.item:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.025);
+}
+
+.table.disabled td {
+  color: gray;
+}
+
+tr.item.folder {
+  cursor: pointer;
+}
+
+tr.item:hover,
+tr.item:nth-child(even):hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+tr.item.folder:hover {
+  text-decoration: underline;
+}
+
+.table .icon {
+  width: 20px;
+  vertical-align: middle;
+}
+
+.table .name {
+  width: 1px;
+  min-width: 200px;
+  white-space: nowrap;
+}
+
+.table .icon div {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+}
+
+.table .actions {
+  width: 200px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.actions .action {
+  display: inline-block;
+}
+
+.actions .action svg {
+  stroke: #1890ff;
+}
+
+.actions .action > div {
+  width: 30px;
+}
+
+.actions .action .hint {
+  font-size: x-small;
+}
