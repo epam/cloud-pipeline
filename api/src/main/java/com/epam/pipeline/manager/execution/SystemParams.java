@@ -60,10 +60,10 @@ public enum SystemParams {
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
     PARENT_ID("parent-id", "parent_id", false),
     RESUMED_RUN("resumed-run", "RESUMED_RUN", false),
-    FSBROWSER_ENABLED("cp-fsbrowser-enabled", "CP_FSBROWSER_ENABLED", false),
-    FSBROWSER_PORT("cp-fsbrowser-port", "CP_FSBROWSER_PORT", false),
-    FSBROWSER_WD("cp-fsbrowser-wd", "CP_FSBROWSER_WD", false),
-    FSBROWSER_STORAGE("cp-fsbrowser-storage", "CP_FSBROWSER_STORAGE", false);
+    FSBROWSER_ENABLED("cp-fsbrowser-enabled", "CP_FSBROWSER_ENABLED", false, true),
+    FSBROWSER_PORT("cp-fsbrowser-port", "CP_FSBROWSER_PORT", false, true),
+    FSBROWSER_WD("cp-fsbrowser-wd", "CP_FSBROWSER_WD", false, true),
+    FSBROWSER_STORAGE("cp-fsbrowser-storage", "CP_FSBROWSER_STORAGE", false, true);
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";
