@@ -91,7 +91,7 @@ class TaskMapperTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.getExecutorFromTesExecutorsList(tesExecutors));
         assertTrue(exception.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS, tesExecutors)));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS)));
     }
 
     @ParameterizedTest
@@ -109,8 +109,8 @@ class TaskMapperTest {
         zones.add("Second zone");
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
-        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS, zones)));
+        assertEquals(exception.getMessage(), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "zones"));
     }
 
     @Test
