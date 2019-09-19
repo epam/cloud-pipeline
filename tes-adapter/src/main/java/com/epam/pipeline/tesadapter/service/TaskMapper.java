@@ -197,7 +197,7 @@ public class TaskMapper {
                 - ramGb) / ramGb + Math.abs((double) (instanceType.getVCPU() - cpuCores)) / cpuCores;
     }
 
-    private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
+    Double convertMemoryUnitTypeToGiB(String memoryUnit) {
         if (memoryUnit != null) {
             if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
                 return KIB_TO_GIB;
@@ -288,7 +288,7 @@ public class TaskMapper {
                                 .build()).collect(Collectors.toList());
     }
 
-    private TesResources createTesResources(PipelineRun run) {
+    TesResources createTesResources(PipelineRun run) {
         return TesResources.builder()
                 .preemptible(run.getInstance().getSpot())
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
@@ -298,7 +298,7 @@ public class TaskMapper {
                 .build();
     }
 
-    private List<String> getPipelineRunZone(PipelineRun run) {
+    List<String> getPipelineRunZone(PipelineRun run) {
         return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
     }
 
@@ -310,7 +310,7 @@ public class TaskMapper {
                 .build()));
     }
 
-    private List<TesTaskLog> createTesTaskLog(final Long runId) {
+    List<TesTaskLog> createTesTaskLog(final Long runId) {
         List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
         List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
                 .stdout(runLogList.stream()
@@ -322,7 +322,7 @@ public class TaskMapper {
                 .build());
     }
 
-    private InstanceType getInstanceType(PipelineRun run) {
+    InstanceType getInstanceType(PipelineRun run) {
         Long regionId = run.getInstance().getCloudRegionId();
         Boolean spot = run.getInstance().getSpot();
         Tool pipeLineTool = loadToolByTesImage(run.getDockerImage());
@@ -331,9 +331,7 @@ public class TaskMapper {
                 cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(pipeLineTool.getId(), regionId, spot);
         return Stream.of(allowedInstanceAndPriceTypes)
                 .flatMap(instance -> instance.getAllowedInstanceTypes().stream())
-                .filter(instance -> instance
-                        .getName()
-                        .equalsIgnoreCase(nodeType))
+                .filter(instance -> instance.getName().equalsIgnoreCase(nodeType))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY)));
     }
