@@ -853,8 +853,13 @@ public class PipelineRunManager {
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         run.setTags(newTags.getTags());
-        pipelineRunDao.updateTags(run);
+        pipelineRunDao.updateRunTags(run);
         return run;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunsTags(final Collection<PipelineRun> runs) {
+        pipelineRunDao.updateRunsTags(runs);
     }
 
     /**

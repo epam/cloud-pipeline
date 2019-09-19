@@ -358,9 +358,20 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
      * @param run run with updated tags
      **/
     @Transactional(propagation = Propagation.MANDATORY)
-    public void updateTags(final PipelineRun run) {
+    public void updateRunTags(final PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateTagsQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRunsTags(final Collection<PipelineRun> runs) {
+        if (CollectionUtils.isEmpty(runs)) {
+            return;
+        }
+        final MapSqlParameterSource[] params = runs.stream()
+                .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
+                .toArray(MapSqlParameterSource[]::new);
+        getNamedParameterJdbcTemplate().batchUpdate(updateTagsQuery, params);
     }
 
     public int countFilteredPipelineRuns(PipelineRunFilterVO filter, PipelineRunFilterVO.ProjectFilter projectFilter) {
