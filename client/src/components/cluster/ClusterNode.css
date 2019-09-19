@@ -70,8 +70,9 @@
 
 .full-height-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex: 1;
+  flex-wrap: wrap;
 }
 
 .half-height-container {
@@ -93,11 +94,12 @@
 }
 
 .chart-container {
-  flex: 1;
-  margin: 5px;
-  padding: 5px;
-  display: flex;
-  text-align: center;
+  display: block;
+}
+
+.chart-container .wrapper {
+  border: 1px solid #f1f1f1;
+  background-color: #fafafa;
 }
 
 .chart-container-80 {
@@ -111,4 +113,11 @@
 .two-charts-row {
   flex: 0.5;
   min-height: 300px;
+}
+
+.divider {
+  width: 1px;
+  height: 100%;
+  background-color: #ccc;
+  margin: 0 5px;
 }

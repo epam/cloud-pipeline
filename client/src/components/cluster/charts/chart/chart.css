@@ -1,0 +1,46 @@
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.chart-container .title {
+  text-align: center;
+  font-weight: bold;
+  font-size: larger;
+}
+
+.zoom-controls {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  margin-top: -40px;
+  height: 80px;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.zoom-controls .zoom-control {
+  margin: 2px;
+  width: 30px;
+  height: 30px;
+  font-size: x-large;
+  line-height: 30px;
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.zoom-controls:hover .zoom-control {
+  opacity: 0.75;
+}
+
+.zoom-controls .zoom-control:hover {
+  opacity: 1;
+}
+
+.zoom-controls .zoom-control.disabled {
+  opacity: 0.25;
+}

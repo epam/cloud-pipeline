@@ -18,15 +18,16 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Row} from 'antd';
-import styles from './Charts.css';
 import Chart from 'chart.js';
 import moment from 'moment';
+import styles from './Charts.css';
 
 @observer
 export default class NodeChart extends React.Component {
 
   static propTypes = {
     className: PropTypes.string,
+    style: PropTypes.object,
     usage: PropTypes.object
   };
 
@@ -98,9 +99,9 @@ export default class NodeChart extends React.Component {
           chartArea: {
             backgroundColor: '#fcfcfc'
           },
-          ...this.constructor.chartOptions
-        },
-        plugins: this.constructor.plugins
+          ...this.constructor.chartOptions,
+          plugins: this.constructor.plugins
+        }
       });
     }
   };
@@ -123,7 +124,8 @@ export default class NodeChart extends React.Component {
 
   render () {
     const containerProps = {
-      className: this.props.className || styles.container
+      className: styles.container,
+      style: this.props.style
     };
     let content;
     if (!this.props.usage || (!this.props.usage.pending && this.props.usage.error)) {

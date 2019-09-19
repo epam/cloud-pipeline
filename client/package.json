@@ -36,6 +36,7 @@
     "react-tap-event-plugin": "2.0.1",
     "react-test-renderer": "^15.5.4",
     "react-virtualized": "^9.7.2",
+    "react-vis": "^1.11.7",
     "remarkable": "^1.7.1"
   },
   "devDependencies": {
