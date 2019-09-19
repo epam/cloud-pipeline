@@ -50,8 +50,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -200,11 +198,10 @@ public class SystemNotificationManager {
         final String confirmationsKey = Optional.ofNullable(preferenceManager.getStringPreference(
                 SystemPreferences.MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY.getKey()))
                 .orElse(DEFAULT_SYSTEM_EVENTS_METADATA_KEY);
-        final SystemNotificationConfirmation escapedConfirmation = confirmation.escaped();
         final PipeConfValue updatedValue = Optional.ofNullable(metadataEntry.getData())
                 .map(data -> data.get(confirmationsKey))
-                .map(value -> appendMetadataValue(value, escapedConfirmation))
-                .orElseGet(() -> toMetadataValue(escapedConfirmation));
+                .map(value -> appendMetadataValue(value, confirmation))
+                .orElseGet(() -> toMetadataValue(confirmation));
         Optional.ofNullable(metadataEntry.getEntity())
                 .map(entityVO -> toMetadataVO(entityVO, confirmationsKey, updatedValue))
                 .ifPresent(metadataManager::updateMetadataItemKey);
@@ -221,11 +218,9 @@ public class SystemNotificationManager {
     private PipeConfValue appendMetadataValue(final PipeConfValue existingValue,
                                               final SystemNotificationConfirmation confirmation) {
         try {
-            final List<SystemNotificationConfirmation> allConfirmations = confirmations(existingValue)
-                    .map(SystemNotificationConfirmation::escaped)
-                    .collect(Collectors.toCollection(ArrayList::new));
-            allConfirmations.add(confirmation);
-            return toMetadataValue(allConfirmations);
+            final List<SystemNotificationConfirmation> confirmations = new ArrayList<>(toConfirmations(existingValue));
+            confirmations.add(confirmation);
+            return toMetadataValue(confirmations);
         } catch (IllegalArgumentException e) {
             log.error(String.format("System notification confirmations parsing has failed. " +
                     "All existing confirmations will be cleaned for the user %s.", confirmation.getUser()), e);
@@ -233,12 +228,11 @@ public class SystemNotificationManager {
         }
     }
 
-    private Stream<SystemNotificationConfirmation> confirmations(final PipeConfValue existingValue) {
+    private List<SystemNotificationConfirmation> toConfirmations(final PipeConfValue existingValue) {
         return Optional.of(existingValue)
                 .map(PipeConfValue::getValue)
                 .map(this::toConfirmations)
-                .map(List::stream)
-                .orElseGet(Stream::empty);
+                .orElseGet(Collections::emptyList);
     }
 
     private List<SystemNotificationConfirmation> toConfirmations(final String confirmationsJson) {

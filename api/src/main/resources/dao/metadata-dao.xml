@@ -49,7 +49,7 @@
             <value>
                 <![CDATA[
                     UPDATE pipeline.metadata SET
-                        data = jsonb_set(data, @KEY@, @VALUE@, true)
+                        data = jsonb_set(data, :KEY::text[], :VALUE::jsonb, true)
                     WHERE
                         entity_id = :ENTITY_ID
                     AND

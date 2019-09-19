@@ -34,10 +34,4 @@ public final class PipelineStringUtils {
         return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
     }
 
-    public static String escapeQuotes(final String input) {
-        if (StringUtils.isBlank(input)) {
-            return input;
-        }
-        return input.replaceAll("\"", "\\\\\"").replaceAll("\"", "\\\\\"");
-    }
 }
