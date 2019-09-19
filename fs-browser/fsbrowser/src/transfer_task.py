@@ -22,6 +22,7 @@ from fsbrowser.src.logger import BrowserLogger
 
 TAF_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
+TAR_GZ_PERMISSIONS = 0774  # -rwxrwxr--
 
 
 class TaskStatus(object):
@@ -184,6 +185,11 @@ class TransferTask(object):
         return result
 
     @staticmethod
+    def set_permissions(tarinfo):
+        tarinfo.mode = TAR_GZ_PERMISSIONS
+        return tarinfo
+
+    @staticmethod
     def compress_directory(output_filename, source_dir):
         with tarfile.open(output_filename, "w:gz") as tar:
-            tar.add(source_dir)
+            tar.add(source_dir, filter=TransferTask.set_permissions)
