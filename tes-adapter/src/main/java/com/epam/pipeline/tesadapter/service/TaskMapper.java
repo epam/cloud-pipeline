@@ -107,7 +107,7 @@ public class TaskMapper {
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
         pipelineStart.setHddSize(Optional.ofNullable(tesTask.getResources())
-                .map((tesResources) -> tesResources.getDiskGb().intValue()).orElse(defaultHddSize));
+                .map(TesResources::getDiskGb).map(Double::intValue).orElse(defaultHddSize));
         pipelineStart.setIsSpot(Optional.ofNullable(tesTask.getResources())
                 .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
                 .orElse(defaultPreemptible));
@@ -165,7 +165,7 @@ public class TaskMapper {
     }
 
     public String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
-                                                  Double ramGb, Long cpuCores) {
+                                                 Double ramGb, Long cpuCores) {
         return Optional.ofNullable(allowedInstanceAndPriceTypes.getAllowedInstanceTypes())
                 .orElseThrow(() ->
                         new IllegalArgumentException(messageHelper
