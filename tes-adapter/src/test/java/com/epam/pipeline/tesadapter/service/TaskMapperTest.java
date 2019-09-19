@@ -3,11 +3,14 @@ package com.epam.pipeline.tesadapter.service;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.configuration.AppConfiguration;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
+import com.epam.pipeline.tesadapter.entity.TesInput;
+import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,15 +30,17 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.util.StringUtils.hasText;
 
 
 @ExtendWith(value = SpringExtension.class)
 @ContextConfiguration(classes = {AppConfiguration.class})
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
 class TaskMapperTest {
     private static final Integer DEFAULT_HDD_SIZE = 50;
     private static final Double DEFAULT_RAM_GB = 8.0;
@@ -43,16 +48,33 @@ class TaskMapperTest {
     private static final Boolean DEFAULT_PREEMPTIBLE = true;
     private static final String DEFAULT_REGION_NAME = "eu-central-1";
     private static final String EXECUTORS = "executors";
+    private static final String SIMPLE_NAME = "name";
+    private static final String SIMPLE_URL = "somePath";
+    private static final String IMAGE = "image";
+    private static final String COMMAND = "command";
+    private static final String DEFAULT_COMMAND = "sleep 300";
     private static final Long STUBBED_REGION_ID = 1L;
     private static final Long STUBBED_TOOL_ID = 11584L;
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
     private static List<InstanceType> allowedInstanceTypes;
+    private static final Double KIB_TO_GIB = 0.00000095367432;
+    private static final Double MIB_TO_GIB = 0.0009765625;
+    private static final Double GIB_TO_GIB = 1.0;
+    private static final Double TIB_TO_GIB = 1024.0;
+    private static final Double PIB_TO_GIB = 1048576.0;
+    private static final Double EIB_TO_GIB = 1073741824.0;
 
     @Autowired
     private MessageHelper messageHelper;
 
     private TaskMapper taskMapper;
     private List<String> zones = new ArrayList<>();
+    private TesExecutor tesExecutor = new TesExecutor();
+    private TesInput tesInput = mock(TesInput.class);
+    private TesOutput tesOutput = mock(TesOutput.class);
+    private List<TesExecutor> tesExecutors = new ArrayList<>();
+    private List<TesInput> tesInputs = new ArrayList<>();
+    private List<TesOutput> tesOutputs = new ArrayList<>();
     private List<AbstractCloudRegion> abstractCloudRegions = new ArrayList<>();
 
     private AbstractCloudRegion abstractCloudRegion = mock(AbstractCloudRegion.class);
@@ -75,11 +97,29 @@ class TaskMapperTest {
         when(cloudPipelineAPIClient.loadTool(STUBBED_IMAGE)).thenReturn(tool);
         when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(STUBBED_TOOL_ID,
                 STUBBED_REGION_ID, DEFAULT_PREEMPTIBLE)).thenReturn(allowedInstanceAndPriceTypes);
+        when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(allowedInstanceTypes);
         when(tool.getId()).thenReturn(STUBBED_TOOL_ID);
         when(tesTask.getResources()).thenReturn(mock(TesResources.class));
-        when(tesTask.getResources().getPreemptible()).thenReturn(true);
+        when(tesTask.getResources().getPreemptible()).thenReturn(DEFAULT_PREEMPTIBLE);
+        when(tesTask.getResources().getDiskGb()).thenReturn(DEFAULT_HDD_SIZE.doubleValue());
+        when(tesTask.getResources().getRamGb()).thenReturn(DEFAULT_RAM_GB);
+        when(tesTask.getResources().getZones()).thenReturn(Collections.singletonList(DEFAULT_REGION_NAME));
+        when(tesTask.getExecutors()).thenReturn(tesExecutors);
+        when(tesTask.getInputs()).thenReturn(tesInputs);
+        when(tesTask.getOutputs()).thenReturn(tesOutputs);
+        when(tesOutput.getName()).thenReturn(SIMPLE_NAME);
+        when(tesInput.getName()).thenReturn(SIMPLE_NAME);
+        when(tesInput.getUrl()).thenReturn(SIMPLE_URL);
+        when(tesOutput.getUrl()).thenReturn(SIMPLE_URL);
         zones.add(DEFAULT_REGION_NAME);
+        tesInputs.add(tesInput);
+        tesOutputs.add(tesOutput);
+        tesExecutor.setImage(STUBBED_IMAGE);
+        tesExecutor.setCommand(Collections.singletonList(DEFAULT_COMMAND));
+        tesExecutor.setEnv(Collections.singletonMap(SIMPLE_NAME, SIMPLE_URL));
         abstractCloudRegions.add(abstractCloudRegion);
+        tesExecutors.add(tesExecutor);
+        tesTask.setExecutors(tesExecutors);
         this.taskMapper = new TaskMapper(DEFAULT_HDD_SIZE, DEFAULT_RAM_GB, DEFAULT_CPU_CORES,
                 DEFAULT_PREEMPTIBLE, DEFAULT_REGION_NAME, cloudPipelineAPIClient, this.messageHelper);
     }
@@ -124,13 +164,21 @@ class TaskMapperTest {
 
     @Test()
     public void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
-        List<TesExecutor> tesExecutors = new ArrayList<>();
-        tesExecutors.add(new TesExecutor());
         tesExecutors.add(new TesExecutor());
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.getExecutorFromTesExecutorsList(tesExecutors));
         assertTrue(exception.getMessage().contains(messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS)));
+    }
+
+    @Test
+    void convertMemoryUnitTypeToGiBShouldReturnCorrectConvertCoefficients() {
+        assertEquals(KIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("KiB"));
+        assertEquals(MIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("MiB"));
+        assertEquals(GIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("GiB"));
+        assertEquals(TIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("TiB"));
+        assertEquals(PIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("PiB"));
+        assertEquals(EIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("EiB"));
     }
 
     @ParameterizedTest
@@ -158,7 +206,17 @@ class TaskMapperTest {
     }
 
     @Test
-    public void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullImage() {
+    void expectIllegalArgExceptionWhenRunGetProperRegionIdWithWrongResponse() {
+        when(abstractCloudRegion.getId()).thenReturn(null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
+        assertEquals(exception.getMessage(), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "id"));
+    }
+
+    @Test
+    public void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullResponse() {
+        when(cloudPipelineAPIClient.loadTool(STUBBED_IMAGE)).thenReturn(null);
         IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.loadToolByTesImage(STUBBED_IMAGE));
         assertTrue(exception1.getMessage().contains(messageHelper.getMessage(
