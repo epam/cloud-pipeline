@@ -262,7 +262,7 @@ class S3Client(FileSystemClient):
         for file in self.ls(fuseutils.append_delimiter(path), depth=-1):
             self.delete(file.name)
 
-    def download_range(self, buf, path, offset=0, length=0):
+    def download_range(self, fd, buf, path, offset=0, length=0):
         source_path = path.lstrip(self._delimiter)
         source = {
             'Bucket': self.bucket,
@@ -277,23 +277,24 @@ class S3Client(FileSystemClient):
         for chunk in iter(lambda: response.read(S3Client.DOWNLOAD_CHUNK_SIZE_BYTES), b''):
             buf.write(chunk)
 
-    def upload_range(self, buf, path, offset=0):
+    def upload_range(self, fd, buf, path, offset=0):
+        mpu_key = fd, path
         source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(path, None)
+        mpu = self._mpus.get(mpu_key, None)
         try:
             if not mpu:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
                 if buf_size < self.MULTIPART_PART_MIN_SIZE_BYTES and file_size < self.MULTIPART_PART_MIN_SIZE_BYTES:
-                    self._upload_single_range(buf, source_path, offset)
+                    self._upload_single_range(fd, buf, source_path, offset)
                 else:
                     uploading_buf = buf
                     if offset and offset <= 5 * MB:
                         with io.BytesIO() as prefix_buf:
-                            self.download_range(prefix_buf, source_path)
+                            self.download_range(fd, prefix_buf, source_path)
                             uploading_buf = bytearray(prefix_buf.getvalue()) + buf
                     mpu = _MultipartUpload(source_path, offset, file_size, self.bucket, self._s3)
-                    self._mpus[path] = mpu
+                    self._mpus[mpu_key] = mpu
                     mpu.initiate()
                     mpu.upload_part(uploading_buf)
             else:
@@ -301,19 +302,20 @@ class S3Client(FileSystemClient):
         except _ANY_ERROR:
             if mpu:
                 mpu.abort()
-                del self._mpus[path]
+                del self._mpus[mpu_key]
             raise
 
-    def _upload_single_range(self, buf, path, offset):
+    def _upload_single_range(self, fd, buf, path, offset):
         with io.BytesIO() as original_buf:
-            self.download_range(original_buf, path)
+            self.download_range(fd, original_buf, path)
             modified_bytes = bytearray(original_buf.getvalue())
         modified_bytes[offset: offset + len(buf)] = buf
         with io.BytesIO(modified_bytes) as body:
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body)
 
-    def flush(self, path):
-        mpu = self._mpus.get(path, None)
+    def flush(self, fd, path):
+        mpu_key = fd, path
+        mpu = self._mpus.get(mpu_key, None)
         if mpu:
             try:
                 mpu.complete()
@@ -321,4 +323,4 @@ class S3Client(FileSystemClient):
                 mpu.abort()
                 raise
             finally:
-                del self._mpus[path]
+                del self._mpus[mpu_key]

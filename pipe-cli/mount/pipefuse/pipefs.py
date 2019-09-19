@@ -163,11 +163,11 @@ class PipeFS(Operations):
 
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
-            self.client.download_range(file_buff, path, offset=offset, length=length)
+            self.client.download_range(fh, file_buff, path, offset=offset, length=length)
             return file_buff.getvalue()
 
     def write(self, path, buf, offset, fh):
-        self.client.upload_range(buf, path, offset=offset)
+        self.client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
     def truncate(self, path, length, fh=None):
@@ -175,12 +175,12 @@ class PipeFS(Operations):
         if file_size > 0 and length == 0:
             self.create(path, self.mode)
         elif length > file_size:
-            self.client.upload_range([], path, offset=(length - 1))
+            self.client.upload_range(fh, [], path, offset=(length - 1))
         elif length != file_size:
             raise FuseOSError(errno.ERANGE)
 
     def flush(self, path, fh):
-        self.client.flush(path)
+        self.client.flush(fh, path)
 
     def release(self, path, fh):
         if self.fd > self.FH_START:

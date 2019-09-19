@@ -2,6 +2,7 @@ import io
 import logging
 
 from fsclient import FileSystemClient
+from fuseutils import MB
 
 
 class _FileBuffer(object):
@@ -72,7 +73,7 @@ class _ReadBuffer(_FileBuffer):
 
 class BufferedFileSystemClient(FileSystemClient):
 
-    _READ_AHEAD_SIZE = 20 * 1024 * 1024
+    _READ_AHEAD_SIZE = 20 * MB
 
     def __init__(self, inner, capacity):
         """
@@ -115,46 +116,49 @@ class BufferedFileSystemClient(FileSystemClient):
     def rmdir(self, path):
         self._inner.rmdir(path)
 
-    def download_range(self, buf, path, offset=0, length=0):
-        file_buf = self._read_file_buffs.get(path)
+    def download_range(self, fd, buf, path, offset=0, length=0):
+        buf_key = fd, path
+        file_buf = self._read_file_buffs.get(buf_key)
         if not file_buf:
             file_size = self.attrs(path).size
             if not file_size:
                 return
             file_buf = _ReadBuffer(offset, file_size)
-            file_buf.append(self._read_ahead(offset, path))
-            self._read_file_buffs[path] = file_buf
+            file_buf.append(self._read_ahead(fd, offset, path))
+            self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
-            file_buf.append(self._read_ahead(file_buf.offset, path))
+            file_buf.append(self._read_ahead(fd, file_buf.offset, path))
             file_buf.shrink()
         buf.write(file_buf.view(offset, length))
 
-    def _read_ahead(self, offset, path):
+    def _read_ahead(self, fd, offset, path):
         with io.BytesIO() as read_ahead_buf:
-            self._inner.download_range(read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
+            self._inner.download_range(fd, read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
             return read_ahead_buf.getvalue()
 
-    def upload_range(self, buf, path, offset=0):
-        file_buf = self._download_file_buffs.get(path)
+    def upload_range(self, fd, buf, path, offset=0):
+        buf_key = fd, path
+        file_buf = self._download_file_buffs.get(buf_key)
         if not file_buf:
             file_buf = _WriteBuffer(offset, self._capacity)
-            self._download_file_buffs[path] = file_buf
+            self._download_file_buffs[buf_key] = file_buf
         file_buf.append(buf, offset)
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
-            write_buf = self._download_file_buffs.pop(path, None)
+            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % (fd, path))
+            write_buf = self._download_file_buffs.pop(buf_key, None)
             if write_buf:
                 collected_buf, collected_offset = write_buf.collect()
-                self._inner.upload_range(collected_buf, path, collected_offset)
+                self._inner.upload_range(fd, collected_buf, path, collected_offset)
 
-    def flush(self, path):
-        self._read_file_buffs.pop(path, None)
-        write_buf = self._download_file_buffs.pop(path, None)
-        logging.info('Flushing buffers for %s' % path)
+    def flush(self, fd, path):
+        buf_key = fd, path
+        self._read_file_buffs.pop(buf_key, None)
+        write_buf = self._download_file_buffs.pop(buf_key, None)
+        logging.info('Flushing buffers for %d:%s' % (fd, path))
         if write_buf:
             buf, offset = write_buf.collect()
-            self._inner.upload_range(buf, path, offset)
-        self._inner.flush(path)
+            self._inner.upload_range(fd, buf, path, offset)
+        self._inner.flush(fd, path)
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):

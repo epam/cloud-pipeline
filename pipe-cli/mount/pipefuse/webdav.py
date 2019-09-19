@@ -123,14 +123,14 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             self.prop_exists(elem, 'collection')
         )
 
-    def download_range(self, data, remote_path, offset=0, length=0):
+    def download_range(self, fd, data, remote_path, offset=0, length=0):
         headers = None
         if offset >= 0 and length >= 0:
             headers = {'Range': 'bytes=%d-%d' % (offset, offset + length - 1)}
         response = self._send('GET', remote_path, (200, 206), stream=True, headers=headers)
         self._download(data, response)
 
-    def upload_range(self, data, remote_path, offset=0):
+    def upload_range(self, fd, data, remote_path, offset=0):
         end = offset + len(data) - 1
         if end < offset:
             end = offset

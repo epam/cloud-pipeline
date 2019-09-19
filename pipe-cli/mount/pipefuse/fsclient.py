@@ -60,14 +60,37 @@ class FileSystemClient:
         pass
 
     @abstractmethod
-    def download_range(self, buf, path, offset, length):
+    def download_range(self, fd, buf, path, offset, length):
+        """
+        Downloads a range of data by the given path into the given buffer.
+
+        :param fd: File descriptor.
+        :param buf: Buffer to write downloaded data to.
+        :param path: Path to read data from.
+        :param offset: Downloading data offset.
+        :param length: Downloading data length.
+        """
         pass
 
     @abstractmethod
-    def upload_range(self, buf, path, offset):
+    def upload_range(self, fd, buf, path, offset):
+        """
+        Uploads the given buffer to the given path.
+
+        :param fd: File descriptor.
+        :param buf: Buffer to read uploading data from.
+        :param path: Path to write data to.
+        :param offset: Uploading data offset.
+        """
         pass
 
-    def flush(self, path):
+    def flush(self, fd, path):
+        """
+        Flushes downloading or uploading data for the given path.
+
+        :param fd: File descriptor.
+        :param path: Path to flush data for.
+        """
         pass
 
     def utimens(self, path, times=None):

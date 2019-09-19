@@ -90,14 +90,14 @@ class CachingFileSystemClient(FileSystemClient):
         self._remove_from_parent_cache(path)
         self._invalidate_cache_recursively(path)
 
-    def download_range(self, buf, path, offset=0, length=0):
-        self._inner.download_range(buf, path, offset, length)
+    def download_range(self, fd, buf, path, offset=0, length=0):
+        self._inner.download_range(fd, buf, path, offset, length)
 
-    def upload_range(self, buf, path, offset=0):
-        self._inner.upload_range(buf, path, offset)
+    def upload_range(self, fd, buf, path, offset=0):
+        self._inner.upload_range(fd, buf, path, offset)
 
-    def flush(self, path):
-        self._inner.flush(path)
+    def flush(self, fd, path):
+        self._inner.flush(fd, path)
         self._invalidate_parent_cache(path)
 
     def _remove_from_parent_cache(self, path):
