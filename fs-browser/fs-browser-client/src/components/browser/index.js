@@ -140,13 +140,13 @@ class Browser extends React.Component {
         removable: true,
       }));
     items.sort((a, b) => {
-      if (a.isFolder && b.isFolder) {
-        return 0;
+      if (a.name > b.name) {
+        return 1;
       }
-      if (a.isFolder) {
+      if (a.name < b.name) {
         return -1;
       }
-      return 1;
+      return 0;
     });
     elements.push(...items);
     return (
