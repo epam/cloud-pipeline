@@ -166,10 +166,10 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     }
 
     @Test
-    public void updateTags() {
+    public void testUpdateRunTags() {
         final PipelineRun run = createTestPipelineRun();
         final Map<String, String> tags = new HashMap<>();
-        loadTagsAndCompareWithExpected(run, tags);
+        loadTagsAndCompareWithExpected(run.getId(), tags);
         tags.put(TAG_KEY_1, TAG_VALUE_1);
         updateTagsAndVerifySaveIsCorrect(run, tags);
         tags.put(TAG_KEY_2, TAG_VALUE_2);
@@ -179,17 +179,31 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         tags.remove(TAG_KEY_2);
         updateTagsAndVerifySaveIsCorrect(run, tags);
         run.setTags(null);
-        loadTagsAndCompareWithExpected(run, Collections.emptyMap());
+        loadTagsAndCompareWithExpected(run.getId(), Collections.emptyMap());
+    }
+
+    @Test
+    public void updateTagsForRuns() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+        run1.setTags(tags1);
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2);
+        run2.setTags(tags2);
+
+        pipelineRunDao.updateRunsTags(Arrays.asList(run1, run2));
+        loadTagsAndCompareWithExpected(run1.getId(), tags1);
+        loadTagsAndCompareWithExpected(run2.getId(), tags2);
     }
 
     private void updateTagsAndVerifySaveIsCorrect(final PipelineRun run, final Map<String, String> tags) {
         run.setTags(tags);
-        pipelineRunDao.updateTags(run);
-        loadTagsAndCompareWithExpected(run, tags);
+        pipelineRunDao.updateRunTags(run);
+        loadTagsAndCompareWithExpected(run.getId(), tags);
     }
 
-    private void loadTagsAndCompareWithExpected(final PipelineRun run, final Map<String, String> tags) {
-        final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(run.getId()).getTags();
+    private void loadTagsAndCompareWithExpected(final Long runId, final Map<String, String> tags) {
+        final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(runId).getTags();
         assertThat(loadedTags, CoreMatchers.is(tags));
     }
 
