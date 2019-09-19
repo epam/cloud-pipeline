@@ -52,6 +52,8 @@ class TaskMapperTest {
     private static final String SIMPLE_URL = "somePath";
     private static final String IMAGE = "image";
     private static final String COMMAND = "command";
+    private static final String INSTANCE_TYPES = "instanceList";
+    private static final String MIN_INSTANCE = "instance";
     private static final String DEFAULT_COMMAND = "sleep 300";
     private static final Long STUBBED_REGION_ID = 1L;
     private static final Long STUBBED_TOOL_ID = 11584L;
@@ -169,6 +171,28 @@ class TaskMapperTest {
                 () -> taskMapper.getExecutorFromTesExecutorsList(tesExecutors));
         assertTrue(exception.getMessage().contains(messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS)));
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunEvaluateMostProperInstanceTypeWithNullInstanceTypesList() {
+        when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.evaluateMostProperInstanceType(allowedInstanceAndPriceTypes,
+                        DEFAULT_RAM_GB, DEFAULT_CPU_CORES));
+        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES)));
+
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunEvaluateMostProperInstanceTypeWithNullResponse() {
+        when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(new ArrayList<>());
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.evaluateMostProperInstanceType(allowedInstanceAndPriceTypes,
+                        DEFAULT_RAM_GB, DEFAULT_CPU_CORES));
+        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, MIN_INSTANCE)));
+
     }
 
     @Test
