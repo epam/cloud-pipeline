@@ -8,6 +8,7 @@ import styles from './upload.css';
 @inject('messages', 'taskManager')
 class Upload extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
     path: PropTypes.string.isRequired,
     showButton: PropTypes.bool,
     showUploadArea: PropTypes.bool,
@@ -15,6 +16,7 @@ class Upload extends React.Component {
   };
 
   static defaultProps = {
+    className: null,
     showButton: false,
     showUploadArea: true,
     uploadAreaClassName: null,
@@ -83,6 +85,7 @@ class Upload extends React.Component {
 
   render() {
     const {
+      className,
       showUploadArea,
     } = this.props;
     const {drop} = this.state;
@@ -95,6 +98,7 @@ class Upload extends React.Component {
               {
                 [styles.drop]: !!drop,
               },
+              className,
             )
           }
           onDragLeave={this.onDragLeave}
@@ -107,7 +111,12 @@ class Upload extends React.Component {
     }
     return (
       <div
-        className={styles.container}
+        className={
+          classNames(
+            styles.container,
+            className,
+          )
+        }
       >
         {this.renderChildren()}
       </div>

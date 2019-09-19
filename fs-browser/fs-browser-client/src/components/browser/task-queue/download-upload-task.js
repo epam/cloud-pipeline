@@ -44,7 +44,12 @@ class DownloadUploadTask extends React.Component {
 
   get isUploaded() {
     const {task} = this.props;
-    return task && task.item && task.item.type === 'upload' && task.value.status === TaskStatuses.success;
+    return task
+      && task.item
+      && (
+        (task.item.type === 'upload' && task.value.status === TaskStatuses.success)
+        || task.item.type === 'uploaded'
+      );
   }
 
   get defaultActionDescription() {
@@ -52,15 +57,17 @@ class DownloadUploadTask extends React.Component {
     if (task.error && !task.isRunning) {
       return task.error;
     }
-    if (task && task.item) {
-      switch (task.item.type) {
-        case 'download': return 'Downloading...';
-        case 'upload': return 'Uploading...';
-        default:
-          return null;
-      }
+    if (task?.loaded && task.value?.status === TaskStatuses.failure) {
+      return task?.value.message || 'Failure';
     }
-    return null;
+    switch (task?.item?.type) {
+      case 'download': return 'Downloading...';
+      case 'downloaded': return 'Downloaded';
+      case 'upload': return 'Uploading...';
+      case 'uploaded': return 'Uploaded';
+      default:
+        return null;
+    }
   }
 
   download = () => {

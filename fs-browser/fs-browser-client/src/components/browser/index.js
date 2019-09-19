@@ -113,6 +113,13 @@ class Browser extends React.Component {
         </div>
       );
     }
+    if (!directory.loaded) {
+      return (
+        <div className={styles.alert}>
+          Error fetching directory contents
+        </div>
+      );
+    }
     const {disabled} = this.state;
     const elements = [];
     const parts = (path || '').split('/').filter(l => l.length > 0);
@@ -203,7 +210,10 @@ class Browser extends React.Component {
   render() {
     const {path, taskManager} = this.props;
     return (
-      <Upload path={path || ''}>
+      <Upload
+        className={styles.uploadContainer}
+        path={path || ''}
+      >
         <div
           className={styles.container}
         >

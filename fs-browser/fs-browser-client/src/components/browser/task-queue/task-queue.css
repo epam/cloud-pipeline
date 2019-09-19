@@ -4,7 +4,7 @@
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.25);
   position: fixed;
   bottom: 15px;
-  right: 15px;
+  right: 25px;
   z-index: 1;
   background-color: white;
 }
@@ -35,17 +35,12 @@
 .content {
   position: relative;
   padding: 5px;
-  max-width: 25vw;
+  max-width: 50vw;
   max-height: 25vh;
   visibility: visible;
   opacity: 1;
   overflow: auto;
   white-space: nowrap;
-  -webkit-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
-  -moz-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
-  -ms-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
-  -o-transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
-  transition: max-width 250ms, max-height 250ms, border-radius 250ms, opacity 250ms, overflow 250ms 0s;
   box-sizing: border-box;
 }
 
@@ -53,14 +48,9 @@
   margin: 0;
   visibility: hidden;
   opacity: 0;
-  max-width: 40px;
-  max-height: 40px;
+  width: 40px;
+  height: 40px;
   overflow: hidden;
-  -webkit-transition: max-width 250ms, max-height 250ms, border-radius 250ms, visibility 250ms 0s, opacity 250ms, overflow 250ms 0s;
-  -moz-transition: max-width 250ms, max-height 250ms, border-radius 250ms, visibility 250ms 0s, opacity 250ms, overflow 250ms 0s;
-  -ms-transition: max-width 250ms, max-height 250ms, border-radius 250ms, visibility 250ms 0s, opacity 250ms, overflow 250ms 0s;
-  -o-transition: max-width 250ms, max-height 250ms, border-radius 250ms, visibility 250ms 0s, opacity 250ms, overflow 250ms 0s;
-  transition: max-width 250ms, max-height 250ms, border-radius 250ms, visibility 250ms 0s, opacity 250ms, overflow 250ms 0s;
 }
 
 .header {

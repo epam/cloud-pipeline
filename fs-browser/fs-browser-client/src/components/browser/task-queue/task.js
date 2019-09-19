@@ -6,7 +6,7 @@ export default function ({manager, task}) {
   if (!task || !task.item) {
     return null;
   }
-  if (task.item.type === 'download' || task.item.type === 'upload') {
+  if (/^(download|downloaded|upload|uploaded)$/i.test(task.item.type)) {
     return (
       <DownloadUploadTask manager={manager} task={task} />
     );

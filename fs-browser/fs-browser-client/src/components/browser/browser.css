@@ -3,6 +3,10 @@
   position: relative;
 }
 
+.upload-container {
+  overflow: auto;
+}
+
 .alert {
   border: 1px solid #ff908e;
   background-color: #ffe4e9;

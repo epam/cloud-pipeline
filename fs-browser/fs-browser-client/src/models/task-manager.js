@@ -20,7 +20,7 @@ const isRunning = status => [
 ].indexOf(status) >= 0;
 
 function localStorageFilter(task) {
-  return task.type !== 'upload-to-bucket';
+  return /^(download|upload)$/i.test(task.item?.type);
 }
 
 class Task extends TaskStatus {
@@ -32,7 +32,7 @@ class Task extends TaskStatus {
 
   id;
 
-  item;
+  @observable item;
 
   timer;
 
@@ -122,7 +122,10 @@ class TaskManager {
       && task.value.result.url) {
       const name = task.item.path.split('/').pop();
       autoDownloadFile(name, task.downloadUrl);
-      this.removeTask(task);
+      this.changeTaskTypeOnFinish(task, 'downloaded');
+    }
+    if (task.item.type === 'upload') {
+      this.changeTaskTypeOnFinish(task, 'uploaded');
     }
     if (this.listener) {
       this.listener(task);
@@ -197,6 +200,18 @@ class TaskManager {
     if (item) {
       const index = this.items.indexOf(item);
       this.items.splice(index, 1);
+      localStorage.setItem(
+        LOCAL_STORAGE_TASKS_KEY,
+        JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)),
+      );
+    }
+  };
+
+  changeTaskTypeOnFinish = (task, newType) => {
+    const [item] = this.items.filter(i => i.id === task.id);
+    if (item) {
+      item.item.type = newType;
+      item.downloadUrl = null;
       localStorage.setItem(
         LOCAL_STORAGE_TASKS_KEY,
         JSON.stringify(this.items.filter(localStorageFilter).map(Task.unmapper)),
