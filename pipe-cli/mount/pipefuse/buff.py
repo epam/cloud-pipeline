@@ -13,6 +13,14 @@ class _FileBuffer(object):
         self._capacity = capacity
         self._buffs = []
 
+    @property
+    def offset(self):
+        return self._current_offset
+
+    @property
+    def capacity(self):
+        return self._capacity
+
     def append(self, buf, offset=None):
         if offset and offset != self._current_offset:
             raise RuntimeError('Only sequential writes supported. Offset differs %s != %s '
@@ -38,10 +46,6 @@ class _WriteBuffer(_FileBuffer):
 
 
 class _ReadBuffer(_FileBuffer):
-
-    @property
-    def offset(self):
-        return self._current_offset
 
     def view(self, offset, length):
         start = offset
@@ -123,15 +127,22 @@ class BufferedFileSystemClient(FileSystemClient):
             file_size = self.attrs(path).size
             if not file_size:
                 return
-            file_buf = _ReadBuffer(offset, file_size)
-            file_buf.append(self._read_ahead(fd, offset, path))
+            file_buf = self._new_read_buf(fd, path, file_size, offset)
             self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
-            file_buf.append(self._read_ahead(fd, file_buf.offset, path))
+            file_buf.append(self._read_ahead(fd, path, file_buf.offset))
             file_buf.shrink()
+            if not file_buf.suits(offset, length):
+                file_buf = self._new_read_buf(fd, path, file_buf.capacity, offset)
+                self._read_file_buffs[buf_key] = file_buf
         buf.write(file_buf.view(offset, length))
 
-    def _read_ahead(self, fd, offset, path):
+    def _new_read_buf(self, fd, path, file_size, offset):
+        file_buf = _ReadBuffer(offset, file_size)
+        file_buf.append(self._read_ahead(fd, path, offset))
+        return file_buf
+
+    def _read_ahead(self, fd, path, offset):
         with io.BytesIO() as read_ahead_buf:
             self._inner.download_range(fd, read_ahead_buf, path, offset, length=self._READ_AHEAD_SIZE)
             return read_ahead_buf.getvalue()
