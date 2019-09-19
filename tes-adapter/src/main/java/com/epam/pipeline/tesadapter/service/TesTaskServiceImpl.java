@@ -122,7 +122,7 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     private Long parseRunId(String id) {
         Assert.state(StringUtils.isNumeric(id),
-                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "ID", id));
+                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ID));
         return Long.parseLong(id);
     }
 

@@ -127,7 +127,7 @@ public class TaskMapper {
 
     public TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
         Assert.isTrue(tesExecutors.size() == ONLY_ONE, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS, tesExecutors));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS));
         return tesExecutors.get(FIRST);
     }
 
@@ -160,7 +160,7 @@ public class TaskMapper {
 
     public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES, zones));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES));
         return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
                 region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
                 .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(() ->
