@@ -57,6 +57,7 @@ public class TaskMapper {
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
     private static final String TOOL = "tool";
+    private static final String COMMAND = "command";
     private static final String INSTANCE_TYPES = "instanceList";
     private static final String MIN_INSTANCE = "instance";
     private static final String REGION_ID = "id";
@@ -100,16 +101,13 @@ public class TaskMapper {
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE));
         Tool pipelineTool = loadToolByTesImage(tesExecutor.getImage());
         pipelineStart.setInstanceType(getProperInstanceType(tesTask, pipelineTool));
-        pipelineStart.setCmdTemplate(String.join(SEPARATOR, tesExecutor.getCommand()));
+        pipelineStart.setCmdTemplate(String.join(SEPARATOR, Optional.ofNullable(tesExecutor.getCommand())
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, COMMAND)))));
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
         pipelineStart.setHddSize(Optional.ofNullable(tesTask.getResources())
-                .map(tesResources -> {
-                    if (Optional.ofNullable(tesResources.getDiskGb()).isPresent()) {
-                        return tesResources.getDiskGb().intValue();
-                    }
-                    return defaultHddSize;
-                }).orElse(defaultHddSize));
+                .map((tesResources) -> tesResources.getDiskGb().intValue()).orElse(defaultHddSize));
         pipelineStart.setIsSpot(Optional.ofNullable(tesTask.getResources())
                 .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
                 .orElse(defaultPreemptible));
@@ -151,8 +149,6 @@ public class TaskMapper {
     }
 
     public Tool loadToolByTesImage(String image) {
-        Assert.hasText(image, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, image));
         return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(() ->
                 new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, TOOL)));
@@ -197,7 +193,7 @@ public class TaskMapper {
                 - ramGb) / ramGb + Math.abs((double) (instanceType.getVCPU() - cpuCores)) / cpuCores;
     }
 
-    private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
+    public Double convertMemoryUnitTypeToGiB(String memoryUnit) {
         if (memoryUnit != null) {
             if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
                 return KIB_TO_GIB;

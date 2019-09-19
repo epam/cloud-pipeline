@@ -22,6 +22,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -83,6 +84,44 @@ class TaskMapperTest {
                 DEFAULT_PREEMPTIBLE, DEFAULT_REGION_NAME, cloudPipelineAPIClient, this.messageHelper);
     }
 
+    @Test
+    void mapToPipelineStartShouldConvertTesTaskToPipelineStart() {
+        PipelineStart pipelineStart = taskMapper.mapToPipelineStart(tesTask);
+        assertEquals(DEFAULT_HDD_SIZE, pipelineStart.getHddSize());
+        assertEquals(STUBBED_IMAGE, pipelineStart.getDockerImage());
+        assertTrue(hasText(pipelineStart.getInstanceType()));
+        assertEquals(DEFAULT_PREEMPTIBLE, pipelineStart.getIsSpot());
+        assertNotNull(pipelineStart.getParams());
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullTesTask() {
+        tesTask = null;
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.mapToPipelineStart(tesTask));
+        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, tesTask)));
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullCommandExecutor() {
+        tesExecutor.setCommand(null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.mapToPipelineStart(tesTask));
+        assertEquals(exception.getMessage(), (messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, COMMAND)));
+    }
+
+    @Test
+    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullOrEmptyTesImage() {
+        tesExecutor.setImage(null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.mapToPipelineStart(tesTask));
+        assertEquals(exception.getMessage(), (messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE)));
+
+    }
+
     @Test()
     public void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
         List<TesExecutor> tesExecutors = new ArrayList<>();
@@ -121,14 +160,9 @@ class TaskMapperTest {
     @Test
     public void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullImage() {
         IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.loadToolByTesImage(""));
+                () -> taskMapper.loadToolByTesImage(STUBBED_IMAGE));
         assertTrue(exception1.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "")));
-
-        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.loadToolByTesImage(null));
-        assertTrue(exception2.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "null")));
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "tool")));
     }
 
     @Test
