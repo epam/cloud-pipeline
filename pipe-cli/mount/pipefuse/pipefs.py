@@ -30,14 +30,35 @@ class UnsupportedOperationException(Exception):
     pass
 
 
-class PipeFS(Operations):
+class FileHandleContainer(object):
     FH_START = 2
+    FH_END = 10000
+
+    def __init__(self):
+        self._container = set()
+        try:
+            self._range = xrange(self.FH_START, self.FH_END)
+        except NameError:
+            self._range = range(self.FH_START, self.FH_END)
+
+    def get(self):
+        for fh in self._range:
+            if fh not in self._container:
+                self._container.add(fh)
+                return fh
+
+    def release(self, fh):
+        if fh in self._container:
+            self._container.remove(fh)
+
+
+class PipeFS(Operations):
 
     def __init__(self, client, mode=0o755):
         self.client = client
         if not self.client.is_available():
             raise RuntimeError("File system server is not available.")
-        self.fd = self.FH_START
+        self.container = FileHandleContainer()
         self.mode = mode
         self.delimiter = '/'
         self.root = '/'
@@ -152,14 +173,12 @@ class PipeFS(Operations):
 
     def open(self, path, flags):
         if self.client.exists(path):
-            self.fd += 1
-            return self.fd
+            return self.container.get()
         raise FuseOSError(errno.ENOENT)
 
     def create(self, path, mode, fi=None):
         self.client.upload([], path)
-        self.fd += 1
-        return self.fd
+        return self.container.get()
 
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
@@ -183,8 +202,7 @@ class PipeFS(Operations):
         self.client.flush(fh, path)
 
     def release(self, path, fh):
-        if self.fd > self.FH_START:
-            self.fd -= 1
+        self.container.release(fh)
 
     def fsync(self, path, fdatasync, fh):
         raise UnsupportedOperationException("fsync")
