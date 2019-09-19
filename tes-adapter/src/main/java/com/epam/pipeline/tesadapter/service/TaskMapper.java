@@ -164,7 +164,7 @@ public class TaskMapper {
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION_ID)));
     }
 
-    private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
+    public String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
                                                   Double ramGb, Long cpuCores) {
         return Optional.ofNullable(allowedInstanceAndPriceTypes.getAllowedInstanceTypes())
                 .orElseThrow(() ->
