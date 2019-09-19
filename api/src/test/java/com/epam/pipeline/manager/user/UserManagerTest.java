@@ -45,6 +45,7 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final Long DEFAULT_STORAGE_ID = null;
     private static final List<Long> DEFAULT_USER_ROLES = Collections.singletonList(2L);
     private static final String TEST_GROUP_NAME_1 = "test_group_1";
+    private static final String NOT_EXISTENT_GROUP = "not_exists";
     private static final List<String> DEFAULT_USER_GROUPS = Collections.singletonList(TEST_GROUP_NAME_1);
     private static final Map<String, String> DEFAULT_USER_ATTRIBUTE = Collections.emptyMap();
 
@@ -116,41 +117,54 @@ public class UserManagerTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void createGroupStatus() {
-        Assert.assertNotNull(userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false));
+        Assert.assertNotNull(userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false, true));
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateGroupStatus() {
-        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false, true);
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
-        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, true);
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, true, true);
         Assert.assertTrue(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
-        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false, true);
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
-    }
-
-    private GroupStatus getGroupStatus(final String groupName) {
-        return userManager.loadGroupBlockingStatus(Collections.singletonList(groupName))
-                          .stream()
-                          .findFirst()
-                          .orElse(null);
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void deleteGroupStatus() {
-        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false);
+        userManager.upsertGroupBlockingStatus(TEST_GROUP_NAME_1, false, true);
         Assert.assertFalse(getGroupStatus(TEST_GROUP_NAME_1).isBlocked());
-        userManager.deleteGroupBlockingStatus(TEST_GROUP_NAME_1);
+        userManager.deleteGroupBlockingStatus(TEST_GROUP_NAME_1, true);
         Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteShouldThrowWhenGroupNotExists() {
+        userManager.deleteGroupBlockingStatus(NOT_EXISTENT_GROUP, true);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void deleteShouldThrowWhenGroupIsEmpty() {
+        userManager.deleteGroupBlockingStatus("", true);
+    }
+
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void loadGroupStatusForNonexistentGroup() {
-        Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
+        Assert.assertNull(getGroupStatus(NOT_EXISTENT_GROUP));
+    }
+
+    private GroupStatus getGroupStatus(final String groupName) {
+        return userManager.loadGroupsBlockingStatus(Collections.singletonList(groupName))
+                .stream()
+                .findFirst()
+                .orElse(null);
     }
 
     private void compareAllFieldOfUsers(PipelineUser firstUser, PipelineUser secondUser) {

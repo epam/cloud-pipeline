@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -168,7 +169,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldAuthorizeRegisteredUserIfHisGroupsHaveValidGroupStatus() {
-        setValidGroupsStatusForUser();
+        setNotBlockingGroupsStatusForUser();
         final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
         Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
         Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
@@ -244,15 +245,26 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     @Test(expected = LockedException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
-        blockOneGroupForCurrentUser();
+        blockOneGroupForCurrentUser(true, groups);
         userDetailsService.loadUserBySAML(credential);
     }
 
-    private void blockOneGroupForCurrentUser() {
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedRole() {
+        final Role role = new Role();
+        role.setName(SAML_ATTRIBUTE_1);
+        role.setPredefined(false);
+        user.setRoles(Collections.singletonList(role));
+        blockOneGroupForCurrentUser(false, Collections.singletonList(SAML_ATTRIBUTE_1));
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void blockOneGroupForCurrentUser(final boolean external, final List<String> groups) {
         user.setUserName(USER_NAME);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
-        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true);
-        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+        final GroupStatus blockedGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, true, external);
+        Mockito.when(userManager.loadGroupsBlockingStatus(groups))
                 .thenReturn(Collections.singletonList(blockedGroupStatus));
     }
 
@@ -262,18 +274,18 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
     }
 
-    private void setValidGroupsStatusForUser() {
+    private void setNotBlockingGroupsStatusForUser() {
         user.setUserName(USER_NAME);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
-        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false);
-        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+        final GroupStatus validGroupStatus = new GroupStatus(SAML_ATTRIBUTE_1, false, true);
+        Mockito.when(userManager.loadGroupsBlockingStatus(groups))
                 .thenReturn(Collections.singletonList(validGroupStatus));
     }
 
     private void setEmptyGroupsStatusListForUser() {
         user.setUserName(USER_NAME);
         Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(user);
-        Mockito.when(userManager.loadGroupBlockingStatus(groups))
+        Mockito.when(userManager.loadGroupsBlockingStatus(groups))
                 .thenReturn(Collections.emptyList());
     }
 

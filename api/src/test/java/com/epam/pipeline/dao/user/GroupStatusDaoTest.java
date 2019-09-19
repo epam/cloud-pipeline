@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.List;
 
 @Transactional
 public class GroupStatusDaoTest extends AbstractSpringTest {
@@ -35,28 +36,37 @@ public class GroupStatusDaoTest extends AbstractSpringTest {
 
     @Test
     public void testGroupStatusCRUD() {
-        final GroupStatus groupStatusArgument = new GroupStatus(TEST_GROUP_1, false);
-        final GroupStatus savedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(groupStatusArgument);
-        Assert.assertEquals(TEST_GROUP_1, savedGroupStatus.getGroupName());
-        Assert.assertFalse(savedGroupStatus.isBlocked());
+        validateGroupStatusCRUD(true);
+        validateGroupStatusCRUD(false);
 
-        final GroupStatus loadedGroupStatus = loadGroupStatus(TEST_GROUP_1);
-        Assert.assertEquals(savedGroupStatus.getGroupName(), loadedGroupStatus.getGroupName());
-        Assert.assertEquals(savedGroupStatus.isBlocked(), loadedGroupStatus.isBlocked());
+        final List<GroupStatus> loadedGroups = groupStatusDao
+                .loadGroupsBlockingStatus(Collections.singletonList(TEST_GROUP_1));
+        Assert.assertEquals(2, loadedGroups.size());
 
-        final GroupStatus blockedGroupStatus = new GroupStatus(TEST_GROUP_1, true);
+        groupStatusDao.deleteGroupBlockingStatus(TEST_GROUP_1, true);
+        Assert.assertNull(loadGroupStatus(TEST_GROUP_1, true));
+        groupStatusDao.deleteGroupBlockingStatus(TEST_GROUP_1, false);
+        Assert.assertNull(loadGroupStatus(TEST_GROUP_1, false));
+    }
+
+    private GroupStatus validateGroupStatusCRUD(final boolean isExternal) {
+        final GroupStatus groupStatusExternal = new GroupStatus(TEST_GROUP_1, false, isExternal);
+        GroupStatus loadedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(groupStatusExternal);
+        Assert.assertEquals(TEST_GROUP_1, loadedGroupStatus.getGroupName());
+        Assert.assertFalse(loadedGroupStatus.isBlocked());
+
+        loadedGroupStatus = loadGroupStatus(TEST_GROUP_1, isExternal);
+        Assert.assertEquals(loadedGroupStatus.getGroupName(), loadedGroupStatus.getGroupName());
+        Assert.assertEquals(loadedGroupStatus.isBlocked(), loadedGroupStatus.isBlocked());
+
+        final GroupStatus blockedGroupStatus = new GroupStatus(TEST_GROUP_1, true, isExternal);
         final GroupStatus updatedGroupStatus = groupStatusDao.upsertGroupBlockingStatusQuery(blockedGroupStatus);
         Assert.assertEquals(blockedGroupStatus.getGroupName(), updatedGroupStatus.getGroupName());
         Assert.assertTrue(updatedGroupStatus.isBlocked());
-
-        groupStatusDao.deleteGroupBlockingStatus(TEST_GROUP_1);
-        Assert.assertNull(loadGroupStatus(TEST_GROUP_1));
+        return groupStatusExternal;
     }
 
-    private GroupStatus loadGroupStatus(final String groupName) {
-        return groupStatusDao.loadGroupsBlockingStatus(Collections.singletonList(groupName))
-                             .stream()
-                             .findFirst()
-                             .orElse(null);
+    private GroupStatus loadGroupStatus(final String groupName, final boolean external) {
+        return groupStatusDao.loadGroupBlockingStatus(groupName, external);
     }
 }

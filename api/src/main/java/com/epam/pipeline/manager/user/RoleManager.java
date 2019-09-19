@@ -19,9 +19,12 @@ package com.epam.pipeline.manager.user;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.user.RoleVO;
+import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.RoleWithGroupBlockedStatus;
 import com.epam.pipeline.entity.user.ExtendedRole;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
@@ -37,6 +40,8 @@ import org.springframework.util.Assert;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -60,6 +65,9 @@ public class RoleManager {
     @Autowired
     private DataStorageValidator storageValidator;
 
+    @Autowired
+    private GroupStatusDao groupStatusDao;
+
     @Transactional(propagation = Propagation.REQUIRED)
     public Role createRole(final String name, final boolean predefined,
                            final boolean userDefault, final Long storageId) {
@@ -81,8 +89,21 @@ public class RoleManager {
         return role;
     }
 
-    public Collection<Role> loadAllRoles(boolean loadUsers) {
-        return roleDao.loadAllRoles(loadUsers);
+    public Collection<RoleWithGroupBlockedStatus> loadAllRoles(boolean loadUsers) {
+        final Collection<Role> roles = roleDao.loadAllRoles(loadUsers);
+        final List<String> groups = roles
+                .stream()
+                .filter(role -> !role.isPredefined())
+                .map(Role::getName)
+                .collect(Collectors.toList());
+        final Map<String, GroupStatus> groupStatuses = groupStatusDao.loadGroupsBlockingStatus(groups)
+                .stream()
+                .filter(groupStatus -> !groupStatus.isExternal())
+                .collect(Collectors.toMap(GroupStatus::getGroupName, Function.identity()));
+        return roles
+                .stream()
+                .map(role -> convertRole(role, groupStatuses.get(role.getName())))
+                .collect(Collectors.toList());
     }
 
     public List<Role> loadUserDefaultRoles() {
@@ -175,5 +196,14 @@ public class RoleManager {
             formattedName = Role.ROLE_PREFIX + formattedName;
         }
         return formattedName;
+    }
+
+    private RoleWithGroupBlockedStatus convertRole(final Role role, final GroupStatus group) {
+        final RoleWithGroupBlockedStatus roleWithGroupBlockedStatus = new RoleWithGroupBlockedStatus();
+        roleWithGroupBlockedStatus.setRole(role);
+        if (!role.isPredefined()) {
+            roleWithGroupBlockedStatus.setBlocked(group != null && group.isBlocked());
+        }
+        return roleWithGroupBlockedStatus;
     }
 }

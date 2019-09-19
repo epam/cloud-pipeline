@@ -74,13 +74,14 @@ public class UserApiService {
      * @return created/updated groupStatus
      */
     @PreAuthorize(ADMIN_ONLY)
-    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
-        return userManager.upsertGroupBlockingStatus(groupName, blockStatus);
+    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus,
+                                                 final boolean external) {
+        return userManager.upsertGroupBlockingStatus(groupName, blockStatus, external);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public GroupStatus deleteGroupBlockingStatus(final String groupName) {
-        return userManager.deleteGroupBlockingStatus(groupName);
+    public GroupStatus deleteGroupBlockingStatus(final String groupName, final boolean external) {
+        return userManager.deleteGroupBlockingStatus(groupName, external);
     }
 
     @PreAuthorize(ADMIN_ONLY)

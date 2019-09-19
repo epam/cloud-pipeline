@@ -18,7 +18,6 @@ package com.epam.pipeline.security.saml;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -89,7 +88,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             PipelineUser createdUser = userManager.createUser(userName,
                     roles, groups, attributes, null);
             LOGGER.debug("Created user {} with groups {}", userName, groups);
-            validateGroupsBlockingStatus(groups, userName);
+            validateGroupsBlockingStatus(groups, null, userName);
             UserContext userContext = new UserContext(createdUser.getId(), userName);
             userContext.setGroups(createdUser.getGroups());
             userContext.setRoles(createdUser.getRoles());
@@ -101,23 +100,44 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                 throw new LockedException("User is blocked!");
             }
             loadedUser.setUserName(userName);
-            List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
+            final List<Role> userRoles = loadedUser.getRoles();
+            final List<Long> roles = userRoles.stream().map(Role::getId).collect(Collectors.toList());
             if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
                 loadedUser = userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
                 LOGGER.debug("Updated user groups {} ", groups);
             }
-            validateGroupsBlockingStatus(groups, userName);
+            validateGroupsBlockingStatus(groups, userRoles, userName);
             return new UserContext(loadedUser);
         }
     }
 
-    private void validateGroupsBlockingStatus(final List<String> groups, final String userName) {
-        final boolean isValidGroupList = userManager.loadGroupBlockingStatus(groups).stream()
-                .noneMatch(GroupStatus::isBlocked);
-        if (!isValidGroupList) {
+    private void validateGroupsBlockingStatus(final List<String> groups, final List<Role> roles,
+                                              final String userName) {
+        boolean notBlockedGroup = hasNotBlockedGroupsFromSaml(groups);
+        if (notBlockedGroup && CollectionUtils.isNotEmpty(roles)) {
+            notBlockedGroup = hasNotBlockedNotPredefinedGroups(roles);
+        }
+        if (!notBlockedGroup) {
             LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
             throw new LockedException("User is blocked!");
         }
+    }
+
+    private boolean hasNotBlockedNotPredefinedGroups(final List<Role> roles) {
+        final List<String> groups = roles
+                .stream()
+                .filter(role -> !role.isPredefined())
+                .map(Role::getName)
+                .collect(Collectors.toList());
+        return userManager.loadGroupsBlockingStatus(groups)
+                .stream()
+                .noneMatch(groupStatus -> groupStatus.isBlocked() && !groupStatus.isExternal());
+    }
+
+    private boolean hasNotBlockedGroupsFromSaml(final List<String> groups) {
+        return userManager.loadGroupsBlockingStatus(groups)
+                .stream()
+                .noneMatch(groupStatus -> groupStatus.isBlocked() && groupStatus.isExternal());
     }
 
     List<String> readAuthorities(SAMLCredential credential) {

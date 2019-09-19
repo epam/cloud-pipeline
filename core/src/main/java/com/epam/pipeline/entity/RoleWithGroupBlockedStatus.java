@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.user;
+package com.epam.pipeline.entity;
 
-import lombok.Data;
+import com.epam.pipeline.entity.user.Role;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-public class GroupStatus {
+@Getter
+@Setter
+@NoArgsConstructor
+public class RoleWithGroupBlockedStatus {
 
-    private final String groupName;
-    private final boolean blocked;
-    private final boolean external;
+    @JsonUnwrapped
+    private Role role;
+    private Boolean blocked;
 }

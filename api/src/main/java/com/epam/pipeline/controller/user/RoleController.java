@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.user;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.user.RoleVO;
+import com.epam.pipeline.entity.RoleWithGroupBlockedStatus;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.RoleApiService;
@@ -57,7 +58,7 @@ public class RoleController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<Collection<Role>> loadRoles(
+    public Result<Collection<RoleWithGroupBlockedStatus>> loadRoles(
             @RequestParam(required = false, defaultValue = "false") boolean loadUsers) {
         return Result.success(loadUsers ? roleApiService.loadRolesWithUsers() : roleApiService.loadRoles());
     }

@@ -303,8 +303,9 @@ public class UserController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<GroupStatus> upsertGroupBlockingStatus(@PathVariable final String groupName,
-                                                         @RequestParam final Boolean blockStatus) {
-        return Result.success(userApiService.upsertGroupBlockingStatus(groupName, blockStatus));
+                                                         @RequestParam final Boolean blockStatus,
+                                                         @RequestParam final Boolean external) {
+        return Result.success(userApiService.upsertGroupBlockingStatus(groupName, blockStatus, external));
     }
 
     @DeleteMapping(value = "/group/{groupName}/block")
@@ -316,7 +317,8 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<GroupStatus> deleteGroupBlockingStatus(@PathVariable final String groupName) {
-        return Result.success(userApiService.deleteGroupBlockingStatus(groupName));
+    public Result<GroupStatus> deleteGroupBlockingStatus(@PathVariable final String groupName,
+                                                         @RequestParam final Boolean external) {
+        return Result.success(userApiService.deleteGroupBlockingStatus(groupName, external));
     }
 }

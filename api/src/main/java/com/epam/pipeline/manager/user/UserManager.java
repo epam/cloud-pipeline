@@ -171,27 +171,24 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
-        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus);
+    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus,
+                                                 final boolean external) {
+        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus, external);
         return groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public GroupStatus deleteGroupBlockingStatus(final String groupName) {
-        final GroupStatus groupStatus = loadGroupBlockingStatus(groupName);
-        Assert.notNull(groupName,
+    public GroupStatus deleteGroupBlockingStatus(final String groupName, final boolean external) {
+        Assert.state(StringUtils.isNotBlank(groupName),
+                messageHelper.getMessage(MessageConstants.USER_GROUP_IS_REQUIRED));
+        final GroupStatus groupStatus = groupStatusDao.loadGroupBlockingStatus(groupName, external);
+        Assert.notNull(groupStatus,
                 messageHelper.getMessage(MessageConstants.ERROR_NO_GROUP_WAS_FOUND, groupName));
-        groupStatusDao.deleteGroupBlockingStatus(groupStatus.getGroupName());
+        groupStatusDao.deleteGroupBlockingStatus(groupName, external);
         return groupStatus;
     }
 
-    private GroupStatus loadGroupBlockingStatus(final String groupName) {
-        return loadGroupBlockingStatus(Collections.singletonList(groupName)).stream()
-                .findFirst()
-                .orElse(null);
-    }
-
-    public List<GroupStatus> loadGroupBlockingStatus(final List<String> groupNames) {
+    public List<GroupStatus> loadGroupsBlockingStatus(final List<String> groupNames) {
         return ListUtils.emptyIfNull(CollectionUtils.isEmpty(groupNames)
                 ? null
                 : groupStatusDao.loadGroupsBlockingStatus(groupNames));

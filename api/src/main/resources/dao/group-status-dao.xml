@@ -24,24 +24,39 @@
                 <![CDATA[
                     INSERT INTO pipeline.group_status (
                         group_name,
-                        blocked)
+                        blocked,
+                        is_external)
                     VALUES (
                         :GROUP_NAME,
-                        :GROUP_BLOCKED_STATUS)
-                    ON CONFLICT (group_name)
+                        :GROUP_BLOCKED_STATUS,
+                        :GROUP_EXTERNAL)
+                    ON CONFLICT (group_name, is_external)
                         DO UPDATE
                         SET blocked=:GROUP_BLOCKED_STATUS;
                 ]]>
             </value>
         </property>
-        <property name="loadGroupsBlockedStatusQuery">
+        <property name="loadGroupsBlockedStatusByNameQuery">
             <value>
                 <![CDATA[
                     SELECT
                         group_name,
-                        blocked as group_blocked_status
+                        blocked as group_blocked_status,
+                        is_external as group_external
                     FROM  pipeline.group_status
                     WHERE group_name in (:GROUPS)
+                ]]>
+            </value>
+        </property>
+        <property name="loadGroupBlockedStatusQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        group_name,
+                        blocked as group_blocked_status,
+                        is_external as group_external
+                    FROM  pipeline.group_status
+                    WHERE group_name = ? AND is_external = ?
                 ]]>
             </value>
         </property>
@@ -49,7 +64,7 @@
             <value>
                 <![CDATA[
                     DELETE FROM pipeline.group_status
-                    WHERE group_name = ?
+                    WHERE group_name = ? AND is_external = ?
                 ]]>
             </value>
         </property>

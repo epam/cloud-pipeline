@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.user.RoleVO;
+import com.epam.pipeline.entity.RoleWithGroupBlockedStatus;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,11 +36,11 @@ public class RoleApiService {
     private RoleManager roleManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public Collection<Role> loadRolesWithUsers() {
+    public Collection<RoleWithGroupBlockedStatus> loadRolesWithUsers() {
         return roleManager.loadAllRoles(true);
     }
 
-    public Collection<Role> loadRoles() {
+    public Collection<RoleWithGroupBlockedStatus> loadRoles() {
         return roleManager.loadAllRoles(false);
     }
 
