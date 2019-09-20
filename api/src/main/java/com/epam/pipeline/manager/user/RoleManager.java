@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,7 +97,8 @@ public class RoleManager {
                 .filter(role -> !role.isPredefined())
                 .map(Role::getName)
                 .collect(Collectors.toList());
-        final Map<String, GroupStatus> groupStatuses = groupStatusDao.loadGroupsBlockingStatus(groups)
+        final Map<String, GroupStatus> groupStatuses =
+                ListUtils.emptyIfNull(groupStatusDao.loadGroupsBlockingStatus(groups))
                 .stream()
                 .filter(groupStatus -> !groupStatus.isExternal())
                 .collect(Collectors.toMap(GroupStatus::getGroupName, Function.identity()));

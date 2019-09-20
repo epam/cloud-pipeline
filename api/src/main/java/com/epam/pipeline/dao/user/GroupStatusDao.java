@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.user;
 
 import com.epam.pipeline.entity.user.GroupStatus;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -48,6 +49,9 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<GroupStatus> loadGroupsBlockingStatus(final List<String> groupNames) {
+        if (CollectionUtils.isEmpty(groupNames)) {
+            return null;
+        }
         return getNamedParameterJdbcTemplate().query(loadGroupsBlockedStatusByNameQuery,
                 GroupParameters.getNamesListParameters(groupNames),
                 GroupParameters.getRowMapper());
