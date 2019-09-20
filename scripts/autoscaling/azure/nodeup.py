@@ -917,11 +917,19 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
-        return user_data_script\
-            .replace('@DOCKER_CERTS@', certs_string) \
-            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-            .replace('@KUBE_IP@', kube_ip) \
-            .replace('@KUBE_TOKEN@', kubeadm_token)
+        user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                            .replace('@KUBE_IP@', kube_ip) \
+                                            .replace('@KUBE_TOKEN@', kubeadm_token)
+
+        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
+        # to minimize the size of the user data
+        # Otherwise - raw script will be used
+        try:
+            from pipeline import pack_script_contents
+            return pack_script_contents(user_data_script)
+        except:
+            return user_data_script
     else:
         raise RuntimeError('Unable to get init.sh path')
 

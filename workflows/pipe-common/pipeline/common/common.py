@@ -51,3 +51,35 @@ def get_cmd_command_output(command, executable=None):
     exit_code = p.returncode
     if error: print(error)
     return exit_code, output.splitlines()
+
+def pack_script(script_path):
+    with open(script_path, 'r') as script_contents:
+        return pack_script_contents(script_contents.read()) 
+
+def pack_script_contents(script_contents):
+    import gzip
+    import io
+    import base64
+    gzipped_stream = io.BytesIO()
+    with gzip.GzipFile(fileobj=gzipped_stream, mode='wb') as compressed:
+        compressed.write(str(script_contents))
+    b64_contents = base64.b64encode(gzipped_stream.getvalue())
+
+    packed_template = """#!/bin/bash
+function p()
+{
+    pl=$1
+    m=$(grep -a -n '^PAYLOAD:$' $0 | cut -d ':' -f 1)
+    ps=$((m + 1))
+    tail -n +$ps $0 | base64 -d | gzip -d > $pl
+    chmod +x $pl
+}
+o=$(mktemp)
+p "$o"
+$o
+c=$?
+rm -f $o
+exit $c
+PAYLOAD:
+"""
+    return packed_template + b64_contents
