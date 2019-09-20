@@ -212,9 +212,9 @@ public class PipelineRun extends AbstractSecuredEntity {
      */
     public PipelineRun inverseTagForRun(final String key, final String value) {
         if (hasTag(key)) {
-            addTag(key, value);
-        } else {
             removeTag(key, value);
+        } else {
+            addTag(key, value);
         }
         return this;
     }
