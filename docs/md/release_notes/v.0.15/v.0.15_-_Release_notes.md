@@ -28,6 +28,7 @@
 - [Disabling of the FS mounts creation if no FS mount points are registered](#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered)
 - [Displaying resource limit errors during run resuming](#displaying-resource-limit-errors-during-run-resuming)
 - [Object storage creation in despite of that the CORS/Policies could not be applied](#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied)
+- [Track the confirmation of the "Blocking" notifications](#track-the-confirmation-of-the-blocking-notifications)
 - [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
@@ -532,6 +533,23 @@ But the corresponding warning will be displayed to the user like this:
 The storage {storage_name} was created, but certain policies were not applied.
 This can be caused by insufficient permissions.
 ```
+
+## Track the confirmation of the "Blocking" notifications
+
+System events allow to create popup notifications for users.  
+One of the notification types - the "Blocking" notification. Such event emerges in the middle of the window and requires confirmation from the user to disappear for proceeding with the GUI operations.  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_1.png)
+
+In certain cases (e.g. for some important messages), it is handy to be able to check which users confirmed the notification.  
+For that, in the current version the ability to view, which "blocking" notifications confirmed by specific user, was implemented for admins.  
+Information about confirmed notifications can be viewed at the "**Attributes**" section of the specific user's profile page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_2.png)
+
+Confirmed notifications are displayed as user attribute with the **KEY** `confirmed_notifications` (that name could be changed via the system-level preference **`system.events.confirmation.metadata.key`**) and the **VALUE** link that shows summary count of confirmed notifications for the user.  
+Click the **VALUE** link with the notification count to open the detailed table with confirmed notifications:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_3.png)
+
+For more details see ["blocking" notifications track](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#blocking-notifications-track).
 
 ## `pipe` CLI warnings on the JWT expiration
 
