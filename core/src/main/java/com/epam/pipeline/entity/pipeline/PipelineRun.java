@@ -173,4 +173,49 @@ public class PipelineRun extends AbstractSecuredEntity {
     public String getTaskName() {
         return StringUtils.isEmpty(pipelineName) ? podId : pipelineName;
     }
+
+    /**
+     * Check if given key represented in tag map
+     * @param key key to be checked
+     * @return true - if tag map contains the given key, false - otherwise
+     */
+    public boolean hasTag(final String key) {
+        return tags.containsKey(key);
+    }
+
+    /**
+     * Add tag to the given run
+     * @param key key to be inserted
+     * @param value value to be checked
+     * @return true - if new tag is added, false - otherwise
+     */
+    public boolean addTag(final String key, final String value) {
+        return tags.putIfAbsent(key, value) == null;
+    }
+
+    /**
+     * Remove tag from the given run
+     * @param key key to be removed
+     * @param value value to be removed
+     * @return true - if the given tag is removed, false - otherwise
+     */
+
+    public boolean removeTag(final String key, final String value) {
+        return tags.remove(key, value);
+    }
+
+    /**
+     * If tag isn't set for run, add new one, or remove it otherwise.
+     * @param key tag key to be proceeded
+     * @param value tag value to be proceeded
+     * @return run with updated tags
+     */
+    public PipelineRun inverseTagForRun(final String key, final String value) {
+        if (hasTag(key)) {
+            addTag(key, value);
+        } else {
+            removeTag(key, value);
+        }
+        return this;
+    }
 }

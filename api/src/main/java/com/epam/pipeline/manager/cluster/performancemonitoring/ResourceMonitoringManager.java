@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,13 +122,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     public void monitorResourceUsage() {
         List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
-
-        final List<PipelineRun> runsToUpdateTags = processIdleRuns(runs);
-        runsToUpdateTags.addAll(processOverloadedRuns(runs));
-        pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        processIdleRuns(runs);
+        processOverloadedRuns(runs);
     }
 
-    private List<PipelineRun> processOverloadedRuns(final List<PipelineRun> runs) {
+    private void processOverloadedRuns(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = runs.stream()
                 .filter(r -> {
                     final boolean hasNodeName = Objects.nonNull(r.getInstance())
@@ -163,46 +162,24 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
-        return runsToUpdateTags;
+        pipelineRunManager.updateRunsTags(runsToUpdateTags);
     }
 
     private List<PipelineRun> getRunsToUpdatePressuredTags(final Map<String, PipelineRun> running,
                               final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> runsToNotify) {
-        final List<PipelineRun> listOfRunsToNotify = runsToNotify
+        final Set<Long> listOfRunsIdToNotify = runsToNotify
                 .parallelStream()
-                .map(Pair::getLeft)
-                .collect(Collectors.toList());
-        final Predicate<PipelineRun> runToBeNotified = listOfRunsToNotify::contains;
-        final Stream<PipelineRun> runsToAddTag = listOfRunsToNotify
-                .parallelStream()
-                .filter(this::hasNoPressuredTag)
-                .map(this::addPressuredTagToRun);
-        final Stream<PipelineRun> runsToRemoveTag = running.values()
-                .parallelStream()
-                .filter(runToBeNotified.negate())
-                .filter(this::hasPressuredTag)
-                .map(this::removePressuredTagFromRun);
+                .map(p -> p.getLeft().getId())
+                .collect(Collectors.toSet());
+        final Stream<PipelineRun> runsStream = running.values().parallelStream();
+        final Predicate<PipelineRun> isToBeNotified = r -> listOfRunsIdToNotify.contains(r.getId());
+        final Stream<PipelineRun> runsToAddTag = runsStream
+                .filter(isToBeNotified)
+                .map(r -> r.inverseTagForRun(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING));
+        final Stream<PipelineRun> runsToRemoveTag = runsStream
+                .filter(isToBeNotified.negate())
+                .map(r -> r.inverseTagForRun(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING));
         return Stream.concat(runsToAddTag, runsToRemoveTag).collect(Collectors.toList());
-    }
-
-    private boolean hasPressuredTag(final PipelineRun run) {
-        final String tagToBeRemoved = run.getTags().get(UTILIZATION_LEVEL_HIGH);
-        return tagToBeRemoved != null
-                && tagToBeRemoved.equals(TRUE_VALUE_STRING);
-    }
-
-    private boolean hasNoPressuredTag(final PipelineRun run) {
-        return !hasPressuredTag(run);
-    }
-
-    private PipelineRun removePressuredTagFromRun(final PipelineRun run) {
-        run.getTags().remove(UTILIZATION_LEVEL_HIGH);
-        return run;
-    }
-
-    private PipelineRun addPressuredTagToRun(final PipelineRun run) {
-        run.getTags().put(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
-        return run;
     }
 
     private Pair<PipelineRun, Map<ELKUsageMetric, Double>> matchRunAndMetrics(
@@ -239,7 +216,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         return result;
     }
 
-    private List<PipelineRun> processIdleRuns(final List<PipelineRun> runs) {
+    private void processIdleRuns(final List<PipelineRun> runs) {
         final Map<String, PipelineRun> running = runs.stream()
                 .collect(Collectors.toMap(PipelineRun::getPodId, r -> r));
 
@@ -267,18 +244,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final IdleRunAction action = IdleRunAction.valueOf(preferenceManager
                 .getPreference(SystemPreferences.SYSTEM_IDLE_ACTION));
 
-        final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
-        final List<PipelineRun> runsToUpdate = processRuns(notProlongedRuns, cpuMetrics,
-                idleCpuLevel, actionTimeout, action, runsToUpdateTags);
-        pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdate);
-        return runsToUpdateTags;
+        processRuns(notProlongedRuns, cpuMetrics, idleCpuLevel, actionTimeout, action);
     }
 
-    private List<PipelineRun> processRuns(Map<String, PipelineRun> running, Map<String, Double> cpuMetrics,
-                                          double idleCpuLevel, int actionTimeout, IdleRunAction action,
-                                          List<PipelineRun> runsToUpdateTags) {
+    private void processRuns(Map<String, PipelineRun> running, Map<String, Double> cpuMetrics,
+                                          double idleCpuLevel, int actionTimeout, IdleRunAction action) {
         List<PipelineRun> runsToUpdate = new ArrayList<>(running.size());
         List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
+        final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
             if (run.isNonPause() || isClusterRun(run)) {
@@ -291,14 +264,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 double cpuUsageRate = metric / MILLIS / type.getVCPU();
                 if (Precision.compareTo(cpuUsageRate, idleCpuLevel, ONE_THOUSANDTH) < 0) {
                     processIdleRun(run, actionTimeout, action, runsToNotify, runsToUpdate, cpuUsageRate);
-                    if (run.getTags().put(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING) == null) {
+                    if (run.addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING)) {
                         runsToUpdateTags.add(run);
                     }
                 } else if (run.getLastIdleNotificationTime() != null) { // No action is longer needed, clear timeout
                     run.setLastIdleNotificationTime(null);
-                    final String tagToBeRemoved = run.getTags().remove(UTILIZATION_LEVEL_LOW);
-                    if (tagToBeRemoved != null
-                            && tagToBeRemoved.equals(TRUE_VALUE_STRING)) {
+                    if (run.removeTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING)) {
                         runsToUpdateTags.add(run);
                     }
                     runsToUpdate.add(run);
@@ -306,7 +277,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             }
         }
         notificationManager.notifyIdleRuns(runsToNotify, NotificationType.IDLE_RUN);
-        return runsToUpdate;
+        pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdate);
+        pipelineRunManager.updateRunsTags(runsToUpdateTags);
     }
 
     private void processIdleRun(PipelineRun run, int actionTimeout, IdleRunAction action,
