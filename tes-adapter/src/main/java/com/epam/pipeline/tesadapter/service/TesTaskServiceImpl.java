@@ -61,8 +61,8 @@ public class TesTaskServiceImpl implements TesTaskService {
     public TesCreateTaskResponse submitTesTask(TesTask body) {
         TesCreateTaskResponse tesCreateTaskResponse = new TesCreateTaskResponse();
         PipelineRun pipelineRun = cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
-        Assert.notNull(pipelineRun.getId(), messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_REQUIRED,
-                ID, TesCreateTaskResponse.class.getSimpleName()));
+        Assert.notNull(pipelineRun.getId(), messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
+                ID));
         tesCreateTaskResponse.setId(String.valueOf(pipelineRun.getId()));
         return tesCreateTaskResponse;
     }
@@ -100,11 +100,6 @@ public class TesTaskServiceImpl implements TesTaskService {
         filterVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
         return cloudPipelineAPIClient.filterRuns(filterVO, LOAD_STORAGE_LINKS).getElements();
-    }
-
-    @Override
-    public void stub() {
-        //stubbed method
     }
 
     @Override
