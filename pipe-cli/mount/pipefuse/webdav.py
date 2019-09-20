@@ -138,7 +138,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         if end < offset:
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=data, headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
