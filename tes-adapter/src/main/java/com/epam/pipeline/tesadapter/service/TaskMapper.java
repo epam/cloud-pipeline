@@ -91,7 +91,7 @@ public class TaskMapper {
         this.defaultRegion = defaultRegion;
     }
 
-    public PipelineStart mapToPipelineStart(TesTask tesTask) {
+    PipelineStart mapToPipelineStart(TesTask tesTask) {
         Assert.notNull(tesTask, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, tesTask));
         PipelineStart pipelineStart = new PipelineStart();
@@ -123,14 +123,14 @@ public class TaskMapper {
         return pipelineStart;
     }
 
-    public TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
+    private TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
         Assert.isTrue(tesExecutors.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS));
         return tesExecutors.get(FIRST);
     }
 
 
-    public String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
+    String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
         Double ramGb = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getRamGb).orElse(defaultRamGb);
         Long cpuCores = Optional.ofNullable(tesTask.getResources())
@@ -141,20 +141,20 @@ public class TaskMapper {
                 .orElse(Collections.singletonList(defaultRegion)));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getPreemptible).orElse(defaultPreemptible);
-        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
-                .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
-        Assert.notEmpty(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, allowedInstanceAndPriceTypes));
+        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = Optional.ofNullable(cloudPipelineAPIClient
+                .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot))
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES)));
         return evaluateMostProperInstanceType(allowedInstanceAndPriceTypes, ramGb, cpuCores);
     }
 
-    public Tool loadToolByTesImage(String image) {
+    private Tool loadToolByTesImage(String image) {
         return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(() ->
                 new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, TOOL)));
     }
 
-    public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
+    private Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES));
         return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
@@ -164,8 +164,8 @@ public class TaskMapper {
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION_ID)));
     }
 
-    public String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
-                                                 Double ramGb, Long cpuCores) {
+    private String evaluateMostProperInstanceType(AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes,
+                                                  Double ramGb, Long cpuCores) {
         return Optional.ofNullable(allowedInstanceAndPriceTypes.getAllowedInstanceTypes())
                 .orElseThrow(() ->
                         new IllegalArgumentException(messageHelper
@@ -193,7 +193,7 @@ public class TaskMapper {
                 - ramGb) / ramGb + Math.abs((double) (instanceType.getVCPU() - cpuCores)) / cpuCores;
     }
 
-    public Double convertMemoryUnitTypeToGiB(String memoryUnit) {
+    private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
         if (memoryUnit != null) {
             if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
                 return KIB_TO_GIB;

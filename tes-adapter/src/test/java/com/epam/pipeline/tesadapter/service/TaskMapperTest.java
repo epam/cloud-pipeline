@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.util.StringUtils.hasText;
@@ -51,6 +52,7 @@ class TaskMapperTest {
     private static final String SIMPLE_NAME = "name";
     private static final String SIMPLE_URL = "somePath";
     private static final String IMAGE = "image";
+    private static final String TOOL = "tool";
     private static final String COMMAND = "command";
     private static final String INSTANCE_TYPES = "instanceList";
     private static final String MIN_INSTANCE = "instance";
@@ -59,6 +61,7 @@ class TaskMapperTest {
     private static final Long STUBBED_TOOL_ID = 11584L;
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
     private static List<InstanceType> allowedInstanceTypes;
+    private static final String GIB = "GiB";
     private static final Double KIB_TO_GIB = 0.00000095367432;
     private static final Double MIB_TO_GIB = 0.0009765625;
     private static final Double GIB_TO_GIB = 1.0;
@@ -105,7 +108,7 @@ class TaskMapperTest {
         when(tesTask.getResources().getPreemptible()).thenReturn(DEFAULT_PREEMPTIBLE);
         when(tesTask.getResources().getDiskGb()).thenReturn(DEFAULT_HDD_SIZE.doubleValue());
         when(tesTask.getResources().getRamGb()).thenReturn(DEFAULT_RAM_GB);
-        when(tesTask.getResources().getZones()).thenReturn(Collections.singletonList(DEFAULT_REGION_NAME));
+        when(tesTask.getResources().getZones()).thenReturn(zones);
         when(tesTask.getExecutors()).thenReturn(tesExecutors);
         when(tesTask.getInputs()).thenReturn(tesInputs);
         when(tesTask.getOutputs()).thenReturn(tesOutputs);
@@ -127,7 +130,7 @@ class TaskMapperTest {
     }
 
     @Test
-    void mapToPipelineStartShouldConvertTesTaskToPipelineStart() {
+    public void mapToPipelineStartShouldConvertTesTaskToPipelineStart() {
         PipelineStart pipelineStart = taskMapper.mapToPipelineStart(tesTask);
         assertEquals(DEFAULT_HDD_SIZE, pipelineStart.getHddSize());
         assertEquals(STUBBED_IMAGE, pipelineStart.getDockerImage());
@@ -137,7 +140,7 @@ class TaskMapperTest {
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullTesTask() {
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullTesTask() {
         tesTask = null;
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.mapToPipelineStart(tesTask));
@@ -146,7 +149,7 @@ class TaskMapperTest {
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullCommandExecutor() {
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullCommandExecutor() {
         tesExecutor.setCommand(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.mapToPipelineStart(tesTask));
@@ -155,54 +158,64 @@ class TaskMapperTest {
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullOrEmptyTesImage() {
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullOrEmptyTesImage() {
         tesExecutor.setImage(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.mapToPipelineStart(tesTask));
         assertEquals(exception.getMessage(), (messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE)));
-
     }
+
+    @Test
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullLoadedInstancesResponse() {
+        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(STUBBED_TOOL_ID,
+                STUBBED_REGION_ID, DEFAULT_PREEMPTIBLE)).thenReturn(null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.mapToPipelineStart(tesTask));
+        assertEquals(exception.getMessage(), (messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES)));
+    }
+
+    @Test
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithNullTool() {
+        when(cloudPipelineAPIClient.loadTool(any())).thenReturn(null);
+        IllegalArgumentException exception2 = assertThrows(IllegalArgumentException.class,
+                () -> taskMapper.mapToPipelineStart(tesTask));
+        assertEquals(exception2.getMessage(), (messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, TOOL)));
+    }
+
 
     @Test()
     public void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
         tesExecutors.add(new TesExecutor());
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.getExecutorFromTesExecutorsList(tesExecutors));
+                () -> taskMapper.mapToPipelineStart(tesTask));
         assertTrue(exception.getMessage().contains(messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS)));
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunEvaluateMostProperInstanceTypeWithNullInstanceTypesList() {
+    public void expectIllegalArgExceptionWhenRunGetProperInstanceTypeWithNullInstanceTypesList() {
         when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.evaluateMostProperInstanceType(allowedInstanceAndPriceTypes,
-                        DEFAULT_RAM_GB, DEFAULT_CPU_CORES));
-        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES)));
-
+                () -> taskMapper.getProperInstanceType(tesTask, tool));
+        assertEquals(exception.getMessage(), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES));
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunEvaluateMostProperInstanceTypeWithNullResponse() {
+    public void expectIllegalArgExceptionWhenRunGetProperInstanceTypeWithNullMinInstanceResponse() {
         when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(new ArrayList<>());
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.evaluateMostProperInstanceType(allowedInstanceAndPriceTypes,
-                        DEFAULT_RAM_GB, DEFAULT_CPU_CORES));
-        assertTrue(exception.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, MIN_INSTANCE)));
-
+                () -> taskMapper.getProperInstanceType(tesTask, tool));
+        assertEquals(exception.getMessage(), messageHelper.getMessage(
+                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, MIN_INSTANCE));
     }
 
     @Test
-    void convertMemoryUnitTypeToGiBShouldReturnCorrectConvertCoefficients() {
-        assertEquals(KIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("KiB"));
-        assertEquals(MIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("MiB"));
-        assertEquals(GIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("GiB"));
-        assertEquals(TIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("TiB"));
-        assertEquals(PIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("PiB"));
-        assertEquals(EIB_TO_GIB, taskMapper.convertMemoryUnitTypeToGiB("EiB"));
+    void getProperInstanceTypeMethodShouldUseProperConversionCoefficientForInstanceMemoryUnit() {
+
     }
 
     @ParameterizedTest
@@ -210,46 +223,25 @@ class TaskMapperTest {
     public void getProperInstanceTypeShouldReturnProperInstanceName(String instanceTypeName, Double ramGb, Long cpuCore) {
         when(tesTask.getResources().getRamGb()).thenReturn(ramGb);
         when(tesTask.getResources().getCpuCores()).thenReturn(cpuCore);
-        when(tesTask.getResources().getZones()).thenReturn(zones);
-        when(allowedInstanceAndPriceTypes.getAllowedInstanceTypes()).thenReturn(allowedInstanceTypes);
         assertEquals(instanceTypeName, taskMapper.getProperInstanceType(tesTask, tool));
     }
 
     @Test
-    public void expectIllegalArgExceptionWhenRunGetProperRegionIdInCloudRegionsByTesZone() {
+    public void expectIllegalArgExceptionWhenRunGetProperInstanceTypeWithTwoZones() {
         zones.add("Second zone");
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
+                () -> taskMapper.getProperInstanceType(tesTask, tool));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "zones"));
     }
 
     @Test
-    public void getProperRegionIdInCloudRegionsByTesZoneShouldReturnRegionId() {
-        assertEquals(STUBBED_REGION_ID, taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
-    }
-
-    @Test
-    void expectIllegalArgExceptionWhenRunGetProperRegionIdWithWrongResponse() {
+    public void expectIllegalArgExceptionWhenRunGetProperInstanceTypeWithWrongRegionIdResponse() {
         when(abstractCloudRegion.getId()).thenReturn(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.getProperRegionIdInCloudRegionsByTesZone(zones));
+                () -> taskMapper.getProperInstanceType(tesTask, tool));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "id"));
-    }
-
-    @Test
-    public void expectIllegalArgExceptionWhenRunLoadToolByTesImageWithEmptyOrNullResponse() {
-        when(cloudPipelineAPIClient.loadTool(STUBBED_IMAGE)).thenReturn(null);
-        IllegalArgumentException exception1 = assertThrows(IllegalArgumentException.class,
-                () -> taskMapper.loadToolByTesImage(STUBBED_IMAGE));
-        assertTrue(exception1.getMessage().contains(messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "tool")));
-    }
-
-    @Test
-    public void loadToolByTesImageShouldReturnToolByRequestingImage() {
-        assertEquals(tool, taskMapper.loadToolByTesImage(STUBBED_IMAGE));
     }
 
     private static Stream<Arguments> provideInputForGetProperInstanceTypeTest() {
@@ -276,66 +268,70 @@ class TaskMapperTest {
                 Arguments.of("p2.16xlarge", 768.0, 64L),
                 Arguments.of("p2.8xlarge", 488.0, 32L),
                 Arguments.of("p2.xlarge", 61.0, 4L),
-                Arguments.of("r5.12xlarge", 384.0, 48L),
-                Arguments.of("r5.16xlarge", 512.0, 64L),
-                Arguments.of("r5.24xlarge", 768.0, 96L),
-                Arguments.of("r5.2xlarge", 64.0, 8L),
-                Arguments.of("r5.4xlarge", 128.0, 16L),
-                Arguments.of("r5.8xlarge", 256.0, 32L),
                 Arguments.of("r5.large", 16.0, 2L),
                 Arguments.of("r5.xlarge", 32.0, 4L),
 
                 //Different cases with non 0.0 deviation
                 Arguments.of("m5.24xlarge", 384.0, 110L), //"m5.24xlarge", 384.0, 96L has closest coef.
-                Arguments.of("r5.2xlarge", 150.0, 8L), //"r5.2xlarge", 64.0, 8L has closest coef.
-                Arguments.of("r5.4xlarge", 128.0, 10L), //"r5.4xlarge", 128.0, 16L has closest coef.
                 Arguments.of("p2.16xlarge", 650.0, 64L), //"p2.16xlarge", 768.0, 64L has closest coef.
                 Arguments.of("p2.8xlarge", 650.0, 32L), //"p2.8xlarge", 488.0, 32L has closest coef.
 
                 //Check that the default values will be used if the request does not have them, respectively
                 Arguments.of("r5.large", 650.0, null), //defaultCpuCore = 2.0, closest should be "r5.large", 16.0, 2L
                 Arguments.of("c5.xlarge", null, 32L), //defaultRamGb = 8.0, closest should be "c5.xlarge", 8.0, 4L
-                Arguments.of("m5.large", null, null) //defaultRamGb = 8.0 and defaultCpuCore = 2 => "m5.large", 8.0, 2L
+                Arguments.of("m5.large", null, null), //defaultRamGb = 8.0 and defaultCpuCore = 2 => "m5.large", 8.0, 2L
+
+                // Check instanceTypes with memoryUnitType (KiB, MiB, GiB, TiB, PiB, EiB)
+                Arguments.of("r5.2xlarge", 161061273600.0, 8L), //RAM_in_GiB(r5.2xlarge) = 150 * 1073741824.0 = 161061273600.0
+                Arguments.of("r5.12xlarge", 384.0, 48L), //RAM_in_GiB(r5.12xlarge) = 384 * 1.0 = 384.0
+                Arguments.of("r5.16xlarge", 0.5, 64L), //RAM_in_GiB(r5.16xlarge) = 512 * 0.0009765625 = 0.5
+                Arguments.of("r5.24xlarge", 0.00073242187776, 96L), //RAM_in_GiB(r5.24xlarge) = 768 * 0.00000095367432 = 0.00073242187776
+                Arguments.of("r5.2xlarge", 68719476736.0, 8L), //RAM_in_GiB(r5.2xlarge) = 64 * 1073741824.0 = 68719476736
+                Arguments.of("r5.4xlarge", 134217728.0, 16L), //RAM_in_GiB(r5.2xlarge) = 128 * 1048576.0 = 134217728
+                Arguments.of("r5.8xlarge", 262144.0, 32L) //RAM_in_GiB(r5.2xlarge) = 256 * 1024.0 = 262144
         );
     }
 
     private static void fillWithAllowedInstanceTypes(List<InstanceType> instanceTypeList) {
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.12xlarge", 96.0, 48L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.18xlarge", 144.0, 72L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.24xlarge", 192.0, 96L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.2xlarge", 16.0, 8L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.4xlarge", 32.0, 16L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.9xlarge", 72.0, 36L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.large", 4.0, 2L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.metal", 192.0, 96L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.xlarge", 8.0, 4L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.12xlarge", 192.0, 48L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.16xlarge", 256.0, 64L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.24xlarge", 384.0, 96L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.2xlarge", 32.0, 8L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.4xlarge", 64.0, 16L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.8xlarge", 128.0, 32L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.large", 8.0, 2L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.metal", 384.0, 96L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.xlarge", 16.0, 4L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.16xlarge", 768.0, 64L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.8xlarge", 488.0, 32L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.xlarge", 61.0, 4L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.12xlarge", 384.0, 48L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.16xlarge", 512.0, 64L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.24xlarge", 768.0, 96L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.2xlarge", 64.0, 8L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.4xlarge", 128.0, 16L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.8xlarge", 256.0, 32L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.large", 16.0, 2L));
-        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.xlarge", 32.0, 4L));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.12xlarge", 96.0, 48L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.18xlarge", 144.0, 72L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.24xlarge", 192.0, 96L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.2xlarge", 16.0, 8L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.4xlarge", 32.0, 16L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.9xlarge", 72.0, 36L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.large", 4.0, 2L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.metal", 192.0, 96L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("c5.xlarge", 8.0, 4L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.12xlarge", 192.0, 48L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.16xlarge", 256.0, 64L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.24xlarge", 384.0, 96L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.2xlarge", 32.0, 8L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.4xlarge", 64.0, 16L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.8xlarge", 128.0, 32L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.large", 8.0, 2L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.metal", 384.0, 96L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("m5.xlarge", 16.0, 4L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.16xlarge", 768.0, 64L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.8xlarge", 488.0, 32L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("p2.xlarge", 61.0, 4L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.large", 16.0, 2L, GIB));
+
+        //instances with non-default instanceMemoryUnits
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.xlarge", 32.0, 4L, null));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.24xlarge", 768.0, 96L, "KiB"));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.16xlarge", 512.0, 64L, "MiB"));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.12xlarge", 384.0, 48L, GIB));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.8xlarge", 256.0, 32L, "TiB"));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.4xlarge", 128.0, 16L, "PiB"));
+        instanceTypeList.add(getInstanceWithNameRamAndCpu("r5.2xlarge", 64.0, 8L, "EiB"));
     }
 
-    private static InstanceType getInstanceWithNameRamAndCpu(String instanceName, Double instanceRam, Long instanceCpu) {
+    private static InstanceType getInstanceWithNameRamAndCpu(String instanceName, Double instanceRam, Long instanceCpu, String memoryType) {
         InstanceType instanceType = new InstanceType();
         instanceType.setName(instanceName);
         instanceType.setMemory(instanceRam.floatValue());
         instanceType.setVCPU(instanceCpu.intValue());
+        instanceType.setMemoryUnit(memoryType);
         return instanceType;
     }
 }
