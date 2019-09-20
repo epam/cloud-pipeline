@@ -187,7 +187,7 @@ class TaskMapperTest {
 
 
     @Test()
-    public void expectIllegalArgExceptionWhenRunGetExecutorFromTesExecutorsList() {
+    public void expectIllegalArgExceptionWhenRunMapToPipelineStartWithTwoExecutors() {
         tesExecutors.add(new TesExecutor());
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> taskMapper.mapToPipelineStart(tesTask));
@@ -211,11 +211,6 @@ class TaskMapperTest {
                 () -> taskMapper.getProperInstanceType(tesTask, tool));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, MIN_INSTANCE));
-    }
-
-    @Test
-    void getProperInstanceTypeMethodShouldUseProperConversionCoefficientForInstanceMemoryUnit() {
-
     }
 
     @ParameterizedTest
