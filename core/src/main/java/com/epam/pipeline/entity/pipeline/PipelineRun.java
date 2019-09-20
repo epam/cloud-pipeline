@@ -187,18 +187,16 @@ public class PipelineRun extends AbstractSecuredEntity {
      * Add tag to the given run
      * @param key key to be inserted
      * @param value value to be checked
-     * @return true - if new tag is added, false - otherwise
      */
-    public boolean addTag(final String key, final String value) {
-        return tags.putIfAbsent(key, value) == null;
+    public void addTag(final String key, final String value) {
+        tags.putIfAbsent(key, value);
     }
 
     /**
      * Remove tag from the given run
      * @param key key to be removed
-     * @return true - if the given tag is removed, false - otherwise
      */
-    public boolean removeTag(final String key) {
-        return tags.remove(key) != null;
+    public void removeTag(final String key) {
+        tags.remove(key);
     }
 }
