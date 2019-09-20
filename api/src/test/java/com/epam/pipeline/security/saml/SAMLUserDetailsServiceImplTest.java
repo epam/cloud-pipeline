@@ -185,6 +185,21 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    @WithMockUser(username = USER_NAME)
+    public void shouldAuthorizeRegisteredUserWithNonBlockingRoles() {
+        final Role role = new Role();
+        role.setName(SAML_ATTRIBUTE_2);
+        role.setPredefined(false);
+        user.setRoles(Collections.singletonList(role));
+
+        blockOneGroupForCurrentUser(false, Collections.singletonList(SAML_ATTRIBUTE_1));
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+        Assert.assertEquals(expectedUserContext.getGroups(), actualUserContext.getGroups());
+    }
+
     @Test(expected = UsernameNotFoundException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
@@ -227,14 +242,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         userDetailsService.loadUserBySAML(credential);
     }
 
-    private void mockUserDoesNotExistSituation() {
-        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(null);
-        Mockito.when(userManager.createUser(Matchers.anyString(),
-                                            Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
-                                            Matchers.anyMapOf(String.class, String.class), Matchers.any()))
-               .thenReturn(user);
-    }
-
     @Test(expected = LockedException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForBlockedUser() {
@@ -258,6 +265,14 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         user.setRoles(Collections.singletonList(role));
         blockOneGroupForCurrentUser(false, Collections.singletonList(SAML_ATTRIBUTE_1));
         userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void mockUserDoesNotExistSituation() {
+        Mockito.when(userManager.loadUserByName(Matchers.anyString())).thenReturn(null);
+        Mockito.when(userManager.createUser(Matchers.anyString(),
+                Matchers.anyListOf(Long.class), Matchers.anyListOf(String.class),
+                Matchers.anyMapOf(String.class, String.class), Matchers.any()))
+                .thenReturn(user);
     }
 
     private void blockOneGroupForCurrentUser(final boolean external, final List<String> groups) {
