@@ -167,11 +167,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     private List<PipelineRun> getRunsToUpdatePressuredTags(final Map<String, PipelineRun> running,
                               final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> runsToNotify) {
-        final Set<Long> listOfRunsIdToNotify = runsToNotify
+        final Set<Long> runsIdToNotify = runsToNotify
                 .stream()
                 .map(p -> p.getLeft().getId())
                 .collect(Collectors.toSet());
-        final Predicate<PipelineRun> isToBeNotified = r -> listOfRunsIdToNotify.contains(r.getId());
+        final Predicate<PipelineRun> isToBeNotified = r -> runsIdToNotify.contains(r.getId());
         final Stream<PipelineRun> runsToAddTag = running.values()
                 .stream()
                 .filter(isToBeNotified)
