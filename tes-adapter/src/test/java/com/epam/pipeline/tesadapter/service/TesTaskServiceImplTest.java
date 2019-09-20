@@ -13,9 +13,7 @@ import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
-import com.epam.pipeline.vo.filter.FilterExpressionTypeVO;
 import com.epam.pipeline.vo.filter.FilterExpressionVO;
-import com.epam.pipeline.vo.filter.FilterOperandTypeVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -83,24 +80,6 @@ class TesTaskServiceImplTest {
         tesTask.setId(DEFAULT_PIPELINE_ID.toString());
         pipelineRunList.add(pipelineRun);
         tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, taskMapper, messageHelper);
-    }
-
-    @Test
-    void listTesTaskShouldReturnNotNullIfRequestDifferent() {
-        expression.setField(PREFIX_FIELD);
-        expression.setValue(PREFIX_NAME);
-        expression.setOperand(FilterOperandTypeVO.EQUALS.getOperand());
-        expression.setFilterExpressionType(FilterExpressionTypeVO.LOGICAL);
-        filterExpressionVO.setFilterExpression(expression);
-        assertNotNull(tesTaskService.listTesTask(PREFIX_NAME, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_TOKEN, DEFAULT_TASK_VIEW));
-        assertNotNull(tesTaskService.listTesTask(null, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_TOKEN, DEFAULT_TASK_VIEW));
-        assertNotNull(tesTaskService.listTesTask(null, null, DEFAULT_PAGE_TOKEN, DEFAULT_TASK_VIEW));
-        assertNotNull(tesTaskService.listTesTask(null, null, null, DEFAULT_TASK_VIEW));
-        assertNotNull(tesTaskService.listTesTask(null, null, null, null));
-
-        assertEquals(tesTaskService.listTesTask(null, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_TOKEN, DEFAULT_TASK_VIEW)
-                        .getTasks().get(FIRST).getId()
-                , DEFAULT_PIPELINE_ID.toString());
     }
 
     @Test
