@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -171,15 +170,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 .stream()
                 .map(p -> p.getLeft().getId())
                 .collect(Collectors.toSet());
-        final Predicate<PipelineRun> isToBeNotified = r -> runsIdToNotify.contains(r.getId());
         final Stream<PipelineRun> runsToAddTag = running.values()
                 .stream()
-                .filter(isToBeNotified)
+                .filter(r -> runsIdToNotify.contains(r.getId()))
                 .filter(r -> !r.hasTag(UTILIZATION_LEVEL_HIGH))
                 .peek(r -> r.addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING));
         final Stream<PipelineRun> runsToRemoveTag =  running.values()
                 .stream()
-                .filter(isToBeNotified.negate())
+                .filter(r -> !runsIdToNotify.contains(r.getId()))
                 .filter(r -> r.hasTag(UTILIZATION_LEVEL_HIGH))
                 .peek(r -> r.removeTag(UTILIZATION_LEVEL_HIGH));
         return Stream.concat(runsToAddTag, runsToRemoveTag).collect(Collectors.toList());
