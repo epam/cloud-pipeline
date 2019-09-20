@@ -27,6 +27,10 @@ class FileSystemClient:
         pass
 
     @abstractmethod
+    def is_read_only(self):
+        pass
+
+    @abstractmethod
     def exists(self, path):
         pass
 

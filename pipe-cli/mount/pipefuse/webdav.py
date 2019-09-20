@@ -90,6 +90,9 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
             logging.error('WevDav is not available: %s' % str(e.message))
             return False
 
+    def is_read_only(self):
+        return False
+
     def get_elem_value(self, elem, name):
         return elem.find('.//{DAV:}' + name)
 

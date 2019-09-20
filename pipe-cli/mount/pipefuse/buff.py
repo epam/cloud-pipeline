@@ -110,6 +110,9 @@ class BufferedFileSystemClient(FileSystemClient):
     def is_available(self):
         return self._inner.is_available()
 
+    def is_read_only(self):
+        return self._inner.is_read_only()
+
     def exists(self, path):
         return self._inner.exists(path)
 

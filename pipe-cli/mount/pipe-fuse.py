@@ -59,7 +59,7 @@ def start(mountpoint, webdav, bucket, buffer, cache_ttl, cache_size, default_mod
     caching_client = CachingFileSystemClient(client, cache)
     buffered_client = BufferedFileSystemClient(caching_client, capacity=buffer)
     fs = PipeFS(client=buffered_client, mode=int(default_mode, 8))
-    FUSE(fs, mountpoint, nothreads=True, foreground=True, **mount_options)
+    FUSE(fs, mountpoint, nothreads=True, foreground=True, ro=buffered_client.is_read_only(), **mount_options)
 
 
 def parse_mount_options(options_string):

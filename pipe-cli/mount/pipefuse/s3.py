@@ -127,6 +127,7 @@ class S3Client(FileSystemClient):
         :param pipe: Cloud Pipeline API client.
         """
         super(S3Client, self).__init__()
+        self._is_read_only = False
         self.bucket = bucket
         session = self._init_session(bucket, pipe)
         proxy_config = self._init_proxy_config()
@@ -137,16 +138,19 @@ class S3Client(FileSystemClient):
 
     def _init_session(self, bucket, pipe):
         def refresh():
-            bucket_id = pipe.get_storage(bucket).id
-            credentials = pipe.get_temporary_credentials(bucket_id)
+            bucket_object = pipe.get_storage(bucket)
+            credentials = pipe.get_temporary_credentials(bucket_object)
             return dict(
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,
                 token=credentials.session_token,
                 expiry_time=credentials.expiration,
-                region_name=credentials.region)
+                region_name=credentials.region,
+                write_allowed=bucket_object.is_write_allowed())
 
         fresh_metadata = refresh()
+
+        self._is_read_only = not fresh_metadata['write_allowed']
 
         session_credentials = RefreshableCredentials.create_from_metadata(
             metadata=fresh_metadata,
@@ -163,6 +167,9 @@ class S3Client(FileSystemClient):
     def is_available(self):
         # TODO 05.09.2019: Check AWS API for availability
         return True
+
+    def is_read_only(self):
+        return self._is_read_only
 
     def exists(self, path):
         return len(self.ls(path)) > 0
