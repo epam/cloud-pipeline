@@ -25,12 +25,13 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage):
+    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
         self.logger = logger
         self.storage_name, self.storage_path = self._parse_transfer_storage_path(storage)
+        self.follow_symlinks = follow_symlinks
 
     def list(self, path):
         items = []
@@ -50,7 +51,7 @@ class FsBrowserManager(object):
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.download, [path, self.working_directory])
+        self.pool.apply_async(task.download, [path, self.working_directory, self.follow_symlinks])
         return task_id
 
     def init_upload(self, path):

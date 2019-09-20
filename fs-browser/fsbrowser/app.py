@@ -149,6 +149,10 @@ def delete(path):
         return jsonify(error(e.__str__()))
 
 
+def str_to_bool(input_value):
+    return input_value.lower() in ("true", "t")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
@@ -158,10 +162,12 @@ def main():
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
     parser.add_argument("--log_dir", required=False)
+    parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
 
     args = parser.parse_args()
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
-                                               BrowserLogger(args.run_id, args.log_dir), args.transfer_storage)
+                                               BrowserLogger(args.run_id, args.log_dir), args.transfer_storage,
+                                               args.follow_symlinks)
 
     app.run(host=args.host, port=args.port)
 

@@ -85,7 +85,7 @@ class TransferTask(object):
                     os.remove(tmp_path)
                     self.logger.log('File %s has been removed' % tmp_path)
 
-    def download(self, source_path, working_directory):
+    def download(self, source_path, working_directory, follow_symlinks):
         try:
             if self.status != TaskStatus.PENDING:
                 self.logger.log("Failed to start download task: expected task state 'pending' but actual %s"
@@ -97,8 +97,11 @@ class TransferTask(object):
             compressed = not os.path.isfile(full_source_path)
             if compressed:
                 self.logger.log("Starting to compress folder for download")
+                if follow_symlinks and self.check_cyclic_symlinks(full_source_path):
+                    raise RuntimeError("Failed to download folder: a cyclic symlinks found in folder '%s'"
+                                       % full_source_path)
                 compressed_name = full_source_path + TAF_GZ_EXTENSION
-                self.compress_directory(compressed_name, full_source_path)
+                self.compress_directory(compressed_name, full_source_path, follow_symlinks)
                 full_source_path = compressed_name
                 source_path = source_path + TAF_GZ_EXTENSION
             source_file_name = os.path.basename(source_path)
@@ -190,6 +193,29 @@ class TransferTask(object):
         return tarinfo
 
     @staticmethod
-    def compress_directory(output_filename, source_dir):
-        with tarfile.open(output_filename, "w:gz") as tar:
+    def compress_directory(output_filename, source_dir, follow_symlinks):
+        with tarfile.open(output_filename, "w:gz", dereference=follow_symlinks) as tar:
             tar.add(source_dir, filter=TransferTask.set_permissions)
+
+    @staticmethod
+    def check_cyclic_symlinks(source_dir):
+        return TransferTask.list_directory(source_dir, set())
+
+    @staticmethod
+    def list_directory(source_dir, visited_symlinks):
+        for item in os.listdir(source_dir):
+            absolute_path = os.path.join(source_dir, item)
+            symlink_target = None
+            if os.path.islink(absolute_path):
+                symlink_target = os.readlink(absolute_path)
+                if symlink_target in visited_symlinks:
+                    return True
+                else:
+                    visited_symlinks.add(symlink_target)
+            if os.path.isdir(absolute_path):
+                has_cyclic_symlinks = TransferTask.list_directory(absolute_path, visited_symlinks)
+                if has_cyclic_symlinks:
+                    return True
+            if symlink_target and os.path.islink(absolute_path) and symlink_target in visited_symlinks:
+                visited_symlinks.remove(symlink_target)
+        return False
