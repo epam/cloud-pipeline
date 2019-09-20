@@ -196,26 +196,9 @@ public class PipelineRun extends AbstractSecuredEntity {
     /**
      * Remove tag from the given run
      * @param key key to be removed
-     * @param value value to be removed
      * @return true - if the given tag is removed, false - otherwise
      */
-
-    public boolean removeTag(final String key, final String value) {
-        return tags.remove(key, value);
-    }
-
-    /**
-     * If tag isn't set for run, add new one, or remove it otherwise.
-     * @param key tag key to be proceeded
-     * @param value tag value to be proceeded
-     * @return run with updated tags
-     */
-    public PipelineRun inverseTagForRun(final String key, final String value) {
-        if (hasTag(key)) {
-            removeTag(key, value);
-        } else {
-            addTag(key, value);
-        }
-        return this;
+    public boolean removeTag(final String key) {
+        return tags.remove(key) != null;
     }
 }

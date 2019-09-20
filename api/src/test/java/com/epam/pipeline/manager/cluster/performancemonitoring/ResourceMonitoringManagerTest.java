@@ -573,6 +573,19 @@ public class ResourceMonitoringManagerTest {
         assertThat(okayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
     }
 
+    @Test
+    public void testIdledPressuredTagsRemains() {
+        final Map<String, String> idledTagMap = Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
+        final Map<String, String> pressuredTagMap = Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+        highConsumingRun.setTags(new HashMap<>(pressuredTagMap));
+        idleOnDemandRun.setTags(new HashMap<>(idledTagMap));
+        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(idleOnDemandRun, highConsumingRun));
+
+        resourceMonitoringManager.monitorResourceUsage();
+        assertThat(highConsumingRun.getTags(), CoreMatchers.is(pressuredTagMap));
+        assertThat(idleOnDemandRun.getTags(), CoreMatchers.is(idledTagMap));
+    }
+
     private HashMap<String, Double> getMockedHighConsumingStats() {
         HashMap<String, Double> stats = new HashMap<>();
         stats.put(highConsumingRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
