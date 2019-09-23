@@ -13,8 +13,6 @@ public interface TesTaskService {
 
     TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view);
 
-    void stub();
-
     TesCancelTaskResponse cancelTesTask(String id);
 
     TesTask getTesTask(String id, TaskView view);
