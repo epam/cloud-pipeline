@@ -83,12 +83,12 @@ class TesTaskServiceImplTest {
     }
 
     @Test
-    void submitTesTaskShouldReturnTesCreateTaskResponse() {
+    public void submitTesTaskShouldReturnTesCreateTaskResponse() {
         assertEquals(tesTaskService.submitTesTask(tesTask).getId(), pipelineRun.getId().toString());
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunSubmitTesTaskWithNullIdResponse() {
+    public void expectIllegalArgExceptionWhenRunSubmitTesTaskWithNullIdResponse() {
         pipelineRun.setId(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> tesTaskService.submitTesTask(tesTask));
@@ -97,7 +97,7 @@ class TesTaskServiceImplTest {
     }
 
     @Test
-    void cancelTesTaskShouldStopTaskWithCorrespondId() {
+    public void cancelTesTaskShouldStopTaskWithCorrespondId() {
         RunStatusVO updateStatus = new RunStatusVO();
         updateStatus.setStatus(TaskStatus.STOPPED);
         pipelineRun.setStatus(TaskStatus.STOPPED);
@@ -107,7 +107,7 @@ class TesTaskServiceImplTest {
 
     @ParameterizedTest
     @MethodSource("provideWrongIdInputForCancelTesTask")
-    void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId(String id) {
+    public void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId(String id) {
         IllegalStateException exception = assertThrows(IllegalStateException.class,
                 () -> tesTaskService.cancelTesTask(id));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
