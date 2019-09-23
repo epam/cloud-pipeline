@@ -107,7 +107,7 @@ class BufferedFileSystemClient(FileSystemClient):
         """
         self._inner = inner
         self._capacity = capacity
-        self._download_file_buffs = {}
+        self._write_file_buffs = {}
         self._read_file_buffs = {}
 
     def is_available(self):
@@ -169,19 +169,19 @@ class BufferedFileSystemClient(FileSystemClient):
 
     def upload_range(self, fh, buf, path, offset=0):
         buf_key = fh, path
-        file_buf = self._download_file_buffs.get(buf_key)
+        file_buf = self._write_file_buffs.get(buf_key)
         if not file_buf:
             file_buf = self._new_write_buf(self._capacity, offset)
-            self._download_file_buffs[buf_key] = file_buf
+            self._write_file_buffs[buf_key] = file_buf
         if file_buf.suits(offset):
             file_buf.append(buf, offset)
         else:
-            logging.info('Uploading buffer is not sequential for %d:%s. Buffer will be cleared.')
+            logging.info('Uploading buffer is not sequential for %d:%s. Buffer will be cleared.' % buf_key)
             self._flush_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, offset, buf)
-            self._download_file_buffs[buf_key] = file_buf
+            self._write_file_buffs[buf_key] = file_buf
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
+            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % buf_key)
             self._flush_write_buf(fh, path)
 
     def _new_write_buf(self, capacity, offset, buf=None):
@@ -192,7 +192,7 @@ class BufferedFileSystemClient(FileSystemClient):
 
     def _flush_write_buf(self, fh, path):
         buf_key = fh, path
-        write_buf = self._download_file_buffs.pop(buf_key, None)
+        write_buf = self._write_file_buffs.pop(buf_key, None)
         if write_buf:
             collected_buf, collected_offset = write_buf.collect()
             self._inner.upload_range(fh, collected_buf, path, collected_offset)
