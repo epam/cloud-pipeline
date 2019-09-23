@@ -66,20 +66,14 @@ def pack_script_contents(script_contents):
     b64_contents = base64.b64encode(gzipped_stream.getvalue())
 
     packed_template = """#!/bin/bash
-function p()
-{
-    pl=$1
-    m=$(grep -a -n '^PAYLOAD:$' $0 | cut -d ':' -f 1)
-    ps=$((m + 1))
-    tail -n +$ps $0 | base64 -d | gzip -d > $pl
-    chmod +x $pl
-}
 o=$(mktemp)
-p "$o"
+(base64 -d | gzip -d > $o) << EOF
+{payload}
+EOF
+chmod +x $o
 $o
 c=$?
 rm -f $o
 exit $c
-PAYLOAD:
 """
-    return packed_template + b64_contents
+    return packed_template.format(payload=b64_contents)
