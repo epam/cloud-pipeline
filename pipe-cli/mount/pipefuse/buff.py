@@ -58,6 +58,9 @@ class _WriteBuffer(_FileBuffer):
             current_offset += current_buf_size
         return collected_buf, self._offset
 
+    def suits(self, offset=None):
+        return not offset or offset == self._current_offset
+
 
 class _ReadBuffer(_FileBuffer):
 
@@ -168,25 +171,40 @@ class BufferedFileSystemClient(FileSystemClient):
         buf_key = fh, path
         file_buf = self._download_file_buffs.get(buf_key)
         if not file_buf:
-            file_buf = _WriteBuffer(offset, self._capacity)
+            file_buf = self._new_write_buf(self._capacity, offset)
             self._download_file_buffs[buf_key] = file_buf
-        file_buf.append(buf, offset)
+        if file_buf.suits(offset):
+            file_buf.append(buf, offset)
+        else:
+            logging.info('Uploading buffer is not sequential for %d:%s. Buffer will be cleared.')
+            self._flush_write_buf(fh, path)
+            file_buf = self._new_write_buf(self._capacity, offset, buf)
+            self._download_file_buffs[buf_key] = file_buf
         if file_buf.is_full():
             logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
-            write_buf = self._download_file_buffs.pop(buf_key, None)
-            if write_buf:
-                collected_buf, collected_offset = write_buf.collect()
-                self._inner.upload_range(fh, collected_buf, path, collected_offset)
+            self._flush_write_buf(fh, path)
+
+    def _new_write_buf(self, capacity, offset, buf=None):
+        write_buf = _WriteBuffer(offset, capacity)
+        if buf:
+            write_buf.append(buf, offset)
+        return write_buf
+
+    def _flush_write_buf(self, fh, path):
+        buf_key = fh, path
+        write_buf = self._download_file_buffs.pop(buf_key, None)
+        if write_buf:
+            collected_buf, collected_offset = write_buf.collect()
+            self._inner.upload_range(fh, collected_buf, path, collected_offset)
 
     def flush(self, fh, path):
-        buf_key = fh, path
-        self._read_file_buffs.pop(buf_key, None)
-        write_buf = self._download_file_buffs.pop(buf_key, None)
         logging.info('Flushing buffers for %d:%s' % (fh, path))
-        if write_buf:
-            buf, offset = write_buf.collect()
-            self._inner.upload_range(fh, buf, path, offset)
+        self._flush_read_buf(fh, path)
+        self._flush_write_buf(fh, path)
         self._inner.flush(fh, path)
+
+    def _flush_read_buf(self, fh, path):
+        self._read_file_buffs.pop((fh, path), None)
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):

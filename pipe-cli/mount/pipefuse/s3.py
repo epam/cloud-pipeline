@@ -15,6 +15,8 @@
 import io
 import logging
 import os
+from abc import ABCMeta, abstractmethod
+
 import time
 from datetime import datetime
 
@@ -35,8 +37,44 @@ def _http_range(start, end):
 
 
 class _MultipartUpload:
+    __metaclass__ = ABCMeta
+
+    @property
+    @abstractmethod
+    def path(self):
+        pass
+
+    @abstractmethod
+    def initiate(self):
+        pass
+
+    @abstractmethod
+    def upload_part(self, buf, offset=None):
+        pass
+
+    @abstractmethod
+    def complete(self):
+        pass
+
+    @abstractmethod
+    def abort(self):
+        pass
+
+
+class _SequentialMultipartUpload(_MultipartUpload):
 
     def __init__(self, path, offset, size, bucket, s3):
+        """
+        Sequential multipart upload.
+
+        Minimal upload part size is 5 MB. See https://docs.aws.amazon.com/en_us/AmazonS3/latest/dev/qfacts.html.
+
+        :param path: Destination bucket relative path.
+        :param offset: First upload part offset.
+        :param size: Destination file original size.
+        :param bucket: Destination bucket name.
+        :param s3: Boto S3 client.
+        """
         self._path = path
         self._original_size = size
         self._bucket = bucket
@@ -58,7 +96,7 @@ class _MultipartUpload:
         )
         self._upload_id = response['UploadId']
 
-    def upload_part(self, buf):
+    def upload_part(self, buf, offset=None):
         with io.BytesIO(buf) as body:
             response = self._s3.upload_part(
                 Bucket=self._bucket,
@@ -113,6 +151,68 @@ class _MultipartUpload:
     def abort(self):
         logging.error('Aborting multipart upload for %s' % self._path)
         self._s3.abort_multipart_upload(Bucket=self._bucket, Key=self._path, UploadId=self._upload_id)
+
+
+class _BufferedSequentialMultipartUpload(_MultipartUpload):
+
+    def __init__(self, mpu, minimal_buffer_size):
+        """
+        Buffered sequential multipart upload.
+
+        Merges several sequential upload parts to reach a certain size.
+
+        :param mpu: Wrapping multipart upload object.
+        :param minimal_buffer_size: Minimal buffer size to be used as an upload part.
+        """
+        self._mpu = mpu
+        self._minimal_buffer_size = minimal_buffer_size
+        self._bufs = []
+        self._bufs_offset = 0
+        self._bufs_current_offset = 0
+
+    @property
+    def path(self):
+        return self._mpu.path
+
+    def initiate(self):
+        self._mpu.initiate()
+
+    def upload_part(self, buf, offset=None):
+        if self._bufs:
+            self._bufs.append(buf)
+            self._bufs_current_offset += len(buf)
+            if self._bufs_current_offset - self._bufs_offset > self._minimal_buffer_size:
+                self._mpu.upload_part(self._collect_current_buffer(), self._bufs_offset)
+                self._clear_current_buffer()
+        else:
+            if len(buf) > self._minimal_buffer_size:
+                self._mpu.upload_part(buf, offset)
+            else:
+                self._bufs.append(buf)
+                self._bufs_offset = offset
+                self._bufs_current_offset = offset + len(buf)
+
+    def _collect_current_buffer(self):
+        collected_buf = bytearray(self._bufs_current_offset - self._bufs_offset)
+        start = 0
+        for buf in self._bufs:
+            end = start + len(buf)
+            collected_buf[start:end] = buf[:]
+        return collected_buf
+
+    def _clear_current_buffer(self):
+        self._bufs = []
+        self._bufs_offset = 0
+        self._bufs_current_offset = 0
+
+    def complete(self):
+        if self._bufs:
+            self._mpu.upload_part(self._collect_current_buffer(), self._bufs_offset)
+            self._clear_current_buffer()
+        self._mpu.complete()
+
+    def abort(self):
+        self._mpu.abort()
 
 
 class S3Client(FileSystemClient):
@@ -285,9 +385,8 @@ class S3Client(FileSystemClient):
             buf.write(chunk)
 
     def upload_range(self, fh, buf, path, offset=0):
-        mpu_key = fh, path
         source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(mpu_key, None)
+        mpu = self._mpus.get(path, None)
         try:
             if not mpu:
                 file_size = self.attrs(path).size
@@ -300,17 +399,21 @@ class S3Client(FileSystemClient):
                         with io.BytesIO() as prefix_buf:
                             self.download_range(fh, prefix_buf, source_path)
                             uploading_buf = bytearray(prefix_buf.getvalue()) + buf
-                    mpu = _MultipartUpload(source_path, offset, file_size, self.bucket, self._s3)
-                    self._mpus[mpu_key] = mpu
+                    mpu = self._new_mpu(file_size, offset, source_path)
+                    self._mpus[path] = mpu
                     mpu.initiate()
-                    mpu.upload_part(uploading_buf)
+                    mpu.upload_part(uploading_buf, offset)
             else:
-                mpu.upload_part(buf)
+                mpu.upload_part(buf, offset)
         except _ANY_ERROR:
             if mpu:
                 mpu.abort()
-                del self._mpus[mpu_key]
+                del self._mpus[path]
             raise
+
+    def _new_mpu(self, file_size, offset, source_path):
+        mpu = _SequentialMultipartUpload(source_path, offset, file_size, self.bucket, self._s3)
+        return _BufferedSequentialMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
 
     def _upload_single_range(self, fh, buf, path, offset):
         with io.BytesIO() as original_buf:
@@ -321,8 +424,7 @@ class S3Client(FileSystemClient):
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body)
 
     def flush(self, fh, path):
-        mpu_key = fh, path
-        mpu = self._mpus.get(mpu_key, None)
+        mpu = self._mpus.get(path, None)
         if mpu:
             try:
                 mpu.complete()
@@ -330,4 +432,4 @@ class S3Client(FileSystemClient):
                 mpu.abort()
                 raise
             finally:
-                del self._mpus[mpu_key]
+                del self._mpus[path]
