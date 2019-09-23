@@ -215,10 +215,6 @@ public class TaskMapper {
     }
 
     public TesTask mapToTesTask(PipelineRun run, TaskView view) {
-        return filterTesTaskWithView(run, view);
-    }
-
-    private TesTask filterTesTaskWithView(PipelineRun run, TaskView view) {
         final TesTask.TesTaskBuilder tesTask = TesTask.builder()
                 .id(String.valueOf(run.getId()))
                 .state(createTesState(run));

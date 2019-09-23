@@ -26,12 +26,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -396,28 +395,64 @@ class TaskMapperTest {
     }
 
     @Test
-    public void testGetInstanceType(){
-        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes =
-                new AllowedInstanceAndPriceTypes(Collections.singletonList(getInstanceType()),
-                        Collections.singletonList(getInstanceType()), Collections.singletonList("string"));
+    public void testGetInstanceType() {
         when(cloudPipelineAPIClient.loadTool(anyString())).thenReturn(mock(Tool.class));
-        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(anyLong(), anyLong(), anyBoolean())).thenReturn(allowedInstanceAndPriceTypes);
+        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(anyLong(), anyLong(),
+                anyBoolean())).thenReturn(getAllowedInstanceAndPriceTypes());
         InstanceType instanceType = getInstanceType();
-        assertEquals(instanceType.getName(), taskMapper.getInstanceType(getPipelineRun()).getName());
-        assertEquals(instanceType.getMemory(), taskMapper.getInstanceType(getPipelineRun()).getMemory());
-        assertEquals(instanceType.getMemoryUnit(), taskMapper.getInstanceType(getPipelineRun()).getMemoryUnit());
-        assertEquals(instanceType.getVCPU(), taskMapper.getInstanceType(getPipelineRun()).getVCPU());
+        assertEquals(instanceType, taskMapper.getInstanceType(getPipelineRun()));
+    }
+
+    @Test
+    public void testCreateTesResources() {
+        TesResources tesResources = TesResources.builder()
+                .preemptible(getPipelineRun().getInstance().getSpot())
+                .diskGb(new Double(getPipelineRun().getInstance().getNodeDisk()))
+                .ramGb(getInstanceType().getMemory() * taskMapper.convertMemoryUnitTypeToGiB(getInstanceType().getMemoryUnit()))
+                .cpuCores((long) getInstanceType().getVCPU())
+                .zones(Collections.singletonList(DEFAULT_REGION_NAME))
+                .build();
+        when(cloudPipelineAPIClient.loadRegion(Mockito.eq(getPipelineRun().getInstance().getCloudRegionId())).getRegionCode()).thenReturn(DEFAULT_REGION_NAME);
+
+        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(anyLong(), anyLong(),
+                getPipelineRun().getInstance().getSpot())).thenReturn(getAllowedInstanceAndPriceTypes());
+        assertEquals(tesResources, taskMapper.createTesResources(getPipelineRun()));
+    }
+
+    private TesResources getTesResources() {
+        return TesResources.builder()
+                .preemptible(getPipelineRun().getInstance().getSpot())
+                .diskGb(new Double(getPipelineRun().getInstance().getNodeDisk()))
+                .ramGb(getInstanceType().getMemory() * taskMapper.convertMemoryUnitTypeToGiB(getInstanceType().getMemoryUnit()))
+                .cpuCores((long) getInstanceType().getVCPU())
+                .zones(Collections.singletonList(DEFAULT_REGION_NAME))
+                .build();
+    }
+
+    private AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes() {
+        return new AllowedInstanceAndPriceTypes(Collections.singletonList(getInstanceType()),
+                Collections.singletonList(getInstanceType()), Collections.singletonList("string"));
     }
 
 //    @Test
-//    public void testCreateTesResources(){
-//        TesResources tesResources = TesResources.builder()
-//                .preemptible(getPipelineRun().getInstance().getSpot())
-//                .diskGb(new Double(getPipelineRun().getInstance().getNodeDisk()))
-//                .ramGb(getInstanceType().getMemory() * taskMapper.convertMemoryUnitTypeToGiB(getInstanceType().getMemoryUnit()))
-//                .cpuCores((long) getInstanceType().getVCPU())
-//                .zones(Collections.singletonList(DEFAULT_REGION_NAME))
-//                .build();
-//        assertEquals(tesResources, taskMapper.createTesResources(getPipelineRun()));
+//    public void getMapToTesTask(){
+//        assertEquals(TesTask.builder()
+//                .id(String.valueOf(getPipelineRun().getId()))
+//                .state(TesState.RUNNING).build(), taskMapper.mapToTesTask(getPipelineRun(), TaskView.MINIMAL));
+//
+//        when(cloudPipelineAPIClient.loadPipelineTasks(getPipelineRun().getId())).thenReturn(getPipelineTaskListWithConsole());
+//        when(cloudPipelineAPIClient.loadTool(anyString())).thenReturn(new Tool());
+//        List<TesExecutor> tesExecutors = new ArrayList<>();
+//        tesExecutors.add(new TesExecutor());
+//        tesExecutors.add(new TesExecutor());
+//        assertEquals(TesTask.builder()
+//                .id(String.valueOf(getPipelineRun().getId()))
+//                .state(TesState.RUNNING)
+//                .name(getPipelineRun().getPodId())
+//                .resources(getTesResources())
+//                .executors(tesExecutors)
+//                .outputs(Collections.singletonList(new TesOutput()))
+//                .creationTime(getPipelineRun().getStartDate().toString())
+//                .build(), taskMapper.mapToTesTask(getPipelineRun(), TaskView.BASIC));
 //    }
 }
