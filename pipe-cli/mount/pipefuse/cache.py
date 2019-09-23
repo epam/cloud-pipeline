@@ -132,7 +132,7 @@ class CachingFileSystemClient(FileSystemClient):
         self._cache.pop(path, None)
 
     def _invalidate_cache_recursively(self, path):
-        for cache_path, cache_listing in self._cache.items():
+        for cache_path in self._cache.keys():
             if self._is_relative(cache_path, path):
                 self._invalidate_cache(cache_path)
 
