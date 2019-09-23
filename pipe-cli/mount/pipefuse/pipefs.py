@@ -36,10 +36,7 @@ class FileHandleContainer(object):
 
     def __init__(self):
         self._container = set()
-        try:
-            self._range = xrange(self.FH_START, self.FH_END)
-        except NameError:
-            self._range = range(self.FH_START, self.FH_END)
+        self._range = fuseutils.lazy_range(self.FH_START, self.FH_END)
 
     def get(self):
         for fh in self._range:

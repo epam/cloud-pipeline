@@ -15,6 +15,7 @@
 import io
 import logging
 import os
+
 import time
 from datetime import datetime
 
@@ -23,9 +24,11 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
+
 import fuseutils
 from fsclient import File, FileSystemClient
-from fuseutils import MB
+from fuseutils import MB, GB
+from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload
 
 _ANY_ERROR = Exception
 
@@ -34,18 +37,23 @@ def _http_range(start, end):
     return 'bytes=%s-%s' % (start, end - 1)
 
 
-class _MultipartUpload:
+class S3MultipartUpload(MultipartUpload):
 
-    def __init__(self, path, offset, size, bucket, s3):
+    def __init__(self, path, offset, bucket, s3):
+        """
+        Plain multipart upload.
+
+        :param path: Destination bucket relative path.
+        :param offset: First upload part offset.
+        :param bucket: Destination bucket name.
+        :param s3: Boto S3 client.
+        """
         self._path = path
-        self._original_size = size
         self._bucket = bucket
         self._s3 = s3
         self._upload_id = None
-        self._ETags = []
-        self._part_number_shift = 2
+        self._parts = {}
         self._offset = offset
-        self._current_offset = self._offset
 
     @property
     def path(self):
@@ -58,44 +66,18 @@ class _MultipartUpload:
         )
         self._upload_id = response['UploadId']
 
-    def upload_part(self, buf):
+    def upload_part(self, buf, offset=None, part_number=None):
         with io.BytesIO(buf) as body:
             response = self._s3.upload_part(
                 Bucket=self._bucket,
                 Key=self._path,
                 Body=body,
                 UploadId=self._upload_id,
-                PartNumber=len(self._ETags) + self._part_number_shift
+                PartNumber=part_number
             )
-        self._ETags.append(response['ETag'])
-        self._current_offset += len(buf)
+        self._parts[part_number] = response['ETag']
 
-    def complete(self):
-        if self._offset:
-            self._copy_prefix(self._offset)
-        if self._current_offset < self._original_size:
-            self._copy_suffix(self._current_offset)
-        self._s3.complete_multipart_upload(
-            Bucket=self._bucket,
-            Key=self._path,
-            MultipartUpload={
-                'Parts': [
-                    {
-                        'ETag': ETag,
-                        'PartNumber': index + self._part_number_shift
-                    } for index, ETag in enumerate(self._ETags)
-                ]
-            },
-            UploadId=self._upload_id
-        )
-
-    def _copy_prefix(self, end):
-        self._copy(0, end, 1)
-
-    def _copy_suffix(self, start):
-        self._copy(start, self._original_size, len(self._ETags) + self._part_number_shift)
-
-    def _copy(self, start, end, part_number):
+    def upload_copy_part(self, start, end, offset=None, part_number=None):
         response = self._s3.upload_part_copy(
             Bucket=self._bucket,
             Key=self._path,
@@ -107,8 +89,22 @@ class _MultipartUpload:
             UploadId=self._upload_id,
             PartNumber=part_number
         )
-        self._ETags.insert(part_number - 1, response['CopyPartResult']['ETag'])
-        self._part_number_shift -= 1
+        self._parts[part_number] = response['CopyPartResult']['ETag']
+
+    def complete(self):
+        self._s3.complete_multipart_upload(
+            Bucket=self._bucket,
+            Key=self._path,
+            MultipartUpload={
+                'Parts': [
+                    {
+                        'ETag': self._parts[part_number],
+                        'PartNumber': part_number
+                    } for part_number in sorted(self._parts.keys())
+                ]
+            },
+            UploadId=self._upload_id
+        )
 
     def abort(self):
         logging.error('Aborting multipart upload for %s' % self._path)
@@ -116,27 +112,30 @@ class _MultipartUpload:
 
 
 class S3Client(FileSystemClient):
-    DOWNLOAD_CHUNK_SIZE_BYTES = 1 * MB
-    MULTIPART_PART_MIN_SIZE_BYTES = 5 * MB
 
-    def __init__(self, bucket, pipe):
+    def __init__(self, bucket, pipe, chunk_size):
         """
         AWS S3 API client for single bucket operations.
 
         :param bucket: Name of the AWS S3 bucket.
         :param pipe: Cloud Pipeline API client.
+        :param chunk_size: Multipart upload chunk size.
         """
         super(S3Client, self).__init__()
         self._is_read_only = False
         self.bucket = bucket
-        session = self._init_session(bucket, pipe)
-        proxy_config = self._init_proxy_config()
-        self._s3 = session.client('s3', config=proxy_config)
+        self._s3 = self._generate_s3_client(bucket, pipe)
+        self._chunk_size = chunk_size
         self._delimiter = '/'
+        self._single_upload_size = 5 * MB
         self._mpus = {}
         self.root_path = '/'
 
-    def _init_session(self, bucket, pipe):
+    def _generate_s3_client(self, bucket, pipe):
+        session = self._generate_aws_session(bucket, pipe)
+        return session.client('s3', config=Config())
+
+    def _generate_aws_session(self, bucket, pipe):
         def refresh():
             bucket_object = pipe.get_storage(bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
@@ -160,9 +159,6 @@ class S3Client(FileSystemClient):
         s = get_session()
         s._credentials = session_credentials
         return Session(botocore_session=s, region_name=fresh_metadata['region_name'])
-
-    def _init_proxy_config(self):
-        return Config()
 
     def is_available(self):
         # TODO 05.09.2019: Check AWS API for availability
@@ -281,36 +277,44 @@ class S3Client(FileSystemClient):
         self._download(buf, response['Body'])
 
     def _download(self, buf, response):
-        for chunk in iter(lambda: response.read(S3Client.DOWNLOAD_CHUNK_SIZE_BYTES), b''):
+        for chunk in iter(lambda: response.read(1 * MB), b''):
             buf.write(chunk)
 
     def upload_range(self, fh, buf, path, offset=0):
-        mpu_key = fh, path
         source_path = path.lstrip(self._delimiter)
-        mpu = self._mpus.get(mpu_key, None)
+        mpu = self._mpus.get(path, None)
         try:
             if not mpu:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
-                if buf_size < self.MULTIPART_PART_MIN_SIZE_BYTES and file_size < self.MULTIPART_PART_MIN_SIZE_BYTES:
+                if buf_size < self._single_upload_size and file_size < self._single_upload_size:
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
-                    uploading_buf = buf
-                    if offset and offset <= 5 * MB:
-                        with io.BytesIO() as prefix_buf:
-                            self.download_range(fh, prefix_buf, source_path)
-                            uploading_buf = bytearray(prefix_buf.getvalue()) + buf
-                    mpu = _MultipartUpload(source_path, offset, file_size, self.bucket, self._s3)
-                    self._mpus[mpu_key] = mpu
+                    mpu = self._new_mpu(file_size, offset, source_path)
+                    self._mpus[path] = mpu
                     mpu.initiate()
-                    mpu.upload_part(uploading_buf)
+                    mpu.upload_part(buf, offset)
             else:
-                mpu.upload_part(buf)
+                mpu.upload_part(buf, offset)
         except _ANY_ERROR:
             if mpu:
                 mpu.abort()
-                del self._mpus[mpu_key]
+                del self._mpus[path]
             raise
+
+    def _new_mpu(self, file_size, offset, source_path):
+        mpu = S3MultipartUpload(source_path, offset, self.bucket, self._s3)
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=5 * MB, max_part_size=5 * GB)
+        mpu = ChunkedMultipartUpload(mpu, file_size, download_func=self._generate_region_download_function(source_path),
+                                     chunk_size=self._chunk_size, min_chunk=1, max_chunk=10000)
+        return mpu
+
+    def _generate_region_download_function(self, path):
+        def download_func(region_offset, region_length):
+            with io.BytesIO() as buf:
+                self.download_range(None, buf, path, region_offset, region_length)
+                return buf.getvalue()
+        return download_func
 
     def _upload_single_range(self, fh, buf, path, offset):
         with io.BytesIO() as original_buf:
@@ -321,8 +325,7 @@ class S3Client(FileSystemClient):
             self._s3.put_object(Bucket=self.bucket, Key=path, Body=body)
 
     def flush(self, fh, path):
-        mpu_key = fh, path
-        mpu = self._mpus.get(mpu_key, None)
+        mpu = self._mpus.get(path, None)
         if mpu:
             try:
                 mpu.complete()
@@ -330,4 +333,4 @@ class S3Client(FileSystemClient):
                 mpu.abort()
                 raise
             finally:
-                del self._mpus[mpu_key]
+                del self._mpus[path]

@@ -32,24 +32,33 @@ class _FileBuffer(object):
         return self._current_offset
 
     @property
+    def size(self):
+        return self._current_offset - self._offset
+
+    @property
     def capacity(self):
         return self._capacity
 
-    def append(self, buf, offset=None):
-        if offset and offset != self._current_offset:
-            raise RuntimeError('Only sequential writes supported. Offset differs %s != %s '
-                               % (offset, self._current_offset))
+    def append(self, buf):
         self._buffs.append(buf)
         self._current_offset += len(buf)
 
 
 class _WriteBuffer(_FileBuffer):
 
+    def __init__(self, offset, capacity, inherited_size=0):
+        super(_WriteBuffer, self).__init__(offset, capacity)
+        self._inherited_size = inherited_size
+
+    @property
+    def inherited_size(self):
+        return max(self._current_offset, self._inherited_size)
+
     def is_full(self):
-        return self._current_offset - self._offset >= self._capacity
+        return self.size >= self.capacity
 
     def collect(self):
-        collected_buf_size = self._current_offset - self._offset
+        collected_buf_size = self.size
         collected_buf = bytearray(collected_buf_size)
         current_offset = 0
         for current_buf in self._buffs:
@@ -57,6 +66,9 @@ class _WriteBuffer(_FileBuffer):
             collected_buf[current_offset:current_offset + current_buf_size] = current_buf
             current_offset += current_buf_size
         return collected_buf, self._offset
+
+    def suits(self, offset):
+        return offset == self._current_offset
 
 
 class _ReadBuffer(_FileBuffer):
@@ -104,7 +116,7 @@ class BufferedFileSystemClient(FileSystemClient):
         """
         self._inner = inner
         self._capacity = capacity
-        self._download_file_buffs = {}
+        self._write_file_buffs = {}
         self._read_file_buffs = {}
 
     def is_available(self):
@@ -117,7 +129,11 @@ class BufferedFileSystemClient(FileSystemClient):
         return self._inner.exists(path)
 
     def attrs(self, path):
-        return self._inner.attrs(path)
+        attrs = self._inner.attrs(path)
+        write_buf = self._write_file_buffs.get(path)
+        if write_buf:
+            attrs = attrs._replace(size=max(attrs.size, write_buf.inherited_size))
+        return attrs
 
     def ls(self, path, depth=1):
         return self._inner.ls(path, depth)
@@ -147,8 +163,9 @@ class BufferedFileSystemClient(FileSystemClient):
             file_buf = self._new_read_buf(fh, path, file_size, offset)
             self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
-            file_buf.append(self._read_ahead(fh, path, file_buf.offset))
-            file_buf.shrink()
+            if file_buf.offset < file_buf.capacity:
+                file_buf.append(self._read_ahead(fh, path, file_buf.offset))
+                file_buf.shrink()
             if not file_buf.suits(offset, length):
                 file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
                 self._read_file_buffs[buf_key] = file_buf
@@ -165,28 +182,46 @@ class BufferedFileSystemClient(FileSystemClient):
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
-        buf_key = fh, path
-        file_buf = self._download_file_buffs.get(buf_key)
+        logging.debug('Uploading range %d-%d for %d:%s' % (offset, offset + len(buf), fh, path))
+        file_buf = self._write_file_buffs.get(path)
         if not file_buf:
-            file_buf = _WriteBuffer(offset, self._capacity)
-            self._download_file_buffs[buf_key] = file_buf
-        file_buf.append(buf, offset)
+            file_buf = self._new_write_buf(self._capacity, offset)
+            self._write_file_buffs[path] = file_buf
+        if file_buf.suits(offset):
+            file_buf.append(buf)
+        else:
+            logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
+            old_file_buf = self._flush_write_buf(fh, path)
+            file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
+            self._write_file_buffs[path] = file_buf
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % (fh, path))
-            write_buf = self._download_file_buffs.pop(buf_key, None)
-            if write_buf:
-                collected_buf, collected_offset = write_buf.collect()
+            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
+            self._flush_write_buf(fh, path)
+            file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
+            self._write_file_buffs[path] = file_buf
+
+    def _new_write_buf(self, capacity, offset, buf=None, old_write_buf=None):
+        write_buf = _WriteBuffer(offset, capacity, inherited_size=old_write_buf.inherited_size if old_write_buf else 0)
+        if buf:
+            write_buf.append(buf)
+        return write_buf
+
+    def _flush_write_buf(self, fh, path):
+        write_buf = self._write_file_buffs.pop(path, None)
+        if write_buf:
+            collected_buf, collected_offset = write_buf.collect()
+            if collected_buf:
                 self._inner.upload_range(fh, collected_buf, path, collected_offset)
+        return write_buf
 
     def flush(self, fh, path):
-        buf_key = fh, path
-        self._read_file_buffs.pop(buf_key, None)
-        write_buf = self._download_file_buffs.pop(buf_key, None)
         logging.info('Flushing buffers for %d:%s' % (fh, path))
-        if write_buf:
-            buf, offset = write_buf.collect()
-            self._inner.upload_range(fh, buf, path, offset)
+        self._flush_read_buf(fh, path)
+        self._flush_write_buf(fh, path)
         self._inner.flush(fh, path)
+
+    def _flush_read_buf(self, fh, path):
+        return self._read_file_buffs.pop((fh, path), None)
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):
