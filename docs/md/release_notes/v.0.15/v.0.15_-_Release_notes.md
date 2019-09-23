@@ -50,6 +50,7 @@
     - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
     - [JWT token shall be updated for the jobs being resumed](#jwt-token-shall-be-updated-for-the-jobs-being-resumed)
     - [Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error](#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error)
+    - [`pipe`: incorrect behavior of the `-nc` option for the `run` command](#pipe-incorrect-behavior-of-the-nc-option-for-the-run-command)
     - [Cluster run cannot be launched with a Pretty URL](#cluster-run-cannot-be-launched-with-a-pretty-url)
     - [Cloning of large repositories might fail](#cloning-of-large-repositories-might-fail)
     - [System events HTML overflow](#system-events-html-overflow)
@@ -711,6 +712,11 @@ Now, the JWT token and other variables as well are being updated when a job is b
 [#520](https://github.com/epam/cloud-pipeline/issues/520)
 
 Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.
+
+### `pipe`: incorrect behavior of the `-nc` option for the `run` command
+
+[#609](https://github.com/epam/cloud-pipeline/issues/609)
+Previously, trying to launch a pipeline via the `pipe run` command with the single `-nc` option threw an error.
 
 ### Cluster run cannot be launched with a Pretty URL
 
