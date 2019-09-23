@@ -49,13 +49,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.web.client.HttpClientErrorException;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -311,7 +308,7 @@ public class GitManager {
         boolean fileExists = false;
         try {
             fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (HttpClientErrorException exception) {
+        } catch (UnexpectedResponseStatusException exception) {
             LOGGER.debug(exception.getMessage(), exception);
         }
         return fileExists;
@@ -519,7 +516,7 @@ public class GitManager {
                 boolean fileExists = false;
                 try {
                     fileExists = gitlabClient.getFileContents(sourcePath, GIT_MASTER_REPOSITORY) != null;
-                } catch (HttpClientErrorException exception) {
+                } catch (UnexpectedResponseStatusException exception) {
                     LOGGER.debug(exception.getMessage(), exception);
                 }
                 if (fileExists) {
@@ -596,7 +593,7 @@ public class GitManager {
             boolean fileExists = false;
             try {
                 fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-            } catch (HttpClientErrorException exception) {
+            } catch (UnexpectedResponseStatusException exception) {
                 LOGGER.debug(exception.getMessage(), exception);
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
@@ -742,8 +739,7 @@ public class GitManager {
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
-    public void deletePipelineRepository(Pipeline pipeline)
-            throws GitClientException, URISyntaxException, UnsupportedEncodingException {
+    public void deletePipelineRepository(Pipeline pipeline) throws GitClientException {
         this.getGitlabClientForPipeline(pipeline).deleteRepository();
     }
 
