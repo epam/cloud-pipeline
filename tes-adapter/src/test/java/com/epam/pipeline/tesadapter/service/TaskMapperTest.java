@@ -82,7 +82,6 @@ class TaskMapperTest {
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
     private static final String INPUT = "input";
     private static final String OUTPUT = "output";
-    private static final Double KIB_TO_GIB = 0.00000095367432;
     private static final String STUBBED_NAME_PIPELINE_PARAMETER = "pipelineRunParameter";
     private static final String STUBBED_VALUE_PIPELINE_PARAMETER = "www.url.ru";
     private static final String OUTPUT_LOG_STRING_FORMAT = "%s - %s - %s";
@@ -132,10 +131,7 @@ class TaskMapperTest {
         when(cloudPipelineAPIClient.loadRegion(anyLong())).thenReturn(awsRegion);
         when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(TOOL_ID, 1l,
                 true)).thenReturn(getAllowedInstanceAndPriceTypes(run));
-        Tool tool = new Tool();
-        tool.setId(TOOL_ID);
-        tool.setName(STUBBED_IMAGE);
-        when(cloudPipelineAPIClient.loadTool(anyString())).thenReturn(tool);
+
     }
 
     @BeforeEach
@@ -377,6 +373,10 @@ class TaskMapperTest {
     @ParameterizedTest
     @MethodSource("provideTesTaskForTestTaskMapper")
     public void testTaskMapperMapPipelineRunToTesTask(PipelineRun run, TaskView view, TesTask tesTaskExpected) {
+        Tool tool = new Tool();
+        tool.setId(TOOL_ID);
+        tool.setName(STUBBED_IMAGE);
+        when(cloudPipelineAPIClient.loadTool(anyString())).thenReturn(tool);
         TesTask tesTaskActual = taskMapper.mapToTesTask(run, view);
         assertEquals(tesTaskExpected, tesTaskActual);
     }
