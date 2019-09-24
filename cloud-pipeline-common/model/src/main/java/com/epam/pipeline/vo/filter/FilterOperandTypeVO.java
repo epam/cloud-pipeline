@@ -14,27 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.rest;
+package com.epam.pipeline.vo.filter;
 
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+public enum FilterOperandTypeVO {
+    LESS("<"),
+    LESS_OR_EQUALS("<="),
+    EQUALS("="),
+    NOT_EQUALS("!="),
+    MORE_OR_EQUALS(">="),
+    MORE(">");
 
-@Setter
-@NoArgsConstructor
-public class PagedResult<T> { // TODO: refactor to extend Result class
-    private T elements; // TODO; refactor to contain a list of T
-    private int totalCount;
+    private String operand;
 
-    public PagedResult(T elements, int totalCount) {
-        this.elements = elements;
-        this.totalCount = totalCount;
+    FilterOperandTypeVO(String operand) {
+        this.operand = operand;
     }
 
-    public T getElements() {
-        return elements;
-    }
-
-    public int getTotalCount() {
-        return totalCount;
+    public String getOperand() {
+        return this.operand;
     }
 }

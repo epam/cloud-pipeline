@@ -42,10 +42,13 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
+import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
@@ -77,10 +80,18 @@ public interface CloudPipelineAPI {
     String TOOL_ID = "toolId";
     String REGION_ID = "regionId";
     String SPOT = "spot";
+    String LOAD_LINKS = "loadLinks";
 
 
     @POST("run")
     Call<Result<PipelineRun>> runPipeline(@Body PipelineStart runVo);
+
+    @POST("run/search")
+    Call<Result<PagedResult<List<PipelineRun>>>> searchRuns(@Body PagingRunFilterExpressionVO filterVO);
+
+    @POST("run/filter")
+    Call<Result<PagedResult<List<PipelineRun>>>> filterRuns(@Body PagingRunFilterVO filterVO,
+                                                            @Query(LOAD_LINKS) Boolean loadStorageLinks);
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
