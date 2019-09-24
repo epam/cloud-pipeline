@@ -77,6 +77,11 @@ class CLIVersionUpdater:
             raise RuntimeError("Failed to find Cloud Pipeline CLI download url")
         return api_path.replace(self.CP_RESTAPI_SUFFIX, self.get_download_suffix())
 
+    @staticmethod
+    def check_write_permissions(path):
+        if not os.access(path, os.X_OK & os.W_OK):
+            raise RuntimeError("Access denied: the user has no permissions to modify folder '%s'" % path)
+
 
 class LinuxUpdater(CLIVersionUpdater):
 
@@ -85,6 +90,7 @@ class LinuxUpdater(CLIVersionUpdater):
 
     def update_version(self, path):
         path_to_script = os.path.realpath(sys.argv[0])
+        self.check_write_permissions(path_to_script)
         self.replace_executable(path_to_script, path)
         self.set_x_permission(path_to_script)
 
@@ -122,39 +128,34 @@ class WindowsUpdater(CLIVersionUpdater):
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
-            log_file.write('[%s] Starting a new update operation %s' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
-                                                                        random_prefix))
+            log_file.write('[%s] Starting a new update operation %s\n' % (datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                                                                          random_prefix))
 
         bat_file_content = """@echo off
         for /L %%a in (1,1,{attempts_count}) do (
-            tasklist | find /i "{pipe_pid}" >> "{log_file}"
+            tasklist | find /i " {pipe_pid} " >> "{log_file}"
             if errorlevel 1 (
                 for /d %%b in ("{src_dir}\\*") do (
                     rd /q /s "%%b" || (
-                        echo . >> "{log_file}"
                         echo Failed to delete "%%b" file >> "{log_file}"
                         goto fail
                     )
                 )
                 echo Source subfolders folder was deleted >> "{log_file}"
                 del /q "{src_dir}" >> "{log_file}" || (
-                    echo . >> "{log_file}"
                     echo Failed to delete src files >> "{log_file}"
                     goto fail
                 )
                 xcopy "{tmp_dir}/pipe" "{src_dir}" /y /s /i > nul || (
-                    echo . >> "{log_file}"
                     echo Failed to copy files >> "{log_file}"
                     goto fail
                 )
                 rd /s /q "{tmp_dir}" || (
-                    echo . >> "{log_file}"
                     echo Failed to delete tmp directory '{tmp_dir}' >> "{log_file}"
                     goto fail
                 )
                 goto success
             ) else (
-                echo . >> "{log_file}"
                 echo Pipeline CLI process '{pipe_pid}' still alive >> "{log_file}"
                 timeout /T 2 > nul
             ) 
@@ -170,16 +171,16 @@ class WindowsUpdater(CLIVersionUpdater):
         goto end
 
         :end
-        (goto) 2>nul & del "%~f0
+        goto 2>nul & del "%~f0
         """.format(attempts_count=self.ATTEMPTS_COUNT,
                    log_file=log_file_path,
                    pipe_pid=os.getpid(),
                    src_dir=path_to_src_dir,
                    tmp_dir=tmp_src_dir)
-        with open(path_to_bat, 'w') as bat_file:
+        with open(path_to_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
 
-        subprocess.Popen("{}".format(path_to_bat), shell=True)
+        subprocess.Popen("{}".format(path_to_bat))
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
@@ -199,8 +200,3 @@ class WindowsUpdater(CLIVersionUpdater):
         if not os.path.exists(tmp_folder):
             os.makedirs(tmp_folder)
         return tmp_folder
-
-    @staticmethod
-    def check_write_permissions(path):
-        if not os.access(path, os.X_OK & os.W_OK):
-            raise RuntimeError("Access denied: the user has no permissions to modify folder '%s'" % path)
