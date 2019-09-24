@@ -193,7 +193,7 @@ public class TaskMapper {
                 - ramGb) / ramGb + Math.abs((double) (instanceType.getVCPU() - cpuCores)) / cpuCores;
     }
 
-    Double convertMemoryUnitTypeToGiB(String memoryUnit) {
+    private Double convertMemoryUnitTypeToGiB(String memoryUnit) {
         if (memoryUnit != null) {
             if (memoryUnit.equalsIgnoreCase(PipelineDiskMemoryTypes.KIB.getValue())) {
                 return KIB_TO_GIB;
@@ -210,7 +210,7 @@ public class TaskMapper {
         return GIB_TO_GIB;
     }
 
-    public TesTask mapToTesTask(PipelineRun run, TaskView view) {
+    TesTask mapToTesTask(PipelineRun run, TaskView view) {
         final TesTask.TesTaskBuilder tesTask = TesTask.builder()
                 .id(String.valueOf(run.getId()))
                 .state(createTesState(run));
