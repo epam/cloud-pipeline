@@ -32,6 +32,10 @@ class _FileBuffer(object):
         return self._current_offset
 
     @property
+    def size(self):
+        return self._current_offset - self._offset
+
+    @property
     def capacity(self):
         return self._capacity
 
@@ -46,10 +50,10 @@ class _FileBuffer(object):
 class _WriteBuffer(_FileBuffer):
 
     def is_full(self):
-        return self._current_offset - self._offset >= self._capacity
+        return self.size >= self.capacity
 
     def collect(self):
-        collected_buf_size = self._current_offset - self._offset
+        collected_buf_size = self.size
         collected_buf = bytearray(collected_buf_size)
         current_offset = 0
         for current_buf in self._buffs:
@@ -120,7 +124,11 @@ class BufferedFileSystemClient(FileSystemClient):
         return self._inner.exists(path)
 
     def attrs(self, path):
-        return self._inner.attrs(path)
+        attrs = self._inner.attrs(path)
+        write_buf = self._write_file_buffs.get(path)
+        if write_buf:
+            attrs = attrs._replace(size=attrs.size + write_buf.size)
+        return attrs
 
     def ls(self, path, depth=1):
         return self._inner.ls(path, depth)
@@ -168,20 +176,20 @@ class BufferedFileSystemClient(FileSystemClient):
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
-        buf_key = fh, path
-        file_buf = self._write_file_buffs.get(buf_key)
+        logging.debug('Uploading range %d-%d for %d:%s' % (offset, offset + len(buf), fh, path))
+        file_buf = self._write_file_buffs.get(path)
         if not file_buf:
             file_buf = self._new_write_buf(self._capacity, offset)
-            self._write_file_buffs[buf_key] = file_buf
+            self._write_file_buffs[path] = file_buf
         if file_buf.suits(offset):
             file_buf.append(buf, offset)
         else:
-            logging.info('Uploading buffer is not sequential for %d:%s. Buffer will be cleared.' % buf_key)
+            logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
             self._flush_write_buf(fh, path)
             file_buf = self._new_write_buf(self._capacity, offset, buf)
-            self._write_file_buffs[buf_key] = file_buf
+            self._write_file_buffs[path] = file_buf
         if file_buf.is_full():
-            logging.info('Uploading buffer is full for %d:%s. Buffer will be cleared.' % buf_key)
+            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
             self._flush_write_buf(fh, path)
 
     def _new_write_buf(self, capacity, offset, buf=None):
@@ -191,8 +199,7 @@ class BufferedFileSystemClient(FileSystemClient):
         return write_buf
 
     def _flush_write_buf(self, fh, path):
-        buf_key = fh, path
-        write_buf = self._write_file_buffs.pop(buf_key, None)
+        write_buf = self._write_file_buffs.pop(path, None)
         if write_buf:
             collected_buf, collected_offset = write_buf.collect()
             self._inner.upload_range(fh, collected_buf, path, collected_offset)
