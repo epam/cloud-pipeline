@@ -61,6 +61,21 @@ class _MultipartUpload:
         pass
 
 
+class _UploadPart:
+
+    def __init__(self, number, ETag):
+        self._number = number
+        self._ETag = ETag
+
+    @property
+    def ETag(self):
+        return self._ETag
+
+    @property
+    def number(self):
+        return self._number
+
+
 class _SequentialMultipartUpload(_MultipartUpload):
 
     def __init__(self, path, offset, size, bucket, s3):
@@ -80,7 +95,7 @@ class _SequentialMultipartUpload(_MultipartUpload):
         self._bucket = bucket
         self._s3 = s3
         self._upload_id = None
-        self._ETags = []
+        self._parts = []
         self._part_number_shift = 2
         self._offset = offset
         self._current_offset = self._offset
@@ -98,15 +113,19 @@ class _SequentialMultipartUpload(_MultipartUpload):
 
     def upload_part(self, buf, offset=None):
         with io.BytesIO(buf) as body:
+            part_number = self._next_part_number()
             response = self._s3.upload_part(
                 Bucket=self._bucket,
                 Key=self._path,
                 Body=body,
                 UploadId=self._upload_id,
-                PartNumber=len(self._ETags) + self._part_number_shift
+                PartNumber=part_number
             )
-        self._ETags.append(response['ETag'])
+        self._parts.append(_UploadPart(part_number, response['ETag']))
         self._current_offset += len(buf)
+
+    def _next_part_number(self):
+        return len(self._parts) + self._part_number_shift
 
     def complete(self):
         if self._offset:
@@ -119,9 +138,9 @@ class _SequentialMultipartUpload(_MultipartUpload):
             MultipartUpload={
                 'Parts': [
                     {
-                        'ETag': ETag,
-                        'PartNumber': index + self._part_number_shift
-                    } for index, ETag in enumerate(self._ETags)
+                        'ETag': part.ETag,
+                        'PartNumber': part.number
+                    } for part in self._parts
                 ]
             },
             UploadId=self._upload_id
@@ -131,7 +150,7 @@ class _SequentialMultipartUpload(_MultipartUpload):
         self._copy(0, end, 1)
 
     def _copy_suffix(self, start):
-        self._copy(start, self._original_size, len(self._ETags) + self._part_number_shift)
+        self._copy(start, self._original_size, self._next_part_number())
 
     def _copy(self, start, end, part_number):
         response = self._s3.upload_part_copy(
@@ -145,8 +164,7 @@ class _SequentialMultipartUpload(_MultipartUpload):
             UploadId=self._upload_id,
             PartNumber=part_number
         )
-        self._ETags.insert(part_number - 1, response['CopyPartResult']['ETag'])
-        self._part_number_shift -= 1
+        self._parts.insert(part_number - 1, _UploadPart(part_number, response['CopyPartResult']['ETag']))
 
     def abort(self):
         logging.error('Aborting multipart upload for %s' % self._path)
