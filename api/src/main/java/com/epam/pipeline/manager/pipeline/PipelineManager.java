@@ -162,11 +162,25 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
+        final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
+        final boolean projectNameUpdated = !newProjectName.equals(currentProjectName);
+        if (projectNameUpdated) {
+            final String newRepository =
+                GitUtils.replaceGitProjectNameInUrl(dbPipeline.getRepository(), newProjectName);
+            final String newRepositorySsh =
+                GitUtils.replaceGitProjectNameInUrl(dbPipeline.getRepositorySsh(), newProjectName);
+            dbPipeline.setRepository(newRepository);
+            dbPipeline.setRepositorySsh(newRepositorySsh);
+        }
         dbPipeline.setName(pipelineVOName);
         dbPipeline.setDescription(pipelineVO.getDescription());
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         pipelineDao.updatePipeline(dbPipeline);
+        if (projectNameUpdated) {
+            gitManager.updateRepositoryName(currentProjectName, newProjectName);
+        }
         return dbPipeline;
     }
 

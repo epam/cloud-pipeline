@@ -68,6 +68,8 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.utils.GitUtils.convertPipeNameToProject;
+
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
@@ -209,13 +211,6 @@ public class GitlabClient {
         return createGitProject(template, description, convertPipeNameToProject(name), indexingEnabled, hookUrl);
     }
 
-    private String convertPipeNameToProject(String name) {
-        // This regexp differ from one from GitUtils, actually there is no sing why we should replace all '.'
-        // and etc from name, and cant user the same pattern from GitUtils here, but since it legacy method
-        // we decided to leave it as is
-        return name.trim().toLowerCase().replaceAll("[^\\w\\s]", "").replaceAll("\\s+", "-");
-    }
-
     public boolean projectExists(String name) throws GitClientException {
         try {
             String projectId = makeProjectId(namespace, convertPipeNameToProject(name));
@@ -329,6 +324,15 @@ public class GitlabClient {
     public GitRepositoryEntry createProjectHook(String hookUrl) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         return addProjectHook(projectId, hookUrl);
+    }
+
+    public GitProject updateProjectName(final String currentName, final String newName) throws GitClientException{
+        final String normalizedNewName = convertPipeNameToProject(newName);
+        return execute(gitLabApi.updateProject(makeProjectId(namespace, convertPipeNameToProject(currentName)),
+                                               GitProjectRequest.builder()
+                                                   .name(normalizedNewName)
+                                                   .path(normalizedNewName)
+                                                   .build()));
     }
 
     private <R> R execute(Call<R> call) throws GitClientException {

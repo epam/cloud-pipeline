@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
@@ -56,6 +57,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,17 +66,21 @@ import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.epam.pipeline.manager.git.GitManager.DRAFT_PREFIX;
 import static com.epam.pipeline.manager.git.GitManager.GIT_MASTER_REPOSITORY;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.givenThat;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
@@ -118,6 +124,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String FILE_CONTENT = "some content";
     private static final GitlabUser USER = GitlabUser.builder().id(1L).username("root").build();
     private static final GitToken USER_TOKEN = GitToken.builder().id(1L).token("token-123").expires(new Date()).build();
+    private static final String PROJECTS_ROOT = "/api/v3/projects/";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -540,6 +547,58 @@ public class GitManagerTest extends AbstractManagerTest {
         assertThat(commits, contains(expectedCommit));
     }
 
+    @Test
+    public void shouldRenameExistingProject() {
+        final String projectName = "currentname";
+        final String newProjectName = "expectedname";
+        final GitProject currentProject = createProject(projectName);
+        final GitProject expectedProject = createProject(newProjectName);
+        givenThat(
+            get(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
+                .willReturn(okJson(with(currentProject)))
+        );
+        givenThat(
+            put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
+                .withRequestBody(equalToJson(createUpdateRequestBody(newProjectName)))
+                .willReturn(okJson(with(expectedProject)))
+        );
+        final GitProject updatedProject = gitManager.updateRepositoryName(projectName, newProjectName);
+        assertThat(updatedProject, is(expectedProject));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionForNonExistentProject() {
+        final String projectName = "currentname";
+        final String newProjectName = "expectedname";
+        givenThat(
+            put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
+                .willReturn(aResponse().withStatus(HttpURLConnection.HTTP_NOT_FOUND))
+        );
+        gitManager.updateRepositoryName(projectName, newProjectName);
+    }
+
+    private String getUrlEncodedNamespacePath(final String projectName) {
+        return encodeUrlPath(ROOT_USER_NAME + "/"+ projectName);
+    }
+
+    private String createUpdateRequestBody(final String newName) {
+        final HashMap<String, String> updateQueryParameters = new HashMap<>();
+        updateQueryParameters.put("name", newName);
+        updateQueryParameters.put("path", newName);
+        return JsonMapper.convertDataToJsonStringForQuery(updateQueryParameters);
+    }
+
+    private GitProject createProject(final String name) {
+        final String httpPathPattern = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
+        final String sshPathPattern = "git@cp-git.default.svc.cluster.local:%s/%s.git";
+        final GitProject project = new GitProject();
+        project.setName(name);
+        project.setPath(name);
+        project.setRepoUrl(String.format(httpPathPattern, ROOT_USER_NAME, name));
+        project.setRepoSsh(String.format(sshPathPattern, ROOT_USER_NAME, name));
+        return project;
+    }
+
     /**
      * We suppress checkstyle warning since this method is for creating dummy data that actually doesn't matter.
      */
@@ -573,7 +632,7 @@ public class GitManagerTest extends AbstractManagerTest {
     }
 
     private static String api() {
-        return "/api/v3/projects/" + PROJECT_PATH;
+        return PROJECTS_ROOT + PROJECT_PATH;
     }
 
     private static String api(final String url) {
