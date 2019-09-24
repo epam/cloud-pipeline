@@ -19,8 +19,10 @@ package com.epam.pipeline.entity.git;
 import com.epam.pipeline.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class GitProject extends BaseEntity {
 
     @JsonProperty("project_id") private Long projectId;

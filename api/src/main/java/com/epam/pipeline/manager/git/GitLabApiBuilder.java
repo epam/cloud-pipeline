@@ -29,7 +29,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.assertj.core.api.exception.RuntimeIOException;
 import org.springframework.util.Assert;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
@@ -71,7 +70,7 @@ public class GitLabApiBuilder {
         try {
             return initGitLabApi(generateToken());
         } catch (IOException e) {
-            throw new RuntimeIOException(e.getMessage());
+            throw new IllegalStateException(e.getMessage());
         }
     }
 

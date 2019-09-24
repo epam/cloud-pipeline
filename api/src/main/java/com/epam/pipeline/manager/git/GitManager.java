@@ -155,16 +155,24 @@ public class GitManager {
 
     public GitCredentials getGitCredentials(Long id, boolean useEnvVars, boolean issueToken) {
         Pipeline pipeline = pipelineManager.load(id);
-        return getGitlabClientForPipeline(pipeline)
-                .buildCloneCredentials(useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+        try {
+            return getGitlabClientForPipeline(pipeline)
+                    .buildCloneCredentials(useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     public GitCredentials getGitlabCredentials(Long duration) {
         Long expiration = Optional.ofNullable(duration).orElse(DEFAULT_TOKEN_DURATION);
-        return getDefaultGitlabClient()
-                .withUserName(authManager.getAuthorizedUser())
-                .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
-                .buildCloneCredentials(false, true, expiration);
+        try {
+            return getDefaultGitlabClient()
+                    .withUserName(authManager.getAuthorizedUser())
+                    .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
+                    .buildCloneCredentials(false, true, expiration);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     /**
@@ -678,7 +686,7 @@ public class GitManager {
             Path path = Files.createTempDirectory(getBaseDir().toPath(), "git");
             return checkoutConfigToDirectory(pipeline, getRevisionName(version),
                     path.toFile().getAbsolutePath() + PATH_DELIMITER);
-        } catch (IOException e) {
+        } catch (IOException | GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new CmdExecutionException(e.getMessage(), e);
         }
@@ -752,12 +760,14 @@ public class GitManager {
         }
     }
 
-    private File checkoutConfigToDirectory(Pipeline pipeline, String version, String repoPath) {
+    private File checkoutConfigToDirectory(Pipeline pipeline, String version, String repoPath)
+            throws GitClientException {
         checkoutRepo(pipeline, version, repoPath);
         return new File(repoPath, CONFIG_FILE_NAME);
     }
 
-    private void checkoutRepo(Pipeline pipeline, String version, String repoPath) {
+    private void checkoutRepo(Pipeline pipeline, String version, String repoPath)
+            throws GitClientException {
         GitCredentials gitCredentials = getGitCredentials(pipeline.getId(), false);
         final String clone = String.format(GIT_CLONE_CMD, gitCredentials.getUrl(), repoPath);
         cmdExecutor.executeCommand(clone, null, new File(workingDirPath), true);

@@ -659,8 +659,8 @@ public class SystemPreferences {
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
                 gitPreferences.get(GIT_USER_NAME.getKey()).getValue());
-        client.buildCloneCredentials(false, false, 1L);
         try {
+            client.buildCloneCredentials(false, false, 1L);
             GitlabVersion version = client.getVersion();
             Matcher matcher = GIT_VERSION_PATTERN.matcher(version.getVersion());
             if (matcher.find()) {

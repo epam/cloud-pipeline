@@ -38,7 +38,6 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.assertj.core.api.exception.RuntimeIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -149,7 +148,8 @@ public class GitlabClient {
         return new GitlabClient(gitHost, adminName, adminName, token, null, null, gitAdminId, adminName, false);
     }
 
-    public GitCredentials buildCloneCredentials(boolean useEnvVars, boolean issueToken, Long duration) {
+    public GitCredentials buildCloneCredentials(boolean useEnvVars, boolean issueToken, Long duration)
+            throws GitClientException {
         final String gitUrl = StringUtils.isNotBlank(fullUrl) ? fullUrl : gitHost;
         Assert.state(StringUtils.isNotBlank(gitUrl), "Gitlab URL is required to issue credentials.");
         final GitCredentials.GitCredentialsBuilder credentialsBuilder = GitCredentials.builder();
@@ -184,7 +184,7 @@ public class GitlabClient {
                 .email(email).build();
     }
 
-    public GitCredentials buildCloneCredentials(boolean useEnvVars, Long duration) {
+    public GitCredentials buildCloneCredentials(boolean useEnvVars, Long duration) throws GitClientException {
         return buildCloneCredentials(useEnvVars, false, duration);
     }
 
@@ -197,21 +197,13 @@ public class GitlabClient {
     public List<GitRepositoryEntry> getRepositoryContents(String path,
                                                           String revision,
                                                           boolean recursive) throws GitClientException {
-        try {
-            String projectId = makeProjectId(namespace, projectName);
-            return gitLabApi.getRepositoryTree(projectId, path, revision, recursive).execute().body();
-        } catch (IOException e) {
-            throw new GitClientException(e);
-        }
+        String projectId = makeProjectId(namespace, projectName);
+        return execute(gitLabApi.getRepositoryTree(projectId, path, revision, recursive));
     }
 
     public GitProject createTemplateRepository(Template template, String name, String description,
                                                boolean indexingEnabled, String hookUrl) throws GitClientException {
-        try {
-            return createGitProject(template, description, convertPipeNameToProject(name), indexingEnabled, hookUrl);
-        } catch (IOException | HttpClientErrorException e) {
-            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
-        }
+        return createGitProject(template, description, convertPipeNameToProject(name), indexingEnabled, hookUrl);
     }
 
     private String convertPipeNameToProject(String name) {
@@ -243,7 +235,7 @@ public class GitlabClient {
         try {
             String repoName = this.projectName;
             return createGitProject(template, description, repoName, indexingEnabled, hookUrl);
-        } catch (IOException | HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
         }
     }
@@ -329,12 +321,8 @@ public class GitlabClient {
     }
 
     public GitRepositoryEntry createProjectHook(String hookUrl) throws GitClientException {
-        try {
-            String projectId = makeProjectId(namespace, projectName);
-            return addProjectHook(projectId, hookUrl);
-        } catch (UnexpectedResponseStatusException e) {
-            throw new GitClientException("Failed to add hook to git repository: " + e.getMessage(), e);
-        }
+        String projectId = makeProjectId(namespace, projectName);
+        return addProjectHook(projectId, hookUrl);
     }
 
     private <R> R execute(Call<R> call) throws GitClientException {
@@ -364,7 +352,7 @@ public class GitlabClient {
                 throw new HttpException(response);
             }
         } catch (IOException e) {
-            throw new RuntimeIOException(e.getMessage());
+            throw new IllegalStateException(e.getMessage());
         }
     }
 
@@ -382,38 +370,32 @@ public class GitlabClient {
         return gitUserName + "/" + projectName;
     }
 
-    private String createImpersonationToken(String repositoryName, Long userId, Long duration) {
+    private String createImpersonationToken(String repositoryName, Long userId, Long duration)
+            throws GitClientException {
         //issue adminToken for one day
         final String tokenName = repositoryName + "-adminToken";
         final LocalDate endDay = LocalDate.now().plusDays(duration);
         return createImpersonationToken(tokenName, userId, endDay);
     }
 
-    private String createImpersonationToken(String tokenName, Long userId, LocalDate expires) {
+    private String createImpersonationToken(String tokenName, Long userId, LocalDate expires)
+            throws GitClientException {
         if (adminId == null) {
             throw new IllegalArgumentException("Token may be issued only for local Gitlab.");
         }
-        try {
-            return execute(gitLabApi.issueToken(
-                    String.valueOf(userId),
-                    GitTokenRequest.builder()
-                            .name(tokenName)
-                            .expires(DATE_TIME_FORMATTER.format(expires))
-                            .scopes(Collections.singletonList("api")).build(),
-                    adminToken)).getToken();
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException("Failed to issue Gitlab adminToken");
-        }
+        return execute(gitLabApi.issueToken(
+                String.valueOf(userId),
+                GitTokenRequest.builder()
+                        .name(tokenName)
+                        .expires(DATE_TIME_FORMATTER.format(expires))
+                        .scopes(Collections.singletonList("api")).build(),
+                adminToken)).getToken();
     }
 
-    private Optional<GitlabUser> findUser(String userName) {
-        try {
-            return Optional.of(execute(gitLabApi.searchUser(userName)))
-                    .map(List::stream)
-                    .flatMap(Stream::findFirst);
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e);
-        }
+    private Optional<GitlabUser> findUser(String userName) throws GitClientException {
+        return Optional.of(execute(gitLabApi.searchUser(userName)))
+                .map(List::stream)
+                .flatMap(Stream::findFirst);
     }
 
     private GitProject createRepo(String repoName, String description) throws GitClientException {
@@ -431,12 +413,8 @@ public class GitlabClient {
                                 .tagPushEvents(true).sslVerify(false).build()));
     }
 
-    private GitProject createGitProject(Template template,
-                                        String description,
-                                        String repoName,
-                                        boolean indexingEnabled,
-                                        String hookUrl)
-            throws GitClientException, IOException {
+    private GitProject createGitProject(Template template, String description, String repoName,
+                                        boolean indexingEnabled, String hookUrl) throws GitClientException {
         GitProject project = createRepo(repoName, description);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
@@ -447,7 +425,7 @@ public class GitlabClient {
             if (!fileExists) {
                 createFile(project, DEFAULT_README, README_DEFAULT_CONTENTS);
             }
-        } catch (HttpClientErrorException e) {
+        } catch (UnexpectedResponseStatusException e) {
             createFile(project, DEFAULT_README, README_DEFAULT_CONTENTS);
         } catch (GitClientException exception) {
             LOGGER.debug(exception.getMessage(), exception);
@@ -455,8 +433,7 @@ public class GitlabClient {
         return project;
     }
 
-    private void uploadFolder(Template template, String repoName, GitProject project)
-            throws IOException {
+    private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {
         String templateRootFolder = Paths.get(template.getDirPath()).toAbsolutePath().toString();
         if (!Paths.get(template.getDirPath()).toFile().exists()) {
             return;
@@ -479,6 +456,8 @@ public class GitlabClient {
                     }
                 }
             });
+        } catch (IOException e) {
+            throw new GitClientException(e.getMessage());
         }
     }
 
