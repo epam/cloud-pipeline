@@ -58,11 +58,6 @@ class TestTerminateInstanceBeforeKubeRegistration(object):
         terminate_node(node_name)
         logging.info("Node {} was terminated".format(node_name))
 
-        if not cls.state.failure:
-            PipelineManager.delete(cls.pipeline_id)
-            logging.info("Pipeline {} deleted".format(cls.pipeline_id))
-            wait_for_instance_termination(cls.run_id, 150)
-
     @pytest.mark.run(order=2)
     def test_pipe_should_still_wait(self):
         try:
