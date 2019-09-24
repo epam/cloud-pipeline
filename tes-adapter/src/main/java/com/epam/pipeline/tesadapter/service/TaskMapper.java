@@ -238,7 +238,7 @@ public class TaskMapper {
         }
     }
 
-     TesState createTesState(PipelineRun run) {
+    private TesState createTesState(PipelineRun run) {
         List<PipelineTask> pipelineTaskList = cloudPipelineAPIClient.loadPipelineTasks(run.getId());
         switch (run.getStatus()) {
             case RUNNING:
@@ -264,7 +264,7 @@ public class TaskMapper {
         }
     }
 
-    List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
+    private List<TesInput> createTesInput(List<PipelineRunParameter> parameters) {
         return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT_TYPE))
                 .map(pipelineRunParameter ->
@@ -274,7 +274,7 @@ public class TaskMapper {
                                 .build()).collect(Collectors.toList());
     }
 
-    List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
+    private List<TesOutput> createTesOutput(List<PipelineRunParameter> parameters) {
         return parameters.stream()
                 .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT_TYPE))
                 .map(pipelineRunParameter ->
@@ -284,7 +284,7 @@ public class TaskMapper {
                                 .build()).collect(Collectors.toList());
     }
 
-    TesResources createTesResources(PipelineRun run) {
+    private TesResources createTesResources(PipelineRun run) {
         return TesResources.builder()
                 .preemptible(run.getInstance().getSpot())
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
@@ -294,11 +294,11 @@ public class TaskMapper {
                 .build();
     }
 
-    List<String> getPipelineRunZone(PipelineRun run) {
+    private List<String> getPipelineRunZone(PipelineRun run) {
         return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
     }
 
-    List<TesExecutor> createListExecutor(PipelineRun run) {
+    private List<TesExecutor> createListExecutor(PipelineRun run) {
         return ListUtils.emptyIfNull(Collections.singletonList(TesExecutor.builder()
                 .command(ListUtils.emptyIfNull(Arrays.asList(run.getActualCmd().split(SEPARATOR))))
                 .env(run.getEnvVars())
@@ -306,7 +306,7 @@ public class TaskMapper {
                 .build()));
     }
 
-    List<TesTaskLog> createTesTaskLog(final Long runId) {
+    private List<TesTaskLog> createTesTaskLog(final Long runId) {
         List<RunLog> runLogList = ListUtils.emptyIfNull(cloudPipelineAPIClient.getRunLog(runId));
         List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
                 .stdout(runLogList.stream()
@@ -318,7 +318,7 @@ public class TaskMapper {
                 .build());
     }
 
-    InstanceType getInstanceType(PipelineRun run) {
+    private InstanceType getInstanceType(PipelineRun run) {
         Long regionId = run.getInstance().getCloudRegionId();
         Boolean spot = run.getInstance().getSpot();
         Tool pipeLineTool = loadToolByTesImage(run.getDockerImage());
