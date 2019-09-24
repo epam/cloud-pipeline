@@ -11,10 +11,12 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.rest.PagedResult;
+import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,62 +24,79 @@ import java.util.List;
 
 @Service
 public class CloudPipelineAPIClient {
-    private CloudPipelineAPI cloudPipelineAPI;
+    private TesTokenHolder tesTokenHolder;
 
-    public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
-                                  @Value("${cloud.pipeline.token}") String cloudPipelineToken) {
-        this.cloudPipelineAPI =
-                new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
-                        .buildClient();
+    @Value("${cloud.pipeline.host}")
+    private String cloudPipelineHostUrl;
+
+    @Autowired
+    public CloudPipelineAPIClient(TesTokenHolder tesTokenHolder) {
+        this.tesTokenHolder = tesTokenHolder;
+    }
+
+    private CloudPipelineAPI buildCloudPipelineAPI(String apiHost, String token) {
+        return new CloudPipelineApiBuilder(0, 0, apiHost, token)
+                .buildClient();
     }
 
     public PipelineRun runPipeline(PipelineStart runVo) {
-        return QueryUtils.execute(cloudPipelineAPI.runPipeline(runVo));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .runPipeline(runVo));
     }
 
     public PipelineRun loadPipelineRun(final Long pipelineRunId) {
-        return QueryUtils.execute(cloudPipelineAPI.loadPipelineRun(pipelineRunId));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadPipelineRun(pipelineRunId));
     }
 
     public PipelineRun updateRunStatus(final Long pipelineRunId, RunStatusVO statusUpdate) {
-        return QueryUtils.execute(cloudPipelineAPI.updateRunStatus(pipelineRunId, statusUpdate));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .updateRunStatus(pipelineRunId, statusUpdate));
     }
 
     public AllowedInstanceAndPriceTypes loadAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
                                                                          final Boolean spot) {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllowedInstanceAndPriceTypes(toolId, regionId, spot));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot));
     }
 
     public Tool loadTool(String image) {
-        return QueryUtils.execute(cloudPipelineAPI.loadTool(null, image));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadTool(null, image));
     }
 
     public List<AbstractCloudRegion> loadAllRegions() {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadAllRegions());
     }
 
     public List<AbstractDataStorage> loadAllDataStorages() {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadAllDataStorages());
     }
 
     public List<RunLog> getRunLog(final Long runId) {
-        return QueryUtils.execute(cloudPipelineAPI.loadLogs(runId));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadLogs(runId));
     }
 
-
     public List<PipelineTask> loadPipelineTasks(final Long id) {
-        return QueryUtils.execute(cloudPipelineAPI.loadPipelineTasks(id));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadPipelineTasks(id));
     }
 
     public PagedResult<List<PipelineRun>> searchRuns(PagingRunFilterExpressionVO filterVO) {
-        return QueryUtils.execute(cloudPipelineAPI.searchRuns(filterVO));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .searchRuns(filterVO));
     }
 
     public PagedResult<List<PipelineRun>> filterRuns(PagingRunFilterVO filterVO, Boolean loadStorageLinks) {
-        return QueryUtils.execute(cloudPipelineAPI.filterRuns(filterVO, loadStorageLinks));
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .filterRuns(filterVO, loadStorageLinks));
     }
 
-    public AbstractCloudRegion loadRegion(final Long regionId){
-        return QueryUtils.execute(cloudPipelineAPI.loadRegion(regionId));
+    public AbstractCloudRegion loadRegion(final Long regionId) {
+        return QueryUtils.execute(buildCloudPipelineAPI(cloudPipelineHostUrl, tesTokenHolder.getToken())
+                .loadRegion(regionId));
     }
 }
