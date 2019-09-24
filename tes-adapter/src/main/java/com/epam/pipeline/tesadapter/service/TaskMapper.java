@@ -210,7 +210,7 @@ public class TaskMapper {
         return GIB_TO_GIB;
     }
 
-    TesTask mapToTesTask(PipelineRun run, TaskView view) {
+    public TesTask mapToTesTask(PipelineRun run, TaskView view) {
         final TesTask.TesTaskBuilder tesTask = TesTask.builder()
                 .id(String.valueOf(run.getId()))
                 .state(createTesState(run));
