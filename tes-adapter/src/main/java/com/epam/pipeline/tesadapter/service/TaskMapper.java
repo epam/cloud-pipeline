@@ -91,7 +91,7 @@ public class TaskMapper {
         this.defaultRegion = defaultRegion;
     }
 
-    PipelineStart mapToPipelineStart(TesTask tesTask) {
+    public PipelineStart mapToPipelineStart(TesTask tesTask) {
         Assert.notNull(tesTask, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, tesTask));
         PipelineStart pipelineStart = new PipelineStart();
