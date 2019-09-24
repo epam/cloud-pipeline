@@ -29,8 +29,8 @@ public class UnexpectedResponseStatusException extends GitClientException {
         this.status = status;
     }
 
-    public UnexpectedResponseStatusException(HttpStatus status, String massage) {
-        super("Unexpected response status code: " + status + " Message: " + massage);
+    public UnexpectedResponseStatusException(HttpStatus status, String message) {
+        super("Unexpected response status code: " + status + " Message: " + message);
         this.status = status;
     }
 
