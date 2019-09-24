@@ -129,9 +129,9 @@ class _SequentialMultipartUpload(_MultipartUpload):
 
     def complete(self):
         if self._offset:
-            self._copy_prefix(self._offset)
+            self._copy_prefix()
         if self._current_offset < self._original_size:
-            self._copy_suffix(self._current_offset)
+            self._copy_suffix()
         self._s3.complete_multipart_upload(
             Bucket=self._bucket,
             Key=self._path,
@@ -146,11 +146,11 @@ class _SequentialMultipartUpload(_MultipartUpload):
             UploadId=self._upload_id
         )
 
-    def _copy_prefix(self, end):
-        self._copy(0, end, 1)
+    def _copy_prefix(self):
+        self._copy(0, self._offset, 1)
 
-    def _copy_suffix(self, start):
-        self._copy(start, self._original_size, self._next_part_number())
+    def _copy_suffix(self):
+        self._copy(self._offset, self._original_size, self._next_part_number())
 
     def _copy(self, start, end, part_number):
         response = self._s3.upload_part_copy(
