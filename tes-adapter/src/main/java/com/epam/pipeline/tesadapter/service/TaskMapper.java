@@ -211,10 +211,6 @@ public class TaskMapper {
     }
 
     public TesTask mapToTesTask(PipelineRun run, TaskView view) {
-        return filterTesTaskWithView(run, view);
-    }
-
-    private TesTask filterTesTaskWithView(PipelineRun run, TaskView view) {
         final TesTask.TesTaskBuilder tesTask = TesTask.builder()
                 .id(String.valueOf(run.getId()))
                 .state(createTesState(run));
@@ -327,9 +323,7 @@ public class TaskMapper {
                 cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(pipeLineTool.getId(), regionId, spot);
         return Stream.of(allowedInstanceAndPriceTypes)
                 .flatMap(instance -> instance.getAllowedInstanceTypes().stream())
-                .filter(instance -> instance
-                        .getName()
-                        .equalsIgnoreCase(nodeType))
+                .filter(instance -> instance.getName().equalsIgnoreCase(nodeType))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY)));
     }

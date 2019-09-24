@@ -2,17 +2,31 @@ package com.epam.pipeline.tesadapter.service;
 
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.configuration.AppConfiguration;
+import com.epam.pipeline.tesadapter.entity.PipelineDiskMemoryTypes;
+import com.epam.pipeline.tesadapter.entity.TaskView;
 import com.epam.pipeline.tesadapter.entity.TesExecutor;
 import com.epam.pipeline.tesadapter.entity.TesInput;
 import com.epam.pipeline.tesadapter.entity.TesOutput;
+import com.epam.pipeline.tesadapter.entity.TesExecutorLog;
+import com.epam.pipeline.tesadapter.entity.TesInput;
+import com.epam.pipeline.tesadapter.entity.TesOutput;
 import com.epam.pipeline.tesadapter.entity.TesResources;
+import com.epam.pipeline.tesadapter.entity.TesState;
 import com.epam.pipeline.tesadapter.entity.TesTask;
+import com.epam.pipeline.tesadapter.entity.TesTaskLog;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +40,18 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -59,7 +78,18 @@ class TaskMapperTest {
     private static final String DEFAULT_COMMAND = "sleep 300";
     private static final Long STUBBED_REGION_ID = 1L;
     private static final Long STUBBED_TOOL_ID = 11584L;
+    private static final Long TOOL_ID = 1l;
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
+    private static final String INPUT = "input";
+    private static final String OUTPUT = "output";
+    private static final String STUBBED_NAME_PIPELINE_PARAMETER = "pipelineRunParameter";
+    private static final String STUBBED_VALUE_PIPELINE_PARAMETER = "www.url.ru";
+    private static final String OUTPUT_LOG_STRING_FORMAT = "%s - %s - %s";
+    private static final String TYPE_NODE = "nodeType";
+    private static final String STUBBED_TEXT_FOR_LOG = "log";
+    private static final String PIPELINE_TASK_NAME_CONSOLE = "Console";
+    private static final String PIPELINE_TASK_NAME_InitializeEnvironment =  "InitializeEnvironment";
+    private static final String ANY_STRING = "any_string";
     private static List<InstanceType> allowedInstanceTypes;
     private static final String GIB = "GiB";
     private static final Double KIB_TO_GIB = 0.00000095367432;
@@ -72,7 +102,8 @@ class TaskMapperTest {
     @Autowired
     private MessageHelper messageHelper;
 
-    private TaskMapper taskMapper;
+    private static TaskMapper taskMapper;
+    private static PipelineRun run = getPipelineRun();
     private List<String> zones = new ArrayList<>();
     private TesExecutor tesExecutor = new TesExecutor();
     private TesInput tesInput = mock(TesInput.class);
@@ -83,15 +114,24 @@ class TaskMapperTest {
     private List<AbstractCloudRegion> abstractCloudRegions = new ArrayList<>();
 
     private AbstractCloudRegion abstractCloudRegion = mock(AbstractCloudRegion.class);
-    private CloudPipelineAPIClient cloudPipelineAPIClient = mock(CloudPipelineAPIClient.class);
+    private static CloudPipelineAPIClient cloudPipelineAPIClient = mock(CloudPipelineAPIClient.class);
     private AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = mock(AllowedInstanceAndPriceTypes.class);
     private Tool tool = mock(Tool.class);
     private TesTask tesTask = mock(TesTask.class);
+    private PipelineRun pipelineRun = mock(PipelineRun.class);
+
 
     @BeforeAll
     public static void setUpAll() {
         allowedInstanceTypes = new ArrayList<>();
         fillWithAllowedInstanceTypes(allowedInstanceTypes);
+
+        AwsRegion awsRegion = new AwsRegion();
+        awsRegion.setRegionCode(DEFAULT_REGION_NAME);
+        when(cloudPipelineAPIClient.loadRegion(anyLong())).thenReturn(awsRegion);
+        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(TOOL_ID, 1l,
+                true)).thenReturn(getAllowedInstanceAndPriceTypes(run));
+
     }
 
     @BeforeEach
@@ -328,5 +368,199 @@ class TaskMapperTest {
         instanceType.setVCPU(instanceCpu.intValue());
         instanceType.setMemoryUnit(memoryType);
         return instanceType;
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideTesTaskForTestTaskMapper")
+    public void testTaskMapperMapPipelineRunToTesTask(PipelineRun run, TaskView view, TesTask tesTaskExpected) {
+        Tool tool = new Tool();
+        tool.setId(TOOL_ID);
+        tool.setName(STUBBED_IMAGE);
+        when(cloudPipelineAPIClient.loadTool(anyString())).thenReturn(tool);
+        TesTask tesTaskActual = taskMapper.mapToTesTask(run, view);
+        assertEquals(tesTaskExpected, tesTaskActual);
+    }
+
+    private static Stream<Arguments> provideTesTaskForTestTaskMapper() {
+        //data for TaskView.Minimal
+        TesTask tesTaskForMinimal = TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(TesState.RUNNING)
+                .build();
+        //data for TaskView.basic
+        TesTask tesTaskForBasic = TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(TesState.RUNNING)
+                .resources(createResources(run))
+                .executors(createListExecutor(run))
+                .outputs(getListPipelineRunParameter().stream()
+                        .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT))
+                        .map(pipelineRunParameter ->
+                                TesOutput.builder()
+                                        .name(pipelineRunParameter.getName())
+                                        .url(pipelineRunParameter.getValue())
+                                        .build()).collect(Collectors.toList()))
+                .creationTime(run.getStartDate().toString())
+                .build();
+        //data for TaskView.FULL
+        TesTask tesTaskForFull = TesTask.builder()
+                .id(String.valueOf(run.getId()))
+                .state(TesState.RUNNING)
+                .resources(createResources(run))
+                .executors(createListExecutor(run))
+                .outputs(getListPipelineRunParameter().stream()
+                        .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(OUTPUT))
+                        .map(pipelineRunParameter ->
+                                TesOutput.builder()
+                                        .name(pipelineRunParameter.getName())
+                                        .url(pipelineRunParameter.getValue())
+                                        .build()).collect(Collectors.toList()))
+                .creationTime(run.getStartDate().toString())
+                .inputs(getListPipelineRunParameter().stream()
+                        .filter(pipelineRunParameter -> pipelineRunParameter.getType().contains(INPUT))
+                        .map(pipelineRunParameter ->
+                                TesInput.builder()
+                                        .name(pipelineRunParameter.getName())
+                                        .url(pipelineRunParameter.getValue())
+                                        .build()).collect(Collectors.toList()))
+                .logs(createTesTaskLog(run.getId()))
+                .build();
+        return Stream.of(
+                Arguments.of(run, TaskView.MINIMAL, tesTaskForMinimal),
+                Arguments.of(run, TaskView.BASIC, tesTaskForBasic),
+                Arguments.of(run, TaskView.FULL, tesTaskForFull)
+        );
+    }
+
+    private static PipelineRun getPipelineRun() {
+        PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(1L);
+        pipelineRun.setStatus(TaskStatus.RUNNING);
+        pipelineRun.setPodIP("pipelineRun");
+        pipelineRun.setPipelineRunParameters(getListPipelineRunParameter());
+        pipelineRun.setStartDate(new Date(2000));
+        pipelineRun.setInstance(getRunInstance());
+        pipelineRun.setActualCmd(ANY_STRING);
+        HashMap<String, String> env = new HashMap<>();
+        env.put(ANY_STRING, ANY_STRING);
+        pipelineRun.setEnvVars(env);
+        pipelineRun.setDockerImage("centos");
+        return pipelineRun;
+    }
+
+    private static List<PipelineRunParameter> getListPipelineRunParameter() {
+        PipelineRunParameter pipelineRunParameterInput = new PipelineRunParameter();
+        pipelineRunParameterInput.setType(INPUT);
+        pipelineRunParameterInput.setName(STUBBED_NAME_PIPELINE_PARAMETER);
+        pipelineRunParameterInput.setValue(STUBBED_VALUE_PIPELINE_PARAMETER);
+
+        PipelineRunParameter pipelineRunParameterOuput = new PipelineRunParameter();
+        pipelineRunParameterOuput.setType(OUTPUT);
+        pipelineRunParameterOuput.setName(STUBBED_NAME_PIPELINE_PARAMETER);
+        pipelineRunParameterOuput.setValue(STUBBED_VALUE_PIPELINE_PARAMETER);
+
+        List<PipelineRunParameter> pipelineRunParameterList = new ArrayList<>();
+        pipelineRunParameterList.add(pipelineRunParameterInput);
+        pipelineRunParameterList.add(pipelineRunParameterOuput);
+        return pipelineRunParameterList;
+    }
+
+    private static TesResources createResources(PipelineRun run) {
+        InstanceType instanceType = getInstanceType(run);
+        RunInstance runInstance = getRunInstance();
+        return TesResources.builder()
+                .preemptible(runInstance.getSpot())
+                .diskGb(new Double(runInstance.getNodeDisk()))
+                .ramGb(instanceType.getMemory() * KIB_TO_GIB)
+                .cpuCores((long) instanceType.getVCPU())
+                .zones(Collections.singletonList(DEFAULT_REGION_NAME))
+                .build();
+    }
+
+    private static List<TesExecutor> createListExecutor(PipelineRun run) {
+        return Collections.singletonList(TesExecutor.builder()
+                .command(Collections.singletonList(run.getActualCmd()))
+                .env(run.getEnvVars())
+                .image(run.getDockerImage())
+                .build());
+    }
+
+    private static List<TesTaskLog> createTesTaskLog(final Long runId) {
+        RunLog runLog = RunLog.builder()
+                .date(new Date(12, 12, 12))
+                .taskName(STUBBED_TEXT_FOR_LOG)
+                .logText(STUBBED_TEXT_FOR_LOG)
+                .build();
+        when(cloudPipelineAPIClient.getRunLog(anyLong())).thenReturn(Collections.singletonList(runLog));
+        List<TesExecutorLog> tesExecutorLogList = Collections.singletonList(TesExecutorLog.builder()
+                .stdout(String.format(OUTPUT_LOG_STRING_FORMAT, runLog.getDate(), runLog.getTaskName(), runLog.getLogText()))
+                .build());
+        List<TesTaskLog> tesTaskLogsList = Collections.singletonList(TesTaskLog.builder()
+                .logs(tesExecutorLogList)
+                .build());
+        return tesTaskLogsList;
+    }
+
+    private static RunInstance getRunInstance() {
+        RunInstance runInstance = new RunInstance();
+        runInstance.setNodeType(TYPE_NODE);
+        runInstance.setSpot(DEFAULT_PREEMPTIBLE);
+        runInstance.setNodeDisk(DEFAULT_HDD_SIZE);
+        runInstance.setCloudRegionId(STUBBED_REGION_ID);
+        return runInstance;
+    }
+
+    private static InstanceType getInstanceType(PipelineRun run) {
+        return InstanceType.builder()
+                .name(run.getInstance().getNodeType())
+                .memory(DEFAULT_RAM_GB.floatValue())
+                .memoryUnit(PipelineDiskMemoryTypes.KIB.getValue())
+                .vCPU(DEFAULT_CPU_CORES.intValue())
+                .build();
+    }
+
+    private static AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(PipelineRun run) {
+        InstanceType instanceType = getInstanceType(run);
+        return new AllowedInstanceAndPriceTypes(Collections.singletonList(instanceType),
+                Collections.singletonList(instanceType), Collections.singletonList(ANY_STRING));
+    }
+
+    @Test
+    public void testTesStateForPipelineTaskWithOneTask() {
+        ArrayList<PipelineTask> listPipelineTasks = new ArrayList<>();
+        PipelineTask pipelineTask = new PipelineTask();
+        pipelineTask.setName(PIPELINE_TASK_NAME_CONSOLE);
+        listPipelineTasks.add(pipelineTask);
+
+        when(cloudPipelineAPIClient.loadPipelineTasks(run.getId())).thenReturn(listPipelineTasks);
+        assertEquals(TesState.QUEUED, taskMapper.mapToTesTask(run, TaskView.MINIMAL).getState());
+    }
+
+    @Test
+    public void testTesStateForPipelineTaskWithTwoTasksButWithoutInitializeEnvironment() {
+        ArrayList<PipelineTask> listPipelineTasks = new ArrayList<>();
+        PipelineTask pipelineTaskConsole = new PipelineTask();
+        pipelineTaskConsole.setName(PIPELINE_TASK_NAME_CONSOLE);
+        PipelineTask pipelineTaskAny = new PipelineTask();
+        pipelineTaskAny.setName(ANY_STRING);
+        listPipelineTasks.add(pipelineTaskConsole);
+        listPipelineTasks.add(pipelineTaskAny);
+
+        when(cloudPipelineAPIClient.loadPipelineTasks(run.getId())).thenReturn(listPipelineTasks);
+        assertEquals(TesState.INITIALIZING, taskMapper.mapToTesTask(run, TaskView.MINIMAL).getState());
+    }
+
+    @Test
+    public void testTesStateForPipelineTaskWithTwoTasksWithInitializeEnvironment() {
+        ArrayList<PipelineTask> listPipelineTasks = new ArrayList<>();
+        PipelineTask pipelineTaskConsole = new PipelineTask();
+        pipelineTaskConsole.setName(PIPELINE_TASK_NAME_CONSOLE);
+        PipelineTask pipelineTaskInitializeEnvironment = new PipelineTask();
+        pipelineTaskInitializeEnvironment.setName(PIPELINE_TASK_NAME_InitializeEnvironment);
+        listPipelineTasks.add(pipelineTaskConsole);
+        listPipelineTasks.add(pipelineTaskInitializeEnvironment);
+
+        when(cloudPipelineAPIClient.loadPipelineTasks(run.getId())).thenReturn(listPipelineTasks);
+        assertEquals(TesState.RUNNING, taskMapper.mapToTesTask(run, TaskView.MINIMAL).getState());
     }
 }
