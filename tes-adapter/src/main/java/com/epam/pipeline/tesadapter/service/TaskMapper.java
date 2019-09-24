@@ -57,6 +57,7 @@ public class TaskMapper {
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
     private static final String TOOL = "tool";
+    private static final String COMMAND = "command";
     private static final String INSTANCE_TYPES = "instanceList";
     private static final String MIN_INSTANCE = "instance";
     private static final String REGION_ID = "id";
@@ -90,7 +91,7 @@ public class TaskMapper {
         this.defaultRegion = defaultRegion;
     }
 
-    public PipelineStart mapToPipelineStart(TesTask tesTask) {
+    PipelineStart mapToPipelineStart(TesTask tesTask) {
         Assert.notNull(tesTask, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, tesTask));
         PipelineStart pipelineStart = new PipelineStart();
@@ -100,16 +101,13 @@ public class TaskMapper {
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, IMAGE));
         Tool pipelineTool = loadToolByTesImage(tesExecutor.getImage());
         pipelineStart.setInstanceType(getProperInstanceType(tesTask, pipelineTool));
-        pipelineStart.setCmdTemplate(String.join(SEPARATOR, tesExecutor.getCommand()));
+        pipelineStart.setCmdTemplate(String.join(SEPARATOR, Optional.ofNullable(tesExecutor.getCommand())
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, COMMAND)))));
         pipelineStart.setDockerImage(tesExecutor.getImage());
         pipelineStart.setExecutionEnvironment(ExecutionEnvironment.CLOUD_PLATFORM);
         pipelineStart.setHddSize(Optional.ofNullable(tesTask.getResources())
-                .map(tesResources -> {
-                    if (Optional.ofNullable(tesResources.getDiskGb()).isPresent()) {
-                        return tesResources.getDiskGb().intValue();
-                    }
-                    return defaultHddSize;
-                }).orElse(defaultHddSize));
+                .map(TesResources::getDiskGb).map(Double::intValue).orElse(defaultHddSize));
         pipelineStart.setIsSpot(Optional.ofNullable(tesTask.getResources())
                 .map(tesResources -> Optional.ofNullable(tesResources.getPreemptible()).orElse(defaultPreemptible))
                 .orElse(defaultPreemptible));
@@ -125,14 +123,14 @@ public class TaskMapper {
         return pipelineStart;
     }
 
-    public TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
+    private TesExecutor getExecutorFromTesExecutorsList(List<TesExecutor> tesExecutors) {
         Assert.isTrue(tesExecutors.size() == ONLY_ONE, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS, tesExecutors));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, EXECUTORS));
         return tesExecutors.get(FIRST);
     }
 
 
-    public String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
+    String getProperInstanceType(TesTask tesTask, Tool pipelineTool) {
         Double ramGb = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getRamGb).orElse(defaultRamGb);
         Long cpuCores = Optional.ofNullable(tesTask.getResources())
@@ -143,24 +141,22 @@ public class TaskMapper {
                 .orElse(Collections.singletonList(defaultRegion)));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getPreemptible).orElse(defaultPreemptible);
-        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = cloudPipelineAPIClient
-                .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot);
-        Assert.notEmpty(allowedInstanceAndPriceTypes.getAllowedInstanceTypes(), messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, allowedInstanceAndPriceTypes));
+        AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = Optional.ofNullable(cloudPipelineAPIClient
+                .loadAllowedInstanceAndPriceTypes(toolId, regionId, spot))
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper
+                        .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, INSTANCE_TYPES)));
         return evaluateMostProperInstanceType(allowedInstanceAndPriceTypes, ramGb, cpuCores);
     }
 
-    public Tool loadToolByTesImage(String image) {
-        Assert.hasText(image, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, image));
+    private Tool loadToolByTesImage(String image) {
         return Optional.ofNullable(cloudPipelineAPIClient.loadTool(image)).orElseThrow(() ->
                 new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, TOOL)));
     }
 
-    public Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
+    private Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES, zones));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES));
         return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
                 region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
                 .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(() ->

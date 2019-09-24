@@ -11,9 +11,7 @@ public interface TesTaskService {
 
     TesCreateTaskResponse submitTesTask(TesTask body);
 
-    TesListTasksResponse listTesTask();
-
-    void stub();
+    TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view);
 
     TesCancelTaskResponse cancelTesTask(String id);
 

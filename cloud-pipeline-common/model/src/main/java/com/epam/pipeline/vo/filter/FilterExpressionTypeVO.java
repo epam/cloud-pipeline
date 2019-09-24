@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.rest;
+package com.epam.pipeline.vo.filter;
 
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+public enum FilterExpressionTypeVO {
+    LOGICAL(0),
+    AND(1),
+    OR(2);
 
-@Setter
-@NoArgsConstructor
-public class PagedResult<T> { // TODO: refactor to extend Result class
-    private T elements; // TODO; refactor to contain a list of T
-    private int totalCount;
+    private long id;
 
-    public PagedResult(T elements, int totalCount) {
-        this.elements = elements;
-        this.totalCount = totalCount;
+    FilterExpressionTypeVO(long id) {
+        this.id = id;
     }
 
-    public T getElements() {
-        return elements;
-    }
-
-    public int getTotalCount() {
-        return totalCount;
+    public Long getId() {
+        return this.id;
     }
 }
