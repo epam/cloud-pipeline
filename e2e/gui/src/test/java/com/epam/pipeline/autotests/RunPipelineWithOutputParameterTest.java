@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipelineRunningTest implements StorageHandling {
 
@@ -57,6 +58,7 @@ public class RunPipelineWithOutputParameterTest extends AbstractAutoRemovingPipe
                         getPipelineName().toLowerCase() + ".sh",
                         Utils.readResourceFully(shellTemplate)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .clickAddOutputParameter()
                 .setName("parameter")

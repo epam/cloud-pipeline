@@ -145,9 +145,9 @@ public class Utils {
         for (final char character : charArray) {
             while (true) {
                 field.sendKeys(String.valueOf(character));
-                sleep(30, MILLISECONDS);
+                sleep(500, MILLISECONDS);
                 final String enteredText = field.getAttribute("value");
-                sleep(50, MILLISECONDS);
+                sleep(500, MILLISECONDS);
                 if (enteredText.charAt(charNumber) == character) {
                     break;
                 }
