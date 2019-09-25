@@ -79,7 +79,7 @@ class CLIVersionUpdater:
 
     @staticmethod
     def check_write_permissions(path):
-        if not os.access(path, os.X_OK & os.W_OK):
+        if not os.access(path, os.X_OK | os.W_OK):
             raise RuntimeError("Access denied: the user has no permissions to modify folder '%s'" % path)
 
 
