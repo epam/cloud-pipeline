@@ -59,6 +59,9 @@ public class TesAdapterControllerTest {
     @Value("${cloud.pipeline.doc}")
     private String doc;
 
+    @Value("${cloud.pipeline.token}")
+    private String defaultPipelineToken;
+
     @Autowired
     private MessageHelper messageHelper;
 
@@ -149,6 +152,14 @@ public class TesAdapterControllerTest {
         tesServiceInfo.setDoc(doc);
         tesServiceInfo.setStorage(new ArrayList<>());
         this.mockMvc.perform(get("/v1/tasks/service-info").contentType(JSON_CONTENT_TYPE))
+                .andDo(print()).andExpect(status().isOk())
+                .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
+    }
+
+    @Test
+    void preHandleMethodShouldCheckAuthorizationContext() throws Exception {
+        this.mockMvc.perform(get("/v1/tasks/service-info")
+                .header("Authorization", defaultPipelineToken).contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isOk())
                 .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
     }
