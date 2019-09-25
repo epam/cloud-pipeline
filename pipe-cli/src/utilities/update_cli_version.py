@@ -133,23 +133,25 @@ class WindowsUpdater(CLIVersionUpdater):
 
         bat_file_content = """@echo off
         for /L %%a in (1,1,{attempts_count}) do (
-            tasklist | find /i " {pipe_pid} " >> "{log_file}"
+            tasklist | find /i " {pipe_pid} " >> "{log_file}" 2>>&1
             if errorlevel 1 (
                 for /d %%b in ("{src_dir}\\*") do (
-                    rd /q /s "%%b" || (
+                    rd /q /s "%%b" 2>> "{log_file}" || (
                         echo Failed to delete "%%b" file >> "{log_file}"
                         goto fail
                     )
                 )
-                echo Source subfolders folder was deleted >> "{log_file}"
-                del /q "{src_dir}" >> "{log_file}" || (
-                    echo Failed to delete src files >> "{log_file}"
+                echo The source subfolders were deleted >> "{log_file}"
+                del /q "{src_dir}" >> "{log_file}" 2>>&1 || (
+                    echo Failed to delete src files by path "{log_file}" >> "{log_file}"
                     goto fail
                 )
-                xcopy "{tmp_dir}/pipe" "{src_dir}" /y /s /i > nul || (
-                    echo Failed to copy files >> "{log_file}"
+                echo The source files were deleted >> "{log_file}"
+                xcopy "{tmp_dir}\\pipe" "{src_dir}" /y /s /i > nul 2>> "{log_file}" || (
+                    echo Failed to copy files from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
                     goto fail
                 )
+                echo Files successfully copied from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
                 rd /s /q "{tmp_dir}" || (
                     echo Failed to delete tmp directory '{tmp_dir}' >> "{log_file}"
                     goto fail
@@ -163,11 +165,12 @@ class WindowsUpdater(CLIVersionUpdater):
         goto fail
         
         :success
-        echo Pipeline CLI successfully updated
+        echo Success! >> "{log_file}"
         goto end
 
         :fail
-        echo Fail to update Pipeline CLI
+        echo Failure! >> "{log_file}"
+        echo Failed to update Pipeline CLI. For more details see logs: "{log_file}"
         goto end
 
         :end
