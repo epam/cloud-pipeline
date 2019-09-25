@@ -15,6 +15,7 @@
 DEFAULT_DELIMITER = '/'
 KB = 1024
 MB = KB * KB
+GB = MB * KB
 
 
 def join_path_with_delimiter(parent, child, delimiter=DEFAULT_DELIMITER):

@@ -27,7 +27,7 @@ from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
 import fuseutils
 from fsclient import File, FileSystemClient
-from fuseutils import MB
+from fuseutils import MB, GB
 
 _ANY_ERROR = Exception
 
@@ -53,6 +53,10 @@ class _MultipartUpload:
         pass
 
     @abstractmethod
+    def upload_copy_part(self, start, end, offset=None):
+        pass
+
+    @abstractmethod
     def complete(self):
         pass
 
@@ -63,7 +67,9 @@ class _MultipartUpload:
 
 class _UploadPart:
 
-    def __init__(self, number, ETag):
+    def __init__(self, offset, length, number, ETag):
+        self._offset = offset
+        self._length = length
         self._number = number
         self._ETag = ETag
 
@@ -77,8 +83,9 @@ class _UploadPart:
 
 
 class _SequentialMultipartUpload(_MultipartUpload):
+    PREFIXES_PART_NUMBER_CAPACITY = 100  # Maximum number of prefix copy upload parts.
 
-    def __init__(self, path, offset, size, bucket, s3):
+    def __init__(self, path, offset, bucket, s3):
         """
         Sequential multipart upload.
 
@@ -86,19 +93,17 @@ class _SequentialMultipartUpload(_MultipartUpload):
 
         :param path: Destination bucket relative path.
         :param offset: First upload part offset.
-        :param size: Destination file original size.
         :param bucket: Destination bucket name.
         :param s3: Boto S3 client.
         """
         self._path = path
-        self._original_size = size
         self._bucket = bucket
         self._s3 = s3
         self._upload_id = None
         self._parts = []
-        self._part_number_shift = 2
         self._offset = offset
-        self._current_offset = self._offset
+        self._part_number_shift = self.PREFIXES_PART_NUMBER_CAPACITY + 1
+        self._last_prefix_index = 0
 
     @property
     def path(self):
@@ -121,17 +126,35 @@ class _SequentialMultipartUpload(_MultipartUpload):
                 UploadId=self._upload_id,
                 PartNumber=part_number
             )
-        self._parts.append(_UploadPart(part_number, response['ETag']))
-        self._current_offset += len(buf)
+        self._parts.append(_UploadPart(offset, len(buf), part_number, response['ETag']))
 
     def _next_part_number(self):
         return len(self._parts) + self._part_number_shift
 
+    def upload_copy_part(self, start, end, offset=None):
+        part_number = self._next_heading_or_trailing_part_number(start)
+        response = self._s3.upload_part_copy(
+            Bucket=self._bucket,
+            Key=self._path,
+            CopySource={
+                'Bucket': self._bucket,
+                'Key': self._path,
+            },
+            CopySourceRange=_http_range(start, end),
+            UploadId=self._upload_id,
+            PartNumber=part_number
+        )
+        self._parts.insert(part_number - 1, _UploadPart(offset, end - start, part_number,
+                                                        response['CopyPartResult']['ETag']))
+
+    def _next_heading_or_trailing_part_number(self, start):
+        return self._next_part_number() if start > self._offset else self._next_heading_part_number()
+
+    def _next_heading_part_number(self):
+        self._last_prefix_index += 1
+        return self._last_prefix_index
+
     def complete(self):
-        if self._offset:
-            self._copy_prefix()
-        if self._current_offset < self._original_size:
-            self._copy_suffix()
         self._s3.complete_multipart_upload(
             Bucket=self._bucket,
             Key=self._path,
@@ -146,44 +169,24 @@ class _SequentialMultipartUpload(_MultipartUpload):
             UploadId=self._upload_id
         )
 
-    def _copy_prefix(self):
-        self._copy(0, self._offset, 1)
-
-    def _copy_suffix(self):
-        self._copy(self._offset, self._original_size, self._next_part_number())
-
-    def _copy(self, start, end, part_number):
-        response = self._s3.upload_part_copy(
-            Bucket=self._bucket,
-            Key=self._path,
-            CopySource={
-                'Bucket': self._bucket,
-                'Key': self._path,
-            },
-            CopySourceRange=_http_range(start, end),
-            UploadId=self._upload_id,
-            PartNumber=part_number
-        )
-        self._parts.insert(part_number - 1, _UploadPart(part_number, response['CopyPartResult']['ETag']))
-
     def abort(self):
         logging.error('Aborting multipart upload for %s' % self._path)
         self._s3.abort_multipart_upload(Bucket=self._bucket, Key=self._path, UploadId=self._upload_id)
 
 
-class _BufferedSequentialMultipartUpload(_MultipartUpload):
+class _MergingSequentialMultipartUpload(_MultipartUpload):
 
-    def __init__(self, mpu, minimal_buffer_size):
+    def __init__(self, mpu, min_part_size=5 * MB):
         """
-        Buffered sequential multipart upload.
+        Merging sequential multipart upload.
 
-        Merges several sequential upload parts to reach a certain size.
+        Merges several sequential upload parts up to a minimum part size.
 
-        :param mpu: Wrapping multipart upload object.
-        :param minimal_buffer_size: Minimal buffer size to be used as an upload part.
+        :param mpu: Wrapping sequential multipart upload.
+        :param min_part_size: Minimum upload part size.
         """
         self._mpu = mpu
-        self._minimal_buffer_size = minimal_buffer_size
+        self._min_part_size = min_part_size
         self._bufs = []
         self._bufs_offset = 0
         self._bufs_current_offset = 0
@@ -199,11 +202,11 @@ class _BufferedSequentialMultipartUpload(_MultipartUpload):
         if self._bufs:
             self._bufs.append(buf)
             self._bufs_current_offset += len(buf)
-            if self._bufs_current_offset - self._bufs_offset > self._minimal_buffer_size:
+            if self._bufs_current_offset - self._bufs_offset > self._min_part_size:
                 self._mpu.upload_part(self._collect_current_buffer(), self._bufs_offset)
                 self._clear_current_buffer()
         else:
-            if len(buf) > self._minimal_buffer_size:
+            if len(buf) > self._min_part_size:
                 self._mpu.upload_part(buf, offset)
             else:
                 self._bufs.append(buf)
@@ -223,6 +226,9 @@ class _BufferedSequentialMultipartUpload(_MultipartUpload):
         self._bufs_offset = 0
         self._bufs_current_offset = 0
 
+    def upload_copy_part(self, start, end, offset=None):
+        return self._mpu.upload_copy_part(start, end, offset)
+
     def complete(self):
         if self._bufs:
             self._mpu.upload_part(self._collect_current_buffer(), self._bufs_offset)
@@ -233,9 +239,111 @@ class _BufferedSequentialMultipartUpload(_MultipartUpload):
         self._mpu.abort()
 
 
+class _SplittingMultipartCopyUpload(_MultipartUpload):
+
+    def __init__(self, mpu, min_part_size=5 * MB, max_part_size=5 * GB):
+        """
+        Splitting multipart copy upload.
+
+        Splits copy upload parts into several ones to fit maximum upload part size limit.
+        Also takes into the account minimum upload part size.
+
+        :param mpu: Wrapping multipart upload.
+        :param min_part_size: Minimum upload part size.
+        :param max_part_size: Maximum upload part size.
+        """
+        self._mpu = mpu
+        self._min_part_size = min_part_size
+        self._max_part_size = max_part_size
+
+    @property
+    def path(self):
+        return self._mpu.path
+
+    def initiate(self):
+        self._mpu.initiate()
+
+    def upload_part(self, buf, offset=None):
+        self._mpu.upload_part(buf, offset)
+
+    def upload_copy_part(self, start, end, offset=None):
+        copy_part_length = end - start
+        if copy_part_length > self._max_part_size:
+            logging.debug('Splitting upload part into pieces for %s' % self.path)
+            remaining_length = copy_part_length
+            current_offset = 0
+            while remaining_length > 0:
+                part_size = self._resolve_part_size(remaining_length)
+                self._mpu.upload_copy_part(current_offset, current_offset + part_size, offset)
+                remaining_length -= part_size
+        else:
+            self._mpu.upload_copy_part(start, end, offset)
+
+    def _resolve_part_size(self, remaining_length):
+        if self._min_part_size <= remaining_length <= self._max_part_size:
+            return remaining_length
+        else:
+            return min(self._max_part_size, remaining_length - self._min_part_size)
+
+    def complete(self):
+        self._mpu.complete()
+
+    def abort(self):
+        self._mpu.abort()
+
+
+class _FillingGapsMultipartUpload(_MultipartUpload):
+
+    def __init__(self, mpu, offset, original_size):
+        """
+        Filling gaps multipart upload.
+
+        Fills heading and trailing gaps with the original file data.
+
+        :param mpu: Wrapping multipart upload.
+        :param offset: First upload part offset.
+        :param original_size: Destination file original size.
+        """
+        self._mpu = mpu
+        self._offset = offset
+        self._current_offset = self._offset
+        self._original_size = original_size
+
+    @property
+    def path(self):
+        return self._mpu.path
+
+    def initiate(self):
+        self._mpu.initiate()
+
+    def upload_part(self, buf, offset=None):
+        self._mpu.upload_part(buf, offset)
+        self._current_offset += len(buf)
+
+    def upload_copy_part(self, start, end, offset=None):
+        self._mpu.upload_copy_part(start, end, offset)
+
+    def complete(self):
+        if self._offset:
+            self._copy_prefix()
+        if self._current_offset < self._original_size:
+            self._copy_suffix()
+        self._mpu.complete()
+
+    def _copy_prefix(self):
+        self.upload_copy_part(0, self._offset)
+
+    def _copy_suffix(self):
+        self.upload_copy_part(self._offset, self._original_size)
+
+    def abort(self):
+        self._mpu.abort()
+
+
 class S3Client(FileSystemClient):
     DOWNLOAD_CHUNK_SIZE_BYTES = 1 * MB
     MULTIPART_PART_MIN_SIZE_BYTES = 5 * MB
+    MULTIPART_PART_MAX_SIZE_BYTES = 5 * GB
 
     def __init__(self, bucket, pipe):
         """
@@ -430,8 +538,11 @@ class S3Client(FileSystemClient):
             raise
 
     def _new_mpu(self, file_size, offset, source_path):
-        mpu = _SequentialMultipartUpload(source_path, offset, file_size, self.bucket, self._s3)
-        return _BufferedSequentialMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
+        mpu = _SequentialMultipartUpload(source_path, offset, self.bucket, self._s3)
+        mpu = _MergingSequentialMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
+        mpu = _SplittingMultipartCopyUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES, self.MULTIPART_PART_MAX_SIZE_BYTES)
+        mpu = _FillingGapsMultipartUpload(mpu, offset, file_size)
+        return mpu
 
     def _upload_single_range(self, fh, buf, path, offset):
         with io.BytesIO() as original_buf:

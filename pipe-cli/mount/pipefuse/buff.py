@@ -68,7 +68,7 @@ class _WriteBuffer(_FileBuffer):
         return collected_buf, self._offset
 
     def suits(self, offset=None):
-        return not offset or offset == self._current_offset
+        return (offset or 0) == self._current_offset
 
 
 class _ReadBuffer(_FileBuffer):
