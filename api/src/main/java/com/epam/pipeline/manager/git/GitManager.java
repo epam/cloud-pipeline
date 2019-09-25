@@ -128,7 +128,8 @@ public class GitManager {
                                         Long gitAdminId,
                                         String gitAdminName) {
         return GitlabClient
-                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
+                        gitAdminId, gitAdminName);
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
@@ -728,8 +729,8 @@ public class GitManager {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        return GitlabClient
-                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+        return GitlabClient.initializeRootGitlabClientFromHostAndToken(gitHost, gitToken,
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
     }
 
     public GitProject createRepository(String templateId,

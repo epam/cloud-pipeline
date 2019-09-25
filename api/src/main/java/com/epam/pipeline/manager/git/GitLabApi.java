@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitFile;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitProjectMember;
+import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -72,6 +74,13 @@ public interface GitLabApi {
      */
     @POST("api/v3/projects")
     Call<GitProject> createProject(@Body GitProjectRequest repo);
+
+    /**
+     * Give permissions to specific user
+     * */
+    @POST("api/v3/projects/{project}/members")
+    Call<GitProjectMember> grantProjectPermissions(@Path(PROJECT) String idOrName,
+                                                   @Body GitProjectMemberRequest repo);
 
     /**
      * delete a specific project
