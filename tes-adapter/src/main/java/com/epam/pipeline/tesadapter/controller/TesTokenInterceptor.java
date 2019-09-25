@@ -39,7 +39,7 @@ public class TesTokenInterceptor implements HandlerInterceptor {
             tesTokenHolder.setToken(defaultPipelineToken);
             return true;
         }
-        response.sendError(HttpServletResponse.SC_FORBIDDEN);
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         return false;
     }
 
