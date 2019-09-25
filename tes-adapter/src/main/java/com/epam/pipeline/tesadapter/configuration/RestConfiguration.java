@@ -1,7 +1,7 @@
 package com.epam.pipeline.tesadapter.configuration;
 
 import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
-import com.epam.pipeline.tesadapter.service.TesTokenInterceptor;
+import com.epam.pipeline.tesadapter.controller.TesTokenInterceptor;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

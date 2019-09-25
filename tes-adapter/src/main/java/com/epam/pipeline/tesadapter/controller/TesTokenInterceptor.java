@@ -1,4 +1,4 @@
-package com.epam.pipeline.tesadapter.service;
+package com.epam.pipeline.tesadapter.controller;
 
 import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import lombok.extern.slf4j.Slf4j;
