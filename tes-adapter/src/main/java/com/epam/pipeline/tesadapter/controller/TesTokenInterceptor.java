@@ -7,6 +7,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.web.util.matcher.IpAddressMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.Cookie;
@@ -24,6 +25,9 @@ public class TesTokenInterceptor implements HandlerInterceptor {
 
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
+
+    @Value("${security.allowed.client.ip.range}")
+    private String ipRange;
 
     @Autowired
     public TesTokenInterceptor(TesTokenHolder tesTokenHolder) {
@@ -55,7 +59,7 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     }
 
     private boolean checkClientHostAddress(HttpServletRequest request) {
-        //stub
-        return true;
+        IpAddressMatcher ipAddressMatcher = new IpAddressMatcher(ipRange);
+        return ipAddressMatcher.matches(request);
     }
 }

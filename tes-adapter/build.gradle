@@ -39,6 +39,7 @@ dependencies {
 
     //Spring
     compile('org.springframework.boot:spring-boot-starter-web')
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: '5.1.6.RELEASE'
 
     //Swagger
     compile('io.springfox:springfox-swagger2:2.9.2')
