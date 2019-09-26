@@ -123,10 +123,10 @@ public class GitManager {
         Assert.isTrue(result, "Could not create directory");
     }
 
-    public GitlabClient getGitlabClient(String gitHost,
-                                        String gitToken,
-                                        Long gitAdminId,
-                                        String gitAdminName) {
+    public GitlabClient getGitlabRootClient(String gitHost,
+                                            String gitToken,
+                                            Long gitAdminId,
+                                            String gitAdminName) {
         return GitlabClient
                 .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
                         gitAdminId, gitAdminName);

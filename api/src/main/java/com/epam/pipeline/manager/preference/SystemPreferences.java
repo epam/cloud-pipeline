@@ -654,7 +654,7 @@ public class SystemPreferences {
 
     private boolean areGitPreferencesValid(Map<String, Preference> gitPreferences) {
         long adminId = Long.parseLong(gitPreferences.get(GIT_USER_ID.getKey()).getValue());
-        GitlabClient client =  gitManager.getGitlabClient(
+        GitlabClient client =  gitManager.getGitlabRootClient(
                 gitPreferences.get(GIT_HOST.getKey()).getValue(),
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
