@@ -56,6 +56,6 @@ public class TesTokenInterceptor implements HandlerInterceptor {
 
     private boolean checkClientHostAddress(HttpServletRequest request) {
         //stub
-        return true;
+        return false;
     }
 }
