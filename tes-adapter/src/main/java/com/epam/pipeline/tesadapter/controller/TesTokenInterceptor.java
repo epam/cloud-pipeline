@@ -26,7 +26,7 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
-    @Value("${security.allowed.client.ip.range}")
+    @Value("${security.allowed.client.ip.range:0.0.0.0/0}")
     private String ipRange;
 
     @Autowired
