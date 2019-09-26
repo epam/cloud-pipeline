@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.utils;
+package com.epam.pipeline.entity.notification;
 
-import org.apache.commons.lang3.StringUtils;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
-public final class PipelineStringUtils {
+import java.util.Date;
 
-    public static final String DASH = "-";
-    private static final String ALPHANUMERIC_DASH_TEMPLATE = "[^a-zA-Z0-9\\-]+";
-
-    private PipelineStringUtils() {
-        //no op
-    }
-
-    public static String convertToAlphanumericWithDashes(final String input) {
-        if (StringUtils.isBlank(input)) {
-            return input;
-        }
-        return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
-    }
-
+@Getter
+@Setter
+@RequiredArgsConstructor
+public class SystemNotificationConfirmation {
+    private final Long notificationId;
+    private final String title;
+    private final String body;
+    private final String user;
+    private final Date date;
 }

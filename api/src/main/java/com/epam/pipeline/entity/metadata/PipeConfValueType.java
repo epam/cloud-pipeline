@@ -14,24 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.utils;
+package com.epam.pipeline.entity.metadata;
 
-import org.apache.commons.lang3.StringUtils;
+public enum PipeConfValueType {
+    STRING("string"),
+    JSON("json");
 
-public final class PipelineStringUtils {
+    private final String alias;
 
-    public static final String DASH = "-";
-    private static final String ALPHANUMERIC_DASH_TEMPLATE = "[^a-zA-Z0-9\\-]+";
-
-    private PipelineStringUtils() {
-        //no op
+    PipeConfValueType(final String alias) {
+        this.alias = alias;
     }
 
-    public static String convertToAlphanumericWithDashes(final String input) {
-        if (StringUtils.isBlank(input)) {
-            return input;
-        }
-        return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
+    @Override
+    public String toString() {
+        return alias;
     }
-
 }

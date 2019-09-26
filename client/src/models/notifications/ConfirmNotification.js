@@ -14,24 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.utils;
+import RemotePost from '../basic/RemotePost';
 
-import org.apache.commons.lang3.StringUtils;
-
-public final class PipelineStringUtils {
-
-    public static final String DASH = "-";
-    private static final String ALPHANUMERIC_DASH_TEMPLATE = "[^a-zA-Z0-9\\-]+";
-
-    private PipelineStringUtils() {
-        //no op
-    }
-
-    public static String convertToAlphanumericWithDashes(final String input) {
-        if (StringUtils.isBlank(input)) {
-            return input;
-        }
-        return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
-    }
-
+export default class ConfirmNotification extends RemotePost {
+  constructor () {
+    super();
+    this.url = '/notification/confirm';
+  }
 }
