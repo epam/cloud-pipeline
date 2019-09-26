@@ -88,7 +88,7 @@ public interface GitLabApi {
      * @param idOrName The ID or URL-encoded path of the project
      */
     @DELETE("api/v3/projects/{project}")
-    Call<GitProject> deleteProject(@Path(PROJECT) String idOrName);
+    Call<Boolean> deleteProject(@Path(PROJECT) String idOrName);
 
     /**
      * Get a list of repository files and directories in a project.

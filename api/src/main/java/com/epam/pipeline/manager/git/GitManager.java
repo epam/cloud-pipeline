@@ -133,17 +133,22 @@ public class GitManager {
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
-        return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken());
+        return getGitlabClientForPipeline(pipeline, false);
     }
 
-    private GitlabClient getGitlabClientForRepository(String repository, String providedToken) {
+    private GitlabClient getGitlabClientForPipeline(Pipeline pipeline, boolean rootClient) {
+        return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken(), rootClient);
+    }
+
+    private GitlabClient getGitlabClientForRepository(String repository, String providedToken, final boolean rootClient) {
         Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
         String token = externalHost ? providedToken :
                 preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
-                authManager.getAuthorizedUser(), repository, token, adminId, adminName, externalHost);
+                rootClient ? adminName : authManager.getAuthorizedUser(),
+                repository, token, adminId, adminName, externalHost);
     }
 
     public GitCredentials getGitCredentials(Long id) {
@@ -741,7 +746,7 @@ public class GitManager {
         TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
         Template template = templatesScanner.listTemplates().get(templateId);
         Assert.notNull(template, "There is no such a template: " + templateId);
-        return getGitlabClientForRepository(repository, token)
+        return getGitlabClientForRepository(repository, token, true)
                 .createTemplateRepository(template,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
@@ -749,7 +754,7 @@ public class GitManager {
     }
 
     public void deletePipelineRepository(Pipeline pipeline) throws GitClientException {
-        this.getGitlabClientForPipeline(pipeline).deleteRepository();
+        this.getGitlabClientForPipeline(pipeline, true).deleteRepository();
     }
 
     private void checkRevision(Pipeline pipeline, String version) {
@@ -831,7 +836,7 @@ public class GitManager {
 
     public GitProject getRepository(String repository, String token) {
         try {
-            return getGitlabClientForRepository(repository, token).getProject();
+            return getGitlabClientForRepository(repository, token, false).getProject();
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
