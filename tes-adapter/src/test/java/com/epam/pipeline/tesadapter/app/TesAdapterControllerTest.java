@@ -20,8 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import javax.servlet.http.Cookie;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -37,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(TesAdapterController.class)
-@SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
+@SuppressWarnings({"unused", "PMD.TooManyStaticImports", "PMD.AvoidUsingHardCodedIP"})
+@TestPropertySource(locations = "classpath:test-application.properties")
 public class TesAdapterControllerTest {
     private static final String DEFAULT_TASK_ID = "5";
     private static final String PAGE_TOKEN = "1";
@@ -52,12 +56,20 @@ public class TesAdapterControllerTest {
     private static final String STUBBED_SUBMIT_JSON_RESPONSE = "{\"id\":\"5\"}";
     private static final String CANCEL_REQUEST_DESCRIPTION = "uri=/v1/tasks/%20:cancel;client=127.0.0.1";
     private static final String JSON_CONTENT_TYPE = "application/json";
+    private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
+    private static final String WRONG_TOKEN = "wrongPipelineToken";
+    private static final String GET_SERVICE_INFO = "/v1/tasks/service-info";
+    private static final String IP_IN_RANGE = "192.168.1.1";
+    private static final String IP_OUT_OF_RANGE = "10.0.0.0";
 
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
 
     @Value("${cloud.pipeline.doc}")
     private String doc;
+
+    @Value("${cloud.pipeline.token}")
+    private String defaultPipelineToken;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -84,13 +96,18 @@ public class TesAdapterControllerTest {
                 .thenReturn(mock(TesListTasksResponse.class));
         when(tesTaskService.getServiceInfo()).thenReturn(tesServiceInfo);
         when(tesTaskService.getTesTask(DEFAULT_TASK_ID, DEFAULT_VIEW)).thenReturn(tesTask);
+        tesServiceInfo.setName(nameOfService);
+        tesServiceInfo.setDoc(doc);
+        tesServiceInfo.setStorage(new ArrayList<>());
     }
 
     @Test
     void submitTesTaskWhenRequestingTesTaskBodyAndReturnId() throws Exception {
         tesCreateTaskResponse.setId(DEFAULT_TASK_ID);
         when(tesTaskService.submitTesTask(any(TesTask.class))).thenReturn(tesCreateTaskResponse);
-        this.mockMvc.perform(post("/v1/tasks").contentType(JSON_CONTENT_TYPE)
+        this.mockMvc.perform(post("/v1/tasks")
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
+                .contentType(JSON_CONTENT_TYPE)
                 .content(STUBBED_SUBMIT_JSON_REQUEST))
                 .andDo(print()).andExpect(status().isOk()).andExpect(content()
                 .json(new ObjectMapper().writeValueAsString(tesCreateTaskResponse)));
@@ -101,6 +118,7 @@ public class TesAdapterControllerTest {
         tesTask.setExecutors(null);
         when(tesTaskService.submitTesTask(tesTask)).thenThrow(new IllegalArgumentException());
         this.mockMvc.perform(post("/v1/tasks")
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
                 .contentType(JSON_CONTENT_TYPE)
                 .content(STUBBED_SUBMIT_JSON_REQUEST))
                 .andDo(print()).andExpect(status().isInternalServerError());
@@ -109,7 +127,8 @@ public class TesAdapterControllerTest {
     @Test
     void cancelTesTaskWhenRequestingIdReturnCanceledTask() throws Exception {
         when(tesTaskService.cancelTesTask(DEFAULT_TASK_ID)).thenReturn(new TesCancelTaskResponse());
-        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", DEFAULT_TASK_ID))
+        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", DEFAULT_TASK_ID)
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken))
                 .andDo(print()).andExpect(status().isOk());
     }
 
@@ -117,7 +136,8 @@ public class TesAdapterControllerTest {
     void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId() throws Exception {
         when(tesTaskService.cancelTesTask(EMPTY_INPUT)).thenThrow(new IllegalStateException(messageHelper
                 .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "taskId")));
-        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", EMPTY_INPUT))
+        this.mockMvc.perform(post("/v1/tasks/{id}:cancel", EMPTY_INPUT)
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken))
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(containsString(messageHelper
@@ -129,7 +149,8 @@ public class TesAdapterControllerTest {
     void listTesTaskWhenRequestingReturnTesListTasksResponse() throws Exception {
         this.mockMvc.perform(get("/v1/tasks?name_prefix={name_prefix}?page_size={page_size}" +
                         "?page_token={page_token}?view={view}",
-                NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW))
+                NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW)
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken))
                 .andDo(print()).andExpect(status().isOk());
     }
 
@@ -138,18 +159,36 @@ public class TesAdapterControllerTest {
         tesExecutor.setImage(DEFAULT_IMAGE);
         tesExecutor.setCommand(Collections.singletonList(DEFAULT_COMMAND));
         tesTask.setExecutors(Collections.singletonList(tesExecutor));
-        this.mockMvc.perform(get("/v1/tasks/{id}", DEFAULT_TASK_ID).contentType(JSON_CONTENT_TYPE))
+        this.mockMvc.perform(get("/v1/tasks/{id}", DEFAULT_TASK_ID)
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
+                .contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isOk()).andExpect(content()
                 .json(new ObjectMapper().writeValueAsString(tesTask)));
     }
 
     @Test
     void serviceInfoRequestShouldReturnCurrentServiceState() throws Exception {
-        tesServiceInfo.setName(nameOfService);
-        tesServiceInfo.setDoc(doc);
-        tesServiceInfo.setStorage(new ArrayList<>());
-        this.mockMvc.perform(get("/v1/tasks/service-info").contentType(JSON_CONTENT_TYPE))
+        this.mockMvc.perform(get("/v1/tasks/service-info")
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
+                .contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isOk())
                 .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
+    }
+
+    @Test
+    void preHandleMethodShouldCheckAuthorizationContext() throws Exception {
+        this.mockMvc.perform(get(GET_SERVICE_INFO)
+                .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken).contentType(JSON_CONTENT_TYPE))
+                .andDo(print()).andExpect(status().isOk())
+                .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
+
+        this.mockMvc.perform(get(GET_SERVICE_INFO)
+                .cookie(new Cookie(HTTP_AUTH_COOKIE, defaultPipelineToken)).contentType(JSON_CONTENT_TYPE))
+                .andDo(print()).andExpect(status().isOk())
+                .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
+
+        this.mockMvc.perform(get(GET_SERVICE_INFO)
+                .contentType(JSON_CONTENT_TYPE))
+                .andDo(print()).andExpect(status().isUnauthorized());
     }
 }
