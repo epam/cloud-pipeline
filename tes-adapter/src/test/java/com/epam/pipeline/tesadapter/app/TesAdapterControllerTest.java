@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import javax.servlet.http.Cookie;
@@ -39,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(TesAdapterController.class)
-@SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
+@SuppressWarnings({"unused", "PMD.TooManyStaticImports", "PMD.AvoidUsingHardCodedIP"})
+@TestPropertySource(locations = "classpath:test-application.properties")
 public class TesAdapterControllerTest {
     private static final String DEFAULT_TASK_ID = "5";
     private static final String PAGE_TOKEN = "1";
@@ -57,12 +59,8 @@ public class TesAdapterControllerTest {
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
     private static final String WRONG_TOKEN = "wrongPipelineToken";
     private static final String GET_SERVICE_INFO = "/v1/tasks/service-info";
-
-    @Value("${allowed.client.ip}")
-    private String ipInRange;
-
-    @Value("${wrong.client.ip}")
-    private String ipOutOfRange;
+    private static final String IP_IN_RANGE = "192.168.1.1";
+    private static final String IP_OUT_OF_RANGE = "10.0.0.0";
 
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
@@ -98,6 +96,9 @@ public class TesAdapterControllerTest {
                 .thenReturn(mock(TesListTasksResponse.class));
         when(tesTaskService.getServiceInfo()).thenReturn(tesServiceInfo);
         when(tesTaskService.getTesTask(DEFAULT_TASK_ID, DEFAULT_VIEW)).thenReturn(tesTask);
+        tesServiceInfo.setName(nameOfService);
+        tesServiceInfo.setDoc(doc);
+        tesServiceInfo.setStorage(new ArrayList<>());
     }
 
     @Test
@@ -167,9 +168,6 @@ public class TesAdapterControllerTest {
 
     @Test
     void serviceInfoRequestShouldReturnCurrentServiceState() throws Exception {
-        tesServiceInfo.setName(nameOfService);
-        tesServiceInfo.setDoc(doc);
-        tesServiceInfo.setStorage(new ArrayList<>());
         this.mockMvc.perform(get("/v1/tasks/service-info")
                 .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
                 .contentType(JSON_CONTENT_TYPE))
