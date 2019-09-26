@@ -39,14 +39,15 @@ class PipelineServer(object):
     def synchronize(self, pipeline_ids=[]):
         try:
             self.__users__ = self.__users_api__.list()
-            emails = map(lambda x: x.email.lower(), self.__users__)
+            __users_with_email__ = filter(lambda x: x.email is not None, self.__users__)
+            emails = map(lambda x: x.email.lower(), __users_with_email__)
             self.__duplicated_users__ = list(set(filter(lambda x: emails.count(x) > 1, emails)))
             if len(self.__duplicated_users__) > 0:
                 print 'Following users wont be synchronized:'
                 for duplicate in self.__duplicated_users__:
                     duplicates = map(
                         lambda x: '{} ({})'.format(x.friendly_name, x.username),
-                        list(filter(lambda x: x.email.lower() == duplicate, self.__users__))
+                        list(filter(lambda x: x.email.lower() == duplicate, __users_with_email__))
                     )
                     print '{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate)
             self.__groups__ = PipelineServer.__create_group_users_map__(self.__users__)
