@@ -190,22 +190,5 @@ public class TesAdapterControllerTest {
         this.mockMvc.perform(get(GET_SERVICE_INFO)
                 .contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isUnauthorized());
-
-//        this.mockMvc.perform(get(GET_SERVICE_INFO)
-//                .with(request -> {
-//                    request.setRemoteAddr(IP_IN_RANGE);
-//                    return request;
-//                })
-//                .contentType(JSON_CONTENT_TYPE))
-//                .andDo(print()).andExpect(status().isOk())
-//                .andExpect(content().json(new ObjectMapper().writeValueAsString(tesServiceInfo)));
-//
-//        this.mockMvc.perform(get(GET_SERVICE_INFO)
-//                .with(request -> {
-//                    request.setRemoteAddr(IP_OUT_OF_RANGE);
-//                    return request;
-//                })
-//                .contentType(JSON_CONTENT_TYPE))
-//                .andDo(print()).andExpect(status().isUnauthorized());
     }
 }
