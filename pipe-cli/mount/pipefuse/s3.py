@@ -18,6 +18,7 @@ import os
 from abc import ABCMeta, abstractmethod
 
 import time
+from collections import namedtuple
 from datetime import datetime
 
 import pytz
@@ -25,6 +26,8 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials
 from botocore.session import get_session
+from sortedcontainers import SortedList
+
 import fuseutils
 from fsclient import File, FileSystemClient
 from fuseutils import MB, GB
@@ -65,20 +68,8 @@ class _MultipartUpload:
         pass
 
 
-# TODO 25.09.2019: Replace with named tuple
-class _UploadPart:
-
-    def __init__(self, number, ETag):
-        self._number = number
-        self._ETag = ETag
-
-    @property
-    def ETag(self):
-        return self._ETag
-
-    @property
-    def number(self):
-        return self._number
+_UploadPart = namedtuple('UploadPart', ['number', 'ETag'])
+_UploadSection = namedtuple('UploadSection', ['offset', 'length', 'number'])
 
 
 class _PlainMultipartUpload(_MultipartUpload):
@@ -155,22 +146,6 @@ class _PlainMultipartUpload(_MultipartUpload):
         self._s3.abort_multipart_upload(Bucket=self._bucket, Key=self._path, UploadId=self._upload_id)
 
 
-# TODO 25.09.2019: Replace with named tuple
-class _UploadSection:
-
-    def __init__(self, offset, number):
-        self._offset = offset
-        self._number = number
-
-    @property
-    def offset(self):
-        return self._offset
-
-    @property
-    def number(self):
-        return self._number
-
-
 class _NumeratingMultipartUpload(_MultipartUpload):
 
     MIN_PART_NUMBER = 1
@@ -190,8 +165,8 @@ class _NumeratingMultipartUpload(_MultipartUpload):
         :param margin: Upload part numbers initial margin.
         """
         self._mpu = mpu
-        self._sections = []
         self._margin = margin
+        self._sections = SortedList(key=lambda f: f.offset)
 
     @property
     def path(self):
@@ -203,9 +178,7 @@ class _NumeratingMultipartUpload(_MultipartUpload):
     def upload_part(self, buf, offset=None, part_number=None):
         part_number = self._resolve_part_number(offset)
         self._mpu.upload_part(buf, offset, part_number)
-        self._sections.append(_UploadSection(offset, part_number))
-        # TODO 25.09.2019: Use sorted list from sortedcontainers
-        self._sections = sorted(self._sections, key=lambda s: s.offset)
+        self._sections.add(_UploadSection(offset, len(buf), part_number))
 
     def _resolve_part_number(self, offset):
         if not self._sections:
@@ -220,11 +193,9 @@ class _NumeratingMultipartUpload(_MultipartUpload):
                     if prev_number < part_number < next_number:
                         return part_number
                     else:
-                        # TODO 25.09.2019: Handle not available part numbers issue.
-                        error_msg = 'There is no available part numbers for %s. ' \
-                                    'Repeatable multipart uploads is not yet supported.' % self.path
-                        logging.error(error_msg)
-                        raise RuntimeError(error_msg)
+                        # TODO 25.09.2019: There is no available part numbers.
+                        raise RuntimeError('There is no available part numbers for %s. '
+                                           'Operation is not supported yet.' % self.path)
                 prev_offset = section.offset
             last_section = self._sections[len(self._sections) - 1]
             return last_section.number + self._margin
@@ -235,9 +206,7 @@ class _NumeratingMultipartUpload(_MultipartUpload):
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         part_number = self._resolve_part_number(offset)
         self._mpu.upload_copy_part(start, end, offset, part_number)
-        self._sections.append(_UploadSection(start, part_number))
-        # TODO 25.09.2019: Use sorted list from sortedcontainers
-        self._sections = sorted(self._sections, key=lambda s: s.offset)
+        self._sections.add(_UploadSection(start, end-start, part_number))
 
     def complete(self):
         self._mpu.complete()
@@ -397,7 +366,7 @@ class _SplittingMultipartCopyUpload(_MultipartUpload):
 
 class _FillingGapsMultipartUpload(_MultipartUpload):
 
-    def __init__(self, mpu, offset, original_size):
+    def __init__(self, mpu, offset, original_size, min_part_size=5*MB):
         """
         Filling gaps multipart upload.
 
@@ -409,8 +378,9 @@ class _FillingGapsMultipartUpload(_MultipartUpload):
         """
         self._mpu = mpu
         self._offset = offset
-        self._current_offset = self._offset
         self._original_size = original_size
+        self._min_part_size = min_part_size
+        self._sections = SortedList(key=lambda f: f.offset)
 
     @property
     def path(self):
@@ -420,24 +390,30 @@ class _FillingGapsMultipartUpload(_MultipartUpload):
         self._mpu.initiate()
 
     def upload_part(self, buf, offset=None, part_number=None):
+        self._sections.add(_UploadSection(offset, len(buf), part_number))
         self._mpu.upload_part(buf, offset, part_number)
-        self._current_offset += len(buf)
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
+        self._sections.add(_UploadSection(offset, end - start, part_number))
         self._mpu.upload_copy_part(start, end, offset, part_number)
 
     def complete(self):
-        if self._offset:
-            self._copy_prefix()
-        if self._current_offset < self._original_size:
-            self._copy_suffix()
+        last_fragment_end = 0
+        for fragment in self._sections:
+            self._upload_gap(last_fragment_end, fragment.offset)
+            last_fragment_end = fragment.offset + fragment.length
+        if last_fragment_end < self._original_size:
+            self._upload_gap(last_fragment_end, self._original_size)
         self._mpu.complete()
 
-    def _copy_prefix(self):
-        self.upload_copy_part(0, self._offset, 0)
-
-    def _copy_suffix(self):
-        self.upload_copy_part(self._offset, self._original_size, self._current_offset)
+    def _upload_gap(self, last_fragment_end, next_fragment_start):
+        gap_length = next_fragment_start - last_fragment_end
+        if gap_length:
+            if gap_length >= self._min_part_size:
+                self._mpu.upload_copy_part(last_fragment_end, next_fragment_start, last_fragment_end)
+            else:
+                # TODO 26.09.2019: Too small gap to be copied.
+                raise RuntimeError('Too small gap %d to be copied. Operation is not supported yet.' % gap_length)
 
     def abort(self):
         self._mpu.abort()
@@ -638,9 +614,9 @@ class S3Client(FileSystemClient):
     def _new_mpu(self, file_size, offset, source_path):
         mpu = _PlainMultipartUpload(source_path, offset, self.bucket, self._s3)
         mpu = _NumeratingMultipartUpload(mpu)
+        mpu = _FillingGapsMultipartUpload(mpu, offset, file_size, self.MULTIPART_PART_MIN_SIZE_BYTES)
         mpu = _MergingMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
         mpu = _SplittingMultipartCopyUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES, self.MULTIPART_PART_MAX_SIZE_BYTES)
-        mpu = _FillingGapsMultipartUpload(mpu, offset, file_size)
         return mpu
 
     def _upload_single_range(self, fh, buf, path, offset):
