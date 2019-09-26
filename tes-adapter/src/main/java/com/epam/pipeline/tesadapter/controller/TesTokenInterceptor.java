@@ -4,6 +4,7 @@ import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -20,13 +21,14 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 public class TesTokenInterceptor implements HandlerInterceptor {
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
+    private static final String TOKEN_NOT_FOUND = "Default token not found";
 
     private TesTokenHolder tesTokenHolder;
 
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
-    @Value("${security.allowed.client.ip.range:0.0.0.1/32}")
+    @Value("${security.allowed.client.ip.range}")
     private String ipRange;
 
     @Autowired
@@ -40,8 +42,12 @@ public class TesTokenInterceptor implements HandlerInterceptor {
             tesTokenHolder.setToken(checkRequestForToken(request).get());
             return true;
         } else if (checkClientHostAddress(request)) {
-            tesTokenHolder.setToken(defaultPipelineToken);
-            return true;
+            if(Strings.isNotEmpty(defaultPipelineToken)) {
+                tesTokenHolder.setToken(defaultPipelineToken);
+                return true;
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, TOKEN_NOT_FOUND);
+            }
         }
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         return false;
@@ -59,7 +65,11 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     }
 
     private boolean checkClientHostAddress(HttpServletRequest request) {
-        IpAddressMatcher ipAddressMatcher = new IpAddressMatcher(ipRange);
-        return ipAddressMatcher.matches(request);
+        if (StringUtils.isNotEmpty(ipRange)) {
+            IpAddressMatcher ipAddressMatcher = new IpAddressMatcher(ipRange);
+            return ipAddressMatcher.matches(request);
+        } else {
+            return false;
+        }
     }
 }
