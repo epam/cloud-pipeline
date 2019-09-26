@@ -39,7 +39,7 @@ class _FileBuffer(object):
     def capacity(self):
         return self._capacity
 
-    def append(self, buf, offset=None):
+    def append(self, buf):
         self._buffs.append(buf)
         self._current_offset += len(buf)
 
@@ -67,8 +67,8 @@ class _WriteBuffer(_FileBuffer):
             current_offset += current_buf_size
         return collected_buf, self._offset
 
-    def suits(self, offset=None):
-        return (offset or 0) == self._current_offset
+    def suits(self, offset):
+        return self._offset <= offset <= self._current_offset
 
 
 class _ReadBuffer(_FileBuffer):
@@ -187,7 +187,7 @@ class BufferedFileSystemClient(FileSystemClient):
             file_buf = self._new_write_buf(self._capacity, offset)
             self._write_file_buffs[path] = file_buf
         if file_buf.suits(offset):
-            file_buf.append(buf, offset)
+            file_buf.append(buf)
         else:
             logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
             old_file_buf = self._flush_write_buf(fh, path)
@@ -202,7 +202,7 @@ class BufferedFileSystemClient(FileSystemClient):
     def _new_write_buf(self, capacity, offset, buf=None, old_write_buf=None):
         write_buf = _WriteBuffer(offset, capacity, inherited_size=old_write_buf.inherited_size if old_write_buf else 0)
         if buf:
-            write_buf.append(buf, offset)
+            write_buf.append(buf)
         return write_buf
 
     def _flush_write_buf(self, fh, path):

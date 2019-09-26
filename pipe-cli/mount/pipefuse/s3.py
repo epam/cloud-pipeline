@@ -246,23 +246,62 @@ class _NumeratingMultipartUpload(_MultipartUpload):
         self._mpu.abort()
 
 
-class _MergingSequentialMultipartUpload(_MultipartUpload):
+class _PartBuffer:
+
+    def __init__(self, offset, part_number):
+        self._bufs = []
+        self._offset = offset
+        self._current_offset = self._offset
+        self._part_number = part_number
+
+    @property
+    def offset(self):
+        return self._offset
+
+    @property
+    def current_offset(self):
+        return self._current_offset
+
+    @property
+    def part_number(self):
+        return self._part_number
+
+    @property
+    def size(self):
+        return self.current_offset - self.offset
+
+    def append(self, buf):
+        self._bufs.append(buf)
+        self._current_offset += len(buf)
+
+    def suits(self, offset):
+        return self.offset <= offset <= self.current_offset
+
+    def collect(self):
+        collected_buf_size = self.size
+        collected_buf = bytearray(collected_buf_size)
+        current_offset = 0
+        for current_buf in self._bufs:
+            current_buf_size = len(current_buf)
+            collected_buf[current_offset:current_offset + current_buf_size] = current_buf
+            current_offset += current_buf_size
+        return collected_buf
+
+
+class _MergingMultipartUpload(_MultipartUpload):
 
     def __init__(self, mpu, min_part_size=5 * MB):
         """
-        Merging sequential multipart upload.
+        Merging multipart upload.
 
-        Merges several sequential upload parts up to a minimum part size.
+        Merges sequential series of upload parts up to a minimum part size.
 
         :param mpu: Wrapping sequential multipart upload.
         :param min_part_size: Minimum upload part size.
         """
         self._mpu = mpu
         self._min_part_size = min_part_size
-        self._bufs_part_number = None
-        self._bufs = []
-        self._bufs_offset = 0
-        self._bufs_current_offset = 0
+        self._pbufs = []
 
     @property
     def path(self):
@@ -272,54 +311,31 @@ class _MergingSequentialMultipartUpload(_MultipartUpload):
         self._mpu.initiate()
 
     def upload_part(self, buf, offset=None, part_number=None):
-        if self._bufs:
-            if offset == self._bufs_current_offset:
-                self._upload_sequential_part(buf)
-            else:
-                self._upload_current_buffer()
-                self._upload_non_sequential_part(buf, offset, part_number)
-        else:
-            self._upload_non_sequential_part(buf, offset, part_number)
-
-    def _upload_sequential_part(self, buf):
-        self._bufs.append(buf)
-        self._bufs_current_offset += len(buf)
-        if self._bufs_current_offset - self._bufs_offset > self._min_part_size:
-            self._upload_current_buffer()
-
-    def _upload_current_buffer(self):
-        self._mpu.upload_part(self._collect_current_buffer(), self._bufs_offset, self._bufs_part_number)
-        self._clear_current_buffer()
-
-    def _upload_non_sequential_part(self, buf, offset, part_number):
-        if len(buf) > self._min_part_size:
+        pbuf = self._matching_sbuf(offset)
+        if pbuf:
+            pbuf.append(buf)
+            if pbuf.size > self._min_part_size:
+                self._mpu.upload_part(pbuf.collect(), pbuf.offset, pbuf.part_number)
+                self._pbufs.remove(pbuf)
+        elif len(buf) > self._min_part_size:
             self._mpu.upload_part(buf, offset, part_number)
         else:
-            self._bufs.append(buf)
-            self._bufs_offset = offset
-            self._bufs_current_offset = offset + len(buf)
-            self._bufs_part_number = part_number
+            pbuf = _PartBuffer(offset, part_number)
+            pbuf.append(buf)
+            self._pbufs.append(pbuf)
 
-    def _collect_current_buffer(self):
-        collected_buf = bytearray(self._bufs_current_offset - self._bufs_offset)
-        start = 0
-        for buf in self._bufs:
-            end = start + len(buf)
-            collected_buf[start:end] = buf[:]
-        return collected_buf
-
-    def _clear_current_buffer(self):
-        self._bufs = []
-        self._bufs_offset = 0
-        self._bufs_current_offset = 0
-        self._bufs_part_number = None
+    def _matching_sbuf(self, offset):
+        for pbuf in self._pbufs:
+            if pbuf.suits(offset):
+                return pbuf
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         return self._mpu.upload_copy_part(start, end, offset, part_number)
 
     def complete(self):
-        if self._bufs:
-            self._upload_current_buffer()
+        for pbuf in self._pbufs:
+            self._mpu.upload_part(pbuf.collect(), pbuf.offset, pbuf.part_number)
+        self._pbufs = []
         self._mpu.complete()
 
     def abort(self):
@@ -607,15 +623,10 @@ class S3Client(FileSystemClient):
                 if buf_size < self.MULTIPART_PART_MIN_SIZE_BYTES and file_size < self.MULTIPART_PART_MIN_SIZE_BYTES:
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
-                    uploading_buf = buf
-                    if offset and offset <= 5 * MB:
-                        with io.BytesIO() as prefix_buf:
-                            self.download_range(fh, prefix_buf, source_path)
-                            uploading_buf = bytearray(prefix_buf.getvalue()) + buf
                     mpu = self._new_mpu(file_size, offset, source_path)
                     self._mpus[path] = mpu
                     mpu.initiate()
-                    mpu.upload_part(uploading_buf, offset)
+                    mpu.upload_part(buf, offset)
             else:
                 mpu.upload_part(buf, offset)
         except _ANY_ERROR:
@@ -626,8 +637,8 @@ class S3Client(FileSystemClient):
 
     def _new_mpu(self, file_size, offset, source_path):
         mpu = _PlainMultipartUpload(source_path, offset, self.bucket, self._s3)
-        mpu = _MergingSequentialMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
         mpu = _NumeratingMultipartUpload(mpu)
+        mpu = _MergingMultipartUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES)
         mpu = _SplittingMultipartCopyUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES, self.MULTIPART_PART_MAX_SIZE_BYTES)
         mpu = _FillingGapsMultipartUpload(mpu, offset, file_size)
         return mpu
