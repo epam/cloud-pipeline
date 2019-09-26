@@ -21,7 +21,6 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 public class TesTokenInterceptor implements HandlerInterceptor {
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
-    private static final String TOKEN_NOT_FOUND = "Default token not found";
 
     private TesTokenHolder tesTokenHolder;
 
@@ -30,8 +29,6 @@ public class TesTokenInterceptor implements HandlerInterceptor {
 
     @Value("${security.allowed.client.ip.range}")
     private String ipRange;
-
-    private IpAddressMatcher ipAddressMatcher = StringUtils.isNotEmpty(ipRange) ? new IpAddressMatcher(ipRange) : null;
 
     @Autowired
     public TesTokenInterceptor(TesTokenHolder tesTokenHolder) {
@@ -63,6 +60,11 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     }
 
     private boolean checkClientHostAddress(HttpServletRequest request) {
-        return ipAddressMatcher != null && ipAddressMatcher.matches(request);
+        if (StringUtils.isNotEmpty(ipRange)) {
+            IpAddressMatcher ipAddressMatcher = new IpAddressMatcher(ipRange);
+            return ipAddressMatcher.matches(request);
+        } else {
+            return false;
+        }
     }
 }
