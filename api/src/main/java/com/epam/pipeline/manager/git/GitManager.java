@@ -140,7 +140,8 @@ public class GitManager {
         return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken(), rootClient);
     }
 
-    private GitlabClient getGitlabClientForRepository(String repository, String providedToken, final boolean rootClient) {
+    private GitlabClient getGitlabClientForRepository(String repository, String providedToken,
+                                                      final boolean rootClient) {
         Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);

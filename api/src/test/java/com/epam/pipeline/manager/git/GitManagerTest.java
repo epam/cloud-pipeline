@@ -230,7 +230,8 @@ public class GitManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldDeleteFile() throws GitClientException {
-        final Revision revision = new Revision("Initial commit", "", new Date(), "doesn't matter", "someauthor", "author@email.com");
+        final Revision revision = new Revision("Initial commit", "", new Date(),
+                "doesn't matter", "someauthor", "author@email.com");
         final Pipeline pipeline = testingPipeline();
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
@@ -244,7 +245,8 @@ public class GitManagerTest extends AbstractManagerTest {
     public void getConfigFile() {
         final Pipeline pipeline = testingPipeline();
         final String sha = "somecommitsha";
-        final Revision revision = new Revision("Initial commit", "", new Date(), DRAFT_PREFIX + sha, "someauthor", "author@email.com");
+        final Revision revision = new Revision("Initial commit", "", new Date(),
+                DRAFT_PREFIX + sha, "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry initialCommit = new GitCommitEntry();
         initialCommit.setMessage("New pipeline initial commit");
@@ -547,7 +549,8 @@ public class GitManagerTest extends AbstractManagerTest {
         pipeline.setId(1L);
         pipeline.setRepository(gitHost.withNamespace(ROOT_USER_NAME).withProject(REPOSITORY_NAME).asString());
         final Date date = Date.from(ZonedDateTime.of(2018, 6, 28, 14, 30, 0, 0, UTC).toInstant());
-        final Revision revision = new Revision(TEST_REVISION, "Initial commit", date, "somecommitsha", "someauthor", "author@email.com");
+        final Revision revision = new Revision(TEST_REVISION, "Initial commit", date,
+                "somecommitsha", "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
         return pipeline;
     }
