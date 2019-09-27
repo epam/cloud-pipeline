@@ -210,6 +210,9 @@ public class GitlabClient {
     }
 
     private String convertPipeNameToProject(String name) {
+        // This regexp differ from one from GitUtils, actually there is no sing why we should replace all '.'
+        // and etc from name, and cant user the same pattern from GitUtils here, but since it legacy method
+        // we decided to leave it as is
         return name.trim().toLowerCase().replaceAll("[^\\w\\s]", "").replaceAll("\\s+", "-");
     }
 
