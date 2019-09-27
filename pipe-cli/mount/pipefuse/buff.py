@@ -52,7 +52,7 @@ class _WriteBuffer(_FileBuffer):
 
     @property
     def inherited_size(self):
-        return self._inherited_size + self.size
+        return max(self._current_offset, self._inherited_size)
 
     def is_full(self):
         return self.size >= self.capacity
@@ -68,7 +68,7 @@ class _WriteBuffer(_FileBuffer):
         return collected_buf, self._offset
 
     def suits(self, offset):
-        return self._offset <= offset <= self._current_offset
+        return offset == self._current_offset
 
 
 class _ReadBuffer(_FileBuffer):
@@ -132,7 +132,7 @@ class BufferedFileSystemClient(FileSystemClient):
         attrs = self._inner.attrs(path)
         write_buf = self._write_file_buffs.get(path)
         if write_buf:
-            attrs = attrs._replace(size=attrs.size + write_buf.inherited_size)
+            attrs = attrs._replace(size=max(attrs.size, write_buf.inherited_size))
         return attrs
 
     def ls(self, path, depth=1):

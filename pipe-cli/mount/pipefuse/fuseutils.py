@@ -37,3 +37,10 @@ def split_path(path, delimiter=DEFAULT_DELIMITER):
 
 def __matching_delimiter(path, reference_path, delimiter=DEFAULT_DELIMITER):
     return path + delimiter if reference_path.endswith(delimiter) else path
+
+
+def lazy_range(start, end):
+    try:
+        return xrange(start, end)
+    except NameError:
+        return range(start, end)
