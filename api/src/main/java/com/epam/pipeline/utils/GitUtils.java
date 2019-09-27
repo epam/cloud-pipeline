@@ -23,7 +23,12 @@ public final class GitUtils {
 
     //regex for alphanumeric characters, underscore, dots and dash, allowing dash only in the middle
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_.]+([-.][a-zA-Z0-9_]+)*$");
-    private static final String PROJECT_NAME_IN_URL_PATTERN = "(?<=/)[\\w]+(?=\\.git$)";
+
+    // This regexps differ from NAME_PATTERN, actually there is no sign why we should replace all '.' and etc
+    // from name, and can't use the same pattern here, but since it's legacy we decided to leave it as is.
+    // In case of any changes these patterns must match each other in terms of allowed symbols for name.
+    private static final String PROJECT_NAME_IN_URL_PATTERN = "(?<=/)\\w+(?=\\.git$)";
+    private static final String CHARS_TO_BE_REMOVED_FROM_NAME = "[^\\w\\s]";
 
     private GitUtils() {}
 
@@ -41,8 +46,6 @@ public final class GitUtils {
     }
 
     public static String convertPipeNameToProject(final String name) {
-        // This regexp differ from NAME_PATTERN, actually there is no sign why we should replace all '.' and etc
-        // from name, and cant use the same pattern here, but since it's legacy method we decided to leave it as is
-        return name.trim().toLowerCase().replaceAll("[^\\w\\s]", "").replaceAll("\\s+", "-");
+        return name.trim().toLowerCase().replaceAll(CHARS_TO_BE_REMOVED_FROM_NAME, "").replaceAll("\\s+", "-");
     }
 }

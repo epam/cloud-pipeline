@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.git.UpdateGitFileRequest;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
@@ -67,8 +68,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Stream;
-
-import static com.epam.pipeline.utils.GitUtils.convertPipeNameToProject;
 
 @Wither
 @AllArgsConstructor
@@ -208,12 +207,14 @@ public class GitlabClient {
 
     public GitProject createTemplateRepository(Template template, String name, String description,
                                                boolean indexingEnabled, String hookUrl) throws GitClientException {
-        return createGitProject(template, description, convertPipeNameToProject(name), indexingEnabled, hookUrl);
+        return createGitProject(template, description,
+                                GitUtils.convertPipeNameToProject(name),
+                                indexingEnabled, hookUrl);
     }
 
     public boolean projectExists(String name) throws GitClientException {
         try {
-            String projectId = makeProjectId(namespace, convertPipeNameToProject(name));
+            String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
             Response<GitProject> response = gitLabApi.getProject(projectId).execute();
             return response.isSuccessful();
         } catch (IOException e) {
@@ -226,7 +227,7 @@ public class GitlabClient {
     }
 
     public GitProject getProject(String name) throws GitClientException {
-        String project = convertPipeNameToProject(name);
+        String project = GitUtils.convertPipeNameToProject(name);
         return execute(gitLabApi.getProject(project));
     }
 
@@ -326,9 +327,9 @@ public class GitlabClient {
         return addProjectHook(projectId, hookUrl);
     }
 
-    public GitProject updateProjectName(final String currentName, final String newName) throws GitClientException{
-        final String normalizedNewName = convertPipeNameToProject(newName);
-        return execute(gitLabApi.updateProject(makeProjectId(namespace, convertPipeNameToProject(currentName)),
+    public GitProject updateProjectName(final String currentName, final String newName) throws GitClientException {
+        final String normalizedNewName = GitUtils.convertPipeNameToProject(newName);
+        return execute(gitLabApi.updateProject(makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
                                                GitProjectRequest.builder()
                                                    .name(normalizedNewName)
                                                    .path(normalizedNewName)
