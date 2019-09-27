@@ -33,10 +33,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
-    @Value("${cloud.pipeline.service.name}")
+    @Value("#{'${cloud.pipeline.service.name}' != '' ? '${cloud.pipeline.service.name}' : 'CloudPipeline'}")
     private String nameOfService;
 
-    @Value("${cloud.pipeline.doc}")
+    @Value("#{'${cloud.pipeline.doc}' != '' ? '${cloud.pipeline.doc}' : ' '}")
     private String doc;
 
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
