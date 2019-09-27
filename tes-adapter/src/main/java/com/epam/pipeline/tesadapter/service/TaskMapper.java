@@ -25,6 +25,7 @@ import com.epam.pipeline.tesadapter.entity.TesTaskLog;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,7 +59,6 @@ public class TaskMapper {
     private static final Long DEFAULT_CPU_CORE = 2L;
     private static final Boolean DEFAULT_PREEMPRIBLE = true;
     private static final String DEFAULT_REGION = null;
-    private static final String EMPTY_STRING = "";
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
@@ -93,7 +93,7 @@ public class TaskMapper {
         this.defaultRamGb = defaultRamGb != null ? defaultRamGb : DEFAULT_RAM_GB;
         this.defaultCpuCore = defaultCpuCore != null ? defaultCpuCore : DEFAULT_CPU_CORE;
         this.defaultPreemptible = defaultPreemptible != null ? defaultPreemptible : DEFAULT_PREEMPRIBLE;
-        this.defaultRegion = !defaultRegion.equalsIgnoreCase(EMPTY_STRING) ? defaultRegion : DEFAULT_REGION;
+        this.defaultRegion = StringUtils.isNoneEmpty(defaultRegion) ? defaultRegion : DEFAULT_REGION;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.messageHelper = messageHelper;
 
