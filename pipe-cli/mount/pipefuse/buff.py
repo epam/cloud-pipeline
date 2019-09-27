@@ -163,8 +163,9 @@ class BufferedFileSystemClient(FileSystemClient):
             file_buf = self._new_read_buf(fh, path, file_size, offset)
             self._read_file_buffs[buf_key] = file_buf
         if not file_buf.suits(offset, length):
-            file_buf.append(self._read_ahead(fh, path, file_buf.offset))
-            file_buf.shrink()
+            if file_buf.offset < file_buf.capacity:
+                file_buf.append(self._read_ahead(fh, path, file_buf.offset))
+                file_buf.shrink()
             if not file_buf.suits(offset, length):
                 file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
                 self._read_file_buffs[buf_key] = file_buf
