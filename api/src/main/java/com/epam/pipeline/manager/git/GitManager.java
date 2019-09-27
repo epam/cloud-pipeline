@@ -263,7 +263,8 @@ public class GitManager {
         GitlabClient client = this.getGitlabClientForPipeline(pipeline);
         List<Revision> tags = client.getRepositoryRevisions(pageSize).stream()
                 .map(i -> new Revision(i.getName(), i.getMessage(),
-                        parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId()))
+                        parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId(),
+                        i.getCommit().getAuthorEmail()))
                 .sorted(Comparator.comparing(Revision::getCreatedDate).reversed())
                 .collect(Collectors.toList());
         List<Revision> revisions = new ArrayList<>(tags.size());
@@ -283,7 +284,8 @@ public class GitManager {
         GitTagEntry gitTagEntry = client.createRepositoryRevision(revisionName, commit, message, releaseDescription);
         return new Revision(gitTagEntry.getName(),
                 gitTagEntry.getMessage(),
-                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId());
+                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
+                gitTagEntry.getCommit().getAuthorEmail());
     }
 
     private void addDraftRevision(GitlabClient client, List<Revision> revisions,
@@ -294,7 +296,7 @@ public class GitManager {
             if (CollectionUtils.isEmpty(tags) || !tags.get(0).getCommitId()
                     .equals(commit.getId())) {
                 revisions.add(new Revision(DRAFT_PREFIX + commit.getShortId(), commit.getMessage(),
-                        parseGitDate(commit.getCreatedAt()), commit.getId(), Boolean.TRUE));
+                        parseGitDate(commit.getCreatedAt()), commit.getId(), Boolean.TRUE, commit.getAuthorEmail()));
             }
         }
     }

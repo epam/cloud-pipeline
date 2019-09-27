@@ -31,22 +31,24 @@ public class Revision {
     private Date createdDate;
     private Boolean draft;
     private String commitId;
+    private String author;
 
     public Revision() {
         this.id = 1L;
         this.draft = Boolean.FALSE;
     }
 
-    public Revision(String name, String message, Date createdDate, String commitId) {
+    public Revision(String name, String message, Date createdDate, String commitId, String author) {
         this();
         this.name = name;
         this.message = message;
         this.createdDate = new Date(createdDate.getTime());
         this.commitId = commitId;
+        this.author = author;
     }
 
-    public Revision(String name, String message, Date createdDate, String commitId, Boolean draft) {
-        this(name, message, createdDate, commitId);
+    public Revision(String name, String message, Date createdDate, String commitId, Boolean draft, String author) {
+        this(name, message, createdDate, commitId, author);
         this.draft = draft;
     }
 }
