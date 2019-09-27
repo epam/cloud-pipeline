@@ -23,8 +23,9 @@ import subprocess
 import uuid
 from datetime import datetime
 
-
 from src.config import Config
+
+PERMISSION_DENIED_ERROR = "Permission denied: the user has no permissions to modify '%s'"
 
 
 class UpdateCLIVersionManager(object):
@@ -77,11 +78,6 @@ class CLIVersionUpdater:
             raise RuntimeError("Failed to find Cloud Pipeline CLI download url")
         return api_path.replace(self.CP_RESTAPI_SUFFIX, self.get_download_suffix())
 
-    @staticmethod
-    def check_write_permissions(path):
-        if not os.access(path, os.X_OK | os.W_OK):
-            raise RuntimeError("Access denied: the user has no permissions to modify folder '%s'" % path)
-
 
 class LinuxUpdater(CLIVersionUpdater):
 
@@ -90,7 +86,7 @@ class LinuxUpdater(CLIVersionUpdater):
 
     def update_version(self, path):
         path_to_script = os.path.realpath(sys.argv[0])
-        self.check_write_permissions(path_to_script)
+        self.check_write_permissions(os.path.dirname(path_to_script))
         self.replace_executable(path_to_script, path)
         self.set_x_permission(path_to_script)
 
@@ -105,6 +101,11 @@ class LinuxUpdater(CLIVersionUpdater):
         st = os.stat(path_to_script)
         os.chmod(path_to_script, st.st_mode | stat.S_IEXEC)
 
+    @staticmethod
+    def check_write_permissions(path):
+        if not os.access(path, os.R_OK) or not os.access(path, os.W_OK):
+            raise RuntimeError(PERMISSION_DENIED_ERROR % path)
+
 
 class WindowsUpdater(CLIVersionUpdater):
     WINDOWS_SRC_ZIP = 'pipe.zip'
@@ -118,10 +119,10 @@ class WindowsUpdater(CLIVersionUpdater):
         random_prefix = str(uuid.uuid4()).replace("-", "")
 
         tmp_folder = self.get_tmp_folder()
-        self.check_write_permissions(tmp_folder)
+        self.check_write_permissions(tmp_folder, random_prefix)
 
         path_to_src_dir = os.path.dirname(sys.executable)
-        self.check_write_permissions(path_to_src_dir)
+        self.check_write_permissions(path_to_src_dir, random_prefix)
 
         tmp_src_dir = self.download_new_src(path, random_prefix)
         path_to_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
@@ -137,7 +138,7 @@ class WindowsUpdater(CLIVersionUpdater):
             if errorlevel 1 (
                 for /d %%b in ("{src_dir}\\*") do (
                     rd /q /s "%%b" 2>> "{log_file}" || (
-                        echo Failed to delete "%%b" file >> "{log_file}"
+                        echo Failed to delete "%%b" >> "{log_file}"
                         goto fail
                     )
                 )
@@ -203,3 +204,13 @@ class WindowsUpdater(CLIVersionUpdater):
         if not os.path.exists(tmp_folder):
             os.makedirs(tmp_folder)
         return tmp_folder
+
+    @staticmethod
+    def check_write_permissions(path, prefix):
+        try:
+            path_to_tmp_file = os.path.join(path, "tmp-%s" % prefix)
+            with open(path_to_tmp_file, 'a') as tmp_file:
+                tmp_file.write("")
+            os.remove(path_to_tmp_file)
+        except OSError:
+            raise RuntimeError(PERMISSION_DENIED_ERROR % path)
