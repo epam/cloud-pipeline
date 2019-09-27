@@ -29,6 +29,7 @@ from botocore.session import get_session
 import fuseutils
 from fsclient import File, FileSystemClient
 from fuseutils import MB, GB
+from mpu import MultipartUpload, SplittingMultipartCopyUpload, ChunkedMultipartUpload
 
 _ANY_ERROR = Exception
 
@@ -37,36 +38,7 @@ def _http_range(start, end):
     return 'bytes=%s-%s' % (start, end - 1)
 
 
-class _MultipartUpload:
-    __metaclass__ = ABCMeta
-
-    @property
-    @abstractmethod
-    def path(self):
-        pass
-
-    @abstractmethod
-    def initiate(self):
-        pass
-
-    @abstractmethod
-    def upload_part(self, buf, offset=None, part_number=None):
-        pass
-
-    @abstractmethod
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
-        pass
-
-    @abstractmethod
-    def complete(self):
-        pass
-
-    @abstractmethod
-    def abort(self):
-        pass
-
-
-class _PlainMultipartUpload(_MultipartUpload):
+class S3MultipartUpload(MultipartUpload):
 
     def __init__(self, path, offset, bucket, s3):
         """
@@ -140,213 +112,31 @@ class _PlainMultipartUpload(_MultipartUpload):
         self._s3.abort_multipart_upload(Bucket=self._bucket, Key=self._path, UploadId=self._upload_id)
 
 
-class _PartialChunk:
-
-    def __init__(self, offset, size):
-        self._offset = offset
-        self._size = size
-        self._buf = bytearray(size)
-        self._filled_regions = []
-
-    @property
-    def offset(self):
-        return self._offset
-
-    def append(self, offset, buf):
-        end = offset + len(buf)
-        self._buf[offset:end] = buf[:]
-        # TODO 27.09.2019: Merge overlapping and adjacent regions
-        self._filled_regions.append((offset, end))
-
-    def missing_regions(self):
-        last_index = 0
-        for region_start, region_end in self._sorted_filled_regions():
-            if last_index < region_start:
-                yield (last_index, region_start)
-            last_index = max(last_index, region_end)
-        if last_index < self._size:
-            yield (last_index, self._size)
-
-    def _sorted_filled_regions(self):
-        return sorted(self._filled_regions, key=lambda region: region[0])
-
-    def collect(self):
-        regions = self._sorted_filled_regions()
-        last_region_end = regions[len(regions)-1][1]
-        return self._buf[:last_region_end]
-
-
-class _ChunkedMultipartUpload(_MultipartUpload):
-    MIN_CHUNK_NUMBER = 1
-    MAX_CHUNK_NUMBER = 10000
-    CHUNK_NUMBER_RANGE = fuseutils.lazy_range(MIN_CHUNK_NUMBER, MAX_CHUNK_NUMBER)
-
-    def __init__(self, mpu, original_size, download_func, chunk_size=10 * MB):
-        """
-        Chunked multipart upload.
-
-        Cuts all the incoming uploads into chunks of the given size.
-
-        Has a limit on the maximum file size that can be written using chunked multipart upload.
-        It can be calculated multiplying chunk size by max chunk number. F.e. for chunk size of 10MB it will be 100GB,
-        for chunk size of 100MB it will be 1TB.
-
-        Fills gaps between uploaded parts with the original file's content.
-
-        :param mpu: Wrapping multipart upload.
-        :param original_size: Destination file original size.
-        :param download_func: Function that retrieves a region by its offset and length from the original file.
-        :param chunk_size: Size of a single upload part.
-        """
-        self._mpu = mpu
-        self._original_size = original_size
-        self._download_func = download_func
-        self._chunk_size = chunk_size
-        self._chunk_numbers = set()
-        self._partial_chunks = {}
-
-    @property
-    def path(self):
-        return self._mpu.path
-
-    def initiate(self):
-        self._mpu.initiate()
-
-    def upload_part(self, buf, offset=None, part_number=None):
-        chunk_number, chunk_offset = self._resolve_chunk_number(offset)
-        chunk_shift = offset - chunk_offset
-        buf_shift = 0
-        while buf_shift < len(buf):
-            if chunk_shift or buf_shift + self._chunk_size - chunk_shift > len(buf):
-                partial_chunk = self._partial_chunks.get(chunk_number, None)
-                if not partial_chunk:
-                    partial_chunk = _PartialChunk(chunk_offset, self._chunk_size)
-                    self._partial_chunks[chunk_number] = partial_chunk
-                partial_chunk.append(chunk_shift, buf[buf_shift:buf_shift+self._chunk_size - chunk_shift])
-                # TODO 27.09.2019: Flush partial chunk if it is filled
-            else:
-                chunk = bytearray(self._chunk_size)
-                chunk[chunk_shift:self._chunk_size] = buf[buf_shift:buf_shift + self._chunk_size]
-                self._mpu.upload_part(chunk, chunk_offset, chunk_number)
-            buf_shift += self._chunk_size - chunk_shift
-            self._chunk_numbers.add(chunk_number)
-            chunk_number += 1
-            chunk_offset += self._chunk_size
-            chunk_shift = 0
-
-    def _resolve_chunk_number(self, offset):
-        # TODO 26.09.2019: Use binary-like search for that
-        for chunk in self.CHUNK_NUMBER_RANGE:
-            chunk_offset = (chunk-1) * self._chunk_size
-            if chunk_offset <= offset < chunk_offset + self._chunk_size:
-                return chunk, chunk_offset
-
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
-        self._mpu.upload_copy_part(start, end, offset, part_number)
-
-    def complete(self):
-        last_chunk = 0
-        for chunk in sorted(self._chunk_numbers):
-            if chunk - last_chunk > 1:
-                missing_start = last_chunk * self._chunk_size
-                missing_end = (chunk - 1) * self._chunk_size
-                self._mpu.upload_copy_part(missing_start, missing_end, missing_start, last_chunk + 1)
-            last_chunk = chunk
-        last_chunk_end = last_chunk * self._chunk_size
-        if last_chunk_end < self._original_size:
-            self._mpu.upload_copy_part(last_chunk_end, self._original_size, last_chunk_end, last_chunk + 1)
-        for chunk_number, partial_chunk in self._partial_chunks.items():
-            for missing_start, missing_end in partial_chunk.missing_regions():
-                actual_start = missing_start + partial_chunk.offset
-                actual_end = min(missing_end + partial_chunk.offset, self._original_size)
-                if actual_end > actual_start:
-                    partial_chunk.append(missing_start, self._download_func(actual_start, actual_end - actual_start))
-            chunk = partial_chunk.collect()
-            self._mpu.upload_part(chunk, partial_chunk.offset, chunk_number)
-        self._mpu.complete()
-
-    def abort(self):
-        self._mpu.abort()
-
-
-class _SplittingMultipartCopyUpload(_MultipartUpload):
-
-    def __init__(self, mpu, min_part_size=5 * MB, max_part_size=5 * GB):
-        """
-        Splitting multipart copy upload.
-
-        Splits copy upload parts into several ones to fit maximum upload part size limit.
-        Also takes into the account minimum upload part size.
-
-        :param mpu: Wrapping multipart upload.
-        :param min_part_size: Minimum upload part size.
-        :param max_part_size: Maximum upload part size.
-        """
-        self._mpu = mpu
-        self._min_part_size = min_part_size
-        self._max_part_size = max_part_size
-
-    @property
-    def path(self):
-        return self._mpu.path
-
-    def initiate(self):
-        self._mpu.initiate()
-
-    def upload_part(self, buf, offset=None, part_number=None):
-        self._mpu.upload_part(buf, offset, part_number)
-
-    def upload_copy_part(self, start, end, offset=None, part_number=None):
-        copy_part_length = end - start
-        if copy_part_length > self._max_part_size:
-            logging.debug('Splitting upload part into pieces for %s' % self.path)
-            remaining_length = copy_part_length
-            current_offset = 0
-            actual_part_number = part_number
-            while remaining_length > 0:
-                part_size = self._resolve_part_size(remaining_length)
-                self._mpu.upload_copy_part(current_offset, current_offset + part_size, offset, actual_part_number)
-                remaining_length -= part_size
-                actual_part_number += 1
-        else:
-            self._mpu.upload_copy_part(start, end, offset, part_number)
-
-    def _resolve_part_size(self, remaining_length):
-        if self._min_part_size <= remaining_length <= self._max_part_size:
-            return remaining_length
-        else:
-            return min(self._max_part_size, remaining_length - self._min_part_size)
-
-    def complete(self):
-        self._mpu.complete()
-
-    def abort(self):
-        self._mpu.abort()
-
-
 class S3Client(FileSystemClient):
-    DOWNLOAD_CHUNK_SIZE_BYTES = 1 * MB
-    MULTIPART_PART_MIN_SIZE_BYTES = 5 * MB
-    MULTIPART_PART_MAX_SIZE_BYTES = 5 * GB
 
-    def __init__(self, bucket, pipe):
+    def __init__(self, bucket, pipe, chunk_size):
         """
         AWS S3 API client for single bucket operations.
 
         :param bucket: Name of the AWS S3 bucket.
         :param pipe: Cloud Pipeline API client.
+        :param chunk_size: Multipart upload chunk size.
         """
         super(S3Client, self).__init__()
         self._is_read_only = False
         self.bucket = bucket
-        session = self._init_session(bucket, pipe)
-        proxy_config = self._init_proxy_config()
-        self._s3 = session.client('s3', config=proxy_config)
+        self._s3 = self._generate_s3_client(bucket, pipe)
+        self._chunk_size = chunk_size
         self._delimiter = '/'
+        self._single_upload_size = 5 * MB
         self._mpus = {}
         self.root_path = '/'
 
-    def _init_session(self, bucket, pipe):
+    def _generate_s3_client(self, bucket, pipe):
+        session = self._generate_aws_session(bucket, pipe)
+        return session.client('s3', config=Config())
+
+    def _generate_aws_session(self, bucket, pipe):
         def refresh():
             bucket_object = pipe.get_storage(bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
@@ -370,9 +160,6 @@ class S3Client(FileSystemClient):
         s = get_session()
         s._credentials = session_credentials
         return Session(botocore_session=s, region_name=fresh_metadata['region_name'])
-
-    def _init_proxy_config(self):
-        return Config()
 
     def is_available(self):
         # TODO 05.09.2019: Check AWS API for availability
@@ -491,7 +278,7 @@ class S3Client(FileSystemClient):
         self._download(buf, response['Body'])
 
     def _download(self, buf, response):
-        for chunk in iter(lambda: response.read(S3Client.DOWNLOAD_CHUNK_SIZE_BYTES), b''):
+        for chunk in iter(lambda: response.read(1 * MB), b''):
             buf.write(chunk)
 
     def upload_range(self, fh, buf, path, offset=0):
@@ -501,7 +288,7 @@ class S3Client(FileSystemClient):
             if not mpu:
                 file_size = self.attrs(path).size
                 buf_size = len(buf)
-                if buf_size < self.MULTIPART_PART_MIN_SIZE_BYTES and file_size < self.MULTIPART_PART_MIN_SIZE_BYTES:
+                if buf_size < self._single_upload_size and file_size < self._single_upload_size:
                     self._upload_single_range(fh, buf, source_path, offset)
                 else:
                     mpu = self._new_mpu(file_size, offset, source_path)
@@ -517,13 +304,13 @@ class S3Client(FileSystemClient):
             raise
 
     def _new_mpu(self, file_size, offset, source_path):
-        mpu = _PlainMultipartUpload(source_path, offset, self.bucket, self._s3)
-        mpu = _SplittingMultipartCopyUpload(mpu, self.MULTIPART_PART_MIN_SIZE_BYTES, self.MULTIPART_PART_MAX_SIZE_BYTES)
-        # TODO 26.09.2019: Move to environment variable
-        mpu = _ChunkedMultipartUpload(mpu, file_size, self._download_func(source_path), chunk_size=10 * MB)
+        mpu = S3MultipartUpload(source_path, offset, self.bucket, self._s3)
+        mpu = SplittingMultipartCopyUpload(mpu, min_part_size=5 * MB, max_part_size=5 * GB)
+        mpu = ChunkedMultipartUpload(mpu, file_size, download_func=self._generate_region_download_function(source_path),
+                                     chunk_size=self._chunk_size, min_chunk=1, max_chunk=10000)
         return mpu
 
-    def _download_func(self, path):
+    def _generate_region_download_function(self, path):
         def download_func(region_offset, region_length):
             with io.BytesIO() as buf:
                 self.download_range(None, buf, path, region_offset, region_length)
