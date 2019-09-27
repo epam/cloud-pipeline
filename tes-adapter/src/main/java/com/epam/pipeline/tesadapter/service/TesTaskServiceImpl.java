@@ -43,7 +43,6 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
     private static final String DEFAULT_PAGE_TOKEN = "1";
-    private static final String EMPTY_STRING = "";
     private static final String DEFAULT_NAME_SERVICE = "CloudPipeline";
     private static final String DEFAULT_DOC = " ";
     private static final Boolean LOAD_STORAGE_LINKS = true;
@@ -54,8 +53,8 @@ public class TesTaskServiceImpl implements TesTaskService {
                               @Value("${cloud.pipeline.doc:}") String doc,
                               CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
                               MessageHelper messageHelper) {
-        this.nameOfService = !nameOfService.equalsIgnoreCase(EMPTY_STRING) ? nameOfService : DEFAULT_NAME_SERVICE;
-        this.doc = !doc.equalsIgnoreCase(EMPTY_STRING) ? doc : DEFAULT_DOC;
+        this.nameOfService = StringUtils.isNotEmpty(nameOfService) ? nameOfService : DEFAULT_NAME_SERVICE;
+        this.doc = StringUtils.isNotEmpty(doc) ? doc : DEFAULT_DOC;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.taskMapper = taskMapper;
         this.messageHelper = messageHelper;
