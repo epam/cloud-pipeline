@@ -64,6 +64,7 @@ public class TaskMapper {
     private static final String IMAGE = "image";
     private static final String EXECUTORS = "executors";
     private static final String ZONES = "zones";
+    private static final String DEFAULT_REGION = "defaultRegion";
     private static final Integer FIRST = 0;
     private static final String OUTPUT_LOG_STRING_FORMAT = "%s - %s - %s";
     private static final String CARRIAGE_RETURN = "\n";
@@ -76,11 +77,11 @@ public class TaskMapper {
     private static final Double EIB_TO_GIB = 1073741824.0;
 
     @Autowired
-    public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
-                      @Value("${cloud.pipeline.ramGb}") Double defaultRamGb,
-                      @Value("${cloud.pipeline.cpuCore}") Long defaultCpuCore,
-                      @Value("${cloud.pipeline.preemtible}") Boolean defaultPreemptible,
-                      @Value("${cloud.pipeline.region}") String defaultRegion,
+    public TaskMapper(@Value("#{'${cloud.pipeline.hddSize}' != '' ? '${cloud.pipeline.hddSize}' : 30}") Integer hddSize,
+                      @Value("#{'${cloud.pipeline.ramGb}' != '' ? '${cloud.pipeline.ramGb}' : 4}") Double defaultRamGb,
+                      @Value("#{'${cloud.pipeline.cpuCore}' != '' ? '${cloud.pipeline.cpuCore}' : 2}") Long defaultCpuCore,
+                      @Value("#{'${cloud.pipeline.preemtible}' != '' ? '${cloud.pipeline.preemtible}' : true}") Boolean defaultPreemptible,
+                      @Value("#{'${cloud.pipeline.region}' != '' ? '${cloud.pipeline.region}' : null}") String defaultRegion,
                       CloudPipelineAPIClient cloudPipelineAPIClient, MessageHelper messageHelper) {
         this.defaultHddSize = hddSize;
         this.defaultRamGb = defaultRamGb;
@@ -138,7 +139,9 @@ public class TaskMapper {
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getZones)
-                .orElse(Collections.singletonList(defaultRegion)));
+                .orElseGet(() -> Collections.singletonList(Optional.ofNullable(defaultRegion).orElseThrow(() ->
+                        new IllegalArgumentException(messageHelper
+                                .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, DEFAULT_REGION))))));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getPreemptible).orElse(defaultPreemptible);
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = Optional.ofNullable(cloudPipelineAPIClient
