@@ -33,12 +33,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
-    @Value("#{'${cloud.pipeline.service.name}' != '' ? '${cloud.pipeline.service.name}' : 'CloudPipeline'}")
+
     private String nameOfService;
-
-    @Value("#{'${cloud.pipeline.doc}' != '' ? '${cloud.pipeline.doc}' : ' '}")
     private String doc;
-
     private final CloudPipelineAPIClient cloudPipelineAPIClient;
     private final TaskMapper taskMapper;
     private final MessageHelper messageHelper;
@@ -46,12 +43,19 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
     private static final String DEFAULT_PAGE_TOKEN = "1";
+    private static final String EMPTY_STRING = "";
+    private static final String DEFAULT_NAME_SERVICE = "CloudPipeline";
+    private static final String DEFAULT_DOC = " ";
     private static final Boolean LOAD_STORAGE_LINKS = true;
     private static final Long DEFAULT_PAGE_SIZE = 256L;
 
     @Autowired
-    public TesTaskServiceImpl(CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
+    public TesTaskServiceImpl(@Value("${cloud.pipeline.service.name:}") String nameOfService,
+                              @Value("${cloud.pipeline.doc:}") String doc,
+                              CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
                               MessageHelper messageHelper) {
+        this.nameOfService = !nameOfService.equalsIgnoreCase(EMPTY_STRING) ? nameOfService : DEFAULT_NAME_SERVICE;
+        this.doc = !doc.equalsIgnoreCase(EMPTY_STRING) ? doc : DEFAULT_DOC;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.taskMapper = taskMapper;
         this.messageHelper = messageHelper;
