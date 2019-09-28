@@ -18,12 +18,13 @@ import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CloudPipelineAPIClient {
@@ -37,10 +38,10 @@ public class CloudPipelineAPIClient {
     public CloudPipelineAPIClient(TesTokenHolder tesTokenHolder,
                                   MessageHelper messageHelper,
                                   @Value("${cloud.pipeline.host}") String cloudPipelineHostUrl) {
-        Assert.hasText(cloudPipelineHostUrl,
-                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, CLOUD_PIPELINE_HOST));
         this.tesTokenHolder = tesTokenHolder;
-        this.cloudPipelineHostUrl = cloudPipelineHostUrl;
+        this.cloudPipelineHostUrl = Optional.ofNullable(cloudPipelineHostUrl).filter(StringUtils::isNotEmpty)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, CLOUD_PIPELINE_HOST)));
     }
 
     private CloudPipelineAPI buildCloudPipelineAPI() {
