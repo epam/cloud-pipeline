@@ -58,7 +58,6 @@ public class TaskMapper {
     private static final Double DEFAULT_RAM_GB = 4.0;
     private static final Long DEFAULT_CPU_CORE = 2L;
     private static final Boolean DEFAULT_PREEMPRIBLE = true;
-    private static final String DEFAULT_REGION = null;
     private static final String INPUT_TYPE = "input";
     private static final String OUTPUT_TYPE = "output";
     private static final String DEFAULT_TYPE = "string";
@@ -83,17 +82,17 @@ public class TaskMapper {
     private static final Double EIB_TO_GIB = 1073741824.0;
 
     @Autowired
-    public TaskMapper(@Value("${cloud.pipeline.hddSize:}") Integer hddSize,
-                      @Value("${cloud.pipeline.ramGb:}") Double defaultRamGb,
-                      @Value("${cloud.pipeline.cpuCore:}") Long defaultCpuCore,
-                      @Value("${cloud.pipeline.preemtible:}") Boolean defaultPreemptible,
-                      @Value("${cloud.pipeline.region:}") String defaultRegion,
+    public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
+                      @Value("${cloud.pipeline.ramGb}") Double defaultRamGb,
+                      @Value("${cloud.pipeline.cpuCore}") Long defaultCpuCore,
+                      @Value("${cloud.pipeline.preemtible}") Boolean defaultPreemptible,
+                      @Value("${cloud.pipeline.region}") String defaultRegion,
                       CloudPipelineAPIClient cloudPipelineAPIClient, MessageHelper messageHelper) {
-        this.defaultHddSize = hddSize != null ? hddSize : DEFAULT_HDD_SIZE;
-        this.defaultRamGb = defaultRamGb != null ? defaultRamGb : DEFAULT_RAM_GB;
-        this.defaultCpuCore = defaultCpuCore != null ? defaultCpuCore : DEFAULT_CPU_CORE;
-        this.defaultPreemptible = defaultPreemptible != null ? defaultPreemptible : DEFAULT_PREEMPRIBLE;
-        this.defaultRegion = StringUtils.isNoneEmpty(defaultRegion) ? defaultRegion : DEFAULT_REGION;
+        this.defaultHddSize = Optional.ofNullable(hddSize).orElse(DEFAULT_HDD_SIZE);
+        this.defaultRamGb = Optional.ofNullable(defaultRamGb).orElse(DEFAULT_RAM_GB);
+        this.defaultCpuCore = Optional.ofNullable(defaultCpuCore).orElse(DEFAULT_CPU_CORE);
+        this.defaultPreemptible = Optional.ofNullable(defaultPreemptible).orElse(DEFAULT_PREEMPRIBLE);
+        this.defaultRegion = defaultRegion;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.messageHelper = messageHelper;
 
@@ -146,9 +145,10 @@ public class TaskMapper {
         Long toolId = pipelineTool.getId();
         Long regionId = getProperRegionIdInCloudRegionsByTesZone(Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getZones)
-                .orElseGet(() -> Collections.singletonList(Optional.ofNullable(defaultRegion).orElseThrow(() ->
-                        new IllegalArgumentException(messageHelper
-                                .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION))))));
+                .orElseGet(() -> Collections.singletonList(
+                        Optional.ofNullable(defaultRegion).filter(StringUtils::isNotEmpty).orElseThrow(() ->
+                                new IllegalArgumentException(messageHelper.getMessage(
+                                        MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION))))));
         Boolean spot = Optional.ofNullable(tesTask.getResources())
                 .map(TesResources::getPreemptible).orElse(defaultPreemptible);
         AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = Optional.ofNullable(cloudPipelineAPIClient
