@@ -49,12 +49,12 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final Long DEFAULT_PAGE_SIZE = 256L;
 
     @Autowired
-    public TesTaskServiceImpl(@Value("${cloud.pipeline.service.name:}") String nameOfService,
-                              @Value("${cloud.pipeline.doc:}") String doc,
+    public TesTaskServiceImpl(@Value("${cloud.pipeline.service.name}") String nameOfService,
+                              @Value("${cloud.pipeline.doc}") String doc,
                               CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
                               MessageHelper messageHelper) {
-        this.nameOfService = StringUtils.isNotEmpty(nameOfService) ? nameOfService : DEFAULT_NAME_SERVICE;
-        this.doc = StringUtils.isNotEmpty(doc) ? doc : DEFAULT_DOC;
+        this.nameOfService = Optional.ofNullable(nameOfService).filter(StringUtils::isNotEmpty).orElse(DEFAULT_NAME_SERVICE);
+        this.doc = Optional.ofNullable(doc).filter(StringUtils::isNotEmpty).orElse(DEFAULT_DOC);
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.taskMapper = taskMapper;
         this.messageHelper = messageHelper;
