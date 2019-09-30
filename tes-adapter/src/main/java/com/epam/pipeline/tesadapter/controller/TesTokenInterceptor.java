@@ -29,13 +29,13 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
-    private IpAddressMatcher ipAddressMatcher;
+    private final IpAddressMatcher ipAddressMatcher;
 
     @Autowired
     public TesTokenInterceptor(TesTokenHolder tesTokenHolder,
                                @Value("${security.allowed.client.ip.range}") String ipRange) {
         this.tesTokenHolder = tesTokenHolder;
-        ipAddressMatcher = new IpAddressMatcher(ipRange);
+        ipAddressMatcher = StringUtils.isNotEmpty(ipRange) ? new IpAddressMatcher(ipRange) : null;
     }
 
     @Override
