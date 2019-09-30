@@ -21,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -40,6 +41,12 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {AppConfiguration.class})
 @SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
 class TesTaskServiceImplTest {
+    @Value("${cloud.pipeline.service.name}")
+    private String nameOfService;
+
+    @Value("${cloud.pipeline.doc}")
+    private String doc;
+
     private TesTaskServiceImpl tesTaskService;
 
     @Autowired
@@ -79,7 +86,7 @@ class TesTaskServiceImplTest {
         pipelineRun.setId(DEFAULT_PIPELINE_ID);
         tesTask.setId(DEFAULT_PIPELINE_ID.toString());
         pipelineRunList.add(pipelineRun);
-        tesTaskService = new TesTaskServiceImpl(cloudPipelineAPIClient, taskMapper, messageHelper);
+        tesTaskService = new TesTaskServiceImpl(nameOfService, doc, cloudPipelineAPIClient, taskMapper, messageHelper);
     }
 
     @Test
