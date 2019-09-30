@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -155,6 +156,7 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         switchToExplicitGroupMode();
 
         mockUserDoesNotExistSituation();
+        user.setUserName(USER_NAME);
 
         final Folder folder = initFolder();
         initFolderPermissions(folder);
@@ -244,6 +246,17 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     @Test(expected = LockedException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
+        blockOneGroupForCurrentUser();
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test(expected = LockedException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedRole() {
+        final Role role = new Role();
+        role.setName(SAML_ATTRIBUTE_1);
+        role.setPredefined(false);
+        user.setRoles(Collections.singletonList(role));
         blockOneGroupForCurrentUser();
         userDetailsService.loadUserBySAML(credential);
     }

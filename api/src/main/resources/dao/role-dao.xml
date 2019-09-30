@@ -132,9 +132,11 @@
                         r.name as role_name,
                         r.predefined as role_predefined,
                         r.user_default as role_user_default,
-                        r.default_storage_id as role_default_storage_id
+                        r.default_storage_id as role_default_storage_id,
+                        g.blocked as group_blocked
                     FROM
                         pipeline.role r
+                    LEFT JOIN pipeline.group_status g ON r.name = g.group_name
                 ]]>
             </value>
         </property>
@@ -168,10 +170,12 @@
                       u.groups as user_groups,
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
-                      u.blocked as user_blocked
+                      u.blocked as user_blocked,
+                      g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id
-                    LEFT JOIN pipeline.user u ON m.user_id = u.id;
+                    LEFT JOIN pipeline.user u ON m.user_id = u.id
+                    LEFT JOIN pipeline.group_status g ON r.name = g.group_name
                 ]]>
             </value>
         </property>
