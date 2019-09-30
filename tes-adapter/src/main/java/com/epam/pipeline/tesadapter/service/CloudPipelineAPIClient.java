@@ -11,16 +11,20 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.rest.PagedResult;
+import com.epam.pipeline.tesadapter.common.MessageConstants;
+import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CloudPipelineAPIClient {
@@ -28,11 +32,16 @@ public class CloudPipelineAPIClient {
 
     private String cloudPipelineHostUrl;
 
+    private static final String CLOUD_PIPELINE_HOST = "cloudPipelineHost";
+
     @Autowired
     public CloudPipelineAPIClient(TesTokenHolder tesTokenHolder,
+                                  MessageHelper messageHelper,
                                   @Value("${cloud.pipeline.host}") String cloudPipelineHostUrl) {
         this.tesTokenHolder = tesTokenHolder;
-        this.cloudPipelineHostUrl = cloudPipelineHostUrl;
+        this.cloudPipelineHostUrl = Optional.ofNullable(cloudPipelineHostUrl).filter(StringUtils::isNotEmpty)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, CLOUD_PIPELINE_HOST)));
     }
 
     private CloudPipelineAPI buildCloudPipelineAPI() {
