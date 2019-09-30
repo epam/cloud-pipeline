@@ -206,12 +206,14 @@ class SplittingMultipartCopyUpload(MultipartUpload):
         if copy_part_length > self._max_part_size:
             logging.debug('Splitting upload part into pieces for %s' % self.path)
             remaining_length = copy_part_length
-            current_offset = 0
+            current_offset = offset
             actual_part_number = part_number
             while remaining_length > 0:
                 part_size = self._resolve_part_size(remaining_length)
-                self._mpu.upload_copy_part(current_offset, current_offset + part_size, offset, actual_part_number)
+                self._mpu.upload_copy_part(current_offset, current_offset + part_size, current_offset,
+                                           actual_part_number)
                 remaining_length -= part_size
+                current_offset += part_size
                 actual_part_number += 1
         else:
             self._mpu.upload_copy_part(start, end, offset, part_number)
