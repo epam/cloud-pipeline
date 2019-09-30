@@ -126,7 +126,7 @@ public class GitlabClient {
         this.adminId = gitAdminId;
         this.adminName = adminName;
         this.externalHost = externalHost;
-        this.gitLabApi = new GitLabApiBuilder(host, adminToken, rootClient ? adminName : user).build();
+        this.gitLabApi = buildGitLabApi(host, adminToken, rootClient ? adminName : user);
     }
 
     public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,
@@ -431,6 +431,8 @@ public class GitlabClient {
                                         boolean indexingEnabled, String hookUrl) throws GitClientException {
         GitProject project = createRepo(repoName, description);
         addUserAsMemberToProject(makeProjectId(namespace, repoName));
+        // change api client to do all following actions as an authorized user
+        this.gitLabApi = buildGitLabApi(gitHost, adminToken, userName);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
         }
@@ -446,6 +448,10 @@ public class GitlabClient {
             LOGGER.debug(exception.getMessage(), exception);
         }
         return project;
+    }
+
+    private GitLabApi buildGitLabApi(final String gitHost, final String adminToken, final String userName) {
+        return new GitLabApiBuilder(gitHost, adminToken, userName).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {
