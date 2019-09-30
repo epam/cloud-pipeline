@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
@@ -72,6 +74,9 @@ public class NodesManager {
     private MessageHelper messageHelper;
 
     @Autowired
+    private PreferenceManager preferenceManager;
+
+    @Autowired
     private PipelineRunManager pipelineRunManager;
 
     @Autowired
@@ -88,6 +93,7 @@ public class NodesManager {
 
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
+
     private Map<String, String> protectedNodeLabels;
 
     @PostConstruct
@@ -202,7 +208,16 @@ public class NodesManager {
                     client.nodes().withLabel(MASTER_LABEL);
             return nodeSearchResult.list().getItems()
                     .stream()
-                    .filter(this::nodeIsReady).map(MasterNode::new).collect(Collectors.toList());
+                    .filter(this::nodeIsReady)
+                    .map(MasterNode::new)
+                    .peek(master -> {
+                        if (master.getPort() == null) {
+                            String defaultPort = String.valueOf(
+                                    preferenceManager.getPreference(SystemPreferences.CLUSTER_API_PORT));
+                            master.setPort(defaultPort);
+                        }
+                    })
+                    .collect(Collectors.toList());
         }
     }
 

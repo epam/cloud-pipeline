@@ -32,7 +32,6 @@ import java.util.UUID;
 @Setter
 public class MasterNode {
 
-    public static final int DEFAULT_API_PORT = 9999;
     public static final String API_PORT_LABEL = "api_port";
     private UUID uid;
     private String name;
@@ -54,8 +53,6 @@ public class MasterNode {
                 String port = labels.get(API_PORT_LABEL);
                 if (StringUtils.isNotBlank(port)) {
                     this.setPort(port);
-                } else {
-                    this.setPort(String.valueOf(DEFAULT_API_PORT));
                 }
             }
             this.setCreationTimestamp(metadata.getCreationTimestamp());

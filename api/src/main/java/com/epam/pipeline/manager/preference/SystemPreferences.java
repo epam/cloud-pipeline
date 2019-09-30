@@ -297,6 +297,8 @@ public class SystemPreferences {
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
             new IntPreference("cluster.docker.extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_API_PORT =
+            new IntPreference("cluster.api.server.port", 9999, CLUSTER_GROUP, isGreaterThan(0));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
