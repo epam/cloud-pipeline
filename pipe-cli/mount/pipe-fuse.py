@@ -114,7 +114,7 @@ if __name__ == '__main__':
                         level=_allowed_logging_level_names[args.logging_level])
 
     try:
-        start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size * MB,
+        start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
               chunk_size=args.chunk_size, cache_ttl=args.cache_ttl, cache_size=args.cache_size, default_mode=args.mode,
               mount_options=parse_mount_options(args.options))
     except BaseException as e:

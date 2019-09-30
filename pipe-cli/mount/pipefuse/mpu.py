@@ -1,8 +1,9 @@
 import logging
 from abc import abstractmethod, ABCMeta
 
-from mount.pipefuse import fuseutils
-from mount.pipefuse.fuseutils import MB, GB
+import intervals
+
+from fuseutils import MB, GB
 
 
 class MultipartUpload:
@@ -40,7 +41,8 @@ class _PartialChunk:
         self._offset = offset
         self._size = size
         self._buf = bytearray(size)
-        self._filled_regions = []
+        self._bounds_interval = intervals.closed(0, self._size)
+        self._interval = intervals.empty()
 
     @property
     def offset(self):
@@ -49,25 +51,20 @@ class _PartialChunk:
     def append(self, offset, buf):
         end = offset + len(buf)
         self._buf[offset:end] = buf[:]
-        # TODO 27.09.2019: Merge overlapping and adjacent regions
-        self._filled_regions.append((offset, end))
+        self._interval |= intervals.closed(offset, end)
 
-    def missing_regions(self):
-        last_index = 0
-        for region_start, region_end in self._sorted_filled_regions():
-            if last_index < region_start:
-                yield (last_index, region_start)
-            last_index = max(last_index, region_end)
-        if last_index < self._size:
-            yield (last_index, self._size)
+    def is_full(self):
+        return self._missing_interval().is_empty()
 
-    def _sorted_filled_regions(self):
-        return sorted(self._filled_regions, key=lambda region: region[0])
+    def missing_intervals(self):
+        for interval in self._missing_interval():
+            yield interval.lower, interval.upper
+
+    def _missing_interval(self):
+        return self._interval.complement().intersection(self._bounds_interval)
 
     def collect(self):
-        regions = self._sorted_filled_regions()
-        last_region_end = regions[len(regions)-1][1]
-        return self._buf[:last_region_end]
+        return self._buf[:self._interval.upper]
 
 
 class ChunkedMultipartUpload(MultipartUpload):
@@ -95,9 +92,10 @@ class ChunkedMultipartUpload(MultipartUpload):
         self._original_size = original_size
         self._download_func = download_func
         self._chunk_size = chunk_size
-        self._chunk_numbers = set()
+        self._chunks = set()
         self._partial_chunks = {}
-        self._chunk_number_range = fuseutils.lazy_range(min_chunk, max_chunk)
+        self._min_chunk = min_chunk
+        self._max_chunk = max_chunk
 
     @property
     def path(self):
@@ -107,50 +105,63 @@ class ChunkedMultipartUpload(MultipartUpload):
         self._mpu.initiate()
 
     def upload_part(self, buf, offset=None, part_number=None):
-        chunk_number, chunk_offset = self._resolve_chunk_number(offset)
+        chunk = self._resolve_chunk(offset)
+        chunk_offset = self._chunk_offset(chunk)
         chunk_shift = offset - chunk_offset
         buf_shift = 0
         while buf_shift < len(buf):
             if chunk_shift or buf_shift + self._chunk_size - chunk_shift > len(buf):
-                partial_chunk = self._partial_chunks.get(chunk_number, None)
+                partial_chunk = self._partial_chunks.get(chunk, None)
                 if not partial_chunk:
                     partial_chunk = _PartialChunk(chunk_offset, self._chunk_size)
-                    self._partial_chunks[chunk_number] = partial_chunk
-                partial_chunk.append(chunk_shift, buf[buf_shift:buf_shift+self._chunk_size - chunk_shift])
-                # TODO 27.09.2019: Flush partial chunk if it is filled
+                    self._partial_chunks[chunk] = partial_chunk
+                partial_chunk.append(chunk_shift, buf[buf_shift:buf_shift + self._chunk_size - chunk_shift])
+                if partial_chunk.is_full():
+                    self._mpu.upload_part(partial_chunk.collect(), partial_chunk.offset, chunk)
+                    del self._partial_chunks[chunk]
             else:
-                chunk = bytearray(self._chunk_size)
-                chunk[chunk_shift:self._chunk_size] = buf[buf_shift:buf_shift + self._chunk_size]
-                self._mpu.upload_part(chunk, chunk_offset, chunk_number)
+                chunk_buf = bytearray(self._chunk_size)
+                chunk_buf[chunk_shift:self._chunk_size] = buf[buf_shift:buf_shift + self._chunk_size]
+                self._mpu.upload_part(chunk_buf, chunk_offset, chunk)
             buf_shift += self._chunk_size - chunk_shift
-            self._chunk_numbers.add(chunk_number)
-            chunk_number += 1
+            self._chunks.add(chunk)
+            chunk += 1
             chunk_offset += self._chunk_size
             chunk_shift = 0
 
-    def _resolve_chunk_number(self, offset):
-        # TODO 26.09.2019: Use binary-like search for that
-        for chunk in self.CHUNK_NUMBER_RANGE:
-            chunk_offset = (chunk-1) * self._chunk_size
-            if chunk_offset <= offset < chunk_offset + self._chunk_size:
-                return chunk, chunk_offset
+    def _resolve_chunk(self, offset):
+        first_chunk = self._min_chunk
+        last_chunk = self._max_chunk
+        while last_chunk - first_chunk > 1:
+            mid_chunk = first_chunk + (last_chunk - first_chunk) / 2
+            mid_chunk_offset = self._chunk_offset(mid_chunk)
+            if offset > mid_chunk_offset:
+                first_chunk = mid_chunk
+            elif offset < mid_chunk_offset:
+                last_chunk = mid_chunk
+            else:
+                return mid_chunk
+        return last_chunk if offset >= self._chunk_offset(last_chunk) else first_chunk
+
+    def _chunk_offset(self, chunk):
+        return (chunk - 1) * self._chunk_size
 
     def upload_copy_part(self, start, end, offset=None, part_number=None):
         self._mpu.upload_copy_part(start, end, offset, part_number)
 
     def complete(self):
-        last_chunk = 0
-        for chunk in sorted(self._chunk_numbers):
-            if chunk - last_chunk > 1:
-                missing_start = last_chunk * self._chunk_size
-                missing_end = (chunk - 1) * self._chunk_size
-                self._mpu.upload_copy_part(missing_start, missing_end, missing_start, last_chunk + 1)
-            last_chunk = chunk
-        last_chunk_end = last_chunk * self._chunk_size
+        last_missing_chunk = 1
+        for chunk in sorted(self._chunks):
+            if chunk > last_missing_chunk:
+                missing_start = self._chunk_offset(last_missing_chunk)
+                missing_end = self._chunk_offset(chunk)
+                self._mpu.upload_copy_part(missing_start, missing_end, missing_start, last_missing_chunk)
+            last_missing_chunk = chunk + 1
+        last_chunk_end = self._chunk_offset(last_missing_chunk)
         if last_chunk_end < self._original_size:
-            self._mpu.upload_copy_part(last_chunk_end, self._original_size, last_chunk_end, last_chunk + 1)
+            self._mpu.upload_copy_part(last_chunk_end, self._original_size, last_chunk_end, last_missing_chunk)
         for chunk_number, partial_chunk in self._partial_chunks.items():
-            for missing_start, missing_end in partial_chunk.missing_regions():
+            for missing_start, missing_end in partial_chunk.missing_intervals():
                 actual_start = missing_start + partial_chunk.offset
                 actual_end = min(missing_end + partial_chunk.offset, self._original_size)
                 if actual_end > actual_start:
