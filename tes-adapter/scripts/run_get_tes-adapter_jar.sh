@@ -27,7 +27,7 @@ cp -i tes-adapter/build/libs/tes-adapter-1.0-SNAPSHOT.jar .. || { echo "Copying 
 #Check exit status and remove tmp files:
 echo "Removing tmp directory..."
 if [ $? -ne 0 ]; then
-	echo "The program failed! See errorlog file"
+	echo "Something going wrong! Check log info!"
 else
 	 rm -r -f $tmpdir; echo "Success!"
 fi
