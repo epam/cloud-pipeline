@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.git.UpdateGitFileRequest;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
@@ -206,19 +207,14 @@ public class GitlabClient {
 
     public GitProject createTemplateRepository(Template template, String name, String description,
                                                boolean indexingEnabled, String hookUrl) throws GitClientException {
-        return createGitProject(template, description, convertPipeNameToProject(name), indexingEnabled, hookUrl);
-    }
-
-    private String convertPipeNameToProject(String name) {
-        // This regexp differ from one from GitUtils, actually there is no sing why we should replace all '.'
-        // and etc from name, and cant user the same pattern from GitUtils here, but since it legacy method
-        // we decided to leave it as is
-        return name.trim().toLowerCase().replaceAll("[^\\w\\s]", "").replaceAll("\\s+", "-");
+        return createGitProject(template, description,
+                                GitUtils.convertPipeNameToProject(name),
+                                indexingEnabled, hookUrl);
     }
 
     public boolean projectExists(String name) throws GitClientException {
         try {
-            String projectId = makeProjectId(namespace, convertPipeNameToProject(name));
+            String projectId = makeProjectId(namespace, GitUtils.convertPipeNameToProject(name));
             Response<GitProject> response = gitLabApi.getProject(projectId).execute();
             return response.isSuccessful();
         } catch (IOException e) {
@@ -231,7 +227,7 @@ public class GitlabClient {
     }
 
     public GitProject getProject(String name) throws GitClientException {
-        String project = convertPipeNameToProject(name);
+        String project = GitUtils.convertPipeNameToProject(name);
         return execute(gitLabApi.getProject(project));
     }
 
@@ -329,6 +325,15 @@ public class GitlabClient {
     public GitRepositoryEntry createProjectHook(String hookUrl) throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         return addProjectHook(projectId, hookUrl);
+    }
+
+    public GitProject updateProjectName(final String currentName, final String newName) throws GitClientException {
+        final String normalizedNewName = GitUtils.convertPipeNameToProject(newName);
+        return execute(gitLabApi.updateProject(makeProjectId(namespace, GitUtils.convertPipeNameToProject(currentName)),
+                                               GitProjectRequest.builder()
+                                                   .name(normalizedNewName)
+                                                   .path(normalizedNewName)
+                                                   .build()));
     }
 
     private <R> R execute(Call<R> call) throws GitClientException {

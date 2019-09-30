@@ -853,4 +853,12 @@ public class GitManager {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
+
+    public GitProject updateRepositoryName(final String projectIdOrName, final String newName) {
+        try {
+            return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
 }
