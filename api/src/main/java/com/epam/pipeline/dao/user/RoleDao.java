@@ -176,9 +176,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             }
             if (getGroupStatus) {
                 final boolean groupStatus = rs.getBoolean(GROUP_BLOCKED.name());
-                if (!rs.wasNull()) {
-                    role.setBlocked(groupStatus);
-                }
+                role.setBlocked(!rs.wasNull() && groupStatus);
             }
             return role;
         }

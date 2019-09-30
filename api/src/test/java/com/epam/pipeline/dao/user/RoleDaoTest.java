@@ -133,6 +133,7 @@ public class RoleDaoTest extends AbstractSpringTest {
         final Role blockedRole = roleDao.createRole(TEST_ROLE);
         blockedRole.setBlocked(true);
         final Role notBlockedRole = roleDao.createRole(TEST_ROLE_UPDATED);
+        notBlockedRole.setBlocked(false);
 
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true));
         groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false));
@@ -185,7 +186,7 @@ public class RoleDaoTest extends AbstractSpringTest {
                 assertTrue(CollectionUtils.isEmpty(extendedRole.getUsers()));
                 assertTrue(extendedRole.getBlocked());
             } else if (role.getName().equals(TEST_ROLE_UPDATED)) {
-                assertNull(extendedRole.getBlocked());
+                assertFalse(extendedRole.getBlocked());
                 assertTrue(CollectionUtils.isEmpty(extendedRole.getUsers()));
             } else if (role.getName().equals(roleAdminName)) {
                 assertEquals(1, extendedRole.getUsers().size());
@@ -195,6 +196,6 @@ public class RoleDaoTest extends AbstractSpringTest {
     }
 
     private boolean isRolePresent(Role roleToFind, Collection<Role> roles) {
-        return roles.stream().anyMatch(r -> r.equals(roleToFind));
+        return roles.stream().anyMatch(r -> r.getName().equals(roleToFind.getName()));
     }
 }
