@@ -16,11 +16,9 @@
 
 package com.epam.pipeline.entity.git;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class GitFile {
     private String content;
 }

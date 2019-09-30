@@ -16,16 +16,21 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * Represents Gitlab repository browsing request result
- */
+import java.util.List;
+
 @Data
-public class GitRepositoryEntry {
-    private String id;
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class GitTokenRequest {
     private String name;
-    private String type;
-    private String path;
-    private String mode;
+    @JsonProperty(value = "expires_at")
+    private String expires;
+    private List<String> scopes;
 }

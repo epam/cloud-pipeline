@@ -16,16 +16,20 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Data;
 
-/**
- * Represents Gitlab repository browsing request result
- */
 @Data
-public class GitRepositoryEntry {
-    private String id;
-    private String name;
-    private String type;
-    private String path;
-    private String mode;
+@Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class GitProjectMember {
+
+    private long id;
+
+    @JsonProperty("access_level")
+    private Long accessLevel;
+
+    private String username;
 }

@@ -25,6 +25,8 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitToken;
+import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -37,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.exception.RuntimeIOException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -113,6 +116,8 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String README_FILE = "README.md";
     private static final String BLOB_TYPE = "blob";
     private static final String FILE_CONTENT = "some content";
+    private static final GitlabUser USER = GitlabUser.builder().id(1L).username("root").build();
+    private static final GitToken USER_TOKEN = GitToken.builder().id(1L).token("token-123").expires(new Date()).build();
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -173,6 +178,14 @@ public class GitManagerTest extends AbstractManagerTest {
     public void setup() {
         MockitoAnnotations.initMocks(this.getClass());
         gitHost = GitRepositoryUrl.from("http://localhost:" + wireMockRule.port());
+        givenThat(
+                get(urlPathEqualTo("/api/v3/users"))
+                        .willReturn(okJson(with(singletonList(USER))))
+        );
+        givenThat(
+                post(urlPathEqualTo("/api/v3/users/1/impersonation_tokens"))
+                        .willReturn(okJson(with(USER_TOKEN)))
+        );
     }
 
     @Test
@@ -217,7 +230,8 @@ public class GitManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldDeleteFile() throws GitClientException {
-        final Revision revision = new Revision("Initial commit", "", new Date(), "doesn't matter");
+        final Revision revision = new Revision("Initial commit", "", new Date(),
+                "doesn't matter", "someauthor", "author@email.com");
         final Pipeline pipeline = testingPipeline();
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
@@ -231,7 +245,8 @@ public class GitManagerTest extends AbstractManagerTest {
     public void getConfigFile() {
         final Pipeline pipeline = testingPipeline();
         final String sha = "somecommitsha";
-        final Revision revision = new Revision("Initial commit", "", new Date(), DRAFT_PREFIX + sha);
+        final Revision revision = new Revision("Initial commit", "", new Date(),
+                DRAFT_PREFIX + sha, "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry initialCommit = new GitCommitEntry();
         initialCommit.setMessage("New pipeline initial commit");
@@ -258,7 +273,6 @@ public class GitManagerTest extends AbstractManagerTest {
         final List<GitTagEntry> tags = Collections.emptyList();
         givenThat(
             get(urlPathEqualTo(api(REPOSITORY_TAGS)))
-                .withQueryParam("per_page", equalTo(String.valueOf(pageSize)))
                 .willReturn(okJson(with(tags)))
         );
         final GitCommitEntry initialCommit = new GitCommitEntry();
@@ -282,7 +296,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final List<GitRepositoryEntry> tree = singletonList(bla);
         givenThat(
             get(urlPathEqualTo(api(REPOSITORY_TREE)))
-                .withQueryParam(REF_NAME, equalTo(TEST_REVISION))
+                .withQueryParam(REF, equalTo(TEST_REVISION))
                 .withQueryParam(PATH, equalTo(DOCS + "/"))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(false)))
                 .willReturn(okJson(with(tree)))
@@ -367,7 +381,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final List<GitRepositoryEntry> tree = singletonList(repositoryEntry);
         givenThat(
             get(urlPathEqualTo(api(REPOSITORY_TREE)))
-                .withQueryParam(REF_NAME, equalTo(GIT_MASTER_REPOSITORY))
+                .withQueryParam(REF, equalTo(GIT_MASTER_REPOSITORY))
                 .withQueryParam(PATH, equalTo(DOCS))
                 .withQueryParam(RECURSIVE, equalTo(String.valueOf(true)))
                 .willReturn(okJson(with(tree)))
@@ -535,7 +549,8 @@ public class GitManagerTest extends AbstractManagerTest {
         pipeline.setId(1L);
         pipeline.setRepository(gitHost.withNamespace(ROOT_USER_NAME).withProject(REPOSITORY_NAME).asString());
         final Date date = Date.from(ZonedDateTime.of(2018, 6, 28, 14, 30, 0, 0, UTC).toInstant());
-        final Revision revision = new Revision(TEST_REVISION, "Initial commit", date, "somecommitsha");
+        final Revision revision = new Revision(TEST_REVISION, "Initial commit", date,
+                "somecommitsha", "someauthor", "author@email.com");
         pipeline.setCurrentVersion(revision);
         return pipeline;
     }
@@ -569,11 +584,18 @@ public class GitManagerTest extends AbstractManagerTest {
         final GitFile gitFile = new GitFile();
         gitFile.setContent(Base64.getEncoder().encodeToString(content.getBytes()));
         givenThat(
-                get(urlPathEqualTo(api(REPOSITORY_FILES)))
-                        .withQueryParam(FILE_PATH, equalTo(filePath))
+                get(urlPathEqualTo(api(REPOSITORY_FILES + "/" + encodeUrlPath(filePath))))
                         .withQueryParam(REF, equalTo(ref))
                         .willReturn(okJson(with(gitFile)))
         );
+    }
+
+    private String encodeUrlPath(final String filePath) {
+        try {
+            return URLEncoder.encode(filePath, "UTF8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeIOException(e.getMessage());
+        }
     }
 
     private GitCommitEntry mockGitCommitRequest() {

@@ -16,16 +16,23 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * Represents Gitlab repository browsing request result
- */
 @Data
-public class GitRepositoryEntry {
-    private String id;
-    private String name;
-    private String type;
-    private String path;
-    private String mode;
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateGitFileRequest {
+
+    private String branch;
+
+    @JsonProperty("commit_message")
+    private String message;
+
+    @JsonProperty("content")
+    private String content;
 }

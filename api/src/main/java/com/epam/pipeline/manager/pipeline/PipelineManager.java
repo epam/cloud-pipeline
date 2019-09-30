@@ -50,8 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -218,8 +216,7 @@ public class PipelineManager implements SecuredEntityManager {
         if (!keepRepository) {
             try {
                 gitManager.deletePipelineRepository(pipeline);
-            } catch (GitClientException | UnsupportedEncodingException |
-                    URISyntaxException | HttpClientErrorException e) {
+            } catch (GitClientException | HttpClientErrorException e) {
                 LOGGER.error(e.getMessage(), e);
             }
         }

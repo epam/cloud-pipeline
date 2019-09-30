@@ -132,7 +132,7 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
-            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
+            new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
@@ -669,13 +669,13 @@ public class SystemPreferences {
 
     private boolean areGitPreferencesValid(Map<String, Preference> gitPreferences) {
         long adminId = Long.parseLong(gitPreferences.get(GIT_USER_ID.getKey()).getValue());
-        GitlabClient client =  gitManager.getGitlabClient(
+        GitlabClient client =  gitManager.getGitlabRootClient(
                 gitPreferences.get(GIT_HOST.getKey()).getValue(),
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
                 gitPreferences.get(GIT_USER_NAME.getKey()).getValue());
-        client.buildCloneCredentials(false, false, 1L);
         try {
+            client.buildCloneCredentials(false, false, 1L);
             GitlabVersion version = client.getVersion();
             Matcher matcher = GIT_VERSION_PATTERN.matcher(version.getVersion());
             if (matcher.find()) {

@@ -16,16 +16,30 @@
 
 package com.epam.pipeline.entity.git;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * Represents Gitlab repository browsing request result
- */
 @Data
-public class GitRepositoryEntry {
-    private String id;
-    private String name;
-    private String type;
-    private String path;
-    private String mode;
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class GitHookRequest {
+
+    @JsonProperty("url")
+    private String hookUrl;
+
+    @JsonProperty("push_events")
+    private boolean pushEvents;
+
+    @JsonProperty("push_events_branch_filter")
+    private String branch;
+
+    @JsonProperty("tag_push_events")
+    private boolean tagPushEvents;
+
+    @JsonProperty("enable_ssl_verification")
+    private boolean sslVerify;
 }
