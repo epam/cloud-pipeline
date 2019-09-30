@@ -191,4 +191,20 @@ public class TesAdapterControllerTest {
                 .contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void preHandleMethodShouldCheckAuthorizationContextWithIpRange() throws Exception {
+        this.mockMvc.perform(get(GET_SERVICE_INFO)
+                .with(request -> {
+                    request.setRemoteAddr(IP_IN_RANGE);
+                    return request;
+                }))
+                .andDo(print()).andExpect(status().isOk());
+        this.mockMvc.perform(get(GET_SERVICE_INFO)
+                .with(request -> {
+                    request.setRemoteAddr(IP_OUT_OF_RANGE);
+                    return request;
+                }))
+                .andDo(print()).andExpect(status().isUnauthorized());
+    }
 }

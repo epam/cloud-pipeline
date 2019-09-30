@@ -1,7 +1,8 @@
 package com.epam.pipeline.tesadapter.configuration;
 
-import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import com.epam.pipeline.tesadapter.controller.TesTokenInterceptor;
+import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,6 +18,7 @@ import java.util.Collections;
 
 @Configuration
 public class RestConfiguration implements WebMvcConfigurer {
+    private TesTokenInterceptor tesTokenInterceptor;
 
     @Bean
     public HttpMessageConverters customConverters() {
@@ -26,17 +28,17 @@ public class RestConfiguration implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(getTesTokenInterceptor());
-    }
-
-    @Bean
-    public TesTokenInterceptor getTesTokenInterceptor() {
-        return new TesTokenInterceptor(getTesTokenHolder());
+        registry.addInterceptor(tesTokenInterceptor);
     }
 
     @Bean
     @Scope(value = WebApplicationContext.SCOPE_REQUEST, proxyMode = ScopedProxyMode.TARGET_CLASS)
     public TesTokenHolder getTesTokenHolder() {
         return new TesTokenHolder();
+    }
+
+    @Autowired
+    public void setTesTokenInterceptor(TesTokenInterceptor tesTokenInterceptor) {
+        this.tesTokenInterceptor = tesTokenInterceptor;
     }
 }
