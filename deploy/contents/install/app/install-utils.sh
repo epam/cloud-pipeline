@@ -38,7 +38,11 @@ function id_from_arn {
 # If "$1" is not specified - "/" will be used by default
 function get_available_disk {
     local mount_path="${1:-/}"
-    df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+    if [ -d "$mount_path" ]; then
+        df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+    else
+        echo "0"
+    fi
 }
 
 function check_enough_disk {

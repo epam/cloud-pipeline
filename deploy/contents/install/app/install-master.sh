@@ -24,7 +24,7 @@ check_enough_disk "${CP_KUBE_MASTER_DOCKER_MIN_DISK_MB:-102400}" \
                   "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/docker"
 
 check_enough_disk "${CP_KUBE_MASTER_ETCD_MIN_DISK_MB:-20480}" \
-                  "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/etcd"
+                  "$CP_KUBE_MASTER_ETCD_HOST_PATH" "/var/lib/etcd"
 
 
 
@@ -175,3 +175,5 @@ sleep 10
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
 
 sleep 30
+
+set +e
