@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.web.util.matcher.IpAddressMatcher;
+import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.Cookie;
@@ -19,6 +20,7 @@ import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("unused")
+@Component
 public class TesTokenInterceptor implements HandlerInterceptor {
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
 
@@ -27,12 +29,13 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
-    @Value("${security.allowed.client.ip.range}")
-    private String ipRange;
+    private IpAddressMatcher ipAddressMatcher;
 
     @Autowired
-    public TesTokenInterceptor(TesTokenHolder tesTokenHolder) {
+    public TesTokenInterceptor(TesTokenHolder tesTokenHolder,
+                               @Value("${security.allowed.client.ip.range}") String ipRange) {
         this.tesTokenHolder = tesTokenHolder;
+        ipAddressMatcher = new IpAddressMatcher(ipRange);
     }
 
     @Override
@@ -60,11 +63,6 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     }
 
     private boolean checkClientHostAddress(HttpServletRequest request) {
-        if (StringUtils.isNotEmpty(ipRange)) {
-            IpAddressMatcher ipAddressMatcher = new IpAddressMatcher(ipRange);
-            return ipAddressMatcher.matches(request);
-        } else {
-            return false;
-        }
+        return ipAddressMatcher != null && ipAddressMatcher.matches(request);
     }
 }
