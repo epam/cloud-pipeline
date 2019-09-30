@@ -19,10 +19,7 @@ package com.epam.pipeline.manager.cluster;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
-import com.epam.pipeline.entity.cluster.FilterPodsRequest;
-import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.*;
 import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -87,5 +84,9 @@ public class ClusterApiService {
     public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
                                                                         final Boolean spot) {
         return instanceOfferManager.getAllowedInstanceAndPriceTypes(toolId, regionId, spot);
+    }
+
+    public List<MasterNode> getMasterNodes() {
+        return nodesManager.getMasterNodes();
     }
 }

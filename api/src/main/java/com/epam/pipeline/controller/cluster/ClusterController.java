@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
@@ -50,13 +51,27 @@ public class ClusterController extends AbstractRestController {
     @Autowired
     private ClusterApiService clusterApiService;
 
+    @RequestMapping(value = "/cluster/master", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns ec2 nodes used in cluster as a master API node",
+            notes = "Returns ec2 nodes used in cluster as a master API node",
+            produces = MediaType.APPLICATION_JSON_VALUE
+        )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<List<MasterNode>> loadMasterNodes() {
+        return Result.success(clusterApiService.getMasterNodes());
+    }
+
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
             value = "Returns all ec2 nodes used in cluster",
             notes = "Returns all ec2 nodes used in cluster",
             produces = MediaType.APPLICATION_JSON_VALUE
-        )
+    )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )

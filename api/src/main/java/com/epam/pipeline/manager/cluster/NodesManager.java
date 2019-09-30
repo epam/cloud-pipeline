@@ -20,10 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
-import com.epam.pipeline.entity.cluster.FilterPodsRequest;
-import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
-import com.epam.pipeline.entity.cluster.PodInstance;
+import com.epam.pipeline.entity.cluster.*;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -34,14 +31,16 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
-import io.fabric8.kubernetes.client.Config;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
+import org.owasp.esapi.util.CollectionsUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -66,6 +65,8 @@ public class NodesManager {
 
     private static final String MASTER_LABEL = "node-role.kubernetes.io/master";
     private static final int NODE_DOWN_ATTEMPTS = 10;
+    public static final String TRUE = "True";
+    public static final String READY = "Ready";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -193,6 +194,24 @@ public class NodesManager {
         final NodeInstance nodeInstance = getNode(name);
         terminateNode(nodeInstance);
         return nodeInstance;
+    }
+
+    public List<MasterNode> getMasterNodes() {
+        try (KubernetesClient client = new DefaultKubernetesClient()) {
+            final FilterWatchListDeletable<Node, NodeList, Boolean, Watch, Watcher<Node>> nodeSearchResult =
+                    client.nodes().withLabel(MASTER_LABEL);
+            return nodeSearchResult.list().getItems()
+                    .stream()
+                    .filter(this::nodeIsReady).map(MasterNode::new).collect(Collectors.toList());
+        }
+    }
+
+    private boolean nodeIsReady(final Node node) {
+        return CollectionUtils.emptyIfNull(node.getStatus().getConditions())
+                .stream()
+                .anyMatch(
+                        nc -> nc.getType().equalsIgnoreCase(READY) && nc.getStatus().equalsIgnoreCase(TRUE)
+                );
     }
 
     /**
