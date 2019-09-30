@@ -25,6 +25,7 @@ import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
+import com.microsoft.azure.credentials.AzureCliCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.InstanceViewStatus;
 import com.microsoft.azure.management.compute.PowerState;
@@ -39,6 +40,7 @@ import com.microsoft.rest.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -318,14 +320,21 @@ public class AzureVMService {
 
     private Azure buildClient(final String authFile) {
         try {
-            final File credFile = new File(authFile);
-            return Azure.configure()
-                    .withLogLevel(LogLevel.BASIC)
-                    .authenticate(credFile)
+            final Azure.Configurable builder = Azure.configure()
+                    .withLogLevel(LogLevel.BASIC);
+            return authenticate(authFile, builder)
                     .withDefaultSubscription();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new AzureException(e);
         }
+    }
+
+    private Azure.Authenticated authenticate(final String authFile,
+                                             Azure.Configurable builder) throws IOException {
+        if (StringUtils.isBlank(authFile)) {
+            return builder.authenticate(AzureCliCredentials.create());
+        }
+        return builder.authenticate(new File(authFile));
     }
 }
