@@ -33,7 +33,8 @@ fi
 yum install -y  nc \
                 python \
                 curl \
-                btrfs-progs && \
+                btrfs-progs \
+                iproute-tc && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
 # Install jq
@@ -104,14 +105,9 @@ setenforce 0
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 yum install -y \
-            kubeadm-1.7.5-0.x86_64 \
-            kubectl-1.7.5-0.x86_64 \
-            kubelet-1.7.5-0.x86_64 \
-            kubernetes-cni-0.5.1-0.x86_64
-
-# Setup default cgroups and cadvisor port
-sed -i 's/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"/Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=4194"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
-sed -i 's/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=systemd"/Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"/g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+            kubeadm-1.15.4-0.x86_64 \
+            kubectl-1.15.4-0.x86_64 \
+            kubelet-1.15.4-0.x86_64
 
 # Label instance as Done
 instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)

@@ -131,9 +131,9 @@ if [ "$CLOUD_IMAGES_MANIFEST_FILE" == "rebuild" ]; then
         rm -f ${CLOUD_IMAGES_MANIFEST_FILE}.az
     fi
 elif [ -z "$CLOUD_IMAGES_MANIFEST_FILE" ] || [[ "$CLOUD_IMAGES_MANIFEST_FILE" == "http"*"://"* ]]; then
-    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
     CLOUD_IMAGES_MANIFEST_URI=${CLOUD_IMAGES_MANIFEST_FILE:-"https://s3.amazonaws.com/cloud-pipeline-oss-builds/manifests/cloud-images-manifest.txt"}
     CLOUD_IMAGES_MANIFEST_FILE="$BUILD_DIR/cloud-images-manifest.txt"
+    echo "Cloud images manifest is specified explicitely ($CLOUD_IMAGES_MANIFEST_FILE) via the remote URI, downloading to $CLOUD_IMAGES_MANIFEST_FILE. Cloud image WILL NOT be rebuilt"
     if check_installed "wget"; then
         wget "$CLOUD_IMAGES_MANIFEST_URI" -O $CLOUD_IMAGES_MANIFEST_FILE
     elif check_installed "curl"; then

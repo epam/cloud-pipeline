@@ -114,7 +114,7 @@ function run_preflight {
         return 1
     fi
     if ! grep -q centos /etc/os-release; then
-        print_err "Unsopported Linux distribution. Centos 7 and above shall be used"
+        print_err "Unsupported Linux distribution. Centos 7 and above shall be used"
         return 1
     fi
     fix_http_proxies
@@ -1224,7 +1224,7 @@ function get_service_cluster_ip {
     local search_namespace="$2"
     [ ! "$search_namespace" ] && search_namespace="default"
 
-    cluster_ip=$(kubectl get svc --namespace=$search_namespace $service_name 2>/dev/null | tail -n +2 | awk '$1=$1' | cut -f2 -d' ')
+    cluster_ip=$(kubectl get svc --namespace=$search_namespace $service_name -o jsonpath='{.spec.clusterIP}' 2>/dev/null)
     echo "$cluster_ip"
 }
 

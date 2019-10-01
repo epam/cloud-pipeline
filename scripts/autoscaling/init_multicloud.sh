@@ -135,6 +135,7 @@ if check_installed "nvidia-smi"; then
 # If btrfs is used as a storage driver - this confuses cadvisor and kubelet (filesystem can't be enumerated within a container)
 cat <<EOT > /etc/docker/daemon.json
 {
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
   "max-concurrent-uploads": 1,
@@ -151,6 +152,7 @@ else
   # Setup docker config for non-gpu
 cat <<EOT > /etc/docker/daemon.json
 {
+  "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
   "max-concurrent-uploads": 1
@@ -283,9 +285,11 @@ _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
-_KUBELET_INITD_DROPIN_PATH="/etc/systemd/system/kubelet.service.d/20-kubelet-labels.conf"
+# FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
+_KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
+echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 ## Configure kubelet reservations
 ## FIXME: shall be moved to the preferences
 
@@ -317,11 +321,13 @@ chmod +x $_KUBELET_INITD_DROPIN_PATH
 systemctl enable docker
 systemctl enable kubelet
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+# Add support for joining node to kube cluster after starting
+echo -e "systemctl start docker\nkubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME\nsystemctl start kubelet" >> /etc/rc.local
 _API_URL="@API_URL@"
 _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"
