@@ -43,7 +43,6 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.springframework.scheduling.TaskScheduler;
@@ -66,10 +65,7 @@ import java.util.Map;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ResourceMonitoringManagerTest {
     private static final long TEST_OK_RUN_ID = 1;
@@ -94,9 +90,9 @@ public class ResourceMonitoringManagerTest {
     private static final String UTILIZATION_LEVEL_LOW = "IDLED";
     private static final String UTILIZATION_LEVEL_HIGH = "PRESSURED";
     private static final String TRUE_VALUE_STRING = "true";
-    private static final Map<String, String> idledTagMap =
+    private static final Map<String, String> IDLE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
-    private static final Map<String, String> pressuredTagMap =
+    private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
 
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -556,13 +552,13 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testIdledRunTagging() {
-        setTagsAndLastNotificationTimeOfRun(okayRun, idledTagMap, HALF_AN_HOUR_BEFORE);        
-        final PipelineRun spyIdledRun = Mockito.spy(idleOnDemandRun);
-        final PipelineRun spyOkayRun = Mockito.spy(okayRun);
+        setTagsAndLastNotificationTimeOfRun(okayRun, IDLE_TAGS, HALF_AN_HOUR_BEFORE);
+        final PipelineRun spyIdledRun = spy(idleOnDemandRun);
+        final PipelineRun spyOkayRun = spy(okayRun);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyOkayRun));
 
         resourceMonitoringManager.monitorResourceUsage();
-        assertThat(spyIdledRun.getTags(), CoreMatchers.is(idledTagMap));
+        assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));
         assertThat(spyOkayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
         Assert.assertNull(spyOkayRun.getLastIdleNotificationTime());
         verify(spyIdledRun, times(1)).addTag(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
@@ -571,15 +567,15 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testPressuredRunTagging() {
-        setTagsAndLastNotificationTimeOfRun(okayRun, pressuredTagMap, HALF_AN_HOUR_BEFORE);
-        okayRun.setTags(new HashMap<>(pressuredTagMap));
+        setTagsAndLastNotificationTimeOfRun(okayRun, PRESSURE_TAGS, HALF_AN_HOUR_BEFORE);
+        okayRun.setTags(new HashMap<>(PRESSURE_TAGS));
         okayRun.setLastIdleNotificationTime(HALF_AN_HOUR_BEFORE);
-        final PipelineRun spyPressuredRun = Mockito.spy(highConsumingRun);
-        final PipelineRun spyOkayRun = Mockito.spy(okayRun);
+        final PipelineRun spyPressuredRun = spy(highConsumingRun);
+        final PipelineRun spyOkayRun = spy(okayRun);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyPressuredRun, spyOkayRun));
 
         resourceMonitoringManager.monitorResourceUsage();
-        assertThat(spyPressuredRun.getTags(), CoreMatchers.is(pressuredTagMap));
+        assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
         assertThat(spyOkayRun.getTags(), CoreMatchers.is(Collections.emptyMap()));
         verify(spyPressuredRun, times(1)).addTag(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
         verify(spyOkayRun, times(1)).removeTag(UTILIZATION_LEVEL_LOW);
@@ -587,15 +583,15 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testIdledPressuredTagsRemains() {
-        setTagsAndLastNotificationTimeOfRun(idleOnDemandRun, idledTagMap, HALF_AN_HOUR_BEFORE);
-        setTagsAndLastNotificationTimeOfRun(highConsumingRun, pressuredTagMap, HALF_AN_HOUR_BEFORE);
-        final PipelineRun spyIdledRun = Mockito.spy(idleOnDemandRun);
-        final PipelineRun spyPressuredRun = Mockito.spy(highConsumingRun);
+        setTagsAndLastNotificationTimeOfRun(idleOnDemandRun, IDLE_TAGS, HALF_AN_HOUR_BEFORE);
+        setTagsAndLastNotificationTimeOfRun(highConsumingRun, PRESSURE_TAGS, HALF_AN_HOUR_BEFORE);
+        final PipelineRun spyIdledRun = spy(idleOnDemandRun);
+        final PipelineRun spyPressuredRun = spy(highConsumingRun);
         when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyPressuredRun));
 
         resourceMonitoringManager.monitorResourceUsage();
-        assertThat(spyIdledRun.getTags(), CoreMatchers.is(idledTagMap));
-        assertThat(spyPressuredRun.getTags(), CoreMatchers.is(pressuredTagMap));
+        assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));
+        assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
         verifyZeroInteractionWithTagsMethods(spyIdledRun, UTILIZATION_LEVEL_LOW);
         verifyZeroInteractionWithTagsMethods(spyPressuredRun, UTILIZATION_LEVEL_HIGH);
     }
@@ -609,7 +605,7 @@ public class ResourceMonitoringManagerTest {
     private void verifyZeroInteractionWithTagsMethods(final PipelineRun run, final String tag) {
         verify(run, times(0)).addTag(tag, TRUE_VALUE_STRING);
         verify(run, times(0)).removeTag(tag);
-        verify(run, times(0)).setTags(Mockito.anyMap());
+        verify(run, times(0)).setTags(anyMap());
     }
 
     private HashMap<String, Double> getMockedHighConsumingStats() {

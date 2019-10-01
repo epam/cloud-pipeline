@@ -40,10 +40,10 @@ public class ApplicationInfoController extends AbstractRestController {
             value = "Returns an application version info",
             notes = "Returns an application version info",
             produces = MediaType.APPLICATION_JSON_VALUE
-    )
+        )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
-    )
+        )
     public Result<ApplicationInfo> getInfo() {
         return Result.success(new ApplicationInfo());
     }
