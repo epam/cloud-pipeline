@@ -17,6 +17,7 @@ import requests
 import sys
 from prettytable import prettytable
 
+from src.api.app_info import ApplicationInfo
 from src.api.cluster import Cluster
 from src.api.pipeline import Pipeline
 from src.api.pipeline_run import PipelineRun
@@ -38,9 +39,19 @@ MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
 
 
+def silent_print_api_version():
+    try:
+        api_info = ApplicationInfo().info()
+    except ConfigNotFoundError:
+        return
+    if 'version' in api_info and api_info['version']:
+        click.echo('Cloud Pipeline API, version {}'.format(api_info['version']))
+
+
 def print_version(ctx, param, value):
     if value is False:
         return
+    silent_print_api_version()
     click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
     silent_print_config_info()
     ctx.exit()
