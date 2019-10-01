@@ -113,10 +113,6 @@
         
             <li><a class="toctree-l4" href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs within a parent log form</a></li>
         
-            <li><a class="toctree-l4" href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a></li>
-        
-            <li><a class="toctree-l4" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
-        
             <li><a class="toctree-l4" href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</a></li>
         
             <li><a class="toctree-l4" href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
@@ -125,11 +121,25 @@
         
             <li><a class="toctree-l4" href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
         
-            <li><a class="toctree-l4" href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via pipe without failures in case of lacks read permissions</a></li>
-        
             <li><a class="toctree-l4" href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
         
             <li><a class="toctree-l4" href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a></li>
+        
+            <li><a class="toctree-l4" href="#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</a></li>
+        
+            <li><a class="toctree-l4" href="#displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</a></li>
+        
+            <li><a class="toctree-l4" href="#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</a></li>
+        
+            <li><a class="toctree-l4" href="#track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</a></li>
+        
+            <li><a class="toctree-l4" href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a></li>
+        
+            <li><a class="toctree-l4" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
+        
+            <li><a class="toctree-l4" href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via pipe without failures in case of lacks read permissions</a></li>
+        
+            <li><a class="toctree-l4" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via pipe</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -561,15 +571,20 @@
 <li><a href="#installation-via-pipectl">Installation via pipectl</a></li>
 <li><a href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a></li>
 <li><a href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs</a></li>
-<li><a href="#pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</a></li>
-<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 <li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
 <li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
 <li><a href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
 <li><a href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
-<li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
 <li><a href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
 <li><a href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a></li>
+<li><a href="#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</a></li>
+<li><a href="#displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</a></li>
+<li><a href="#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</a></li>
+<li><a href="#track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</a></li>
+<li><a href="#pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</a></li>
+<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
+<li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
+<li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></a></li>
 </ul>
 <hr />
 <ul>
@@ -582,12 +597,18 @@
 <li><a href="#cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</a></li>
 <li><a href="#acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a></li>
 <li><a href="#getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</a></li>
-<li><a href="#layout-is-broken-for-pipelines-versions-table">Layout is broken for pipeline's versions table</a></li>
 <li><a href="#aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</a></li>
 <li><a href="#not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</a></li>
 <li><a href="#incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</a></li>
 <li><a href="#jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</a></li>
 <li><a href="#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</a></li>
+<li><a href="#pipe-incorrect-behavior-of-the-nc-option-for-the-run-command"><code>pipe</code>: incorrect behavior of the <code>-nc</code> option for the <code>run</code> command</a></li>
+<li><a href="#cluster-run-cannot-be-launched-with-a-pretty-url">Cluster run cannot be launched with a Pretty URL</a></li>
+<li><a href="#cloning-of-large-repositories-might-fail">Cloning of large repositories might fail</a></li>
+<li><a href="#system-events-html-overflow">System events HTML overflow</a></li>
+<li><a href="#aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run <code>InitializeNode</code> task fails</a></li>
+<li><a href="#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</a></li>
+<li><a href="#broken-layouts">Broken layouts</a></li>
 </ul>
 </li>
 </ul>
@@ -846,47 +867,6 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <p>That feature is implemented for the comleted runs too:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_2.png" /></p>
 <p>More information about nested runs displaying see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-cluster-runs">here</a> and <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#general-information">here</a>.</p>
-<h2 id="pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</h2>
-<p>By default, when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date.</p>
-<p>In <strong><code>v.0.15</code></strong> extra <code>pipe</code> CLI warnings are introduced to provide users an information on the JWT token expiration:</p>
-<ul>
-<li>When <code>pipe configure</code> command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:<br />
-<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_1.png" /></li>
-<li>When <code>--version</code> option is specified - <code>pipe</code> prints dates of issue and expiration for the currently used token:<br />
-<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_2.png" /></li>
-<li>When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:<br />
-<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_3.png" /></li>
-</ul>
-<p>See more information about <code>pipe</code> CLI installation <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#how-to-install-and-setup-pipe-cli">here</a>.</p>
-<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h2>
-<p>For some special customer needs, <code>pipe</code> configuration for using NTLM Authentication Proxy, when running in Linux, could be required.</p>
-<p>For that, several new options were added to <code>pipe configure</code> command:</p>
-<ul>
-<li><code>-nt</code> or <code>--proxy-ntlm</code> - flag that enable NTLM proxy support</li>
-<li><code>-nu</code> or <code>--proxy-ntlm-user</code> - username for NTLM proxy authorization</li>
-<li><code>-np</code> or <code>--proxy-ntlm-pass</code> - password for NTLM proxy authorization</li>
-<li><code>-nd</code> or <code>--proxy-ntlm-domain</code> - domain for NTLM proxy authorization</li>
-</ul>
-<p>If <code>--proxy-ntlm</code> is set, <code>pipe</code> will try to get the proxy value from the environment variables or <code>--proxy</code> option (<code>--proxy</code> option has a higher priority).<br />
-If <code>--proxy-ntlm-user</code> and <code>--proxy-ntlm-pass</code> options are not set - user will be prompted for username/password in an interactive manner.  </p>
-<p>Valid configuration examples:</p>
-<ul>
-<li>User will be prompted for NTLM Proxy Username, Password and Domain:</li>
-</ul>
-<pre><code class="bash">pipe configure --proxy-ntlm
-...
-Username for the proxy NTLM authentication: user1
-Domain of the user1 user: ''
-Password of the user1 user:
-</code></pre>
-
-<ul>
-<li>Use <code>http://myproxy:3128</code> as the "original" proxy address. User will not be prompted for NTLM credentials:</li>
-</ul>
-<pre><code class="bash">pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy &quot;http://myproxy:3128&quot;
-</code></pre>
-
-<p>See more information about <code>pipe</code> CLI installation and configure <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">here</a>.</p>
 <h2 id="environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</h2>
 <p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
 <p>In current version, an ability to configure the <code>Modules</code> support for the compute jobs is introduced, if this is required by any use case.</p>
@@ -943,10 +923,6 @@ You can do it using two new System Parameters at the Launch or the Configuration
 <li><strong><code>CP_CAP_SGE_PE_NAME</code></strong> <em>(string)</em> - allows to override the GE's <code>PE</code> name (default: "<strong>local</strong>")</li>
 </ul>
 <p>More information how to use System Parameters when a job is launched see <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-system-parameter">here</a>.</p>
-<h2 id="execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via <code>pipe</code> without failures in case of lacks read permissions</h2>
-<p>Previously, <code>pipe storage cp</code>/<code>mv</code> commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the <code>pipe</code> process had reached one of files that was not readable for the <code>pipe</code> process, then the whole command was being failed, remaining files did not upload.</p>
-<p>In current version, the <code>pipe</code> process checks read permission for the "local" source (directories and files) and skip those that are not readable:</p>
-<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeCPforNotReadable_1.png" /></p>
 <h2 id="estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</h2>
 <p>Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using <code>STAR</code> aligner, where the genome index file is 20Gb).</p>
 <p>In <strong><code>v0.15</code></strong>, an attempt to handle some of such cases is implemented. Now, the Cloud Pipeline try to estimate the required disk size using the input/common parameters and warn the user if the requested disk is not enough.</p>
@@ -967,11 +943,107 @@ In current version, a small enhancement for the Global Search is implemented. No
 <li>the "Search" button will be hidden from the left menu</li>
 <li>keyboard search shortcut will be disabled</li>
 </ul>
+<h2 id="disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</h2>
+<p>In the <code>Cloud Pipeline</code>, along with the regular data storages user can also create <a href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">FS mounts</a> - data storages based on the network file system:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DisablingFSmounts_1.png" /></p>
+<p>For the correct FS mount creation, at least one mount point shall be registered in the <code>Cloud Pipeline</code> Preferences.<br />
+Now, if no FS mount points are registered for any Cloud Region in the System Preferences - user can not create a new FS mount, the corresponding button becomes invisible:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DisablingFSmounts_2.png" /></p>
+<h2 id="displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</h2>
+<p>User may hit a situation of resource limits while trying to resume previously paused run. E.g. instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type. Previously, in this case run could be failed with an error of insufficient resources.</p>
+<p>In <strong><code>v0.15</code></strong> the following approach is implemented for such cases:</p>
+<ul>
+<li>resuming run doesn't fail if resource limits are hit. That run returns to the <code>Paused</code> state</li>
+<li>log message that contains a reason for resume failure and returning back to the <code>Paused</code> state is being added to the <code>ResumeRun</code> task</li>
+<li>user is notified about such event. The corresponding warning messages are displayed:<ul>
+<li>at the <strong>Run logs</strong> page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_1.png" /></li>
+<li>at the <strong>ACTIVE RUNS</strong> page (hint message while hovering the <strong>RESUME</strong> button)<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_3.png" /></li>
+<li>at the <strong>ACTIVE RUNS</strong> panel of the Dashboard (hint message while hovering the <strong>RESUME</strong> button)<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_2.png" /></li>
+</ul>
+</li>
+</ul>
+<h2 id="object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</h2>
+<p>Previously, if the Cloud service account/role had permissions to create object storages, but lacked permissions to apply <code>CORS</code> or other policies - object storage was created, but the <code>Cloud Pipeline API</code> threw an exception and storage was not being registered.<br />
+This led to the creation of a "zombie" storage, which was not available via GUI, but existed in the Cloud.</p>
+<p>Currently, the <code>Cloud Pipeline API</code> doesn't fail such requests and storage is being registered normally.<br />
+But the corresponding warning will be displayed to the user like this:</p>
+<pre><code>The storage {storage_name} was created, but certain policies were not applied.
+This can be caused by insufficient permissions.
+</code></pre>
+
+<h2 id="track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</h2>
+<p>System events allow to create popup notifications for users.<br />
+One of the notification types - the "Blocking" notification. Such event emerges in the middle of the window and requires confirmation from the user to disappear for proceeding with the GUI operations.<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_1.png" /></p>
+<p>In certain cases (e.g. for some important messages), it is handy to be able to check which users confirmed the notification.<br />
+For that, in the current version the ability to view, which "blocking" notifications confirmed by specific user, was implemented for admins.<br />
+Information about confirmed notifications can be viewed at the "<strong>Attributes</strong>" section of the specific user's profile page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_2.png" /></p>
+<p>Confirmed notifications are displayed as user attribute with the <strong>KEY</strong> <code>confirmed_notifications</code> (that name could be changed via the system-level preference <strong><code>system.events.confirmation.metadata.key</code></strong>) and the <strong>VALUE</strong> link that shows summary count of confirmed notifications for the user.<br />
+Click the <strong>VALUE</strong> link with the notification count to open the detailed table with confirmed notifications:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_3.png" /></p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/#blocking-notifications-track">"blocking" notifications track</a>.</p>
+<h2 id="pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</h2>
+<p>By default, when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date.</p>
+<p>In <strong><code>v.0.15</code></strong> extra <code>pipe</code> CLI warnings are introduced to provide users an information on the JWT token expiration:</p>
+<ul>
+<li>When <code>pipe configure</code> command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_1.png" /></li>
+<li>When <code>--version</code> option is specified - <code>pipe</code> prints dates of issue and expiration for the currently used token:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_2.png" /></li>
+<li>When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_3.png" /></li>
+</ul>
+<p>See more information about <code>pipe</code> CLI installation <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#how-to-install-and-setup-pipe-cli">here</a>.</p>
+<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h2>
+<p>For some special customer needs, <code>pipe</code> configuration for using NTLM Authentication Proxy, when running in Linux, could be required.</p>
+<p>For that, several new options were added to <code>pipe configure</code> command:</p>
+<ul>
+<li><code>-nt</code> or <code>--proxy-ntlm</code> - flag that enable NTLM proxy support</li>
+<li><code>-nu</code> or <code>--proxy-ntlm-user</code> - username for NTLM proxy authorization</li>
+<li><code>-np</code> or <code>--proxy-ntlm-pass</code> - password for NTLM proxy authorization</li>
+<li><code>-nd</code> or <code>--proxy-ntlm-domain</code> - domain for NTLM proxy authorization</li>
+</ul>
+<p>If <code>--proxy-ntlm</code> is set, <code>pipe</code> will try to get the proxy value from the environment variables or <code>--proxy</code> option (<code>--proxy</code> option has a higher priority).<br />
+If <code>--proxy-ntlm-user</code> and <code>--proxy-ntlm-pass</code> options are not set - user will be prompted for username/password in an interactive manner.  </p>
+<p>Valid configuration examples:</p>
+<ul>
+<li>User will be prompted for NTLM Proxy Username, Password and Domain:</li>
+</ul>
+<pre><code class="bash">pipe configure --proxy-ntlm
+...
+Username for the proxy NTLM authentication: user1
+Domain of the user1 user: ''
+Password of the user1 user:
+</code></pre>
+
+<ul>
+<li>Use <code>http://myproxy:3128</code> as the "original" proxy address. User will not be prompted for NTLM credentials:</li>
+</ul>
+<pre><code class="bash">pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy &quot;http://myproxy:3128&quot;
+</code></pre>
+
+<p>See more information about <code>pipe</code> CLI installation and configure <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">here</a>.</p>
+<h2 id="execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via <code>pipe</code> without failures in case of lacks read permissions</h2>
+<p>Previously, <code>pipe storage cp</code>/<code>mv</code> commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the <code>pipe</code> process had reached one of files that was not readable for the <code>pipe</code> process, then the whole command was being failed, remaining files did not upload.</p>
+<p>In current version, the <code>pipe</code> process checks read permission for the "local" source (directories and files) and skip those that are not readable:</p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeCPforNotReadable_1.png" /></p>
+<h2 id="run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></h2>
+<p>For the certain purposes, it could be conveniently to start an interactive session over the SSH protocol for the job run via the <code>pipe</code> CLI.</p>
+<p>For such cases, in <strong><code>v0.15</code></strong> the <code>pipe ssh</code> command was implemented. It allows you, if you are the <strong>ADMIN</strong> or the run <strong>OWNER</strong>, to perform a single command or launch an interactive session for the specified job run.<br />
+Launching of an interactive session:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_1.png" /><br />
+This session is similar to the <a href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/#using-terminal-access">terminal access</a> that user can get via the GUI.</p>
+<p>Performing the same single command without launching an interactive session:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_2.png" />  </p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/221">#221</a></p>
-<p>When user was searching for an entry, that may belong to different classes (e.g. <code>issues</code> and <code>folders</code>) - user was not able to filter the results by the class</p>
+<p>When user was searching for an entry, that may belong to different classes (e.g. <code>issues</code> and <code>folders</code>) - user was not able to filter the results by the class.</p>
 <h3 id="committing-status-hangs">"COMMITTING..." status hangs</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/152">#152</a></p>
 <p>In certain cases, while committing pipeline with the stop flag enabled - the run's status hangs in <code>Committing...</code> state. Run state does not change even after the commit operation succeeds and a job is stopped.</p>
@@ -984,9 +1056,9 @@ In current version, a small enhancement for the Global Search is implemented. No
 </ol>
 <h3 id="tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/144">#144</a></p>
-<p>If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.</p>
-<p>It works fine if the child tools are dropped beforehand.</p>
-<p>Now it is possible to delete such a group if a <code>force</code> flag is set in the confirmation dialog.</p>
+<p>If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.<br />
+It works fine if the child tools are dropped beforehand.<br />
+Now, it is possible to delete such a group if a <code>force</code> flag is set in the confirmation dialog.</p>
 <h3 id="missing-region-while-estimating-a-run-price">Missing region while estimating a run price</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/93">#93</a></p>
 <p>On the launch page, while calculating a price of the run, Cloud Provider's region was ignored. This way a calculation used a price of the specified instance type in any of the available regions. In practice, requested price may vary from region to region.</p>
@@ -995,21 +1067,18 @@ In current version, a small enhancement for the Global Search is implemented. No
 <p>Web GUI interface was not providing an option to select a region when adding an existing object storage. And it was impossible to add a bucket from the non-default region.</p>
 <h3 id="acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/265">#265</a></p>
-<p>All authorized users were permitted to browse the metadata of <code>users</code> and <code>roles</code> entities. But those entries may contain a sensitive data, that shall not be shared across users.</p>
-<p>Now a general user may list only personal <code>user-level</code> metadata. Administrators may list both <code>users</code> and <code>roles</code> metadata across all entries.</p>
+<p>All authorized users were permitted to browse the metadata of <code>users</code> and <code>roles</code> entities. But those entries may contain a sensitive data, that shall not be shared across users.<br />
+Now, a general user may list only personal <code>user-level</code> metadata. Administrators may list both <code>users</code> and <code>roles</code> metadata across all entries.</p>
 <h3 id="getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/468">#468</a></p>
 <p>For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause <code>OutOfMemory</code> error, since Kubernetes library tries to load it into a single String object.<br />
 In current version, a new system preference was introduced: <strong><code>system.logs.line.limit</code></strong>. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.</p>
-<h3 id="layout-is-broken-for-pipelines-versions-table">Layout is broken for pipeline's versions table</h3>
-<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a></p>
-<p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.</p>
 <h3 id="aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/556">#556</a></p>
 <p>Previously, in a situation when an <code>AWS</code> spot instance created after some timeout - spot status wasn't updated correctly in the handling of <code>spot request status</code>. It might cause errors while getting spot instance info.</p>
 <h3 id="not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/557">#557</a></p>
-<p>Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).
+<p>Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).<br />
 In current version, <code>autopause</code> daemon doesn't handle any clusters ("Static" or "Autoscaled").<br />
 Also now, if the cluster is configured - <strong>Auto pause</strong> checkbox doesn't display in the <strong>Launch Form</strong> for the <code>On-Demand</code> node types.</p>
 <h3 id="incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</h3>
@@ -1017,11 +1086,42 @@ Also now, if the cluster is configured - <strong>Auto pause</strong> checkbox do
 <p>Previously, <code>pipe</code> CLI version displayed incorrectly for the <code>pipe</code> CLI installations performed via hints from the <strong>Cloud Pipeline</strong> System Settings menu.</p>
 <h3 id="jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/579">#579</a></p>
-<p>In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.</p>
-<p>Now, the JWT token (and other variables as well) are being updated when a job is being resumed.</p>
+<p>In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.<br />
+Now, the JWT token and other variables as well are being updated when a job is being resumed.</p>
 <h3 id="trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/520">#520</a></p>
 <p>Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.</p>
+<h3 id="pipe-incorrect-behavior-of-the-nc-option-for-the-run-command"><code>pipe</code>: incorrect behavior of the <code>-nc</code> option for the <code>run</code> command</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/609">#609</a>
+Previously, trying to launch a pipeline via the <code>pipe run</code> command with the single <code>-nc</code> option threw an error.</p>
+<h3 id="cluster-run-cannot-be-launched-with-a-pretty-url">Cluster run cannot be launched with a Pretty URL</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/620">#620</a></p>
+<p>Previously, if user tried to launch any interactive tool with <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-friendly-url">Pretty URL</a> and configured cluster - an error appeared <code>URL {Pretty URL} is already used for run {Run ID}</code>.<br />
+Now, pretty URL could be set only for the parent runs, for the child runs regular URLs are set.</p>
+<h3 id="cloning-of-large-repositories-might-fail">Cloning of large repositories might fail</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/626">#626</a></p>
+<p>When large repository (&gt; 1Gb) was cloned (e.g. when a pipeline was being run) - <code>git clone</code> could fail with the OOM error happened at the GitLab server if it is not powerful enough.<br />
+OOM was produced by the <code>git pack-objects</code> process, which tries to pack all the data in-memory.<br />
+Now, <code>git pack-objects</code> memory usage is limited to avoid errors in cases described above.</p>
+<h3 id="system-events-html-overflow">System events HTML overflow</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/630">#630</a></p>
+<p>If admin set a quite long text (without separators) into the message body of the <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-events">system event notifications</a> - the resulting notification text "overflowed" the browser window.<br />
+Now, text wrapping is considered for such cases.</p>
+<p>Also, support of <a href="https://en.wikipedia.org/wiki/Markdown">Markdown</a> was added for the system notification messages:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NotificationsMarkdown.png" /></p>
+<h3 id="aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run <code>InitializeNode</code> task fails</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/635">#635</a></p>
+<p>Previously, if <code>AWS</code> spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: <code>Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available</code>.<br />
+Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to <code>on-demand</code> and run initialization continues.</p>
+<h3 id="git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/648">#648</a></p>
+<p>When the <code>git-sync</code> script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.<br />
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issue with the synchronization of users with duplicate email addresses was resolved.</p>
+<h3 id="broken-layouts">Broken layouts</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a></p>
+<p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.<br />
+<strong>Global search page</strong> was not rendered correctly when the search results table had too many records.<br />
+Some of the other page layouts also were broken.</p>
               
             </div>
           </div>

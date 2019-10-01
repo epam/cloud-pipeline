@@ -492,7 +492,10 @@
               
                 <h1 id="17-cp-objects-tagging-by-additional-attributes">17. CP objects tagging by additional attributes</h1>
 <ul>
-<li><a href="#add-attributes">Add attributes</a></li>
+<li><a href="#add-attributes">Add attributes</a><ul>
+<li><a href="#add-json-object-into-the-attribute-value">Add <code>JSON</code> object into the attribute value</a></li>
+</ul>
+</li>
 <li><a href="#edit-attributes">Edit attributes</a></li>
 <li><a href="#delete-attributes">Delete attributes</a></li>
 <li><a href="#automatic-tagging">Automatic tagging</a></li>
@@ -523,6 +526,29 @@ You can also manage attributes via CLI. See <a href="../../14_CLI/14.2._View_an
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_3.png" /></li>
 <li>Added attribute will appear at the <strong>Attributes</strong> panel:<br />
 <img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_7.png" /></li>
+</ol>
+<h3 id="add-json-object-into-the-attribute-value">Add <code>JSON</code> object into the attribute value</h3>
+<p>Also, you can add more complex attributes than just strings.<br />
+In the "Value" field you can specify a raw <a href="https://en.wikipedia.org/wiki/JSON"><code>JSON</code></a> object, that will be transformed into the pretty-view table.<br />
+View an example:</p>
+<ol>
+<li>Navigate to the <strong>Attributes</strong> panel of a selected object.</li>
+<li>Click the <strong>+ Add</strong> button.  </li>
+<li>Enter an attribute key.<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_11.png" /></li>
+<li>Enter the <code>JSON</code> object as the attribute value, click the <strong>Add</strong> button:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_12.png" /></li>
+<li>Added attribute will appear at the <strong>Attributes</strong> panel:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_13.png" /><br />
+    As the value - the link will be displayed that shows the summary count of first-level <code>JSON</code> records.</li>
+<li>Click the value link - the pretty-view detailed table will be opened for the added attribute:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_14.png" /></li>
+<li>If the raw <code>JSON</code> has more than one level, downstream records will be shown as the link <strong><em>Object</em></strong>. You can hover over it and view the downstream records:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_15.png" /></li>
+<li>If you want to edit such attribute value - click the <strong>EDIT</strong> button. The raw <code>JSON</code> will be opened:<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_16.png" /><br />
+    You can edit it and click the <strong>SAVE</strong> button to save changes.<br />
+<img alt="CP_ObjectsTaggingByAdditionalAttributes" src="../attachments/TaggingByAttributes_17.png" />  </li>
 </ol>
 <h2 id="edit-attributes">Edit attributes</h2>
 <ol>

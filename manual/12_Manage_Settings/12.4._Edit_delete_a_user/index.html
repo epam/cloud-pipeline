@@ -525,6 +525,27 @@
 <h3 id="attributes">Attributes</h3>
 <p><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_05.png" /></p>
 <p>In this block you can set metadata tags (attributes) for a user. These tags represent key/value pairs, same as pipeline/folder tags. For more information see <a href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>.</p>
+<h4 id="blocking-notifications-track">"Blocking" notifications track</h4>
+<p>One of the special attribute that is set automatically - information about the notifications confirmation:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_15.png" /><br />
+Via that attribute you can view, which "blocking" notifications were confirmed by the user (about system notifications see <a href="../12._Manage_Settings/#system-events">here</a>).<br />
+This attribute is shown only for users that confirmed at least one "blocking" notification.<br />
+By default, this attribute has the following pair:</p>
+<ul>
+<li><em>KEY</em> - <code>confirmed_notifications</code> (that name could be changed via the system-level preference <strong><code>system.events.confirmation.metadata.key</code></strong>)</li>
+<li><em>VALUE</em> - link that shows summary count of confirmed notifications for the user</li>
+</ul>
+<p>To open the detailed table with confirmed notifications for the user:</p>
+<ol>
+<li>Click the <em>VALUE</em> link:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_16.png" />  </li>
+<li>Here you can view detailed information about confirmed notifications - their titles, messages and datetime of the confirmation:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_17.png" />  </li>
+<li>Also you can open "raw" <code>JSON</code> view of the detailed table, if necessary. For that, click the <strong>EDIT</strong> button under the detailed table:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_18.png" />  </li>
+<li>Here you can edit the contents. Click the <strong>SAVE</strong> button to save changes:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_19.png" />  </li>
+</ol>
 <h3 id="launch-options">Launch options</h3>
 <p><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_06.png" /></p>
 <p>In this block you can specify some restrictions for a user on allowed instance types and price types.

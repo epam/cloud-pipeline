@@ -514,6 +514,15 @@
     Then a Run will continue working again.<br />
 <img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_6.png" /></li>
 </ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: Not always paused run could be resumed. <em>E.g. user may hit a situation of resource limits - instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type.</em>
+In such cases, run will be returned to the <code>Paused</code> state. User will be notified about that - by the hint message near the <strong>RESUME</strong> button:<br />
+<img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_12.png" /></p>
+<p>Or at the <strong>Run information page</strong>:<br />
+<img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_13.png" /></p>
+<p>Or at the <strong>ACTIVE RUNS</strong> panel of the main Dashboard:<br />
+<img alt="CP_PauseResumeRuns" src="../attachments/PauseResumeRuns_14.png" /></p>
+</blockquote>
 <h2 id="stopterminate-run">Stop/terminate run</h2>
 <p><strong>STOP</strong> option allows to stop a run execution forcibly. Once a run is stopped - all its local data will be deleted, this action couldn't be undone.<br />
 <strong><em>Note</em></strong>: This option is available only for initializing/executing runs, not for paused ones.<br />
