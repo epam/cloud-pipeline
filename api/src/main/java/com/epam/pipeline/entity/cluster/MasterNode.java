@@ -22,6 +22,8 @@ import io.fabric8.kubernetes.api.model.NodeStatus;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +32,7 @@ import java.util.UUID;
 @Setter
 public class MasterNode {
 
+    public static final String K8S_MASTER_PORT_LABEL = "cloud-pipeline/k8s_master_port";
     public static final String INTERNAL_IP = "InternalIP";
 
     private UUID uid;
@@ -39,13 +42,15 @@ public class MasterNode {
     private String port;
     private Map<String, String> labels;
 
-    private MasterNode(final Node node, final String port) {
+    private MasterNode(final Node node, final String defaultPort) {
         ObjectMeta metadata = node.getMetadata();
 
         if (metadata != null) {
             this.uid = UUID.fromString(metadata.getUid());
             this.name = metadata.getName();
             this.labels = metadata.getLabels();
+            final String port = MapUtils.emptyIfNull(this.labels).get(K8S_MASTER_PORT_LABEL);
+            this.port = StringUtils.isNotBlank(port) ? port : defaultPort;
             this.creationTimestamp = metadata.getCreationTimestamp();
         }
 
@@ -58,8 +63,6 @@ public class MasterNode {
                                 .findFirst()
                                 .orElse(null);
         }
-
-        this.port = port;
     }
 
     public static MasterNode fromNode(final Node node, final String port) {
