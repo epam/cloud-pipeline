@@ -27,6 +27,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -89,7 +90,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
             PipelineUser createdUser = userManager.createUser(userName,
                     roles, groups, attributes, null);
             LOGGER.debug("Created user {} with groups {}", userName, groups);
-            validateGroupsBlockingStatus(groups, userName);
+            validateGroupsBlockingStatus(createdUser.getAuthorities(), userName);
             UserContext userContext = new UserContext(createdUser.getId(), userName);
             userContext.setGroups(createdUser.getGroups());
             userContext.setRoles(createdUser.getRoles());
@@ -106,13 +107,18 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
                 loadedUser = userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
                 LOGGER.debug("Updated user groups {} ", groups);
             }
-            validateGroupsBlockingStatus(groups, userName);
+            validateGroupsBlockingStatus(loadedUser.getAuthorities(), userName);
             return new UserContext(loadedUser);
         }
     }
 
-    private void validateGroupsBlockingStatus(final List<String> groups, final String userName) {
-        final boolean isValidGroupList = userManager.loadGroupBlockingStatus(groups).stream()
+    private void validateGroupsBlockingStatus(final Set<String> authorities, final String userName) {
+        final List<String> groups = SetUtils.emptyIfNull(authorities)
+                .stream()
+                .filter(authority -> !authority.equals(userName))
+                .collect(Collectors.toList());
+        final boolean isValidGroupList = ListUtils.emptyIfNull(userManager.loadGroupBlockingStatus(groups))
+                .stream()
                 .noneMatch(GroupStatus::isBlocked);
         if (!isValidGroupList) {
             LOGGER.debug("User {} is blocked due to one of his groups is blocked!", userName);
