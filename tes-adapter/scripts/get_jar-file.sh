@@ -17,7 +17,6 @@ else
 fi
 
 echo "Creating tmp directory..."
-
 mkdir tmp
 cd tmp
 tmpdir=$(pwd)
@@ -34,8 +33,8 @@ git clone $gitRepoUrl $tmpdir;
 # Step 2.
 # Build jar file from tes-adapter module(TES-PATH)
 echo "Building jar-file..."
-cd tmp
 if [ -d "$TES_PATH" ]; then
+    cd tmp
     ./gradlew tes-adapter:bootJar > /dev/null 2>&1
 else
    echo "The $TES_PATH directory doesn't exist!" 2>&1; exit 1
@@ -49,4 +48,4 @@ cp -rf tes-adapter/build/libs/tes-adapter-1.0-SNAPSHOT.jar ..
 echo "Removing tmp directory..."
 rm -r -f $tmpdir
 
-echo "The Programm finished with Success!"
+echo "Success! You can find the corresponding jar-file in the folder $workdir"
