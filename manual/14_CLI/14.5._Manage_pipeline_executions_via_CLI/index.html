@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>14.5. Manage pipeline executions - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "14.5. Manage pipeline executions";
+    var mkdocs_page_input_path = "manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class=" current">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">14.5. Manage pipeline executions</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#145-manage-pipeline-executions-via-cli">14.5. Manage pipeline executions via CLI</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#view-pipeline-runs">View pipeline runs</a></li>
+        
+            <li><a class="toctree-l5" href="#schedule-a-pipeline-execution">Schedule a pipeline execution</a></li>
+        
+            <li><a class="toctree-l5" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</a></li>
+        
+            <li><a class="toctree-l5" href="#stop-a-pipeline-execution">Stop a pipeline execution</a></li>
+        
+            <li><a class="toctree-l5" href="#terminate-a-node">Terminate a node</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>14. CLI interface &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>14.5. Manage pipeline executions</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="145-manage-pipeline-executions-via-cli">14.5. Manage pipeline executions via CLI</h1>
+<ul>
+<li><a href="#view-pipeline-runs">View pipeline runs</a></li>
+<li><a href="#schedule-a-pipeline-execution">Schedule a pipeline execution</a><ul>
+<li><a href="#change-execution-environment">Change execution environment</a></li>
+<li><a href="#change-advanced-options">Change advanced options</a></li>
+<li><a href="#setting-parameters-for-a-launch">Setting parameters for a launch</a></li>
+<li><a href="#launch-a-cluster">Launch a cluster</a></li>
+<li><a href="#launch-a-pipeline-in-a-synchronized-mode">Launch a pipeline in a synchronized mode</a></li>
+<li><a href="#launch-a-job-on-the-existing-running-instance">Launch a job on the existing running instance</a></li>
+<li><a href="#run-a-tool">Run a tool</a></li>
+</ul>
+</li>
+<li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</a></li>
+<li><a href="#stop-a-pipeline-execution">Stop a pipeline execution</a></li>
+<li><a href="#terminate-a-node">Terminate a node</a></li>
+</ul>
+<blockquote>
+<p>Cloud Pipeline CLI has to be installed. See <a href="../14._Command-line_interface/">14. Command-line interface (CLI)</a>.</p>
+</blockquote>
+<h2 id="view-pipeline-runs">View pipeline runs</h2>
+<p>The command to view runs info:</p>
+<pre><code class="bash">pipe view-runs [OPTIONS] [RUN_ID]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-s</code> / <code>--status</code> [ANY | FAILURE | PAUSED | PAUSING | RESUMING | RUNNING | STOPPED | SUCCESS]</td>
+<td>List pipeline runs with a specific status</td>
+</tr>
+<tr>
+<td><code>-df</code> / <code>--date-from</code></td>
+<td>List pipeline runs started after specified date</td>
+</tr>
+<tr>
+<td><code>-dt</code> / <code>--date-to</code></td>
+<td>List pipeline runs completed before specified date</td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--pipeline</code></td>
+<td>List history of runs for a specific pipeline</td>
+</tr>
+<tr>
+<td><code>-pid</code> / <code>--parent-id</code></td>
+<td>List runs for a specific parent pipeline run</td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--find</code></td>
+<td>Search runs with a specific substring in run parameters values</td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--top</code></td>
+<td>Display top N records</td>
+</tr>
+<tr>
+<td><code>-nd</code> / <code>--node-details</code></td>
+<td>Display node details</td>
+</tr>
+<tr>
+<td><code>-pd</code> / <code>--parameters-details</code></td>
+<td>Display parameters</td>
+</tr>
+<tr>
+<td><code>-td</code> / <code>--tasks-details</code></td>
+<td>Display tasks</td>
+</tr>
+</tbody>
+</table>
+<p>That command without any arguments will list all active runs available for the current user (more about permissions see <a href="../../13_Permissions/13._Permissions/">here</a>):<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_10.png" /></p>
+<p>To view information about specific run - enter its RunID at the end of the command, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_11.png" /><br />
+    You can additionally display information about instance used by a specific run - by the <code>-nd</code> (<code>--node-details</code>) flag:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_17.png" /><br />
+    You can additionally display information about pipeline parameters used by a specific run - by the <code>-pd</code> (<code>--parameters-details</code>) flag:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_18.png" /><br />
+    You can additionally display information about run tasks - by the <code>-td</code> (<code>--tasks-details</code>) flag:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_19.png" /></p>
+<p><strong><em>Note</em></strong>: by default, the <code>view-runs</code> command outputs information about <strong><em>active</em></strong> runs.<br />
+To view a list of all runs with a specific status (see possible values in the table above) - use the <code>-s</code> (<code>--status</code>) option, e.g. to view a list of failed runs:</p>
+<pre><code class="bash">pipe view-runs -s FAILURE
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_12.png" /></p>
+<p>By default, only last 100 records are displayed. If you want to change this count, use the <code>-t</code> (<code>--top</code>) option with specifying a number of records to show, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_13.png" /></p>
+<p>Option <code>-df</code> (<code>--date-from</code>) allows to output runs <strong><em>started</em></strong> after specified datetime.<br />
+Datetime shall be specified in one of the following formats: <strong>yyyy-MM-dd HH:mm:ss</strong> or <strong>yyyy-MM-dd</strong>, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_14.png" /></p>
+<p>Option <code>-dt</code> (<code>--date-to</code>) allows to output runs <strong><em>completed</em></strong> before specified datetime.<br />
+<strong><em>Note</em></strong>: since the <code>view-runs</code> command outputs by default information about active runs, then for using that command with the <code>-dt</code> option one of the completed statuses must be specified, e.g.:
+    <img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_24.png" /></p>
+<p>To list history of runs for a specific pipeline use the <code>-p</code> (<code>--pipeline</code>) option and a pipeline name.<br />
+By default it will print a list of active runs for the <strong>latest</strong> pipeline version. If you want to launch non-latest pipeline version, specify version name after the pipeline name using the <code>@</code> symbol, e.g. to list <strong>STOPPED</strong> runs for the <strong>v1</strong> version of the <strong>simplepipeline</strong> pipeline:  </p>
+<pre><code class="bash">pipe view-runs -p simplepipeline@v1 -s STOPPED
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_15.png" /></p>
+<p>To list child runs use the <code>-pid</code> (<code>--parent-id</code>) option and a parent run ID, e.g.:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_16.png" /></p>
+<p>To find runs with a specific substring in run parameters values use the <code>-f</code> (<code>--find</code>) option. E.g. to find among all stopped runs only those which parameter values contain the word "Changed":</p>
+<pre><code class="bash">pipe view-runs -s STOPPED -f &quot;Changed&quot;
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_21.png" /></p>
+<h2 id="schedule-a-pipeline-execution">Schedule a pipeline execution</h2>
+<p>The command to shedule a pipeline/version execution:</p>
+<pre><code class="bash">pipe run [OPTIONS] [RUN_PARAMETERS]
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-n</code> / <code>--pipeline</code></td>
+<td>Pipeline name or ID</td>
+</tr>
+<tr>
+<td><code>-c</code> / <code>--config</code></td>
+<td>Pipeline configuration name</td>
+</tr>
+<tr>
+<td><code>-di</code> / <code>--docker-image</code></td>
+<td>Docker image</td>
+</tr>
+<tr>
+<td><code>-it</code> / <code>--instance-type</code></td>
+<td>Node type in terms of the Cloud Provider</td>
+</tr>
+<tr>
+<td><code>-id</code> / <code>--instance-disk</code></td>
+<td>Instance disk size</td>
+</tr>
+<tr>
+<td><code>-ic</code> / <code>--instance-count</code></td>
+<td>Number of worker instances to launch in a cluster</td>
+</tr>
+<tr>
+<td><code>-nc</code> / <code>--cores</code></td>
+<td>Number of cores that a cluster shall contain. This option will be ignored if <code>-ic</code> (<code>--instance-count</code>) option was specified</td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--region-id</code></td>
+<td>Instance Cloud region</td>
+</tr>
+<tr>
+<td><code>-pt</code> / <code>--price-type</code> [spot | on-demand]</td>
+<td>Price type</td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--timeout</code></td>
+<td>Timeout (in minutes), when elapsed - run will be stopped</td>
+</tr>
+<tr>
+<td><code>-cmd</code> / <code>--cmd-template</code></td>
+<td>Command template</td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--parameters</code></td>
+<td>Returns a parameter list for the specified pipeline</td>
+</tr>
+<tr>
+<td><code>-pn</code> / <code>--parent-node</code></td>
+<td>Parent instance Run ID. Allows to run a pipeline as a child job on the existing running instance</td>
+</tr>
+<tr>
+<td><code>-s</code> / <code>--sync</code></td>
+<td>Allows a pipeline to be run in a sync mode. When set - terminal will be blocked until the pipeline won't finish the run.<br />After that the pipeline's finish status will be returned into the terminal output and the terminal will be unblocked</td>
+</tr>
+<tr>
+<td><code>-y</code> / <code>--yes</code></td>
+<td>Do not ask confirmation</td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RUN_PARAMETERS</strong> - list of the pipeline parameters to set. Can be specified as a single <code>--&lt;Parameter name&gt; &lt;value&gt;</code> pair or a list of them.</p>
+<p>In the example below the pipeline with the name <strong>simplepipeline</strong> will be launched:</p>
+<pre><code class="bash">pipe run -n simplepipeline -y
+</code></pre>
+
+<p>And then we'll check that it was launched by the <a href="#view-pipeline-runs"><code>view-runs</code></a> command:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_01.png" /></p>
+<p>If not additionally specified, described command will launch <strong>default</strong> configuration of the pipeline <strong>latest</strong> version.<br />
+If you want to launch non-default pipeline configuration, specify its name with the <code>-c</code> (<code>--config</code>) option, e.g.:</p>
+<pre><code class="bash">pipe run -n simplepipeline -c new-config -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_02.png" /><br />
+In the example above the configuration with the name <strong>new-config</strong> of the pipeline <strong>simplepipeline</strong> was launched.</p>
+<p>If you want to launch non-latest pipeline version, specify version name after the pipeline name using the <code>@</code> symbol, e.g.:</p>
+<pre><code class="bash">pipe run -n simplepipeline@v1 -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_03.png" /><br />
+In the example above default configuration of the version with the name <strong>v1</strong> of the pipeline <strong>simplepipeline</strong> was launched.</p>
+<h3 id="change-execution-environment">Change execution environment</h3>
+<p>You can change execution environment for a pipeline run by setting the following options: <code>-di</code> (<code>--docker-image</code>), <code>-it</code> (<code>--instance-type</code>), <code>-id</code> (<code>--instance-disk</code>), <code>-r</code> (<code>--region-id</code>).<br />
+In the example below the pipeline <strong>simplepipeline</strong> will be launched on the instance <strong>n1-highcpu-2</strong> with the disk size <strong>25</strong> Gb:</p>
+<pre><code class="bash">pipe run -n simplepipeline --instance-type n1-highcpu-2 --instance-disk 25 -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_04.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: for the <code>-di</code> (<code>--docker-image</code>) option shall specify a full path to the Docker image including its version.</p>
+</blockquote>
+<h3 id="change-advanced-options">Change advanced options</h3>
+<p>You can change advanced options for a pipeline execution by setting the following options: <code>-pt</code> (<code>--price-type</code>), <code>-t</code> (<code>--timeout</code>), <code>-cmd</code> (<code>--cmd-template</code>).<br />
+E.g. the command below will launch the pipeline <strong>simplepipeline</strong> with the <code>spot</code> price type and changed command template:</p>
+<pre><code class="bash">pipe run -n simplepipeline -pt spot -cmd &quot;sleep 1d&quot;
+</code></pre>
+
+<blockquote>
+<p><strong><em>Note</em></strong>: <code>-pt</code> flag could take only one from two values - <code>on-demand</code> and <code>spot</code>, independent on the Cloud Provider.</p>
+</blockquote>
+<h3 id="setting-parameters-for-a-launch">Setting parameters for a launch</h3>
+<p>To view all parameter list for a pipeline use <code>-p</code> (<code>--parameters</code>) flag, e.g. to view parameters of the <strong>simplepipeline</strong> pipeline:</p>
+<pre><code class="bash">pipe run -n simplepipeline -p
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_09.png" /><br />
+As you can see, that flag allows to view all parameters with their types.<br />
+If parameters have default values they will be also printed.</p>
+<p>To set parameters for a pipeline launch, enter them after all options in the following manner: <code>--&lt;Parameter1 name&gt; &lt;value&gt; --&lt;Parameter2 name&gt; &lt;value&gt; ...</code>, e.g.:</p>
+<pre><code class="bash">pipe run -n simplepipeline --booleanParamExample false --stringParamExample &quot;Changed test value&quot; -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_20.png" /></p>
+<h3 id="launch-a-cluster">Launch a cluster</h3>
+<p>You can launch a cluster using <code>-ic</code> (<code>--instance-count</code>) option. It sets a number of worker instances.<br />
+In the example below the cluster with two child nodes will be launched:</p>
+<pre><code class="bash">pipe run -n simplepipeline -ic 2
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_05.png" /></p>
+<p>Also you can launch a cluster using the <code>-nc</code> (<code>--number-cores</code>) option. With this option you specify a number of cores that a cluster shall contain. In that case worker instance count of the cluster will be calculated automatically based on the supported instance types.</p>
+<p><strong><em>Note</em></strong>: This option will be ignored if <code>-ic</code> (<code>--instance-count</code>) option was specified.</p>
+<p>In the example below the cluster runs with 16 cores will be launched:</p>
+<pre><code class="bash">pipe run -n simplepipeline -nc 16
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_27.png" /><br />
+As you can see, for that run single instance with 16 cores was scheduled.</p>
+<h3 id="launch-a-pipeline-in-a-synchronized-mode">Launch a pipeline in a synchronized mode</h3>
+<p>You can launch a pipeline in a synchronized mode by setting the <code>-s</code> (<code>--sync</code>) flag. In that mode terminal will be blocked until the pipeline won't finish the run. After the pipeline's finish, its status will be returned into the terminal output and the terminal will be unblocked.<br />
+Example of the pipeline <strong>simplepipeline</strong> execution in a sync mode:</p>
+<pre><code class="bash">pipe run -n simplepipeline --sync -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_06.png" /></p>
+<h3 id="launch-a-job-on-the-existing-running-instance">Launch a job on the existing running instance</h3>
+<p>You can launch a pipeline as a child job on the existing running instance by setting the <code>-pn</code> (<code>--parent-node</code>) option. It allows not to initialize a new node for a such job but use already existing one.<br />
+Example of the launching the pipeline <strong>simplepipeline</strong> as a child of the previously launched and initialized instance:</p>
+<pre><code class="bash">pipe run -n simplepipeline --parent-node &lt;Parent RunID&gt; -q -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_07.png" /></p>
+<h3 id="run-a-tool">Run a tool</h3>
+<p>Also you can launch a tool - without providing a pipeline name/ID. In that case Docker image shall be mandatory specified. If instance type, instance disk and cmd template aren't specified, default tool settings for them will be used.<br />
+In the example below we will launch the Docker image <strong>ubuntu:latest</strong> on the <strong>n1-highcpu-2</strong> instance with the disk size <strong>27</strong> GB and <code>sleep infinity</code> command template:</p>
+<pre><code class="bash">pipe run -di &lt;Docker image path&gt; -it n1-highcpu-2 -id 27 -cmd &quot;sleep infinity&quot; -y
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_08.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: Docker image path shall be specified in a full manner including version.</p>
+</blockquote>
+<h2 id="run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">Run a single command or an interactive session over the SSH protocol</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: to perform a command or run an interactive session over the running job, user shall be the <strong>OWNER</strong> of that job or has an <strong>ADMIN</strong> role.</p>
+</blockquote>
+<p>The command to run a single command or an interactive session over the SSH protocol for the specified job run:</p>
+<pre><code class="bash">pipe ssh RUN_ID [COMMAND]
+</code></pre>
+
+<p><strong>COMMAND</strong> - a single command to execute over the running instance with the specified Run ID using the SSH protocol.<br />
+In the example below we will list the content of the <strong>root</strong> directory of the job run with ID <strong>12370</strong>:</p>
+<pre><code class="bash">pipe ssh 12370 'ls -l /root'
+</code></pre>
+
+<p><img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_25.png" /></p>
+<p>If <strong>COMMAND</strong> isn't specified, it will start an interactive session over the running instance with the specified Run ID using the SSH protocol. To exit from the interactive session use commands <code>exit</code> or <code>logout</code>.<br />
+We will perform the same command as was in the example above but in the interactive session:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_26.png" /></p>
+<h2 id="stop-a-pipeline-execution">Stop a pipeline execution</h2>
+<p>The command to stop a specific running pipeline:</p>
+<pre><code class="bash">pipe stop [OPTIONS] RUN_ID
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-y</code> / <code>--yes</code></td>
+<td>Do not ask confirmation</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will run a pipeline and then stop it:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_22.png" /></p>
+<h2 id="terminate-a-node">Terminate a node</h2>
+<p>The command to terminate a specific calculation node:</p>
+<pre><code class="bash">pipe terminate-node [OPTIONS] NODE_NAME
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-y</code> / <code>--yes</code></td>
+<td>Do not ask confirmation</td>
+</tr>
+</tbody>
+</table>
+<p><strong>NODE_NAME</strong> - calculation node name (ID). You can know it, for example, by the <code>view-runs</code> command with the <code>-nd</code> option, the <a href="../14.6._View_cluster_nodes_via_CLI/"><code>view-cluster</code></a> command or via the GUI.</p>
+<p>In the example below we will terminate a node of the running pipeline:<br />
+<img alt="CP_ManagePipelineExecutionsViaCLI" src="../attachments/PipelineExecutions_23.png" /></p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../14.6._View_cluster_nodes_via_CLI/" class="btn btn-neutral float-right" title="14.6. View cluster nodes">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../14.4._View_pipeline_definitions_via_CLI/" class="btn btn-neutral" title="14.4. View pipeline definitions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../14.4._View_pipeline_definitions_via_CLI/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../14.6._View_cluster_nodes_via_CLI/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>

@@ -409,7 +409,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../14_CLI/14.4._View_and_manage_Permissions_via_CLI/">14.4. View and manage Permissions</a>
+    <a class="" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
     </ul>
                 </li>
@@ -527,6 +539,9 @@
 <li><a href="../../03_Overview/3._Overview/#library"><strong>"Hierarchy" view</strong></a> pane</li>
 <li><a href="#details-view-pane"><strong>"Details" view</strong></a> pane.</li>
 </ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: also you can view general information and some details about the specific pipeline via CLI. See <a href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4 View pipeline definitions via CLI</a>.</p>
+</blockquote>
 <h3 id="details-view-pane">"Details" view pane</h3>
 <p>The "Details" view pane displays content of a selected object. In case of a pipeline, you will see:</p>
 <ul>
@@ -680,7 +695,7 @@ To create your own scenario the default template of the main file shall be edite
 <p>This file contains pipeline execution parameters. You can not rename or delete it because of it's used in pipeline scripts and they will not work without it.<br />
 <strong><em>Note</em></strong>: it is advised that pipeline execution settings are modified via <a href="#configuration">CONFIGURATION tab</a> (e.g. if you want to change default settings for pipeline execution) or via <a href="../6.2._Launch_a_pipeline/">Launch pipeline page</a> (e.g. if you want to change pipeline settings for a current run). Manual <strong><code>config.json</code></strong> editing should be used only for advanced users (primarily developers) since json format is not validated in this case.<br />
 <strong><em>Note</em></strong>: all attributes from <strong><code>config.json</code></strong> are available as environment variables for pipeline execution.</p>
-<p>A <strong><code>config.json</code></strong> files for every pipeline template have the following settings:</p>
+<p>The <strong><code>config.json</code></strong> file for every pipeline template have the following settings:</p>
 <table>
     <thead>
         <tr class="header">

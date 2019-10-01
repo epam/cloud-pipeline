@@ -87,7 +87,9 @@
         
             <li><a class="toctree-l4" href="#storage-mounts-data-transfer-restrictor">Storage mounts data transfer restrictor</a></li>
         
-            <li><a class="toctree-l4" href="#extended-symlinks-handling-for-pipe-storage-cpmv-operations">Extended symlinks handling for pipe storage cp/mv operations</a></li>
+            <li><a class="toctree-l4" href="#extended-recursive-symlinks-handling">Extended recursive symlinks handling</a></li>
+        
+            <li><a class="toctree-l4" href="#displaying-of-the-latest-commit-datetime">Displaying of the latest commit date/time</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -413,7 +415,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/14_CLI/14.4._View_and_manage_Permissions_via_CLI/">14.4. View and manage Permissions</a>
+    <a class="" href="../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
     </ul>
                 </li>
@@ -500,7 +514,8 @@
 <li><a href="#displaying-cloud-providers-icon-for-the-storagecompute-resources">Displaying Cloud Provider's icon</a></li>
 <li><a href="#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up">Configurable timeout of GE Autoscale waiting</a></li>
 <li><a href="#storage-mounts-data-transfer-restrictor">Storage mounts data transfer restrictor</a></li>
-<li><a href="#extended-symlinks-handling-for-pipe-storage-cpmv-operations">Symlinks handling for <code>pipe storage cp/mv</code> operations</a></li>
+<li><a href="#extended-recursive-symlinks-handling">Extended recursive symlinks handling</a></li>
+<li><a href="#displaying-of-the-latest-commit-datetime">Displaying of the latest commit date/time</a></li>
 </ul>
 <hr />
 <ul>
@@ -578,14 +593,27 @@ To avoid users of performing usual <code>cp</code> or <code>mv</code> commands f
 <blockquote>
 <p><strong><em>Note</em></strong>: this feature is not available for <code>NFS</code>/<code>SMB</code> mounts, only for object storages.</p>
 </blockquote>
-<h2 id="extended-symlinks-handling-for-pipe-storage-cpmv-operations">Extended symlinks handling for <code>pipe storage cp/mv</code> operations</h2>
-<p>In specific cases some services could execute tasks using the on-prem storages, where "recursive" symlinks could be presented. This may caused such services to follow symlinks infinitely.</p>
-<p>To avoid of that behavior, in <strong><code>v0.16</code></strong> a new option was added to <code>pipe storage cp</code>/<code>pipe storage mv</code> operations to handle symlinks (for local source) → <code>--symlinks</code> (<code>-sl</code>) that supports three possible values:</p>
+<h2 id="extended-recursive-symlinks-handling">Extended recursive symlinks handling</h2>
+<p>There could be specific cases when some services execute tasks using the on-prem storages, where "recursive" symlinks are presented. This causes the Cloud Pipeline <code>Data transfer service</code> to follow symlinks infinitely.</p>
+<p>In <strong><code>v0.16</code></strong>, a new feature is introduced for <code>Data transfer service</code> to detect such issues and skip the upload for files/folders, that cause infinite loop over symlinks.<br />
+A new option <code>-sl</code> (<code>--symlinks</code>) was added to the <code>pipe storage cp</code> / <code>mv</code> operations to handle symlinks (for local source) with the following possible values:</p>
 <ul>
-<li><code>follow</code> - to follow symlinks (default behavior)</li>
+<li><code>follow</code> - follow symlinks (<em>default</em>)</li>
 <li><code>skip</code> - do not follow symlinks</li>
-<li><code>filter</code> - to follow symlinks but check for cyclic links (by keeping track of visited symlinks)</li>
+<li><code>filter</code> - follow symlinks but check for cyclic links and skip them</li>
 </ul>
+<p>Example for the folder with recursive and non-recursive symbolic links:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RecursiveSymlinks_1.png" /></p>
+<p>Also options were added to the <code>Data transfer service</code> to set symlink policy for transfer operations.</p>
+<p>For more details about <code>pipe storage cp</code> / <code>mv</code> operations see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#upload-and-download-data">here</a>.</p>
+<h2 id="displaying-of-the-latest-commit-datetime">Displaying of the latest commit date/time</h2>
+<p>Users can modify existing tools and then commit them to save performed changes.<br />
+It can be done by <strong>COMMIT</strong> button on the run's details page:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_CommitDatetime_1.png" /></p>
+<p>Previously, if user committed some tool, only commit status was shown on the run's details page.<br />
+In the current version, displaying of the date/time for the tool latest commit is added:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_CommitDatetime_2.png" /></p>
+<p>For more details about tool commit see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="setting-of-the-tool-icon-size">Setting of the tool icon size</h3>

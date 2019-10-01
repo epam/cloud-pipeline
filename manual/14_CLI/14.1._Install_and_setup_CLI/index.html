@@ -388,7 +388,7 @@
         
             <li><a class="toctree-l5" href="#how-to-install-and-setup-pipe-cli">How to install and setup pipe CLI</a></li>
         
-            <li><a class="toctree-l5" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a></li>
+            <li><a class="toctree-l5" href="#configure-command-options">configure command options</a></li>
         
         </ul>
     
@@ -405,7 +405,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../14.4._View_and_manage_Permissions_via_CLI/">14.4. View and manage Permissions</a>
+    <a class="" href="../14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
                 </li>
     </ul>
                 </li>
@@ -491,6 +503,13 @@
             <div class="section">
               
                 <h1 id="141-install-and-setup-cli">14.1. Install and setup CLI</h1>
+<ul>
+<li><a href="#how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</a></li>
+<li><a href="#configure-command-options"><code>configure</code> command options</a><ul>
+<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
+</ul>
+</li>
+</ul>
 <h2 id="how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</h2>
 <ol>
 <li>Go to <strong>Settings</strong> → <strong>CLI</strong> tab.</li>
@@ -518,22 +537,69 @@
 <p><strong><em>Note</em></strong>: If any exceptions occur during installation, follow the instructions in the Terminal.<br />
 Notice that Python 2 / Python 3 has to be installed to run CLI. Python can be downloaded here <a href="https://www.python.org/downloads/">https://www.python.org/downloads/</a>.<br />
 <strong><em>Note</em></strong>: <strong>pip</strong> package manager is required for CLI installation if you selected <strong>Operation System</strong> → <strong>Other</strong> on step 2. Modern <strong>Python</strong> versions come bundled with <strong>pip</strong>. On top of that, with this type of installation you'll also need internet connection to install dependencies.</p>
-<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h2>
+<h2 id="configure-command-options"><code>configure</code> command options</h2>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-a</code> / <code>--auth-token</code></td>
+<td>Token for API authentication</td>
+</tr>
+<tr>
+<td><code>-s</code> / <code>--api</code></td>
+<td>URL of a Pipeline API endpoint</td>
+</tr>
+<tr>
+<td><code>-tz</code> / <code>--timezone</code> [local|utc]</td>
+<td>Sets presentation timezone. Default: <em>local</em></td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--proxy</code></td>
+<td>URL of a proxy for all calls</td>
+</tr>
+<tr>
+<td><code>-nt</code> / <code>--proxy-ntlm</code></td>
+<td>Enables NTLM proxy support</td>
+</tr>
+<tr>
+<td><code>-nu</code> / <code>--proxy-ntlm-user</code></td>
+<td>Sets username for NTLM proxy authorization</td>
+</tr>
+<tr>
+<td><code>-np</code> / <code>--proxy-ntlm-pass</code></td>
+<td>Sets password for NTLM proxy authorization</td>
+</tr>
+<tr>
+<td><code>-nd</code> / <code>--proxy-ntlm-domain</code></td>
+<td>Sets domain for NTLM proxy authorization</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong><em>Note</em></strong>: there is not necessary to set all options while input that command. If some options are not set directly - user shall be prompted for them in an interactive manner, if they will not be set in an interactive manner, default values will be used (where it is possible).</p>
+</blockquote>
+<h3 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h3>
 <p>CLI <code>pipe</code> can be configured for using NTLM Authentication Proxy, when running in Linux.</p>
-<p>For that, use the following options while execute <code>pipe configure</code> command:</p>
-<ul>
-<li><code>-nt</code> or <code>--proxy-ntlm</code> - enables NTLM proxy support</li>
-<li><code>-nu</code> or <code>--proxy-ntlm-user</code> - sets username for NTLM proxy authorization</li>
-<li><code>-np</code> or <code>--proxy-ntlm-pass</code> - sets password for NTLM proxy authorization</li>
-<li><code>-nd</code> or <code>--proxy-ntlm-domain</code> - sets domain for NTLM proxy authorization</li>
-</ul>
+<p>For that, use the <code>ntlm</code> options described <a href="#configure-command-options">above</a> while execute <code>pipe configure</code> command.</p>
 <p>If <code>pipe configure</code> command is executing with specified <code>--proxy-ntlm</code> option, <code>pipe</code> will try to get the proxy value from the <code>--proxy</code> option or the environment variables (<code>--proxy</code> option has a higher priority).<br />
 Example:</p>
 <pre><code class="bash">pipe configure --proxy-ntlm --proxy &quot;http://myproxy:3128&quot;
 </code></pre>
 
 <p><img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_6.png" /></p>
-<p>As you can see, if some of the <code>configure</code> options are not set directly in command, you will be prompted to specify them in an interactive manner.</p>
               
             </div>
           </div>
