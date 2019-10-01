@@ -4,8 +4,10 @@ FROM centos:7
 RUN apt-get -y install java-1.8.0-openjdk
 # copy script
 ADD scriptFromEuvgenii /init
-# change rule and start script
+# change rule
 RUN chmod +x /init
+# start script
+RUN ["/init/scriptFromEuvgenii.sh"]
 # copy jar to /opt
 COPY tes-adapter-1.0-SNAPSHOT.jar /opt
 # run jar
