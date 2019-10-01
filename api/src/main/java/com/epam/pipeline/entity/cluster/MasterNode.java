@@ -17,14 +17,12 @@
 package com.epam.pipeline.entity.cluster;
 
 import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeAddress;
 import io.fabric8.kubernetes.api.model.NodeStatus;
-import io.fabric8.kubernetes.api.model.NodeSystemInfo;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -32,40 +30,40 @@ import java.util.UUID;
 @Setter
 public class MasterNode {
 
-    public static final String API_PORT_LABEL = "api_port";
+    public static final String INTERNAL_IP = "InternalIP";
+
     private UUID uid;
     private String name;
     private String creationTimestamp;
-    private List<NodeInstanceAddress> addresses;
-    private String clusterName;
-    private Map<String, String> labels;
-    private NodeInstanceSystemInfo systemInfo;
+    private String internalIP;
     private String port;
+    private Map<String, String> labels;
 
-    public MasterNode(Node node) {
+    private MasterNode(final Node node, final String port) {
         ObjectMeta metadata = node.getMetadata();
+
         if (metadata != null) {
-            this.setUid(UUID.fromString(metadata.getUid()));
-            this.setName(metadata.getName());
-            Map<String, String> labels = metadata.getLabels();
-            this.setLabels(labels);
-            if (labels != null) {
-                String port = labels.get(API_PORT_LABEL);
-                if (StringUtils.isNotBlank(port)) {
-                    this.setPort(port);
-                }
-            }
-            this.setCreationTimestamp(metadata.getCreationTimestamp());
-            this.setClusterName(metadata.getClusterName());
+            this.uid = UUID.fromString(metadata.getUid());
+            this.name = metadata.getName();
+            this.labels = metadata.getLabels();
+            this.creationTimestamp = metadata.getCreationTimestamp();
         }
+
         NodeStatus status = node.getStatus();
         if (status != null) {
-            this.setAddresses(NodeInstanceAddress.convertToInstances(status.getAddresses()));
-            NodeSystemInfo info = status.getNodeInfo();
-            if (info != null) {
-                this.setSystemInfo(new NodeInstanceSystemInfo(info));
-            }
+            this.internalIP = status.getAddresses()
+                                .stream()
+                                .filter(address -> address.getType().equalsIgnoreCase(INTERNAL_IP))
+                                .map(NodeAddress::getAddress)
+                                .findFirst()
+                                .orElse(null);
         }
+
+        this.port = port;
+    }
+
+    public static MasterNode fromNode(final Node node, final String port) {
+        return new MasterNode(node, port);
     }
 
 }
