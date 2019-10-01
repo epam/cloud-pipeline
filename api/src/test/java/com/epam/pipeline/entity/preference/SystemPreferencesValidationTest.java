@@ -71,7 +71,7 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         unsupportedVersion = new GitlabVersion();
         unsupportedVersion.setVersion("9.5");
 
-        Mockito.when(gitManager.getGitlabRootClient(anyString(), anyString(), Mockito.anyLong(),
+        Mockito.when(gitManager.getGitlabClient(anyString(), anyString(), Mockito.anyLong(),
                 anyString())).thenReturn(mockGitlabClient);
     }
 

@@ -123,12 +123,9 @@ public class GitManager {
         Assert.isTrue(result, "Could not create directory");
     }
 
-    public GitlabClient getGitlabRootClient(String gitHost,
-                                            String gitToken,
-                                            Long gitAdminId,
-                                            String gitAdminName) {
+    public GitlabClient getGitlabClient(String gitHost, String gitToken, Long gitAdminId, String gitAdminName) {
         return GitlabClient
-                .initializeRootGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
+                .initializeGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
                         gitAdminId, gitAdminName);
     }
 
@@ -174,7 +171,6 @@ public class GitManager {
         Long expiration = Optional.ofNullable(duration).orElse(DEFAULT_TOKEN_DURATION);
         try {
             return getDefaultGitlabClient()
-                    .withUserName(authManager.getAuthorizedUser())
                     .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
                     .buildCloneCredentials(false, true, expiration);
         } catch (GitClientException e) {
@@ -738,7 +734,7 @@ public class GitManager {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        return GitlabClient.initializeRootGitlabClientFromHostAndToken(gitHost, gitToken,
+        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
                 authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
     }
 

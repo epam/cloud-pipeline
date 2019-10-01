@@ -17,9 +17,6 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.entity.git.GitTokenRequest;
-import com.epam.pipeline.entity.git.GitlabUser;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +24,6 @@ import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
 import retrofit2.Retrofit;
@@ -40,38 +36,36 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 public class GitLabApiBuilder {
 
     private static final String DATA_FORMAT = "yyyy-MM-dd";
-    private static final String DEFAULT_SCOPE = "api";
     private static final int TIMEOUT = 30;
 
     private final int connectTimeout;
     private final int readTimeout;
     private final String apiHost;
     private final String adminToken;
-    private final String userName;
 
-    public GitLabApiBuilder(String apiHost, String adminToken, String userName) {
+    public GitLabApiBuilder(String apiHost, String adminToken) {
         this.connectTimeout = TIMEOUT;
         this.readTimeout = TIMEOUT;
         this.apiHost = apiHost;
         this.adminToken = adminToken;
-        this.userName = userName;
     }
 
     public GitLabApi build() {
-        try {
-            return initGitLabApi(generateToken());
-        } catch (IOException e) {
-            throw new IllegalStateException(e.getMessage());
-        }
+        return new Retrofit.Builder()
+                .baseUrl(normalizeUrl(apiHost))
+                .addConverterFactory(JacksonConverterFactory
+                        .create(new JsonMapper()
+                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
+                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
+                .client(buildHttpClient(adminToken))
+                .build()
+                .create(GitLabApi.class);
     }
 
     private OkHttpClient buildHttpClient(final String token) {
@@ -117,38 +111,6 @@ public class GitLabApiBuilder {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
 
-    }
-
-    private String generateToken() throws IOException {
-        GitLabApi gitLabApi = initGitLabApi(null);
-
-        GitlabUser user = ListUtils.emptyIfNull(
-                gitLabApi.searchUser(userName).execute().body()).stream().findFirst().orElseThrow(
-                    () -> new IllegalArgumentException("User not found!")
-        );
-
-        return Optional.ofNullable(gitLabApi.issueToken(
-                String.valueOf(user.getId()),
-                GitTokenRequest.builder()
-                        .name(user.getName() + "-" + this.hashCode())
-                        .scopes(Collections.singletonList(DEFAULT_SCOPE))
-                        .expires(DateTimeFormatter.ofPattern(DATA_FORMAT).format(
-                                DateUtils.nowUTC().plusDays(1).toLocalDate())).build(),
-                adminToken).execute()
-                .body())
-                .orElseThrow(() -> new IllegalArgumentException("Problem with issuing of a userToken!")).getToken();
-    }
-
-    private GitLabApi initGitLabApi(final String token) {
-        return new Retrofit.Builder()
-                .baseUrl(normalizeUrl(apiHost))
-                .addConverterFactory(JacksonConverterFactory
-                        .create(new JsonMapper()
-                                .setDateFormat(new SimpleDateFormat(DATA_FORMAT))
-                                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
-                .client(buildHttpClient(token))
-                .build()
-                .create(GitLabApi.class);
     }
 
     @AllArgsConstructor
