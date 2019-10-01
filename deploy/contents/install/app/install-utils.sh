@@ -51,6 +51,10 @@ function check_enough_disk {
     local mount_locations="$@"
 
     for location in $mount_locations; do
+        if [ ! -d "$location" ]; then
+            print_info "${location} does not exist, skipping free disk volume check"
+            continue
+        fi
         local location_free_volume="$(get_available_disk "$location")"
         print_info "${location} has ${location_free_volume}MB free (required: ${min_disk}MB)"
         (( "$location_free_volume" < "$min_disk" )) && return 1

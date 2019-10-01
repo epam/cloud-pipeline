@@ -339,7 +339,7 @@ function api_get_cluster_instance_details {
     local region_id="$2"
 
     local get_cluster_instance_details_json=$(call_api "/cluster/instance/loadAll?regionId=$region_id" "$CP_API_JWT_ADMIN")
-    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r ".payload[] | select(.name == \"$instance_type\")")"
+    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r "select(.payload != null) | .payload[] | select(.name == \"$instance_type\")")"
     if [ "$get_cluster_instance_details_result" ] && [ "$get_cluster_instance_details_result" != "null" ]; then
         echo "$get_cluster_instance_details_result"
         return 0
