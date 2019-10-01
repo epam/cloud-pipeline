@@ -200,7 +200,7 @@ public class NodesManager {
     }
 
     public List<MasterNode> getMasterNodes() {
-        String defMPort = String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_API_PORT));
+        String defMPort = String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
         try (KubernetesClient client = new DefaultKubernetesClient()) {
             String mPort = String.valueOf(client.getMasterUrl().getPort());
             return client.nodes().withLabel(MASTER_LABEL).list().getItems()
