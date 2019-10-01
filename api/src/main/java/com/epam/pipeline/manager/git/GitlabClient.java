@@ -228,7 +228,8 @@ public class GitlabClient {
 
     public GitProject getProject(String name) throws GitClientException {
         String project = GitUtils.convertPipeNameToProject(name);
-        return execute(gitLabApi.getProject(project));
+        String projectId = makeProjectId(namespace, project);
+        return execute(gitLabApi.getProject(projectId));
     }
 
     public GitProject createTemplateRepository(Template template, String description,
