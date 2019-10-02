@@ -27,9 +27,9 @@ public class MonitoringConstants {
             .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
             .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
             .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
-            .appendValue(ChronoField.HOUR_OF_DAY).appendLiteral(":")
-            .appendValue(ChronoField.MINUTE_OF_HOUR).appendLiteral(":")
-            .appendValue(ChronoField.SECOND_OF_MINUTE).appendLiteral(".")
+            .appendValue(ChronoField.HOUR_OF_DAY, 2).appendLiteral(":")
+            .appendValue(ChronoField.MINUTE_OF_HOUR, 2).appendLiteral(":")
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 2).appendLiteral(".")
             .appendValue(ChronoField.NANO_OF_SECOND).appendLiteral("Z")
             .toFormatter();
 
