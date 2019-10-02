@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -49,6 +50,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
+
+    private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
+            SearchRequest.DEFAULT_INDICES_OPTIONS.allowNoIndices(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsClosed(),
+            SearchRequest.DEFAULT_INDICES_OPTIONS);
 
     protected static final String FIELD_METRICS = "Metrics";
     protected static final String FIELD_METRICS_TAGS = "MetricsTags";
@@ -154,7 +161,10 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     protected SearchRequest request(final LocalDateTime from, final LocalDateTime to,
                                     final SearchSourceBuilder builder) {
-        return new SearchRequest(getIndexNames(from, to)).types(metric().getName()).source(builder);
+        return new SearchRequest(getIndexNames(from, to))
+                .types(metric().getName())
+                .source(builder)
+                .indicesOptions(INDICES_OPTIONS);
     }
 
     private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {

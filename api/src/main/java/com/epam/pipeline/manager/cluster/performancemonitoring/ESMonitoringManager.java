@@ -58,15 +58,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to) {
-        final LocalDateTime start;
-        final LocalDateTime end;
-        if (from == null || to == null) {
-            start = creationDate(nodeName);
-            end = DateUtils.nowUTC();
-        } else {
-            start = from;
-            end = to;
-        }
+        final LocalDateTime start = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
+        final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         return getStats(nodeName, start, end);
     }
 
