@@ -44,7 +44,8 @@ import java.util.List;
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 public class RunStatusReasonTest extends AbstractManagerTest {
 
-    private static final String RESUME_RUN_FAILED_MESSAGE = "Could not resume run. Operation failed with message 'InsufficientInstanceCapacity'";
+    private static final String RESUME_RUN_FAILED_MESSAGE =
+            "Could not resume run. Operation failed with message 'InsufficientInstanceCapacity'";
 
     @Autowired
     private PipelineRunManager pipelineRunManager;

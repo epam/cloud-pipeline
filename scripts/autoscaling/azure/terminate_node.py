@@ -18,7 +18,7 @@ import re
 
 import pykube
 import argparse
-from azure.common.client_factory import get_client_from_auth_file
+from azure.common.client_factory import get_client_from_auth_file, get_client_from_cli_profile
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 
@@ -27,8 +27,14 @@ CLOUD_REGION_LABEL = 'cloud_region'
 KUBE_CONFIG_PATH = '~/.kube/config'
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
 
-res_client = get_client_from_auth_file(ResourceManagementClient)
-compute_client = get_client_from_auth_file(ComputeManagementClient)
+auth_file = os.environ.get('AZURE_AUTH_LOCATION', None)
+if auth_file:
+    res_client = get_client_from_auth_file(ResourceManagementClient, auth_path=auth_file)
+    compute_client = get_client_from_auth_file(ComputeManagementClient, auth_path=auth_file)
+else:
+    res_client = get_client_from_cli_profile(ResourceManagementClient)
+    compute_client = get_client_from_cli_profile(ComputeManagementClient)
+
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 

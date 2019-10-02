@@ -14,10 +14,14 @@
 
 import math
 import os
+
+from src.api.preferenceapi import PreferenceAPI
 from src.api.cluster import Cluster
 
-DEFAULT_CORE_TYPE = 'c4'
+DEFAULT_CORE_TYPE = 'm5'
 CORE_TYPE_DELIMITER = '.'
+CLUSTER_INSTANCE_TYPE_PREFERENCE = "cluster.instance.type"
+
 
 class ClusterManager(object):
     @classmethod
@@ -38,6 +42,10 @@ class ClusterManager(object):
         if not core_type_from_env:
             core_type_from_env = os.environ.get('instance_size')
         if not core_type_from_env:
+            default_instance_type = PreferenceAPI().get_preference(CLUSTER_INSTANCE_TYPE_PREFERENCE)
+            if default_instance_type and default_instance_type.value:
+                core_type_from_env = default_instance_type.value
+        if not core_type_from_env:
             core_type_from_env = DEFAULT_CORE_TYPE
 
         return ClusterManager.parse_core_type(core_type_from_env)
@@ -57,17 +65,20 @@ class ClusterManager(object):
         return result
 
     @classmethod
-    def get_instance_type (cls, core_type, instances, cores):
+    def get_instance_type(cls, core_type, instances, cores):
         instances = [x for x in instances if core_type in x.name]
 
         if len(instances) == 0:
             raise RuntimeError("No instances found for type {}".format(core_type))
 
+        instance_name = ''
+        instance_cores = 0
+        total_nodes = 0
+
         if cores == 0:
-            return ClusterManager.get_instance_type_object('', 0, 0)
+            return ClusterManager.get_instance_type_object(instance_name, instance_cores, total_nodes)
 
         instances_sorted = sorted(instances, key=lambda x: x.vcpu, reverse=True)
-        instance_num = 0
         for instance_num in range(0, len(instances_sorted)-1):
             instance_type = instances_sorted[instance_num]
             instance_cores = instance_type.vcpu

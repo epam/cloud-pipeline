@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+echo "Setup FSBrowser"
+echo "-"
+
+# Check jq is installed (used to parse the API responses)
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
+    chmod +x /usr/bin/jq
+fi
+
+CP_FSBROWSER_PORT="${CP_FSBROWSER_PORT:-8091}"
+CP_FSBROWSER_WD="${CP_FSBROWSER_WD:-/}"
+if [ -z "$CP_FSBROWSER_STORAGE" ]; then
+    CP_FSBROWSER_STORAGE="$(curl -k \
+                                    -s \
+                                    -X GET \
+                                    -H "Authorization: Bearer ${API_TOKEN}" \
+                                    "${API}preferences/storage.system.storage.name" | \
+                                        jq -r '.payload.value//""')"
+    if [ -z "$CP_FSBROWSER_STORAGE" ]; then
+            echo "[ERROR] CP_FSBROWSER_STORAGE is not set and unable to get the default system storage (storage.system.storage.name). FSBrowser will NOT be configured"
+            exit 1
+    fi
+    CP_FSBROWSER_STORAGE="$CP_FSBROWSER_STORAGE/fsbrowser/$RUN_ID"
+fi
+
+if ! fsbrowser -h > /dev/null 2>&1; then
+    echo "[ERROR] Cannot load 'fsbrowser' command"
+    exit 1
+fi
+
+echo "Starting FSBrowser:"
+echo "- Port:    $CP_FSBROWSER_PORT"
+echo "- WD:      $CP_FSBROWSER_WD"
+echo "- Storage: $CP_FSBROWSER_STORAGE"
+nohup fsbrowser --host 0.0.0.0 \
+                --port "${CP_FSBROWSER_PORT}" \
+                --working_directory "${CP_FSBROWSER_WD}" \
+                --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &

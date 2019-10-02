@@ -17,12 +17,10 @@
 package com.epam.pipeline.entity.git;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 public class GitReleaseEntry {
     @JsonProperty("tag_name")

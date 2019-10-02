@@ -37,8 +37,6 @@ SSH server is started
 ------
 Installing pipeline packages and code
 -
-Installing PipelineCLI
--
 ------
 Getting data storage rules
 -

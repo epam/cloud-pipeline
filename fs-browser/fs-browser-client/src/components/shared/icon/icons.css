@@ -1,0 +1,38 @@
+.icon {
+  display: inline-flex;
+  text-align: center;
+  padding: 2px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.icon svg {
+  stroke: #666;
+}
+
+.icon.clickable {
+  opacity: 0.65;
+  cursor: pointer;
+}
+
+.icon.disabled svg {
+  stroke: #aaa;
+}
+
+.icon.clickable.disabled,
+.icon:hover {
+  opacity: 1;
+}
+
+.rotating {
+  -webkit-animation: spin 1s linear infinite;
+  -moz-animation: spin 1s linear infinite;
+  animation: spin 1s linear infinite;
+}
+
+@-moz-keyframes spin { 100% { -moz-transform: rotate(360deg); } }
+@-webkit-keyframes spin { 100% { -webkit-transform: rotate(360deg); } }
+@keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }

@@ -485,7 +485,7 @@ else
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
-            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reashed" "$SGE_MASTER_SETUP_TASK_WORKERS"
+            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SGE_MASTER_SETUP_TASK_WORKERS"
             exit 0
         fi
     done

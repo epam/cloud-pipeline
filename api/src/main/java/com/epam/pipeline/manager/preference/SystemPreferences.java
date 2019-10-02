@@ -132,7 +132,19 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
-            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
+            new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+
+    /**
+     * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
+     */
+    public static final BooleanPreference STORAGE_FSBROWSER_ENABLED =
+            new BooleanPreference("storage.fsbrowser.enabled", true, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_FSBROWSER_PORT =
+            new IntPreference("storage.fsbrowser.port", 8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
+    public static final StringPreference STORAGE_FSBROWSER_WD =
+            new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
+            new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -277,6 +289,9 @@ public class SystemPreferences {
             0, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
             "instance.restart.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> INSTANCE_LIMIT_STATE_REASONS = new ObjectPreference<>(
+            "instance.limit.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference CLUSTER_INSTANCE_HDD_EXTRA_MULTI =
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
@@ -447,6 +462,9 @@ public class SystemPreferences {
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
                                                                                      MISC_GROUP, isGreaterThan(0));
+    public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
+            "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
+            PreferenceValidators.isNotBlank);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -651,13 +669,13 @@ public class SystemPreferences {
 
     private boolean areGitPreferencesValid(Map<String, Preference> gitPreferences) {
         long adminId = Long.parseLong(gitPreferences.get(GIT_USER_ID.getKey()).getValue());
-        GitlabClient client =  gitManager.getGitlabClient(
+        GitlabClient client =  gitManager.getGitlabRootClient(
                 gitPreferences.get(GIT_HOST.getKey()).getValue(),
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
                 gitPreferences.get(GIT_USER_NAME.getKey()).getValue());
-        client.buildCloneCredentials(false, false, 1L);
         try {
+            client.buildCloneCredentials(false, false, 1L);
             GitlabVersion version = client.getVersion();
             Matcher matcher = GIT_VERSION_PATTERN.matcher(version.getVersion());
             if (matcher.find()) {

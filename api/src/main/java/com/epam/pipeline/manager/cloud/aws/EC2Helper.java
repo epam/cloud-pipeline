@@ -138,7 +138,9 @@ public class EC2Helper {
             Waiter<DescribeInstancesRequest> waiter = client.waiters().instanceRunning();
             waiter.run(new WaiterParameters<>(new DescribeInstancesRequest().withInstanceIds(instanceId)));
         } catch (AmazonServiceException e) {
-            if (e.getErrorCode().equals(INSUFFICIENT_INSTANCE_CAPACITY)) {
+            final List<String> limitErrors = preferenceManager.getPreference(
+                    SystemPreferences.INSTANCE_LIMIT_STATE_REASONS);
+            if (ListUtils.emptyIfNull(limitErrors).stream().anyMatch(code -> code.equals(e.getErrorCode()))) {
                 return CloudInstanceOperationResult.fail(e.getErrorCode());
             }
             throw e;

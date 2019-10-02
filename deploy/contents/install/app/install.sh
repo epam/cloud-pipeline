@@ -72,7 +72,7 @@ if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
         print_info "Kube master is already installed, skipping installation"
     else
         print_info "Starting Kube master installation"
-        bash install-master.sh
+        . install-master.sh
         if [ $? -ne 0 ]; then
             print_err "Errors occured during master installation - please review any output above"
             print_err "Aborting installation"
@@ -233,10 +233,15 @@ CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_N
 print_info "-> Assigning cloud-pipeline/cp-vm-monitor to $CP_VM_MONITOR_KUBE_NODE_NAME"
 kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-vm-monitor="true" --overwrite
 
+# Allow to schedule Drive Mapping service to the master
+CP_DRIVE_MAPPING_KUBE_NODE_NAME=${CP_DRIVE_MAPPING_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-dav to $CP_DRIVE_MAPPING_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DRIVE_MAPPING_KUBE_NODE_NAME" cloud-pipeline/cp-dav="true" --overwrite
+
 # Allow to schedule Share service to the master
-CP_VM_MONITOR_KUBE_NODE_NAME=${CP_VM_MONITOR_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_VM_MONITOR_KUBE_NODE_NAME"
-kubectl label nodes "$CP_VM_MONITOR_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
+CP_SHARE_SRV_KUBE_NODE_NAME=${CP_SHARE_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_SHARE_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
 
 echo
 
@@ -532,6 +537,13 @@ fi
 if is_service_requested cp-docker-registry; then
     print_ok "[Starting Docker registry deployment]"
 
+    check_enough_disk "${CP_KUBE_MASTER_DOCKER_MIN_DISK_MB:-102400}" \
+                      "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/docker"
+
+    if [ $? -ne 0 ]; then
+        print_err "!!! Docker images storage does not provide enough space (see above), subsequent images transfer (and overall installation) may fail !!!"
+    fi
+
     print_info "-> Deleting existing instance of Docker registry"
     delete_deployment_and_service   "cp-docker-registry" \
                                     "/opt/docker-registry" \
@@ -800,7 +812,7 @@ if is_service_requested cp-git-sync; then
             print_warn "Make sure CP_API_JWT_ADMIN is available in the Kube \"cp-config-global\" configmap, otherwise - rerun cp-api and cp-git-sync deployment"
         fi
         print_info "-> Deploying Git Sync"
-        create_kube_resource $K8S_SPECS_HOME/cp-git-sync/cp-git-sync-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-git-sync/cp-git-sync-dpl.yaml
 
         print_info "-> Waiting for Git Sync to initialize"
         wait_for_deployment "cp-git-sync"
@@ -884,7 +896,7 @@ if is_service_requested cp-notifier; then
             print_err "Not all the SMTP parameters are set ("$CP_NOTIFIER_SMTP_PARAMETERS_LIST"). Email notifier service WILL NOT be installed. Please rerun installation with \"-s cp-notifier\" and all the parameters specified"
         else
             print_info "-> Deploying Email notifier"
-            create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-pod.yaml
+            create_kube_resource $K8S_SPECS_HOME/cp-notifier/cp-notifier-dpl.yaml
 
             print_info "-> Waiting for the Email notifier to initialize"
             wait_for_deployment "cp-notifier"
@@ -920,7 +932,7 @@ if is_service_requested cp-search; then
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-pod.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-svc.yaml
 
         print_info "-> Waiting for Search service to initialize"
@@ -954,9 +966,33 @@ if is_service_requested cp-vm-monitor; then
 fi
 
 # WebDav
+if is_service_requested cp-dav; then
+    print_ok "[Starting Drive Mapping service deployment]"
+
+    print_info "-> Deleting existing instance of Drive Mapping service"
+    delete_deployment_and_service   "cp-dav" \
+                                    "/opt/dav"
+
+    if is_install_requested; then
+        print_info "-> Deploying Drive Mapping service"
+        create_kube_resource $K8S_SPECS_HOME/cp-dav/cp-dav-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-dav/cp-dav-svc.yaml
+
+        print_info "-> Waiting for Drive Mapping service to initialize"
+        wait_for_deployment "cp-dav"
+
+        print_info "-> Registering Drive Mapping service in API"
+        api_register_drive_mapping
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-dav:"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (internal):      http://${CP_DAV_INTERNAL_HOST}:${CP_DAV_INTERNAL_PORT}/${CP_DAV_URL_PATH}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping (external):      ${CP_DAV_EXTERNAL_MAPPING_URL}"
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nDrive Mapping Auth (external): ${CP_DAV_EXTERNAL_AUTH_URL}"
+    fi
+    echo
+fi
 
 # Share Service
-
 if is_service_requested cp-share-srv; then
     print_ok "[Starting Share Service deployment]"
 

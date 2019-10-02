@@ -36,6 +36,7 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -60,6 +62,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractSpringTest {
@@ -93,6 +96,11 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final BigDecimal PRICE_PER_HOUR = new BigDecimal("0.08");
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+
+    private static final String TAG_KEY_1 = "key1";
+    private static final String TAG_KEY_2 = "key2";
+    private static final String TAG_VALUE_1 = "value1";
+    private static final String TAG_VALUE_2 = "value2";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -155,6 +163,48 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(run.getCommitStatus(), loadedRun.getCommitStatus());
+    }
+
+    @Test
+    public void testUpdateRunTags() {
+        final PipelineRun run = createTestPipelineRun();
+        final Map<String, String> tags = new HashMap<>();
+        loadTagsAndCompareWithExpected(run.getId(), tags);
+        tags.put(TAG_KEY_1, TAG_VALUE_1);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.put(TAG_KEY_2, TAG_VALUE_2);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.remove(TAG_KEY_1);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.remove(TAG_KEY_2);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        run.setTags(null);
+        loadTagsAndCompareWithExpected(run.getId(), Collections.emptyMap());
+    }
+
+    @Test
+    public void updateTagsForRuns() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+        run1.setTags(tags1);
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2);
+        run2.setTags(tags2);
+
+        pipelineRunDao.updateRunsTags(Arrays.asList(run1, run2));
+        loadTagsAndCompareWithExpected(run1.getId(), tags1);
+        loadTagsAndCompareWithExpected(run2.getId(), tags2);
+    }
+
+    private void updateTagsAndVerifySaveIsCorrect(final PipelineRun run, final Map<String, String> tags) {
+        run.setTags(tags);
+        pipelineRunDao.updateRunTags(run);
+        loadTagsAndCompareWithExpected(run.getId(), tags);
+    }
+
+    private void loadTagsAndCompareWithExpected(final Long runId, final Map<String, String> tags) {
+        final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(runId).getTags();
+        assertThat(loadedTags, CoreMatchers.is(tags));
     }
 
     @Test

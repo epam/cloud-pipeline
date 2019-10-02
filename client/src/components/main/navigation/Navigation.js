@@ -34,7 +34,8 @@ export default class Navigation extends React.Component {
     activeTabPath: PropTypes.string,
     deploymentName: PropTypes.string,
     openSearchDialog: PropTypes.func,
-    searchControlVisible: PropTypes.bool
+    searchControlVisible: PropTypes.bool,
+    searchEnabled: PropTypes.bool
   };
 
   state = {
@@ -193,6 +194,9 @@ export default class Navigation extends React.Component {
           style={{height: 1, width: '100%', backgroundColor: '#fff', opacity: 0.5}} />;
       }
       if (navigationItem.key === 'search') {
+        if (!this.props.searchEnabled) {
+          return null;
+        }
         return (
           <Tooltip
             key={navigationItem.key}
@@ -261,7 +265,8 @@ export default class Navigation extends React.Component {
           </Tooltip>
         );
       }
-    });
+    })
+      .filter(Boolean);
     const searchStyle = [searchStyles.searchBlur];
     if (this.props.searchControlVisible) {
       searchStyle.push(searchStyles.enabled);

@@ -106,7 +106,8 @@ public class FolderTemplateManager {
         if (CollectionUtils.isNotEmpty(template.getDatastorages())) {
             template.getDatastorages().forEach(storage -> {
                 storage.setParentFolderId(savedFolder.getId());
-                AbstractDataStorage created = dataStorageManager.create(storage, true, true, false);
+                AbstractDataStorage created = dataStorageManager.create(storage, true, true, false)
+                        .getEntity();
                 if (!MapUtils.isEmpty(storage.getMetadata())) {
                     updateMetadata(storage.getMetadata(), new EntityVO(created.getId(), AclClass.DATA_STORAGE));
                 }

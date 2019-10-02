@@ -35,23 +35,29 @@ def find_and_tag_instance(ec2, old_id, new_id):
     else:
         raise RuntimeError("Failed to find instance {}".format(old_id))
 
-
-def verify_regnode(kube_api, ec2, ins_id):
-    response = ec2.describe_instances(InstanceIds=[ins_id])
-    nodename = response['Reservations'][0]['Instances'][0]['PrivateDnsName'].split('.', 1)[0]
-    nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
-
-    exist_node = False
-    ret_namenode = ""
-    node = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': nodename})
+def get_nodename(api, nodename):
+    node = pykube.Node.objects(api).filter(field_selector={'metadata.name': nodename})
     if len(node.response['items']) > 0:
-        exist_node = True
-        ret_namenode = nodename
-    node_full = pykube.Node.objects(kube_api).filter(field_selector={'metadata.name': nodename_full})
-    if len(node_full.response['items']) > 0:
-        exist_node = True
-        ret_namenode = nodename_full
-    if not exist_node:
+        return nodename
+    else:
+        return ''
+
+def find_node(nodes, api):
+    for nodename in nodes:
+        ret_namenode = get_nodename(api, nodename)
+        if ret_namenode:
+            return ret_namenode
+    return ''
+
+def verify_regnode(api, ec2, ins_id):
+    response = ec2.describe_instances(InstanceIds=[ins_id])
+    nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
+    nodename = nodename_full.split('.', 1)[0]
+    
+
+    ret_namenode = find_node([ins_id, nodename, nodename_full], api)    
+
+    if not ret_namenode:
         raise RuntimeError("Failed to find Node {}".format(ins_id))
     return ret_namenode
 
