@@ -77,8 +77,11 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .filter(this::isMonitoringStatsComplete)
-                .peek(stats -> addStatsDuration(stats, interval))
-                .sorted(Comparator.comparing(MonitoringStats::getStartTime))
+                .map(stats -> statsWithinRegion(stats, start, end, interval))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .sorted(Comparator.comparing(MonitoringStats::getStartTime,
+                        Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
     }
 
@@ -145,10 +148,23 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 && monitoringStats.getNetworkUsage() != null;
     }
 
-    private void addStatsDuration(final MonitoringStats stats, final Duration interval) {
-        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), MonitoringConstants.FORMATTER);
-        final LocalDateTime end = start.plus(interval);
+    private LocalDateTime asMonitoringDateTime(final String dateTimeString) {
+        return LocalDateTime.parse(dateTimeString, MonitoringConstants.FORMATTER);
+    }
+
+    private Optional<MonitoringStats> statsWithinRegion(final MonitoringStats stats, final LocalDateTime regionStart,
+                                              final LocalDateTime regionEnd, final Duration interval) {
+        final LocalDateTime intervalStart = asMonitoringDateTime(stats.getStartTime());
+        final LocalDateTime intervalEnd = intervalStart.plus(interval);
+        final LocalDateTime start = intervalStart.compareTo(regionStart) > 0 ? intervalStart : regionStart;
+        final LocalDateTime end = intervalEnd.compareTo(regionEnd) < 0 ? intervalEnd : regionEnd;
+        final Duration actualInterval = Duration.between(start, end);
+        if (actualInterval.isNegative() || actualInterval.isZero()) {
+            return Optional.empty();
+        }
+        stats.setStartTime(MonitoringConstants.FORMATTER.format(start));
         stats.setEndTime(MonitoringConstants.FORMATTER.format(end));
-        stats.setMillsInPeriod(interval.toMillis());
+        stats.setMillsInPeriod(actualInterval.toMillis());
+        return Optional.of(stats);
     }
 }
