@@ -26,7 +26,7 @@ fi
 
 echo "Creating tmp directory..."
 
-tmpdir=$(mktemp -d -t ci-XXXXXXXXXX)
+tmpdir=$(mktemp -d -t cloud_pipeline-XXXXXXXXXX)
 TES_PATH=$tmpdir/tes-adapter
 TES_JAR_PATH=$TES_PATH/build/libs/tes-adapter-1.0-SNAPSHOT.jar
 
