@@ -145,10 +145,10 @@ public class Utils {
         for (final char character : charArray) {
             while (true) {
                 field.sendKeys(String.valueOf(character));
-                sleep(500, MILLISECONDS);
+                sleep(1, SECONDS);
                 final String enteredText = field.getAttribute("value");
-                sleep(500, MILLISECONDS);
-                if (enteredText.charAt(charNumber) == character) {
+                sleep(1, SECONDS);
+                if (enteredText.length() == charArray.length) {
                     break;
                 }
             }
