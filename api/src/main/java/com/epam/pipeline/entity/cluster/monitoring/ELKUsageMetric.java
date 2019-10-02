@@ -25,7 +25,8 @@ public enum ELKUsageMetric {
 
     CPU("cpu", "CpuMetricsTimestamp"),
     MEM("memory", "MemoryMetricsTimestamp"),
-    FS("filesystem", "FilesystemMetricsTimestamp");
+    FS("filesystem", "FilesystemMetricsTimestamp"),
+    NETWORK("network", "NetworkMetricsTimestamp");
 
     private final String name;
     private final String timestamp;

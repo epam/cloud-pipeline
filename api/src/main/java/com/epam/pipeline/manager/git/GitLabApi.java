@@ -37,6 +37,7 @@ import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -228,4 +229,12 @@ public interface GitLabApi {
     Call<GitRepositoryEntry> addProjectHook(@Path(PROJECT) String project,
                                             @Body GitHookRequest hookRequest);
 
+    /**
+     * Update a project info.
+     *
+     * @param project The ID or URL-encoded path of the project
+     */
+    @PUT("api/v3/projects/{project}")
+    Call<GitProject> updateProject(@Path(PROJECT) String project,
+                                   @Body GitProjectRequest projectInfo);
 }

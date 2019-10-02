@@ -269,7 +269,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
                     rs.getLong(RoleParameters.ROLE_ID.name());
                     if (!rs.wasNull()) {
                         Role role = new Role();
-                        RoleParameters.parseRole(rs, role);
+                        RoleParameters.parseRole(rs, role, false);
                         user.getRoles().add(role);
                     }
                 }

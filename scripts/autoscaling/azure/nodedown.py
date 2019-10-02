@@ -18,7 +18,7 @@ import functools
 import os
 
 import pykube
-from azure.common.client_factory import get_client_from_auth_file
+from azure.common.client_factory import get_client_from_auth_file, get_client_from_cli_profile
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
@@ -27,9 +27,16 @@ from azure.mgmt.compute import ComputeManagementClient
 RUN_ID_LABEL = 'runid'
 CLOUD_REGION_LABEL = 'cloud_region'
 
-res_client = get_client_from_auth_file(ResourceManagementClient)
-network_client = get_client_from_auth_file(NetworkManagementClient)
-compute_client = get_client_from_auth_file(ComputeManagementClient)
+auth_file = os.environ.get('AZURE_AUTH_LOCATION', None)
+if auth_file:
+    res_client = get_client_from_auth_file(ResourceManagementClient, auth_path=auth_file)
+    network_client = get_client_from_auth_file(NetworkManagementClient, auth_path=auth_file)
+    compute_client = get_client_from_auth_file(ComputeManagementClient, auth_path=auth_file)
+else:
+    res_client = get_client_from_cli_profile(ResourceManagementClient)
+    network_client = get_client_from_cli_profile(NetworkManagementClient)
+    compute_client = get_client_from_cli_profile(ComputeManagementClient)
+
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 

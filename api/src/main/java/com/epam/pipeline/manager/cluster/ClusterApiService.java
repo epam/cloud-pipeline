@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
@@ -26,8 +27,11 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -35,14 +39,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class ClusterApiService {
 
-    @Autowired
-    private NodesManager nodesManager;
+    private static final String ELASTIC = "elastic";
+    private static final String CADVISOR = "cadvisor";
 
-    @Autowired
-    private CAdvisorMonitoringManager cAdvisorMonitorManager;
+    private final NodesManager nodesManager;
+    private final UsageMonitoringManager usageMonitoringManager;
+    private final InstanceOfferManager instanceOfferManager;
 
-    @Autowired
-    private InstanceOfferManager instanceOfferManager;
+    public ClusterApiService(final NodesManager nodesManager,
+                             final InstanceOfferManager instanceOfferManager,
+                             final CAdvisorMonitoringManager cAdvisorMonitoringManager,
+                             final ESMonitoringManager esMonitoringManager,
+                             @Value("${monitoring.backend:" + CADVISOR + "}") final String backend) {
+        this.nodesManager = nodesManager;
+        this.instanceOfferManager = instanceOfferManager;
+        if (StringUtils.isBlank(backend) || backend.equals(CADVISOR)) {
+            this.usageMonitoringManager = cAdvisorMonitoringManager;
+        } else if (backend.equals(ELASTIC)) {
+            this.usageMonitoringManager = esMonitoringManager;
+        } else {
+            throw new IllegalArgumentException(String.format("Required monitoring backend '%s' is not available. " +
+                    "Use either %s or %s.", backend, CADVISOR, ELASTIC));
+        }
+    }
 
     @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(filterObject, 'READ')")
     public List<NodeInstance> getNodes() {
@@ -73,8 +92,8 @@ public class ClusterApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
-    public List<MonitoringStats> getStatsForNode(String nodeName) {
-        return cAdvisorMonitorManager.getStatsForNode(nodeName);
+    public List<MonitoringStats> getStatsForNode(String nodeName, final LocalDateTime from, final LocalDateTime to) {
+        return usageMonitoringManager.getStatsForNode(nodeName, from, to);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {

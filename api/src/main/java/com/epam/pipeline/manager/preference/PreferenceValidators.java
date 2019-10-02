@@ -140,6 +140,10 @@ public final class PreferenceValidators {
             pref.isEmpty() || Arrays.stream(pref.split(",")).allMatch(s -> s.matches("[^\0 \n]+[^\\/]")
                     || "/".equals(s) || "\\".equals(s));
 
+    public static BiPredicate<String, Map<String, Preference>> isGreaterThan(long x) {
+        return (pref, dependencies) -> StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) > x;
     }

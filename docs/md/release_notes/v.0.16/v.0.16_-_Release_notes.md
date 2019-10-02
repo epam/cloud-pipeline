@@ -4,7 +4,8 @@
 - [Displaying Cloud Provider's icon](#displaying-cloud-providers-icon-for-the-storagecompute-resources)
 - [Configurable timeout of GE Autoscale waiting](#configurable-timeout-of-ge-autoscale-waiting-for-a-worker-node-up)
 - [Storage mounts data transfer restrictor](#storage-mounts-data-transfer-restrictor)
-- [Symlinks handling for `pipe storage cp/mv` operations](#extended-symlinks-handling-for-pipe-storage-cpmv-operations)
+- [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
+- [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
 
 ***
 
@@ -88,15 +89,35 @@ Specified approach is implemented in the following manner:
 
 > **_Note_**: this feature is not available for `NFS`/`SMB` mounts, only for object storages.
 
-## Extended symlinks handling for `pipe storage cp/mv` operations
+## Extended recursive symlinks handling
 
-In specific cases some services could execute tasks using the on-prem storages, where "recursive" symlinks could be presented. This may caused such services to follow symlinks infinitely.
+There could be specific cases when some services execute tasks using the on-prem storages, where "recursive" symlinks are presented. This causes the Cloud Pipeline `Data transfer service` to follow symlinks infinitely.
 
-To avoid of that behavior, in **`v0.16`** a new option was added to `pipe storage cp`/`pipe storage mv` operations to handle symlinks (for local source) → `--symlinks` (`-sl`) that supports three possible values:
+In **`v0.16`**, a new feature is introduced for `Data transfer service` to detect such issues and skip the upload for files/folders, that cause infinite loop over symlinks.  
+A new option `-sl` (`--symlinks`) was added to the `pipe storage cp` / `mv` operations to handle symlinks (for local source) with the following possible values:
 
-- `follow` - to follow symlinks (default behavior)
+- `follow` - follow symlinks (_default_)
 - `skip` - do not follow symlinks
-- `filter` - to follow symlinks but check for cyclic links (by keeping track of visited symlinks)
+- `filter` - follow symlinks but check for cyclic links and skip them
+
+Example for the folder with recursive and non-recursive symbolic links:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_RecursiveSymlinks_1.png)
+
+Also options were added to the `Data transfer service` to set symlink policy for transfer operations.
+
+For more details about `pipe storage cp` / `mv` operations see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#upload-and-download-data).
+
+## Displaying of the latest commit date/time
+
+Users can modify existing tools and then commit them to save performed changes.  
+It can be done by **COMMIT** button on the run's details page:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_CommitDatetime_1.png)
+
+Previously, if user committed some tool, only commit status was shown on the run's details page.  
+In the current version, displaying of the date/time for the tool latest commit is added:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_CommitDatetime_2.png)
+
+For more details about tool commit see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#commit-a-tool).
 
 ***
 

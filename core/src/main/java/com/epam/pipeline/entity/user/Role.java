@@ -34,6 +34,7 @@ public class Role implements StorageContainer {
     private boolean predefined;
     private boolean userDefault;
     private Long defaultStorageId;
+    private Boolean blocked;
 
     public Role() {
         this.predefined = false;
