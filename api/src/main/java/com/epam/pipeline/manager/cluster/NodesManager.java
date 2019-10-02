@@ -37,6 +37,7 @@ import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -181,7 +182,13 @@ public class NodesManager {
                 );
                 return Optional.of(nodeInstance);
             }
+        } catch (KubernetesClientException e) {
+            return missingNodeInstance(name, request);
         }
+        return missingNodeInstance(name, request);
+    }
+
+    private Optional<NodeInstance> missingNodeInstance(final String name, final FilterPodsRequest request) {
         final List<String> podStatuses = Optional.ofNullable(request)
                 .map(FilterPodsRequest::getPodStatuses)
                 .orElseGet(Collections::emptyList);
