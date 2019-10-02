@@ -144,7 +144,8 @@ public class AzurePriceListLoader {
                 .values()
                 .stream()
                 .filter(this::isLowPriorityAvailable)
-                .map(sku -> vmSkuToOffer(regionId, sku, DEFAULT_PRICE, sku.name() + LOW_PRIORITY_VM_POSTFIX,
+                .map(sku -> vmSkuToOffer(regionId, sku, DEFAULT_PRICE,
+                        sku.name() + LOW_PRIORITY_VM_POSTFIX,
                         TermType.LOW_PRIORITY, LINUX_OS));
 
         final Stream<InstanceOffer> diskOffers = MapUtils.emptyIfNull(diskSkusByName)
