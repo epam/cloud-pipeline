@@ -19,10 +19,11 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
-import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -33,14 +34,7 @@ import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.SignStyle;
-import java.time.temporal.ChronoField;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -52,16 +46,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
         ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
-    private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
-            // Example: 2019-05-17T10:24:23.033Z
-            .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
-            .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
-            .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
-            .appendValue(ChronoField.HOUR_OF_DAY, 2).appendLiteral(":")
-            .appendValue(ChronoField.MINUTE_OF_HOUR, 2).appendLiteral(":")
-            .appendValue(ChronoField.SECOND_OF_MINUTE, 2).appendLiteral(".")
-            .appendFraction(ChronoField.NANO_OF_SECOND, 3, 3, false).appendLiteral("Z")
-            .toFormatter();
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
@@ -107,10 +91,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private LocalDateTime creationDate(final String nodeName) {
         return nodesManager.findNode(nodeName)
-                .map(BaseEntity::getCreatedDate)
-                .map(Date::toInstant)
-                .map(it -> it.atZone(ZoneOffset.UTC))
-                .map(ZonedDateTime::toLocalDateTime)
+                .map(NodeInstance::getCreationTimestamp)
+                .map(it -> LocalDateTime.parse(it, KubernetesConstants.KUBE_DATE_FORMATTER))
                 .orElseGet(() -> DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD));
     }
 
@@ -171,9 +153,9 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     private void addStatsDuration(final MonitoringStats stats, final Duration interval) {
-        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), FORMATTER);
+        final LocalDateTime start = LocalDateTime.parse(stats.getStartTime(), MonitoringConstants.FORMATTER);
         final LocalDateTime end = start.plus(interval);
-        stats.setEndTime(FORMATTER.format(end));
+        stats.setEndTime(MonitoringConstants.FORMATTER.format(end));
         stats.setMillsInPeriod(interval.toMillis());
     }
 }
