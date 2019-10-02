@@ -852,6 +852,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setNonPause(nonPause);
             }
+            final String tagsJson = rs.getString(TAGS.name());
+            if (!rs.wasNull()) {
+                final Map<String, String> newTags =
+                    JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
+                run.setTags(newTags);
+            }
             return run;
         }
 
@@ -870,7 +876,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 if (loadEnvVars) {
                     run.setEnvVars(getEnvVarsRowMapper().mapRow(rs, rowNum));
                 }
-                run.setTags(getTagsRowMapper().mapRow(rs, rowNum));
                 return run;
             };
         }
@@ -913,11 +918,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         static RowMapper<Map<String, String>> getEnvVarsRowMapper() {
             return (rs, rowNum) -> JsonMapper.parseData(rs.getString(ENV_VARS.name()),
-                    new TypeReference<Map<String, String>>() {});
-        }
-
-        static RowMapper<Map<String, String>> getTagsRowMapper() {
-            return (rs, rowNum) -> JsonMapper.parseData(rs.getString(TAGS.name()),
                     new TypeReference<Map<String, String>>() {});
         }
     }
