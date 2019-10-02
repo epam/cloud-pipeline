@@ -284,6 +284,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
+        pipelineRunDao.updateRunTags(parent);
         PagingRunFilterVO filterVO = new PagingRunFilterVO();
         filterVO.setPage(1);
         filterVO.setPageSize(TEST_PAGE_SIZE);
@@ -296,6 +298,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(1, runs.get(1).getChildRuns().size());
         assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
 
+        assertThat(runs.get(1).getTags(), CoreMatchers.is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
 
     }
