@@ -183,12 +183,8 @@ public class NodesManager {
                 return Optional.of(nodeInstance);
             }
         } catch (KubernetesClientException e) {
-            return missingNodeInstance(name, request);
+            log.warn("Node wasn't found in cluster.", e);
         }
-        return missingNodeInstance(name, request);
-    }
-
-    private Optional<NodeInstance> missingNodeInstance(final String name, final FilterPodsRequest request) {
         final List<String> podStatuses = Optional.ofNullable(request)
                 .map(FilterPodsRequest::getPodStatuses)
                 .orElseGet(Collections::emptyList);
