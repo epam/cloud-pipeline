@@ -32,12 +32,24 @@ class PipelineServer(object):
         self.__metadata_api__ = Metadata()
         self.__config__ = Config.instance()
         self.__users__ = []
+        self.__duplicated_users__ = []
         self.__groups__ = []
         self.__git_servers__ = {}
 
     def synchronize(self, pipeline_ids=[]):
         try:
             self.__users__ = self.__users_api__.list()
+            __users_with_email__ = filter(lambda x: x.email is not None, self.__users__)
+            emails = map(lambda x: x.email.lower(), __users_with_email__)
+            self.__duplicated_users__ = list(set(filter(lambda x: emails.count(x) > 1, emails)))
+            if len(self.__duplicated_users__) > 0:
+                print 'Following users wont be synchronized:'
+                for duplicate in self.__duplicated_users__:
+                    duplicates = map(
+                        lambda x: '{} ({})'.format(x.friendly_name, x.username),
+                        list(filter(lambda x: x.email.lower() == duplicate, __users_with_email__))
+                    )
+                    print '{}: duplicated email \'{}\'.'.format(', '.join(duplicates), duplicate)
             self.__groups__ = PipelineServer.__create_group_users_map__(self.__users__)
             self.__git_servers__ = {}
             for pipeline in self.list_pipelines():
@@ -118,6 +130,9 @@ class PipelineServer(object):
         if len(matches) == 0:
             return None
         return matches[0]
+
+    def user_skipped(self, email):
+        return self.__duplicated_users__.count(email) > 0
 
     def update_user_keys(self, pipeline_user, private_key, public_key):
         metadata = {

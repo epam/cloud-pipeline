@@ -60,8 +60,9 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 .clickOnFile(getPipelineName().toLowerCase() + ".sh")
                 .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
                 .saveAndCommitWithMessage("test: Prepare pipeline script")
+                .sleep(2, SECONDS)
                 .clickOnFile("config.json")
-                .sleep(3, SECONDS)
+                .sleep(5, SECONDS)
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName("default", profiles);
                     profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));

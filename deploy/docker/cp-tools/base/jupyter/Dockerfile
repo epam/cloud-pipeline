@@ -35,6 +35,7 @@ RUN yum install -y wget \
 ENV ANACONDA_HOME=/opt/local/anaconda
 ARG ANACONDA_VERSION="2-latest"
 ARG INSTALL_TEMP="/tmp/"
+ENV PATH=$ANACONDA_HOME/bin:$PATH
 
 ADD anaconda_install.sh anaconda_install_python.sh anaconda_install_r.sh $INSTALL_TEMP/
 RUN mkdir -p $ANACONDA_HOME

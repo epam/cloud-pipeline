@@ -66,12 +66,15 @@ import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
 import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
+  CP_CAP_SPARK,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
-  gridEngineEnabled
+  gridEngineEnabled,
+  sparkEnabled,
+  setClusterParameterValue,
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -196,6 +199,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     launchCluster: false,
     autoScaledCluster: false,
     gridEngineEnabled: false,
+    sparkEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
@@ -692,6 +696,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
+    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -704,6 +709,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
+        sparkEnabled: sparkEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -748,6 +754,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
+        sparkEnabled: sparkEnabledValue,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -879,6 +886,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.state.launchCluster && this.state.sparkEnabled) {
+        payload[PARAMETERS][CP_CAP_SPARK] = {
+          type: 'boolean',
+          value: true
+        };
+      }
     }
     if (this.props.detached && this.state.pipeline && this.state.version) {
       payload.pipelineId = this.state.pipeline.id;
@@ -1001,6 +1014,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
+        type: 'boolean',
+        value: true
+      };
+    }
+    if (this.state.launchCluster && this.state.sparkEnabled) {
+      payload.params[CP_CAP_SPARK] = {
         type: 'boolean',
         value: true
       };
@@ -1131,10 +1150,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   prepare = (updateFireCloud = false) => {
     const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
+    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
       gridEngineEnabled: gridEngineEnabledValue,
+      sparkEnabled: sparkEnabledValue,
       nodesCount: +this.props.parameters.node_count,
       maxNodesCount: this.props.parameters.parameters &&
       this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -2778,17 +2799,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   onChangeClusterConfiguration = (configuration) => {
+    setClusterParameterValue(this.props.form, SYSTEM_PARAMETERS, configuration);
     const {
       launchCluster,
       autoScaledCluster,
       nodesCount,
       maxNodesCount,
-      gridEngineEnabled
+      gridEngineEnabled,
+      sparkEnabled
     } = configuration;
     this.setState({
       launchCluster,
       autoScaledCluster,
       gridEngineEnabled,
+      sparkEnabled,
       nodesCount,
       maxNodesCount
     }, this.closeConfigureClusterDialog);
@@ -3358,17 +3382,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.getDefaultValue('docker_image')
           )
         );
-        if (this.state.launchCluster && !this.state.autoScaledCluster) {
+        if (this.state.launchCluster) {
           const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
             this.getDefaultValue('instance_size');
           descriptions.push(
-            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this).toLowerCase()}`
-          );
-        } else if (this.state.launchCluster && this.state.autoScaledCluster) {
-          const instanceType = this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
-            this.getDefaultValue('instance_size');
-          descriptions.push(
-            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this).toLowerCase()}`
+            `${instanceType} ${ConfigureClusterDialog.getClusterDescription(this, true)}`
           );
         } else {
           descriptions.push(this.getSectionFieldValue(EXEC_ENVIRONMENT)('type') ||
@@ -3893,6 +3911,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       launchCluster={this.state.launchCluster}
                       autoScaledCluster={this.state.autoScaledCluster}
                       gridEngineEnabled={this.state.gridEngineEnabled}
+                      sparkEnabled={this.state.sparkEnabled}
                       nodesCount={this.state.nodesCount}
                       maxNodesCount={this.state.maxNodesCount || 1}
                       onClose={this.closeConfigureClusterDialog}

@@ -110,6 +110,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     @JsonIgnore
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
+    private Map<String, String> tags;
 
 
     public PipelineRun() {
@@ -171,5 +172,31 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     public String getTaskName() {
         return StringUtils.isEmpty(pipelineName) ? podId : pipelineName;
+    }
+
+    /**
+     * Check if given key represented in tag map
+     * @param key key to be checked
+     * @return true - if tag map contains the given key, false - otherwise
+     */
+    public boolean hasTag(final String key) {
+        return tags.containsKey(key);
+    }
+
+    /**
+     * Add tag to the given run
+     * @param key key to be inserted
+     * @param value value to be checked
+     */
+    public void addTag(final String key, final String value) {
+        tags.putIfAbsent(key, value);
+    }
+
+    /**
+     * Remove tag from the given run
+     * @param key key to be removed
+     */
+    public void removeTag(final String key) {
+        tags.remove(key);
     }
 }

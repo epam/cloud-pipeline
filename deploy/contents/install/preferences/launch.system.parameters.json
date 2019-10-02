@@ -36,6 +36,18 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_SPARK",
+        "type": "boolean",
+        "description": "Enables Spark for a current run",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SPARK_VERSION",
+        "type": "string",
+        "description": "Allows to override a Spark version (2.3.3 or 2.4.3)",
+        "defaultValue": "2.4.3"
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys and s3fs",

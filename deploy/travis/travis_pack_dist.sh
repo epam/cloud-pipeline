@@ -24,6 +24,7 @@ mkdir -p $API_STATIC_PATH
 # - client.tgz
 # - cli-linux.tgz
 # - cli-win.tgz
+# - fsbrowser.tgz
 mkdir assemble
 cd assemble
 aws s3 cp s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/ ./ --recursive
@@ -37,9 +38,12 @@ tar -zxf cli-linux.tgz
 mv pipe-cli/dist/PipelineCLI-* $API_STATIC_PATH/PipelineCLI.tar.gz
 mv pipe-cli/dist/pipe $API_STATIC_PATH/
 
-# Untar pipe-cli windoes binary and move it to the pipeline.jar static assets
+# Untar pipe-cli windows binary and move it to the pipeline.jar static assets
 tar -zxf cli-win.tgz
 mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
+
+# Untar fsbrowser and move it to the pipeline.jar static assets
+mv fsbrowser-* $API_STATIC_PATH/fsbrowser.tar.gz
 
 # Create distribution tgz
 cd ..
@@ -50,6 +54,7 @@ cd ..
                     -x pipe-cli:build \
                     -x pipe-cli:buildLinux \
                     -x pipe-cli:buildWin \
+                    -x fs-browser:build \
                     -Pfast \
                     --no-daemon
 

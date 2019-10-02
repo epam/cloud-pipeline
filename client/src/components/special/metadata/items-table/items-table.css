@@ -1,0 +1,53 @@
+.container {
+  padding: 2px 5px;
+}
+
+.link,
+.link:hover,
+.link:visited,
+.link:active {
+  color: #108ee9;
+  text-decoration: underline;
+}
+
+.actions button {
+  margin-left: 5px;
+}
+
+.table-container {
+  width: 100%;
+  overflow: auto;
+}
+
+.table-container .table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.table-container .table th {
+  background-color: #f0f0f0;
+  padding: 2px 4px;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.table-container .table tr.item td {
+  padding: 2px 4px;
+  border: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.table-container .table tr.item td span {
+  display: block;
+}
+
+.code-editor {
+  max-height: 40vh;
+  overflow: auto;
+  border: 1px solid transparent;
+}
+
+.code-editor.invalid {
+  border: 1px solid red;
+}

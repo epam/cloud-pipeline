@@ -19,8 +19,10 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
-import {Modal, Button, Row, Icon} from 'antd';
+import {message, Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment';
+import NotificationView from '../../special/notifications/controls/NotificationView';
+import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import styles from './SystemNotification.css';
 
 @inject(({notifications}) => ({
@@ -151,6 +153,44 @@ export default class NotificationCenter extends React.Component {
     this.setState({hiddenNotifications: hidden});
   };
 
+  onCloseBlockingNotification = async (notification) => {
+    const hidden = this.state.hiddenNotifications;
+    hidden.push({
+      id: notification.notificationId,
+      createdDate: notification.createdDate
+    });
+    const hide = message.loading('Confirming...', 0);
+    const request = new ConfirmNotification();
+    await request.send({
+      notificationId: notification.notificationId,
+      body: notification.body,
+      title: notification.title
+    });
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      let hiddenNotificationsInStorage = [];
+      const hiddenNotificationsInStorageStr = localStorage.getItem('hidden_notifications');
+      if (hiddenNotificationsInStorageStr) {
+        try {
+          hiddenNotificationsInStorage = JSON.parse(hiddenNotificationsInStorageStr);
+          if (!Array.isArray(hiddenNotificationsInStorage)) {
+            hiddenNotificationsInStorage = [];
+          }
+        } catch (___) {}
+      }
+      hiddenNotificationsInStorage.push({
+        id: notification.notificationId,
+        createdDate: notification.createdDate
+      });
+      try {
+        localStorage.setItem('hidden_notifications', JSON.stringify(hiddenNotificationsInStorage));
+      } catch (___) {}
+    }
+    this.setState({hiddenNotifications: hidden});
+  };
+
   renderSeverityIcon = (notification) => {
     switch (notification.severity) {
       case 'INFO':
@@ -211,14 +251,18 @@ export default class NotificationCenter extends React.Component {
           closable={false}
           footer={
             <Row type="flex" justify="end">
-              <Button type="primary" onClick={() => this.onCloseNotification(blockingNotification)}>
+              <Button type="primary" onClick={() => this.onCloseBlockingNotification(blockingNotification)}>
                 CONFIRM
               </Button>
             </Row>
           }
           visible={!!blockingNotification}>
           {
-            blockingNotification ? blockingNotification.body : null
+            blockingNotification ? (
+              <NotificationView
+                text={blockingNotification.body}
+              />
+            ) : null
           }
         </Modal>
       </div>

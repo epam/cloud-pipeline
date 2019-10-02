@@ -91,7 +91,11 @@ export default function (callbacks) {
             title: 'RESUME',
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
             action: callbacks ? callbacks.resume : undefined,
-            overlay: run.resumeFailureReason
+            overlay: run.resumeFailureReason ? (
+              <div style={{maxWidth: '40vw'}}>
+                {run.resumeFailureReason}
+              </div>
+            ) : undefined
           });
         }
         actions.push({

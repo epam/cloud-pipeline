@@ -27,6 +27,10 @@
     }
   },
   "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
+    },
     "analysis": {
       "analyzer": {
         "file_path_analyzer": { "tokenizer": "file_path_tokenizer" }

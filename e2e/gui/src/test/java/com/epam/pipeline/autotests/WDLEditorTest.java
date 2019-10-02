@@ -40,6 +40,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.OUTPUT_ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation {
     private final String pipelineName = "wdl-editor-test-pipeline" + Utils.randomSuffix();
@@ -121,7 +122,9 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .fillWith(Utils.readResourceFully("/extraScatter.wdl"))
                 .deleteExtraBrackets()
                 .saveAndCommitWithMessage(commitMessage)
+                .sleep(2, SECONDS)
                 .graphTab()
+                .sleep(3, SECONDS)
                 .searchScatter("scattername");
     }
 
@@ -135,7 +138,9 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .fillWith(Utils.readResourceFully("/extraScatterTask.wdl"))
                 .deleteExtraBrackets()
                 .saveAndCommitWithMessage(commitMessage)
+                .sleep(2, SECONDS)
                 .graphTab()
+                .sleep(2, SECONDS)
                 .searchScatter("myscatter")
                 .searchLabel("MyTask");
     }

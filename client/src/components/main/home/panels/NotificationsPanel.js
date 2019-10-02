@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import LoadingView from '../../../special/LoadingView';
 import {Alert, Card, Col, Icon, Row} from 'antd';
 import displayDate from '../../../../utils/displayDate';
+import NotificationView from '../../../special/notifications/controls/NotificationView';
 import styles from './Panel.css';
 
 @inject('notifications')
@@ -65,16 +66,18 @@ export default class NotificationsPanel extends React.Component {
 
   renderNotification = (notification) => {
     return (
-      <Row type="flex" align="middle">
+      <Row type="flex" style={{padding: '5px 0 0 5px'}}>
         <Col className={styles.iconColumn}>
           {this.renderSeverityIcon(notification)}
         </Col>
-        <Col style={{paddingLeft: 10, flex: 1}}>
+        <Col style={{paddingLeft: 10, flex: 1, wordBreak: 'break-word'}}>
           <Row type="flex" style={{fontWeight: 'bold', fontSize: 'larger'}}>
             {notification.title}
           </Row>
           <Row type="flex">
-            {notification.body}
+            <NotificationView
+              text={notification.body}
+            />
           </Row>
           <Row type="flex" style={{fontSize: 'x-small', color: '#666'}}>
             {displayDate(notification.createdDate)}

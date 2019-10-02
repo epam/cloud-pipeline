@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserApiService;
@@ -33,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -222,6 +225,20 @@ public class UserController extends AbstractRestController {
         return Result.success(userApiService.getUserControls());
     }
 
+    @PutMapping(value = "/user/{id}/block")
+    @ResponseBody
+    @ApiOperation(
+            value = "Changes the block status of a user.",
+            notes = "Changes the block status of a user. If the user is blocked, he can't access his account.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<PipelineUser> updateUserBlockingStatus(@PathVariable final Long id,
+                                                         @RequestParam final Boolean blockStatus) {
+        return Result.success(userApiService.updateUserBlockingStatus(id, blockStatus));
+    }
+
     @RequestMapping(value = "/user/{id}/update", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
@@ -273,5 +290,33 @@ public class UserController extends AbstractRestController {
             })
     public Result<List<String>> findGroups(@RequestParam String prefix) {
         return Result.success(userApiService.findGroups(prefix));
+    }
+
+    @RequestMapping(value = "/group/{groupName}/block", method = {RequestMethod.POST, RequestMethod.PUT})
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates or updates the block status of a group.",
+            notes = "Creates the block status of a group or updates it if it exists. " +
+                    "If the group is blocked, none of its users can't access their accounts.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GroupStatus> upsertGroupBlockingStatus(@PathVariable final String groupName,
+                                                         @RequestParam final Boolean blockStatus) {
+        return Result.success(userApiService.upsertGroupBlockingStatus(groupName, blockStatus));
+    }
+
+    @DeleteMapping(value = "/group/{groupName}/block")
+    @ResponseBody
+    @ApiOperation(
+            value = "Removes the block status of a group.",
+            notes = "Removes the block status of a group.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GroupStatus> deleteGroupBlockingStatus(@PathVariable final String groupName) {
+        return Result.success(userApiService.deleteGroupBlockingStatus(groupName));
     }
 }
