@@ -42,10 +42,10 @@ MAX_CORES_COUNT = 10000
 def silent_print_api_version():
     try:
         api_info = ApplicationInfo().info()
+        if 'version' in api_info and api_info['version']:
+            click.echo('Cloud Pipeline API, version {}'.format(api_info['version']))
     except ConfigNotFoundError:
         return
-    if 'version' in api_info and api_info['version']:
-        click.echo('Cloud Pipeline API, version {}'.format(api_info['version']))
 
 
 def print_version(ctx, param, value):
