@@ -18,64 +18,44 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import org.apache.commons.lang.NotImplementedException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.avg.Avg;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MemoryRequester extends AbstractMetricRequester {
+public class NetworkRequester extends AbstractMetricRequester {
 
-    MemoryRequester(final RestHighLevelClient client) {
+    NetworkRequester(final RestHighLevelClient client) {
         super(client);
     }
 
     @Override
     protected ELKUsageMetric metric() {
-        return ELKUsageMetric.MEM;
+        return ELKUsageMetric.NETWORK;
     }
 
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        return request(from, to,
-                new SearchSourceBuilder()
-                        .query(QueryBuilders.boolQuery()
-                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
-                                        resourceIds))
-                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
-                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                        .size(0)
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
-                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
-                                .size(resourceIds.size())
-                                .subAggregation(average(AVG_AGGREGATION + NODE_UTILIZATION, NODE_UTILIZATION))));
+        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
-                .collect(Collectors.toMap(
-                    b -> b.getKey().toString(),
-                    b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()));
+        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
     }
 
     @Override
@@ -83,9 +63,9 @@ public class MemoryRequester extends AbstractMetricRequester {
                                               final Duration interval) {
         return request(from, to,
                 nodeStatsQuery(nodeName, from, to)
-                        .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
-                                .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, USAGE))
-                                .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
+                        .aggregation(dateHistogram(NETWORK_HISTOGRAM, interval)
+                                .subAggregation(average(AVG_AGGREGATION + RX_RATE, RX_RATE))
+                                .subAggregation(average(AVG_AGGREGATION + TX_RATE, TX_RATE))));
     }
 
     @Override
@@ -94,7 +74,7 @@ public class MemoryRequester extends AbstractMetricRequester {
                 .map(Aggregations::asList)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .filter(it -> MEMORY_HISTOGRAM.equals(it.getName()))
+                .filter(it -> NETWORK_HISTOGRAM.equals(it.getName()))
                 .filter(it -> it instanceof MultiBucketsAggregation)
                 .map(MultiBucketsAggregation.class::cast)
                 .findFirst()
@@ -109,15 +89,16 @@ public class MemoryRequester extends AbstractMetricRequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Long> utilization = longValue(aggregations, AVG_AGGREGATION + MEMORY_UTILIZATION);
-        final Optional<Long> capacity = longValue(aggregations, AVG_AGGREGATION + MEMORY_CAPACITY);
-        final MonitoringStats.MemoryUsage memoryUsage = new MonitoringStats.MemoryUsage();
-        utilization.ifPresent(memoryUsage::setUsage);
-        capacity.ifPresent(memoryUsage::setCapacity);
-        monitoringStats.setMemoryUsage(memoryUsage);
-        final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
-        capacity.ifPresent(containerSpec::setMaxMemory);
-        monitoringStats.setContainerSpec(containerSpec);
+        final Optional<Long> rxRate = longValue(aggregations, AVG_AGGREGATION + RX_RATE);
+        final Optional<Long> txRate = longValue(aggregations, AVG_AGGREGATION + TX_RATE);
+        final MonitoringStats.NetworkUsage.NetworkStats stats = new MonitoringStats.NetworkUsage.NetworkStats();
+        rxRate.ifPresent(stats::setRxBytes);
+        txRate.ifPresent(stats::setTxBytes);
+        final HashMap<String, MonitoringStats.NetworkUsage.NetworkStats> statsMap = new HashMap<>();
+        statsMap.put(SYNTHETIC_NETWORK_INTERFACE, stats);
+        final MonitoringStats.NetworkUsage networkUsage = new MonitoringStats.NetworkUsage();
+        networkUsage.setStatsByInterface(statsMap);
+        monitoringStats.setNetworkUsage(networkUsage);
         return monitoringStats;
     }
 }

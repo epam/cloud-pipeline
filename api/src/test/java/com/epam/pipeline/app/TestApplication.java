@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
+import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -72,6 +73,9 @@ public class TestApplication {
 
     @MockBean // TODO: remove and fix what's wrong
     public MonitoringESDao monitoringESDao;
+
+    @MockBean
+    public ESMonitoringManager esMonitoringManager;
 
     @MockBean
     public CloudFacade cloudFacade;

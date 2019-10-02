@@ -17,20 +17,28 @@
 package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CPURequester extends AbstractMetricRequester {
 
@@ -39,25 +47,29 @@ public class CPURequester extends AbstractMetricRequester {
     }
 
     @Override
+    protected ELKUsageMetric metric() {
+        return ELKUsageMetric.CPU;
+    }
+
+    @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        final SearchSourceBuilder builder = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW), resourceIds))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME), "default"))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), "pod_container"))
-                        .filter(QueryBuilders.rangeQuery(ELKUsageMetric.CPU.getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0)
-                .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
-                        .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
-                        .size(resourceIds.size())
-                        .subAggregation(AggregationBuilders.avg(AVG_AGGREGATION + USAGE_RATE)
-                                .field("Metrics." + ELKUsageMetric.CPU.getName() + "/"
-                                        + USAGE_RATE + ".value")));
-
-        return new SearchRequest(getIndexNames(from, to)).types(ELKUsageMetric.CPU.getName()).source(builder);
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_NAMESPACE_NAME),
+                                        DEFAULT))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(AggregationBuilders.terms(AGGREGATION_POD_NAME)
+                                .field(path(FIELD_METRICS_TAGS, FIELD_POD_NAME_RAW))
+                                .size(resourceIds.size())
+                                .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));
     }
 
     @Override
@@ -66,5 +78,52 @@ public class CPURequester extends AbstractMetricRequester {
                 .collect(Collectors.toMap(
                     b -> b.getKey().toString(),
                     b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()));
+    }
+
+    @Override
+    protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
+                                              final Duration interval) {
+
+        return request(from, to,
+                nodeStatsQuery(nodeName, from, to)
+                        .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
+                                .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
+                                .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));
+    }
+
+    @Override
+    protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
+        return Optional.ofNullable(response.getAggregations())
+                .map(Aggregations::asList)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .filter(it -> CPU_HISTOGRAM.equals(it.getName()))
+                .filter(it -> it instanceof MultiBucketsAggregation)
+                .map(MultiBucketsAggregation.class::cast)
+                .findFirst()
+                .map(MultiBucketsAggregation::getBuckets)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(this::toMonitoringStats)
+                .collect(Collectors.toList());
+    }
+
+    private MonitoringStats toMonitoringStats(final MultiBucketsAggregation.Bucket bucket) {
+        final MonitoringStats monitoringStats = new MonitoringStats();
+        Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
+        final List<Aggregation> aggregations = aggregations(bucket);
+        final Optional<Double> utilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
+        final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
+                .map(Object::toString)
+                // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
+                .map(it -> it.substring(0, it.length() - 3))
+                .map(Integer::valueOf);
+        final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
+        utilization.ifPresent(cpuUsage::setLoad);
+        monitoringStats.setCpuUsage(cpuUsage);
+        final MonitoringStats.ContainerSpec containerSpec = new MonitoringStats.ContainerSpec();
+        capacity.ifPresent(containerSpec::setNumberOfCores);
+        monitoringStats.setContainerSpec(containerSpec);
+        return monitoringStats;
     }
 }
