@@ -121,7 +121,7 @@ class CachingFileSystemClient(FileSystemClient):
         parent_path, _ = fuseutils.split_path(path)
         parent_listing = self._cache.get(parent_path, None)
         if parent_listing:
-            parent_listing.pop(self._without_prefix(path, parent_path), None)
+            parent_listing.pop(fuseutils.without_prefix(path, parent_path), None)
 
     def _invalidate_parent_cache(self, path):
         parent_path, _ = fuseutils.split_path(path)
@@ -138,13 +138,9 @@ class CachingFileSystemClient(FileSystemClient):
 
     def _is_relative(self, cache_path, path):
         if cache_path.startswith(path):
-            relative_path = self._without_prefix(cache_path, path)
+            relative_path = fuseutils.without_prefix(cache_path, path)
             return not relative_path or relative_path.startswith(self._delimiter)
         return False
-
-    def _without_prefix(self, string, prefix):
-        if string.startswith(prefix):
-            return string[len(prefix):]
 
     def __getattr__(self, name):
         if hasattr(self._inner, name):

@@ -44,3 +44,8 @@ def lazy_range(start, end):
         return xrange(start, end)
     except NameError:
         return range(start, end)
+
+
+def without_prefix(string, prefix):
+    if string.startswith(prefix):
+        return string[len(prefix):]

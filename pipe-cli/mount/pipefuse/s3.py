@@ -249,6 +249,19 @@ class S3Client(FileSystemClient):
     def mv(self, old_path, path):
         source_path = old_path.lstrip(self._delimiter)
         destination_path = path.lstrip(self._delimiter)
+        folder_source_path = fuseutils.append_delimiter(source_path)
+        if self.exists(folder_source_path):
+            self._mvdir(folder_source_path, destination_path)
+        else:
+            self._mvfile(source_path, destination_path)
+
+    def _mvdir(self, folder_source_path, folder_destination_path):
+        for file in self.ls(fuseutils.append_delimiter(folder_source_path), depth=-1):
+            relative_path = fuseutils.without_prefix(file.name, folder_source_path)
+            destination_path = fuseutils.join_path_with_delimiter(folder_destination_path, relative_path)
+            self._mvfile(file.name, destination_path)
+
+    def _mvfile(self, source_path, destination_path):
         source = {
             'Bucket': self.bucket,
             'Key': source_path
