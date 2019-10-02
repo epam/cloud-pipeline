@@ -19,7 +19,11 @@ package com.epam.pipeline.manager.cluster;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
-import com.epam.pipeline.entity.cluster.*;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.FilterPodsRequest;
+import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MasterNode;
+import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.security.acl.AclMask;
