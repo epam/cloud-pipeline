@@ -42,10 +42,6 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.SignStyle;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -63,17 +59,6 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static final String CORE_MASK_DELIMETER = "-";
     private static final int KILO = 1000;
-
-
-    private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
-            .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
-            .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
-            .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
-            .appendValue(ChronoField.HOUR_OF_DAY).appendLiteral(":")
-            .appendValue(ChronoField.MINUTE_OF_HOUR).appendLiteral(":")
-            .appendValue(ChronoField.SECOND_OF_MINUTE).appendLiteral(".")
-            .appendValue(ChronoField.NANO_OF_SECOND).appendLiteral("Z")
-            .toFormatter();
 
     private int cAdvisorPort;
 
@@ -142,7 +127,7 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     }
 
     private static LocalDateTime dateTime(final String dateTime) {
-        return LocalDateTime.parse(dateTime, FORMATTER);
+        return LocalDateTime.parse(dateTime, MonitoringConstants.FORMATTER);
     }
 
     public long getDiskAvailableForDocker(final String nodeName,

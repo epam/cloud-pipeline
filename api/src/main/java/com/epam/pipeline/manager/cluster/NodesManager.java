@@ -37,6 +37,7 @@ import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -181,6 +182,8 @@ public class NodesManager {
                 );
                 return Optional.of(nodeInstance);
             }
+        } catch (KubernetesClientException e) {
+            log.warn("Node wasn't found in cluster.", e);
         }
         final List<String> podStatuses = Optional.ofNullable(request)
                 .map(FilterPodsRequest::getPodStatuses)
