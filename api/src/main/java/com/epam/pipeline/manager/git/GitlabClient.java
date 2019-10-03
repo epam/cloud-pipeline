@@ -70,7 +70,7 @@ import java.util.stream.Stream;
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
-public final class GitlabClient {
+public class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
