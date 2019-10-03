@@ -36,6 +36,10 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
+const IDLED_TAG = 'IDLED';
+const PRESSURED_TAG = 'PRESSURED';
+const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+
 const colors = {
   [Statuses.failure]: {
     color: 'rgb(255, 76, 31)'
@@ -230,6 +234,22 @@ export default class PipelineRunPreview extends React.Component {
       const {instance} = run;
       const details = [];
       if (instance) {
+        if (run.tags && activeRunStatuses.includes(run.status)) {
+          if (run.tags[IDLED_TAG]) {
+            details.push({
+              key: 'Idle',
+              value: <span style={{color: '#f79e2c', fontSize: 'larger'}}>Idle</span>,
+              additionalStyle: {backgroundColor: '#f79f2b33'}
+            });
+          }
+          if (run.tags[PRESSURED_TAG]) {
+            details.push({
+              key: 'Pressure',
+              value: <span style={{color: '#f04134', fontSize: 'larger'}}>Pressure</span>,
+              additionalStyle: {backgroundColor: '#ae172633'}
+            });
+          }
+        }
         if (run.executionPreferences && run.executionPreferences.environment) {
           details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
         }
@@ -241,7 +261,7 @@ export default class PipelineRunPreview extends React.Component {
                 <span>
                   <AWSRegionTag
                     darkMode
-                    style={{verticalAlign: 'top', marginRight: -3, marginLeft: -3}}
+                    style={{verticalAlign: 'baseline', marginRight: -3, marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
                   {instance.nodeType}
                 </span>
@@ -281,16 +301,17 @@ export default class PipelineRunPreview extends React.Component {
         return (
           <Row className={`${styles.description} ${styles.tags}`}>
             {
-            details.map(d => {
-              return (
-                <span
-                  key={d.key}
-                  className={styles.instanceHeaderItem}>
-                  {d.value}
-                </span>
-              );
-            })
-          }
+              details.map(d => {
+                return (
+                  <span
+                    key={d.key}
+                    style={d.additionalStyle}
+                    className={styles.instanceHeaderItem}>
+                    {d.value}
+                  </span>
+                );
+              })
+            }
           </Row>
         );
       }

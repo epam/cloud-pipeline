@@ -66,11 +66,16 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import {renderRunTags} from '../renderers';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 const MAX_PARAMETER_VALUES_TO_DISPLAY = 5;
 const MAX_NESTED_RUNS_TO_DISPLAY = 10;
+const IDLED_TAG = 'IDLED';
+const PRESSURED_TAG = 'PRESSURED';
+
+const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
 @connect({
   pipelineRun,
@@ -100,7 +105,8 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runTasks: pipelineRun.runTasks(params.runId),
     task,
     pipelines,
-    roles: new Roles()
+    roles: new Roles(),
+    routing
   };
 })
 @observer
@@ -401,6 +407,22 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
+      if (run.tags && activeRunStatuses.includes(run.status)) {
+        if (run.tags[IDLED_TAG]) {
+          details.push({
+            key: 'Idle',
+            value: <span style={{color: '#f79e2c', fontSize: 'larger'}}>Idle</span>,
+            additionalStyle: {borderColor: '#f79e2c'}
+          });
+        }
+        if (run.tags[PRESSURED_TAG]) {
+          details.push({
+            key: 'Pressure',
+            value: <span style={{color: '#ae1726', fontSize: 'larger'}}>Pressure</span>,
+            additionalStyle: {borderColor: '#ae1726'}
+          });
+        }
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }
@@ -450,16 +472,17 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Row>
           Instance: {
-          details.map(d => {
-            return (
-              <span
-                key={d.key}
-                className={styles.instanceHeaderItem}>
-                {d.value}
-              </span>
-            );
-          })
-        }
+            details.map(d => {
+              return (
+                <span
+                  key={d.key}
+                  style={d.additionalStyle}
+                  className={styles.instanceHeaderItem}>
+                  {d.value}
+                </span>
+              );
+            })
+          }
         </Row>
       );
     }
@@ -469,6 +492,13 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance) {
+      if (run.tags && activeRunStatuses.includes(run.status)) {
+        const {routing: {location}} = this.props;
+        details.push({
+          key: 'Tags',
+          value: renderRunTags(run.tags, {location, instance, renderAll: true})
+        });
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }

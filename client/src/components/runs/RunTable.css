@@ -116,3 +116,7 @@ td.run-row {
   margin-left: 4px;
   margin-right: 4px !important;
 }
+
+.tags-column {
+  padding: 0 !important;
+}

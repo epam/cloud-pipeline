@@ -54,6 +54,7 @@ import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
+import {renderRunTags} from './renderers';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -76,6 +77,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     onSelect: PropTypes.func,
     useFilter: PropTypes.bool,
     versionsDisabled: PropTypes.bool,
+    displayTags: PropTypes.bool,
     ownersDisabled: PropTypes.bool
   };
 
@@ -983,6 +985,20 @@ export default class RunTable extends localization.LocalizedReactComponent {
       },
       ...statusesFilter
     };
+    const tagsColumn = {
+      title: '',
+      dataIndex: '',
+      key: 'tags',
+      className: styles.tagsColumn,
+      render: (text, run) => {
+        const {displayTags, routing: {location}} = this.props;
+        if (!displayTags) {
+          return null;
+        }
+
+        return renderRunTags(run.tags, {location, instance: run.instance});
+      }
+    };
     const parentRunColumn = {
       title: 'Parent run',
       dataIndex: 'parentRunId',
@@ -1162,6 +1178,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
     return [
       expandIconColumn,
       runColumn,
+      tagsColumn,
       parentRunColumn,
       pipelineColumn,
       dockerImageColumn,
