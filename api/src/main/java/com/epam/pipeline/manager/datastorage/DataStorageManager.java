@@ -604,8 +604,8 @@ public class DataStorageManager implements SecuredEntityManager {
         final Map<String, PathDescription> container = new ConcurrentHashMap<>();
         try {
             CompletableFuture.runAsync(
-                    () -> getRootPaths(paths)
-                            .forEach(path -> computeDataSize(path, container)),
+                () -> getRootPaths(paths)
+                        .forEach(path -> computeDataSize(path, container)),
                     dataStoragePathExecutor)
                     .get(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {

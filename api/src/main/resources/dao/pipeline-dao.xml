@@ -58,7 +58,9 @@
                         description = :DESCRIPTION,
                         folder_id = :FOLDER_ID,
                         owner = :OWNER,
-                        repository_token = :REPOSITORY_TOKEN
+                        repository_token = :REPOSITORY_TOKEN,
+                        repository = :REPOSITORY,
+                        repository_ssh = :REPOSITORY_SSH
                     WHERE
                         pipeline_id = :PIPELINE_ID
                 ]]>

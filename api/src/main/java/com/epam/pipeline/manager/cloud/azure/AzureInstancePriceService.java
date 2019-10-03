@@ -55,11 +55,8 @@ public class AzureInstancePriceService implements CloudInstancePriceService<Azur
         try {
             final String authPath = region.getAuthFile();
             Assert.isTrue(StringUtils.isNotBlank(authPath), "Azure auth file path must be specified");
-
-            final String offerId = region.getPriceOfferId();
-            Assert.notNull(offerId, "Cannot find offer durable ID");
-
-            return new AzurePriceListLoader(authPath, offerId, region.getMeterRegionName(), region.getAzureApiUrl())
+            return new AzurePriceListLoader(authPath, region.getPriceOfferId(),
+                    region.getMeterRegionName(), region.getAzureApiUrl())
                     .load(region);
         } catch (IOException e) {
             log.error(e.getMessage(), e);

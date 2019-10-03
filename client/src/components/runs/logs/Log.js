@@ -31,6 +31,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
@@ -95,6 +96,7 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     run: pipelineRun.run(params.runId, {refresh: true}),
     nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
     runSSH: new PipelineRunSSH(params.runId),
+    runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     task,
     pipelines,
@@ -888,6 +890,22 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get fsBrowserEnabled () {
+    if (
+      this.props.run.loaded &&
+      this.props.runFSBrowser.loaded &&
+      this.initializeEnvironmentFinished &&
+      !this.isDtsEnvironment
+    ) {
+      const {status, podIP} = this.props.run.value;
+      return status.toLowerCase() === 'running' &&
+        roleModel.executeAllowed(this.props.run.value) &&
+        podIP;
+    }
+    return false;
+  }
+
+  @computed
   get endpointAvailable () {
     if (this.props.run.loaded && this.initializeEnvironmentFinished) {
       const {serviceUrl} = this.props.run.value;
@@ -1014,6 +1032,7 @@ class Logs extends localization.LocalizedReactComponent {
     let PauseResumeButton;
     let ActionButton;
     let SSHButton;
+    let FSBrowserButton;
     let ExportLogsButton;
     let SwitchTimingsButton;
     let SwitchModeButton;
@@ -1336,6 +1355,9 @@ class Logs extends localization.LocalizedReactComponent {
       if (this.sshEnabled) {
         SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
       }
+      if (this.fsBrowserEnabled) {
+        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+      }
 
       if (!(this.props.run.value.nodeCount > 0) &&
         !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
@@ -1424,7 +1446,7 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{ExportLogsButton}
+              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>

@@ -72,7 +72,7 @@ if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
         print_info "Kube master is already installed, skipping installation"
     else
         print_info "Starting Kube master installation"
-        bash install-master.sh
+        . install-master.sh
         if [ $? -ne 0 ]; then
             print_err "Errors occured during master installation - please review any output above"
             print_err "Aborting installation"

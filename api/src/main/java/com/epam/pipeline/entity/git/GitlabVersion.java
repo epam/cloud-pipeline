@@ -16,14 +16,12 @@
 
 package com.epam.pipeline.entity.git;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 /**
  * A VO, that represents version data from Gitlab
  */
-@Getter
-@Setter
+@Data
 public class GitlabVersion {
     private String version;
     private String revision;

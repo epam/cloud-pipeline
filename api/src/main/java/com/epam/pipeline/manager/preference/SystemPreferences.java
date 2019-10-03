@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -132,7 +133,19 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
-            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
+            new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+
+    /**
+     * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
+     */
+    public static final BooleanPreference STORAGE_FSBROWSER_ENABLED =
+            new BooleanPreference("storage.fsbrowser.enabled", true, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_FSBROWSER_PORT =
+            new IntPreference("storage.fsbrowser.port", 8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
+    public static final StringPreference STORAGE_FSBROWSER_WD =
+            new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
+            new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -285,6 +298,11 @@ public class SystemPreferences {
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
             new IntPreference("cluster.docker.extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_MONITORING_ELASTIC_INTERVALS_NUMBER = new IntPreference(
+            "cluster.monitoring.elastic.intervals.number", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final LongPreference CLUSTER_MONITORING_ELASTIC_MINIMAL_INTERVAL = new LongPreference(
+            "cluster.monitoring.elastic.minimal.interval", TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES),
+            CLUSTER_GROUP, isGreaterThan(0L));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
@@ -450,6 +468,9 @@ public class SystemPreferences {
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
                                                                                      MISC_GROUP, isGreaterThan(0));
+    public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
+            "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
+            PreferenceValidators.isNotBlank);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -659,8 +680,8 @@ public class SystemPreferences {
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
                 gitPreferences.get(GIT_USER_NAME.getKey()).getValue());
-        client.buildCloneCredentials(false, false, 1L);
         try {
+            client.buildCloneCredentials(false, false, 1L);
             GitlabVersion version = client.getVersion();
             Matcher matcher = GIT_VERSION_PATTERN.matcher(version.getVersion());
             if (matcher.find()) {

@@ -38,7 +38,11 @@ function id_from_arn {
 # If "$1" is not specified - "/" will be used by default
 function get_available_disk {
     local mount_path="${1:-/}"
-    df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+    if [ -d "$mount_path" ]; then
+        df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+    else
+        echo "0"
+    fi
 }
 
 function check_enough_disk {
@@ -47,6 +51,10 @@ function check_enough_disk {
     local mount_locations="$@"
 
     for location in $mount_locations; do
+        if [ ! -d "$location" ]; then
+            print_info "${location} does not exist, skipping free disk volume check"
+            continue
+        fi
         local location_free_volume="$(get_available_disk "$location")"
         print_info "${location} has ${location_free_volume}MB free (required: ${min_disk}MB)"
         (( "$location_free_volume" < "$min_disk" )) && return 1

@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.ExtendedRole;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import org.apache.commons.collections4.CollectionUtils;
@@ -51,6 +52,9 @@ public class RoleDaoTest extends AbstractSpringTest {
 
     @Autowired
     private DataStorageDao dataStorageDao;
+
+    @Autowired
+    private GroupStatusDao groupStatusDao;
 
     @Test
     public void testLoadRolesWithUsers() {
@@ -124,7 +128,74 @@ public class RoleDaoTest extends AbstractSpringTest {
         assertThat(role.isUserDefault(), equalTo(true));
     }
 
+    @Test
+    public void shouldLoadRolesWithGroupStatus() {
+        final Role blockedRole = roleDao.createRole(TEST_ROLE);
+        blockedRole.setBlocked(true);
+        final Role notBlockedRole = roleDao.createRole(TEST_ROLE_UPDATED);
+        notBlockedRole.setBlocked(false);
+
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false));
+
+        final Collection<Role> loadedRoles = roleDao.loadAllRoles(false);
+        assertFalse(loadedRoles.stream().anyMatch(role -> role.getName().equals(TEST_USER1)));
+        assertEquals(2, loadedRoles
+                .stream()
+                .filter(role -> role.getName().equals(TEST_ROLE) || role.getName().equals(TEST_ROLE_UPDATED))
+                .count());
+        loadedRoles.forEach(role -> {
+            if (role.getName().equals(TEST_ROLE)) {
+                assertEquals(blockedRole, role);
+            } else if (role.getName().equals(TEST_ROLE_UPDATED)) {
+                assertEquals(notBlockedRole, role);
+            }
+        });
+    }
+
+    @Test
+    public void shouldLoadRolesWithGroupStatusAndWithUsers() {
+        final ExtendedRole blockedRole = new ExtendedRole();
+        blockedRole.setName(TEST_ROLE);
+        blockedRole.setBlocked(true);
+
+
+        final ExtendedRole notBlockedRole = new ExtendedRole();
+        notBlockedRole.setName(TEST_ROLE_UPDATED);
+        notBlockedRole.setBlocked(false);
+
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_ROLE, true));
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(TEST_USER1, false));
+
+        roleDao.createRole(blockedRole.getName());
+        roleDao.createRole(notBlockedRole.getName());
+
+        final String roleAdminName = DefaultRoles.ROLE_ADMIN.getName();
+        groupStatusDao.upsertGroupBlockingStatusQuery(new GroupStatus(roleAdminName, true));
+
+        final Collection<Role> loadedRoles = roleDao.loadAllRoles(true);
+        assertFalse(loadedRoles.stream().anyMatch(role -> role.getName().equals(TEST_USER1)));
+        assertEquals(3, loadedRoles
+                .stream()
+                .filter(role -> role.getName().equals(TEST_ROLE) || role.getName().equals(TEST_ROLE_UPDATED)
+                        || role.getName().equals(roleAdminName))
+                .count());
+        loadedRoles.forEach(role -> {
+            final ExtendedRole extendedRole = (ExtendedRole) role;
+            if (role.getName().equals(TEST_ROLE)) {
+                assertTrue(CollectionUtils.isEmpty(extendedRole.getUsers()));
+                assertTrue(extendedRole.getBlocked());
+            } else if (role.getName().equals(TEST_ROLE_UPDATED)) {
+                assertFalse(extendedRole.getBlocked());
+                assertTrue(CollectionUtils.isEmpty(extendedRole.getUsers()));
+            } else if (role.getName().equals(roleAdminName)) {
+                assertEquals(1, extendedRole.getUsers().size());
+                assertTrue(extendedRole.getBlocked());
+            }
+        });
+    }
+
     private boolean isRolePresent(Role roleToFind, Collection<Role> roles) {
-        return roles.stream().anyMatch(r -> r.equals(roleToFind));
+        return roles.stream().anyMatch(r -> r.getName().equals(roleToFind.getName()));
     }
 }

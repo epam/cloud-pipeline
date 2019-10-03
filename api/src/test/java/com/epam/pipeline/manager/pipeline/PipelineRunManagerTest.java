@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.app.TestApplicationWithAclSecurity;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
@@ -53,6 +54,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -481,6 +483,41 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
 
         assertThat(pipelineRun.getInstance().getCloudRegionId(), is(NON_DEFAULT_REGION_ID));
     }
+
+    @Test (expected = IllegalArgumentException.class)
+    @WithMockUser
+    public void shouldThrowExceptionOnInexistentRunTagUpdate() {
+        pipelineRunManager.updateTags(-1L, new TagsVO(null));
+    }
+
+    @Test
+    @WithMockUser
+    public void testUpdateRunTags() {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, PARENT_RUN_ID);
+        loadRunAndAssertTags(pipelineRun.getId(), Collections.emptyMap());
+
+        final Map<String, String> tags = new HashMap<>();
+        tags.put("newKey", "newValue");
+        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, tags);
+        tags.clear();
+        updateTagsForRunAndAssertWithExpected(pipelineRun, tags, Collections.emptyMap());
+        pipelineRun.setTags(null);
+        updateTagsForRunAndAssertWithExpected(pipelineRun, null, Collections.emptyMap());
+    }
+
+    private void updateTagsForRunAndAssertWithExpected(final PipelineRun run,
+                                                       final Map<String, String> newTags,
+                                                       final Map<String, String> expectedTags) {
+        final TagsVO tagsVO = new TagsVO(newTags);
+        pipelineRunManager.updateTags(run.getId(), tagsVO);
+        loadRunAndAssertTags(run.getId(), expectedTags);
+    }
+
+    private void loadRunAndAssertTags(final Long runId, Map<String, String> expectedTags) {
+        final PipelineRun loadedRun = pipelineRunManager.loadPipelineRun(runId);
+        assertThat(expectedTags, CoreMatchers.is(loadedRun.getTags()));
+    }
+
 
     private void checkResolvedValue(List<PipelineRunParameter> actualParameters, String paramValue,
             String expectedValue) {

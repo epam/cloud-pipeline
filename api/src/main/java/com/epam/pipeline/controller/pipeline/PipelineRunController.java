@@ -28,6 +28,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.RunCommitVO;
 import com.epam.pipeline.controller.vo.RunStatusVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -321,6 +322,19 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
+    @RequestMapping(value = "/run/{runId}/fsbrowser", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Return URL to access run fsbrowser client.",
+            notes = "Return URL to access run fsbrowser client.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.buildFSBrowserUrl(runId));
+    }
+
     @RequestMapping(value = "/run/filter", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
@@ -459,5 +473,17 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun>  terminateRun(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.terminateRun(runId));
+    }
+
+    @PostMapping(value = "/run/{runId}/tag")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates tags for pipeline run.",
+            notes = "Updates tags for pipeline run. To remove all the tags pass empty map or null inside VO.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun>  updateRunTags(@PathVariable(value = RUN_ID) final Long runId,
+                                              @RequestBody final TagsVO tagsVO) {
+        return Result.success(runApiService.updateTags(runId, tagsVO));
     }
 }

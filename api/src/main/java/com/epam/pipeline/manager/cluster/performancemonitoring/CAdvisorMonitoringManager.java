@@ -42,10 +42,6 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.SignStyle;
-import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -54,25 +50,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
-public class CAdvisorMonitoringManager {
+public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CAdvisorMonitoringManager.class);
 
     private static final String CORE_MASK_DELIMETER = "-";
     private static final int KILO = 1000;
-
-
-    private static final DateTimeFormatter FORMATTER = new DateTimeFormatterBuilder()
-            .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-')
-            .appendValue(ChronoField.MONTH_OF_YEAR, 2).appendLiteral('-')
-            .appendValue(ChronoField.DAY_OF_MONTH, 2).appendLiteral("T")
-            .appendValue(ChronoField.HOUR_OF_DAY).appendLiteral(":")
-            .appendValue(ChronoField.MINUTE_OF_HOUR).appendLiteral(":")
-            .appendValue(ChronoField.SECOND_OF_MINUTE).appendLiteral(".")
-            .appendValue(ChronoField.NANO_OF_SECOND).appendLiteral("Z")
-            .toFormatter();
 
     private int cAdvisorPort;
 
@@ -115,10 +101,33 @@ public class CAdvisorMonitoringManager {
         this.client = builder.build();
     }
 
-    public List<MonitoringStats> getStatsForNode(String nodeName) {
+    @Override
+    public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to) {
+        if (from == null || to == null) {
+            return getStats(nodeName);
+        }
+        Assert.isTrue(from.isBefore(to), messageHelper.getMessage(
+                MessageConstants.ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL, from, to));
+        return getStats(nodeName, from, to);
+    }
+
+    public List<MonitoringStats> getStats(final String nodeName) {
         return getInternalip(nodeName)
                 .map(this::executeStatsRequest)
                 .orElse(Collections.emptyList());
+    }
+
+    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
+        return getStats(nodeName)
+                .stream()
+                .filter(stats -> dateTime(stats.getStartTime()).compareTo(start) >= 0
+                        && dateTime(stats.getEndTime()).compareTo(end) <= 0)
+                .collect(Collectors.toList());
+    }
+
+    private static LocalDateTime dateTime(final String dateTime) {
+        return LocalDateTime.parse(dateTime, MonitoringConstants.FORMATTER);
     }
 
     public long getDiskAvailableForDocker(final String nodeName,
@@ -140,9 +149,9 @@ public class CAdvisorMonitoringManager {
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
-    public List<MonitoringStats> getStatsForContainerDisk(final String nodeName,
-                                                          final String podId,
-                                                          final String dockerImage) {
+    private List<MonitoringStats> getStatsForContainerDisk(final String nodeName,
+                                                           final String podId,
+                                                           final String dockerImage) {
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(podId, dockerImage);
         return getInternalip(nodeName)
                 .map(ip -> executeContainerRequest(ip, containerId))
@@ -308,10 +317,10 @@ public class CAdvisorMonitoringManager {
 
 
     private static long getMills(String dateTime) {
-        return LocalDateTime.parse(dateTime, FORMATTER).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        return dateTime(dateTime).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    public String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
+    private String getDockerDiskName(final String nodeName, final String podId, final String dockerImage) {
         final MonitoringStats monitoringStats = getLastMonitoringStat(
                 getStatsForContainerDisk(nodeName, podId, dockerImage), nodeName);
 

@@ -115,6 +115,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
     private String updateRunQuery;
     private String loadRunByPrettyUrlQuery;
+    private String updateTagsQuery;
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
 
@@ -350,6 +351,27 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public void updateServiceUrl(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateServiceUrlQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));
+    }
+
+    /**
+     * Updates tags the provided run in a database
+     * @param run run with updated tags
+     **/
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRunTags(final PipelineRun run) {
+        getNamedParameterJdbcTemplate().update(updateTagsQuery, PipelineRunParameters
+                .getParameters(run, getConnection()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateRunsTags(final Collection<PipelineRun> runs) {
+        if (CollectionUtils.isEmpty(runs)) {
+            return;
+        }
+        final MapSqlParameterSource[] params = runs.stream()
+                .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
+                .toArray(MapSqlParameterSource[]::new);
+        getNamedParameterJdbcTemplate().batchUpdate(updateTagsQuery, params);
     }
 
     public int countFilteredPipelineRuns(PipelineRunFilterVO filter, PipelineRunFilterVO.ProjectFilter projectFilter) {
@@ -646,7 +668,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         NODE_REAL_DISK,
         QUEUED,
         NODEUP_TASK,
-        ACCESS_TYPE;
+        ACCESS_TYPE,
+        TAGS;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -688,6 +711,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PRICE_PER_HOUR.name(), run.getPricePerHour());
             params.addValue(STATE_REASON.name(), run.getStateReasonMessage());
             params.addValue(NON_PAUSE.name(), run.isNonPause());
+            params.addValue(TAGS.name(), JsonMapper.convertDataToJsonStringForQuery(run.getTags()));
             addInstanceFields(run, params);
             return params;
         }
@@ -828,6 +852,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             if (!rs.wasNull()) {
                 run.setNonPause(nonPause);
             }
+            final String tagsJson = rs.getString(TAGS.name());
+            if (!rs.wasNull()) {
+                final Map<String, String> newTags =
+                    JsonMapper.parseData(tagsJson, new TypeReference<Map<String, String>>() {});
+                run.setTags(newTags);
+            }
             return run;
         }
 
@@ -890,7 +920,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return (rs, rowNum) -> JsonMapper.parseData(rs.getString(ENV_VARS.name()),
                     new TypeReference<Map<String, String>>() {});
         }
-
     }
     private static Array mapListToSqlArray(List<Long> list, Connection connection) {
         Long[] emptyArray = new Long[0];
@@ -1073,5 +1102,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunSidsQueryForList(final String loadRunSidsQueryForList) {
         this.loadRunSidsQueryForList = loadRunSidsQueryForList;
+    }
+
+    @Required
+    public void setUpdateTagsQuery(final String updateTagsQuery) {
+        this.updateTagsQuery = updateTagsQuery;
     }
 }

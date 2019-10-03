@@ -57,6 +57,8 @@ RUN     cd /tmp && \
 # Install LUA JWT
 # FIXME: fork the distribution
 RUN opm get cdbattags/lua-resty-jwt=0.2.0
+# Install LUA HTTP Client
+RUN opm get pintsized/lua-resty-http=0.12
 
 # Configure cron and sync routes script
 ADD	crontab /etc/cron.d/sync-routes
@@ -81,6 +83,7 @@ RUN	mkdir -p /etc/nginx/sites-enabled/
 ADD validate_cookie.lua /etc/nginx/validate_cookie.lua
 ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
+ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
 
 ## DAV auth page

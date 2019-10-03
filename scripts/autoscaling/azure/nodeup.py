@@ -27,7 +27,7 @@ import uuid
 import base64
 from time import sleep
 from random import randint
-from azure.common.client_factory import get_client_from_auth_file
+from azure.common.client_factory import get_client_from_auth_file, get_client_from_cli_profile
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
@@ -202,9 +202,16 @@ RESOURCE_GROUP_KEY_INDEX = 3
 
 
 zone = None
-resource_client = get_client_from_auth_file(ResourceManagementClient)
-network_client = get_client_from_auth_file(NetworkManagementClient)
-compute_client = get_client_from_auth_file(ComputeManagementClient)
+auth_file = os.environ.get('AZURE_AUTH_LOCATION', None)
+if auth_file:
+    resource_client = get_client_from_auth_file(ResourceManagementClient, auth_path=auth_file)
+    network_client = get_client_from_auth_file(NetworkManagementClient, auth_path=auth_file)
+    compute_client = get_client_from_auth_file(ComputeManagementClient, auth_path=auth_file)
+else:
+    resource_client = get_client_from_cli_profile(ResourceManagementClient)
+    network_client = get_client_from_cli_profile(NetworkManagementClient)
+    compute_client = get_client_from_cli_profile(ComputeManagementClient)
+
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
@@ -917,11 +924,19 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(swap_size, user_data_script)
-        return user_data_script\
-            .replace('@DOCKER_CERTS@', certs_string) \
-            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-            .replace('@KUBE_IP@', kube_ip) \
-            .replace('@KUBE_TOKEN@', kubeadm_token)
+        user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                            .replace('@KUBE_IP@', kube_ip) \
+                                            .replace('@KUBE_TOKEN@', kubeadm_token)
+
+        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
+        # to minimize the size of the user data
+        # Otherwise - raw script will be used
+        try:
+            from pipeline import pack_script_contents
+            return pack_script_contents(user_data_script)
+        except:
+            return user_data_script
     else:
         raise RuntimeError('Unable to get init.sh path')
 

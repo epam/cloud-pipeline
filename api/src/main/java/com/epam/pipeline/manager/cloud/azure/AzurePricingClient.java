@@ -17,7 +17,8 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
-import com.epam.pipeline.exception.cloud.azure.AzureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.http.GET;
@@ -26,9 +27,10 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import java.io.IOException;
-import java.util.Objects;
 
 public interface AzurePricingClient {
+    Logger LOGGER = LoggerFactory.getLogger(AzurePricingClient.class);
+
     String AUTH_HEADER = "Authorization";
 
     @GET("subscriptions/{subscription}/providers/Microsoft.Commerce/RateCard")
@@ -41,12 +43,14 @@ public interface AzurePricingClient {
         try {
             Response<T> response = request.execute();
             if (response.isSuccessful()) {
-                return Objects.requireNonNull(response.body());
+                return response.body();
             } else {
-                throw new IllegalArgumentException();
+                LOGGER.error("Failed to execute Azure request: {}", response.message());
+                return null;
             }
         } catch (IOException e) {
-            throw new AzureException(e);
+            LOGGER.error(e.getMessage(), e);
+            return null;
         }
     }
 }

@@ -33,4 +33,5 @@ public final class PipelineStringUtils {
         }
         return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
     }
+
 }

@@ -339,7 +339,7 @@ function api_get_cluster_instance_details {
     local region_id="$2"
 
     local get_cluster_instance_details_json=$(call_api "/cluster/instance/loadAll?regionId=$region_id" "$CP_API_JWT_ADMIN")
-    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r ".payload[] | select(.name == \"$instance_type\")")"
+    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r "select(.payload != null) | .payload[] | select(.name == \"$instance_type\")")"
     if [ "$get_cluster_instance_details_result" ] && [ "$get_cluster_instance_details_result" != "null" ]; then
         echo "$get_cluster_instance_details_result"
         return 0
@@ -1108,7 +1108,7 @@ function api_register_system_folder {
 
 function api_register_system_storage {
     if [ -z "$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME" ]; then
-        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
+        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments and FSBrowser will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
         return 1
     fi
 
@@ -1158,7 +1158,11 @@ EOF
         echo "========"
     else
         print_ok "System storage $CP_PREF_STORAGE_SYSTEM_STORAGE_NAME is registered"
-        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "false"
+        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "true"
+        api_set_preference "storage.fsbrowser.enabled" "${CP_PREF_STORAGE_FSBROWSER_ENABLED:-"true"}" "true"
+        api_set_preference "storage.fsbrowser.port" "${CP_PREF_STORAGE_FSBROWSER_PORT:-8091}" "true"
+        api_set_preference "storage.fsbrowser.wd" "${CP_PREF_STORAGE_FSBROWSER_WD:-"/"}" "true"
+        api_set_preference "storage.fsbrowser.transfer" "${CP_PREF_STORAGE_FSBROWSER_TRANSFER:-$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME/fsbrowser}" "true"
     fi
     return $call_api_register_system_storage_result
 }

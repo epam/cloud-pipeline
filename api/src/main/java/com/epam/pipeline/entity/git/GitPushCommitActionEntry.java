@@ -18,11 +18,9 @@ package com.epam.pipeline.entity.git;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class GitPushCommitActionEntry {
     private String action; // "create", "delete", "move" or "update"
     @JsonProperty("file_path")
@@ -34,6 +32,12 @@ public class GitPushCommitActionEntry {
     private String content;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String encoding; // "text" or "base64"
+
+    @JsonProperty("author_email")
+    private String authorEmail;
+
+    @JsonProperty("author_name")
+    private String authorName;
 
     public GitPushCommitActionEntry() {
         this.encoding = "text";
