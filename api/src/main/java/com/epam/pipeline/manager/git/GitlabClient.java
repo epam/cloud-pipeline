@@ -21,8 +21,6 @@ import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitFile;
 import com.epam.pipeline.entity.git.GitHookRequest;
 import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitProjectMember;
-import com.epam.pipeline.entity.git.GitProjectMemberRequest;
 import com.epam.pipeline.entity.git.GitProjectRequest;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -72,7 +70,7 @@ import java.util.stream.Stream;
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
-public class GitlabClient {
+public final class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
@@ -100,7 +98,7 @@ public class GitlabClient {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    private String userName;
+    private GitlabUser gitlabUser;
     private String namespace;
     private String projectName;
     private String gitHost;
@@ -116,18 +114,18 @@ public class GitlabClient {
      */
     private boolean externalHost;
 
-    public GitlabClient(String host, String namespace, String user, String adminToken, String project,
-                        String fullUrl, Long gitAdminId, String adminName, boolean externalHost, boolean rootClient) {
+    private GitlabClient(String host, String namespace, String user, String adminToken, String project,
+                         String fullUrl, Long gitAdminId, String adminName, boolean externalHost) {
         this.gitHost = host;
         this.namespace = namespace;
-        this.userName = user;
         this.projectName = project;
         this.adminToken = adminToken;
         this.fullUrl = fullUrl;
         this.adminId = gitAdminId;
         this.adminName = adminName;
         this.externalHost = externalHost;
-        this.gitLabApi = buildGitLabApi(host, adminToken, rootClient ? adminName : user);
+        this.gitLabApi = buildGitLabApi(host, adminToken);
+        this.gitlabUser = getUser(user);
     }
 
     public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,
@@ -144,12 +142,12 @@ public class GitlabClient {
 
         LOGGER.trace("Created Git client for repository {}", repository);
         return new GitlabClient(host, namespace, userOrNamespace, token, project,
-                repository, adminId, adminName, externalHost, false);
+                repository, adminId, adminName, externalHost);
     }
 
-    public static GitlabClient initializeRootGitlabClientFromHostAndToken(String gitHost, String token, String userName,
-                                                                          Long gitAdminId, String adminName) {
-        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId, adminName, false, true);
+    public static GitlabClient initializeGitlabClientFromHostAndToken(String gitHost, String token, String userName,
+                                                                      Long gitAdminId, String adminName) {
+        return new GitlabClient(gitHost, adminName, userName, token, null, null, gitAdminId, adminName, false);
     }
 
     public GitCredentials buildCloneCredentials(boolean useEnvVars, boolean issueToken, Long duration)
@@ -164,13 +162,13 @@ public class GitlabClient {
         final String userName;
         final String email;
         if (issueToken && !externalHost) {
-            final GitlabUser user = findUser(this.userName)
+            final GitlabUser user = findUser(this.gitlabUser.getUsername())
                     .orElseGet(() -> GitlabUser.builder().username(adminName).id(adminId).build());
             userName = user.getUsername();
             cloneToken = createImpersonationToken(projectName, user.getId(), duration);
             email = user.getEmail();
         } else {
-            userName = externalHost ? this.userName.replaceAll("@.*$", "") : adminName;
+            userName = externalHost ? this.gitlabUser.getUsername().replaceAll("@.*$", "") : adminName;
             cloneToken = adminToken;
             email = null;
         }
@@ -305,6 +303,8 @@ public class GitlabClient {
     }
 
     public GitCommitEntry commit(GitPushCommitEntry commitEntry) throws GitClientException {
+        commitEntry.setAuthorEmail(gitlabUser.getEmail());
+        commitEntry.setAuthorName(gitlabUser.getUsername());
         String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.postCommit(projectId, commitEntry));
     }
@@ -356,6 +356,8 @@ public class GitlabClient {
             Response<GitFile> response = gitLabApi.createFiles(
                     project.getId().toString(), path,
                     UpdateGitFileRequest.builder()
+                            .authorEmail(gitlabUser.getEmail())
+                            .authorName(gitlabUser.getUsername())
                             .branch(DEFAULT_BRANCH)
                             .message(INITIAL_COMMIT)
                             .content(content).build()
@@ -410,18 +412,18 @@ public class GitlabClient {
                 .flatMap(Stream::findFirst);
     }
 
+    private GitlabUser getUser(String userName) {
+        try {
+            return findUser(userName).orElseThrow(() -> new GitClientException("User " + userName + " not found!"));
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     private GitProject createRepo(String repoName, String description) throws GitClientException {
         GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
                 .visibility(PUBLIC_VISIBILITY).build();
         return execute(gitLabApi.createProject(gitProject));
-    }
-
-    private GitProjectMember addUserAsMemberToProject(String projectId) throws GitClientException {
-        GitProjectMemberRequest gitProject = GitProjectMemberRequest.builder().accessLevel(MAINTAINER)
-                .userId(findUser(userName).orElseThrow(
-                    () -> new GitClientException("Cannot find a user!")).getId()
-                ).build();
-        return execute(gitLabApi.grantProjectPermissions(projectId, gitProject));
     }
 
     private GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
@@ -436,9 +438,6 @@ public class GitlabClient {
     private GitProject createGitProject(Template template, String description, String repoName,
                                         boolean indexingEnabled, String hookUrl) throws GitClientException {
         GitProject project = createRepo(repoName, description);
-        addUserAsMemberToProject(makeProjectId(namespace, repoName));
-        // change api client to do all following actions as an authorized user
-        this.gitLabApi = buildGitLabApi(gitHost, adminToken, userName);
         if (indexingEnabled) {
             addProjectHook(String.valueOf(project.getId()), hookUrl);
         }
@@ -456,8 +455,8 @@ public class GitlabClient {
         return project;
     }
 
-    private GitLabApi buildGitLabApi(final String gitHost, final String adminToken, final String userName) {
-        return new GitLabApiBuilder(gitHost, adminToken, userName).build();
+    private GitLabApi buildGitLabApi(final String gitHost, final String adminToken) {
+        return new GitLabApiBuilder(gitHost, adminToken).build();
     }
 
     private void uploadFolder(Template template, String repoName, GitProject project) throws GitClientException {

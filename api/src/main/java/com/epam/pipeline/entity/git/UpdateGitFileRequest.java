@@ -35,4 +35,11 @@ public class UpdateGitFileRequest {
 
     @JsonProperty("content")
     private String content;
+
+    @JsonProperty("author_email")
+    private String authorEmail;
+
+    @JsonProperty("author_name")
+    private String authorName;
+
 }

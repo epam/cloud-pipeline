@@ -33,6 +33,12 @@ public class GitPushCommitActionEntry {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String encoding; // "text" or "base64"
 
+    @JsonProperty("author_email")
+    private String authorEmail;
+
+    @JsonProperty("author_name")
+    private String authorName;
+
     public GitPushCommitActionEntry() {
         this.encoding = "text";
     }
