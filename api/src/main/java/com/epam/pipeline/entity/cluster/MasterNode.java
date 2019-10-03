@@ -18,19 +18,18 @@ package com.epam.pipeline.entity.cluster;
 
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeAddress;
-import io.fabric8.kubernetes.api.model.NodeStatus;
-import io.fabric8.kubernetes.api.model.ObjectMeta;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Getter
 @Setter
-public class MasterNode {
+public final class MasterNode {
 
     public static final String K8S_MASTER_PORT_LABEL = "cloud-pipeline/k8s_master_port";
     public static final String INTERNAL_IP = "InternalIP";
@@ -43,26 +42,26 @@ public class MasterNode {
     private Map<String, String> labels;
 
     private MasterNode(final Node node, final String defaultPort) {
-        ObjectMeta metadata = node.getMetadata();
 
-        if (metadata != null) {
-            this.uid = UUID.fromString(metadata.getUid());
-            this.name = metadata.getName();
-            this.labels = metadata.getLabels();
-            final String port = MapUtils.emptyIfNull(this.labels).get(K8S_MASTER_PORT_LABEL);
-            this.port = StringUtils.isNotBlank(port) ? port : defaultPort;
-            this.creationTimestamp = metadata.getCreationTimestamp();
-        }
+        Optional.ofNullable(node.getMetadata()).ifPresent(
+                metadata -> {
+                    this.uid = UUID.fromString(metadata.getUid());
+                    this.name = metadata.getName();
+                    this.labels = metadata.getLabels();
+                    final String port = MapUtils.emptyIfNull(this.labels).get(K8S_MASTER_PORT_LABEL);
+                    this.port = StringUtils.isNotBlank(port) ? port : defaultPort;
+                    this.creationTimestamp = metadata.getCreationTimestamp();
+        });
 
-        NodeStatus status = node.getStatus();
-        if (status != null) {
-            this.internalIP = status.getAddresses()
-                                .stream()
-                                .filter(address -> address.getType().equalsIgnoreCase(INTERNAL_IP))
-                                .map(NodeAddress::getAddress)
-                                .findFirst()
-                                .orElse(null);
-        }
+        Optional.ofNullable(node.getStatus()).ifPresent(
+            status ->
+                this.internalIP = status.getAddresses()
+                        .stream()
+                        .filter(address -> address.getType().equalsIgnoreCase(INTERNAL_IP))
+                        .map(NodeAddress::getAddress)
+                        .findFirst()
+                        .orElse(null)
+        );
     }
 
     public static MasterNode fromNode(final Node node, final String port) {

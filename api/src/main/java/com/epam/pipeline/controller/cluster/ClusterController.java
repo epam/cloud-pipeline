@@ -34,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,11 +57,11 @@ public class ClusterController extends AbstractRestController {
 
     private final ClusterApiService clusterApiService;
 
-    @RequestMapping(value = "/cluster/master", method = RequestMethod.GET)
+    @GetMapping(value = "/cluster/master")
     @ResponseBody
     @ApiOperation(
-            value = "Returns ec2 nodes used in cluster as a master API node",
-            notes = "Returns ec2 nodes used in cluster as a master API node",
+            value = "Returns kubernetes nodes used in cluster as a master API node",
+            notes = "Returns kubernetes nodes used in cluster as a master API node",
             produces = MediaType.APPLICATION_JSON_VALUE
         )
     @ApiResponses(
@@ -76,7 +77,7 @@ public class ClusterController extends AbstractRestController {
             value = "Returns all ec2 nodes used in cluster",
             notes = "Returns all ec2 nodes used in cluster",
             produces = MediaType.APPLICATION_JSON_VALUE
-    )
+        )
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
     )

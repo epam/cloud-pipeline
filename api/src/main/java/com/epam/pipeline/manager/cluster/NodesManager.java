@@ -204,12 +204,13 @@ public class NodesManager {
     }
 
     public List<MasterNode> getMasterNodes() {
-        String defMPort = String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
+        final String defMasterPort =
+                String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
         try (KubernetesClient client = new DefaultKubernetesClient()) {
             return client.nodes().withLabel(MASTER_LABEL).list().getItems()
                     .stream()
                     .filter(this::nodeIsReady)
-                    .map(node -> MasterNode.fromNode(node, defMPort))
+                    .map(node -> MasterNode.fromNode(node, defMasterPort))
                     .collect(Collectors.toList());
         }
     }
@@ -217,8 +218,8 @@ public class NodesManager {
     private boolean nodeIsReady(final Node node) {
         return CollectionUtils.emptyIfNull(node.getStatus().getConditions())
                 .stream().anyMatch(
-                        nc -> nc.getType().equalsIgnoreCase(KubernetesConstants.READY) &&
-                                nc.getStatus().equalsIgnoreCase(KubernetesConstants.TRUE));
+                    nc -> nc.getType().equalsIgnoreCase(KubernetesConstants.READY) &&
+                            nc.getStatus().equalsIgnoreCase(KubernetesConstants.TRUE));
     }
 
     /**
