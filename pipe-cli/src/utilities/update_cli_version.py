@@ -16,6 +16,8 @@ import os
 import stat
 import sys
 from abc import ABCMeta
+
+import click
 import requests
 import platform
 import zipfile
@@ -24,6 +26,7 @@ import uuid
 from datetime import datetime
 
 from src.config import Config
+from src.utilities.version_utils import need_to_update_version
 
 PERMISSION_DENIED_ERROR = "Permission denied: the user has no permissions to modify '%s'"
 
@@ -34,6 +37,10 @@ class UpdateCLIVersionManager(object):
         pass
 
     def update(self, path=None):
+        if not need_to_update_version():
+            click.echo("The Cloud Pipeline CLI version is up-to-date")
+            return
+
         updater = self.get_updater()
 
         if not path:
