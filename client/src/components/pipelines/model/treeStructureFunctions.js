@@ -299,6 +299,7 @@ export function generateTreeData ({
         id: versions[i].commitId,
         key: `${ItemTypes.version}_${versions[i].commitId}`,
         name: versions[i].name,
+        author: versions[i].author,
         type: ItemTypes.version,
         entityId: parent && parent.id,
         entityClass: 'PIPELINE',
