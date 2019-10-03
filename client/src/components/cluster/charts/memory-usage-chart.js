@@ -22,8 +22,7 @@ import {
   LinePlot,
   Plot,
   XAxis,
-  YAxis,
-  Tooltip
+  YAxis
 } from './controls';
 import {
   AxisDataType,
@@ -66,12 +65,14 @@ class MemoryUsageChart extends Base {
             identifier={'usage'}
             name={'MB used'}
             yAxis={'memory usage'}
+            tooltip={item => Math.round(item.y * 100) / 100.0}
           />
           <LinePlot
             identifier={'percent'}
             name={'MB used (%)'}
             dataField={'percent'}
             yAxis={'memory percent'}
+            tooltip={item => `${Math.round(item.percent * 100) / 100.0}%`}
           />
           <Legend />
         </Plot>

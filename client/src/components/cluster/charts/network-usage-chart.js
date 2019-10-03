@@ -19,7 +19,7 @@ import {computed} from 'mobx';
 import {Row, Select} from 'antd';
 import Base from './base';
 import {Legend, LinePlot, Plot, XAxis, YAxis} from './controls';
-import {AxisDataType} from './controls/utilities';
+import {AxisDataType, formatters} from './controls/utilities';
 
 class NetworkUsageChart extends Base {
   static controlsHeight = 30;
@@ -102,11 +102,13 @@ class NetworkUsageChart extends Base {
           identifier={'rx'}
           name={'RX'}
           dataField={obj => obj?.stats[selectedInterface]?.rxBytes}
+          tooltip={item => formatters.networkUsage(item.stats[selectedInterface]?.rxBytes)}
         />
         <LinePlot
           identifier={'tx'}
           name={'TX'}
           dataField={obj => obj?.stats[selectedInterface]?.txBytes}
+          tooltip={item => formatters.networkUsage(item.stats[selectedInterface]?.txBytes)}
         />
         <Legend />
       </Plot>

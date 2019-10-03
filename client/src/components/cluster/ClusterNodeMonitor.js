@@ -34,8 +34,8 @@ import {
   FileSystemUsageChart,
   MemoryUsageChart,
   NetworkUsageChart
-} from './charts/chart';
-import {ResponsiveContainer} from './charts/chart/utilities';
+} from './charts';
+import {ResponsiveContainer} from './charts/utilities';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -416,34 +416,6 @@ class ClusterNodeMonitor extends React.Component {
         </ResponsiveContainer>
       </div>
     );
-    // return (
-    //   <div className={styles.fullHeightContainer} style={{overflowY: 'auto'}}>
-    //     <ChartContainer>
-    //       <Chart
-    //         title="CPU Usage"
-    //         data={cpuUsageData}
-    //         renderer={CPUUsageChart}
-    //       />
-    //       {/*<CPUChart*/}
-    //       {/*usage={this.props.usage} />*/}
-    //     </ChartContainer>
-    //     <ChartContainer>
-    //       <MemoryChart
-    //         usage={this.props.usage} />
-    //       <CurrentMemoryUsageChart
-    //         usage={this.props.usage}
-    //         style={{height: 80, flex: 'unset'}} />
-    //     </ChartContainer>
-    //     <ChartContainer>
-    //       <NetworkChart
-    //         usage={this.props.usage} />
-    //     </ChartContainer>
-    //     <ChartContainer>
-    //       <FileSystemChart
-    //         usage={this.props.usage} />
-    //     </ChartContainer>
-    //   </div>
-    // );
   }
 }
 

@@ -153,6 +153,24 @@ class LinePlot extends React.Component {
     );
   };
 
+  renderHoveredPoint = (x, y) => {
+    const {plotContext} = this.props;
+    if (!plotContext.hoveredItem) {
+      return null;
+    }
+    const point = this.getDataPoint(x, y)(plotContext.hoveredItem);
+    return (
+      <circle
+        key={'hovered'}
+        cx={point.x}
+        cy={point.y}
+        r={4}
+        strokeWidth={2}
+        fill={'white'}
+      />
+    );
+  };
+
   renderLine = (dataPoints) => {
     return dataPoints.map(this.renderItem).join(' ');
   };
@@ -178,6 +196,7 @@ class LinePlot extends React.Component {
           {
             dataPoints.map(this.renderPoint)
           }
+          {this.renderHoveredPoint(x, y)}
         </g>
       );
     }
@@ -193,7 +212,8 @@ LinePlot.propTypes = {
   plotData: PropTypes.object,
   xAxis: PropTypes.string,
   yAxis: PropTypes.string,
-  dataField: PropTypes.oneOfType([PropTypes.func, PropTypes.string])
+  dataField: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
+  tooltip: PropTypes.func
 };
 
 LinePlot.defaultProps = {

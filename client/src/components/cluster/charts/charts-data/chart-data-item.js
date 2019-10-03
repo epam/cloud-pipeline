@@ -177,6 +177,7 @@ class ChartData {
   @observable to;
 
   @observable ranges = {};
+  listeners = [];
 
   nodeName;
 
@@ -198,6 +199,20 @@ class ChartData {
     this.instanceFrom = instanceFrom;
     this.from = instanceFrom;
   }
+
+  registerListener = (listener) => {
+    const index = this.listeners.indexOf(listener);
+    if (index === -1) {
+      this.listeners.push(listener);
+    }
+  };
+
+  unRegisterListener = (listener) => {
+    const index = this.listeners.indexOf(listener);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
+  };
 
   @action
   loadData = () => {
@@ -246,6 +261,7 @@ class ChartData {
       this.data.splice(0, this.data.length, ...data);
     }
     this.updateRange();
+    this.listeners.forEach(fn => fn(this));
   }
 }
 

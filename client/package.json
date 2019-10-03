@@ -5,7 +5,6 @@
   "dependencies": {
     "ansi_up": "^2.0.2",
     "antd": "2.13.14",
-    "chart.js": "^2.6.0",
     "codemirror": "^5.28.0",
     "cytoscape": "^2.7.16",
     "cytoscape-dagre": "^1.5.0",
@@ -36,7 +35,6 @@
     "react-tap-event-plugin": "2.0.1",
     "react-test-renderer": "^15.5.4",
     "react-virtualized": "^9.7.2",
-    "react-vis": "^1.11.7",
     "remarkable": "^1.7.1"
   },
   "devDependencies": {

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
+import * as formatters from './formatters';
+
 export {default as AxisDataType} from './axis-data-format';
 export {default as AxisDefaultSize} from './axis-default-size';
 export {default as AxisPosition} from './axis-position';
+export {formatters};
 export {default as interpolate} from './interpolate';
-export {default as generateTicks} from './ticks-generator';
 export {default as PlotColors} from './plot-colors';
 export {default as PlotContext} from './plot-context';
 export {default as usageFormatter} from './usage-formatter';
-export {default as networkUsageFormatter} from './network-usage-formatter';
-export {default as memoryUsageFormatter} from './memory-usage-formatter';

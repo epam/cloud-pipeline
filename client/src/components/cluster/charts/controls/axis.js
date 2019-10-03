@@ -17,32 +17,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
-import moment from 'moment';
+import {computed, observable} from 'mobx';
 import {
   AxisDataType,
   AxisDefaultSize,
-  AxisPosition,
-  generateTicks,
-  networkUsageFormatter,
-  memoryUsageFormatter
+  AxisPosition
 } from './utilities';
-
-function numberFormatter (number, base = 2) {
-  if (base > 0) {
-    return Math.round(number);
-  }
-  const v = 10 ** (-base);
-  return (Math.round(number * v) / v).toFixed(-base);
-}
-
-function percentageFormatter (number) {
-  return `${number.toFixed()}%`;
-}
-
-function dateFormatter (value) {
-  return moment.unix(value).format('HH:mm:ss');
-}
+import ticksGenerator from './ticks';
 
 function valueUnset (value) {
   return value === null || value === undefined || value === Infinity || value === -Infinity;
@@ -80,6 +61,9 @@ class Axis extends React.Component {
   };
 
   static defaultSize = AxisDefaultSize.horizontal;
+
+  @observable startTick;
+  @observable endTick;
 
   get size () {
     const {size} = this.props;
@@ -176,31 +160,12 @@ class Axis extends React.Component {
     if (Array.isArray(ticks)) {
       return ticks;
     }
-    return generateTicks(
-      this.start,
-      this.end,
-      ticks,
-      axisDataType === AxisDataType.networkUsage ? 1024 : 10);
+    const generator = ticksGenerator[axisDataType] || ticksGenerator.default;
+    return generator(this.start, this.end, this.canvasSize);
   }
 
   get invalid () {
     return valueUnset(this.start) || valueUnset(this.end);
-  }
-
-  get tickFormatter () {
-    const {axisDataType, tickFormatter} = this.props;
-    if (tickFormatter) {
-      return tickFormatter;
-    }
-    switch (axisDataType) {
-      case AxisDataType.number: return numberFormatter;
-      case AxisDataType.bytes: return memoryUsageFormatter;
-      case AxisDataType.mBytes: return numberFormatter;
-      case AxisDataType.date: return dateFormatter;
-      case AxisDataType.percent: return percentageFormatter;
-      case AxisDataType.networkUsage: return networkUsageFormatter;
-      default: return numberFormatter;
-    }
   }
 
   componentDidMount () {
@@ -230,6 +195,31 @@ class Axis extends React.Component {
     if (plotContext) {
       plotContext.unRegisterAxis(this);
     }
+  };
+
+  skipTickLabel = (x, y) => {
+    const testTickBox = (tick) => {
+      if (tick) {
+        const box = tick.getBBox();
+        const left = box.x - box.width / 2.0;
+        const right = box.x + 3 * box.width / 2.0;
+        const top = box.y - box.height / 2.0;
+        const bottom = box.y + 3 * box.height / 2.0;
+        if (left <= x && x <= right && top <= y && y <= bottom) {
+          return true;
+        }
+      }
+      return false;
+    };
+    return testTickBox(this.startTick) || testTickBox(this.endTick);
+  };
+
+  createStartTickRef = (tickLabel) => {
+    this.startTick = tickLabel;
+  };
+
+  createEndTickRef = (tickLabel) => {
+    this.endTick = tickLabel;
   };
 
   getCanvasCoordinate (value) {
@@ -347,23 +337,30 @@ class XAxis extends Axis {
   }
 
   renderTicks = (ticks) => {
+    if (!ticks) {
+      console.log(this.constructor.name, 'empty ticks');
+    }
     const {
       tickSize
     } = this.props;
     const mainY = this.axisLine;
     const renderTick = (tick) => {
-      const x = this.getCanvasCoordinate(tick);
+      const x = this.getCanvasCoordinate(tick.tick);
+      const sizeFactor = tick.isBase ? 1 : 0.5;
       const yTick1 = mainY;
-      const yTick2 = Math.round(mainY - tickSize * this.perpendicularDirection);
+      const yTick2 = Math.round(mainY - tickSize * this.perpendicularDirection * sizeFactor);
       return `M ${x},${yTick1} L ${x},${yTick2}`;
     };
-    const ticksPath = ticks.ticks.map(renderTick).join(' ');
+    const ticksPath = ticks.map(renderTick).join(' ');
     return (
       <path d={ticksPath} />
     );
   };
 
   renderTickLabels = (ticks) => {
+    if (!ticks) {
+      console.log(this.constructor.name, 'empty ticks');
+    }
     const {
       position,
       tickSize,
@@ -373,19 +370,32 @@ class XAxis extends Axis {
     const mainY = this.axisLine;
     const tickDirection = position === AxisPosition.bottom ? 1 : 0;
     const renderTickLabel = (tick) => {
-      const x = this.getCanvasCoordinate(tick);
-      const tickY = Math.round(
+      if (!tick.isBase) {
+        return null;
+      }
+      const x = this.getCanvasCoordinate(tick.tick);
+      const y = Math.round(
         mainY - tickSize * this.perpendicularDirection + tickFontSizePx * tickDirection
       );
-      if (tickY - tickFontSizePx / 2.0 < 0 || tickY + tickFontSizePx / 2.0 > this.bottom) {
+      if (y - tickFontSizePx / 2.0 < 0 || y + tickFontSizePx / 2.0 > this.bottom) {
         return null;
       }
       let anchor = 'middle';
+      let text = tick.display || (o => o);
+      let ref;
+      if (tick.isStart) {
+        ref = this.createStartTickRef;
+      } else if (tick.isEnd) {
+        ref = this.createEndTickRef;
+      } else if (this.skipTickLabel(x, y)) {
+        return null;
+      }
       return (
         <text
-          key={tick}
+          ref={ref}
+          key={tick.tick}
           x={x}
-          y={tickY}
+          y={y}
           textAnchor={anchor}
           style={{
             fontSize: `${tickFontSizePx}px`,
@@ -393,11 +403,11 @@ class XAxis extends Axis {
             fill: (style || {}).stroke || '#999'
           }}
         >
-          {this.tickFormatter(tick, ticks.base)}
+          {text}
         </text>
       );
     };
-    return ticks.ticks.map(renderTickLabel);
+    return ticks.map(renderTickLabel);
   };
 
   render () {
@@ -534,12 +544,13 @@ class YAxis extends Axis {
     } = this.props;
     const mainX = this.axisLine;
     const renderTick = (tick) => {
-      const y = this.getCanvasCoordinate(tick);
+      const y = this.getCanvasCoordinate(tick.tick);
+      const sizeFactor = tick.isBase ? 1 : 0.5;
       const xTick1 = mainX;
-      const xTick2 = Math.round(mainX - tickSize * this.perpendicularDirection);
+      const xTick2 = Math.round(mainX - tickSize * this.perpendicularDirection * sizeFactor);
       return `M ${xTick1},${y} L ${xTick2},${y}`;
     };
-    const ticksPath = ticks.ticks.map(renderTick).join(' ');
+    const ticksPath = ticks.map(renderTick).join(' ');
     return (
       <path d={ticksPath} />
     );
@@ -554,15 +565,28 @@ class YAxis extends Axis {
     } = this.props;
     const mainX = this.axisLine;
     const renderTickLabel = (tick) => {
-      const y = this.getCanvasCoordinate(tick) + tickFontSizePx / 3.0;
+      if (!tick.isBase) {
+        return null;
+      }
+      const y = this.getCanvasCoordinate(tick.tick) + tickFontSizePx / 3.0;
       const x = Math.round(mainX - tickSize * this.perpendicularDirection);
       let anchor = 'start';
       if (position === AxisPosition.left) {
         anchor = 'end';
       }
+      const text = tick.display || (o => o);
+      let ref;
+      if (tick.isStart) {
+        ref = this.createStartTickRef;
+      } else if (tick.isEnd) {
+        ref = this.createEndTickRef;
+      } else if (this.skipTickLabel(x, y)) {
+        return null;
+      }
       return (
         <text
-          key={tick}
+          ref={ref}
+          key={tick.tick}
           x={x}
           y={y}
           textAnchor={anchor}
@@ -572,11 +596,11 @@ class YAxis extends Axis {
             fill: (style || {}).stroke || '#999'
           }}
         >
-          {this.tickFormatter(tick, ticks.base)}
+          {text}
         </text>
       );
     };
-    return ticks.ticks.map(renderTickLabel);
+    return ticks.map(renderTickLabel);
   };
 
   render () {
@@ -648,7 +672,8 @@ XAxis.defaultProps = {
 
 YAxis.defaultProps = {
   identifier: 'y',
-  position: AxisPosition.left
+  position: AxisPosition.left,
+  tickSize: 8
 };
 
 export {XAxis, YAxis};

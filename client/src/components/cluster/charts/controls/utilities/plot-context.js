@@ -38,6 +38,20 @@ class PlotContext {
     this.container = container;
   }
 
+  setData = (data) => {
+    if (this.data && this.data.unRegisterListener) {
+      this.data.unRegisterListener(this.dataUpdated);
+    }
+    this.data = data;
+    if (this.data && this.data.registerListener) {
+      this.data.registerListener(this.dataUpdated);
+    }
+  };
+
+  dataUpdated = () => {
+    this.hoveredItem = null;
+  };
+
   registerAxis (axis) {
     if (this.axises.indexOf(axis) === -1) {
       this.axises.push(axis);

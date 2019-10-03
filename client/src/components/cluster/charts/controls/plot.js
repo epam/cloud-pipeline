@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {PlotContext} from './utilities';
+import Tooltip from './tooltip';
 import ZoomArea from './zoom-area';
 
 const ESCAPE_KEY = 27;
@@ -65,7 +66,7 @@ class Plot extends React.Component {
   }
 
   componentDidMount () {
-    this.plotContext.data = this.props.data;
+    this.plotContext.setData(this.props.data);
     window.addEventListener('mousemove', this.mouseMove);
     window.addEventListener('mouseup', this.mouseUp);
     window.addEventListener('keydown', this.keydown);
@@ -79,7 +80,7 @@ class Plot extends React.Component {
 
   componentWillReceiveProps (nextProps) {
     if (nextProps.data !== this.props.data) {
-      this.plotContext.data = nextProps.data;
+      this.plotContext.setData(nextProps.data);
     }
   }
 
@@ -298,8 +299,7 @@ class Plot extends React.Component {
       width,
       height,
       padding,
-      xAxis,
-      tooltipFormat
+      xAxis
     } = this.props;
     const {zoom} = this.state;
     return (
@@ -326,6 +326,7 @@ class Plot extends React.Component {
             />
           </mask>
           {children}
+          <Tooltip />
           <ZoomArea
             from={zoom?.start}
             to={zoom?.end}

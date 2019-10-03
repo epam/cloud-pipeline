@@ -37,7 +37,10 @@ class CPUUsageChart extends Base {
           min={0}
           start={0}
         />
-        <LinePlot />
+        <LinePlot
+          name={'CPU Usage'}
+          tooltip={item => Math.round(item.y * 10000) / 10000.0}
+        />
       </Plot>
     );
   }
