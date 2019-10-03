@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
-import com.epam.pipeline.common.MessageConstants;
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -31,10 +29,10 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +53,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private final MonitoringESDao monitoringDao;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
-    private final MessageHelper messageHelper;
 
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
@@ -64,7 +61,9 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime oldestMonitoring = oldestMonitoringDate();
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
-        return getStats(nodeName, start, end);
+        return end.isAfter(start) && end.isAfter(oldestMonitoring)
+                ? getStats(nodeName, start, end)
+                : Collections.emptyList();
     }
 
     private LocalDateTime oldestMonitoringDate() {
@@ -83,8 +82,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
-        Assert.isTrue(start.isBefore(end), messageHelper.getMessage(
-                MessageConstants.ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL, start, end));
         final Duration interval = interval(start, end);
         return Stream.of(MONITORING_METRICS)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))

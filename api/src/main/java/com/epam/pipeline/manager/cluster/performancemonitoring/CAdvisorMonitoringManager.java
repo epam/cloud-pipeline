@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -104,12 +105,9 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to) {
-        if (from == null || to == null) {
-            return getStats(nodeName);
-        }
-        Assert.isTrue(from.isBefore(to), messageHelper.getMessage(
-                MessageConstants.ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL, from, to));
-        return getStats(nodeName, from, to);
+        final LocalDateTime start = Optional.ofNullable(from).orElseGet(() -> LocalDateTime.from(Instant.MIN));
+        final LocalDateTime end = Optional.ofNullable(to).orElseGet(() -> LocalDateTime.from(Instant.MAX));
+        return getStats(nodeName, start, end);
     }
 
     public List<MonitoringStats> getStats(final String nodeName) {

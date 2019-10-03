@@ -439,10 +439,6 @@ public final class MessageConstants {
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
 
-    //Cluster usage monitoring
-    public static final String ERROR_CLUSTER_MONITORING_NEGATIVE_INTERVAL =
-            "error.cluster.monitoring.negative.interval";
-
     private MessageConstants() {
         // no-op
     }
