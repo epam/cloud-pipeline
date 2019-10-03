@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
@@ -51,6 +52,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
 
     private final RestHighLevelClient client;
+    private final MonitoringESDao monitoringDao;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
     private final MessageHelper messageHelper;
@@ -58,9 +60,26 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to) {
-        final LocalDateTime start = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
+        final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         return getStats(nodeName, start, end);
+    }
+
+    private LocalDateTime oldestMonitoringDate() {
+        return monitoringDao.oldestIndexDate().orElseGet(this::fallbackMonitoringStart);
+    }
+
+    private LocalDateTime creationDate(final String nodeName) {
+        return nodesManager.findNode(nodeName)
+                .map(NodeInstance::getCreationTimestamp)
+                .map(it -> LocalDateTime.parse(it, KubernetesConstants.KUBE_DATE_FORMATTER))
+                .orElseGet(this::fallbackMonitoringStart);
+    }
+
+    private LocalDateTime fallbackMonitoringStart() {
+        return DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD);
     }
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
@@ -83,13 +102,6 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime,
                         Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
-    }
-
-    private LocalDateTime creationDate(final String nodeName) {
-        return nodesManager.findNode(nodeName)
-                .map(NodeInstance::getCreationTimestamp)
-                .map(it -> LocalDateTime.parse(it, KubernetesConstants.KUBE_DATE_FORMATTER))
-                .orElseGet(() -> DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD));
     }
 
     private Duration interval(final LocalDateTime start, final LocalDateTime end) {
@@ -156,8 +168,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                               final LocalDateTime regionEnd, final Duration interval) {
         final LocalDateTime intervalStart = asMonitoringDateTime(stats.getStartTime());
         final LocalDateTime intervalEnd = intervalStart.plus(interval);
-        final LocalDateTime start = intervalStart.compareTo(regionStart) > 0 ? intervalStart : regionStart;
-        final LocalDateTime end = intervalEnd.compareTo(regionEnd) < 0 ? intervalEnd : regionEnd;
+        final LocalDateTime start = intervalStart.isAfter(regionStart) ? intervalStart : regionStart;
+        final LocalDateTime end = intervalEnd.isBefore(regionEnd) ? intervalEnd : regionEnd;
         final Duration actualInterval = Duration.between(start, end);
         if (actualInterval.isNegative() || actualInterval.isZero()) {
             return Optional.empty();
