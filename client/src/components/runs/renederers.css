@@ -1,0 +1,44 @@
+.run-tag {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  color: #888;
+  font-size: xx-small;
+  margin-left: 1px;
+  padding: 1px 3px;
+}
+
+.idle-tag {
+  cursor: pointer;
+  color: #f79e2c;
+  border-color: #f79e2c;
+  font-size: x-small;
+  font-weight: bold;
+}
+
+.idle-tag:hover {
+  background-color: #f79e2c;
+  color: #fff;
+  font-weight: normal;
+}
+
+.pressure-tag {
+  cursor: pointer;
+  color: #ae1726;
+  border-color: #ae1726;
+  font-size: x-small;
+  font-weight: bold;
+}
+
+.pressure-tag:hover {
+  background-color: #ae1726;
+  color: #fff;
+  font-weight: normal;
+}
+
+.more-label {
+  margin: 2px;
+  padding: 0 2px;
+  font-style: italic;
+  text-decoration: underline;
+  white-space: nowrap;
+}
