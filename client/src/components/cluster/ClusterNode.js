@@ -19,7 +19,7 @@ import {Alert, Menu, Row, Col, Card, Button} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
-import {ChartsData} from './charts/chart';
+import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';

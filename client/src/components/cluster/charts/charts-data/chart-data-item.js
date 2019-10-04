@@ -16,7 +16,7 @@
 
 import {action, computed, observable} from 'mobx';
 import moment from 'moment';
-import NodeUsage from '../../../../../models/cluster/ClusterNodeUsage';
+import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 
 async function loadData (node, from, to) {
   const fromValue = from

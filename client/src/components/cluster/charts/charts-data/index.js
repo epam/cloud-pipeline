@@ -23,7 +23,7 @@ import {
   NetworkUsageData,
   FileSystemUsageData
 } from './chart-data-item';
-import NodeInstance from '../../../../../models/cluster/NodeInstance';
+import NodeInstance from '../../../../models/cluster/NodeInstance';
 
 class ChartsData extends ChartData {
   @observable initialized = false;
