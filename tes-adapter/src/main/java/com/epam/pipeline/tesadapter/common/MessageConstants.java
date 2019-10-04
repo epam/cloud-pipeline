@@ -9,4 +9,9 @@ public final class MessageConstants {
 
     //Parameters mapping
     public static final String ERROR_PARAMETER_NON_SCALAR_TYPE = "error.parameter.non.scalar.type";
+
+    //Auth messages
+    public static final String TOKEN_FOUND_IN_REQUEST = "debug.token.found.in.request";
+    public static final String IP_ACCEPTED = "debug.ip.is.accepted";
+    public static final String NO_MATCHED_AUTH_METHODS = "debug.no.matched.auth.methods";
 }
