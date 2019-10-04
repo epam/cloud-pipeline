@@ -153,6 +153,13 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertNull(getGroupStatus(TEST_GROUP_NAME_1));
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void loadGroupStatusForEmptyGroupList() {
+        Assert.assertTrue(userManager.loadGroupBlockingStatus(Collections.emptyList()).isEmpty());
+        Assert.assertTrue(userManager.loadGroupBlockingStatus(null).isEmpty());
+    }
+
     private void compareAllFieldOfUsers(PipelineUser firstUser, PipelineUser secondUser) {
         Assert.assertEquals(firstUser.getUserName(), secondUser.getUserName());
         Assert.assertEquals(firstUser.getEmail(), secondUser.getEmail());

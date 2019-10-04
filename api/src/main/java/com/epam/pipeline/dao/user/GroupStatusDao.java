@@ -29,7 +29,7 @@ import java.util.List;
 public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
 
     private String upsertGroupStatusQuery;
-    private String loadGroupStatusQuery;
+    private String loadGroupsBlockedStatusQuery;
     private String deleteGroupStatusQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -40,7 +40,7 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<GroupStatus> loadGroupsBlockingStatus(final List<String> groupNames) {
-        return getNamedParameterJdbcTemplate().query(loadGroupStatusQuery,
+        return getNamedParameterJdbcTemplate().query(loadGroupsBlockedStatusQuery,
                 GroupParameters.getNamesListParameters(groupNames),
                 GroupParameters.getRowMapper());
     }
@@ -68,7 +68,7 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
                     rs.getBoolean(GROUP_BLOCKED_STATUS.name()));
         }
 
-        private static MapSqlParameterSource getNamesListParameters(List<String> groupNames) {
+        private static MapSqlParameterSource getNamesListParameters(final List<String> groupNames) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(GROUPS.name(), groupNames);
             return params;
@@ -81,8 +81,8 @@ public class GroupStatusDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadGroupsBlockedStatusQuery(final String loadGroupStatusQuery) {
-        this.loadGroupStatusQuery = loadGroupStatusQuery;
+    public void setLoadGroupsBlockedStatusQuery(final String loadGroupsBlockedStatusQuery) {
+        this.loadGroupsBlockedStatusQuery = loadGroupsBlockedStatusQuery;
     }
 
     @Required

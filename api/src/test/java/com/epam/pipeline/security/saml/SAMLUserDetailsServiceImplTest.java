@@ -29,6 +29,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +60,7 @@ import java.util.stream.Stream;
 
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
+@Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
 public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
 
     private static final String USER_NAME = "TEST_USER";
@@ -73,6 +75,10 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     private Map<String, String> expectedAttributes = new HashMap<>();
     private List<String> groups = Stream.of(SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2).collect(Collectors.toList());
     private UserContext expectedUserContext = new UserContext(1L, USER_NAME.toUpperCase());
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_1 = "true";
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_2 = "True";
+    private static final String SAML_ATTRIBUTE_BLOCKED_USER_VALUE_3 = "TRUE";
+    private static final String SAML_ATTRIBUTE_NOT_BLOCKED_USER_VALUE = "false";
 
     @InjectMocks
     @Autowired
@@ -150,7 +156,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldRegisterUserIfGroupPresentsAndEntityExistsWithExplicitGroupMode() {
         switchToExplicitGroupMode();
@@ -167,7 +172,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldAuthorizeRegisteredUserIfHisGroupsHaveValidGroupStatus() {
         setValidGroupsStatusForUser();
@@ -177,7 +181,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldAuthorizeRegisteredUserIfHisGroupsAreNotAtGroupStatus() {
         setEmptyGroupsStatusListForUser();
@@ -187,7 +190,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test(expected = UsernameNotFoundException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldNotRegisterUserIfGroupPresentsButNoEntityReferWithExplicitGroupMode() {
         switchToExplicitGroupMode();
@@ -202,7 +204,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test(expected = UsernameNotFoundException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldNotRegisterUserIfGroupNotPresentsWithExplicitGroupMode() {
         switchToExplicitGroupMode();
@@ -218,7 +219,6 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test(expected = UsernameNotFoundException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     @WithMockUser(username = USER_NAME)
     public void shouldNotRegisterUserWithExplicitMode() {
         switchToExplicitMode();
@@ -237,14 +237,44 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     }
 
     @Test(expected = LockedException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldThrowAuthorizationExceptionForBlockedUser() {
         blockCurrentUser();
         userDetailsService.loadUserBySAML(credential);
     }
 
     @Test(expected = LockedException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty1() {
+        setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_1);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test(expected = LockedException.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty2() {
+        setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_2);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test(expected = LockedException.class)
+    public void shouldThrowAuthorizationExceptionForUserWithBlockedApplicationProperty3() {
+        setBlockedAttributeValue(SAML_ATTRIBUTE_BLOCKED_USER_VALUE_3);
+        userDetailsService.loadUserBySAML(credential);
+    }
+
+    @Test
+    public void shouldAcceptUserWithValidNotBlockedApplicationProperty() {
+        setBlockedAttributeValue(SAML_ATTRIBUTE_NOT_BLOCKED_USER_VALUE);
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+    }
+
+    @Test
+    public void shouldAcceptUserWithValidEmptyApplicationProperty() {
+        setBlockedAttributeValue(StringUtils.EMPTY);
+        final UserContext actualUserContext = userDetailsService.loadUserBySAML(credential);
+        Assert.assertEquals(expectedUserContext.getUsername(), actualUserContext.getUsername());
+    }
+
+    @Test(expected = LockedException.class)
     public void shouldThrowAuthorizationExceptionForUserFromBlockedGroup() {
         blockOneGroupForCurrentUser();
         userDetailsService.loadUserBySAML(credential);
@@ -259,6 +289,13 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         user.setRoles(Collections.singletonList(role));
         blockOneGroupForCurrentUser();
         userDetailsService.loadUserBySAML(credential);
+    }
+
+    private void setBlockedAttributeValue(final String value) {
+        user.setUserName(USER_NAME);
+        Mockito.when(userManager.loadUserByName(Matchers.eq(USER_NAME))).thenReturn(user);
+        ReflectionTestUtils.setField(userDetailsService, "blockedAttribute", value);
+        Mockito.when(credential.getAttributeAsString(value)).thenReturn(value);
     }
 
     private void blockOneGroupForCurrentUser() {
