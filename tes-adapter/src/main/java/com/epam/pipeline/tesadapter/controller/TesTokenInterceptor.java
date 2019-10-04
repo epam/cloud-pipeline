@@ -1,5 +1,7 @@
 package com.epam.pipeline.tesadapter.controller;
 
+import com.epam.pipeline.tesadapter.common.MessageConstants;
+import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.entity.TesTokenHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -22,6 +24,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Component
 public class TesTokenInterceptor implements HandlerInterceptor {
+
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
 
     private TesTokenHolder tesTokenHolder;
@@ -29,24 +32,32 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
+    private MessageHelper messageHelper;
+
     private final IpAddressMatcher ipAddressMatcher;
 
     @Autowired
     public TesTokenInterceptor(TesTokenHolder tesTokenHolder,
+                               MessageHelper messageHelper,
                                @Value("${security.allowed.client.ip.range}") String ipRange) {
         this.tesTokenHolder = tesTokenHolder;
+        this.messageHelper = messageHelper;
         ipAddressMatcher = StringUtils.isNotEmpty(ipRange) ? new IpAddressMatcher(ipRange) : null;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (checkRequestForToken(request).isPresent()) {
-            tesTokenHolder.setToken(checkRequestForToken(request).get());
+        final Optional<String> requestToken = checkRequestForToken(request);
+        if (requestToken.isPresent()) {
+            log.debug(messageHelper.getMessage(MessageConstants.TOKEN_FOUND_IN_REQUEST, request.getServletPath()));
+            tesTokenHolder.setToken(requestToken.get());
             return true;
         } else if (checkClientHostAddress(request) && Strings.isNotEmpty(defaultPipelineToken)) {
+            log.debug(messageHelper.getMessage(MessageConstants.IP_ACCEPTED, request.getServletPath()));
             tesTokenHolder.setToken(defaultPipelineToken);
             return true;
         }
+        log.debug(messageHelper.getMessage(MessageConstants.NO_MATCHED_AUTH_METHODS, request.getServletPath()));
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
         return false;
     }
