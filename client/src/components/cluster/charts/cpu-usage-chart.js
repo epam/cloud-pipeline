@@ -18,9 +18,15 @@ import React from 'react';
 import Base from './base';
 import {LinePlot, Plot, XAxis, YAxis} from './controls';
 import {AxisDataType} from './controls/utilities';
+import P from './controls/new-plot';
 
 class CPUUsageChart extends Base {
   renderPlot (data, width, height) {
+    return (
+      <P width={width} height={height} data={data}>
+
+      </P>
+    );
     return (
       <Plot
         identifier={'cpu-usage'}
@@ -41,6 +47,7 @@ class CPUUsageChart extends Base {
           name={'CPU Usage'}
           tooltip={item => Math.round(item.y * 10000) / 10000.0}
         />
+        <P />
       </Plot>
     );
   }

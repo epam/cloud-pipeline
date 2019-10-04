@@ -16,7 +16,13 @@
 
 import {action, computed, observable} from 'mobx';
 import moment from 'moment';
-import NodeUsage from '../../../../../models/cluster/ClusterNodeUsage';
+import {
+  CPUUsageData as C,
+  MemoryUsageData as M,
+  NetworkUsageData as N,
+  FileSystemUsage as F
+} from './chart-data';
+import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 
 async function loadData (node, from, to) {
   const fromValue = from
@@ -181,8 +187,6 @@ class ChartData {
 
   nodeName;
 
-  usageItemType;
-
   static UsageItemType = ChartDataItem;
 
   @computed
@@ -261,23 +265,51 @@ class ChartData {
       this.data.splice(0, this.data.length, ...data);
     }
     this.updateRange();
+    console.log(this);
     this.listeners.forEach(fn => fn(this));
   }
 }
 
 class CPUUsageData extends ChartData {
   static UsageItemType = CPUUsageItem;
+  @observable newData = new C();
+
+  processValues (values) {
+    this.newData.apply(values);
+    super.processValues(values);
+  }
 }
 
 class MemoryUsageData extends ChartData {
+  @observable newData = new M();
+
+  processValues (values) {
+    this.newData.apply(values);
+    super.processValues(values);
+  }
+
   static UsageItemType = MemoryUsageItem;
 }
 
 class NetworkUsageData extends ChartData {
+  @observable newData = new N();
+
+  processValues (values) {
+    this.newData.apply(values);
+    super.processValues(values);
+  }
+
   static UsageItemType = NetworkUsageItem;
 }
 
 class FileSystemUsageData extends ChartData {
+  @observable newData = new F();
+
+  processValues (values) {
+    this.newData.apply(values);
+    super.processValues(values);
+  }
+
   static UsageItemType = FileSystemUsageItem;
 }
 
