@@ -117,7 +117,7 @@ class PipeFS(Operations):
         prefix = fuseutils.append_delimiter(path, self.delimiter)
         for f in self.client.ls(prefix):
             f_name = f.name.rstrip(self.delimiter)
-            if self.is_skipped_mac_files(f_name):
+            if self.is_skipped_mac_files(f_name) or f_name == '.DS_Store':
                 continue
             if f_name:
                 dirents.append(f_name)
