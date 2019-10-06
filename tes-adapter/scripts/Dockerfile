@@ -21,7 +21,7 @@ ADD get_jar-file.sh /init
 # change rule
 RUN chmod +x /init
 # start script
-RUN ["/init", "tes-support", "https://github.com/evgeniimv/cloud-pipeline.git"]
+RUN ["/init", "tes-support", "https://github.com/SilinPavel/cloud-pipeline.git"]
 # run jar
 CMD ["java", "-jar", "tes-adapter-1.0-SNAPSHOT.jar"]
 # expose port
