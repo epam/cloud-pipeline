@@ -806,7 +806,7 @@ public class PipelineRunManager {
     public PipelineRun resumeRun(Long runId) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         verifyPipelineRunForPauseResume(pipelineRun, runId);
-
+        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
         if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
