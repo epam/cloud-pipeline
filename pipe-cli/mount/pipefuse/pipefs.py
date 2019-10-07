@@ -15,42 +15,52 @@
 import datetime
 import errno
 import io
+import logging
 import os
 import platform
 import stat
 import time
 
-import easywebdav
 from fuse import FuseOSError, Operations
 
 import fuseutils
-from webdav import CPWebDavClient
-
-py_version, _, _ = platform.python_version_tuple()
-if py_version == '2':
-    from urlparse import urlparse
-else:
-    from urllib.parse import urlparse
 
 
 class UnsupportedOperationException(Exception):
     pass
 
 
-class WebDavFS(Operations):
+class FileHandleContainer(object):
     FH_START = 2
+    FH_END = 10000
 
-    def __init__(self, webdav_url, mode=0o755):
-        url = urlparse(webdav_url)
-        bearer = os.environ.get('API_TOKEN', '')
-        self.webdav = CPWebDavClient(url.scheme + '://' + url.netloc, path=url.path, bearer=bearer)
-        if not self.webdav.is_available():
-            raise RuntimeError("WebDAV server is not available.")
-        self.fd = self.FH_START
+    def __init__(self):
+        self._container = set()
+        self._range = fuseutils.lazy_range(self.FH_START, self.FH_END)
+
+    def get(self):
+        for fh in self._range:
+            if fh not in self._container:
+                self._container.add(fh)
+                return fh
+
+    def release(self, fh):
+        if fh in self._container:
+            self._container.remove(fh)
+
+
+class PipeFS(Operations):
+
+    def __init__(self, client, mode=0o755):
+        self.client = client
+        if not self.client.is_available():
+            raise RuntimeError("File system server is not available.")
+        self.container = FileHandleContainer()
         self.mode = mode
         self.delimiter = '/'
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
+        self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
 
     def is_skipped_mac_files(self, path):
         if not self.is_mac:
@@ -64,7 +74,7 @@ class WebDavFS(Operations):
     def access(self, path, mode):
         if path == self.root:
             return
-        if self.is_skipped_mac_files(path) or not self.webdav.exists(path):
+        if self.is_skipped_mac_files(path) or not self.client.exists(path):
             raise FuseOSError(errno.EACCES)
 
     def chmod(self, path, mode):
@@ -77,33 +87,37 @@ class WebDavFS(Operations):
         if self.is_skipped_mac_files(path):
             raise FuseOSError(errno.ENOENT)
         try:
-            props = self.webdav.ls(path, depth=0)[0]
+            props = self.client.attrs(path)
+            if not props:
+                raise RuntimeError('Cannot read attributes for a path because it doesn\'t exist %s' % path)
             if path == self.root or props.is_dir:
                 mode = stat.S_IFDIR
             else:
                 mode = stat.S_IFREG
-            return {
+            attrs = {
                 'st_size': props.size,
-                'st_mtime': props.mtime,
-                'st_ctime': props.ctime,
                 'st_nlink': 1,
                 'st_mode': mode | self.mode,
                 'st_gid': os.getgid(),
                 'st_uid': os.getuid(),
                 'st_atime': time.mktime(datetime.datetime.now().timetuple())
             }
-        except easywebdav.OperationFailed as e:
+            if props.mtime:
+                attrs['st_mtime'] = props.mtime
+            if props.ctime:
+                attrs['st_ctime'] = props.ctime
+            return attrs
+        except Exception:
+            if path not in self._system_files:
+                logging.exception('Error occurred while getting attributes for %s' % path)
             raise FuseOSError(errno.ENOENT)
 
     def readdir(self, path, fh):
         dirents = ['.', '..']
-        prefix = self.webdav.root_path
-        if path != self.root:
-            prefix = fuseutils.append_delimiter(fuseutils.join_path_with_delimiter(
-                prefix, path, delimiter=self.delimiter), self.delimiter)
-        for f in self.webdav.ls(path):
-            f_name = f.name.replace(prefix, '').rstrip(self.delimiter)
-            if self.is_skipped_mac_files(f_name):
+        prefix = fuseutils.append_delimiter(path, self.delimiter)
+        for f in self.client.ls(prefix):
+            f_name = f.name.rstrip(self.delimiter)
+            if self.is_skipped_mac_files(f_name) or f_name == '.DS_Store':
                 continue
             if f_name:
                 dirents.append(f_name)
@@ -117,12 +131,13 @@ class WebDavFS(Operations):
         raise UnsupportedOperationException("mknod")
 
     def rmdir(self, path):
-        self.webdav.rmdir(path)
+        self.client.rmdir(path)
 
     def mkdir(self, path, mode):
         try:
-            self.webdav.mkdir(path)
-        except easywebdav.OperationFailed as e:
+            self.client.mkdir(path)
+        except Exception:
+            logging.exception('Error occurred while creating directory %s' % path)
             raise FuseOSError(errno.EACCES)
 
     def statfs(self, path):
@@ -136,41 +151,39 @@ class WebDavFS(Operations):
         }
 
     def unlink(self, path):
-        self.webdav.delete(path)
+        self.client.delete(path)
 
     def symlink(self, name, target):
         raise UnsupportedOperationException("symlink")
 
     def rename(self, old, new):
-        self.webdav.mv(old, new)
+        self.client.mv(old, new)
 
     def link(self, target, name):
         raise UnsupportedOperationException("link")
 
     def utimens(self, path, times=None):
-        raise UnsupportedOperationException("utimens")
+        self.client.utimens(path, times)
 
     # File methods
     # ============
 
     def open(self, path, flags):
-        if self.webdav.exists(path):
-            self.fd += 1
-            return self.fd
+        if self.client.exists(path):
+            return self.container.get()
         raise FuseOSError(errno.ENOENT)
 
     def create(self, path, mode, fi=None):
-        self.webdav.upload([], path)
-        self.fd += 1
-        return self.fd
+        self.client.upload([], path)
+        return self.container.get()
 
     def read(self, path, length, offset, fh):
-        file_buff = io.BytesIO()
-        self.webdav.download_range(file_buff, path, offset=offset, length=length)
-        return file_buff.getvalue()
+        with io.BytesIO() as file_buff:
+            self.client.download_range(fh, file_buff, path, offset=offset, length=length)
+            return file_buff.getvalue()
 
     def write(self, path, buf, offset, fh):
-        self.webdav.upload_range(buf, path, offset=offset)
+        self.client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
     def truncate(self, path, length, fh=None):
@@ -178,16 +191,15 @@ class WebDavFS(Operations):
         if file_size > 0 and length == 0:
             self.create(path, self.mode)
         elif length > file_size:
-            self.webdav.upload_range([], path, offset=(length - 1))
+            self.client.upload_range(fh, [], path, offset=(length - 1))
         elif length != file_size:
             raise FuseOSError(errno.ERANGE)
 
     def flush(self, path, fh):
-        pass
+        self.client.flush(fh, path)
 
     def release(self, path, fh):
-        if self.fd > self.FH_START:
-            self.fd -= 1
+        self.container.release(fh)
 
     def fsync(self, path, fdatasync, fh):
         raise UnsupportedOperationException("fsync")

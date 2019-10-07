@@ -18,7 +18,6 @@ import platform
 import time
 import urllib
 import xml.etree.cElementTree as xml
-from collections import namedtuple
 from numbers import Number
 
 import easywebdav
@@ -27,14 +26,13 @@ import urllib3
 from requests import cookies
 
 import fuseutils
+from fsclient import FileSystemClient, File
 
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
     from urlparse import urlparse
 else:
     from urllib.parse import urlparse
-
-File = namedtuple('File', ['name', 'size', 'mtime', 'ctime', 'contenttype', 'is_dir'])
 
 # add additional methods
 easywebdav.OperationFailed._OPERATIONS = dict(
@@ -49,13 +47,16 @@ easywebdav.OperationFailed._OPERATIONS = dict(
 )
 
 
-class CPWebDavClient(easywebdav.Client):
+class CPWebDavClient(easywebdav.Client, FileSystemClient):
     C_DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
     # 'Wed, 28 Aug 2019 12:18:02 GMT'
     M_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
 
-    def __init__(self, host, auth=None, username=None, password=None,
-                 verify_ssl=False, path=None, cert=None, bearer=None):
+    def __init__(self, webdav_url, auth=None, username=None, password=None,
+                 verify_ssl=False, cert=None, bearer=None):
+        url = urlparse(webdav_url)
+        host = url.scheme + '://' + url.netloc
+        path = url.path
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         self.host = host
         self.baseurl = host.rstrip('/')
@@ -89,6 +90,9 @@ class CPWebDavClient(easywebdav.Client):
             logging.error('WevDav is not available: %s' % str(e.message))
             return False
 
+    def is_read_only(self):
+        return False
+
     def get_elem_value(self, elem, name):
         return elem.find('.//{DAV:}' + name)
 
@@ -110,9 +114,11 @@ class CPWebDavClient(easywebdav.Client):
                 'Failed to parse date: %s. Expected format: "%s". Error: "%s"' % (value, date_format, e.message))
             return None
 
-    def elem2file(self, elem):
+    def elem2file(self, elem, path):
+        prefix = fuseutils.append_delimiter(fuseutils.join_path_with_delimiter(
+            self.root_path, path, delimiter=self.cwd), self.cwd)
         return File(
-            self.prop_value(elem, 'href'),
+            self.prop_value(elem, 'href').replace(prefix, ''),
             int(self.prop_value(elem, 'getcontentlength', 0)),
             self.parse_timestamp(self.prop_value(elem, 'getlastmodified', ''), self.M_DATE_FORMAT),
             self.parse_timestamp(self.prop_value(elem, 'creationdate', ''), self.C_DATE_FORMAT),
@@ -120,19 +126,19 @@ class CPWebDavClient(easywebdav.Client):
             self.prop_exists(elem, 'collection')
         )
 
-    def download_range(self, data, remote_path, offset=0, length=0):
+    def download_range(self, fh, data, remote_path, offset=0, length=0):
         headers = None
         if offset >= 0 and length >= 0:
             headers = {'Range': 'bytes=%d-%d' % (offset, offset + length - 1)}
         response = self._send('GET', remote_path, (200, 206), stream=True, headers=headers)
         self._download(data, response)
 
-    def upload_range(self, data, remote_path, offset=0):
+    def upload_range(self, fh, data, remote_path, offset=0):
         end = offset + len(data) - 1
         if end < offset:
             end = offset
         headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=data, headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
@@ -143,7 +149,7 @@ class CPWebDavClient(easywebdav.Client):
             return self.ls(url.path)
 
         tree = xml.fromstring(response.content)
-        return [self.elem2file(elem) for elem in tree.findall('{DAV:}response')]
+        return [self.elem2file(elem, remote_path) for elem in tree.findall('{DAV:}response')]
 
     def mv(self, old_path, new_path):
         headers = {'Destination': self._get_url(new_path),

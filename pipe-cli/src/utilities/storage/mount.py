@@ -28,26 +28,36 @@ from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
 
 
-class AbstractMount:
+class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_mount_cmd(self, config, mountpoint, options, web_dav_url):
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
+        pass
+
+    @abstractmethod
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
         pass
 
 
-class FrozenMount(object):
+class FrozenMount(AbstractMount):
 
-    def get_mount_cmd(self, config, mountpoint, options, web_dav_url):
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
+        return self._get_mount_cmd(config, mountpoint, options, '--webdav ' + web_dav_url)
+
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
+        return self._get_mount_cmd(config, mountpoint, options, '--bucket ' + bucket)
+
+    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
         mount_bin = self.get_mount_executable(config)
         mount_script = self.create_mount_script(os.path.dirname(Config.config_path()), mount_bin,
-                                                mountpoint, options, web_dav_url)
+                                                mountpoint, options, additional_arguments)
         return ['bash', mount_script]
 
-    def create_mount_script(self, config_folder, mount_bin, mountpoint, options, web_dav_url):
-        mount_cmd = '%s --mountpoint %s  --webdav %s' % (mount_bin, mountpoint, web_dav_url)
+    def create_mount_script(self, config_folder, mount_bin, mountpoint, options, additional_arguments):
+        mount_cmd = '%s --mountpoint %s %s' % (mount_bin, mountpoint, additional_arguments)
         if options:
-            mount_cmd += '-o ' + options
+            mount_cmd += ' -o ' + options
         mount_script = os.path.join(config_folder, 'pipe-fuse-script' + str(uuid.uuid4()))
         with open(mount_script, 'w') as script:
             # run pipe-fuse
@@ -68,13 +78,20 @@ class FrozenMount(object):
         return mount_bin
 
 
-class SourceMount(object):
+class SourceMount(AbstractMount):
 
-    def get_mount_cmd(self, config, mountpoint, options, web_dav_url):
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
+        return self._get_mount_cmd(config, mountpoint, options, ['--webdav', web_dav_url])
+
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
+        return self._get_mount_cmd(config, mountpoint, options, ['--bucket', bucket])
+
+    def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
         python_exec = sys.executable
         script_folder = dirname(Config.get_base_source_dir())
         script_path = os.path.join(script_folder, 'mount/pipe-fuse.py')
-        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint, '--webdav', web_dav_url]
+        mount_cmd = [python_exec, script_path, '--mountpoint', mountpoint]
+        mount_cmd.extend(additional_arguments)
         if options:
             mount_cmd.extend(['-o', options])
         return mount_cmd
@@ -82,22 +99,34 @@ class SourceMount(object):
 
 class Mount(object):
 
-    def mount_storages(self, mountpoint, options=None, quiet=False):
+    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False):
         config = Config.instance()
         username = config.get_current_user()
-        web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
-        web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
         mount = FrozenMount() if is_frozen() else SourceMount()
-        self.mount_dav(mount, config, mountpoint, options, web_dav_url)
+        if file:
+            web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
+            web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
+            self.mount_dav(mount, config, mountpoint, options, web_dav_url)
+        else:
+            self.mount_storage(mount, config, mountpoint, options, bucket)
 
     def mount_dav(self, mount, config, mountpoint, options, web_dav_url):
-        mount_cmd = mount.get_mount_cmd(config, mountpoint, options, web_dav_url)
+        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url)
+        self.run(config, mount_cmd)
+
+    def mount_storage(self, mount, config, mountpoint, options, bucket):
+        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket)
         self.run(config, mount_cmd)
 
     def run(self, config, mount_cmd, mount_timeout=5):
         with open(os.devnull, 'w') as dev_null:
             mount_environment = os.environ.copy()
+            mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.access_key
+            if config.proxy:
+                mount_environment['http_proxy'] = config.proxy
+                mount_environment['https_proxy'] = config.proxy
+                mount_environment['ftp_proxy'] = config.proxy
             mount_aps_proc = subprocess.Popen(mount_cmd,
                                               stdout=dev_null,
                                               stderr=subprocess.PIPE,
@@ -112,5 +141,3 @@ class Mount(object):
                     if line:
                         click.echo(line, err=True)
                 sys.exit(1)
-
-
