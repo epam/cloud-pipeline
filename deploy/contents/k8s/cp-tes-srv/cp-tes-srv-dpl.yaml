@@ -1,1 +1,25 @@
-# FIXME Add spec implementation
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-tes-srv
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-git-sync
+      namespace: default
+      labels:
+        cloud-pipeline/cp-tes-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-tes-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-tes-srv
+          image: lifescience/cloud-pipeline:tes-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 8080
