@@ -303,6 +303,8 @@ public class SystemPreferences {
     public static final LongPreference CLUSTER_MONITORING_ELASTIC_MINIMAL_INTERVAL = new LongPreference(
             "cluster.monitoring.elastic.minimal.interval", TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES),
             CLUSTER_GROUP, isGreaterThan(0L));
+    public static final IntPreference CLUSTER_KUBE_MASTER_PORT =
+            new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

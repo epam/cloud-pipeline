@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,6 +56,20 @@ public class ClusterController extends AbstractRestController {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final ClusterApiService clusterApiService;
+
+    @GetMapping(value = "/cluster/master")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns kubernetes nodes used in cluster as a master API node",
+            notes = "Returns kubernetes nodes used in cluster as a master API node",
+            produces = MediaType.APPLICATION_JSON_VALUE
+        )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<List<MasterNode>> loadMasterNodes() {
+        return Result.success(clusterApiService.getMasterNodes());
+    }
 
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
     @ResponseBody
