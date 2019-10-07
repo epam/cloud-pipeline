@@ -80,6 +80,7 @@ class Chart extends React.Component {
     const {data} = this.props;
     if (data) {
       properties.instanceFrom = data.instanceFrom;
+      properties.instanceTo = data.instanceTo;
     }
     return properties;
   }

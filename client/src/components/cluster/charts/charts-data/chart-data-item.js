@@ -198,10 +198,12 @@ class ChartData {
     this._pending = value;
   }
 
-  constructor (nodeName, instanceFrom) {
+  constructor (nodeName, instanceFrom, instanceTo) {
     this.nodeName = nodeName;
     this.instanceFrom = instanceFrom;
+    this.instanceTo = instanceTo;
     this.from = instanceFrom;
+    this.to = instanceTo;
   }
 
   registerListener = (listener) => {
@@ -265,7 +267,6 @@ class ChartData {
       this.data.splice(0, this.data.length, ...data);
     }
     this.updateRange();
-    console.log(this);
     this.listeners.forEach(fn => fn(this));
   }
 }

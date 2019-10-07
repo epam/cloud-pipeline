@@ -69,12 +69,13 @@ class ChartsData extends ChartData {
     const {creationTimestamp, name} = this.node.value;
     this.nodeName = name;
     this.instanceFrom = moment.utc(creationTimestamp).unix();
+    this.instanceTo = moment.utc().unix();
     this.from = this.instanceFrom;
-    this.cpuUsage = new CPUUsageData(this.nodeName, this.instanceFrom);
-    this.memoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom);
-    this.lastMemoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom);
-    this.networkUsage = new NetworkUsageData(this.nodeName, this.instanceFrom);
-    this.fileSystemUsage = new FileSystemUsageData(this.nodeName, this.instanceFrom);
+    this.cpuUsage = new CPUUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
+    this.memoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
+    this.lastMemoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
+    this.networkUsage = new NetworkUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
+    this.fileSystemUsage = new FileSystemUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.initialized = true;
   };
 

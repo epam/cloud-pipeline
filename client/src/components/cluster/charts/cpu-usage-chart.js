@@ -23,7 +23,12 @@ import P from './controls/new-plot';
 class CPUUsageChart extends Base {
   renderPlot (data, width, height) {
     return (
-      <P width={width} height={height} data={data}>
+      <P
+        width={width}
+        height={height}
+        data={data}
+        {...this.plotProperties}
+      >
 
       </P>
     );

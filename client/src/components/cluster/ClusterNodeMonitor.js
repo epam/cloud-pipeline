@@ -328,7 +328,7 @@ class ClusterNodeMonitor extends React.Component {
     const commonChartProps = {
       followCommonScale: chartsData.followCommonRange,
       start: start || chartsData.instanceFrom,
-      end,
+      end: end || chartsData.instanceTo,
       containerSize: {containerWidth, containerHeight},
       padding: 5,
       onRangeChanged: this.onRangeChanged

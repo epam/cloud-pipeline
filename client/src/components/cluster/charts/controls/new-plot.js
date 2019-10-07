@@ -17,30 +17,41 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
-import {inject, observer, Provider} from 'mobx-react';
+import {observer, Provider} from 'mobx-react';
 import Timeline from './timeline';
+import DrawContainer from './draw-container';
 
 @observer
 class Plot extends React.PureComponent {
-  state = {
-    start: undefined,
-    end: undefined
+  canvas;
+
+  canvasRef = (element) => {
+    this.canvas = element;
   };
+
   render () {
-    const {data, width, height} = this.props;
-    const {start, end} = this.state;
+    const {
+      data,
+      from,
+      height,
+      instanceFrom,
+      instanceTo,
+      to,
+      width
+    } = this.props;
     return (
       <Provider plot={this} data={data}>
-        <svg width={width} height={height}>
+        <svg
+          ref={this.canvasRef}
+          width={width}
+          height={height}
+        >
           <Timeline
-            start={start}
-            end={end}
-            width={width}
-            height={height}
+            from={from || instanceFrom}
+            to={to || instanceTo}
+            interactiveArea={this.canvas}
           >
-            <g>
-              <rect x={10} y={10} width={10} height={10} fill={'red'} />
-            </g>
+            <DrawContainer />
           </Timeline>
         </svg>
       </Provider>
@@ -50,8 +61,27 @@ class Plot extends React.PureComponent {
 
 Plot.propTypes = {
   data: PropTypes.object,
-  width: PropTypes.number,
-  height: PropTypes.number
+  width: PropTypes.number.isRequired,
+  height: PropTypes.number.isRequired,
+  instanceFrom: PropTypes.number.isRequired,
+  instanceTo: PropTypes.number.isRequired,
+  from: PropTypes.number,
+  to: PropTypes.number,
+  chartArea: PropTypes.shape({
+    left: PropTypes.number,
+    right: PropTypes.number,
+    top: PropTypes.number,
+    bottom: PropTypes.number
+  })
+};
+
+Plot.defaultProps = {
+  chartArea: {
+    left: 75,
+    top: 0,
+    right: 75,
+    bottom: 30
+  }
 };
 
 export default Plot;
