@@ -105,8 +105,8 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     @Override
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to) {
-        final LocalDateTime start = Optional.ofNullable(from).orElseGet(() -> LocalDateTime.from(Instant.MIN));
-        final LocalDateTime end = Optional.ofNullable(to).orElseGet(() -> LocalDateTime.from(Instant.MAX));
+        final LocalDateTime start = Optional.ofNullable(from).orElse(LocalDateTime.MIN);
+        final LocalDateTime end = Optional.ofNullable(to).orElse(LocalDateTime.MAX);
         return getStats(nodeName, start, end);
     }
 
