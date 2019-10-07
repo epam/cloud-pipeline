@@ -22,6 +22,7 @@ import Timeline from './timeline';
 import ValueAxis from './value-axis';
 import ChartRenderer from './chart-renderer';
 import Legend from './legend';
+import Tooltip from './tooltip';
 
 @observer
 class Plot extends React.PureComponent {
@@ -105,6 +106,7 @@ class Plot extends React.PureComponent {
                 </ValueAxis>
               ))
             }
+            <Tooltip />
           </Timeline>
           <Legend />
         </svg>

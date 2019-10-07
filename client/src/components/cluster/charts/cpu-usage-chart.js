@@ -28,7 +28,7 @@ class CPUUsageChart extends Base {
         minimum={0}
         valueFrom={0}
         {...this.plotProperties}
-        plots={[{name: 'cpu', renderer: 'cpu-usage'}]}
+        plots={[{title: 'CPU Usage', name: 'cpu', renderer: 'cpu-usage'}]}
       >
         <ChartRenderer identifier={'cpu-usage'} />
       </Plot>

@@ -44,6 +44,7 @@ async function loadData (node, from, to) {
 class ChartData {
   @observable data = {};
   @observable groups = [];
+  @observable xPoints = [];
   @observable xMin = 0;
   @observable xMax = 0;
 
@@ -162,9 +163,11 @@ class ChartData {
       .map(g => g.group)
       .reduce((d, group) => ({[group]: makeEmptyData(), ...d}), {});
     const groups = Object.keys(data);
+    const xPoints = [];
     for (let i = 0; i < responseData.length; i++) {
       const item = responseData[i];
       const x = moment(item.startTime).unix();
+      xPoints.push(x);
       groups.forEach(groupName => {
         const group = data[groupName];
         const rules = config.filter(c => c.group === groupName);
@@ -183,6 +186,7 @@ class ChartData {
       xMax = Math.max(xMax, x);
     }
     this.data = data;
+    this.xPoints = xPoints;
     this.groups = groups;
     this.noData = false;
     this.xMin = xMin;

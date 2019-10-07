@@ -18,5 +18,4 @@ import * as formatters from './utilities/formatters';
 export {formatters};
 export {default as Plot} from './plot';
 export {default as UsagePlot} from './usage-plot';
-export {default as Tooltip} from './tooltip';
 export {default as ChartRenderer} from './chart-renderer';

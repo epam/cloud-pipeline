@@ -18,7 +18,7 @@ import React from 'react';
 import {computed} from 'mobx';
 import {Row, Select} from 'antd';
 import Base from './base';
-import {AxisDataType} from './controls/utilities';
+import {AxisDataType, formatters} from './controls/utilities';
 import {ChartRenderer, Plot} from './controls';
 
 class NetworkUsageChart extends Base {
@@ -88,9 +88,17 @@ class NetworkUsageChart extends Base {
         dataType={AxisDataType.networkUsage}
         {...this.plotProperties}
         plots={[{
-          name: 'rx', renderer: 'network-usage', group: selectedInterface, title: 'RX'
+          name: 'rx',
+          renderer: 'network-usage',
+          group: selectedInterface,
+          title: 'RX',
+          formatter: formatters.networkUsage
         }, {
-          name: 'tx', renderer: 'network-usage', group: selectedInterface, title: 'TX'
+          name: 'tx',
+          renderer: 'network-usage',
+          group: selectedInterface,
+          title: 'TX',
+          formatter: formatters.networkUsage
         }]}
       >
         <ChartRenderer identifier={'network-usage'} />
