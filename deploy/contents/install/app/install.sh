@@ -502,7 +502,7 @@ if is_service_requested cp-api-srv; then
         print_info "-> Registering custom users in IdP and API services"
         api_register_custom_users "$CP_CUSTOM_USERS_SPEC"
 
-        # Here we wait for the price list sync, this is required by the downstream services to manage the instance types configurations            
+        # Here we wait for the price list sync, this is required by the downstream services to manage the instance types configurations
         if [ -z "$CP_CLOUD_REGION_INTERNAL_ID" ]; then
             print_warn "CP_CLOUD_REGION_INTERNAL_ID is not defined, assuming that a cloud region is not registered correctly previously. WILL NOT wait for price lists synchonization"
         else
@@ -607,7 +607,7 @@ if is_service_requested cp-edge; then
     delete_deployment_and_service   "cp-edge" \
                                     "/opt/edge"
 
-    if is_install_requested; then   
+    if is_install_requested; then
         print_info "-> Creating self-signed SSL certificate for EDGE (${CP_EDGE_EXTERNAL_HOST}, ${CP_EDGE_INTERNAL_HOST})"
         generate_self_signed_key_pair   $CP_EDGE_CERT_DIR/ssl-private-key.pem \
                                         $CP_EDGE_CERT_DIR/ssl-public-cert.pem \
@@ -628,7 +628,7 @@ if is_service_requested cp-edge; then
         update_config_value "$CP_INSTALL_CONFIG_FILE" \
                                 "EDGE_EXTERNAL" \
                                 "$EDGE_EXTERNAL"
-        
+
         init_kube_config_map
 
         print_ok "-> EDGE addresses parameters set:"
@@ -917,7 +917,7 @@ if is_service_requested cp-search; then
 
     print_info "-> Deleting existing instance of Search ELK service"
     delete_deployment_and_service   "cp-search-elk" \
-                                    "/opt/search-elk"    
+                                    "/opt/search-elk"
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -1050,6 +1050,24 @@ if is_service_requested cp-share-srv; then
     echo
 fi
 
+# TES Service
+if is_service_requested cp-tes-srv; then
+print_ok "[Starting TES Service deployment]"
+
+    print_info "-> Deleting existing instance of TES Service"
+    delete_deployment_and_service   "cp-tes-srv" \
+                                    "/opt/tes-srv"
+    if is_install_requested; then
+        print_info "-> Deploying TES service"
+        create_kube_resource $K8S_SPECS_HOME/cp-tes-srv/cp-tes-srv-dpl.yaml
+
+        print_info "-> Waiting for TES service to initialize"
+        wait_for_deployment "cp-tes-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tes-srv: deployed"
+    fi
+    echo
+fi
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
