@@ -14,4 +14,11 @@ public final class MessageConstants {
     public static final String TOKEN_FOUND_IN_REQUEST = "debug.token.found.in.request";
     public static final String IP_ACCEPTED = "debug.ip.is.accepted";
     public static final String NO_MATCHED_AUTH_METHODS = "debug.no.matched.auth.methods";
+    public static final String PIPELINE_RUN_SUBMITTED = "debug.pipeline.run.submitted";
+    public static final String GET_LIST_TASKS_BY_NAME_PREFIX = "debug.get.list.tasks.by.prefix";
+    public static final String GET_LIST_TASKS_BY_DEFAULT_PREFIX = "debug.get.list.tasks.by.default";
+    public static final String CANCEL_PIPELINE_RUN_BY_ID = "debug.cancel.pipeline.run.by.id";
+    public static final String GET_PIPELINE_RUN_BY_ID = "debug.get.pipeline.run.by.id";
+    public static final String GET_SERVICE_INFO = "debug.get.service.info";
+
 }
