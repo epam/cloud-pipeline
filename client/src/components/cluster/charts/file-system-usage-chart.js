@@ -14,8 +14,30 @@
  * limitations under the License.
  */
 
-export {default as ChartsData} from './charts-data';
-export {default as CPUUsageChart} from './cpu-usage-chart';
-export {default as FileSystemUsageChart} from './file-system-usage-chart';
-export {default as MemoryUsageChart} from './memory-usage-chart';
-export {default as NetworkUsageChart} from './network-usage-chart';
+import React from 'react';
+import Base from './base';
+import {UsagePlot, formatters} from './controls';
+
+class FileSystemUsageChart extends Base {
+  renderPlot (data, width, height) {
+    if (!data || !data.groups || !data.groups.length) {
+      return null;
+    }
+    return (
+      <UsagePlot
+        width={width}
+        height={height}
+        data={data}
+        config={data.groups.map(group => ({
+          group,
+          title: group,
+          value: 'usage',
+          total: 'capacity',
+          formatter: formatters.fileSystemUsage
+        }))}
+      />
+    );
+  }
+}
+
+export default FileSystemUsageChart;

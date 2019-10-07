@@ -14,8 +14,26 @@
  * limitations under the License.
  */
 
-export {default as ChartsData} from './charts-data';
-export {default as CPUUsageChart} from './cpu-usage-chart';
-export {default as FileSystemUsageChart} from './file-system-usage-chart';
-export {default as MemoryUsageChart} from './memory-usage-chart';
-export {default as NetworkUsageChart} from './network-usage-chart';
+import React from 'react';
+import Base from './base';
+import {ChartRenderer, Plot} from './controls';
+
+class CPUUsageChart extends Base {
+  renderPlot (data, width, height) {
+    return (
+      <Plot
+        width={width}
+        height={height}
+        data={data}
+        minimum={0}
+        valueFrom={0}
+        {...this.plotProperties}
+        plots={[{title: 'CPU Usage', name: 'cpu', renderer: 'cpu-usage'}]}
+      >
+        <ChartRenderer identifier={'cpu-usage'} />
+      </Plot>
+    );
+  }
+}
+
+export default CPUUsageChart;

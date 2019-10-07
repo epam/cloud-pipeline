@@ -19,29 +19,28 @@ import {Alert, Menu, Row, Col, Card, Button} from 'antd';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
-import ClusterNodeUsage from '../../models/cluster/ClusterNodeUsage';
+import {ChartsData} from './charts';
 import {inject, observer} from 'mobx-react';
 import styles from './ClusterNode.css';
 import parentStyles from './Cluster.css';
 import {renderNodeLabels} from './renderers';
 import {PIPELINE_INFO_LABEL} from './node-roles';
 
-@inject(({}, {params}) => {
+@inject((stores, {params}) => {
   return {
     name: params.nodeName,
     node: clusterNodes.getNode(params.nodeName),
-    usage: new ClusterNodeUsage(params.nodeName)
+    chartsData: new ChartsData(params.nodeName)
   };
 })
 @observer
-export default class ClusterNode extends Component {
-
+class ClusterNode extends Component {
   refreshNodeInstance = () => {
     if (!this.props.node.pending) {
       this.props.node.fetch();
     }
-    if (!this.props.usage.pending) {
-      this.props.usage.fetch();
+    if (!this.props.chartsData.pending) {
+      this.props.chartsData.fetch();
     }
   };
 
@@ -52,7 +51,10 @@ export default class ClusterNode extends Component {
       result = (
         <div>
           <br />
-          <Alert message={`The node '${this.props.name}' was not found or was removed`} type="warning"/>
+          <Alert
+            message={`The node '${this.props.name}' was not found or was removed`}
+            type="warning"
+          />
         </div>
       );
     } else {
@@ -87,7 +89,7 @@ export default class ClusterNode extends Component {
             child,
             {
               node: this.props.node,
-              usage: this.props.usage
+              chartsData: this.props.chartsData
             }
           )
         )
@@ -97,10 +99,12 @@ export default class ClusterNode extends Component {
     const labels = Object.assign({}, this.props.node.value ? this.props.node.value.labels : {});
 
     if (this.props.node.value && this.props.node.value.pipelineRun) {
-      if (this.props.node.value.pipelineRun.pipelineName) {
-        labels[PIPELINE_INFO_LABEL] = `${this.props.node.value.pipelineRun.pipelineName} (${this.props.node.value.pipelineRun.version})`;
-      } else if (this.props.node.value.pipelineRun.dockerImage) {
-        const parts = this.props.node.value.pipelineRun.dockerImage.split('/');
+      const {pipelineName, version, dockerImage} = this.props.node.value.pipelineRun;
+      if (pipelineName) {
+        labels[PIPELINE_INFO_LABEL] =
+          `${pipelineName} (${version})`;
+      } else if (dockerImage) {
+        const parts = dockerImage.split('/');
         labels[PIPELINE_INFO_LABEL] = `${parts[parts.length - 1]}`;
       }
     }
@@ -142,7 +146,7 @@ export default class ClusterNode extends Component {
             <Button
               id="refresh-cluster-node-button"
               onClick={this.refreshNodeInstance}
-              disabled={this.props.node.pending || this.props.usage.pending}>
+              disabled={this.props.node.pending || this.props.chartsData.pending}>
               Refresh
             </Button>
           </Col>
@@ -151,5 +155,6 @@ export default class ClusterNode extends Component {
       </Card>
     );
   }
-
 }
+
+export default ClusterNode;

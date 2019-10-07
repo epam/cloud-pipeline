@@ -17,8 +17,29 @@
 import Remote from '../basic/Remote';
 
 export default class ClusterNodeUsage extends Remote {
-  constructor (name) {
+  constructor (name, from, to) {
     super();
-    this.url = `/cluster/node/${name}/usage`;
+    this.name = name;
+    this.changeRange(from, to);
+  }
+
+  buildUrl () {
+    const query = {from: this.from, to: this.to};
+    let queryString = Object.keys(query)
+      .filter(key => query.hasOwnProperty(key) && !!query[key])
+      .map(key => `${key}=${query[key]}`)
+      .join('&');
+    if (queryString.length > 0) {
+      queryString = `?${queryString}`;
+    }
+    this.url = `/cluster/node/${this.name}/usage${queryString}`;
+  }
+
+  changeRange (from, to) {
+    this.from = from;
+    this.to = to;
+    this.buildUrl();
+    this._fetchPromise = null;
+    return this.fetch();
   }
 }

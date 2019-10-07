@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-export {default as ChartsData} from './charts-data';
-export {default as CPUUsageChart} from './cpu-usage-chart';
-export {default as FileSystemUsageChart} from './file-system-usage-chart';
-export {default as MemoryUsageChart} from './memory-usage-chart';
-export {default as NetworkUsageChart} from './network-usage-chart';
+export {default as fileSystemUsage} from './file-system-usage';
+export {default as memoryUsage} from './memory-usage';
+export {default as networkUsage} from './network-usage';

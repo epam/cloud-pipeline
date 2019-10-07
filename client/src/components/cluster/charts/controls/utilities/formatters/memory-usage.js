@@ -14,8 +14,23 @@
  * limitations under the License.
  */
 
-export {default as ChartsData} from './charts-data';
-export {default as CPUUsageChart} from './cpu-usage-chart';
-export {default as FileSystemUsageChart} from './file-system-usage-chart';
-export {default as MemoryUsageChart} from './memory-usage-chart';
-export {default as NetworkUsageChart} from './network-usage-chart';
+const postfixes = ['bytes',
+  'Kb',
+  'Mb',
+  'Gb',
+  'Tb',
+  'Pb',
+  'Eb'
+];
+
+export default function (value) {
+  if (value <= 0) {
+    return '';
+  }
+  let index = 0;
+  while (value >= 1024 && index < postfixes.length - 2) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value.toFixed(index === 0 ? 0 : 2)} ${postfixes[index]}`;
+}
