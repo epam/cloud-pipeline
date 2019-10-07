@@ -953,17 +953,22 @@ def storage_delete_object_tags(path, tags, version):
 
 @storage.command('mount')
 @click.argument('mountpoint', required=True)
+@click.option('-f', '--file', required=False, help='File system mode', is_flag=True)
+@click.option('-b', '--bucket', required=False, help='Bucket name')
 @click.option('-o', '--options', required=False, help='Specify mount options')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @Config.validate_access_token
-def mount_storage(mountpoint, options, quiet):
-    """ Mounts all available storages into a local folder.
+def mount_storage(mountpoint, file, bucket, options, quiet):
+    """ Mounts either all available file systems or a single bucket into a local folder.
+        Either -f\\--file flag or -b\\--bucket argument should be specified.
         Command is supported for Linux distributions and MacOS and requires
         FUSE installed.
-        - mountpoint - destination for mount
+        - mountpoint - destination for mount.
+        - file - enables file system mount mode.
+        - bucket - name of the bucket to mount.
         - options - any mount options supported by underlying FUSE implementation.
     """
-    DataStorageOperations.mount_storage(mountpoint, options=options, quiet=quiet)
+    DataStorageOperations.mount_storage(mountpoint, file=file, bucket=bucket, options=options, quiet=quiet)
 
 
 @storage.command('umount')
