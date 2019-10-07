@@ -40,7 +40,7 @@ import {ResponsiveContainer} from './charts/utilities';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
-const LIFE_UPDATE_INTERVAL = 5000;
+const LIVE_UPDATE_INTERVAL = 5000;
 const Range = {
   full: 'full',
   week: 'week',
@@ -110,10 +110,10 @@ class ClusterNodeMonitor extends React.Component {
     containerHeight: 0,
     start: undefined,
     end: undefined,
-    lifeUpdate: true
+    liveUpdate: true
   };
 
-  lifeUpdateTimer;
+  liveUpdateTimer;
 
   @computed
   get lastWeekEnabled () {
@@ -138,16 +138,16 @@ class ClusterNodeMonitor extends React.Component {
   }
 
   componentDidMount () {
-    this.lifeUpdateTimer = setInterval(
-      this.invokeLifeUpdate,
-      LIFE_UPDATE_INTERVAL
+    this.liveUpdateTimer = setInterval(
+      this.invokeLiveUpdate,
+      LIVE_UPDATE_INTERVAL
     );
   }
 
   componentWillUnmount () {
-    if (this.lifeUpdateTimer) {
-      clearInterval(this.lifeUpdateTimer);
-      delete this.lifeUpdateTimer;
+    if (this.liveUpdateTimer) {
+      clearInterval(this.liveUpdateTimer);
+      delete this.liveUpdateTimer;
     }
   }
 
@@ -168,7 +168,7 @@ class ClusterNodeMonitor extends React.Component {
     }
   };
 
-  invokeLifeUpdate = () => {
+  invokeLiveUpdate = () => {
     let {start, end} = this.state;
     const {chartsData} = this.props;
     if (chartsData.pending) {
@@ -188,21 +188,21 @@ class ClusterNodeMonitor extends React.Component {
     });
   };
 
-  setLifeUpdate = (e) => {
-    const lifeUpdate = e.target.checked;
+  setLiveUpdate = (e) => {
+    const liveUpdate = e.target.checked;
     const {chartsData} = this.props;
-    if (lifeUpdate) {
+    if (liveUpdate) {
       chartsData.followCommonRange = true;
-      if (!this.lifeUpdateTimer) {
-        this.lifeUpdateTimer = setInterval(this.invokeLifeUpdate, LIFE_UPDATE_INTERVAL);
+      if (!this.liveUpdateTimer) {
+        this.liveUpdateTimer = setInterval(this.invokeLiveUpdate, LIVE_UPDATE_INTERVAL);
       }
-      this.invokeLifeUpdate();
-    } else if (this.lifeUpdateTimer) {
-      clearInterval(this.lifeUpdateTimer);
-      delete this.lifeUpdateTimer;
+      this.invokeLiveUpdate();
+    } else if (this.liveUpdateTimer) {
+      clearInterval(this.liveUpdateTimer);
+      delete this.liveUpdateTimer;
     }
     this.setState({
-      lifeUpdate
+      liveUpdate
     });
   };
 
@@ -299,11 +299,11 @@ class ClusterNodeMonitor extends React.Component {
     const {chartsData} = this.props;
     chartsData.from = start;
     chartsData.to = end;
-    this.setState({start, end, lifeUpdate: false}, () => {
+    this.setState({start, end, liveUpdate: false}, () => {
       if (final) {
         chartsData.loadData();
       }
-      this.setLifeUpdate({target: {checked: false}});
+      this.setLiveUpdate({target: {checked: false}});
     });
   };
 
@@ -312,7 +312,7 @@ class ClusterNodeMonitor extends React.Component {
     chartsData.followCommonRange = e.target.checked;
     chartsData.loadData();
     if (!chartsData.followCommonRange) {
-      this.setLifeUpdate({target: {checked: false}});
+      this.setLiveUpdate({target: {checked: false}});
     }
   };
 
@@ -346,7 +346,7 @@ class ClusterNodeMonitor extends React.Component {
       containerHeight,
       start,
       end,
-      lifeUpdate
+      liveUpdate
     } = this.state;
     const commonChartProps = {
       followCommonScale: chartsData.followCommonRange,
@@ -370,10 +370,10 @@ class ClusterNodeMonitor extends React.Component {
           </Checkbox>
           <Divider />
           <Checkbox
-            checked={lifeUpdate}
-            onChange={this.setLifeUpdate}
+            checked={liveUpdate}
+            onChange={this.setLiveUpdate}
           >
-            Life update
+            Live update
           </Checkbox>
           <Divider />
           <Dropdown
