@@ -98,7 +98,7 @@ public class GitlabClient {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    private GitlabUser gitlabUser;
+    private String user;
     private String namespace;
     private String projectName;
     private String gitHost;
@@ -125,7 +125,7 @@ public class GitlabClient {
         this.adminName = adminName;
         this.externalHost = externalHost;
         this.gitLabApi = buildGitLabApi(host, adminToken);
-        this.gitlabUser = getUser(user);
+        this.user = user;
     }
 
     public static GitlabClient initializeGitlabClientFromRepositoryAndToken(String user, String repository,
@@ -161,14 +161,15 @@ public class GitlabClient {
         final String cloneToken;
         final String userName;
         final String email;
+        GitlabUser gitlabUser = getUser(user);
         if (issueToken && !externalHost) {
-            final GitlabUser user = findUser(this.gitlabUser.getUsername())
+            final GitlabUser user = findUser(gitlabUser.getUsername())
                     .orElseGet(() -> GitlabUser.builder().username(adminName).id(adminId).build());
             userName = user.getUsername();
             cloneToken = createImpersonationToken(projectName, user.getId(), duration);
             email = user.getEmail();
         } else {
-            userName = externalHost ? this.gitlabUser.getUsername().replaceAll("@.*$", "") : adminName;
+            userName = externalHost ? gitlabUser.getUsername().replaceAll("@.*$", "") : adminName;
             cloneToken = adminToken;
             email = null;
         }
@@ -303,8 +304,12 @@ public class GitlabClient {
     }
 
     public GitCommitEntry commit(GitPushCommitEntry commitEntry) throws GitClientException {
-        commitEntry.setAuthorEmail(gitlabUser.getEmail());
-        commitEntry.setAuthorName(gitlabUser.getUsername());
+        // use user as author if it exists on gitlab
+        findUser(user).ifPresent(u -> {
+            commitEntry.setAuthorEmail(u.getEmail());
+            commitEntry.setAuthorName(u.getUsername());
+        });
+
         String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.postCommit(projectId, commitEntry));
     }
@@ -353,21 +358,31 @@ public class GitlabClient {
 
     private void createFile(GitProject project, String path, String content) {
         try {
-            Response<GitFile> response = gitLabApi.createFiles(
-                    project.getId().toString(), path,
-                    UpdateGitFileRequest.builder()
-                            .authorEmail(gitlabUser.getEmail())
-                            .authorName(gitlabUser.getUsername())
-                            .branch(DEFAULT_BRANCH)
-                            .message(INITIAL_COMMIT)
-                            .content(content).build()
-            ).execute();
+            final Response<GitFile> response = gitLabApi.createFiles(
+                    project.getId().toString(), path, buildCreateFileRequest(content)).execute();
             if (!response.isSuccessful()) {
                 throw new HttpException(response);
             }
-        } catch (IOException e) {
+        } catch (IOException | GitClientException e) {
             throw new IllegalStateException(e.getMessage());
         }
+    }
+
+    private UpdateGitFileRequest buildCreateFileRequest(final String content)
+            throws GitClientException {
+
+        final UpdateGitFileRequest.UpdateGitFileRequestBuilder requestBuilder = UpdateGitFileRequest.builder()
+                .branch(DEFAULT_BRANCH)
+                .message(INITIAL_COMMIT)
+                .content(content);
+
+        // use user as author if it exists on gitlab
+        findUser(user).ifPresent(u -> {
+            requestBuilder.authorEmail(u.getEmail());
+            requestBuilder.authorName(u.getUsername());
+        });
+
+        return requestBuilder.build();
     }
 
     private String getFileContent(String path) {
@@ -412,12 +427,8 @@ public class GitlabClient {
                 .flatMap(Stream::findFirst);
     }
 
-    private GitlabUser getUser(String userName) {
-        try {
-            return findUser(userName).orElseThrow(() -> new GitClientException("User " + userName + " not found!"));
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e);
-        }
+    private GitlabUser getUser(String userName) throws GitClientException {
+        return findUser(userName).orElseThrow(() -> new GitClientException("User " + userName + " not found!"));
     }
 
     private GitProject createRepo(String repoName, String description) throws GitClientException {
