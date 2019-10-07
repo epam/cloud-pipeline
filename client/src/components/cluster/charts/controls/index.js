@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
+import * as formatters from './utilities/formatters';
+export {formatters};
 export {default as Plot} from './plot';
-export {XAxis, YAxis} from './axis';
-export {default as Legend} from './legend';
-export {default as LinePlot} from './line-plot';
-export {default as BarPlot} from './bar-plot';
-export {default as Tooltip} from './tooltip';
+export {default as UsagePlot} from './usage-plot';
+export {default as ChartRenderer} from './chart-renderer';

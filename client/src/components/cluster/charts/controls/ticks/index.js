@@ -15,13 +15,11 @@
  */
 
 import {AxisDataType} from '../utilities';
-import dateTimeTicksGenerator from './date-time-ticks-generator';
 import defaultTicksGenerator from './default-ticks-generator';
 import percentTicksGenerator from './percent-ticks-generator';
 import * as formatters from '../utilities/formatters';
 
 export default {
-  [AxisDataType.date]: dateTimeTicksGenerator,
   [AxisDataType.networkUsage]: (start, end, canvasSize) =>
     defaultTicksGenerator(start, end, canvasSize, 2, 3, formatters.networkUsage),
   [AxisDataType.bytes]: (start, end, canvasSize) =>
@@ -33,7 +31,7 @@ export default {
       canvasSize,
       2,
       3,
-      o => formatters.memoryUsage( o * 1024 * 1024)
+      o => formatters.memoryUsage(o * 1024 * 1024)
     ),
   [AxisDataType.percent]: percentTicksGenerator,
   default: defaultTicksGenerator

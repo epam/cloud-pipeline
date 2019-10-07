@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-const postfixes = ['',
+const postfixes = ['bytes',
   'KiB',
   'MiB',
   'GiB',
@@ -23,18 +23,14 @@ const postfixes = ['',
   'EiB'
 ];
 
-function valuePresentation (value) {
+export default function (value) {
+  if (value <= 0) {
+    return '';
+  }
   let index = 0;
-  while (value >= 1024 && index < postfixes.length - 1) {
+  while (value >= 1024 && index < postfixes.length - 2) {
     value /= 1024;
     index += 1;
   }
-  return `${value.toFixed(2)} ${postfixes[index]}`;
+  return `${value.toFixed(index === 0 ? 0 : 2)} ${postfixes[index]}`;
 }
-
-export default function (value, total) {
-  const valueDescription = valuePresentation(value);
-  const totalDescription = valuePresentation(total);
-  const percent = value / total * 100.0;
-  return `${valueDescription} of ${totalDescription} (${percent.toFixed(2)}%)`;
-};

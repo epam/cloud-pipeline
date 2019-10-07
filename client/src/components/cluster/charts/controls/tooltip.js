@@ -17,67 +17,67 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import moment from 'moment';
 import {PlotColors} from './utilities';
 
 const MARGIN = 5;
 
-@inject('plotContext')
-@observer
-class Tooltip extends React.Component {
+class TooltipRenderer extends React.PureComponent {
   state = {
     sizes: {}
   };
 
+  componentWillReceiveProps (nextProps, nextContext) {
+    if (nextProps.tooltipString !== this.props.tooltipString) {
+      this.setState({sizes: {}});
+    }
+  }
+
   @computed
-  get tooltipFn () {
-    const {plotContext} = this.props;
-    if (plotContext) {
-      const tooltips = plotContext.plots
-        .filter(p => !!p.props.tooltip)
-        .map(p => ({
-          name: p.props.name || p.props.identifier,
-          color: PlotColors[p.index % PlotColors.length],
-          tooltipFn: p.props.tooltip
-        }));
-      if (!tooltips.length) {
-        return null;
-      }
+  get tooltips () {
+    const {xPoint, tooltips} = this.props;
+    if (tooltips && xPoint) {
       return [
         {
-          color: '#333',
-          tooltipFn: obj => moment.unix(obj.x).format('D MMM YYYY, HH:mm:ss')
+          title: 'Date',
+          color: '#666',
+          value: moment.unix(xPoint).format('d MMM, YYYY HH:mm')
         },
         ...tooltips
       ];
     }
-    return null;
+    return [];
   }
 
   renderTooltip = (x) => {
-    const tooltips = this.tooltipFn;
+    const tooltips = this.tooltips;
     const arrowMargin = 5;
-    const {fontSize, plotContext} = this.props;
+    const arrowDistance = 5;
+    const {fontSize, left, right, top, bottom} = this.props;
+    const canvasWidth = right - left;
+    const canvasHeight = bottom - top;
     const {sizes} = this.state;
     const {width: totalWidth, height: totalHeight} = tooltips
-      .map(t => `${t.name || ''}-${x}`)
+      .map(tooltip => `${tooltip.title}: ${tooltip.value}`)
       .map(key => sizes[key] || {width: 0, height: 0})
       .reduce((result, current) => ({
         width: Math.max(result.width, current.width),
         height: result.height + current.height + MARGIN
       }), {width: 0, height: MARGIN});
-    const direction = x > plotContext.width / 2.0 ? -1 : 1;
-    const xShift = x > plotContext.width / 2.0 ? -totalWidth - arrowMargin : arrowMargin;
+    const direction = x > canvasWidth / 2.0 ? -1 : 1;
+    const xShift = x > canvasWidth / 2.0
+      ? -totalWidth - arrowMargin - arrowDistance
+      : arrowMargin + arrowDistance;
     const getHeightBefore = (index) => {
       return tooltips
-        .map(t => `${t.name || ''}-${x}`)
+        .map(tooltip => `${tooltip.title}: ${tooltip.value}`)
         .map(key => sizes[key] || {width: 0, height: 0})
         .filter((t, i) => i < index)
         .reduce((result, current) => result + current.height + MARGIN, MARGIN);
     };
     const renderSingleTooltip = (tooltip, index) => {
-      const key = `${tooltip.name || ''}-${x}`;
+      const key = `${tooltip.title}: ${tooltip.value}`;
       const ref = (text) => {
         if (text && !this.state.sizes[key]) {
           const {width, height} = text.getBBox();
@@ -100,7 +100,7 @@ class Tooltip extends React.Component {
         style.opacity = 0;
       }
       let textX = x + xShift + MARGIN;
-      let textY = plotContext.height / 2.0 -
+      let textY = canvasHeight / 2.0 -
         totalHeight / 2.0 +
         getHeightBefore(index);
       if (size) {
@@ -115,32 +115,31 @@ class Tooltip extends React.Component {
           style={style}
           alignmentBaseline={'middle'}
         >
-          {tooltip.name ? `${tooltip.name}: ` : ''}
-          {tooltip.tooltipFn(plotContext.hoveredItem)}
+          {tooltip.title}: {tooltip.value}
         </text>
       );
     };
     const tooltipBorderPoints = [{
-      x,
-      y: plotContext.height / 2.0
+      x: x + arrowDistance * direction,
+      y: canvasHeight / 2.0
     }, {
-      x: x + direction * arrowMargin,
-      y: plotContext.height / 2.0 - arrowMargin
+      x: x + direction * (arrowMargin + arrowDistance),
+      y: canvasHeight / 2.0 - arrowMargin
     }, {
-      x: x + direction * arrowMargin,
-      y: plotContext.height / 2.0 - totalHeight / 2.0
+      x: x + direction * (arrowMargin + arrowDistance),
+      y: canvasHeight / 2.0 - totalHeight / 2.0
     }, {
-      x: x + direction * arrowMargin + direction * totalWidth,
-      y: plotContext.height / 2.0 - totalHeight / 2.0
+      x: x + direction * (arrowMargin + arrowDistance + totalWidth),
+      y: canvasHeight / 2.0 - totalHeight / 2.0
     }, {
-      x: x + direction * arrowMargin + direction * totalWidth,
-      y: plotContext.height / 2.0 + totalHeight / 2.0
+      x: x + direction * (arrowMargin + arrowDistance + totalWidth),
+      y: canvasHeight / 2.0 + totalHeight / 2.0
     }, {
-      x: x + direction * arrowMargin,
-      y: plotContext.height / 2.0 + totalHeight / 2.0
+      x: x + direction * (arrowMargin + arrowDistance),
+      y: canvasHeight / 2.0 + totalHeight / 2.0
     }, {
-      x: x + direction * arrowMargin,
-      y: plotContext.height / 2.0 + arrowMargin
+      x: x + direction * (arrowMargin + arrowDistance),
+      y: canvasHeight / 2.0 + arrowMargin
     }].map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`)
       .concat('Z')
       .join(' ');
@@ -148,8 +147,14 @@ class Tooltip extends React.Component {
       <g shapeRendering={'crispEdges'}>
         <path
           d={tooltipBorderPoints}
-          stroke={'#ccc'}
+          stroke={'none'}
           fill={'white'}
+          opacity={0.85}
+        />
+        <path
+          d={tooltipBorderPoints}
+          stroke={'#ccc'}
+          fill={'none'}
           strokeWidth={1}
         />
         {tooltips.map(renderSingleTooltip)}
@@ -158,41 +163,164 @@ class Tooltip extends React.Component {
   };
 
   render () {
-    const {plotContext, xAxis: xAxisIdentifier} = this.props;
-    if (!plotContext || !plotContext.hoveredItem || !this.tooltipFn) {
+    const {
+      visible,
+      xPoint,
+      left,
+      top,
+      bottom,
+      ratio,
+      timelineStart,
+      tooltips
+    } = this.props;
+    if (!visible || !tooltips || tooltips.length === 0) {
       return null;
     }
-    const {top, bottom, height} = plotContext;
-    const xAxis = xAxisIdentifier
-      ? plotContext.getAxis(xAxisIdentifier)
-      : plotContext.xAxis;
-    if (!xAxis) {
-      return null;
-    }
-    const x = Math.round(xAxis.getCanvasCoordinate(plotContext.hoveredItem.x));
+    const x = left + (xPoint - timelineStart) * ratio;
     return (
-      <g>
+      <g shapeRendering={'cripsEdges'}>
         <line
           x1={x}
           x2={x}
           y1={top}
-          y2={height - bottom}
-          stroke={'#ccc'}
+          y2={bottom}
+          stroke={'#666'}
           strokeWidth={1}
         />
-        {this.renderTooltip(x)}
+        {this.renderTooltip(x, xPoint)}
       </g>
     );
   }
 }
 
-Tooltip.propTypes = {
-  fontSize: PropTypes.number,
-  xAxis: PropTypes.string
+TooltipRenderer.propTypes = {
+  visible: PropTypes.bool,
+  xPoint: PropTypes.number,
+  timelineStart: PropTypes.number,
+  ratio: PropTypes.number,
+  left: PropTypes.number,
+  right: PropTypes.number,
+  top: PropTypes.number,
+  bottom: PropTypes.number,
+  tooltipString: PropTypes.string,
+  tooltips: PropTypes.array,
+  fontSize: PropTypes.number
 };
 
-Tooltip.defaultProps = {
+TooltipRenderer.defaultProps = {
   fontSize: 12
+};
+
+@inject('data', 'plot', 'timeline')
+@observer
+class Tooltip extends React.PureComponent {
+  @observable hoveredItem;
+
+  componentDidMount () {
+    window.addEventListener('mousemove', this.mouseMove);
+    if (this.props.data) {
+      this.props.data.registerListener(this.dataUpdated);
+    }
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('mousemove', this.mouseMove);
+  }
+
+  componentWillReceiveProps (nextProps, nextContext) {
+    if (nextProps.data !== this.props.data) {
+      if (this.props.data) {
+        this.props.data.unRegisterListener(this.dataUpdated);
+      }
+      if (nextProps.data) {
+        nextProps.data.registerListener(this.dataUpdated);
+      }
+    }
+  }
+
+  dataUpdated = () => {
+    this.hoveredItem = null;
+  };
+
+  mouseMove = (event) => {
+    const {data, plot, timeline} = this.props;
+    if (data && event.buttons === 0 && timeline && plot) {
+      const {canvas} = plot;
+      const {chartArea} = plot.props;
+      const {from} = timeline.state;
+      const dim = canvas.getBoundingClientRect();
+      const x = event.clientX - dim.left;
+      const y = event.clientY - dim.top;
+      if (x >= 0 && x <= dim.width && y >= 0 && y <= dim.height) {
+        const timelinePosition = from + (x - chartArea.left) * timeline.canvasToPlotRatio;
+        let xPoint = data.xPoints[0];
+        let diff = Math.abs(xPoint - timelinePosition);
+        for (let i = 1; i < data.xPoints.length; i++) {
+          const candidate = Math.abs(data.xPoints[i] - timelinePosition);
+          if (candidate < diff) {
+            diff = candidate;
+            xPoint = data.xPoints[i];
+          }
+        }
+        this.hoveredItem = data.groups.map(group => {
+          const [result] = (data.data[group]?.data || []).filter(item => item.x === xPoint);
+          if (result) {
+            return {[group]: result};
+          }
+          return {};
+        }).reduce((r, c) => ({...r, ...c}), {xPoint});
+        return;
+      }
+    }
+    this.hoveredItem = null;
+  };
+
+  render () {
+    const {plot, timeline} = this.props;
+    if (!plot || !timeline || !this.hoveredItem) {
+      return null;
+    }
+    const {from} = timeline.state;
+    const {chartArea, dataGroup, height, plots, width} = plot.props;
+    const defaultFormatter = o => o ? o.toFixed(2) : '';
+    const tooltips = plots
+      .map((p, i) => ({...p, color: PlotColors[i % PlotColors.length]}))
+      .filter(p => (p.group || 'default') === (dataGroup || 'default') || p.isPercent)
+      .map(p => ({
+        title: p.title || p.name,
+        color: p.color,
+        formatter: p.formatter || defaultFormatter,
+        value: (this.hoveredItem[p.group || 'default'] || {})[p.name]
+      }))
+      .filter(p => p.value !== undefined)
+      .map(p => ({
+        ...p,
+        value: p.formatter(p.value)
+      }));
+    return (
+      <TooltipRenderer
+        visible={!!this.hoveredItem}
+        xPoint={this.hoveredItem ? this.hoveredItem.xPoint : null}
+        left={chartArea.left}
+        right={width - chartArea.right}
+        top={chartArea.top}
+        bottom={height - chartArea.bottom}
+        ratio={timeline.plotToCanvasRatio}
+        timelineStart={from}
+        tooltips={tooltips}
+        tooltipString={tooltips.map(t => `${t.title}: ${t.value}`).join('\n')}
+      />
+    );
+  }
+}
+
+Tooltip.propTypes = {
+  config: PropTypes.arrayOf(PropTypes.shape({
+    group: PropTypes.string,
+    field: PropTypes.string,
+    title: PropTypes.string,
+    formatter: PropTypes.func
+  }))
 };
 
 export default Tooltip;

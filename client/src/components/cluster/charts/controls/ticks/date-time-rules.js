@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import moment from 'moment';
 
-const SIZE_PER_TICK = 100;
+import moment from 'moment';
 
 const buildRule = (fnName) => ({
   fn: duration => typeof duration[fnName] === 'function'
@@ -55,7 +54,13 @@ const buildRule = (fnName) => ({
       date = this.addStep(date);
     }
     if (isBase && this.nextRule) {
-      result.push(...this.nextRule.fillRange(start, end, false));
+      const subResult = this.nextRule.fillRange(start, end, false);
+      for (let i = 0; i < subResult.length; i++) {
+        const item = subResult[i];
+        if (result.filter(({tick}) => tick === item.tick).length === 0) {
+          result.push(item);
+        }
+      }
     }
     return result;
   },
@@ -188,25 +193,4 @@ for (let i = 0; i < rules.length - 1; i++) {
   rules[i].nextRule = rules[i + 1];
 }
 
-export default function (start, end, canvasSize) {
-  if (
-    !canvasSize ||
-    Math.abs(canvasSize) === Infinity ||
-    isNaN(canvasSize) ||
-    start === end
-  ) {
-    return [];
-  }
-  const dateStart = moment.unix(start);
-  const dateEnd = moment.unix(end);
-  const duration = moment.duration(dateEnd.diff(dateStart));
-  const baseTicksCount = Math.floor(canvasSize / SIZE_PER_TICK);
-  const durations = rules
-    .map(rule => ({
-      ...rule,
-      duration: rule.fn(duration)
-    }));
-  const bestFit = durations
-    .filter(d => d.duration <= baseTicksCount).pop() || durations[0];
-  return bestFit.fillRange(dateStart, dateEnd);
-}
+export default rules;

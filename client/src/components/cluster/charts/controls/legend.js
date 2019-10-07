@@ -17,29 +17,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
 import {PlotColors} from './utilities';
 
 const LEGEND_ICON_WIDTH = 30;
 const MARGIN = 15;
 
-@inject('plotContext')
+@inject('plot')
 @observer
 class Legend extends React.Component {
   state = {
     legendSizes: {}
   };
-
-  @computed
-  get plots () {
-    const {plotContext} = this.props;
-    if (!plotContext) {
-      return [];
-    }
-    return plotContext.plots
-      .map(p => p.props.name || p.props.identifier)
-      .filter(Boolean);
-  }
 
   getTotalLegendsWidth (elements) {
     const {legendSizes} = this.state;
@@ -49,7 +37,9 @@ class Legend extends React.Component {
       .reduce((total, current) => total + current, 0);
   }
 
-  renderLegendItem = (y, width) => (name, index, array) => {
+  renderLegendItem = (y, width) => (plot, index, array) => {
+    const {name: plotName, title} = plot;
+    const name = title || plotName;
     const {fontSize} = this.props;
     const initializeTextElement = (text) => {
       if (text) {
@@ -67,8 +57,8 @@ class Legend extends React.Component {
     };
     const color = PlotColors[index % PlotColors.length];
     const x = width / 2.0 -
-      this.getTotalLegendsWidth(array) / 2.0 +
-      this.getTotalLegendsWidth(array.slice(0, index)) +
+      this.getTotalLegendsWidth(array.map(a => a.title || a.name)) / 2.0 +
+      this.getTotalLegendsWidth(array.map(a => a.title || a.name).slice(0, index)) +
       MARGIN / 2.0;
     const {legendSizes} = this.state;
     const style = {fontSize};
@@ -116,25 +106,25 @@ class Legend extends React.Component {
   };
 
   render () {
-    if (this.plots.length < 2) {
+    const {plot} = this.props;
+    if (!plot) {
       return null;
     }
-    const {plotContext} = this.props;
-    if (!plotContext) {
+    const {plots} = plot.props;
+    if (plots.length < 2) {
       return null;
     }
-    const top = plotContext.top;
-    const width = plotContext.width;
+    const {chartArea, width} = plot.props;
+    const top = chartArea.top;
     return (
       <g>
-        {this.plots.map(this.renderLegendItem(top, width))}
+        {plots.map(this.renderLegendItem(top, width))}
       </g>
     );
   }
 }
 
 Legend.propTypes = {
-  plotContext: PropTypes.object,
   fontSize: PropTypes.number
 };
 

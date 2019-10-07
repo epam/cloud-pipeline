@@ -17,10 +17,5 @@
 import * as formatters from './formatters';
 
 export {default as AxisDataType} from './axis-data-format';
-export {default as AxisDefaultSize} from './axis-default-size';
-export {default as AxisPosition} from './axis-position';
 export {formatters};
-export {default as interpolate} from './interpolate';
 export {default as PlotColors} from './plot-colors';
-export {default as PlotContext} from './plot-context';
-export {default as usageFormatter} from './usage-formatter';

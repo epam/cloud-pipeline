@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon} from 'antd';
-import moment from 'moment';
 import styles from './chart.css';
 
 const TITLE_HEIGHT = 26;
@@ -31,7 +30,6 @@ class Chart extends React.Component {
     className: PropTypes.string,
     data: PropTypes.object,
     title: PropTypes.string,
-    renderer: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
     width: PropTypes.number.isRequired,
     height: PropTypes.number.isRequired,
     onRangeChanged: PropTypes.func,
@@ -63,36 +61,24 @@ class Chart extends React.Component {
     const {data} = this.props;
     let {start, end} = this.state;
     if (data) {
-      return (!!start && start > data.instanceFrom) || (end && end < moment.utc().unix());
-    }
-    if (end) {
-      return end < moment.utc().unix();
+      return (start && start > data.instanceFrom) || (end && end < data.instanceFrom);
     }
     return false;
   }
 
   get plotProperties () {
     const {rangeChangeEnabled} = this.props;
+    const {start, end} = this.state;
     const properties = {
-      onChangeRange: this.onChangeRange,
-      rangeChangeEnabled
+      onRangeChanged: this.onChangeRange,
+      rangeChangeEnabled,
+      from: start,
+      to: end
     };
     const {data} = this.props;
     if (data) {
       properties.instanceFrom = data.instanceFrom;
-    }
-    return properties;
-  }
-
-  get xAxisProperties () {
-    const {start, end} = this.state;
-    const properties = {
-      start,
-      end
-    };
-    const {data} = this.props;
-    if (data) {
-      properties.min = data.instanceFrom;
+      properties.instanceTo = data.instanceTo;
     }
     return properties;
   }
@@ -121,6 +107,7 @@ class Chart extends React.Component {
 
   renderTitle = (height) => {
     const {
+      data,
       title
     } = this.props;
     if (!title) {
@@ -131,6 +118,10 @@ class Chart extends React.Component {
         className={styles.title}
         style={{height}}
       >
+        <Icon
+          type={'loading'}
+          style={{opacity: data && data.pending ? 1 : 0, marginRight: 5}}
+        />
         {title}
       </div>
     );
@@ -184,7 +175,7 @@ class Chart extends React.Component {
         start = data.instanceFrom;
       }
       if (!end) {
-        end = moment.utc().unix();
+        end = data.instanceTo;
       }
       const newRange = (end - start) / 2.0;
       const center = (start + end) / 2.0;
@@ -207,7 +198,7 @@ class Chart extends React.Component {
         start = data.instanceFrom;
       }
       if (!end) {
-        end = moment.utc().unix();
+        end = data.instanceTo;
       }
       const newRange = (end - start) * 2.0;
       const center = (start + end) / 2.0;

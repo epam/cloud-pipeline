@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import {
   Alert,
   Button,
@@ -113,6 +114,28 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   lifeUpdateTimer;
+
+  @computed
+  get lastWeekEnabled () {
+    const {chartsData} = this.props;
+    return moment
+      .duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'w');
+  }
+
+  @computed
+  get lastDayEnabled () {
+    const {chartsData} = this.props;
+    return moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'd');
+  }
+
+  @computed
+  get lastHourEnabled () {
+    const {chartsData} = this.props;
+    return moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'h');
+  }
 
   componentDidMount () {
     this.lifeUpdateTimer = setInterval(
@@ -328,7 +351,7 @@ class ClusterNodeMonitor extends React.Component {
     const commonChartProps = {
       followCommonScale: chartsData.followCommonRange,
       start: start || chartsData.instanceFrom,
-      end,
+      end: end || chartsData.instanceTo,
       containerSize: {containerWidth, containerHeight},
       padding: 5,
       onRangeChanged: this.onRangeChanged
@@ -357,9 +380,24 @@ class ClusterNodeMonitor extends React.Component {
             overlay={(
               <Menu onClick={this.setRange}>
                 <Menu.Item key={Range.full}>Whole range</Menu.Item>
-                <Menu.Item key={Range.week}>Last week</Menu.Item>
-                <Menu.Item key={Range.day}>Last day</Menu.Item>
-                <Menu.Item key={Range.hour}>Last hour</Menu.Item>
+                <Menu.Item
+                  key={Range.week}
+                  disabled={!this.lastWeekEnabled}
+                >
+                  Last week
+                </Menu.Item>
+                <Menu.Item
+                  key={Range.day}
+                  disabled={!this.lastDayEnabled}
+                >
+                  Last day
+                </Menu.Item>
+                <Menu.Item
+                  key={Range.hour}
+                  disabled={!this.lastHourEnabled}
+                >
+                  Last hour
+                </Menu.Item>
               </Menu>
             )}>
             <Button>
