@@ -66,6 +66,7 @@ public class TesTaskServiceImpl implements TesTaskService {
         PipelineRun pipelineRun = cloudPipelineAPIClient.runPipeline(taskMapper.mapToPipelineStart(body));
         Assert.notNull(pipelineRun.getId(), messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY,
                 ID));
+        log.debug(messageHelper.getMessage(MessageConstants.PIPELINE_RUN_SUBMITTED, pipelineRun.getId()));
         tesCreateTaskResponse.setId(String.valueOf(pipelineRun.getId()));
         return tesCreateTaskResponse;
     }
@@ -95,6 +96,7 @@ public class TesTaskServiceImpl implements TesTaskService {
         filterExpressionVO.setFilterExpression(expression);
         filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
+        log.debug(messageHelper.getMessage(MessageConstants.GET_LIST_TASKS_BY_NAME_PREFIX, namePrefix));
         return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements());
     }
 
@@ -102,6 +104,7 @@ public class TesTaskServiceImpl implements TesTaskService {
         PagingRunFilterVO filterVO = new PagingRunFilterVO();
         filterVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
         filterVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
+        log.debug(messageHelper.getMessage(MessageConstants.GET_LIST_TASKS_BY_DEFAULT_PREFIX));
         return ListUtils.emptyIfNull(cloudPipelineAPIClient.filterRuns(filterVO, LOAD_STORAGE_LINKS).getElements());
     }
 
@@ -110,11 +113,13 @@ public class TesTaskServiceImpl implements TesTaskService {
         RunStatusVO updateStatus = new RunStatusVO();
         updateStatus.setStatus(TaskStatus.STOPPED);
         cloudPipelineAPIClient.updateRunStatus(parseRunId(id), updateStatus);
+        log.debug(messageHelper.getMessage(MessageConstants.CANCEL_PIPELINE_RUN_BY_ID, id));
         return new TesCancelTaskResponse();
     }
 
     @Override
     public TesTask getTesTask(String id, TaskView view) {
+        log.debug(messageHelper.getMessage(MessageConstants.GET_PIPELINE_RUN_BY_ID, id));
         return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)), view);
     }
 
@@ -126,6 +131,7 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesServiceInfo getServiceInfo() {
+        log.debug(messageHelper.getMessage(MessageConstants.GET_SERVICE_INFO));
         final TesServiceInfo tesServiceInfo = new TesServiceInfo();
         tesServiceInfo.setName(nameOfService);
         tesServiceInfo.setDoc(doc);
