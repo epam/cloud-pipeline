@@ -14,16 +14,126 @@
  * limitations under the License.
  */
 
-import {action, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import moment from 'moment';
+import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
+
+async function loadData (node, from, to) {
+  const fromValue = from
+    ? moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
+    : undefined;
+  const toValue = to
+    ? moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss')
+    : undefined;
+  const request = new NodeUsage(node, fromValue, toValue);
+  await request.fetchIfNeededOrWait();
+  if (request.error) {
+    return {
+      error: request.error,
+      from,
+      to
+    };
+  }
+  return {
+    value: request.value,
+    from,
+    to
+  };
+}
 
 class ChartData {
-  @observable data = [];
+  @observable data = {};
   @observable groups = [];
   @observable xMin = 0;
   @observable xMax = 0;
 
   @observable noData = true;
+
+  @observable _pending = true;
+  @observable error;
+  @observable instanceFrom;
+  @observable instanceTo;
+  @observable from;
+  @observable to;
+
+  @observable ranges = {};
+  listeners = [];
+
+  nodeName;
+
+  @computed
+  get pending () {
+    return this._pending;
+  }
+
+  set pending (value) {
+    this._pending = value;
+  }
+
+  constructor (nodeName, instanceFrom, instanceTo) {
+    this.nodeName = nodeName;
+    this.instanceFrom = instanceFrom;
+    this.instanceTo = instanceTo;
+    this.from = instanceFrom;
+    this.to = instanceTo;
+  }
+
+  registerListener = (listener) => {
+    const index = this.listeners.indexOf(listener);
+    if (index === -1) {
+      this.listeners.push(listener);
+    }
+  };
+
+  unRegisterListener = (listener) => {
+    const index = this.listeners.indexOf(listener);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
+  };
+
+  @action
+  loadData = () => {
+    this.pending = true;
+    loadData(this.nodeName, this.from, this.to)
+      .then(({error, from, to, value}) => {
+        if (from !== this.from || to !== this.to) {
+          return;
+        }
+        this.error = error;
+        if (!error) {
+          this.processValues(value || []);
+        }
+        this.pending = false;
+      });
+  };
+
+  @action
+  async fetch () {
+    return this.loadData();
+  }
+
+  @action
+  updateRange = () => {
+    this.instanceTo = moment().unix();
+  };
+
+  correctDateToFixRange = (unixDateTime) => {
+    if (!unixDateTime) {
+      return unixDateTime;
+    }
+    return Math.max(
+      this.instanceFrom || -Infinity,
+      Math.min(this.instanceTo || Infinity, unixDateTime)
+    );
+  };
+
+  @action
+  processValues (values) {
+    this.apply(values);
+    this.updateRange();
+    this.listeners.forEach(fn => fn(this));
+  }
 
   getConfigForData (responseData) {
     return [{
@@ -136,7 +246,7 @@ class NetworkUsageData extends ChartData {
   }
 }
 
-class FileSystemUsage extends ChartData {
+class FileSystemUsageData extends ChartData {
   getConfigForData (responseData) {
     let devices = [];
     if (responseData && responseData.length > 0) {
@@ -160,5 +270,4 @@ class FileSystemUsage extends ChartData {
   }
 }
 
-export {CPUUsageData, MemoryUsageData, NetworkUsageData, FileSystemUsage};
-export default ChartData;
+export {ChartData, CPUUsageData, MemoryUsageData, NetworkUsageData, FileSystemUsageData};

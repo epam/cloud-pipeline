@@ -42,11 +42,6 @@ class Timeline extends React.PureComponent {
   detachZoomHandler;
 
   @computed
-  get offset () {
-    return 0;
-  }
-
-  @computed
   get dataRange () {
     const {from, to} = this.state;
     if (!from || !to) {
@@ -111,12 +106,12 @@ class Timeline extends React.PureComponent {
   }
 
   componentDidMount () {
-    const {from, to, interactiveArea} = this.props;
+    const {from, to, interactiveArea, onRangeChanged} = this.props;
     this.setState({
       from, to
     });
-    this.detachMoveHandler = attachMoveHandler(this, interactiveArea);
-    this.detachZoomHandler = attachZoomHandler(this, interactiveArea);
+    this.detachMoveHandler = attachMoveHandler(this, interactiveArea, onRangeChanged);
+    this.detachZoomHandler = attachZoomHandler(this, interactiveArea, onRangeChanged);
   }
 
   componentWillUnmount () {
@@ -143,10 +138,18 @@ class Timeline extends React.PureComponent {
       if (this.detachZoomHandler) {
         this.detachZoomHandler();
       }
-      this.detachMoveHandler = attachMoveHandler(this, nextProps.interactiveArea);
-      this.detachZoomHandler = attachZoomHandler(this, nextProps.interactiveArea);
+      this.detachMoveHandler = attachMoveHandler(
+        this,
+        nextProps.interactiveArea,
+        nextProps.onRangeChanged
+      );
+      this.detachZoomHandler = attachZoomHandler(
+        this,
+        nextProps.interactiveArea,
+        nextProps.onRangeChanged
+      );
     }
-    if (Object.keys(newState) > 0) {
+    if (Object.keys(newState).length > 0) {
       this.setState(newState);
     }
   }
@@ -183,7 +186,7 @@ class Timeline extends React.PureComponent {
       <line
         key={tick.tick}
         x1={x}
-        y1={height - chartArea.bottom - 1}
+        y1={height - chartArea.bottom}
         x2={x}
         y2={height - chartArea.bottom + tickSize}
         stroke={tickColor}
@@ -346,7 +349,8 @@ Timeline.propTypes = {
   tickColor: PropTypes.string,
   fontColor: PropTypes.string,
   fontSize: PropTypes.number,
-  interactiveArea: PropTypes.object
+  interactiveArea: PropTypes.object,
+  onRangeChanged: PropTypes.func
 };
 
 Timeline.defaultProps = {

@@ -16,43 +16,21 @@
 
 import React from 'react';
 import Base from './base';
-import {LinePlot, Plot, XAxis, YAxis} from './controls';
-import {AxisDataType} from './controls/utilities';
-import P from './controls/new-plot';
+import {ChartRenderer, Plot} from './controls';
 
 class CPUUsageChart extends Base {
   renderPlot (data, width, height) {
     return (
-      <P
-        width={width}
-        height={height}
-        data={data}
-        {...this.plotProperties}
-      >
-
-      </P>
-    );
-    return (
       <Plot
-        identifier={'cpu-usage'}
-        data={data}
         width={width}
         height={height}
+        data={data}
+        minimum={0}
+        valueFrom={0}
         {...this.plotProperties}
+        plots={[{name: 'cpu', renderer: 'cpu-usage'}]}
       >
-        <XAxis
-          axisDataType={AxisDataType.date}
-          {...this.xAxisProperties}
-        />
-        <YAxis
-          min={0}
-          start={0}
-        />
-        <LinePlot
-          name={'CPU Usage'}
-          tooltip={item => Math.round(item.y * 10000) / 10000.0}
-        />
-        <P />
+        <ChartRenderer identifier={'cpu-usage'} />
       </Plot>
     );
   }

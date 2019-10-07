@@ -18,8 +18,8 @@ import React from 'react';
 import {computed} from 'mobx';
 import {Row, Select} from 'antd';
 import Base from './base';
-import {Legend, LinePlot, Plot, XAxis, YAxis} from './controls';
-import {AxisDataType, formatters} from './controls/utilities';
+import {AxisDataType} from './controls/utilities';
+import {ChartRenderer, Plot} from './controls';
 
 class NetworkUsageChart extends Base {
   static controlsHeight = 30;
@@ -31,9 +31,8 @@ class NetworkUsageChart extends Base {
   @computed
   get interfaces () {
     const {data} = this.props;
-    if (data && data.data && data.data.length > 0) {
-      const {stats} = data.data[0];
-      return Object.keys(stats);
+    if (data && data.groups && data.groups.length > 0) {
+      return data.groups;
     }
     return [];
   }
@@ -82,35 +81,19 @@ class NetworkUsageChart extends Base {
     }
     return (
       <Plot
-        identifier={'network-usage'}
-        data={data}
         width={width}
         height={height}
+        data={data}
+        dataGroup={this.selectedInterface}
+        dataType={AxisDataType.networkUsage}
         {...this.plotProperties}
+        plots={[{
+          name: 'rx', renderer: 'network-usage', group: selectedInterface, title: 'RX'
+        }, {
+          name: 'tx', renderer: 'network-usage', group: selectedInterface, title: 'TX'
+        }]}
       >
-        <XAxis
-          axisDataType={AxisDataType.date}
-          {...this.xAxisProperties}
-        />
-        <YAxis
-          axisDataType={AxisDataType.networkUsage}
-          min={0}
-          start={0}
-          size={100}
-        />
-        <LinePlot
-          identifier={'rx'}
-          name={'RX'}
-          dataField={obj => obj?.stats[selectedInterface]?.rxBytes}
-          tooltip={item => formatters.networkUsage(item.stats[selectedInterface]?.rxBytes)}
-        />
-        <LinePlot
-          identifier={'tx'}
-          name={'TX'}
-          dataField={obj => obj?.stats[selectedInterface]?.txBytes}
-          tooltip={item => formatters.networkUsage(item.stats[selectedInterface]?.txBytes)}
-        />
-        <Legend />
+        <ChartRenderer identifier={'network-usage'} />
       </Plot>
     );
   }

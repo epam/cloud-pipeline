@@ -16,18 +16,8 @@
 
 import React from 'react';
 import Base from './base';
-import {
-  BarPlot,
-  Legend,
-  LinePlot,
-  Plot,
-  XAxis,
-  YAxis
-} from './controls';
-import {
-  AxisDataType,
-  AxisPosition
-} from './controls/utilities';
+import {AxisDataType} from './controls/utilities';
+import {ChartRenderer, Plot, UsagePlot, formatters} from './controls';
 
 class MemoryUsageChart extends Base {
   renderPlot (data, width, height) {
@@ -37,74 +27,30 @@ class MemoryUsageChart extends Base {
         style={{width, height: height, display: 'flex', flexDirection: 'column'}}
       >
         <Plot
-          identifier={'memory-usage'}
-          data={data}
           width={width}
           height={height - barPlotHeight}
-          {...this.plotProperties}
-        >
-          <XAxis
-            axisDataType={AxisDataType.date}
-            {...this.xAxisProperties}
-          />
-          <YAxis
-            axisDataType={AxisDataType.mBytes}
-            identifier={'memory usage'}
-          />
-          <YAxis
-            identifier={'memory percent'}
-            axisDataType={AxisDataType.percent}
-            position={AxisPosition.right}
-            min={0}
-            start={0}
-            end={100}
-            max={100}
-            ticks={4}
-          />
-          <LinePlot
-            identifier={'usage'}
-            name={'MB used'}
-            yAxis={'memory usage'}
-            tooltip={item => Math.round(item.y * 100) / 100.0}
-          />
-          <LinePlot
-            identifier={'percent'}
-            name={'MB used (%)'}
-            dataField={'percent'}
-            yAxis={'memory percent'}
-            tooltip={item => `${Math.round(item.percent * 100) / 100.0}%`}
-          />
-          <Legend />
-        </Plot>
-        <Plot
-          identifier={'memory-usage-percentage'}
           data={data}
+          {...this.plotProperties}
+          plots={[{
+            name: 'memory', renderer: 'memory-usage', group: 'default', title: 'MB used'
+          }, {
+            name: 'percent', isPercent: true, group: 'percent', title: 'MB used (%)'
+          }]}
+          dataType={AxisDataType.mBytes}
+        >
+          <ChartRenderer identifier={'memory-usage'} />
+        </Plot>
+        <UsagePlot
           width={width}
           height={barPlotHeight}
-          {...this.plotProperties}
-          rangeChangeEnabled={false}
-        >
-          <XAxis
-            axisDataType={AxisDataType.percent}
-            visible={false}
-            start={0}
-            end={100}
-          />
-          <YAxis
-            ticksVisible={false}
-            min={-0.75}
-            max={0.75}
-          />
-          <BarPlot
-            identifier={'memory usage'}
-            series={[
-              {
-                value: 'usage',
-                total: 'capacity'
-              }
-            ]}
-          />
-        </Plot>
+          data={data}
+          config={[{
+            group: 'capacity',
+            value: 'usage',
+            total: 'capacity',
+            formatter: formatters.memoryUsage
+          }]}
+        />
       </div>
     );
   }

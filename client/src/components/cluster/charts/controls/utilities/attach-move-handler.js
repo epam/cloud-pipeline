@@ -77,15 +77,17 @@ export default function (controller, area, onMoveFinished) {
     if (!from) {
       return;
     }
+    const {minimum, maximum} = controller.props;
     const delta = (mousePosition - moveInfo.mousePosition) * moveInfo.config.ratio;
-    const start = moveInfo.config.from - delta;
-    const end = start + moveInfo.config.range;
+    let start = Math.max(minimum || -Infinity, moveInfo.config.from - delta);
+    const end = Math.min(maximum || Infinity, start + moveInfo.config.range);
+    start = Math.max(minimum || -Infinity, end - moveInfo.config.range);
     controller.setState({
       from: start,
       to: end
     }, () => {
-      if (final && onMoveFinished) {
-        onMoveFinished(start, end);
+      if (onMoveFinished) {
+        onMoveFinished(start, end, final);
       }
     });
   };

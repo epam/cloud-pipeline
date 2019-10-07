@@ -14,5 +14,6 @@
  * limitations under the License.
  */
 
+export {default as fileSystemUsage} from './file-system-usage';
 export {default as memoryUsage} from './memory-usage';
 export {default as networkUsage} from './network-usage';

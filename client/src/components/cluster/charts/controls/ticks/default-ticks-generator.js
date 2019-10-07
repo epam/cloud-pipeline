@@ -51,7 +51,7 @@ const buildRule = (rangeFn) => ({
       tick = this.addStep(tick);
     }
     while (tick < end) {
-      if (result.filter(({t}) => t === tick).length === 0) {
+      if (result.filter(({tick: t}) => t === tick).length === 0) {
         result.push({
           tick: tick,
           display: this.display(tick),
@@ -61,7 +61,13 @@ const buildRule = (rangeFn) => ({
       tick = this.addStep(tick);
     }
     if (level + 1 < maxLevel && this.nextRule) {
-      result.push(...this.nextRule.fillRange(start, end, maxLevel, level + 1));
+      const subValues = this.nextRule.fillRange(start, end, maxLevel, level + 1);
+      for (let i = 0; i < subValues.length; i++) {
+        const subValue = subValues[i];
+        if (result.filter(({tick: t}) => t === subValue.tick).length === 0) {
+          result.push(subValue);
+        }
+      }
     }
     return result;
   },

@@ -31,7 +31,6 @@ class Chart extends React.Component {
     className: PropTypes.string,
     data: PropTypes.object,
     title: PropTypes.string,
-    renderer: PropTypes.oneOfType([PropTypes.func, PropTypes.object]),
     width: PropTypes.number.isRequired,
     height: PropTypes.number.isRequired,
     onRangeChanged: PropTypes.func,
@@ -73,27 +72,17 @@ class Chart extends React.Component {
 
   get plotProperties () {
     const {rangeChangeEnabled} = this.props;
+    const {start, end} = this.state;
     const properties = {
-      onChangeRange: this.onChangeRange,
-      rangeChangeEnabled
+      onRangeChanged: this.onChangeRange,
+      rangeChangeEnabled,
+      from: start,
+      to: end
     };
     const {data} = this.props;
     if (data) {
       properties.instanceFrom = data.instanceFrom;
       properties.instanceTo = data.instanceTo;
-    }
-    return properties;
-  }
-
-  get xAxisProperties () {
-    const {start, end} = this.state;
-    const properties = {
-      start,
-      end
-    };
-    const {data} = this.props;
-    if (data) {
-      properties.min = data.instanceFrom;
     }
     return properties;
   }

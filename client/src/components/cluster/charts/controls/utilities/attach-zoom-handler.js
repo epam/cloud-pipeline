@@ -72,14 +72,13 @@ export default function (controller, area, onZoomFinished) {
   };
 
   const zoom = ({start, end}) => {
-    console.log('zoom', start, end);
     controller.setState({
       from: Math.min(start, end),
       to: Math.max(start, end)
     }, () => {
       cancelZoom();
       if (onZoomFinished) {
-        onZoomFinished(start, end);
+        onZoomFinished(start, end, true);
       }
     });
   };
