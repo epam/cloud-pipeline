@@ -182,7 +182,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .findFirst()
                 .filter(it -> it instanceof ParsedSingleValueNumericMetricsAggregation)
                 .map(ParsedSingleValueNumericMetricsAggregation .class::cast)
-                .map(ParsedSingleValueNumericMetricsAggregation::value);
+                .map(ParsedSingleValueNumericMetricsAggregation::value)
+                .filter(d -> !d.isInfinite());
     }
 
     protected Optional<Long> longValue(final List<Aggregation> aggregations, final String name) {
