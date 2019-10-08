@@ -43,6 +43,8 @@ import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import lombok.NoArgsConstructor;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -50,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -73,6 +76,22 @@ import static com.epam.pipeline.entity.notification.NotificationSettings.Notific
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PodMonitor extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PodMonitor.class);
+
+    @Autowired
+    private PodMonitorCore core;
+
+    @PostConstruct
+    public void setup() {
+        scheduleFixedDelay(core::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
+    }
+
+    public void updateStatus() {
+        core.updateStatus();
+    }
+
+    @Component
+    @NoArgsConstructor
+    private class PodMonitorCore {
     private static final String PIPELINE_ID_LABEL = "pipeline_id";
     private static final String CLUSTER_ID_LABEL = "cluster_id";
     private static final int DELETE_RETRY_ATTEMPTS = 5;
@@ -116,6 +135,9 @@ public class PodMonitor extends AbstractSchedulingManager {
     /**
      * Queries statuses of pods of running tasks and adjust task statuses corresponding to pods statuses
      */
+    @SchedulerLock(name = "PodMonitor_updateStatus",
+        lockAtLeastForString = "PT29S",
+        lockAtMostForString = "PT29S")
     public void updateStatus() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_RUNNING));
         List<PipelineRun> running = pipelineRunManager.loadRunningAndTerminatedPipelineRuns();
@@ -557,5 +579,6 @@ public class PodMonitor extends AbstractSchedulingManager {
             return false;
         }
         return true;
+    }
     }
 }

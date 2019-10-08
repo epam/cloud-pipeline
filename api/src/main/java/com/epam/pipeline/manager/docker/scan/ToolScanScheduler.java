@@ -33,11 +33,13 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -63,6 +65,53 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolScanScheduler.class);
 
     @Autowired
+    private ToolScanSchedulerCore core;
+
+    /**
+     * A single thread executor to run force scans
+     */
+    private ExecutorService forceScanExecutor;
+
+    @PostConstruct
+    public void init() {
+        forceScanExecutor = Executors.newSingleThreadExecutor();
+
+        scheduleSecured(core::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
+                "Tool Security Scan");
+    }
+
+    @PreDestroy
+    public void shutDown() {
+        forceScanExecutor.shutdownNow();
+    }
+
+    /**
+     * A scheduled scan, that runs for all the registries, all tools and all tool versions, sends them to Tool Scanning
+     * System and stores scanning results to the database.
+     */
+    public void scheduledToolScan() {
+        core.scheduledToolScan();
+    }
+
+    /**
+     * Schedule a Tool for security scan. Since a Tool's scan is a time costly operation, there's a queue for that.
+     * A tool is added to that queue and will be processed in order. Once the tool is added to a queue, it's scanStatus
+     * field is being set to {@link ToolScanStatus}.PENDING
+     * @param registry a registry path, where tool is located
+     * @param id Tool's id or image
+     * @param version Tool's version (Docker tag)
+     * @param rescan
+     */
+    public Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
+                                                               final String version, final Boolean rescan) {
+        return core.forceScheduleScanTool(registry, id, version, rescan);
+    }
+
+    @Component
+    @RequiredArgsConstructor
+    class ToolScanSchedulerCore {
+
+    @Autowired
     private DockerRegistryDao dockerRegistryDao;
 
     @Autowired
@@ -83,28 +132,9 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     @Autowired
     private DockerRegistryManager dockerRegistryManager;
 
-    /**
-     * A single thread executor to run force scans
-     */
-    private ExecutorService forceScanExecutor;
-
-    @PostConstruct
-    public void init() {
-        forceScanExecutor = Executors.newSingleThreadExecutor();
-
-        scheduleSecured(this::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
-                "Tool Security Scan");
-    }
-
-    @PreDestroy
-    public void shutDown() {
-        forceScanExecutor.shutdownNow();
-    }
-
-    /**
-     * A scheduled scan, that runs for all the registries, all tools and all tool versions, sends them to Tool Scanning
-     * System and stores scanning results to the database.
-     */
+    @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan",
+        lockAtLeastForString = "PT23H59M",
+        lockAtMostForString = "PT23H59M")
     public void scheduledToolScan() {
         if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
@@ -158,16 +188,7 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
         }
     }
 
-    /**
-     * Schedule a Tool for security scan. Since a Tool's scan is a time costly operation, there's a queue for that.
-     * A tool is added to that queue and will be processed in order. Once the tool is added to a queue, it's scanStatus
-     * field is being set to {@link ToolScanStatus}.PENDING
-     * @param registry a registry path, where tool is located
-     * @param id Tool's id or image
-     * @param version Tool's version (Docker tag)
-     * @param rescan
-     */
-    public Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
+    private Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,
                                                                final String version, final Boolean rescan) {
         if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
             throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
@@ -228,5 +249,6 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     private DockerClient getDockerClient(DockerRegistry registry, Tool tool) {
         String token = dockerRegistryManager.getImageToken(registry, tool.getImage());
         return dockerClientFactory.getDockerClient(registry, token);
+    }
     }
 }

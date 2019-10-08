@@ -48,6 +48,7 @@ import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.internal.util.reflection.Whitebox;
 
 import java.util.Collections;
 
@@ -88,15 +89,17 @@ public class AutoscaleManagerTest {
     @Mock
     private CloudFacade cloudFacade;
 
-    private AutoscaleManager autoscaleManager;
+    private AutoscaleManager.AutoscaleManagerCore autoscaleManager;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        autoscaleManager = new AutoscaleManager(pipelineRunManager, executorService, autoscalerService, nodesManager,
-                                                nodeDiskManager, kubernetesManager, preferenceManager, 
-                                                TEST_KUBE_NAMESPACE, cloudFacade);
+        autoscaleManager = new AutoscaleManager().new AutoscaleManagerCore(pipelineRunManager, executorService,
+                                                                           nodeDiskManager, autoscalerService,
+                                                                           nodesManager, kubernetesManager,
+                                                                           preferenceManager, cloudFacade);
+        Whitebox.setInternalState(autoscaleManager, TEST_KUBE_NAMESPACE, TEST_KUBE_NAMESPACE);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 

@@ -23,6 +23,8 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -32,6 +34,7 @@ import java.util.Optional;
 @Component
 @ConditionalOnProperty(name = "ha.deploy.enabled",
     havingValue = "true")
+@Order(Ordered.LOWEST_PRECEDENCE - 1)
 public class ScheduledTasksSynchronizationAspect {
 
     @Autowired
@@ -54,6 +57,6 @@ public class ScheduledTasksSynchronizationAspect {
     private boolean isMasterHost() {
         return Optional.ofNullable(kubernetesManager.getMasterPodName())
             .map(masterName -> masterName.equals(kubernetesManager.getCurrentPodName()))
-            .orElse(false);
+            .orElse(true);
     }
 }
