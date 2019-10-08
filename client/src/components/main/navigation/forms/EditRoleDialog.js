@@ -42,7 +42,7 @@ import InstanceTypesManagementForm from '../instance-types-management/InstanceTy
   roleId: params.role ? params.role.id : null
 }))
 @observer
-export default class EditRoleDialog extends React.Component {
+class EditRoleDialog extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
     role: PropTypes.shape({
@@ -284,7 +284,7 @@ export default class EditRoleDialog extends React.Component {
         `${blockStatus ? 'Blocking' : 'Unblocking'} ${this.splitRoleName(this.props.role.name)}...`
       );
       const request = new GroupBlock(this.props.role.id, blockStatus);
-      await request.fetch();
+      await request.send({});
       if (request.error) {
         hide();
         message.error(request.error, 5);
@@ -302,11 +302,6 @@ export default class EditRoleDialog extends React.Component {
         blockGroup();
       }
     });
-    if (blocked) {
-      // unblock
-    } else {
-      // block
-    }
   };
 
   render () {
@@ -323,7 +318,11 @@ export default class EditRoleDialog extends React.Component {
         closable={false}
         title={(
           <Row>
-            {this.props.role.predefined ? this.props.role.name : this.splitRoleName(this.props.role.name)}
+            {
+              this.props.role.predefined
+                ? this.props.role.name
+                : this.splitRoleName(this.props.role.name)
+            }
             {
               blocked && (
                 <span
@@ -399,7 +398,12 @@ export default class EditRoleDialog extends React.Component {
                   this.dataStorages.map(d => {
                     return (
                       <Select.Option
-                        key={d.id} value={`${d.id}`} title={d.name} name={d.name} pathMask={d.pathMask}>
+                        key={d.id}
+                        value={`${d.id}`}
+                        title={d.name}
+                        name={d.name}
+                        pathMask={d.pathMask}
+                      >
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );
@@ -501,3 +505,5 @@ export default class EditRoleDialog extends React.Component {
     );
   }
 }
+
+export default EditRoleDialog;

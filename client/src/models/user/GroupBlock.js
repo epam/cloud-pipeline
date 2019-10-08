@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
 
-export default class GroupBlock extends Remote {
+export default class GroupBlock extends RemotePost {
   constructor (groupName, block = true) {
     super();
-    this.constructor.fetchOptions = {
-      headers: {
-        'Content-type': 'application/json; charset=UTF-8'
-      },
-      mode: 'cors',
-      credentials: 'include',
-      method: 'PUT'
-    };
     this.url = `/group/${groupName}/block?blockStatus=${block}`;
   }
 }
