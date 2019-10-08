@@ -7,7 +7,7 @@ spec:
   replicas: 1
   template:
     metadata:
-      name: cp-git-sync
+      name: cp-tes-srv
       namespace: default
       labels:
         cloud-pipeline/cp-tes-srv: "true"
@@ -20,6 +20,6 @@ spec:
       containers:
         - name: cp-tes-srv
           image: lifescience/cloud-pipeline:tes-srv-$CP_VERSION
-          imagePullPolicy: "Always"
+          imagePullPolicy: "ifNotPresent"
           ports:
             - containerPort: 8080
