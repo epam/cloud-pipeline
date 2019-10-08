@@ -140,7 +140,6 @@ export default class EditUserRolesDialog extends React.Component {
     if (!this.props.userInfo || !this.props.userInfo.loaded) {
       return null;
     }
-    const {blocked} = this.props.userInfo.value;
     const roles = (this.props.userInfo.value.roles || []).map(r => r);
     return this.renderRolesList(
       roles,
@@ -152,7 +151,7 @@ export default class EditUserRolesDialog extends React.Component {
               size="small"
               type="danger"
               onClick={() => this.removeRole(role.id)}
-              disabled={this.state.operationInProgress || blocked}
+              disabled={this.state.operationInProgress}
             >
               <Icon type="delete" />
             </Button>
@@ -346,7 +345,7 @@ export default class EditUserRolesDialog extends React.Component {
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress || blocked}
+                disabled={this.state.operationInProgress}
                 value={
                   this.props.userInfo.loaded && this.props.userInfo.value.defaultStorageId
                     ? `${this.props.userInfo.value.defaultStorageId}`
@@ -381,7 +380,7 @@ export default class EditUserRolesDialog extends React.Component {
               </span>
               <div style={{flex: 1}} id="find-role-select-container">
                 <Select
-                  disabled={this.state.operationInProgress || blocked}
+                  disabled={this.state.operationInProgress}
                   value={this.state.selectedRole}
                   size="small"
                   showSearch
@@ -412,8 +411,7 @@ export default class EditUserRolesDialog extends React.Component {
                   disabled={
                     this.state.selectedRole === null ||
                     this.state.selectedRole === undefined ||
-                    this.state.operationInProgress ||
-                    blocked
+                    this.state.operationInProgress
                   }>
                   <Icon type="plus" /> Add
                 </Button>
@@ -458,12 +456,12 @@ export default class EditUserRolesDialog extends React.Component {
               }
             ]}>
             <Metadata
-              readOnly={this.state.operationInProgress || blocked}
+              readOnly={this.state.operationInProgress}
               key={METADATA_PANEL_KEY}
               entityId={this.props.userId}
               entityClass="PIPELINE_USER" />
             <InstanceTypesManagementForm
-              disabled={this.state.operationInProgress || blocked}
+              disabled={this.state.operationInProgress}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.userId}
               level="USER" />

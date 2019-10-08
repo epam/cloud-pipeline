@@ -167,7 +167,6 @@ class EditRoleDialog extends React.Component {
     if (!this.props.roleInfo || !this.props.roleInfo.loaded) {
       return null;
     }
-    const {blocked} = this.props.roleInfo.value;
     const usersSort = (userA, userB) => {
       if (userA.userName > userB.userName) {
         return 1;
@@ -196,7 +195,6 @@ class EditRoleDialog extends React.Component {
                 id="delete-user-button"
                 size="small"
                 type="danger"
-                disabled={blocked}
                 onClick={() => this.removeRole(user.id)}
               >
                 <Icon type="delete" />
@@ -283,7 +281,7 @@ class EditRoleDialog extends React.Component {
       const hide = message.loading(
         `${blockStatus ? 'Blocking' : 'Unblocking'} ${this.splitRoleName(this.props.role.name)}...`
       );
-      const request = new GroupBlock(this.props.role.id, blockStatus);
+      const request = new GroupBlock(this.props.role.name, blockStatus);
       await request.send({});
       if (request.error) {
         hide();
@@ -381,7 +379,7 @@ class EditRoleDialog extends React.Component {
               <Select
                 allowClear
                 showSearch
-                disabled={this.state.operationInProgress || blocked}
+                disabled={this.state.operationInProgress}
                 value={
                   this.props.roleInfo.loaded && this.props.roleInfo.value.defaultStorageId
                     ? `${this.props.roleInfo.value.defaultStorageId}`
@@ -414,7 +412,7 @@ class EditRoleDialog extends React.Component {
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <div style={{flex: 1}} id="find-user-autocomplete-container">
                 <AutoComplete
-                  disabled={blocked || this.state.operationInProgress}
+                  disabled={this.state.operationInProgress}
                   size="small"
                   style={{width: '100%'}}
                   placeholder="Search user"
@@ -439,7 +437,6 @@ class EditRoleDialog extends React.Component {
                   disabled={
                     this.state.selectedUser === null ||
                     this.state.selectedUser === undefined ||
-                    blocked ||
                     this.state.operationInProgress
                   }>
                   <Icon type="plus" /> Add user
@@ -490,12 +487,12 @@ class EditRoleDialog extends React.Component {
               }
             ]}>
             <Metadata
-              readOnly={blocked || this.state.operationInProgress}
+              readOnly={this.state.operationInProgress}
               key={METADATA_PANEL_KEY}
               entityId={this.props.role.id}
               entityClass="ROLE" />
             <InstanceTypesManagementForm
-              disabled={blocked || this.state.operationInProgress}
+              disabled={this.state.operationInProgress}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.roleId}
               level="ROLE" />
