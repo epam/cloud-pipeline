@@ -105,7 +105,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
 
     public ExtendedRole loadExtendedRole(Long roleId) {
         Collection<ExtendedRole> roles = getJdbcTemplate()
-                .query(loadRoleWithUsersQuery, RoleParameters.getExtendedRowExtractor(false), roleId);
+                .query(loadRoleWithUsersQuery, RoleParameters.getExtendedRowExtractor(true), roleId);
         return CollectionUtils.isEmpty(roles) ? null : roles.stream().findFirst().orElse(null);
     }
 
