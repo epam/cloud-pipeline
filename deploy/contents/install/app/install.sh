@@ -1070,10 +1070,6 @@ print_ok "[Starting TES Service deployment]"
         print_info "-> Waiting for TES service to initialize"
         wait_for_deployment "cp-tes-srv"
 
-        expose_cluster_port "cp-tes-srv" \
-                            "31086" \
-                            "8080"
-
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-tes-srv: deployed"
     fi
     echo
