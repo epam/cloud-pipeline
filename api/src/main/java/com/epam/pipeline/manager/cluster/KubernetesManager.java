@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.MasterPodInfo;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
@@ -38,6 +39,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -49,7 +52,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import retrofit2.Retrofit;
+import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -61,6 +67,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Component
 public class KubernetesManager {
 
@@ -68,6 +75,7 @@ public class KubernetesManager {
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
+    private static final String POD_NAME_ENV_VAR = "MY_POD_NAME";
     private static final int NODE_READY_TIMEOUT = 5000;
     private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
     private static final int ATTEMPTS_STATUS_NODE = 60;
@@ -93,6 +101,9 @@ public class KubernetesManager {
 
     @Value("${kube.edge.scheme.label:cloud-pipeline/external-scheme}")
     private String kubeEdgeSchemeLabel;
+
+    @Value("${kube.master.pod.check.url}")
+    private String kubePodLeaderElectionUrl;
 
     public ServiceDescription getServiceByLabel(String label) {
         try (KubernetesClient client = getKubernetesClient()) {
@@ -285,6 +296,44 @@ public class KubernetesManager {
             LOGGER.error(e.getMessage(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Obtains a master pod name.
+     *
+     * @return master name or <code>null</code> if no such found
+     */
+    public String getMasterPodName() {
+        final PodMasterStatusApi client = buildMasterStatusClient();
+        try {
+            final MasterPodInfo info = client.getMasterName()
+                .execute()
+                .body();
+            if (info != null) {
+                return info.getName();
+            }
+        } catch (IOException e) {
+            log.warn("No leader pod for cluster found!");
+        }
+        return null;
+    }
+
+    /**
+     * Obtains a name of pod, containing service instance.
+     *
+     * @return name of pod or <code>null</code> if no such name specified.
+     */
+    public String getCurrentPodName() {
+        return System.getenv(POD_NAME_ENV_VAR);
+    }
+
+    private PodMasterStatusApi buildMasterStatusClient() {
+        return new Retrofit.Builder()
+            .baseUrl(kubePodLeaderElectionUrl)
+            .addConverterFactory(JacksonConverterFactory.create())
+            .client(new OkHttpClient())
+            .build()
+            .create(PodMasterStatusApi.class);
     }
 
     public Optional<Node> findNodeByName(final String nodeName) {

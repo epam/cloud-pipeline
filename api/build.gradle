@@ -6,6 +6,7 @@ plugins {
     id "net.saliman.properties" version "1.4.4"
     id "org.sonarqube" version "2.6.1"
     id "org.springframework.boot" version "1.5.2.RELEASE"
+    id "com.github.ManifestClasspath" version "0.1.0-RELEASE"
 }
 
 // >>>>> building for different profiles
@@ -204,6 +205,10 @@ dependencies {
 
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
+
+    //ShedLock
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: '3.0.0'
+    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
 }
 
 // >>>>> processes profiles
