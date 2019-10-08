@@ -1,5 +1,6 @@
 package com.epam.pipeline.tesadapter.common;
 
+@SuppressWarnings({"PMD.UseUtilityClass", "checkstyle:HideUtilityClassConstructor"})
 public final class MessageConstants {
 
     //Common errors
