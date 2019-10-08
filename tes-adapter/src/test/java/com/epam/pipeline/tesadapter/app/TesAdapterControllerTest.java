@@ -40,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 
 @WebMvcTest(TesAdapterController.class)
-@SuppressWarnings({"unused", "PMD.TooManyStaticImports", "PMD.AvoidUsingHardCodedIP"})
+@SuppressWarnings({"unused", "PMD.TooManyStaticImports", "PMD.AvoidUsingHardCodedIP",
+        "PMD.JUnitTestsShouldIncludeAssert"})
 @TestPropertySource(locations = "classpath:test-application.properties")
 public class TesAdapterControllerTest {
     private static final String DEFAULT_TASK_ID = "5";
@@ -89,7 +90,7 @@ public class TesAdapterControllerTest {
     private TesExecutor tesExecutor = new TesExecutor();
 
     @BeforeEach
-    void setUp() {
+    private void setUp() {
 
         when(tesTaskService.cancelTesTask(DEFAULT_TASK_ID)).thenReturn(new TesCancelTaskResponse());
         when(tesTaskService.listTesTask(NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW))
@@ -102,7 +103,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void submitTesTaskWhenRequestingTesTaskBodyAndReturnId() throws Exception {
+    public void submitTesTaskWhenRequestingTesTaskBodyAndReturnId() throws Exception {
         tesCreateTaskResponse.setId(DEFAULT_TASK_ID);
         when(tesTaskService.submitTesTask(any(TesTask.class))).thenReturn(tesCreateTaskResponse);
         this.mockMvc.perform(post("/v1/tasks")
@@ -114,7 +115,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void expectIllegalArgExceptionWhenRunSubmitTesTasWithNullId() throws Exception {
+    public void expectIllegalArgExceptionWhenRunSubmitTesTasWithNullId() throws Exception {
         tesTask.setExecutors(null);
         when(tesTaskService.submitTesTask(tesTask)).thenThrow(new IllegalArgumentException());
         this.mockMvc.perform(post("/v1/tasks")
@@ -125,7 +126,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void cancelTesTaskWhenRequestingIdReturnCanceledTask() throws Exception {
+    public void cancelTesTaskWhenRequestingIdReturnCanceledTask() throws Exception {
         when(tesTaskService.cancelTesTask(DEFAULT_TASK_ID)).thenReturn(new TesCancelTaskResponse());
         this.mockMvc.perform(post("/v1/tasks/{id}:cancel", DEFAULT_TASK_ID)
                 .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken))
@@ -133,7 +134,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId() throws Exception {
+    public void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId() throws Exception {
         when(tesTaskService.cancelTesTask(EMPTY_INPUT)).thenThrow(new IllegalStateException(messageHelper
                 .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "taskId")));
         this.mockMvc.perform(post("/v1/tasks/{id}:cancel", EMPTY_INPUT)
@@ -146,7 +147,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void listTesTaskWhenRequestingReturnTesListTasksResponse() throws Exception {
+    public void listTesTaskWhenRequestingReturnTesListTasksResponse() throws Exception {
         this.mockMvc.perform(get("/v1/tasks?name_prefix={name_prefix}?page_size={page_size}" +
                         "?page_token={page_token}?view={view}",
                 NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW)
@@ -155,7 +156,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void getTesTaskWhenRequestingReturnTesTaskResponse() throws Exception {
+    public void getTesTaskWhenRequestingReturnTesTaskResponse() throws Exception {
         tesExecutor.setImage(DEFAULT_IMAGE);
         tesExecutor.setCommand(Collections.singletonList(DEFAULT_COMMAND));
         tesTask.setExecutors(Collections.singletonList(tesExecutor));
@@ -167,7 +168,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void serviceInfoRequestShouldReturnCurrentServiceState() throws Exception {
+    public void serviceInfoRequestShouldReturnCurrentServiceState() throws Exception {
         this.mockMvc.perform(get("/v1/tasks/service-info")
                 .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
                 .contentType(JSON_CONTENT_TYPE))
@@ -176,7 +177,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void preHandleMethodShouldCheckAuthorizationContext() throws Exception {
+    public void preHandleMethodShouldCheckAuthorizationContext() throws Exception {
         this.mockMvc.perform(get(GET_SERVICE_INFO)
                 .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken).contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isOk())
@@ -193,7 +194,7 @@ public class TesAdapterControllerTest {
     }
 
     @Test
-    void preHandleMethodShouldCheckAuthorizationContextWithIpRange() throws Exception {
+    public void preHandleMethodShouldCheckAuthorizationContextWithIpRange() throws Exception {
         this.mockMvc.perform(get(GET_SERVICE_INFO)
                 .with(request -> {
                     request.setRemoteAddr(IP_IN_RANGE);
