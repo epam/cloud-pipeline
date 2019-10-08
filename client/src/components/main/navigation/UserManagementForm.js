@@ -339,6 +339,16 @@ export default class UserManagementForm extends React.Component {
         sorter: this.alphabeticNameSorter,
         className: styles.userNameColumn,
         render: (name, user) => {
+          let blockedSpan;
+          if (user.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
           if (user.attributes) {
             const getAttributesValues = () => {
               const values = [];
@@ -352,12 +362,14 @@ export default class UserManagementForm extends React.Component {
             const attributesString = getAttributesValues().join(', ');
             return (
               <Row type="flex" style={{flexDirection: 'column'}}>
-                <Row>{name}</Row>
+                <Row>{name}{blockedSpan}</Row>
                 <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
               </Row>
             );
           } else {
-            return name;
+            return (
+              <Row>{name}{blockedSpan}</Row>
+            );
           }
         }
       },
@@ -441,7 +453,25 @@ export default class UserManagementForm extends React.Component {
         dataIndex: 'name',
         key: 'name',
         title: 'Role',
-        sorter: this.alphabeticRoleNameSorter
+        sorter: this.alphabeticRoleNameSorter,
+        render: (name, role) => {
+          let blockedSpan;
+          if (role.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
+          return (
+            <span>
+              {name}
+              {blockedSpan}
+            </span>
+          )
+        }
       },
       {
         key: 'actions',
@@ -486,7 +516,25 @@ export default class UserManagementForm extends React.Component {
         dataIndex: 'displayName',
         key: 'name',
         title: 'Group',
-        sorter: this.alphabeticRoleNameSorter
+        sorter: this.alphabeticRoleNameSorter,
+        render: (name, group) => {
+          let blockedSpan;
+          if (group.blocked) {
+            blockedSpan = (
+              <span
+                style={{fontStyle: 'italic', marginLeft: 5}}
+              >
+                - blocked
+              </span>
+            );
+          }
+          return (
+            <span>
+              {name}
+              {blockedSpan}
+            </span>
+          )
+        }
       },
       {
         key: 'actions',
