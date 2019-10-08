@@ -22,6 +22,8 @@ ADD get_jar-file.sh /init
 RUN chmod +x /init
 # start script
 RUN ["/init", "tes-support", "https://github.com/SilinPavel/cloud-pipeline.git"]
+# copy application.properties
+COPY application.properties /
 # run jar
 CMD ["java", "-jar", "tes-adapter-1.0-SNAPSHOT.jar"]
 # expose port
