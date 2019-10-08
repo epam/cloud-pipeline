@@ -7,9 +7,10 @@ RUN yum install -y \
         unzip
 # url jdk 1.8.0
 ARG JAVA_SOURCE="https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/jdk8u222-b10/OpenJDK8U-jdk_x64_linux_hotspot_8u222b10.tar.gz"
+# set /usr/lib as WORKDIR
+WORKDIR /usr/lib
 # download jdk and unzip it
-RUN cd /usr/lib/ && \
-    wget -P /usr/lib/ $JAVA_SOURCE && \
+RUN wget -P /usr/lib/ $JAVA_SOURCE && \
     tar -zxf OpenJDK8U-jdk_x64_linux_hotspot_8u222b10.tar.gz && \
     rm -f OpenJDK8U-jdk_x64_linux_hotspot_8u222b10.tar.gz
 # set JAVA_HOME enviroment
@@ -17,7 +18,7 @@ ENV JAVA_HOME="/usr/lib/jdk8u222-b10/"
 # set PATH enviroment
 ENV PATH="$JAVA_HOME/bin:${PATH}"
 # copy script
-ADD get_jar-file.sh /init
+COPY get_jar-file.sh /init
 # change rule
 RUN chmod +x /init
 # start script

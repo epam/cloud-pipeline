@@ -49,7 +49,8 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+            throws Exception {
         final Optional<String> requestToken = checkRequestForToken(request);
         if (requestToken.isPresent()) {
             log.debug(messageHelper.getMessage(MessageConstants.TOKEN_FOUND_IN_REQUEST, request.getServletPath()));

@@ -44,18 +44,18 @@ public class TesAdapterController {
     }
 
     @PostMapping("/v1/tasks")
-    ResponseEntity<TesCreateTaskResponse> submitTesTask(@RequestBody TesTask body) {
+    public ResponseEntity<TesCreateTaskResponse> submitTesTask(@RequestBody TesTask body) {
         return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.submitTesTask(body));
     }
 
     @GetMapping("/v1/tasks/{id}")
-    ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
+    public ResponseEntity<TesTask> getTesTask(@PathVariable String id, @RequestParam(required = false,
             defaultValue = "MINIMAL") TaskView view) {
         return ResponseEntity.ok().body(tesTaskService.getTesTask(id, view));
     }
 
     @PostMapping("/v1/tasks/{id}:cancel")
-    ResponseEntity<TesCancelTaskResponse> cancelTesTask(@PathVariable String id) {
+    public ResponseEntity<TesCancelTaskResponse> cancelTesTask(@PathVariable String id) {
         return ResponseEntity.status(HttpStatus.OK).body(tesTaskService.cancelTesTask(id));
     }
 }
