@@ -151,6 +151,9 @@ public class RoleDaoTest extends AbstractSpringTest {
                 assertEquals(notBlockedRole, role);
             }
         });
+
+        final ExtendedRole loadedRole = roleDao.loadExtendedRole(blockedRole.getId());
+        assertEquals(blockedRole, loadedRole);
     }
 
     @Test
