@@ -35,7 +35,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -43,7 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public abstract class AbstractMetricRequester implements MetricRequester, MonitoringRequester {
 
@@ -168,11 +170,12 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
-        return IntStream.iterate(0, i -> i + 1)
-                .limit(Duration.between(from, to).toDays() + 1)
-                .mapToObj(from::plusDays)
-                .map(d -> d.format(DATE_FORMATTER))
-                .map(dateStr -> String.format(INDEX_NAME_PATTERN, dateStr))
+        final LocalDate fromDate = from.toLocalDate();
+        final LocalDate toDate = to.toLocalDate();
+        return Stream.iterate(fromDate, date -> date.plusDays(1))
+                .limit(Period.between(fromDate, toDate).getDays() + 1)
+                .map(date -> date.format(DATE_FORMATTER))
+                .map(str -> String.format(INDEX_NAME_PATTERN, str))
                 .toArray(String[]::new);
     }
 
@@ -183,7 +186,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .filter(it -> it instanceof ParsedSingleValueNumericMetricsAggregation)
                 .map(ParsedSingleValueNumericMetricsAggregation .class::cast)
                 .map(ParsedSingleValueNumericMetricsAggregation::value)
-                .filter(d -> !d.isInfinite());
+                .filter(it -> !it.isInfinite());
     }
 
     protected Optional<Long> longValue(final List<Aggregation> aggregations, final String name) {
