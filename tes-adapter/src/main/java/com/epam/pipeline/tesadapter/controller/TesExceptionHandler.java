@@ -13,15 +13,22 @@ import org.springframework.web.context.request.WebRequest;
 @RestControllerAdvice()
 public class TesExceptionHandler {
 
-    @Autowired
+    private static final String ERROR_MESSAGE_FORMAT = "%s\n%s";
+
     private MessageHelper messageHelper;
+
+    @Autowired
+    public TesExceptionHandler(final MessageHelper messageHelper) {
+        this.messageHelper = messageHelper;
+    }
 
     @ExceptionHandler(Throwable.class)
     public final ResponseEntity<String> handleUncaughtException(final Throwable exception, final WebRequest
             request) {
         log.error(messageHelper.getMessage("logger.error", request.getDescription(true)), exception);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(exception.getMessage() + request.getDescription(true));
+                .body(String.format(ERROR_MESSAGE_FORMAT, exception.getMessage(), request.getDescription(true)));
 
     }
+
 }
