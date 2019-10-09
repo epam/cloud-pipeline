@@ -20,7 +20,7 @@ spec:
       containers:
         - name: cp-tes-srv
           image: lifescience/cloud-pipeline:tes-srv-$CP_VERSION
-          imagePullPolicy: "ifNotPresent"
+          imagePullPolicy: "IfNotPresent"
           ports:
             - containerPort: 8080
           envFrom:
