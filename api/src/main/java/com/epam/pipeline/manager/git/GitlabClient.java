@@ -70,7 +70,7 @@ import java.util.stream.Stream;
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
-public class GitlabClient {
+public final class GitlabClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GitlabClient.class);
 
@@ -114,7 +114,7 @@ public class GitlabClient {
      */
     private boolean externalHost;
 
-    private GitlabClient(String host, String namespace, String user, String adminToken, String project,
+    GitlabClient(String host, String namespace, String user, String adminToken, String project,
                          String fullUrl, Long gitAdminId, String adminName, boolean externalHost) {
         this.gitHost = host;
         this.namespace = namespace;

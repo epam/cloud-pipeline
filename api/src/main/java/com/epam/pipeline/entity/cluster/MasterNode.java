@@ -43,14 +43,13 @@ public final class MasterNode {
 
     private MasterNode(final Node node, final String defaultPort) {
 
-        Optional.ofNullable(node.getMetadata()).ifPresent(
-                metadata -> {
-                    this.uid = UUID.fromString(metadata.getUid());
-                    this.name = metadata.getName();
-                    this.labels = metadata.getLabels();
-                    final String port = MapUtils.emptyIfNull(this.labels).get(K8S_MASTER_PORT_LABEL);
-                    this.port = StringUtils.isNotBlank(port) ? port : defaultPort;
-                    this.creationTimestamp = metadata.getCreationTimestamp();
+        Optional.ofNullable(node.getMetadata()).ifPresent(metadata -> {
+            this.uid = UUID.fromString(metadata.getUid());
+            this.name = metadata.getName();
+            this.labels = metadata.getLabels();
+            final String port = MapUtils.emptyIfNull(this.labels).get(K8S_MASTER_PORT_LABEL);
+            this.port = StringUtils.isNotBlank(port) ? port : defaultPort;
+            this.creationTimestamp = metadata.getCreationTimestamp();
         });
 
         Optional.ofNullable(node.getStatus()).ifPresent(
