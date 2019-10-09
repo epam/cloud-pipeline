@@ -26,6 +26,8 @@ import java.util.Optional;
 public class TesTokenInterceptor implements HandlerInterceptor {
 
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String EMPTY_PREFIX = "";
 
     private TesTokenHolder tesTokenHolder;
 
@@ -68,11 +70,22 @@ public class TesTokenInterceptor implements HandlerInterceptor {
 
     private Optional<String> checkRequestForToken(HttpServletRequest request) {
         if (StringUtils.isNotEmpty(request.getHeader(HttpHeaders.AUTHORIZATION))) {
-            return Optional.of(request.getHeader(HttpHeaders.AUTHORIZATION));
+            if (request.getHeader(HttpHeaders.AUTHORIZATION).startsWith(BEARER_PREFIX)) {
+                return Optional.of(request.getHeader(HttpHeaders.AUTHORIZATION)
+                        .replaceFirst(BEARER_PREFIX, EMPTY_PREFIX));
+            } else {
+                return Optional.of(request.getHeader(HttpHeaders.AUTHORIZATION));
+            }
         } else if (ArrayUtils.isNotEmpty(request.getCookies())) {
             return Arrays.stream(request.getCookies()).filter(cookie ->
                     cookie.getName().equalsIgnoreCase(HTTP_AUTH_COOKIE))
-                    .map(Cookie::getValue).findFirst();
+                    .map(Cookie::getValue).findFirst().map(cookieToken -> {
+                        if (cookieToken.startsWith(BEARER_PREFIX)) {
+                            return cookieToken.replaceFirst(BEARER_PREFIX, EMPTY_PREFIX);
+                        } else {
+                            return cookieToken;
+                        }
+                    });
         }
         return Optional.empty();
     }
