@@ -73,8 +73,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private static final int MILLIS = 1000;
     private static final double PERCENT = 100.0;
     private static final double ONE_THOUSANDTH = 0.001;
-    private static final String UTILIZATION_LEVEL_LOW = "IDLED";
-    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURED";
+    private static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     private static final String TRUE_VALUE_STRING = "true";
 
     private final PipelineRunManager pipelineRunManager;
