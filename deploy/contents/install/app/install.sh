@@ -243,6 +243,11 @@ CP_SHARE_SRV_KUBE_NODE_NAME=${CP_SHARE_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAM
 print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SHARE_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
 
+# Allow to schedule TES service to the master
+CP_TES_SRV_KUBE_NODE_NAME=${CP_TES_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-tes-srv to $CP_TES_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_TES_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-tes-srv="true" --overwrite
+
 echo
 
 ##########
@@ -1060,6 +1065,7 @@ print_ok "[Starting TES Service deployment]"
     if is_install_requested; then
         print_info "-> Deploying TES service"
         create_kube_resource $K8S_SPECS_HOME/cp-tes-srv/cp-tes-srv-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-tes-srv/cp-tes-srv-svc.yaml --svc
 
         print_info "-> Waiting for TES service to initialize"
         wait_for_deployment "cp-tes-srv"
