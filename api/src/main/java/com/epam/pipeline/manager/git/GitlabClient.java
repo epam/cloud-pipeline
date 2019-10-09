@@ -161,15 +161,14 @@ public class GitlabClient {
         final String cloneToken;
         final String userName;
         final String email;
-        GitlabUser gitlabUser = getUser(user);
         if (issueToken && !externalHost) {
-            final GitlabUser user = findUser(gitlabUser.getUsername())
+            final GitlabUser gitlabUser = findUser(this.user)
                     .orElseGet(() -> GitlabUser.builder().username(adminName).id(adminId).build());
-            userName = user.getUsername();
-            cloneToken = createImpersonationToken(projectName, user.getId(), duration);
-            email = user.getEmail();
+            userName = gitlabUser.getUsername();
+            cloneToken = createImpersonationToken(projectName, gitlabUser.getId(), duration);
+            email = gitlabUser.getEmail();
         } else {
-            userName = externalHost ? gitlabUser.getUsername().replaceAll("@.*$", "") : adminName;
+            userName = externalHost ? this.user.replaceAll("@.*$", "") : adminName;
             cloneToken = adminToken;
             email = null;
         }
