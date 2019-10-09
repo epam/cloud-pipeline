@@ -89,17 +89,17 @@ public class AutoscaleManagerTest {
     @Mock
     private CloudFacade cloudFacade;
 
-    private AutoscaleManager.AutoscaleManagerCore autoscaleManager;
+    private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        autoscaleManager = new AutoscaleManager().new AutoscaleManagerCore(pipelineRunManager, executorService,
-                                                                           nodeDiskManager, autoscalerService,
-                                                                           nodesManager, kubernetesManager,
-                                                                           preferenceManager, cloudFacade);
-        Whitebox.setInternalState(autoscaleManager, TEST_KUBE_NAMESPACE, TEST_KUBE_NAMESPACE);
+        autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(pipelineRunManager, executorService,
+                                                                         nodeDiskManager, autoscalerService,
+                                                                         nodesManager, kubernetesManager,
+                                                                         TEST_KUBE_NAMESPACE, cloudFacade);
+        Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
 
@@ -174,11 +174,11 @@ public class AutoscaleManagerTest {
                                     argThat(Matchers.hasProperty("spot", Matchers.is(true)))))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
-        autoscaleManager.runAutoscaling(); // this time spot scheduling should fail
+        autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(Mockito.eq(TEST_RUN_ID),
                                        argThat(Matchers.hasProperty("spot", Matchers.is(true))));
 
-        autoscaleManager.runAutoscaling(); // this time it should be a on-demand request
+        autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(Mockito.eq(TEST_RUN_ID), argThat(
                 Matchers.hasProperty("spot", Matchers.is(false))));

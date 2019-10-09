@@ -16,7 +16,6 @@
 package com.epam.pipeline.elasticsearchagent.rest.cluster;
 
 import okhttp3.OkHttpClient;
-import org.springframework.beans.factory.annotation.Value;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 

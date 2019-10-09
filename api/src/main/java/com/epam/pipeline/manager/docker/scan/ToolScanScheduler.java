@@ -30,9 +30,9 @@ import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +59,15 @@ import java.util.concurrent.Future;
  * either in a regular fashion, when all the Tools are
  */
 @Service
-@RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class ToolScanScheduler extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ToolScanScheduler.class);
 
-    @Autowired
-    private ToolScanSchedulerCore core;
+    private final ToolScanSchedulerCore core;
+
+    public ToolScanScheduler(final ToolScanSchedulerCore core) {
+        this.core = core;
+    }
 
     /**
      * A single thread executor to run force scans
@@ -75,7 +77,8 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     @PostConstruct
     public void init() {
         forceScanExecutor = Executors.newSingleThreadExecutor();
-
+        core.setExecutorService(forceScanExecutor);
+        core.setPreferenceManager(preferenceManager);
         scheduleSecured(core::scheduledToolScan, SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_SCHEDULE_CRON,
                 "Tool Security Scan");
     }
@@ -108,33 +111,37 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
     }
 
     @Component
-    @RequiredArgsConstructor
-    class ToolScanSchedulerCore {
+    static class ToolScanSchedulerCore {
+
+    private final DockerRegistryDao dockerRegistryDao;
+    private final ToolScanManager toolScanManager;
+    private final ToolManager toolManager;
+    private final MessageHelper messageHelper;
+    private final ToolVersionManager toolVersionManager;
+    private final DockerClientFactory dockerClientFactory;
+    private final DockerRegistryManager dockerRegistryManager;
+    private PreferenceManager preferenceManager;
+    private ExecutorService forceScanExecutor;
 
     @Autowired
-    private DockerRegistryDao dockerRegistryDao;
-
-    @Autowired
-    private ToolScanManager toolScanManager;
-
-    @Autowired
-    private ToolManager toolManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
-    private ToolVersionManager toolVersionManager;
-
-    @Autowired
-    private DockerClientFactory dockerClientFactory;
-
-    @Autowired
-    private DockerRegistryManager dockerRegistryManager;
+    ToolScanSchedulerCore(final DockerRegistryDao dockerRegistryDao,
+                          final ToolScanManager toolScanManager,
+                          final ToolManager toolManager,
+                          final MessageHelper messageHelper,
+                          final ToolVersionManager toolVersionManager,
+                          final DockerClientFactory dockerClientFactory,
+                          final DockerRegistryManager dockerRegistryManager) {
+        this.dockerRegistryDao = dockerRegistryDao;
+        this.toolScanManager = toolScanManager;
+        this.toolManager = toolManager;
+        this.messageHelper = messageHelper;
+        this.toolVersionManager = toolVersionManager;
+        this.dockerClientFactory = dockerClientFactory;
+        this.dockerRegistryManager = dockerRegistryManager;
+    }
 
     @SchedulerLock(name = "ToolScanScheduler_scheduledToolScan",
-        lockAtLeastForString = "PT23H59M",
-        lockAtMostForString = "PT23H59M")
+        lockAtLeastForString = "PT23H59M", lockAtMostForString = "PT24H")
     public void scheduledToolScan() {
         if (!preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED)) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_DISABLED));
@@ -186,6 +193,14 @@ public class ToolScanScheduler extends AbstractSchedulingManager {
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
                     "latest", null, null);
         }
+    }
+
+    private void setPreferenceManager (final PreferenceManager preferenceManager) {
+        this.preferenceManager = preferenceManager;
+    }
+
+    private void setExecutorService(final ExecutorService forceScanExecutor) {
+        this.forceScanExecutor = forceScanExecutor;
     }
 
     private Future<ToolVersionScanResult> forceScheduleScanTool(final String registry, final String id,

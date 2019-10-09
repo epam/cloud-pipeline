@@ -76,10 +76,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     public static final long DOCKER_SIZE = 123456L;
 
     @InjectMocks
-    private ToolScanScheduler toolScanScheduler = new ToolScanScheduler();
-
-    @InjectMocks
-    private ToolScanScheduler.ToolScanSchedulerCore core = toolScanScheduler. new ToolScanSchedulerCore();
+    private ToolScanScheduler toolScanScheduler;
+    private ToolScanScheduler.ToolScanSchedulerCore core;
 
     @Autowired
     private DockerRegistryDao dockerRegistryDao;
@@ -122,9 +120,14 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        Whitebox.setInternalState(core, "dockerRegistryDao", dockerRegistryDao);
-        Whitebox.setInternalState(core, "toolManager", toolManager);
-        Whitebox.setInternalState(core, "messageHelper", messageHelper);
+        core = new ToolScanScheduler.ToolScanSchedulerCore(dockerRegistryDao,
+                                                     toolScanManager,
+                                                     toolManager,
+                                                     messageHelper,
+                                                     toolVersionManager,
+                                                     dockerClientFactory,
+                                                     dockerRegistryManager);
+        toolScanScheduler = new ToolScanScheduler(core);
         Whitebox.setInternalState(toolScanScheduler, "authManager", authManager);
         Whitebox.setInternalState(toolScanScheduler, "scheduler", taskScheduler);
         Whitebox.setInternalState(toolScanScheduler, "core", core);
@@ -218,6 +221,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         try {
 
             ToolManagerMock toolManagerMock = new ToolManagerMock(tool);
+
             Whitebox.setInternalState(core, "toolManager", toolManagerMock);
 
             Future<ToolVersionScanResult> result = toolScanScheduler.forceScheduleScanTool(

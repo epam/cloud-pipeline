@@ -6,7 +6,6 @@ plugins {
     id "net.saliman.properties" version "1.4.4"
     id "org.sonarqube" version "2.6.1"
     id "org.springframework.boot" version "1.5.2.RELEASE"
-    id "com.github.ManifestClasspath" version "0.1.0-RELEASE"
 }
 
 // >>>>> building for different profiles

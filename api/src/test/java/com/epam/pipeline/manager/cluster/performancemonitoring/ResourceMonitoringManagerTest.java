@@ -99,9 +99,7 @@ public class ResourceMonitoringManagerTest {
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
 
     @InjectMocks
-    private ResourceMonitoringManager resourceMonitoringManager = new ResourceMonitoringManager();
-    private ResourceMonitoringManager.ResourceMonitoringManagerCore core =
-        resourceMonitoringManager. new ResourceMonitoringManagerCore();
+    private ResourceMonitoringManager resourceMonitoringManager;
 
     @Mock
     private PreferenceManager preferenceManager;
@@ -141,17 +139,15 @@ public class ResourceMonitoringManagerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-
-        Whitebox.setInternalState(core, "pipelineRunManager", pipelineRunManager);
-        Whitebox.setInternalState(core, "notificationManager", notificationManager);
-        Whitebox.setInternalState(core, "monitoringDao", monitoringESDao);
-        Whitebox.setInternalState(core, "messageHelper", messageHelper);
-        Whitebox.setInternalState(resourceMonitoringManager, "core", core);
-        Whitebox.setInternalState(resourceMonitoringManager, "instanceOfferManager", instanceOfferManager);
+        ResourceMonitoringManager.ResourceMonitoringManagerCore core =
+            new ResourceMonitoringManager.ResourceMonitoringManagerCore(pipelineRunManager,
+                                                                        notificationManager,
+                                                                        monitoringESDao,
+                                                                        messageHelper);
+        resourceMonitoringManager = new ResourceMonitoringManager(instanceOfferManager, core);
+        Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
         Whitebox.setInternalState(resourceMonitoringManager, "scheduler", taskScheduler);
-        Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
-
         when(preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
             .thenReturn(Observable.empty());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_RESOURCE_MONITORING_PERIOD))
@@ -271,7 +267,7 @@ public class ResourceMonitoringManagerTest {
         resourceMonitoringManager.init();
 
         verify(taskScheduler).scheduleWithFixedDelay(any(), eq(TEST_RESOURCE_MONITORING_DELAY.longValue()));
-        Assert.assertNotNull(Whitebox.getInternalState(resourceMonitoringManager, "instanceTypeMap"));
+        Assert.assertNotNull(Whitebox.getInternalState(core, "instanceTypeMap"));
     }
 
     @Test

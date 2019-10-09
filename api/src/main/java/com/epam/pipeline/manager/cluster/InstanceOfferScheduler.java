@@ -22,7 +22,6 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
-import lombok.NoArgsConstructor;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +41,18 @@ import java.util.concurrent.locks.ReentrantLock;
 public class InstanceOfferScheduler extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferScheduler.class);
 
+    private final InstanceOfferSchedulerCore core;
+
     @Autowired
-    private InstanceOfferSchedulerCore core;
+    public InstanceOfferScheduler(final InstanceOfferSchedulerCore core) {
+        this.core = core;
+    }
 
     @PostConstruct
     public void init() {
         scheduleFixedDelay(core::checkAndUpdatePriceListIfNecessary,
-                SystemPreferences.CLUSTER_INSTANCE_OFFER_UPDATE_RATE,
-                "Instance Offers Expiration Status Check");
+                           SystemPreferences.CLUSTER_INSTANCE_OFFER_UPDATE_RATE,
+                           "Instance Offers Expiration Status Check");
     }
 
     public void checkAndUpdatePriceListIfNecessary() {
@@ -65,23 +68,25 @@ public class InstanceOfferScheduler extends AbstractSchedulingManager {
     }
 
     @Component
-    @NoArgsConstructor
-    private class InstanceOfferSchedulerCore {
+    private static class InstanceOfferSchedulerCore {
 
     private static final int ONE_DAY = 24;
     private static final int PRICE_LIST_REFRESH_PERIOD = 3 * ONE_DAY;
 
     private Lock priceUpdateLock = new ReentrantLock();
 
-    @Autowired
-    private MessageHelper messageHelper;
+    private final MessageHelper messageHelper;
+    private final InstanceOfferManager instanceOfferManager;
 
     @Autowired
-    private InstanceOfferManager instanceOfferManager;
+    InstanceOfferSchedulerCore(final MessageHelper messageHelper,
+                               final InstanceOfferManager instanceOfferManager) {
+        this.messageHelper = messageHelper;
+        this.instanceOfferManager = instanceOfferManager;
+    }
 
     @SchedulerLock(name = "InstanceOfferScheduler_checkAndUpdatePriceList",
-        lockAtLeastForString = "PT39S",
-        lockAtMostForString = "PT39S")
+        lockAtLeastForString = "PT59M", lockAtMostForString = "PT1H")
     public void checkAndUpdatePriceListIfNecessary() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING));
 
