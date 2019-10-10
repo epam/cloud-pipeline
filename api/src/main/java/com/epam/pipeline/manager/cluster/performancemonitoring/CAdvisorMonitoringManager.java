@@ -109,24 +109,7 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
         return getStats(nodeName, start, end);
     }
 
-    public List<MonitoringStats> getStats(final String nodeName) {
-        return getInternalip(nodeName)
-                .map(this::executeStatsRequest)
-                .orElse(Collections.emptyList());
-    }
-
-    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
-        return getStats(nodeName)
-                .stream()
-                .filter(stats -> dateTime(stats.getStartTime()).compareTo(start) >= 0
-                        && dateTime(stats.getEndTime()).compareTo(end) <= 0)
-                .collect(Collectors.toList());
-    }
-
-    private static LocalDateTime dateTime(final String dateTime) {
-        return LocalDateTime.parse(dateTime, MonitoringConstants.FORMATTER);
-    }
-
+    @Override
     public long getDiskAvailableForDocker(final String nodeName,
                                           final String podId,
                                           final String dockerImage) {
@@ -144,6 +127,24 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
                                 MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
 
         return diskStats.getCapacity() - diskStats.getUsableSpace();
+    }
+
+    public List<MonitoringStats> getStats(final String nodeName) {
+        return getInternalip(nodeName)
+                .map(this::executeStatsRequest)
+                .orElse(Collections.emptyList());
+    }
+
+    private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end) {
+        return getStats(nodeName)
+                .stream()
+                .filter(stats -> dateTime(stats.getStartTime()).compareTo(start) >= 0
+                        && dateTime(stats.getEndTime()).compareTo(end) <= 0)
+                .collect(Collectors.toList());
+    }
+
+    private static LocalDateTime dateTime(final String dateTime) {
+        return LocalDateTime.parse(dateTime, MonitoringConstants.FORMATTER);
     }
 
     private List<MonitoringStats> getStatsForContainerDisk(final String nodeName,

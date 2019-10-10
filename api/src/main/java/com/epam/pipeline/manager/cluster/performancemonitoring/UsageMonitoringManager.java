@@ -49,4 +49,16 @@ public interface UsageMonitoringManager {
                                           @Nullable LocalDateTime from,
                                           @Nullable LocalDateTime to);
 
+    /**
+     * Retrieves number of bytes that available on a pod disk .
+     *
+     * @param nodeName Cluster node name.
+     * @param podId
+     * @param dockerImage of the container of the pod.
+     * @return available bytes amount.
+     */
+    long getDiskAvailableForDocker(String nodeName,
+                                   String podId,
+                                   String dockerImage);
+
 }

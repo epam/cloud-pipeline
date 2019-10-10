@@ -132,6 +132,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new MemoryRequester(client);
             case FS:
                 return new FSRequester(client);
+            case POD_FS:
+                return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
             default:
@@ -206,6 +208,19 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
                         .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
+                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                .size(0);
+    }
+
+    protected SearchSourceBuilder podStatsQuery(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to) {
+        return new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
                         .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
                         .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())

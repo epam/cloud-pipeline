@@ -66,6 +66,23 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 : Collections.emptyList();
     }
 
+    @Override
+    public long getDiskAvailableForDocker(final String nodeName, final String podId, final String dockerImage) {
+        final MonitoringStats.DisksUsage.DiskStats diskStats =
+                AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
+                        .requestStats(nodeName,
+                                LocalDateTime.now().minusMinutes(1L),
+                                LocalDateTime.now(),
+                                Duration.ofMinutes(1L)
+                        )
+                        .stream().findFirst()
+                        .orElseThrow(IllegalArgumentException::new)
+                        .getDisksUsage()
+                        .getStatsByDevices()
+                        .values().stream().findFirst().orElseThrow(IllegalArgumentException::new);
+        return diskStats.getCapacity() - diskStats.getUsableSpace();
+    }
+
     private LocalDateTime oldestMonitoringDate() {
         return monitoringDao.oldestIndexDate().orElseGet(this::fallbackMonitoringStart);
     }
