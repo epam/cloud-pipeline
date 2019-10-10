@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import retrofit2.Response;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@ConditionalOnProperty(name = "monitoring.backend", havingValue = "cadvisor", matchIfMissing = true)
 public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CAdvisorMonitoringManager.class);

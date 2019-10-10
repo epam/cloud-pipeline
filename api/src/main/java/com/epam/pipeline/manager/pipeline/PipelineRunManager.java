@@ -53,7 +53,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -174,7 +174,7 @@ public class PipelineRunManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
-    private CAdvisorMonitoringManager cAdvisorMonitoringManager;
+    private UsageMonitoringManager usageMonitoringManager;
 
     @Autowired
     private NodesManager nodesManager;
@@ -910,7 +910,7 @@ public class PipelineRunManager {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = cAdvisorMonitoringManager.getDiskAvailableForDocker(
+        final long availableDisk = usageMonitoringManager.getDiskAvailableForDocker(
                 pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())

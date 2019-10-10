@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -41,6 +42,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "monitoring.backend", havingValue = "elastic")
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
@@ -71,8 +73,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final MonitoringStats.DisksUsage.DiskStats diskStats =
                 AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
                         .requestStats(nodeName,
-                                LocalDateTime.now().minusMinutes(1L),
-                                LocalDateTime.now(),
+                                DateUtils.nowUTC().minusMinutes(1L),
+                                DateUtils.nowUTC(),
                                 Duration.ofMinutes(1L)
                         )
                         .stream().findFirst()
