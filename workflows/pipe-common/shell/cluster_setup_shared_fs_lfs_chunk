@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -73,49 +75,15 @@ fi
 ######################################################
 pipe_log_info "--> Installing LFS chunk server" "$FS_SETUP_TASK"
 
-if [ ! -z $CP_CAP_DISTR_STORAGE_LFS ]; then
-    local_package_install $CP_CAP_DISTR_STORAGE_LFS
+_LFS_INSTALL_RESULT=1
+
+if [[ "$IS_RPM_BASED" = 0 ]]; then
+    yum -y -q install lizardfs-chunkserver
     _LFS_INSTALL_RESULT=$?
 else
-    if [[ "$IS_RPM_BASED" = 0 ]]; then
-        if [ -f "/etc/yum.repos.d/lizardfs.repo" ]; then
-            pipe_log_info "/etc/yum.repos.d/lizardfs.repo already exists. Skipping repo initialization" "$FS_SETUP_TASK"
-        else
-            curl -s http://packages.lizardfs.com/yum/el7/lizardfs.repo > /etc/yum.repos.d/lizardfs.repo && \
-            yum --disablerepo="*" --enablerepo="lizardfs" -q update
-        fi
-
-        # epel-release shall be already available, before installing LFS. Otherwise it will fail with libJudy installation
-        # See: https://docs.lizardfs.com/adminguide/installation.html#installing-from-redhat-el-centos-packages
-        yum -y -q install epel-release && \
-        yum -y -q install lizardfs-chunkserver
-        _LFS_INSTALL_RESULT=$?
-    else
-        apt-get install lsb-release gnupg -y -qq
-        source /etc/os-release
-        if [ "$ID" == "debian" ]; then
-            # If it is debian (especially v8 - "jessie") - use /debian/ repository
-            _repository=debian
-            _release="$(lsb_release -sc)"
-        else
-            # Use xenial release even for 18.04
-            _repository=ubuntu
-            _release=xenial
-        fi
-
-        if [ -f "/etc/apt/sources.list.d/lizardfs.list" ]; then
-            pipe_log_info "/etc/apt/sources.list.d/lizardfs.list already exists. Skipping repo initialization" "$FS_SETUP_TASK"
-        else
-            wget -O - http://packages.lizardfs.com/lizardfs.key | apt-key add -
-            
-            echo "deb [trusted=yes] http://packages.lizardfs.com/$_repository/$_release $_release main" > /etc/apt/sources.list.d/lizardfs.list
-
-            apt-get update -qq
-        fi
-
-        apt-get install lizardfs-chunkserver -t $_release -y -qq
-        _LFS_INSTALL_RESULT=$?
-    fi
+    apt-get install lsb-release gnupg -y -qq && \
+    apt-get install lizardfs-chunkserver -y -qq
+    _LFS_INSTALL_RESULT=$?
 fi
 
 if [ $_LFS_INSTALL_RESULT -ne 0 ]

@@ -318,6 +318,32 @@ function configure_package_manager {
             echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
             apt-get update
       fi
+
+      # Add a Cloud Pipeline repo, which contains the required runtime packages
+      local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+      local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
+      if [ "$CP_OS" == "centos" ]; then
+            yum install curl yum-priorities -y -q && \
+            curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
+            yum --disablerepo=* --enablerepo=cloud-pipeline list available > /dev/null 2>&1
+            
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                  rm -f /etc/yum.repos.d/cloud-pipeline.repo
+            fi
+      elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+            apt-get update -qq && \
+            apt-get install curl apt-transport-https gnupg -y -qq && \
+            sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+            curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+            sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+            apt-get update -qq
+            
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                  sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+            fi
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -339,45 +365,6 @@ function get_install_command_by_current_distr {
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
-}
-
-function local_package_install {
-
-    local _SOURCE=$1
-
-    # This script will download archive with sources to be installed
-
-    if [ -z $_SOURCE ]; then
-         echo "Env var SOURCE not found, no package will be installed"
-         return 1
-    fi
-
-    local _PATH_TO_PACKAGES=/tmp/localinstall
-    local _ARCH_NAME=$(basename "$_SOURCE")
-    local _BIN_DIR=${_ARCH_NAME%.*}
-
-    mkdir -p $_PATH_TO_PACKAGES
-    wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
-    tar -xf "$_PATH_TO_PACKAGES/$_ARCH_NAME" -C $_PATH_TO_PACKAGES
-
-    check_installed "dpkg" && check_installed "apt-get" && {
-        echo "Local installation deb packages"
-        apt-get update
-        export DEBIAN_FRONTEND=noninteractive
-        dpkg -i $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb &> /dev/null
-        dpkg --configure -a > /dev/null
-        apt-get install -f -y
-    };
-
-    check_installed "yum" && {
-        echo "Local installation rpm packages"
-        yum localinstall $_PATH_TO_PACKAGES/$_BIN_DIR/*.rpm -y -q > /dev/null
-    };
-
-    rm -rf $_PATH_TO_PACKAGES
-
-    echo "Done with packages installation"
-
 }
 
 function symlink_common_locations {
@@ -515,14 +502,10 @@ then
 fi
 
 # Install dependencies
-if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
-    local_package_install $CP_CAP_DISTR_STORAGE_COMMON
-else
-    _DEPS_INSTALL_COMMAND=
-     get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
-                                                                coreutils"
-    eval "$_DEPS_INSTALL_COMMAND"
-fi
+_DEPS_INSTALL_COMMAND=
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
+                                                            coreutils"
+eval "$_DEPS_INSTALL_COMMAND"
 
 # Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
 export CP_PYTHON2_PATH=$(command -v python2)
