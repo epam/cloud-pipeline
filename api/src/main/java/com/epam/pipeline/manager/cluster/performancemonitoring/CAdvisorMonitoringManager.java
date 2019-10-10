@@ -112,9 +112,9 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
     }
 
     @Override
-    public long getDiskAvailableForDocker(final String nodeName,
-                                          final String podId,
-                                          final String dockerImage) {
+    public long getPodDiskSpaceAvailable(final String nodeName,
+                                         final String podId,
+                                         final String dockerImage) {
         final String dockerDiskName = getDockerDiskName(nodeName, podId, dockerImage);
         final MonitoringStats monitoringStats = getLastMonitoringStat(getStatsForNode(nodeName), nodeName);
         final MonitoringStats.DisksUsage.DiskStats diskStats = monitoringStats.getDisksUsage()

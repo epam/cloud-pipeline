@@ -910,7 +910,7 @@ public class PipelineRunManager {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = usageMonitoringManager.getDiskAvailableForDocker(
+        final long availableDisk = usageMonitoringManager.getPodDiskSpaceAvailable(
                 pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())

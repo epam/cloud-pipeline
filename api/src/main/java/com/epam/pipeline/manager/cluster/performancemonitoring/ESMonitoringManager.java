@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -53,6 +55,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private final RestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
+    private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
 
@@ -69,7 +72,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     }
 
     @Override
-    public long getDiskAvailableForDocker(final String nodeName, final String podId, final String dockerImage) {
+    public long getPodDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
         final MonitoringStats.DisksUsage.DiskStats diskStats =
                 AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
                         .requestStats(nodeName,
@@ -77,11 +80,14 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                 DateUtils.nowUTC(),
                                 Duration.ofMinutes(1L)
                         )
-                        .stream().findFirst()
-                        .orElseThrow(IllegalArgumentException::new)
-                        .getDisksUsage()
-                        .getStatsByDevices()
-                        .values().stream().findFirst().orElseThrow(IllegalArgumentException::new);
+                        .stream().map(MonitoringStats::getDisksUsage)
+                        .map(MonitoringStats.DisksUsage::getStatsByDevices)
+                        //get disks stats (in fact here only one stats for one disk)
+                        .flatMap(stats -> stats.values().stream())
+                        //get stats for the only Pod disk
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                                MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 

@@ -57,8 +57,8 @@ public interface UsageMonitoringManager {
      * @param dockerImage of the container of the pod.
      * @return available bytes amount.
      */
-    long getDiskAvailableForDocker(String nodeName,
-                                   String podId,
-                                   String dockerImage);
+    long getPodDiskSpaceAvailable(String nodeName,
+                                  String podId,
+                                  String dockerImage);
 
 }
