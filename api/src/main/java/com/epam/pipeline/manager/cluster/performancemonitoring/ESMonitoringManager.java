@@ -77,7 +77,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final MonitoringStats.DisksUsage.DiskStats diskStats =
                 AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
                         .requestStats(nodeName,
-                                DateUtils.nowUTC().minusMinutes(duration.toMinutes()),
+                                DateUtils.nowUTC().minus(duration),
                                 DateUtils.nowUTC(),
                                 duration
                         )
