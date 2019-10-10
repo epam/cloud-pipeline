@@ -82,7 +82,7 @@ if [[ "$IS_RPM_BASED" = 0 ]]; then
     _LFS_INSTALL_RESULT=$?
 else
     apt-get install lsb-release gnupg -y -qq && \
-    apt-get install lizardfs-chunkserver -y -qq
+    apt-get install -t stable lizardfs-chunkserver -y -qq
     _LFS_INSTALL_RESULT=$?
 fi
 
