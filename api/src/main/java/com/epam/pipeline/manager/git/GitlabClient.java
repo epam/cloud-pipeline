@@ -426,10 +426,6 @@ public final class GitlabClient {
                 .flatMap(Stream::findFirst);
     }
 
-    private GitlabUser getUser(String userName) throws GitClientException {
-        return findUser(userName).orElseThrow(() -> new GitClientException("User " + userName + " not found!"));
-    }
-
     private GitProject createRepo(String repoName, String description) throws GitClientException {
         GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
                 .visibility(PUBLIC_VISIBILITY).build();
