@@ -28,24 +28,18 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ClusterApiService {
 
     private final NodesManager nodesManager;
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
-
-    public ClusterApiService(final NodesManager nodesManager,
-                             final InstanceOfferManager instanceOfferManager,
-                             final UsageMonitoringManager usageMonitoringManager) {
-        this.nodesManager = nodesManager;
-        this.instanceOfferManager = instanceOfferManager;
-        this.usageMonitoringManager = usageMonitoringManager;
-    }
 
     @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(filterObject, 'READ')")
     public List<NodeInstance> getNodes() {

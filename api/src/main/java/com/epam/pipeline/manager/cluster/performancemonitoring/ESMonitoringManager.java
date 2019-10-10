@@ -73,12 +73,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     @Override
     public long getPodDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
+        final Duration duration = minimalDuration();
         final MonitoringStats.DisksUsage.DiskStats diskStats =
                 AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
                         .requestStats(nodeName,
-                                DateUtils.nowUTC().minusMinutes(1L),
+                                DateUtils.nowUTC().minusMinutes(duration.toMinutes()),
                                 DateUtils.nowUTC(),
-                                Duration.ofMinutes(1L)
+                                duration
                         )
                         .stream().map(MonitoringStats::getDisksUsage)
                         .map(MonitoringStats.DisksUsage::getStatsByDevices)
