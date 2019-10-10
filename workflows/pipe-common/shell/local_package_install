@@ -14,8 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-_SOURCE="$1"
-_PACKAGE_TO_CHECK="$2"
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+    -s|--source)
+    _SOURCE="$2"
+    shift
+    shift
+    ;;
+    -c|--check-command)
+    _PACKAGE_TO_CHECK="$2"
+    shift
+    shift
+    ;;
+    -p|--source-is-prefix)
+    _SOURCE_IS_PREFIX="yes"
+    shift
+    ;;
+    -d|--distro-name-only)
+    _CONSIDER_ONLY_DISTRO="yes"
+    shift
+    ;;
+esac
+done
 
 function check_installed {
       local _COMMAND_TO_CHECK="$1"
@@ -29,14 +51,53 @@ if [ -z "$_SOURCE" ]; then
      echo "Parameter SOURCE is not specified, no package will be installed"
      exit 1
 fi
+if [ "$_SOURCE_IS_PREFIX" ]; then
+    CP_OS_INFO_SCRIPT="$COMMON_REPO_DIR/shell/os_info"
+    if [ ! -f "$CP_OS_INFO_SCRIPT" ]; then
+        echo "Unable to get OS information for the local installation (os_info not found), exiting"
+        exit 1
+    fi
+    . "$CP_OS_INFO_SCRIPT"
+
+    if [ -z "$CP_OS" ] || [ -z "$CP_VER" ]; then
+        echo "Unable to get OS information for the local installation, exiting"
+        exit 1
+    fi
+
+    if [ "$_CONSIDER_ONLY_DISTRO" ]; then
+        _SOURCE="${_SOURCE}-${CP_OS}.tar"
+    else
+        _SOURCE="${_SOURCE}-${CP_OS}-${CP_VER}.tar"
+    fi
+    echo "Using distro-specific source ($_SOURCE) for the local installation"
+fi
 
 _PATH_TO_PACKAGES=/tmp/localinstall
 _ARCH_NAME=$(basename "$_SOURCE")
 _BIN_DIR=${_ARCH_NAME%.*}
 
 mkdir -p $_PATH_TO_PACKAGES
-wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
+_DISTR_DOWNLOAD_RESULT=1
+if check_installed "wget"; then
+    wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
+    _DISTR_DOWNLOAD_RESULT=$?
+elif check_installed "curl"; then
+    cd $_PATH_TO_PACKAGES
+    curl -s -k -O $_SOURCE  > /dev/null
+    _DISTR_DOWNLOAD_RESULT=$?
+    cd -
+fi
+    
+if [ $_DISTR_DOWNLOAD_RESULT -ne 0 ]; then
+    echo "Unable to download distribution ($_SOURCE) for the local installation, exiting"
+    exit 1
+fi
+
 tar -xf "$_PATH_TO_PACKAGES/$_ARCH_NAME" -C $_PATH_TO_PACKAGES
+if [ $? -ne 0 ]; then
+    echo "Unable to unpack distribution (downloaded from $_SOURCE) for the local installation, exiting"
+    exit 1
+fi
 
 check_installed "dpkg" && check_installed "apt-get" && {
     echo "Local installation of the deb file(s): $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb"
