@@ -71,7 +71,7 @@ class Legend extends React.Component {
     return (
       <g
         key={index}
-        shapeRendering={'geometricprecision'}
+        shapeRendering={'auto'}
       >
         <line
           x1={x + 5}

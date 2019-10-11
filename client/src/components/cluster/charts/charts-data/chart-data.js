@@ -18,24 +18,61 @@ import {action, computed, observable} from 'mobx';
 import moment from 'moment';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 
-async function loadData (node, from, to) {
-  const fromValue = from
-    ? moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
-    : undefined;
-  const toValue = to
-    ? moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss')
-    : undefined;
-  const request = new NodeUsage(node, fromValue, toValue);
-  await request.fetchIfNeededOrWait();
-  if (request.error) {
-    return {
+function makePromise (node, from, to) {
+  return new Promise(async (resolve) => {
+    const fromValue = from
+      ? moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
+      : undefined;
+    const toValue = to
+      ? moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss')
+      : undefined;
+    const request = new NodeUsage(node, fromValue, toValue);
+    await request.fetchIfNeededOrWait();
+    resolve({
       error: request.error,
+      value: request.value
+    });
+  });
+}
+
+function joinArrays (arrays) {
+  const result = (arrays || []).reduce((result, array) => ([...result, ...(array || [])]), []);
+  result.sort((a, b) => {
+    const {startTime: startA} = a;
+    const {startTime: startB} = b;
+    return moment(startA).unix() - moment(startB).unix();
+  });
+  return result;
+}
+
+async function loadData (node, from, to) {
+  const now = moment().unix()
+  const toCorrected = to || now;
+  const promises = [
+    makePromise(node, from, toCorrected)
+  ];
+  if (from && toCorrected - from > 0) {
+    promises.push(makePromise(node, from - (toCorrected - from), from));
+  }
+  if (toCorrected && toCorrected < now) {
+    let range = now - toCorrected;
+    if (from && toCorrected - from < range) {
+      range = toCorrected - from;
+    }
+    promises.push(makePromise(node, toCorrected, toCorrected + range));
+  }
+  const results = await Promise.all(promises);
+  const [error] = results.map(r => r.error).filter(Boolean);
+  const values = results.map(r => r.value);
+  if (error) {
+    return {
+      error: error,
       from,
       to
     };
   }
   return {
-    value: request.value,
+    value: joinArrays(values),
     from,
     to
   };
@@ -163,6 +200,7 @@ class ChartData {
       .map(g => g.group)
       .reduce((d, group) => ({[group]: makeEmptyData(), ...d}), {});
     const groups = Object.keys(data);
+    groups.sort();
     const xPoints = [];
     for (let i = 0; i < responseData.length; i++) {
       const item = responseData[i];

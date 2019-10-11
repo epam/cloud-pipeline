@@ -27,38 +27,40 @@ export default function (controller, area, onMoveFinished) {
     const {from} = controller.state;
     const dim = area.getBoundingClientRect();
     const x = event.clientX - dim.left;
-    let eventProperties = controller.state.move;
-    if (!eventProperties) {
-      eventProperties = {};
+    let {move} = controller.state;
+    if (!move) {
+      move = {};
     }
-    eventProperties.mousePosition = x;
-    eventProperties.config = {
+    move.mousePosition = x;
+    move.moved = false;
+    move.config = {
       from,
       range: controller.dataRange,
       ratio: controller.canvasToPlotRatio
     };
-    controller.setState({move: eventProperties});
+    controller.setState({move});
     event.preventDefault();
     event.stopPropagation();
   };
 
   const mouseMove = (event) => {
-    const {move: moveState} = controller.state;
-    if (moveState) {
+    const {move} = controller.state;
+    if (move) {
       const dim = area.getBoundingClientRect();
       const x = event.clientX - dim.left;
-      move(x, moveState, false);
+      move.moved = move.moved || Math.abs(move.mousePosition - x) > 1;
+      performMove(x, move, false);
       event.preventDefault();
       event.stopPropagation();
     }
   };
 
   const mouseUp = (event) => {
-    const {move: moveState} = controller.state;
-    if (moveState) {
+    const {move} = controller.state;
+    if (move) {
       const dim = area.getBoundingClientRect();
       const x = event.clientX - dim.left;
-      move(x, moveState, true);
+      performMove(x, move, true);
       event.preventDefault();
       event.stopPropagation();
     }
@@ -67,33 +69,48 @@ export default function (controller, area, onMoveFinished) {
 
   const keydown = (event) => {
     switch (event.keyCode) {
-      case ESCAPE_KEY: cancelMove(); break;
+      case ESCAPE_KEY: cancelMove(true); break;
       default: break;
     }
   };
 
-  const move = (mousePosition, moveInfo, final) => {
+  const performMove = (mousePosition, move, final) => {
     const {from} = controller.state;
     if (!from) {
       return;
     }
     const {minimum, maximum} = controller.props;
-    const delta = (mousePosition - moveInfo.mousePosition) * moveInfo.config.ratio;
-    let start = Math.max(minimum || -Infinity, moveInfo.config.from - delta);
-    const end = Math.min(maximum || Infinity, start + moveInfo.config.range);
-    start = Math.max(minimum || -Infinity, end - moveInfo.config.range);
+    const delta = (mousePosition - move.mousePosition) * move.config.ratio;
+    let start = Math.max(minimum || -Infinity, move.config.from - delta);
+    const end = Math.min(maximum || Infinity, start + move.config.range);
+    start = Math.max(minimum || -Infinity, end - move.config.range);
     controller.setState({
       from: start,
-      to: end
+      to: end,
+      move
     }, () => {
-      if (onMoveFinished) {
+      if (onMoveFinished && move.moved) {
         onMoveFinished(start, end, final);
       }
     });
   };
 
-  const cancelMove = () => {
-    controller.setState({move: undefined});
+  const cancelMove = (revert = false) => {
+    let {move} = controller.state;
+    if (revert && move) {
+      const newState = {
+        move: undefined
+      };
+      newState.from = move.config.from;
+      newState.end = move.config.from + move.config.range;
+      controller.setState(newState, () => {
+        if (onMoveFinished) {
+          onMoveFinished(newState.from, newState.end, true);
+        }
+      });
+    } else {
+      controller.setState({move: undefined});
+    }
   };
 
   area.addEventListener('mousedown', mouseDown);

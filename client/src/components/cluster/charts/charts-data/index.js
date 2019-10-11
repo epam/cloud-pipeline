@@ -86,6 +86,9 @@ class ChartsData extends ChartData {
 
   processValues (values) {
     super.processValues(values);
+    if (!this.initialized) {
+      return;
+    }
     if (this.followCommonRange) {
       this.cpuUsage.processValues(values);
       this.memoryUsage.processValues(values);

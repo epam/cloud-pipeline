@@ -188,7 +188,7 @@ class ClusterNodeMonitor extends React.Component {
     });
   };
 
-  setLiveUpdate = (e) => {
+  setLiveUpdate = (e, clearEnd = false) => {
     const liveUpdate = e.target.checked;
     const {chartsData} = this.props;
     if (liveUpdate) {
@@ -201,9 +201,13 @@ class ClusterNodeMonitor extends React.Component {
       clearInterval(this.liveUpdateTimer);
       delete this.liveUpdateTimer;
     }
-    this.setState({
+    const state = {
       liveUpdate
-    });
+    };
+    if (!liveUpdate && clearEnd) {
+      state.end = undefined;
+    }
+    this.setState(state);
   };
 
   setRange = ({key}) => {
@@ -312,7 +316,7 @@ class ClusterNodeMonitor extends React.Component {
     chartsData.followCommonRange = e.target.checked;
     chartsData.loadData();
     if (!chartsData.followCommonRange) {
-      this.setLiveUpdate({target: {checked: false}});
+      this.setLiveUpdate({target: {checked: false}}, true);
     }
   };
 
@@ -371,7 +375,7 @@ class ClusterNodeMonitor extends React.Component {
           <Divider />
           <Checkbox
             checked={liveUpdate}
-            onChange={this.setLiveUpdate}
+            onChange={e => this.setLiveUpdate(e, true)}
           >
             Live update
           </Checkbox>

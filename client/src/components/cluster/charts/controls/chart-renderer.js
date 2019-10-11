@@ -198,7 +198,7 @@ class ChartRendererWithOffset extends React.PureComponent {
     return (
       <g
         key={index}
-        shapeRendering={'geometricprecision'}
+        shapeRendering={'auto'}
       >
         <path d={areaParts} stroke={'none'} fill={plot.color} opacity={0.2} />
         <path d={lineParts} stroke={plot.color} strokeWidth={2} fill={'none'} />

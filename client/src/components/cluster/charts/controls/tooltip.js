@@ -42,7 +42,7 @@ class TooltipRenderer extends React.PureComponent {
         {
           title: 'Date',
           color: '#666',
-          value: moment.unix(xPoint).format('d MMM, YYYY HH:mm')
+          value: moment.unix(xPoint).format('D MMM, YYYY HH:mm')
         },
         ...tooltips
       ];
@@ -251,7 +251,12 @@ class Tooltip extends React.PureComponent {
       const dim = canvas.getBoundingClientRect();
       const x = event.clientX - dim.left;
       const y = event.clientY - dim.top;
-      if (x >= 0 && x <= dim.width && y >= 0 && y <= dim.height) {
+      if (
+        x >= chartArea.left &&
+        x <= dim.width - chartArea.right &&
+        y >= chartArea.top &&
+        y <= dim.height - chartArea.bottom
+      ) {
         const timelinePosition = from + (x - chartArea.left) * timeline.canvasToPlotRatio;
         let xPoint = data.xPoints[0];
         let diff = Math.abs(xPoint - timelinePosition);
