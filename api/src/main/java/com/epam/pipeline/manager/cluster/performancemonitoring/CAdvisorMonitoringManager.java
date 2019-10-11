@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import retrofit2.Response;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@ConditionalOnProperty(name = "monitoring.backend", havingValue = "cadvisor", matchIfMissing = true)
 public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CAdvisorMonitoringManager.class);
@@ -109,6 +111,26 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
         return getStats(nodeName, start, end);
     }
 
+    @Override
+    public long getPodDiskSpaceAvailable(final String nodeName,
+                                         final String podId,
+                                         final String dockerImage) {
+        final String dockerDiskName = getDockerDiskName(nodeName, podId, dockerImage);
+        final MonitoringStats monitoringStats = getLastMonitoringStat(getStatsForNode(nodeName), nodeName);
+        final MonitoringStats.DisksUsage.DiskStats diskStats = monitoringStats.getDisksUsage()
+                .getStatsByDevices()
+                .entrySet()
+                .stream()
+                .filter(e -> dockerDiskName.equals(e.getKey()))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElseThrow(() ->
+                        new IllegalArgumentException(messageHelper.getMessage(
+                                MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
+
+        return diskStats.getCapacity() - diskStats.getUsableSpace();
+    }
+
     public List<MonitoringStats> getStats(final String nodeName) {
         return getInternalip(nodeName)
                 .map(this::executeStatsRequest)
@@ -125,25 +147,6 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
 
     private static LocalDateTime dateTime(final String dateTime) {
         return LocalDateTime.parse(dateTime, MonitoringConstants.FORMATTER);
-    }
-
-    public long getDiskAvailableForDocker(final String nodeName,
-                                          final String podId,
-                                          final String dockerImage) {
-        final String dockerDiskName = getDockerDiskName(nodeName, podId, dockerImage);
-        final MonitoringStats monitoringStats = getLastMonitoringStat(getStatsForNode(nodeName), nodeName);
-        final MonitoringStats.DisksUsage.DiskStats diskStats = monitoringStats.getDisksUsage()
-                .getStatsByDevices()
-                .entrySet()
-                .stream()
-                .filter(e -> dockerDiskName.equals(e.getKey()))
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElseThrow(() ->
-                        new IllegalArgumentException(messageHelper.getMessage(
-                                MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
-
-        return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
     private List<MonitoringStats> getStatsForContainerDisk(final String nodeName,

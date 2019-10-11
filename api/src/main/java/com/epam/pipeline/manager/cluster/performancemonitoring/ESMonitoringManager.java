@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -28,6 +30,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -41,6 +44,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "monitoring.backend", havingValue = "elastic")
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
@@ -51,6 +55,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private final RestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
+    private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
 
@@ -64,6 +69,27 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
                 ? getStats(nodeName, start, end)
                 : Collections.emptyList();
+    }
+
+    @Override
+    public long getPodDiskSpaceAvailable(final String nodeName, final String podId, final String dockerImage) {
+        final Duration duration = minimalDuration();
+        final MonitoringStats.DisksUsage.DiskStats diskStats =
+                AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
+                        .requestStats(nodeName,
+                                DateUtils.nowUTC().minus(duration),
+                                DateUtils.nowUTC(),
+                                duration
+                        )
+                        .stream().map(MonitoringStats::getDisksUsage)
+                        .map(MonitoringStats.DisksUsage::getStatsByDevices)
+                        //get disks stats (in fact here only one stats for one disk)
+                        .flatMap(stats -> stats.values().stream())
+                        //get stats for the only Pod disk
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                                MessageConstants.ERROR_GET_NODE_STAT, nodeName)));
+        return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
     private LocalDateTime oldestMonitoringDate() {
