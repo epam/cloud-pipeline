@@ -32,13 +32,10 @@ import moment from 'moment';
 import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import RunTags from '../../runs/run-tags';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
-
-const IDLED_TAG = 'IDLED';
-const PRESSURED_TAG = 'PRESSURED';
-const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
 const colors = {
   [Statuses.failure]: {
@@ -234,21 +231,18 @@ export default class PipelineRunPreview extends React.Component {
       const {instance} = run;
       const details = [];
       if (instance) {
-        if (run.tags && activeRunStatuses.includes(run.status)) {
-          if (run.tags[IDLED_TAG]) {
-            details.push({
-              key: 'Idle',
-              value: <span style={{color: '#f79e2c', fontSize: 'larger'}}>Idle</span>,
-              additionalStyle: {backgroundColor: '#f79f2b33'}
-            });
-          }
-          if (run.tags[PRESSURED_TAG]) {
-            details.push({
-              key: 'Pressure',
-              value: <span style={{color: '#f04134', fontSize: 'larger'}}>Pressure</span>,
-              additionalStyle: {backgroundColor: '#ae172633'}
-            });
-          }
+        if (RunTags.shouldDisplayTags(run, true)) {
+          details.push({
+            key: 'Tags',
+            value: (
+              <RunTags
+                run={run}
+                onlyKnown
+                theme="black"
+              />
+            ),
+            additionalStyle: {backgroundColor: 'transparent'}
+          });
         }
         if (run.executionPreferences && run.executionPreferences.environment) {
           details.push({key: 'Execution environment', value: this.getExecEnvString(run)});

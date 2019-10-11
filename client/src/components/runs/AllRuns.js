@@ -417,7 +417,6 @@ class AllRuns extends Component {
             pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
             pagination={{total: this.runFilter ? this.runFilter.total : 0, pageSize, current: this.state.currentPage}}
             ownersDisabled={this.props.status === 'active' && !this.props.allUsers}
-            displayTags={this.props.status === 'active'}
             reloadTable={this.reloadTable}
             launchPipeline={this.launchPipeline}
             onSelect={this.onSelectRun}

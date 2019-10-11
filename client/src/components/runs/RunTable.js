@@ -22,7 +22,6 @@ import {Link} from 'react-router';
 import {
   Alert,
   Checkbox,
-  Col,
   Icon,
   Input,
   message,
@@ -54,7 +53,7 @@ import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
-import {renderRunTags} from './renderers';
+import RunTags from './run-tags';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
@@ -77,7 +76,6 @@ export default class RunTable extends localization.LocalizedReactComponent {
     onSelect: PropTypes.func,
     useFilter: PropTypes.bool,
     versionsDisabled: PropTypes.bool,
-    displayTags: PropTypes.bool,
     ownersDisabled: PropTypes.bool
   };
 
@@ -991,12 +989,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
       key: 'tags',
       className: styles.tagsColumn,
       render: (text, run) => {
-        const {displayTags, routing: {location}} = this.props;
-        if (!displayTags) {
-          return null;
-        }
-
-        return renderRunTags(run.tags, {location, instance: run.instance});
+        const {routing: {location}} = this.props;
+        return (
+          <RunTags
+            run={run}
+            location={location}
+            overflow
+          />
+        );
       }
     };
     const parentRunColumn = {
