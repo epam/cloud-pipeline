@@ -38,6 +38,7 @@ NFS_SCHEME = 'nfs://'
 GCP_SCHEME = 'gs://'
 FUSE_GOOFYS_ID = 'goofys'
 FUSE_S3FS_ID = 's3fs'
+FUSE_PIPE_ID = 'pipefuse'
 FUSE_NA_ID = None
 AZURE_PROVIDER = 'AZURE'
 S3_PROVIDER = 'S3'
@@ -213,10 +214,11 @@ class StorageMounter:
         account_id = os.getenv('CP_ACCOUNT_ID_{}'.format(region_id))
         account_key = os.getenv('CP_ACCOUNT_KEY_{}'.format(region_id))
         account_region = os.getenv('CP_ACCOUNT_REGION_{}'.format(region_id))
+        account_token = os.getenv('CP_ACCOUNT_TOKEN_{}'.format(region_id))
         if not account_id or not account_key or not account_region:
             raise RuntimeError('Account information wasn\'t found in the environment for account with id={}.'
                                .format(region_id))
-        return account_id, account_key, account_region
+        return account_id, account_key, account_region, account_token
 
 
 class AzureMounter(StorageMounter):
@@ -250,7 +252,7 @@ class AzureMounter(StorageMounter):
         super(AzureMounter, self).mount(mount_root, task_name)
 
     def build_mount_params(self, mount_point):
-        account_id, account_key, _ = self._get_credentials(self.storage)
+        account_id, account_key, _, _ = self._get_credentials(self.storage)
         return {
             'mount': mount_point,
             'path': self.get_path(),
@@ -273,7 +275,7 @@ class AzureMounter(StorageMounter):
 
     def __resolve_azure_blob_service_url(self, task_name=MOUNT_DATA_STORAGES):
         # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
-        account_name, _, _ = self._get_credentials(self.storage)
+        account_name, _, _, _ = self._get_credentials(self.storage)
         command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
                   '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
                   '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
@@ -300,6 +302,9 @@ class S3Mounter(StorageMounter):
 
     @staticmethod
     def _check_or_install(task_name):
+        # always install pre-requested packages for pipe mount because it could be use instead of goofys of s3fs,
+        # even if other requested, f.e. when EC2 instance role credentials is used
+        pipe_fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_pipe', task_name=task_name)
         fuse_type = os.getenv('CP_S3_FUSE_TYPE', FUSE_GOOFYS_ID)
         if fuse_type == FUSE_GOOFYS_ID:
             fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
@@ -315,6 +320,8 @@ class S3Mounter(StorageMounter):
                     task_name=task_name)
                 fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
                 return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
+        elif fuse_type == FUSE_PIPE_ID:
+            return FUSE_PIPE_ID if pipe_fuse_installed else FUSE_NA_ID
         else:
             Logger.warn("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type),
                         task_name=task_name)
@@ -335,7 +342,7 @@ class S3Mounter(StorageMounter):
         permissions = 'rw'
         stat_cache = os.getenv('CP_S3_FUSE_STAT_CACHE', '1m0s')
         type_cache = os.getenv('CP_S3_FUSE_TYPE_CACHE', '1m0s')
-        aws_key_id, aws_secret, region_name = self._get_credentials(self.storage)
+        aws_key_id, aws_secret, region_name, session_token = self._get_credentials(self.storage)
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
@@ -350,11 +357,14 @@ class S3Mounter(StorageMounter):
                 'fuse_type': self.fuse_type,
                 'aws_key_id': aws_key_id,
                 'aws_secret': aws_secret,
+                'aws_token': session_token,
                 'tmp_dir': self.fuse_tmp
                 }
 
     def build_mount_command(self, params):
-        if params['fuse_type'] == FUSE_GOOFYS_ID:
+        if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
+            return 'pipe storage mount {mount} -b {path}'.format(**params)
+        elif params['fuse_type'] == FUSE_GOOFYS_ID:
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
                     '--stat-cache-ttl {stat_cache} --type-cache-ttl {type_cache} ' \
@@ -474,7 +484,7 @@ class NFSMounter(StorageMounter):
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
         if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE":
-            az_acc_id, az_acc_key, _ = self._get_credentials_by_region_id(region_id)
+            az_acc_id, az_acc_key, _, _ = self._get_credentials_by_region_id(region_id)
             creds_options = ",".join(["username=" + az_acc_id, "password=" + az_acc_key])
 
             if mount_options:

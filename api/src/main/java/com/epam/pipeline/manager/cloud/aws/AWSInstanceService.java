@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.aws;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
@@ -200,6 +201,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         envVars.put(SystemParams.CLOUD_ACCOUNT_PREFIX + region.getId(), credentials.getAWSAccessKeyId());
         envVars.put(SystemParams.CLOUD_ACCOUNT_KEY_PREFIX + region.getId(), credentials.getAWSSecretKey());
         envVars.put(SystemParams.CLOUD_PROVIDER_PREFIX + region.getId(), region.getProvider().name());
+        if (credentials instanceof BasicSessionCredentials) {
+            envVars.put(SystemParams.CLOUD_ACCOUNT_TOKEN_PREFIX + region.getId(),
+                    ((BasicSessionCredentials) credentials).getSessionToken());
+        }
         return envVars;
     }
 
