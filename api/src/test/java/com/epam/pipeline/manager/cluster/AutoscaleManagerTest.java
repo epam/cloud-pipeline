@@ -96,8 +96,8 @@ public class AutoscaleManagerTest {
         MockitoAnnotations.initMocks(this);
 
         autoscaleManagerCore = new AutoscaleManager.AutoscaleManagerCore(pipelineRunManager, executorService,
-                                                                         nodeDiskManager, autoscalerService,
-                                                                         nodesManager, kubernetesManager,
+                                                                         autoscalerService, nodesManager,
+                                                                         nodeDiskManager, kubernetesManager,
                                                                          TEST_KUBE_NAMESPACE, cloudFacade);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
