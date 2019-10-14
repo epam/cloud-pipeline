@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -344,6 +345,14 @@ public class SystemPreferences {
         "launch.task.status.update.rate", 30000, LAUNCH_GROUP, isGreaterThan(5000));
     public static final StringPreference LAUNCH_DOCKER_IMAGE = new StringPreference("launch.docker.image", null,
                                                                                     LAUNCH_GROUP, null);
+    /**
+     * Sets unused pods release rate, on which application will kill Kubernetes pods, which were used by finished
+     * pipeline runs, milliseconds. This rate should be less, than
+     * @see #LAUNCH_TASK_STATUS_UPDATE_RATE
+     * to kill unused pods as soon as possible
+     */
+    public static final IntPreference RELEASE_UNUSED_NODES_RATE = new IntPreference(
+        "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
