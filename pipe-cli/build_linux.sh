@@ -98,8 +98,7 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
                                 --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                 --add-data /tmp/mount/dist/pipe-fuse:mount \
-                                ${PIPE_CLI_SOURCES_DIR}/pipe.py \
-                                --onefile
+                                ${PIPE_CLI_SOURCES_DIR}/pipe.py
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null
