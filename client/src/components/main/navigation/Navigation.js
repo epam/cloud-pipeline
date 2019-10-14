@@ -296,7 +296,7 @@ export default class Navigation extends React.Component {
               <Button
                 id="navigation-button-logo"
                 className={styles.logoMenuItem}>
-                <img src="favicon.png" style={{height: 26}} />
+                <img src="logo.png" style={{height: 26}} />
               </Button>
             </Popover>
           }
