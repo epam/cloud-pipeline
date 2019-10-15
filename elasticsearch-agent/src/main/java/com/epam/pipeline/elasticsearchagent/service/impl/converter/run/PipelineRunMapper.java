@@ -29,11 +29,13 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,6 +45,9 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
+
+    @Value("${sync.run.log.lines.size:1000}")
+    private int maxLogLines;
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunWithLog> container) {
@@ -148,6 +153,8 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
             return;
         }
         jsonBuilder.array("logs", runLogs.stream()
+                .sorted(Comparator.comparing(RunLog::getDate).reversed())
+                .limit(maxLogLines)
                 .map(log -> {
                     final String logText = log.getLogText();
                     final String taskName = Optional.ofNullable(log.getTask())

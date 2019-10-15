@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -28,6 +29,9 @@ import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchron
 
 @Component
 public class PipelineCodeMapper {
+
+    @Value("${sync.pipeline-code.max.chars:10000}")
+    private int maxDocChars;
 
     public XContentBuilder pipelineCodeToDocument(final Pipeline pipeline,
                                                   final String pipelineVersion,
@@ -42,7 +46,7 @@ public class PipelineCodeMapper {
                     .field("pipelineName", pipeline.getName())
                     .field("pipelineVersion", pipelineVersion)
                     .field("path", path)
-                    .field("content", fileContent);
+                    .field("content", buildFileContent(fileContent));
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
             jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
@@ -54,5 +58,18 @@ public class PipelineCodeMapper {
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
         }
+    }
+
+    /**
+     * Create a String object containing code, that will add to full-text search.
+     * Note, that we set the max chars limit for the document to control ElasticSearch memory consumption.
+     *
+     * @param fullContent content of the file we want to index
+     * @return content or <code>null</code> if content is too big
+     */
+    private String buildFileContent(final String fullContent) {
+        return fullContent.length() < maxDocChars
+               ? fullContent
+               : null;
     }
 }
