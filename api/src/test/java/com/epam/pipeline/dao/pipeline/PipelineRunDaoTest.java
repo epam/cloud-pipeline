@@ -24,7 +24,9 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -39,6 +41,7 @@ import com.epam.pipeline.manager.execution.SystemParams;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -53,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,10 +102,19 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private PipelineRunDao pipelineRunDao;
 
     @Autowired
+    private RunLogDao logDao;
+
+    @Autowired
     private PipelineDao pipelineDao;
 
     @Autowired
     private CloudRegionDao regionDao;
+
+    @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
+    private String initTaskName;
+
+    @Value("${run.pipeline.nodeup.task.name?:InitializeNode}")
+    private String nodeUpTaskName;
 
     private Pipeline testPipeline;
     private AbstractCloudRegion cloudRegion;
@@ -371,15 +384,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(2, runs.size());
     }
 
-    private Pipeline getPipeline() {
-        Pipeline testPipeline2 = new Pipeline();
-        testPipeline2.setName("Test");
-        testPipeline2.setRepository(TEST_REPO);
-        testPipeline2.setRepositorySsh(TEST_REPO_SSH);
-        testPipeline2.setOwner(TEST_USER);
-        pipelineDao.createPipeline(testPipeline2);
-        return testPipeline2;
-    }
 
     @Test
     public void testPaging() {
@@ -636,6 +640,30 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(PRICE_PER_HOUR, loaded.getPricePerHour());
     }
 
+    @Test
+    public void loadRunShouldReturnInitializedStatus() {
+        final PipelineRun run = createTestPipelineRun();
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
+
+        createLog(run, TaskStatus.RUNNING, initTaskName);
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
+
+        createLog(run, TaskStatus.SUCCESS, initTaskName);
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getInitialized);
+    }
+
+    @Test
+    public void loadRunShouldReturnQueuedStatus() {
+        final PipelineRun run = createTestPipelineRun();
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getQueued);
+
+        createLog(run, TaskStatus.RUNNING, initTaskName);
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getQueued);
+
+        createLog(run, TaskStatus.RUNNING, nodeUpTaskName);
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getQueued);
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }
@@ -749,6 +777,46 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         run.setConfigurationId(configurationId);
         pipelineRunDao.createPipelineRun(run);
         return run;
+    }
+
+    private Pipeline getPipeline() {
+        Pipeline testPipeline2 = new Pipeline();
+        testPipeline2.setName("Test");
+        testPipeline2.setRepository(TEST_REPO);
+        testPipeline2.setRepositorySsh(TEST_REPO_SSH);
+        testPipeline2.setOwner(TEST_USER);
+        pipelineDao.createPipeline(testPipeline2);
+        return testPipeline2;
+    }
+
+    private RunLog createLog(final PipelineRun run,
+                             final TaskStatus running,
+                             final String taskName) {
+        RunLog runLog = new RunLog();
+        runLog.setDate(DateUtils.now());
+        runLog.setLogText("Log");
+        runLog.setStatus(running);
+        runLog.setRunId(run.getId());
+        runLog.setTaskName(taskName);
+        runLog.setTask(new PipelineTask(taskName));
+        logDao.createRunLog(runLog);
+        return runLog;
+    }
+
+    private void validateLoadRunBooleanFieldValue(final boolean expectedFieldValue,
+                                                  final PipelineRun run,
+                                                  final Function<PipelineRun, Boolean> fieldFunction) {
+        assertEquals(expectedFieldValue, fieldFunction.apply(pipelineRunDao.loadPipelineRun(run.getId())));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.loadPipelineRuns(Collections.singletonList(run.getId())).get(0)));
+        final PagingRunFilterVO pagingRunFilterVO = new PagingRunFilterVO();
+        pagingRunFilterVO.setPage(1);
+        pagingRunFilterVO.setPageSize(TEST_PAGE_SIZE);
+        pagingRunFilterVO.setPipelineIds(Collections.singletonList(run.getPipelineId()));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.searchPipelineRuns(pagingRunFilterVO).get(0)));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
     }
 
 }

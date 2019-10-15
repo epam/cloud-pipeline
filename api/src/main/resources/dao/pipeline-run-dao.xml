@@ -158,26 +158,27 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        FALSE as queued,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = :RUN_ID AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = :RUN_ID AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = ? AND task_name = ?) tasks ON tasks.run_id = r.run_id
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE run_id = ? AND task_name = ?) init_node_tasks ON init_node_tasks.run_id = r.run_id
                     WHERE
-                        r.run_id = ?
+                        r.run_id = :RUN_ID
                     ORDER BY
                         r.start_date
                 ]]>
@@ -984,18 +985,25 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        FALSE as queued,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = r.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = r.run_id
                     @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -1066,18 +1074,25 @@
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        FALSE as queued,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = runs.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
                     WHERE runs.run_id IN (:list)
                 ]]>
             </value>
@@ -1225,18 +1240,25 @@
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        FALSE as queued,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = runs.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline.pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
                  ]]>
             </value>
         </property>

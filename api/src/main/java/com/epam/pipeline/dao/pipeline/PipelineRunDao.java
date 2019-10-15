@@ -138,9 +138,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun loadPipelineRun(Long id) {
-        List<PipelineRun> items = getJdbcTemplate().query(loadRunByIdQuery,
-                PipelineRunParameters.getExtendedRowMapper(), initTaskStatus.ordinal(), initTaskName, id,
-                nodeUpTaskName, id);
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.RUN_ID.name(), id);
+        addTaskStatusParams(params);
+
+        List<PipelineRun> items = getNamedParameterJdbcTemplate().query(loadRunByIdQuery, params,
+                PipelineRunParameters.getExtendedRowMapper());
         if (!items.isEmpty()) {
             PipelineRun pipelineRun = items.get(0);
             List<RunSid> runSids = getJdbcTemplate().query(loadRunSidsQuery,
@@ -168,9 +171,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("list", runIds);
-        params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
-        params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
-        params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
+        addTaskStatusParams(params);
         return getNamedParameterJdbcTemplate().query(loadPipelineRunsWithPipelineByIdsQuery,
                 params,
                 PipelineRunParameters.getExtendedRowMapper());
@@ -377,9 +378,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("LIMIT", filter.getPageSize());
         params.addValue("OFFSET", (filter.getPage() - 1) * filter.getPageSize());
-        params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
-        params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
-        params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
+        addTaskStatusParams(params);
         return params;
     }
 
@@ -584,6 +583,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public void updateProlongIdleRunAndLastIdleNotificationTime(PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateProlongedAtTimeAndLastIdleNotificationTimeQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
+    }
+
+    private void addTaskStatusParams(MapSqlParameterSource params) {
+        params.addValue(PipelineRunParameters.TASK_NAME.name(), initTaskName);
+        params.addValue(PipelineRunParameters.TASK_STATUS.name(), initTaskStatus.ordinal());
+        params.addValue(PipelineRunParameters.NODEUP_TASK.name(), nodeUpTaskName);
     }
 
     public enum PipelineRunParameters {
