@@ -39,11 +39,13 @@ import java.util.stream.Collectors;
 public class BulkRequestSender {
 
     private static final int DEFAULT_BULK_SIZE = 1000;
+    private static final int MAX_PARTITION_SIZE = 200;
+    private static final int MIN_PARTITION_SIZE = 10;
     private final ElasticsearchServiceClient elasticsearchClient;
     private final BulkResponsePostProcessor responsePostProcessor;
 
     private ResponseIdConverter idConverter = new ResponseIdConverter() {};
-    private int bulkSize = DEFAULT_BULK_SIZE;
+    private int currentBulkSize = DEFAULT_BULK_SIZE;
 
     public BulkRequestSender(final ElasticsearchServiceClient elasticsearchClient,
                              final BulkResponsePostProcessor responsePostProcessor,
@@ -56,7 +58,16 @@ public class BulkRequestSender {
                                final PipelineEvent.ObjectType objectType,
                                final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart) {
-        indexDocuments(indexName, Collections.singletonList(objectType), documentRequests, syncStart);
+        indexDocuments(indexName, objectType, documentRequests, syncStart, currentBulkSize);
+
+    }
+
+    public void indexDocuments(final String indexName,
+                               final PipelineEvent.ObjectType objectType,
+                               final List<DocWriteRequest> documentRequests,
+                               final LocalDateTime syncStart,
+                               final int bulkSize) {
+        indexDocuments(indexName, Collections.singletonList(objectType), documentRequests, syncStart, bulkSize);
 
     }
 
@@ -64,7 +75,19 @@ public class BulkRequestSender {
                                final List<PipelineEvent.ObjectType> objectTypes,
                                final List<DocWriteRequest> documentRequests,
                                final LocalDateTime syncStart) {
-        ListUtils.partition(documentRequests, bulkSize)
+        indexDocuments(indexName, objectTypes, documentRequests, syncStart, currentBulkSize);
+
+    }
+
+
+    public void indexDocuments(final String indexName,
+                               final List<PipelineEvent.ObjectType> objectTypes,
+                               final List<DocWriteRequest> documentRequests,
+                               final LocalDateTime syncStart,
+                               final int bulkSize) {
+        final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
+                                              Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
+        ListUtils.partition(documentRequests, partitionSize)
                 .forEach(chunk -> indexChunk(indexName, chunk, objectTypes, syncStart));
 
     }
@@ -82,7 +105,8 @@ public class BulkRequestSender {
             return;
         }
         Arrays.stream(response.getItems())
-                .collect(Collectors.groupingBy(idConverter::getId))
-                .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
+            .filter(item -> !item.isFailed())
+            .collect(Collectors.groupingBy(idConverter::getId))
+            .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
     }
 }

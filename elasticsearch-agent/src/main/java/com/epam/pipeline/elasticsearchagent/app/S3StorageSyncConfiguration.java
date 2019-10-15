@@ -77,12 +77,14 @@ public class S3StorageSyncConfiguration {
             final PipelineEventDao eventDao,
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
-            final @Value("${sync.s3-storage.index.mapping}") String s3StorageMapping) {
+            final @Value("${sync.s3-storage.index.mapping}") String s3StorageMapping,
+            final @Value("${sync.load.common.entity.chunk.size:1000}") int chunkSize) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.S3,
                 s3StorageMapping,
                 s3EventConverter,
                 indexService,
-                requestSender);
+                requestSender,
+                chunkSize);
     }
 }

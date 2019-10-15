@@ -38,38 +38,39 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
     private final EventToRequestConverter converter;
     private final ElasticIndexService indexService;
     private final BulkRequestSender bulkRequestSender;
+    private final int chunkSize;
 
     @Override
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
-        try {
-            log.debug("Starting to synchronize {} entities", objectType);
-            final List<PipelineEvent> pipelineEvents = pipelineEventDao
-                    .loadPipelineEventsByObjectType(objectType, syncStart);
-
-            log.debug("Loaded {} events for {}", pipelineEvents.size(), objectType);
-            final List<PipelineEvent> mergeEvents = EventProcessorUtils.mergeEvents(pipelineEvents);
-            if (mergeEvents.isEmpty()) {
-                log.debug("{} entities for synchronization were not found.", objectType);
-                return;
-            }
-
-            log.debug("Merged {} events for {}", mergeEvents.size(), objectType);
-
-            final String indexName = converter.buildIndexName();
-            indexService.createIndexIfNotExist(indexName, indexMappingFile);
-
-            final List<DocWriteRequest> documentRequests = converter.convertEventsToRequest(mergeEvents, indexName);
-            if (CollectionUtils.isEmpty(documentRequests)) {
-                log.debug("No index requests created for {}", objectType);
-                return;
-            }
-            log.debug("Creating {} requests for {} entity.", documentRequests.size(), objectType);
-            bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart);
-            log.debug("Successfully finished {} synchronization.", objectType);
-        } catch (Exception e) {
-            log.error("An error during {} synchonization: {}", objectType, e.getMessage());
-            log.error(e.getMessage(), e);
+        log.debug("Starting to synchronize {} entities", objectType);
+        final List<PipelineEvent> pipelineEvents =pipelineEventDao
+                    .loadPipelineEventsByObjectType(objectType, syncStart, chunkSize);
+        log.debug("Loaded {} events for {}", pipelineEvents.size(), objectType);
+        final List<PipelineEvent> mergeEvents = EventProcessorUtils.mergeEvents(pipelineEvents);
+        if (mergeEvents.isEmpty()) {
+            log.debug("{} entities for synchronization were not found.", objectType);
+            return;
         }
+        log.debug("Merged {} events for {}", mergeEvents.size(), objectType);
+
+        final String indexName;
+        try {
+            indexName = converter.buildIndexName();
+            indexService.createIndexIfNotExist(indexName, indexMappingFile);
+        } catch (Exception e) {
+            log.error("An error during {} synchronization: {}", objectType, e.getMessage());
+            log.error(e.getMessage(), e);
+            return;
+        }
+
+        final List<DocWriteRequest> documentRequests = converter.convertEventsToRequest(mergeEvents, indexName);
+        if (CollectionUtils.isEmpty(documentRequests)) {
+            log.debug("No index requests created for {}", objectType);
+            return;
+        }
+        log.debug("Creating {} requests for {} entity.", documentRequests.size(), objectType);
+        bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart, chunkSize);
+        log.debug("Successfully finished {} synchronization.", objectType);
     }
 }

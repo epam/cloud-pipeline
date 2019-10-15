@@ -20,9 +20,11 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,13 +52,20 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
                                                               final LocalDateTime before) {
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
+        return loadPipelineEventsByObjectType(objectType, before, -1);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
+                                                              final LocalDateTime before, final int rowLimit) {
+        final MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue(PipelineEventsParameters.OBJECT_TYPE.name(), objectType.getDbName());
         parameterSource.addValue(PipelineEventsParameters.STAMP.name(),
                 OffsetDateTime.of(before, ZoneOffset.ofHours(0)));
-        List<PipelineEvent> pipelineEvents = getNamedParameterJdbcTemplate()
-                .query(loadAllEventsByObjectTypeQuery,
-                        parameterSource, PipelineEventsParameters.getRowMapper());
+        final NamedParameterJdbcTemplate template = getNamedParameterJdbcTemplate();
+        ((JdbcTemplate) template.getJdbcOperations()).setMaxRows(rowLimit);
+        final List<PipelineEvent> pipelineEvents =
+            template.query(loadAllEventsByObjectTypeQuery, parameterSource, PipelineEventsParameters.getRowMapper());
         return ListUtils.emptyIfNull(pipelineEvents);
     }
 
