@@ -70,6 +70,6 @@ public class PipelineCodeMapper {
     private String buildFileContent(final String fullContent) {
         return fullContent.length() < maxDocChars
                ? fullContent
-               : null;
+               : fullContent.substring(0, maxDocChars);
     }
 }

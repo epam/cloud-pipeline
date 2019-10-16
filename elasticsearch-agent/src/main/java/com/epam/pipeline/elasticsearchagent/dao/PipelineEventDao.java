@@ -20,11 +20,9 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,20 +50,20 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
                                                               final LocalDateTime before) {
-        return loadPipelineEventsByObjectType(objectType, before, -1);
+        return loadPipelineEventsByObjectType(objectType, before, null);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
-                                                              final LocalDateTime before, final int rowLimit) {
+                                                              final LocalDateTime before, final Integer rowLimit) {
         final MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue(PipelineEventsParameters.OBJECT_TYPE.name(), objectType.getDbName());
         parameterSource.addValue(PipelineEventsParameters.STAMP.name(),
                 OffsetDateTime.of(before, ZoneOffset.ofHours(0)));
-        final NamedParameterJdbcTemplate template = getNamedParameterJdbcTemplate();
-        ((JdbcTemplate) template.getJdbcOperations()).setMaxRows(rowLimit);
-        final List<PipelineEvent> pipelineEvents =
-            template.query(loadAllEventsByObjectTypeQuery, parameterSource, PipelineEventsParameters.getRowMapper());
+        parameterSource.addValue(PipelineEventsParameters.LIMIT.name(), rowLimit);
+        final List<PipelineEvent> pipelineEvents = getNamedParameterJdbcTemplate()
+                .query(loadAllEventsByObjectTypeQuery,
+                        parameterSource, PipelineEventsParameters.getRowMapper());
         return ListUtils.emptyIfNull(pipelineEvents);
     }
 
@@ -95,7 +93,8 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
         STAMP,
         OBJECT_TYPE,
         OBJECT_ID,
-        DATA;
+        DATA,
+        LIMIT;
 
 
         static RowMapper<PipelineEvent> getRowMapper() {
