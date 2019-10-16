@@ -39,6 +39,10 @@ spec:
               name: api-pipe-templates
             - mountPath: ${CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT}
               name: api-folder-templates
+            - mountPath: ${CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT}
+              name: api-error-templates
+            - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
+              name: api-static-assets
             - mountPath: /opt/idp/pki
               name: idp-pki
             - mountPath: /opt/common/pki
@@ -85,6 +89,12 @@ spec:
         - name: api-folder-templates
           hostPath:
             path: /opt/api/templates/folder-templates
+        - name: api-error-templates
+          hostPath:
+            path: /opt/api/templates/error-templates
+        - name: api-static-assets
+          hostPath:
+            path: /opt/api/templates/static
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki
