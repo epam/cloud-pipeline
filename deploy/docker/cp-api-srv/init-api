@@ -238,6 +238,12 @@ update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EX
 update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
 update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
 
+# Add any other static assets
+if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
+    echo "Importing static assets from $CP_PREF_API_STATIC_DIRECTORY_EXT to $CP_API_SRV_STATIC_DIR"
+    \cp -r "$CP_PREF_API_STATIC_DIRECTORY_EXT/*" "$CP_API_SRV_STATIC_DIR/"
+fi
+
 # Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
