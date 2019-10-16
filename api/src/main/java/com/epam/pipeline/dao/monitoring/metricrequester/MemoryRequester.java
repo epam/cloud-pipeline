@@ -82,7 +82,8 @@ public class MemoryRequester extends AbstractMetricRequester {
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
         return request(from, to,
-                nodeStatsQuery(nodeName, from, to)
+                statsQuery(nodeName, NODE, from, to)
+                        .size(0)
                         .aggregation(dateHistogram(MEMORY_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_UTILIZATION, USAGE))
                                 .subAggregation(average(AVG_AGGREGATION + MEMORY_CAPACITY, NODE_CAPACITY))));
