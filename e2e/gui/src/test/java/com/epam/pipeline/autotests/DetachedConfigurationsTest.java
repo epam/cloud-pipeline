@@ -484,6 +484,7 @@ public class DetachedConfigurationsTest
                     .selectValue(INSTANCE_TYPE, instanceType)
                     .selectValue(PRICE_TYPE, priceType)
                     .click(SAVE)
+                    .sleep(2, SECONDS)
             )
             .configurationWithin(configuration1544, configuration ->
                 configuration
@@ -548,6 +549,7 @@ public class DetachedConfigurationsTest
             .configurationWithin(configuration1611, configuration ->
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
                     .click(SAVE)
+                    .sleep(2, SECONDS)
             )
             .refresh()
             .configurationWithin(configuration1611, configuration ->
