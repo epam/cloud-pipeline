@@ -250,7 +250,19 @@ mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
 nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+APP_PID="$!"
 
 sleep 5
 
-tail -F $API_RUN_TIME_LOG
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $API_RUN_TIME_LOG &
+wait "$!"
