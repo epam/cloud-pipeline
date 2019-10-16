@@ -40,10 +40,6 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f data-sharing-service.jar); sleep 1"]
       volumes:
         - name: share-pki
           hostPath:

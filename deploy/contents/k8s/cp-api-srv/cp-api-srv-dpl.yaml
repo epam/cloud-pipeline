@@ -69,10 +69,15 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f pipeline.jar); sleep 1"]
+          livenessProbe:
+            httpGet:
+              path: /pipeline/launch.sh
+              port: 8080
+              scheme: HTTPS
+            # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
+            initialDelaySeconds: 150
+            periodSeconds: 15
+            failureThreshold: 4
       volumes:
         - name: api-pki
           hostPath:

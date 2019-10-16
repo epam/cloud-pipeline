@@ -83,6 +83,7 @@ echo "$NGINX_CONF" > /etc/nginx/nginx.conf
 
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
+WETTY_PID="$!"
 
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
@@ -93,5 +94,19 @@ crond
 # Start nginx
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
-# Pring wetty and cron logs to the stdout
-tail -f /var/log/wetty.log -f /var/log/sync-routes.log
+sleep 5
+
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), quitting nginx and exiting"
+    if [ $WETTY_PID -ne 0 ]; then
+        kill -SIGTERM "$WETTY_PID"
+        wait "$WETTY_PID"
+    fi
+    nginx -s quit
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+# Print wetty and cron logs to the stdout
+tail -f /var/log/wetty.log -f /var/log/sync-routes.log &
+wait "$!"

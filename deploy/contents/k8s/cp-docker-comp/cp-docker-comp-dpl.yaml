@@ -29,10 +29,6 @@ spec:
           volumeMounts:
             - mountPath: ${CP_DOCKER_COMP_WORKING_DIR}
               name: docker-comp-wd
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f docker-comp-scan.jar); sleep 1"]
       volumes:
         - name: docker-comp-wd
           hostPath:
