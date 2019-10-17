@@ -23,6 +23,7 @@ $_ANACONDA_HOME/bin/conda install -y -n ${_ANACONDA_ENVIRONMENT} 'numpy' \
                                                                  'scipy' \
                                                                  'matplotlib' \
                                                                  'pandas' \
-                                                                 'jupyter'
+                                                                 'jupyter' \
+                                                                 'pyspark'
 
 $_ANACONDA_HOME/bin/conda clean -a -y

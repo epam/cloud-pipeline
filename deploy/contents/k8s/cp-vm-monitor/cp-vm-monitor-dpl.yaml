@@ -32,10 +32,6 @@ spec:
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f vm-monitor.jar); sleep 1"]
       volumes:
         - name: vm-monitor-logs
           hostPath:

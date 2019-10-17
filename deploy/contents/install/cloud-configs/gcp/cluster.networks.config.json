@@ -9,6 +9,12 @@
       "proxies": [
         ${CP_PREF_CLUSTER_PROXIES}
       ],
+      "swap": [
+        {
+          "name": "swap_ratio",
+          "path": "0.01"
+        }
+      ],
       "amis": [
         {
           "instance_mask": "gpu-*",

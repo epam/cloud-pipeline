@@ -57,17 +57,15 @@ public class AclAspect {
     @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
             + "execution(* *.create(..))", returning = RETURN_OBJECT)
     @Transactional(propagation = Propagation.REQUIRED)
-    public void createAclIdentity(JoinPoint joinPoint, AbstractSecuredEntity entity) {
-        if (entity.getOwner().equals(AuthManager.UNAUTHORIZED_USER)) {
-            return;
+    public void createAclIdentity(JoinPoint joinPoint, Object entity) {
+        if (entity instanceof AbstractSecuredEntity) {
+            createEntity((AbstractSecuredEntity)entity);
+        } else if (entity instanceof SecuredEntityDelegate) {
+            SecuredEntityDelegate delegate = (SecuredEntityDelegate) entity;
+            Optional.ofNullable(delegate.toDelegate()).ifPresent(this::createEntity);
+        } else {
+            LOGGER.debug("Unexpected class for ACL synchronization: {}.", entity.getClass());
         }
-        LOGGER.debug("Creating ACL Object {} {}", entity.getName(), entity.getClass());
-        MutableAcl acl = aclService.createAcl(entity);
-        if (entity.getParent() != null) {
-            updateParent(entity, acl);
-        }
-        // owner has all permissions for a new object
-        entity.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
     }
 
     @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
@@ -147,6 +145,18 @@ public class AclAspect {
         permissionManager.extendFilter(filter);
     }
 
+    private void createEntity(final AbstractSecuredEntity entity) {
+        if (entity.getOwner().equals(AuthManager.UNAUTHORIZED_USER)) {
+            return;
+        }
+        LOGGER.debug("Creating ACL Object {} {}", entity.getName(), entity.getClass());
+        MutableAcl acl = aclService.createAcl(entity);
+        if (entity.getParent() != null) {
+            updateParent(entity, acl);
+        }
+        // owner has all permissions for a new object
+        entity.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
+    }
 
     private void updateParent(AbstractSecuredEntity entity, MutableAcl acl) {
         MutableAcl parentAcl = aclService.getOrCreateObjectIdentity(entity.getParent());

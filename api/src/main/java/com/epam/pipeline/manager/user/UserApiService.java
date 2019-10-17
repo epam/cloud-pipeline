@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.entity.user.CustomControl;
+import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -53,6 +54,33 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public PipelineUser updateUser(final Long id, final PipelineUserVO userVO) {
         return userManager.updateUser(id, userVO);
+    }
+
+    /**
+     * Updates `blocked` field of given user
+     * @param id id of the user to be updated
+     * @param blockStatus boolean condition of user (true - blocked, false - not blocked)
+     * @return updated user
+     */
+    @PreAuthorize(ADMIN_ONLY)
+    public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
+        return userManager.updateUserBlockingStatus(id, blockStatus);
+    }
+
+    /**
+     * Updates `blocked` field of a given group or creates a new group status if no such exists
+     * @param groupName name of the group to be updated
+     * @param blockStatus boolean condition of group (true - blocked, false - not blocked)
+     * @return created/updated groupStatus
+     */
+    @PreAuthorize(ADMIN_ONLY)
+    public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
+        return userManager.upsertGroupBlockingStatus(groupName, blockStatus);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public GroupStatus deleteGroupBlockingStatus(final String groupName) {
+        return userManager.deleteGroupBlockingStatus(groupName);
     }
 
     @PreAuthorize(ADMIN_ONLY)

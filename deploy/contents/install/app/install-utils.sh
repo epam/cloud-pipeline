@@ -34,6 +34,63 @@ function id_from_arn {
     echo $arn | cut -d/ -f2
 }
 
+# Will return amount of availble disk volume, mounted to the "$1" location
+# If "$1" is not specified - "/" will be used by default
+function get_available_disk {
+    local mount_path="${1:-/}"
+    if [ -d "$mount_path" ]; then
+        df -m "$mount_path" | sed 1d | awk '{ print $4 }'
+    else
+        echo "0"
+    fi
+}
+
+function check_enough_disk {
+    local min_disk="$1"
+    shift
+    local mount_locations="$@"
+
+    for location in $mount_locations; do
+        if [ ! -d "$location" ]; then
+            print_info "${location} does not exist, skipping free disk volume check"
+            continue
+        fi
+        local location_free_volume="$(get_available_disk "$location")"
+        print_info "${location} has ${location_free_volume}MB free (required: ${min_disk}MB)"
+        (( "$location_free_volume" < "$min_disk" )) && return 1
+    done
+    return 0
+}
+
+function str_to_lower_case {
+    local str="$1"
+    [ -z "$str" ] && return
+    
+    echo "$str" | tr '[:upper:]' '[:lower:]'
+}
+
+# Converts any existing environment variable name to the lower case
+function var_to_lower_case {
+    local var_name="$1"
+    [ -z "$var_name" ] && return
+
+    local var_value="${!var_name}"
+    var_name_lower="$(str_to_lower_case "$var_name")"
+    unset "$var_name"
+    unset "$var_name_lower"
+    declare -xg "${var_name_lower}"="${var_value}"
+}
+
+# In certain cases - upper case http(s)/no_proxy variables are not consumed correctly
+# But it is common to see such approach, during the installation startup
+# So we rewrite them to the lower case
+function fix_http_proxies {
+    var_to_lower_case "HTTP_PROXY"
+    var_to_lower_case "HTTPS_PROXY"
+    var_to_lower_case "FTP_PROXY"
+    var_to_lower_case "NO_PROXY"
+}
+
 function escape_comma_separated_values {
     local value="$1"
     IFS="," read -ra v_arr <<< "$value"
@@ -60,6 +117,7 @@ function run_preflight {
         print_err "Unsopported Linux distribution. Centos 7 and above shall be used"
         return 1
     fi
+    fix_http_proxies
     return 0
 }
 

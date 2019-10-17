@@ -89,13 +89,15 @@ fi
 echo "Importing SHARE SSL cert into global java keystore"
 /update-trust $CP_SHARE_SRV_CERT_DIR/ssl-public-cert.pem "cp-share-srv"
 
-echo "Importing IdP signing cert into Share keystore"
+CP_SHARE_SRV_IDP_CERT_PATH="${CP_SHARE_SRV_IDP_CERT_PATH:-$CP_IDP_CERT_DIR}"
+IDP_CERT_PATH=$CP_SHARE_SRV_IDP_CERT_PATH/idp-public-cert.pem
+echo "Importing IdP signing cert into Share keystore from $IDP_CERT_PATH"
 keytool  -import \
          -keystore $CP_SHARE_HOME/keystore/store.jks \
          -storepass changeit \
          -noprompt \
          -alias idp \
-         -file $CP_IDP_CERT_DIR/idp-public-cert.pem
+         -file $IDP_CERT_PATH
 
 
 # Configure logging and launch
@@ -104,7 +106,19 @@ mkdir -p $(dirname $SHARE_RUN_TIME_LOG)
 touch $SHARE_RUN_TIME_LOG
 
 nohup java $CP_SHARE_SRV_JAVA_OPTS -jar data-sharing-service.jar &> $SHARE_RUN_TIME_LOG &
+APP_PID="$!"
 
 sleep 5
 
-tail -F $SHARE_RUN_TIME_LOG
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $SHARE_RUN_TIME_LOG &
+wait "$!"

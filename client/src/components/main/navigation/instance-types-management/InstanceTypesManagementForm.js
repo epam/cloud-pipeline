@@ -58,6 +58,7 @@ const valueNames = {
 export default class InstanceTypesManagementForm extends React.Component {
 
   static propTypes = {
+    disabled: PropTypes.bool,
     level: PropTypes.oneOf(['USER', 'TOOL', 'ROLE']),
     resourceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
@@ -133,8 +134,9 @@ export default class InstanceTypesManagementForm extends React.Component {
     }
   };
 
-  valueInputDecorator = (field) =>
+  valueInputDecorator = (field, disabled) =>
     <Input
+      disabled={disabled}
       style={{flex: 1}}
       value={this.getValue(field)}
       onChange={this.onValueChanged(field)} />;
@@ -208,6 +210,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     if (this.pending || this.state.operationInProgress) {
       return <LoadingView />;
     }
+    const {disabled} = this.props;
     return (
       <Row type="flex" style={{flex: 1, overflow: 'auto'}}>
         <div style={{padding: 2, width: '100%'}}>
@@ -220,14 +223,14 @@ export default class InstanceTypesManagementForm extends React.Component {
           {
             this.props.level !== 'TOOL' &&
             <Row type="flex">
-              {this.valueInputDecorator(valueNames.allowedInstanceTypes)}
+              {this.valueInputDecorator(valueNames.allowedInstanceTypes, disabled)}
             </Row>
           }
           <Row type="flex" style={{marginTop: 5}}>
             <b>Allowed tool instance types mask</b>
           </Row>
           <Row type="flex">
-            {this.valueInputDecorator(valueNames.allowedToolInstanceTypes)}
+            {this.valueInputDecorator(valueNames.allowedToolInstanceTypes, disabled)}
           </Row>
           <Row type="flex" style={{marginTop: 5}}>
             <b>Allowed price types</b>
@@ -237,7 +240,9 @@ export default class InstanceTypesManagementForm extends React.Component {
               mode="multiple"
               style={{flex: 1}}
               value={this.getPriceTypesValue()}
-              onChange={this.onPriceTypeChanged}>
+              onChange={this.onPriceTypeChanged}
+              disabled={disabled}
+            >
               <Select.Option
                 key="on_demand"
                 value="on_demand">
@@ -254,7 +259,7 @@ export default class InstanceTypesManagementForm extends React.Component {
             <Button
               type="primary"
               onClick={this.operationWrapper(this.onApplyClicked)}
-              disabled={!this.getModified() || this.state.operationInProgress}>
+              disabled={!this.getModified() || this.state.operationInProgress || disabled}>
               APPLY
             </Button>
           </Row>

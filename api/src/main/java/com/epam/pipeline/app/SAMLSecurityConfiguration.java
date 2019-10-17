@@ -105,7 +105,6 @@ import java.util.stream.Collectors;
 @Order(3)
 public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
-    private static final int MAX_AUTHENTICATION_AGE = 93600;
     private static final int RESPONSE_SKEW = 1200;
     private static final int LOGOUT_RESPONSE_SKEW = 120;
 
@@ -133,6 +132,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${saml.login.failure.redirect:/error}")
     private String loginFailureRedirect;
 
+    @Value("${saml.authn.max.authentication.age:93600}")
+    private Long maxAuthentificationAge;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -158,9 +160,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     public String[] getUnsecuredResources() {
         return new String[] {
-            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz", "/PipelineQSUB.tar.gz",
+            "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz",
             "/pipe-common.tar.gz", "/commit-run-scripts/**", "/restapi/**", "/pipe",
-            "/pipe-mount", "/error", "/error/**"
+            "/pipe-mount", "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip"
         };
     }
 
@@ -241,7 +243,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Bean
     public WebSSOProfileConsumer webSSOprofileConsumer() {
         WebSSOProfileConsumerImpl profileConsumer = new WebSSOProfileConsumerImpl();
-        profileConsumer.setMaxAuthenticationAge(MAX_AUTHENTICATION_AGE);
+        profileConsumer.setMaxAuthenticationAge(maxAuthentificationAge);
         profileConsumer.setResponseSkew(RESPONSE_SKEW);
         return profileConsumer;
     }

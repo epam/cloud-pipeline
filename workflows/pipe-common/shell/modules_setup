@@ -35,17 +35,13 @@ IS_RPM_BASED=$?
 # Dependencies first
 pipe_log_info "--> Installing Environment Modules" "$MODULES_INSTALL_TASK"
 
-if [ ! -z $CP_CAP_DISTR_MODULES_DEPS ]; then
-    local_package_install $CP_CAP_DISTR_MODULES_DEPS
+_MODULES_INSTALL_RESULT=1
+if [[ "$IS_RPM_BASED" = 0 ]]; then
+    yum -y -q install tcl-devel less
     _MODULES_INSTALL_RESULT=$?
 else
-    if [[ "$IS_RPM_BASED" = 0 ]]; then
-        yum -y -q install tcl-devel less
-        _MODULES_INSTALL_RESULT=$?
-    else
-        apt-get install tcl-dev less -y -qq
-        _MODULES_INSTALL_RESULT=$?
-    fi
+    apt-get install tcl-dev less -y -qq
+    _MODULES_INSTALL_RESULT=$?
 fi
 
 if [ $_MODULES_INSTALL_RESULT -ne 0 ]; then

@@ -31,6 +31,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
@@ -65,6 +66,7 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import RunTags from '../run-tags';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -93,17 +95,14 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runId: params.runId,
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
-    nestedRuns: pipelineRun.runFilter({
-      page: 1,
-      pageSize: MAX_NESTED_RUNS_TO_DISPLAY,
-      parentId: params.runId,
-      userModified: true
-    }, false),
+    nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
     runSSH: new PipelineRunSSH(params.runId),
+    runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     task,
     pipelines,
-    roles: new Roles()
+    roles: new Roles(),
+    routing
   };
 })
 @observer
@@ -404,6 +403,18 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
+      if (RunTags.shouldDisplayTags(run, true)) {
+        details.push({
+          key: 'tags',
+          value: (
+            <RunTags
+              run={run}
+              onlyKnown
+            />
+          ),
+          additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
+        });
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }
@@ -453,16 +464,17 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Row>
           Instance: {
-          details.map(d => {
-            return (
-              <span
-                key={d.key}
-                className={styles.instanceHeaderItem}>
-                {d.value}
-              </span>
-            );
-          })
-        }
+            details.map(d => {
+              return (
+                <span
+                  key={d.key}
+                  style={d.additionalStyle}
+                  className={styles.instanceHeaderItem}>
+                  {d.value}
+                </span>
+              );
+            })
+          }
         </Row>
       );
     }
@@ -472,6 +484,19 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance) {
+      if (RunTags.shouldDisplayTags(run)) {
+        const {routing: {location}} = this.props;
+        details.push({
+          key: 'Tags',
+          value: (
+            <RunTags
+              run={run}
+              location={location}
+              overflow={false}
+            />
+          )
+        });
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }
@@ -893,6 +918,22 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get fsBrowserEnabled () {
+    if (
+      this.props.run.loaded &&
+      this.props.runFSBrowser.loaded &&
+      this.initializeEnvironmentFinished &&
+      !this.isDtsEnvironment
+    ) {
+      const {status, podIP} = this.props.run.value;
+      return status.toLowerCase() === 'running' &&
+        roleModel.executeAllowed(this.props.run.value) &&
+        podIP;
+    }
+    return false;
+  }
+
+  @computed
   get endpointAvailable () {
     if (this.props.run.loaded && this.initializeEnvironmentFinished) {
       const {serviceUrl} = this.props.run.value;
@@ -1019,6 +1060,7 @@ class Logs extends localization.LocalizedReactComponent {
     let PauseResumeButton;
     let ActionButton;
     let SSHButton;
+    let FSBrowserButton;
     let ExportLogsButton;
     let SwitchTimingsButton;
     let SwitchModeButton;
@@ -1341,6 +1383,9 @@ class Logs extends localization.LocalizedReactComponent {
       if (this.sshEnabled) {
         SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
       }
+      if (this.fsBrowserEnabled) {
+        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+      }
 
       if (!(this.props.run.value.nodeCount > 0) &&
         !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
@@ -1429,7 +1474,7 @@ class Logs extends localization.LocalizedReactComponent {
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{ExportLogsButton}
+              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>

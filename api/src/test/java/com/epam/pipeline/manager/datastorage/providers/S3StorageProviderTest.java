@@ -93,8 +93,10 @@ public class S3StorageProviderTest extends AbstractSpringTest {
         final S3bucketDataStorage storage = new S3bucketDataStorage(1L, bucketName, bucketName);
         storage.setRegionId(REGION_ID);
         final String createdBucketName = s3StorageProvider.createStorage(storage);
-
         Assert.assertEquals(bucketName, createdBucketName);
+
+        s3StorageProvider.postCreationProcessing(storage);
+
         verify(amazonClient).setBucketCrossOriginConfiguration(any(), any());
     }
 }

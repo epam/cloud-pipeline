@@ -73,7 +73,7 @@ export default class MetadataFolder extends React.Component {
       {
         key: 'name',
         title: 'Name',
-        className: styles.treeItemName,
+        className: styles.metadataFolderItemName,
         render: (item) => this.renderItemName(item),
         onCellClick: (item) => this.navigate(item)
       }

@@ -119,7 +119,9 @@ export class LimitMountsInput extends React.Component {
           visible={this.state.limitMountsDialogVisible}
           availableStorages={this.availableStorages}
           selectedStorages={
-            this.selectedStorages.length ? this.selectedStorages : this.availableStorages
+            this.selectedStorages.length
+              ? this.selectedStorages.map(s => s.id)
+              : this.availableStorages.map(s => s.id)
           }
           onCancel={this.onCancelLimitMountsDialog}
           onSave={this.onSaveLimitMountsDialog}

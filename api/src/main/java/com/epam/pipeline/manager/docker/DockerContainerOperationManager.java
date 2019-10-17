@@ -302,9 +302,10 @@ public class DockerContainerOperationManager {
         return configuration;
     }
 
-    private Map<String,String> getResumeRunEnvVars(final PipelineConfiguration configuration) {
+    private Map<String, String> getResumeRunEnvVars(final PipelineConfiguration configuration) {
         final Map<String, String> envs = configuration.getEnvironmentParams();
-        final Map<String, String> resumeEnvVar = Collections.singletonMap(SystemParams.RESUMED_RUN.getEnvName(), "true");
+        final Map<String, String> resumeEnvVar = Collections.singletonMap(
+                SystemParams.RESUMED_RUN.getEnvName(), "true");
         if (MapUtils.isEmpty(envs)) {
             return resumeEnvVar;
         }

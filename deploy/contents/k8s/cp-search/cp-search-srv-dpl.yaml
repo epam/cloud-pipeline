@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-search-srv
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-search-srv
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-search-srv
+          image: lifescience/cloud-pipeline:search-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/search/logs
+              name: search-logs
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: search-logs
+          hostPath:
+            path: /opt/search/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

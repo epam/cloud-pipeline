@@ -33,7 +33,7 @@ export default class AdaptedLink extends Component {
       additionalProps.id = this.props.id;
     }
     return (
-      to === pathinfo
+      !to || (pathinfo && to === pathinfo)
         ? <span {...additionalProps}>{children}</span>
         : <Link {...additionalProps} to={to} onClick={(e) => e.stopPropagation()}>{children}</Link>
     );

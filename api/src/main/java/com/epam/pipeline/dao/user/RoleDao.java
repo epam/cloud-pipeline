@@ -91,21 +91,21 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
     public Collection<Role> loadAllRoles(boolean loadUsers) {
         return loadUsers ?
                 new ArrayList<>(getJdbcTemplate().query(loadRolesWithUsersQuery,
-                        RoleParameters.getExtendedRowExtractor())) :
-                getJdbcTemplate().query(loadAllRolesQuery, RoleParameters.getRowMapper());
+                        RoleParameters.getExtendedRowExtractor(true))) :
+                getJdbcTemplate().query(loadAllRolesQuery, RoleParameters.getRowMapper(true));
     }
 
     public List<Role> loadUserDefaultRoles() {
-        return getJdbcTemplate().query(loadUserDefaultRolesQuery, RoleParameters.getRowMapper());
+        return getJdbcTemplate().query(loadUserDefaultRolesQuery, RoleParameters.getRowMapper(false));
     }
 
     public List<Role> loadRolesByStorageId(Long storageId) {
-        return getJdbcTemplate().query(loadRolesByStorageIdQuery, RoleParameters.getRowMapper(), storageId);
+        return getJdbcTemplate().query(loadRolesByStorageIdQuery, RoleParameters.getRowMapper(false), storageId);
     }
 
     public ExtendedRole loadExtendedRole(Long roleId) {
         Collection<ExtendedRole> roles = getJdbcTemplate()
-                .query(loadRoleWithUsersQuery, RoleParameters.getExtendedRowExtractor(), roleId);
+                .query(loadRoleWithUsersQuery, RoleParameters.getExtendedRowExtractor(true), roleId);
         return CollectionUtils.isEmpty(roles) ? null : roles.stream().findFirst().orElse(null);
     }
 
@@ -119,13 +119,13 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
 
     private Optional<Role> loadRoleByParameter(Object parameter, String loadRoleQuery) {
         List<Role> result =
-                getJdbcTemplate().query(loadRoleQuery, RoleParameters.getRowMapper(), parameter);
+                getJdbcTemplate().query(loadRoleQuery, RoleParameters.getRowMapper(false), parameter);
         return result.stream().findFirst();
     }
 
     public List<Role> loadRolesList(List<Long> ids) {
         return getNamedParameterJdbcTemplate().query(loadRoleListQuery,
-                RoleParameters.getIdListParameters(ids), RoleParameters.getRowMapper());
+                RoleParameters.getIdListParameters(ids), RoleParameters.getRowMapper(false));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -139,7 +139,8 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
         ROLE_PREDEFINED,
         ROLE_USER_DEFAULT,
         IDS,
-        ROLE_DEFAULT_STORAGE_ID;
+        ROLE_DEFAULT_STORAGE_ID,
+        GROUP_BLOCKED;
 
         private static MapSqlParameterSource getParameters(Role role) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -157,14 +158,14 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-        private static RowMapper<Role> getRowMapper() {
+        private static RowMapper<Role> getRowMapper(final boolean getGroupStatus) {
             return (rs, rowNum) -> {
                 Role role = new Role();
-                return parseRole(rs, role);
+                return parseRole(rs, role, getGroupStatus);
             };
         }
 
-        static Role parseRole(ResultSet rs, Role role) throws SQLException {
+        static Role parseRole(ResultSet rs, Role role, boolean getGroupStatus) throws SQLException {
             role.setId(rs.getLong(ROLE_ID.name()));
             role.setName(rs.getString(ROLE_NAME.name()));
             role.setPredefined(rs.getBoolean(ROLE_PREDEFINED.name()));
@@ -173,10 +174,14 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
             if (!rs.wasNull()) {
                 role.setDefaultStorageId(defaultStorageId);
             }
+            if (getGroupStatus) {
+                final boolean groupStatus = rs.getBoolean(GROUP_BLOCKED.name());
+                role.setBlocked(!rs.wasNull() && groupStatus);
+            }
             return role;
         }
 
-        static ResultSetExtractor<Collection<ExtendedRole>> getExtendedRowExtractor() {
+        static ResultSetExtractor<Collection<ExtendedRole>> getExtendedRowExtractor(final boolean getGroupStatus) {
             return (rs) -> {
                 Map<Long, ExtendedRole> roles = new HashMap<>();
                 while (rs.next()) {
@@ -184,7 +189,7 @@ public class RoleDao extends NamedParameterJdbcDaoSupport {
                     ExtendedRole role = roles.get(roleId);
                     if (role == null) {
                         role = new ExtendedRole();
-                        parseRole(rs, role);
+                        parseRole(rs, role, getGroupStatus);
                         role.setUsers(new ArrayList<>());
                         roles.put(roleId, role);
                     }

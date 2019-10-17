@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +22,6 @@ FS_SETUP_TASK="InitializeSharedFS"
 pipe_log_info "Started cluster shared FS setup" "$FS_SETUP_TASK"
 
 
-
-
 ######################################################
 # Check input parameters
 ######################################################
@@ -35,8 +35,6 @@ then
     ALLOWED_CLIENTS="*"
     pipe_log_warn "List of allowed clients is not defined, defaulting to ALL(*)" "$FS_SETUP_TASK"
 fi
-
-
 
 
 ######################################################
@@ -54,13 +52,7 @@ else
     INSTALL_CMD="apt-get install nfs-kernel-server -y -qq"
 fi
 
-if [ ! -z $CP_CAP_DISTR_STORAGE_NFS ]; then
-    INSTALL_CMD="local_package_install $CP_CAP_DISTR_STORAGE_NFS"
-fi
-
 NFS_SRV_INSTALLED=$(eval "$CHECK_CMD")
-
-
 
 
 ######################################################

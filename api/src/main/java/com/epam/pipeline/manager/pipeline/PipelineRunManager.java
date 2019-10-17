@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
@@ -52,7 +53,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -173,7 +174,7 @@ public class PipelineRunManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
-    private CAdvisorMonitoringManager cAdvisorMonitoringManager;
+    private UsageMonitoringManager usageMonitoringManager;
 
     @Autowired
     private NodesManager nodesManager;
@@ -805,7 +806,7 @@ public class PipelineRunManager {
     public PipelineRun resumeRun(Long runId) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         verifyPipelineRunForPauseResume(pipelineRun, runId);
-
+        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
         if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
@@ -838,6 +839,27 @@ public class PipelineRunManager {
         pipelineRunDao.createRunSids(runId, runSids);
         pipelineRun.setRunSids(runSids);
         return pipelineRun;
+    }
+
+    /**
+     * Updates run's tags
+     * @param runId is ID of pipeline run which tags should be updated
+     * @param newTags object, containing a map with tags to set for a pipeline
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateTags(final Long runId, final TagsVO newTags) {
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        run.setTags(newTags.getTags());
+        pipelineRunDao.updateRunTags(run);
+        return run;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunsTags(final Collection<PipelineRun> runs) {
+        pipelineRunDao.updateRunsTags(runs);
     }
 
     /**
@@ -888,7 +910,7 @@ public class PipelineRunManager {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = cAdvisorMonitoringManager.getDiskAvailableForDocker(
+        final long availableDisk = usageMonitoringManager.getPodDiskSpaceAvailable(
                 pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())

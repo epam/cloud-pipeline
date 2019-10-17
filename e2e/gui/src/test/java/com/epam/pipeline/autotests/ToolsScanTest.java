@@ -293,7 +293,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .enablePolicyDenyNotScanned()
                         .setGraceHours("0")
                         .save()
-                        .sleep(1, SECONDS)
+                        .sleep(3, SECONDS)
                         .ok()
         );
         tools().perform(registry, group, group ->

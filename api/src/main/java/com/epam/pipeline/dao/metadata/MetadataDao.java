@@ -40,8 +40,10 @@ import java.util.stream.Collectors;
 
 public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
+    private static final String KEY = "KEY";
+    private static final String VALUE = "VALUE";
+
     private Pattern dataKeyPattern = Pattern.compile("@KEY@");
-    private Pattern dataValuePatten = Pattern.compile("@VALUE@");
     private Pattern entitiesValuePatten = Pattern.compile("@ENTITIES@");
 
     private String createMetadataItemQuery;
@@ -62,11 +64,10 @@ public class MetadataDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void uploadMetadataItemKey(EntityVO entityVO, String key, String value, String type) {
-        String query = dataKeyPattern.matcher(uploadMetadataItemKeyQuery)
-                .replaceFirst(String.format("'{%s}'", key));
-        query = dataValuePatten.matcher(query)
-                .replaceFirst(String.format("'{\"type\": \"%s\", \"value\": \"%s\"}'", type, value));
-        getNamedParameterJdbcTemplate().update(query, MetadataParameters.getParameters(entityVO));
+        MapSqlParameterSource parameters = MetadataParameters.getParameters(entityVO);
+        parameters.addValue(KEY, String.format("{%s}", key));
+        parameters.addValue(VALUE, JsonMapper.convertDataToJsonStringForQuery(new PipeConfValue(type, value)));
+        getNamedParameterJdbcTemplate().update(uploadMetadataItemKeyQuery, parameters);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

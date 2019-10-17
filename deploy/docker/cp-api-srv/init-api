@@ -83,7 +83,7 @@ function sign_win_executable() {
 
     local signed_exec_path="signed-$(basename "$exec_path")"
     if [ "$cert_pass" ]; then
-        local sign_with_pass_opt="-pass \"$cert_pass\""
+        local sign_with_pass_opt=(-pass "$cert_pass")
     fi
     
     # osslsigncode requires openssl v1.1.x which is not available in the system by default.
@@ -97,7 +97,8 @@ function sign_win_executable() {
                 -n "$cert_desc" \
                 -i "$cert_url" \
                 -in "$exec_path" \
-                -out "$signed_exec_path" $sign_with_pass_opt
+                -out "$signed_exec_path" \
+                "${sign_with_pass_opt[@]}"
 
     if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
         echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
@@ -222,18 +223,26 @@ fi
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
-echo "Importing IdP signing cert into API keystore"
+CP_API_SRV_IDP_CERT_PATH="${CP_API_SRV_IDP_CERT_PATH:-$CP_IDP_CERT_DIR}"
+IDP_CERT_PATH=$CP_API_SRV_IDP_CERT_PATH/idp-public-cert.pem
+echo "Importing IdP signing cert into API keystore from $IDP_CERT_PATH"
 keytool  -import \
          -keystore $CP_API_HOME/keystore/store.jks \
          -storepass changeit \
          -noprompt \
          -alias idp \
-         -file $CP_IDP_CERT_DIR/idp-public-cert.pem
+         -file $IDP_CERT_PATH
 
 # Update pipe/folder/error templates with any specific values (e.g. instance/vm size)
 update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
 update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
 update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
+
+# Add any other static assets
+if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
+    echo "Importing static assets from $CP_PREF_API_STATIC_DIRECTORY_EXT to $CP_API_SRV_STATIC_DIR"
+    \cp -r $CP_PREF_API_STATIC_DIRECTORY_EXT/* "$CP_API_SRV_STATIC_DIR/"
+fi
 
 # Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
@@ -241,7 +250,19 @@ mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
 nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+APP_PID="$!"
 
 sleep 5
 
-tail -F $API_RUN_TIME_LOG
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $API_RUN_TIME_LOG &
+wait "$!"

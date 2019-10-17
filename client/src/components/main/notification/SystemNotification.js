@@ -18,6 +18,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Row, Icon} from 'antd';
+import NotificationView from '../../special/notifications/controls/NotificationView';
 import styles from './SystemNotification.css';
 import displayDate from '../../../utils/displayDate';
 
@@ -125,7 +126,7 @@ export default class SystemNotification extends React.Component {
         <div className={styles.iconColumn}>
           {this.renderSeverityIcon()}
         </div>
-        <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+        <Row type="flex" style={{flex: 1, display: 'flex', flexDirection: 'column', wordBreak: 'break-word'}}>
           <Row type="flex" style={{
             marginBottom: 5,
             display: 'flex',
@@ -140,7 +141,9 @@ export default class SystemNotification extends React.Component {
           </Row>
           <Row>
             <span className={styles.body}>
-              {(this.props.notification.body || '').split('\n').map((line, index) => <p key={index}>{line}</p>)}
+              <NotificationView
+                text={this.props.notification.body}
+              />
             </span>
           </Row>
           <Row type="flex" justify="end">

@@ -39,7 +39,19 @@ touch $NOTIFIER_RUN_TIME_LOG
 
 cd $CP_NOTIFIER_HOME
 nohup java $CP_NOTIFIER_JAVA_OPTS -jar notifier.jar &> $NOTIFIER_RUN_TIME_LOG &
+APP_PID="$!"
 
 sleep 5
 
-tail -F $NOTIFIER_RUN_TIME_LOG
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $NOTIFIER_RUN_TIME_LOG &
+wait "$!"

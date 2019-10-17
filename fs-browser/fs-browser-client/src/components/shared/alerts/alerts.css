@@ -1,0 +1,34 @@
+.container {
+  position: absolute;
+  left: 50vw;
+  top: 5px;
+}
+
+.message {
+  width: 300px;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.25);
+  position: relative;
+  left: -150px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 5px;
+  z-index: 1;
+  background-color: white;
+}
+
+.message.warning {
+  border: 1px solid #ff908e;
+  background-color: #ffe4e9;
+}
+
+.icon {
+
+}
+
+.title {
+  flex: 1;
+}

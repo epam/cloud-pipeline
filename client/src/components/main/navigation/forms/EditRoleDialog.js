@@ -24,6 +24,7 @@ import UserFind from '../../../../models/user/UserFind';
 import RoleAssign from '../../../../models/user/RoleAssign';
 import RoleRemove from '../../../../models/user/RoleRemoveFromUser';
 import RoleUpdate from '../../../../models/user/RoleUpdate';
+import GroupBlock from '../../../../models/user/GroupBlock';
 import styles from './UserManagement.css';
 import roleModel from '../../../../utils/roleModel';
 import {
@@ -41,7 +42,7 @@ import InstanceTypesManagementForm from '../instance-types-management/InstanceTy
   roleId: params.role ? params.role.id : null
 }))
 @observer
-export default class EditRoleDialog extends React.Component {
+class EditRoleDialog extends React.Component {
   static propTypes = {
     visible: PropTypes.bool,
     role: PropTypes.shape({
@@ -49,6 +50,7 @@ export default class EditRoleDialog extends React.Component {
         PropTypes.string,
         PropTypes.number
       ]),
+      blocked: PropTypes.bool,
       name: PropTypes.string,
       predefined: PropTypes.bool
     }),
@@ -189,7 +191,12 @@ export default class EditRoleDialog extends React.Component {
         render: (user) => {
           return (
             <Row type="flex" justify="end">
-              <Button id="delete-user-button" size="small" type="danger" onClick={() => this.removeRole(user.id)}>
+              <Button
+                id="delete-user-button"
+                size="small"
+                type="danger"
+                onClick={() => this.removeRole(user.id)}
+              >
                 <Icon type="delete" />
               </Button>
             </Row>
@@ -264,17 +271,75 @@ export default class EditRoleDialog extends React.Component {
     }
   };
 
+  blockUnblockClicked = async () => {
+    if (!this.props.roleInfo || !this.props.roleInfo.loaded) {
+      return null;
+    }
+    const {blocked} = this.props.roleInfo.value;
+    const blockStatus = !blocked;
+    const blockGroup = async () => {
+      const hide = message.loading(
+        `${blockStatus ? 'Blocking' : 'Unblocking'} ${this.splitRoleName(this.props.role.name)}...`
+      );
+      const request = new GroupBlock(this.props.role.name, blockStatus);
+      await request.send({});
+      if (request.error) {
+        hide();
+        message.error(request.error, 5);
+      } else {
+        await this.props.roleInfo.fetch();
+        hide();
+      }
+    };
+    Modal.confirm({
+      title: `Are you sure you want to ${blockStatus ? 'block' : 'unblock'} ${this.splitRoleName(this.props.role.name)}?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        blockGroup();
+      }
+    });
+  };
+
   render () {
     if (!this.props.roleInfo) {
       return null;
+    }
+    let blocked = false;
+    if (this.props.roleInfo.loaded) {
+      blocked = this.props.roleInfo.value.blocked;
     }
     return (
       <Modal
         width="50%"
         closable={false}
-        title={this.props.role.predefined ? this.props.role.name : this.splitRoleName(this.props.role.name)}
+        title={(
+          <Row>
+            {
+              this.props.role.predefined
+                ? this.props.role.name
+                : this.splitRoleName(this.props.role.name)
+            }
+            {
+              blocked && (
+                <span
+                  style={{fontStyle: 'italic', marginLeft: 5}}
+                >
+                  - blocked
+                </span>
+              )
+            }
+          </Row>
+        )}
         footer={
-          <Row type="flex" justify="end">
+          <Row type="flex" justify="space-between">
+            <Button
+              id="edit-user-form-block-unblock"
+              type="danger"
+              onClick={this.operationWrapper(this.blockUnblockClicked)}>
+              {blocked ? 'UNBLOCK' : 'BLOCK'}
+            </Button>
             <Button
               id="close-edit-user-form"
               type="primary"
@@ -331,7 +396,12 @@ export default class EditRoleDialog extends React.Component {
                   this.dataStorages.map(d => {
                     return (
                       <Select.Option
-                        key={d.id} value={`${d.id}`} title={d.name} name={d.name} pathMask={d.pathMask}>
+                        key={d.id}
+                        value={`${d.id}`}
+                        title={d.name}
+                        name={d.name}
+                        pathMask={d.pathMask}
+                      >
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );
@@ -342,6 +412,7 @@ export default class EditRoleDialog extends React.Component {
             <Row type="flex" style={{marginBottom: 10}} align="middle">
               <div style={{flex: 1}} id="find-user-autocomplete-container">
                 <AutoComplete
+                  disabled={this.state.operationInProgress}
                   size="small"
                   style={{width: '100%'}}
                   placeholder="Search user"
@@ -364,7 +435,9 @@ export default class EditRoleDialog extends React.Component {
                   size="small"
                   onClick={this.assignRole}
                   disabled={
-                    this.state.selectedUser === null || this.state.selectedUser === undefined
+                    this.state.selectedUser === null ||
+                    this.state.selectedUser === undefined ||
+                    this.state.operationInProgress
                   }>
                   <Icon type="plus" /> Add user
                 </Button>
@@ -414,10 +487,12 @@ export default class EditRoleDialog extends React.Component {
               }
             ]}>
             <Metadata
+              readOnly={this.state.operationInProgress}
               key={METADATA_PANEL_KEY}
               entityId={this.props.role.id}
               entityClass="ROLE" />
             <InstanceTypesManagementForm
+              disabled={this.state.operationInProgress}
               key="INSTANCE_MANAGEMENT"
               resourceId={this.props.roleId}
               level="ROLE" />
@@ -427,3 +502,5 @@ export default class EditRoleDialog extends React.Component {
     );
   }
 }
+
+export default EditRoleDialog;

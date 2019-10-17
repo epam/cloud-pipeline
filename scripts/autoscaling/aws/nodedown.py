@@ -45,27 +45,30 @@ def run_id_filter(run_id):
                 'Values': [run_id]
            }
 
+def get_nodename(api, nodename):
+    node = pykube.Node.objects(api).filter(field_selector={'metadata.name': nodename})
+    if len(node.response['items']) > 0:
+        return nodename
+    else:
+        return ''
+
+def find_node(nodes, api):
+    for nodename in nodes:
+        ret_namenode = get_nodename(api, nodename)
+        if ret_namenode:
+            return ret_namenode
+    return ''
 
 def verify_regnode(ec2, ins_id, api):
     response = ec2.describe_instances(InstanceIds=[ins_id])
     nodename_full = response['Reservations'][0]['Instances'][0]['PrivateDnsName']
     nodename = nodename_full.split('.', 1)[0]
 
-    if find_node(api, nodename):
-        return nodename
+    ret_namenode = find_node([ins_id, nodename, nodename_full], api)    
 
-    if find_node(api, nodename_full):
-        return nodename_full
-
-    raise RuntimeError("Failed to find Node {}".format(ins_id))
-
-
-def find_node(api, node_name):
-    node = pykube.Node.objects(api).filter(field_selector={'metadata.name': node_name})
-    if len(node.response['items']) > 0:
-        return node_name
-    else:
-        return ''
+    if not ret_namenode:
+        raise RuntimeError("Failed to find Node {}".format(ins_id))
+    return ret_namenode
 
 
 def delete_kube_node(nodename, run_id, api):
@@ -74,6 +77,8 @@ def delete_kube_node(nodename, run_id, api):
         if len(nodes.response['items']) > 0:
             node = nodes.response['items'][0]
             nodename = node['metadata']['name']
+        else:
+            raise RuntimeError("Failed to find Node for Run ID {}".format(run_id))
     if nodename is not None:
         obj = {
             "apiVersion": "v1",
