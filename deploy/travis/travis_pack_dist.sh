@@ -35,7 +35,8 @@ mv client/build/* $API_STATIC_PATH/
 # Untar pipe-cli linux binary and tar.gz. Move them to the pipeline.jar static assets
 tar -zxf cli-linux.tgz
 mv pipe-cli/dist/PipelineCLI-* $API_STATIC_PATH/PipelineCLI.tar.gz
-mv pipe-cli/dist/pipe $API_STATIC_PATH/
+mv pipe-cli/dist/dist-file/pipe $API_STATIC_PATH/
+mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/
 
 # Untar pipe-cli windoes binary and move it to the pipeline.jar static assets
 tar -zxf cli-win.tgz

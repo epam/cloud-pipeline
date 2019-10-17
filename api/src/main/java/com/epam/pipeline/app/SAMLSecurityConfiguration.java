@@ -162,7 +162,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
         return new String[] {
             "/saml/web/**", "/launch.sh", "/PipelineCLI.tar.gz", "/PipelineQSUB.tar.gz",
             "/pipe-common.tar.gz", "/commit-run-scripts/**", "/restapi/**", "/pipe",
-            "/pipe-mount", "/error", "/error/**", "/pipe.zip"
+            "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz"
         };
     }
 

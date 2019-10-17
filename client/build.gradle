@@ -21,7 +21,7 @@ task buildUI(type: NpmTask) {
   dependsOn npmInstall
   doFirst {
     delete fileTree("$rootDir/api/src/main/resources/static/") {
-      exclude ('launch.sh', 'config.json', '*.tar.gz', 'pipe', 'pipe.zip', 'pipe-mount')
+      exclude ('launch.sh', 'config.json', '*.tar.gz', 'pipe', 'pipe.zip', 'pipe.tar.gz')
     }
   }
   args = ['run', 'build']
@@ -34,5 +34,3 @@ task buildUI(type: NpmTask) {
 
 
 }
-
-
