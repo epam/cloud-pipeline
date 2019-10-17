@@ -234,24 +234,9 @@ export default class CLIForm extends React.Component {
 
     return (
       <div>
-        <Row>
-          <Alert
-            type="info"
-            message={
-              <Row type="flex" align="middle">
-                <Icon
-                  type="exclamation-circle-o"
-                  style={{
-                    fontSize: 'large',
-                    marginRight: 10,
-                    color: '#2796dd'
-                  }} /> Python 2 or Python 3 environment is required to run CLI
-              </Row>
-            } />
-        </Row>
         {
           operationSystems &&
-          <Row type="flex" align="middle" style={{marginTop: 5}}>
+          <Row type="flex" align="middle">
             <b style={{marginRight: 10}}>Operation system: </b>
             <Select
               style={{width: 200}}
