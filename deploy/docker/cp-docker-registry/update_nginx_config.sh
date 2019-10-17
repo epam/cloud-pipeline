@@ -49,6 +49,16 @@ http {
     # required to avoid HTTP 411: see Issue #1486 (https://github.com/moby/moby/issues/1486)
     chunked_transfer_encoding on;
 
+    # Helth check for both nginx (if it can proxy - it is ok) and a registry
+    # If registry responded HTTP 200 for "/" - it is fine (see https://github.com/docker/distribution/pull/874 for details)
+    location /health {
+      access_log off;
+      proxy_pass http://127.0.0.1:80/;
+      proxy_connect_timeout   5s;
+      proxy_send_timeout      5s;
+      proxy_read_timeout      5s;
+    }
+
     location /v2/ {
       # Do not allow connections from docker 1.5 and earlier
       # docker pre-1.6.0 did not properly set the user agent on ping, catch "Go *" user agents
