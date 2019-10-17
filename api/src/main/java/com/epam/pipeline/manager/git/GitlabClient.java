@@ -37,6 +37,7 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
+import okhttp3.ResponseBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -52,6 +53,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -93,6 +97,8 @@ public final class GitlabClient {
     private static final String PUBLIC_VISIBILITY = "public";
     public static final String NEW_LINE = "\n";
     public static final long MAINTAINER = 40L;
+    private static final String DOT_CHAR = ".";
+    private static final String DOT_CHAR_URL_ENCODING_REPLACEMENT = "%2E";
 
     static {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -325,6 +331,53 @@ public final class GitlabClient {
         }
         GitFile gitFile = execute(gitLabApi.getFiles(projectId, path, revision));
         return Base64.getDecoder().decode(gitFile.getContent());
+    }
+
+    public byte[] getTruncatedFileContents(String path, String revision, int byteLimit) throws GitClientException {
+        return getTruncatedFileContents(null, path, revision, byteLimit);
+    }
+
+    /**
+     * Retrieves only first bytes of file content to avoid out-of-memory issues in case of enormous file size.
+     * If the file size is less than the limit, then the whole file is loaded.
+     *
+     */
+    public byte[] getTruncatedFileContents(String projectId, final String path,
+                                           final String revision, final int byteLimit) throws GitClientException {
+        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
+        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
+        if (StringUtils.isBlank(projectId)) {
+            projectId = makeProjectId(namespace, projectName);
+        }
+
+        byte[] receivedContent = new byte[0];
+        try {
+            final Call<ResponseBody> filesRawContent = gitLabApi.
+                getFilesRawContent(projectId, encodePath(path), revision);
+            final ResponseBody body = filesRawContent.execute().body();
+            if (body != null) {
+                try(InputStream inputStream = body.byteStream()) {
+                    final int bufferSize = calculateBufferSize(byteLimit, body);
+                    receivedContent = new byte[bufferSize];
+                    inputStream.read(receivedContent);
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.error("Error receiving raw file content!", e);
+        }
+        return receivedContent;
+    }
+
+    private int calculateBufferSize(final int byteLimit, final ResponseBody body) {
+        final long length = body.contentLength();
+        return (length >= 0 && length <= Integer.MAX_VALUE)
+               ? Math.min((int) length, byteLimit)
+               : byteLimit;
+    }
+
+    private String encodePath(final String path) throws UnsupportedEncodingException {
+        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
+                                                                                  DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
 
     public GitRepositoryEntry createProjectHook(String hookUrl) throws GitClientException {

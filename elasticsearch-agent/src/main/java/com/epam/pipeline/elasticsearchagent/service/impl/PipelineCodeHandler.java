@@ -67,6 +67,7 @@ public class PipelineCodeHandler {
     private final PipelineCodeMapper codeMapper;
     private final PipelineLoader pipelineLoader;
     private final String defaultBranchName;
+    private final int codeLimitBytes;
 
     public PipelineCodeHandler(final @Value("${sync.index.common.prefix}") String indexPrefix,
                                final @Value("${sync.pipeline-code.index.name}") String pipelineCodeIndexName,
@@ -76,7 +77,8 @@ public class PipelineCodeHandler {
                                final ObjectMapper objectMapper,
                                final PipelineLoader pipelineLoader,
                                final PipelineCodeMapper codeMapper,
-                               final @Value("${sync.pipeline-code.default-branch}") String defaultBranchName) {
+                               final @Value("${sync.pipeline-code.default-branch}") String defaultBranchName,
+                               final @Value("${sync.pipeline-code.max.bytes:10240}") Integer codeLimitBytes) {
         this.indexPrefix = indexPrefix;
         this.pipelineCodeIndexName = pipelineCodeIndexName;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
@@ -86,6 +88,7 @@ public class PipelineCodeHandler {
         this.codeMapper = codeMapper;
         this.pipelineLoader = pipelineLoader;
         this.defaultBranchName = defaultBranchName;
+        this.codeLimitBytes = codeLimitBytes;
     }
 
     public List<DocWriteRequest> processGitEvents(final Long id,
@@ -245,7 +248,8 @@ public class PipelineCodeHandler {
                                             final PermissionsContainer permissionsContainer) {
         log.debug("Indexing entry {}", repoEntryPath);
         final String fileContent =
-                cloudPipelineAPIClient.getPipelineFile(pipeline.getId(), revisionName, repoEntryPath);
+                cloudPipelineAPIClient.getTruncatedPipelineFile(pipeline.getId(), revisionName, repoEntryPath,
+                                                                codeLimitBytes);
         if (StringUtils.isBlank(fileContent)) {
             log.debug("Missing file content for path {} revision {}", repoEntryPath, revisionName);
             return null;

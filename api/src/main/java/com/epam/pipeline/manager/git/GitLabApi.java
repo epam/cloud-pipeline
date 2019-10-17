@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.git.GitTokenRequest;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
@@ -40,6 +41,7 @@ import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
+import retrofit2.http.Streaming;
 
 import java.util.List;
 
@@ -120,6 +122,20 @@ public interface GitLabApi {
     Call<GitFile> getFiles(@Path(PROJECT) String idOrName,
                            @Path(FILE_PATH) String filePath,
                            @Query(REF) String reference);
+
+    /**
+     * Allows you to receive raw content of a file.
+     * This endpoint can be accessed without authentication if the repository is publicly accessible.
+     *
+     * @param idOrName  The ID or URL-encoded path of the project
+     * @param filePath  Url encoded full path to new file. Ex. lib%2Fclass%2Erb
+     * @param reference The name of branch, tag or commit
+     */
+    @Streaming
+    @GET("api/v3/projects/{project}/repository/files/{file_path}/raw")
+    Call<ResponseBody> getFilesRawContent(@Path(PROJECT) String idOrName,
+                                          @Path(value = FILE_PATH, encoded = true) String filePath,
+                                          @Query(REF) String reference);
 
     /**
      * Allows you to receive information about file in repository like name, size, content.
