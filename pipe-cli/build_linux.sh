@@ -72,34 +72,49 @@ chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 ###
 # Build pipe
 ###
-cd $PIPE_CLI_SOURCES_DIR && \
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
-                                --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
-                                --hidden-import=itertools \
-                                --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
-                                --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
-                                --hidden-import=math \
-                                --hidden-import=reprlib \
-                                --hidden-import=functools \
-                                --hidden-import=re \
-                                --hidden-import=subprocess \
-                                --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
-                                -y \
-                                --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
-                                --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
-                                --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
-                                --add-data /tmp/mount/dist/pipe-fuse:mount \
-                                ${PIPE_CLI_SOURCES_DIR}/pipe.py \
-                                --onefile
+function build_pipe {
+    local distpath="\$1"
+    local onefile="\$2"
+
+    bundle_type="one-folder"
+    [ "\$onefile" ] && bundle_type="one-file"
+    echo "\$bundle_type" > /tmp/bundle.info
+
+    cd $PIPE_CLI_SOURCES_DIR
+    python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                    --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
+                                    --hidden-import=UserList \
+                                    --hidden-import=UserString \
+                                    --hidden-import=commands \
+                                    --hidden-import=ConfigParser \
+                                    --hidden-import=UserDict \
+                                    --hidden-import=itertools \
+                                    --hidden-import=collections \
+                                    --hidden-import=future.backports.misc \
+                                    --hidden-import=commands \
+                                    --hidden-import=base64 \
+                                    --hidden-import=__builtin__ \
+                                    --hidden-import=math \
+                                    --hidden-import=reprlib \
+                                    --hidden-import=functools \
+                                    --hidden-import=re \
+                                    --hidden-import=subprocess \
+                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
+                                    -y \
+                                    --clean \
+                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                    --distpath \$distpath \
+                                    --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
+                                    --add-data /tmp/mount/dist/pipe-fuse:mount \
+                                    --add-data /tmp/bundle.info:. \
+                                    ${PIPE_CLI_SOURCES_DIR}/pipe.py \$onefile
+}
+build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile
+build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder
+tar -zcf $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder/pipe.tar.gz \
+        -C $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder \
+        pipe
+
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null

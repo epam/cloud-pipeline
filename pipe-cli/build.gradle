@@ -40,7 +40,11 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
         cleanCLIVersion.execute()
         delete("$project.rootDir/api/src/main/resources/static/pipe")
         copy {
-            from("$project.rootDir/pipe-cli/dist/pipe")
+            from("$project.rootDir/pipe-cli/dist/dist-file/pipe")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+        copy {
+            from("$project.rootDir/pipe-cli/dist/dist-folder/pipe.tar.gz")
             into("$project.rootDir/api/src/main/resources/static/")
         }
     }
