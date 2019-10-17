@@ -940,6 +940,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_TERMINATION_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
         pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setEndDate(DateUtils.now());
         updatePipelineStatus(pipelineRun);
         nodesManager.terminateRun(pipelineRun);
         return pipelineRun;
