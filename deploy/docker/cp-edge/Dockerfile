@@ -102,3 +102,6 @@ ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
 ADD init /init
 RUN chmod +x /init
+
+ADD liveness.sh /liveness.sh
+RUN chmod +x liveness.sh

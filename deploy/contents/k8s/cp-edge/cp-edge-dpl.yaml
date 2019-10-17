@@ -25,6 +25,15 @@ spec:
           envFrom:
           - configMapRef:
               name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
           volumeMounts:
             - mountPath: /var/log
               name: edge-logs
