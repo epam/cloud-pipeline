@@ -18,11 +18,13 @@ package com.epam.pipeline.elasticsearchagent.service.impl.converter.pipeline;
 import com.epam.pipeline.elasticsearchagent.model.PermissionsContainer;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.utils.FileContentUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 import static com.epam.pipeline.elasticsearchagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -32,7 +34,7 @@ public class PipelineCodeMapper {
     public XContentBuilder pipelineCodeToDocument(final Pipeline pipeline,
                                                   final String pipelineVersion,
                                                   final String path,
-                                                  final String fileContent,
+                                                  final byte[] fileContent,
                                                   final PermissionsContainer permissions) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             jsonBuilder
@@ -42,7 +44,7 @@ public class PipelineCodeMapper {
                     .field("pipelineName", pipeline.getName())
                     .field("pipelineVersion", pipelineVersion)
                     .field("path", path)
-                    .field("content", fileContent);
+                    .field("content", buildDocContent(fileContent));
 
             jsonBuilder.array("allowed_users", permissions.getAllowedUsers().toArray());
             jsonBuilder.array("denied_users", permissions.getDeniedUsers().toArray());
@@ -53,6 +55,14 @@ public class PipelineCodeMapper {
             return jsonBuilder;
         } catch (IOException e) {
             throw new IllegalArgumentException("An error occurred while creating document: ", e);
+        }
+    }
+
+    private String buildDocContent(final byte[] fileContent) {
+        if (FileContentUtils.isBinaryContent(fileContent)) {
+            return null;
+        } else {
+            return new String(fileContent, Charset.defaultCharset());
         }
     }
 }

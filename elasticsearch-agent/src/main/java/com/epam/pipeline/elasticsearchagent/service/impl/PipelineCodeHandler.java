@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.action.DocWriteRequest;
@@ -247,10 +248,10 @@ public class PipelineCodeHandler {
                                             final String repoEntryPath,
                                             final PermissionsContainer permissionsContainer) {
         log.debug("Indexing entry {}", repoEntryPath);
-        final String fileContent =
+        final byte[] fileContent =
                 cloudPipelineAPIClient.getTruncatedPipelineFile(pipeline.getId(), revisionName, repoEntryPath,
                                                                 codeLimitBytes);
-        if (StringUtils.isBlank(fileContent)) {
+        if (ArrayUtils.isEmpty(fileContent)) {
             log.debug("Missing file content for path {} revision {}", repoEntryPath, revisionName);
             return null;
         }
