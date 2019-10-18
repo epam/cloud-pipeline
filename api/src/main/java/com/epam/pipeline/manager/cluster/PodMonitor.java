@@ -18,28 +18,20 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.cloud.InstanceTerminationState;
-import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
-import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.notification.NotificationSettingsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.RestartRunManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
-import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.api.model.PodStatus;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
@@ -54,12 +46,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
@@ -74,10 +62,6 @@ public class PodMonitor extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PodMonitor.class);
     private static final String PIPELINE_ID_LABEL = "pipeline_id";
     private static final String CLUSTER_ID_LABEL = "cluster_id";
-    private static final int DELETE_RETRY_ATTEMPTS = 5;
-    private static final long DELETE_RETRY_DELAY = 5L;
-
-    private BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
 
     @Autowired private RunLogManager runLogManager;
 
@@ -95,13 +79,7 @@ public class PodMonitor extends AbstractSchedulingManager {
     private NotificationManager notificationManager;
 
     @Autowired
-    private ToolManager toolManager;
-
-    @Autowired
-    private RestartRunManager restartRunManager;
-
-    @Autowired
-    private CloudFacade cloudFacade;
+    private PodReleaseService podReleaseService;
 
     @Value("${kube.namespace}")
     private String kubeNamespace;
@@ -109,7 +87,6 @@ public class PodMonitor extends AbstractSchedulingManager {
     @PostConstruct
     public void setup() {
         scheduleFixedDelay(this::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
-        scheduleFixedDelay(this::releaseUnusedPods, SystemPreferences.RELEASE_UNUSED_NODES_RATE, "Release Unused Pods");
     }
 
     /**
@@ -178,15 +155,6 @@ public class PodMonitor extends AbstractSchedulingManager {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_FINISHED));
     }
 
-    /**
-     * Put tasks from specified {@link PipelineRun} to a queue for killing
-     *
-     * @param run a {@link PipelineRun} which tasks to kill
-     */
-    private void killAsync(PipelineRun run) {
-        queueToKill.add(run);
-    }
-
     private void notifyIfExceedsThreshold(PipelineRun run, Pod pod, NotificationType type) {
         NotificationSettings settings = notificationSettingsManager.load(type);
         if (settings == null || !settings.isEnabled()) {
@@ -224,12 +192,12 @@ public class PodMonitor extends AbstractSchedulingManager {
             tasks.forEach(task -> {
                 if (task.getStatus() == TaskStatus.RUNNING && !StringUtils.isEmpty(task.getInstance())) {
                     Pod pod = client.pods().inNamespace(kubeNamespace).withName(task.getInstance()).get();
-                    getPodLogs(run, pod);
+                    podReleaseService.getPodLogs(run, pod);
                 }
             });
-            clearWorkerNodes(run, client);
+            podReleaseService.clearWorkerNodes(run, client);
             //save luigi log
-            getPodLogs(run, parent);
+            podReleaseService.getPodLogs(run, parent);
             //delete all pods
             LOGGER.debug("Clearing pods for successful pipeline: {}.", run.getPodId());
             client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, run.getPodId()).delete();
@@ -237,123 +205,17 @@ public class PodMonitor extends AbstractSchedulingManager {
             LOGGER.debug(e.getMessage(), e);
 
         }
-        return ensurePipelineIsDeleted(String.valueOf(run.getId()), run.getPodId(), client);
-    }
-
-    private void clearWorkerNodes(PipelineRun run, KubernetesClient client) {
-        List<Pod> workers = getWorkerPods(String.valueOf(run.getId()), client);
-        workers.forEach(worker -> {
-            String runIdLabel = getRunIdLabel(worker);
-            LOGGER.debug("Clearing worker {} node for parent run {}.", runIdLabel, run.getId());
-            Long workerId = Long.parseLong(runIdLabel);
-            PipelineRun workerRun = pipelineRunManager.loadPipelineRun(workerId);
-            getPodLogs(workerRun, worker);
-            workerRun.setTerminating(false);
-            workerRun.setStatus(run.getStatus());
-            workerRun.setEndDate(run.getEndDate());
-            pipelineRunManager.updatePipelineStatus(workerRun);
-            checkAndUpdateInstanceState(workerRun, false);
-            client.pods().inNamespace(kubeNamespace)
-                    .withLabel(KubernetesConstants.RUN_ID_LABEL, runIdLabel).delete();
-        });
-    }
-
-    private void checkAndUpdateInstanceState(final PipelineRun run, final boolean allowRestart) {
-        final RunInstance instance = run.getInstance();
-        if (instance == null ||
-                run.getExecutionPreferences().getEnvironment() != ExecutionEnvironment.CLOUD_PLATFORM ||
-                StringUtils.isBlank(instance.getNodeId()) || run.getStatus() == TaskStatus.STOPPED) {
-            return;
-        }
-
-        final Optional<InstanceTerminationState> state = cloudFacade.getInstanceTerminationState(
-                instance.getCloudRegionId(), instance.getNodeId());
-        state.ifPresent(reason -> {
-            pipelineRunManager.updateStateReasonMessage(run, reason.getStateMessage());
-            if (allowRestart && shouldRerunBatchRun(run, reason.getStateCode())) {
-                LOGGER.debug("Restarting run {}", run.getId());
-                pipelineRunManager.restartRun(run);
-            }
-        });
-
-    }
-
-    private String getRunIdLabel(Pod worker) {
-        return worker.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL);
-    }
-
-    private void getPodLogs(PipelineRun pipelineRun, Pod pod) {
-        String log = "";
-        TaskStatus status = getStatus(pipelineRun, pod);
-        String instance = pod == null ? pipelineRun.getPodId() : pod.getMetadata().getName();
-        try {
-            if (pod != null) {
-                LOGGER.debug("LOGS FOR POD: " + pod.getMetadata().getName());
-                log = kubernetesManager.getPodLogs(pod.getMetadata().getName(),
-                        preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES));
-            }
-        } catch (KubernetesClientException e) {
-            LOGGER.debug(e.getMessage(), e);
-        } finally {
-            saveLog(pipelineRun, instance, log, status);
-        }
-    }
-
-    private TaskStatus getStatus(PipelineRun pipelineRun, Pod pod) {
-        TaskStatus status;
-        if (pod == null || pod.getStatus() == null || pod.getStatus().getPhase() == null) {
-            return pipelineRun.getStatus();
-        }
-        switch (pod.getStatus().getPhase()) {
-            case KubernetesConstants.POD_SUCCEEDED_PHASE: {
-                status = TaskStatus.SUCCESS;
-                break;
-            }
-            case KubernetesConstants.POD_FAILED_PHASE: {
-                status = TaskStatus.FAILURE;
-                break;
-            }
-            default: {
-                status = pipelineRun.getStatus();
-                break;
-            }
-        }
-        return status;
-    }
-
-    private void saveLog(PipelineRun pipelineRun, String instance, String log, TaskStatus status) {
-        RunLog runLog = new RunLog();
-        runLog.setDate(DateUtils.now());
-        runLog.setLogText(log);
-        setTaskName(pipelineRun, runLog, instance);
-        runLog.setStatus(status);
-        runLog.setRunId(pipelineRun.getId());
-        runLog.setInstance(instance);
-        runLogManager.saveLog(runLog);
-    }
-
-    private void setTaskName(PipelineRun pipelineRun, RunLog runLog, String pod) {
-        String pipelineName = pipelineRun.getTaskName();
-        if (pipelineRun.getPodId().equals(pod)) {
-            runLog.setTaskName(pipelineName);
-        } else {
-            String taskName = runLogManager.loadTaskByInstance(pod, pipelineRun);
-            if (taskName != null) {
-                runLog.setTaskName(taskName);
-            } else {
-                runLog.setTaskName(pipelineName);
-            }
-        }
+        return podReleaseService.ensurePipelineIsDeleted(String.valueOf(run.getId()), run.getPodId(), client);
     }
 
     private void setRunFinished(PipelineRun run, Pod pod, KubernetesClient client) {
         savePodStatus(run, pod, client);
-        checkAndUpdateInstanceState(run, true);
+        podReleaseService.checkAndUpdateInstanceState(run, true);
         run.setStatus(run.getStatus().isFinal() ? run.getStatus() : TaskStatus.FAILURE);
         run.setTerminating(true);
         run.setEndDate(DateUtils.now());
         notificationManager.removeNotificationTimestamps(run.getId());
-        killAsync(run);
+        podReleaseService.killAsync(run);
     }
 
     private void savePodStatus(PipelineRun run, Pod pod, KubernetesClient client) {
@@ -401,159 +263,10 @@ public class PodMonitor extends AbstractSchedulingManager {
         return nodes.get(0);
     }
 
-    private void releaseUnusedPods() {
-        while (!queueToKill.isEmpty()) {
-            try {
-                PipelineRun pipelineRun = queueToKill.take();
-                if (!pipelineRun.getExecutionPreferences().getEnvironment().isMonitored()) {
-                    LOGGER.debug("Finishing non monitored run {} in {}",
-                                 pipelineRun.getId(), pipelineRun.getExecutionPreferences().getEnvironment());
-                    finishRun(pipelineRun);
-                    continue;
-                }
-                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK,
-                                                     pipelineRun.getPodId()));
-                boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
-                if (isPipelineDeleted) {
-                    finishRun(pipelineRun);
-                }
-            } catch (Exception e) {
-                LOGGER.error(messageHelper
-                                 .getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
-    }
-
-    private void finishRun(PipelineRun pipelineRun) {
-        pipelineRun.setTerminating(false);
-        pipelineRunManager.updatePipelineStatus(pipelineRun);
-    }
-
-    private boolean killChildrenPods(String podId, PipelineRun run) {
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
-        Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
-        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            //get pipeline logs
-            String log = "";
-            try {
-                log = kubernetesManager.getPodLogs(run.getPodId(), preference);
-            } catch (KubernetesClientException e) {
-                LOGGER.error(e.getMessage(), e);
-            }
-            //delete pipeline pod
-            client.pods().inNamespace(kubeNamespace).withName(run.getPodId())
-                .withGracePeriod(0L).delete();
-
-            PodList podList =
-                client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, podId)
-                    .list();
-            podList.getItems().forEach(pod -> {
-                LOGGER.info(messageHelper
-                                .getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, pod.getMetadata().getName()));
-                //skip pipeline pod, since it is already deleted
-                if (pod.getMetadata().getName().equals(podId)) {
-                    return;
-                }
-                getPodLogs(run, pod);
-                client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
-                    .delete();
-            });
-
-            clearWorkerNodes(run, client);
-            //Pipeline logs should be saved the last to prevent ambiguous statuses
-            saveLog(run, run.getPodId(), log, run.getStatus());
-
-            //check that we really deleted all pods
-            return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client);
-        }
-    }
-
-    private boolean ensurePipelineIsDeleted(String runId, String podId, KubernetesClient client) {
-        List<Pod> leftPods = getChildPods(runId, podId, client);
-        int count = 0;
-        while (!CollectionUtils.isEmpty(leftPods) && count < DELETE_RETRY_ATTEMPTS) {
-
-            client.pods().inNamespace(kubeNamespace)
-                    .withLabel(PIPELINE_ID_LABEL, podId)
-                    .withGracePeriod(0)
-                    .delete();
-
-            client.pods().inNamespace(kubeNamespace)
-                    .withLabel(KubernetesConstants.POD_WORKER_NODE_LABEL, runId)
-                    .withGracePeriod(0)
-                    .delete();
-
-            leftPods = getChildPods(runId, podId, client);
-            count++;
-            try {
-                Thread.sleep(DELETE_RETRY_DELAY);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
-        return CollectionUtils.isEmpty(leftPods);
-    }
-
-    private List<Pod> getChildPods(String runId, String podId, KubernetesClient client) {
-        List<Pod> children = new ArrayList<>();
-        children.addAll(client.pods()
-                .inNamespace(kubeNamespace)
-                .withLabel(PIPELINE_ID_LABEL, podId)
-                .list().getItems());
-        children.addAll(getWorkerPods(runId, client));
-        return children;
-    }
-
-    private List<Pod> getWorkerPods(String runId, KubernetesClient client) {
-        return client.pods().inNamespace(kubeNamespace)
-                .withLabel(KubernetesConstants.POD_WORKER_NODE_LABEL, runId)
-                .list().getItems();
-    }
-
     private boolean checkNeedOfNotificationResend(Date lastNotificationDate, long resendDelay) {
         return lastNotificationDate == null
                || resendDelay != 0
                   && Duration.between(lastNotificationDate.toInstant(), DateUtils.now().toInstant()).abs().getSeconds()
                      >= resendDelay;
-    }
-
-    private boolean shouldRerunBatchRun(PipelineRun run, String stateReason) {
-        boolean isSpot = run.getInstance().getSpot() != null && run.getInstance().getSpot();
-        return run.getStatus() != TaskStatus.STOPPED && isSpot && isParentBatchJob(run) &&
-                isStateReasonForRestart(stateReason) && checkRetryRestartCount(run.getId());
-    }
-
-    private boolean isParentBatchJob(PipelineRun run) {
-        return isNotClusterRun(run)
-                && run.getParentRunId() == null
-                && run.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.CLOUD_PLATFORM
-                && CollectionUtils.isEmpty(toolManager.loadByNameOrId(run.getDockerImage()).getEndpoints());
-    }
-
-    private boolean isNotClusterRun(PipelineRun run) {
-        return run.getNodeCount() == null || run.getNodeCount() == 0;
-    }
-
-    private boolean isStateReasonForRestart(String stateReason) {
-        final List<String> rerunReasons = preferenceManager.getPreference(
-                SystemPreferences.INSTANCE_RESTART_STATE_REASONS);
-        if (CollectionUtils.isEmpty(rerunReasons)) {
-            LOGGER.debug(messageHelper.getMessage(MessageConstants.ERROR_RESTART_STATE_REASONS_NOT_FOUND));
-            return false;
-        }
-        return rerunReasons.contains(stateReason);
-    }
-
-    private boolean checkRetryRestartCount(Long runId) {
-        Integer countOfRestartRun = restartRunManager.countRestartRuns(runId);
-        if (preferenceManager.getPreference(SystemPreferences.CLUSTER_BATCH_RETRY_COUNT) <= 0 ||
-                countOfRestartRun >= preferenceManager.getPreference(SystemPreferences.CLUSTER_BATCH_RETRY_COUNT)) {
-            LOGGER.debug(messageHelper.getMessage(
-                    MessageConstants.ERROR_EXCEED_MAX_RESTART_RUN_COUNT, runId));
-            return false;
-        }
-        return true;
     }
 }
