@@ -100,6 +100,7 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
                 # EDGE Service
                 -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)
+                -env CP_EDGE_MAX_SSH_CONNECTIONS = \                # Sets maximum number of the SSH connections to a single run (default: 25)
 
                 # Pipectl options
                 -m|--install-kube-master \                          # Install kuberneters master
