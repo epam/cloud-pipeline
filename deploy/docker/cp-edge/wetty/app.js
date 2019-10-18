@@ -4,6 +4,11 @@ var path = require('path');
 var server = require('socket.io');
 var pty = require('pty.js');
 var request = require("sync-request");
+var child_process = require('child_process');
+
+// Constants
+var ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
+var CONN_QUOTA_PER_PIPELINE_ID = process.env.CP_EDGE_MAX_SSH_CONNECTIONS || 25;
 
 function get_pipe_details(pipeline_id, auth_key) {
     api_url = process.env.API  + '/run/' + pipeline_id;
@@ -25,6 +30,34 @@ function get_pipe_details(pipeline_id, auth_key) {
     }
 
     return null;
+}
+
+function conn_quota_available(pipeline_id) {
+    // This command:
+    // 1. Searches for the processes with "ssh" command (grep -wl ssh /proc/*/comm) and prints the file name (e.g. /proc/123/comm)
+    // 2. Replaces the "comm" with "environ" file name (it will be searched for a "tag")
+    // 3. Searches the resulting list of "ssh" processes, that are "tagged" with the RUN ID
+    var running_pids_command = 'ssh_pids=$(grep -wl ssh /proc/*/comm | sed -e "s/comm/environ/g") && \
+                                [ "$ssh_pids" ] && \
+                                grep -l "\\b' + ENV_TAG_RUNID_NAME + '=' + pipeline_id + '\\b" $ssh_pids';
+
+    var running_pids_count = 0;
+    try {
+        var stdout = child_process.execSync(running_pids_command).toString();
+        running_pids_count = stdout.split(/\r\n|\r|\n/).filter(item => item).length;
+    } 
+    catch (err) {
+        // (1) means that there is no match (i.e. no ssh processes with the correct "tag")
+        // This is totally ok behavior and we consider that quota IS available
+        // https://www.unix.com/man-page/posix/1P/grep/
+        if (err.status != 1) {
+            // If something went wrong - we'll be optimists and allow the connection, but drop a log line on the error
+            console.log((new Date()) + ' Cannot get running connections for a run #' + pipeline_id + ' (exit code: ' + err.status + ', stderr: ' + err.stderr + ')');
+        }
+    }
+
+    console.log('Already running "' + running_pids_count + '" PIDs for #' + pipeline_id);
+    return running_pids_count < CONN_QUOTA_PER_PIPELINE_ID;;
 }
 
 var opts = require('optimist')
@@ -84,7 +117,7 @@ httpserv = http.createServer(app).listen(opts.port, function() {
 });
 
 var io = server(httpserv,{path: '/ssh/socket.io'});
-io.on('connection', function(socket){
+io.on('connection', function(socket) {
     var sshhost = 'localhost';
     var pipeline_id = 0
     var request = socket.request;
@@ -92,28 +125,36 @@ io.on('connection', function(socket){
     var term;
     if (match = request.headers.referer.match('/ssh/(pipeline|container)/(.+)$')) {
         pipeline_id = match[2];
-        if (!pipeline_id){
+        if (!pipeline_id) {
+            socket.disconnect();
+            return;
+        }
+
+        if (!conn_quota_available(pipeline_id)) {
+            var conn_err_msg = ' SSH connection quota exceeded for the run #' + pipeline_id + ' (Max connections: ' + CONN_QUOTA_PER_PIPELINE_ID + ')';
+            console.log((new Date()) + conn_err_msg);
+            socket.emit('output', conn_err_msg);
             socket.disconnect();
             return;
         }
 
         var auth_key = socket.handshake.headers['token'];
-        pipe_details = get_pipe_details(pipeline_id, auth_key)
-        if (!pipe_details || !pipe_details.ip || !pipe_details.pass)
-        {
+        pipe_details = get_pipe_details(pipeline_id, auth_key);
+        if (!pipe_details || !pipe_details.ip || !pipe_details.pass) {
             console.log((new Date()) + " Cannot get ip/pass for a run #" + pipeline_id);
             socket.disconnect();
             return;
         }
 
-        if(match[1] == "pipeline"){
+        if(match[1] == "pipeline") {
             sshhost = pipe_details.ip;
             sshpass = pipe_details.pass;
             sshuser = 'root';
             term = pty.spawn('sshpass', ['-p', sshpass, 'ssh', sshuser + '@' + sshhost, '-p', sshport, '-o', 'StrictHostKeyChecking=no', '-o', 'GlobalKnownHostsFile=/dev/null', '-o', 'UserKnownHostsFile=/dev/null', '-q'], {
                     name: 'xterm-256color',
                     cols: 80,
-                    rows: 30
+                    rows: 30,
+                    env: { [ENV_TAG_RUNID_NAME]: pipeline_id }
             });
         } else if (match[1] == "container") {
             console.log((new Date()) + ' Trying to exec kubectl exec for pod: ' + pipe_details.pod_id);
