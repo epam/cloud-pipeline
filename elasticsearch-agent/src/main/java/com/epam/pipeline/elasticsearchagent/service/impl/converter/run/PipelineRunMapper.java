@@ -46,8 +46,11 @@ public class PipelineRunMapper implements EntityMapper<PipelineRunWithLog> {
 
     private final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
-    @Value("${sync.run.log.lines.size:1000}")
-    private int maxLogLines;
+    private final int maxLogLines;
+
+    public PipelineRunMapper(@Value("${sync.run.log.lines.size:1000}") final int maxLogLines) {
+        this.maxLogLines = maxLogLines;
+    }
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunWithLog> container) {

@@ -79,7 +79,7 @@ public class BulkRequestSender {
 
     }
 
-
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void indexDocuments(final String indexName,
                                final List<PipelineEvent.ObjectType> objectTypes,
                                final List<DocWriteRequest> documentRequests,
@@ -109,7 +109,6 @@ public class BulkRequestSender {
             return;
         }
         Arrays.stream(response.getItems())
-            .filter(item -> !item.isFailed())
             .collect(Collectors.groupingBy(idConverter::getId))
             .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
     }

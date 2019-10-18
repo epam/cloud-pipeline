@@ -27,6 +27,7 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.PERMISSIONS_CON
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_PATH;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
+import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE_BYTE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 
 @SuppressWarnings({"PMD.TooManyStaticImports"})
@@ -40,8 +41,8 @@ class PipelineCodeMapperTest {
         pipeline.setId(1L);
         pipeline.setName(TEST_NAME);
 
-        XContentBuilder contentBuilder = mapper.pipelineCodeToDocument(pipeline, TEST_VERSION, TEST_PATH, TEST_VALUE,
-                PERMISSIONS_CONTAINER);
+        XContentBuilder contentBuilder = mapper.pipelineCodeToDocument(pipeline, TEST_VERSION, TEST_PATH,
+                TEST_VALUE_BYTE, PERMISSIONS_CONTAINER);
 
         verifyPipelineCode(pipeline, TEST_VERSION, TEST_PATH, TEST_VALUE, contentBuilder);
         verifyPermissions(PERMISSIONS_CONTAINER, contentBuilder);
