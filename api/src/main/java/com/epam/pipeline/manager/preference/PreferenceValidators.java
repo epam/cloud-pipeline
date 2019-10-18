@@ -156,6 +156,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) >= x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isLessThan(int x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) < x;
+    }
+
     /**
      * A no-op validator, that is always true
      */

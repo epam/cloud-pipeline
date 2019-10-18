@@ -145,7 +145,7 @@ public final class MessageConstants {
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
     public static final String DEBUG_MONITOR_CHECK_FINISHED = "debug.monitor.check.finished";
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
-    public static final String ERROR_KILLER_THREAD_FAILED = "error.killer.thread.failed";
+    public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
 
     // ResourceMonitoringManager messages

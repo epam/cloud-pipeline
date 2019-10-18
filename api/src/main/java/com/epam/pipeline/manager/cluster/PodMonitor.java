@@ -78,7 +78,6 @@ public class PodMonitor extends AbstractSchedulingManager {
     private static final long DELETE_RETRY_DELAY = 5L;
 
     private BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
-    private Thread killerThread = new Thread(new Killer());
 
     @Autowired private RunLogManager runLogManager;
 
@@ -109,8 +108,8 @@ public class PodMonitor extends AbstractSchedulingManager {
 
     @PostConstruct
     public void setup() {
-        killerThread.start();
         scheduleFixedDelay(this::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
+        scheduleFixedDelay(this::releaseUnusedPods, SystemPreferences.RELEASE_UNUSED_NODES_RATE, "Release Unused Pods");
     }
 
     /**
@@ -402,88 +401,71 @@ public class PodMonitor extends AbstractSchedulingManager {
         return nodes.get(0);
     }
 
-    /**
-     * A thread that constantly queries the queue forKiller tasks to kill
-     */
-    private class Killer implements Runnable {
-
-        private boolean interrupted;
-
-        public void setInterrupted(final boolean interrupted) {
-            this.interrupted = interrupted;
-        }
-
-        @Override
-        public void run() {
-            while (true) {
-                try {
-                    if (interrupted) {
-                        LOGGER.debug("Interrupting monitor thread.");
-                        break;
-                    }
-                    PipelineRun pipelineRun = queueToKill.take();
-                    if (!pipelineRun.getExecutionPreferences().getEnvironment().isMonitored()) {
-                        LOGGER.debug("Finishing non monitored run {} in {}",
-                                pipelineRun.getId(), pipelineRun.getExecutionPreferences().getEnvironment());
-                        finish(pipelineRun);
-                        continue;
-                    }
-                    LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK,
-                            pipelineRun.getPodId()));
-                    boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
-                    if (isPipelineDeleted) {
-                        finish(pipelineRun);
-                    }
-                } catch (Exception e) {
-                    LOGGER.error(messageHelper
-                            .getMessage(MessageConstants.ERROR_KILLER_THREAD_FAILED, e));
-                    LOGGER.error(e.getMessage(), e);
+    private void releaseUnusedPods() {
+        while (!queueToKill.isEmpty()) {
+            try {
+                PipelineRun pipelineRun = queueToKill.take();
+                if (!pipelineRun.getExecutionPreferences().getEnvironment().isMonitored()) {
+                    LOGGER.debug("Finishing non monitored run {} in {}",
+                                 pipelineRun.getId(), pipelineRun.getExecutionPreferences().getEnvironment());
+                    finishRun(pipelineRun);
+                    continue;
                 }
+                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK,
+                                                     pipelineRun.getPodId()));
+                boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
+                if (isPipelineDeleted) {
+                    finishRun(pipelineRun);
+                }
+            } catch (Exception e) {
+                LOGGER.error(messageHelper
+                                 .getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
+                LOGGER.error(e.getMessage(), e);
             }
         }
+    }
 
-        private void finish(PipelineRun pipelineRun) {
-            pipelineRun.setTerminating(false);
-            pipelineRunManager.updatePipelineStatus(pipelineRun);
-        }
+    private void finishRun(PipelineRun pipelineRun) {
+        pipelineRun.setTerminating(false);
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+    }
 
-        private boolean killChildrenPods(String podId, PipelineRun run) {
-            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
-            Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
-            try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-                //get pipeline logs
-                String log = "";
-                try {
-                    log = kubernetesManager.getPodLogs(run.getPodId(), preference);
-                } catch (KubernetesClientException e) {
-                    LOGGER.error(e.getMessage(), e);
-                }
-                //delete pipeline pod
-                client.pods().inNamespace(kubeNamespace).withName(run.getPodId())
-                        .withGracePeriod(0L).delete();
-
-                PodList podList =
-                        client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, podId)
-                                .list();
-                podList.getItems().forEach(pod -> {
-                    LOGGER.info(messageHelper
-                            .getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, pod.getMetadata().getName()));
-                    //skip pipeline pod, since it is already deleted
-                    if (pod.getMetadata().getName().equals(podId)) {
-                        return;
-                    }
-                    getPodLogs(run, pod);
-                    client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
-                        .delete();
-                });
-
-                clearWorkerNodes(run, client);
-                //Pipeline logs should be saved the last to prevent ambiguous statuses
-                saveLog(run, run.getPodId(), log, run.getStatus());
-
-                //check that we really deleted all pods
-                return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client);
+    private boolean killChildrenPods(String podId, PipelineRun run) {
+        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
+        Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
+        try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+            //get pipeline logs
+            String log = "";
+            try {
+                log = kubernetesManager.getPodLogs(run.getPodId(), preference);
+            } catch (KubernetesClientException e) {
+                LOGGER.error(e.getMessage(), e);
             }
+            //delete pipeline pod
+            client.pods().inNamespace(kubeNamespace).withName(run.getPodId())
+                .withGracePeriod(0L).delete();
+
+            PodList podList =
+                client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, podId)
+                    .list();
+            podList.getItems().forEach(pod -> {
+                LOGGER.info(messageHelper
+                                .getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, pod.getMetadata().getName()));
+                //skip pipeline pod, since it is already deleted
+                if (pod.getMetadata().getName().equals(podId)) {
+                    return;
+                }
+                getPodLogs(run, pod);
+                client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
+                    .delete();
+            });
+
+            clearWorkerNodes(run, client);
+            //Pipeline logs should be saved the last to prevent ambiguous statuses
+            saveLog(run, run.getPodId(), log, run.getStatus());
+
+            //check that we really deleted all pods
+            return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client);
         }
     }
 

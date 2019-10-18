@@ -46,7 +46,9 @@ import java.util.concurrent.Executors;
 public class AppConfiguration implements SchedulingConfigurer {
 
     private static final int MAX_LOG_PAYLOAD_LENGTH = 1000;
-    private static final int SCHEDULED_TASKS_POOL_SIZE = 3;
+
+    @Value("${scheduled.pool.size:5}")
+    private int scheduledPoolSize;
 
     @Value("${pause.pool.size:10}")
     private int pausePoolSize;
@@ -68,7 +70,7 @@ public class AppConfiguration implements SchedulingConfigurer {
     public TaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
         scheduler.setRemoveOnCancelPolicy(true);
-        scheduler.setPoolSize(SCHEDULED_TASKS_POOL_SIZE); // For PodMonior, AutoscaleManager and ToolScanScheduler
+        scheduler.setPoolSize(scheduledPoolSize); // For AbstractSchedulingManager's subclasses' tasks
         return scheduler;
     }
 
