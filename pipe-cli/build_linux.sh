@@ -15,7 +15,7 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="python:2.7-stretch"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
@@ -25,7 +25,7 @@ cat >$_BUILD_SCRIPT_NAME <<EOL
 
 mkdir -p $PYINSTALLER_PATH
 cd $PYINSTALLER_PATH
-git clone --single-branch --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
+git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
 cd pyinstaller/bootloader/
 python2 ./waf all
 
