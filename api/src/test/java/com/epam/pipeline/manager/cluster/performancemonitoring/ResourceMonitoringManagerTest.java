@@ -87,8 +87,8 @@ public class ResourceMonitoringManagerTest {
     private static final LocalDateTime HALF_AN_HOUR_BEFORE = DateUtils.nowUTC().minusSeconds(HALF_AN_HOUR);
     private static final String HIGH_CONSUMING_POD_ID = "high-consuming";
     private static final double PERCENTS = 100.0;
-    private static final String UTILIZATION_LEVEL_LOW = "IDLED";
-    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURED";
+    private static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     private static final String TRUE_VALUE_STRING = "true";
     private static final Map<String, String> IDLE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);

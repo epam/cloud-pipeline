@@ -44,7 +44,10 @@ public class PodFSRequester extends FSRequester {
     }
 
     @Override
-    public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from, final LocalDateTime to, final Map <String, String> additional) {
+    public SearchRequest buildRequest(final Collection<String> resourceIds,
+                                      final LocalDateTime from,
+                                      final LocalDateTime to,
+                                      final Map <String, String> additional) {
 
         throw new UnsupportedOperationException();
     }
