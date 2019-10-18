@@ -202,6 +202,12 @@ public class PipelineApiService {
         return gitManager.getPipelineFileContents(pipelineManager.load(id), version, path);
     }
 
+    @PreAuthorize(PIPELINE_ID_READ)
+    public byte[] getTruncatedPipelineFileContent(final Long id, final String version, final String path,
+                                                  final Integer byteLimit) throws GitClientException {
+        return gitManager.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path, byteLimit);
+    }
+
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry modifyFile(Long id, PipelineSourceItemVO sourceItemVO) throws GitClientException {
         return gitManager.modifyFile(pipelineManager.load(id, true), sourceItemVO);

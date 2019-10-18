@@ -30,6 +30,7 @@
                         pipeline.pipeline_event
                     WHERE
                         object_type = :OBJECT_TYPE AND stamp < :STAMP
+                    LIMIT :LIMIT;
                 ]]>
             </value>
         </property>

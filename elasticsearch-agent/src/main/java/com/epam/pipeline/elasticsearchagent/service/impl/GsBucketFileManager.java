@@ -109,12 +109,8 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
                            final String indexName) {
         convertToStorageFile(file)
                 .ifPresent(
-                        item -> indexContainer
-                                .add(createIndexRequest(item,
-                                                        indexName,
-                                                        storage,
-                                                        credentials.getRegion(),
-                                                        permissions)));
+                    item -> indexContainer
+                            .add(createIndexRequest(item, indexName, storage, credentials.getRegion(), permissions)));
     }
 
     private Optional<DataStorageFile> convertToStorageFile(final Blob blob) {

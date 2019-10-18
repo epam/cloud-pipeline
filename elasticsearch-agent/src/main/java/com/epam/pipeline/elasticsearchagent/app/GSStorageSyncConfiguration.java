@@ -62,12 +62,14 @@ public class GSStorageSyncConfiguration {
             final PipelineEventDao eventDao,
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
-            final @Value("${sync.gs-storage.index.mapping}") String gsStorageMapping) {
+            final @Value("${sync.gs-storage.index.mapping}") String gsStorageMapping,
+            final @Value("${sync.load.common.entity.chunk.size:1000}") int chunkSize) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.GS,
                 gsStorageMapping,
                 gsEventConverter,
                 indexService,
-                requestSender);
+                requestSender,
+                chunkSize);
     }
 }

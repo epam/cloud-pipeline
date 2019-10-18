@@ -425,6 +425,25 @@ public class PipelineController extends AbstractRestController {
         return new ResponseEntity<>(pipelineApiService.getPipelineFileContents(id, version, path), HttpStatus.OK);
     }
 
+    @GetMapping(value = "/pipeline/{id}/file/truncate")
+    @ResponseBody
+    @ApiOperation(
+        value = "Truncate first bytes of a file content",
+        notes = "Gets first bytes of content of the file, specified by path in the repository and pipeline "
+                + "version ID. The file content is returned Base64 encoded",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public ResponseEntity<byte[]> getTruncatedPipelineFile(
+        @PathVariable(value = ID) Long id,
+        @RequestParam(value = VERSION) final String version,
+        @RequestParam String path,
+        @RequestParam Integer byteLimit) throws GitClientException {
+        return new ResponseEntity<>(pipelineApiService.getTruncatedPipelineFileContent(id, version, path, byteLimit),
+                                    HttpStatus.OK);
+    }
+
     @RequestMapping(value = "/pipeline/{id}/file", method= RequestMethod.POST)
     @ResponseBody
     @ApiOperation(

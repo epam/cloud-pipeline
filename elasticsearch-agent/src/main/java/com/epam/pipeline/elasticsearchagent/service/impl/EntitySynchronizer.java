@@ -38,6 +38,7 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
     private final EventToRequestConverter converter;
     private final ElasticIndexService indexService;
     private final BulkRequestSender bulkRequestSender;
+    private final int chunkSize;
 
     @Override
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -45,8 +46,7 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
         try {
             log.debug("Starting to synchronize {} entities", objectType);
             final List<PipelineEvent> pipelineEvents = pipelineEventDao
-                    .loadPipelineEventsByObjectType(objectType, syncStart);
-
+                .loadPipelineEventsByObjectType(objectType, syncStart, chunkSize);
             log.debug("Loaded {} events for {}", pipelineEvents.size(), objectType);
             final List<PipelineEvent> mergeEvents = EventProcessorUtils.mergeEvents(pipelineEvents);
             if (mergeEvents.isEmpty()) {
@@ -65,10 +65,10 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
                 return;
             }
             log.debug("Creating {} requests for {} entity.", documentRequests.size(), objectType);
-            bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart);
+            bulkRequestSender.indexDocuments(indexName, objectType, documentRequests, syncStart, chunkSize);
             log.debug("Successfully finished {} synchronization.", objectType);
         } catch (Exception e) {
-            log.error("An error during {} synchonization: {}", objectType, e.getMessage());
+            log.error("An error during {} synchronization: {}", objectType, e.getMessage());
             log.error(e.getMessage(), e);
         }
     }
