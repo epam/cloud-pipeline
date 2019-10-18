@@ -38,7 +38,7 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String NODE_NAME = "node-1";
     private static final String NODE_ID = "node-id";
-    private static final String STUB_STRING = "";
+    private static final String TEST_TAG = "tag";
     private static final long REGION_ID = 1L;
 
     @InjectMocks
@@ -93,14 +93,14 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
     @Test
     public void pauseRun() throws IOException {
         final PipelineRun idledRun =
-            createRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW, STUB_STRING);
+            createRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW, TEST_TAG);
         final PipelineRun pressuredRun =
-            createRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, STUB_STRING);
+            createRunWithTags(ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH, TEST_TAG);
 
         Mockito.when(kubernetesManager.getContainerIdFromKubernetesPod(Mockito.anyString(), Mockito.anyString()))
-            .thenReturn(STUB_STRING);
+            .thenReturn(TEST_TAG);
         Mockito.when(nodesManager.terminateNode(NODE_NAME)).thenReturn(new NodeInstance());
-        Mockito.when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(STUB_STRING);
+        Mockito.when(authManager.issueTokenForCurrentUser().getToken()).thenReturn(TEST_TAG);
         Process sshConnection = Mockito.mock(Process.class);
         Mockito.doReturn(sshConnection).when(operationManager)
             .submitCommandViaSSH(Mockito.anyString(), Mockito.anyString());
@@ -109,8 +109,8 @@ public class DockerContainerOperationManagerTest extends AbstractManagerTest {
         operationManager.pauseRun(idledRun);
         operationManager.pauseRun(pressuredRun);
 
-        assertRunStateAfterPause(idledRun, STUB_STRING);
-        assertRunStateAfterPause(pressuredRun, STUB_STRING);
+        assertRunStateAfterPause(idledRun, TEST_TAG);
+        assertRunStateAfterPause(pressuredRun, TEST_TAG);
     }
 
     private void assertRunStateAfterPause(final PipelineRun run, final String ... expectedTags) {

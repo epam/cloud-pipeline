@@ -261,7 +261,7 @@ public class DockerContainerOperationManager {
             kubernetesManager.deleteNode(instance.getNodeName());
             removeUtilizationLevelTags(run);
             run.setStatus(TaskStatus.PAUSED);
-            runManager.updatePipelineStatus(run);
+            runManager.updateRunInfo(run);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
