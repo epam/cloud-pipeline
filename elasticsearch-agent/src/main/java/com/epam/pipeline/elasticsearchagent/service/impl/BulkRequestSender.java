@@ -87,9 +87,13 @@ public class BulkRequestSender {
                                final int bulkSize) {
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
                                               Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
-        ListUtils.partition(documentRequests, partitionSize)
-                .forEach(chunk -> indexChunk(indexName, chunk, objectTypes, syncStart));
-
+        ListUtils.partition(documentRequests, partitionSize).forEach(chunk -> {
+            try {
+                indexChunk(indexName, chunk, objectTypes, syncStart);
+            } catch (Exception e) {
+                log.error("Partial error during {} index sync: {}.", indexName, e.getMessage());
+            }
+        });
     }
 
     private void indexChunk(final String indexName,

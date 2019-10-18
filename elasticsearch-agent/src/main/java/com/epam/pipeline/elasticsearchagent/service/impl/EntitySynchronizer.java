@@ -53,6 +53,7 @@ public class EntitySynchronizer implements ElasticsearchSynchronizer {
                 log.debug("{} entities for synchronization were not found.", objectType);
                 return;
             }
+
             log.debug("Merged {} events for {}", mergeEvents.size(), objectType);
 
             final String indexName = converter.buildIndexName();

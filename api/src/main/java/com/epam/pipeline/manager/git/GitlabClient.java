@@ -333,51 +333,40 @@ public final class GitlabClient {
         return Base64.getDecoder().decode(gitFile.getContent());
     }
 
-    public byte[] getTruncatedFileContents(String path, String revision, int byteLimit) throws GitClientException {
+    public byte[] getTruncatedFileContents(final String path, final String revision,
+                                           final int byteLimit) throws GitClientException {
         return getTruncatedFileContents(null, path, revision, byteLimit);
     }
 
     /**
-     * Retrieves only first bytes of file content to avoid out-of-memory issues in case of enormous file size.
-     * If the file size is less than the limit, then the whole file is loaded.
-     *
+     * Retrieves only first bytes of file content to avoid out-of-memory issues in case of enormous file size. If the
+     * file size is less than the limit, then the whole file is loaded.
      */
-    public byte[] getTruncatedFileContents(String projectId, final String path,
+    public byte[] getTruncatedFileContents(final String projectId, final String path,
                                            final String revision, final int byteLimit) throws GitClientException {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
-        if (StringUtils.isBlank(projectId)) {
-            projectId = makeProjectId(namespace, projectName);
-        }
+        final String currentProjectId = StringUtils.isBlank(projectId)
+                                        ? makeProjectId(namespace, projectName)
+                                        : projectId;
 
-        byte[] receivedContent = new byte[0];
         try {
             final Call<ResponseBody> filesRawContent = gitLabApi.
-                getFilesRawContent(projectId, encodePath(path), revision);
+                getFilesRawContent(currentProjectId, encodePath(path), revision);
             final ResponseBody body = filesRawContent.execute().body();
             if (body != null) {
                 try(InputStream inputStream = body.byteStream()) {
                     final int bufferSize = calculateBufferSize(byteLimit, body);
-                    receivedContent = new byte[bufferSize];
+                    final byte[] receivedContent = new byte[bufferSize];
                     inputStream.read(receivedContent);
+                    return receivedContent;
                 }
+            } else {
+                return new byte[0];
             }
         } catch (IOException e) {
-            LOGGER.error("Error receiving raw file content!", e);
+            throw new GitClientException("Error receiving raw file content!", e);
         }
-        return receivedContent;
-    }
-
-    private int calculateBufferSize(final int byteLimit, final ResponseBody body) {
-        final long length = body.contentLength();
-        return (length >= 0 && length <= Integer.MAX_VALUE)
-               ? Math.min((int) length, byteLimit)
-               : byteLimit;
-    }
-
-    private String encodePath(final String path) throws UnsupportedEncodingException {
-        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
-                                                                                  DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
 
     public GitRepositoryEntry createProjectHook(String hookUrl) throws GitClientException {
@@ -551,5 +540,17 @@ public final class GitlabClient {
             return path.replaceAll("\\\\", "/");
         }
         return path;
+    }
+
+    private int calculateBufferSize(final int byteLimit, final ResponseBody body) {
+        final long length = body.contentLength();
+        return (length >= 0 && length <= Integer.MAX_VALUE)
+               ? Math.min((int) length, byteLimit)
+               : byteLimit;
+    }
+
+    private String encodePath(final String path) throws UnsupportedEncodingException {
+        return URLEncoder.encode(path, StandardCharsets.UTF_8.toString()).replace(DOT_CHAR,
+                                                                                  DOT_CHAR_URL_ENCODING_REPLACEMENT);
     }
 }
