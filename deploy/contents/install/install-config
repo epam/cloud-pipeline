@@ -154,5 +154,8 @@ CP_DAV_SERVE_DIR=/dav-serve
 CP_DAV_MOUNT_POINT=/dav-mount
 CP_DAV_INSTRUCTIONS_URL=
 
+# cp-tes-srv
+CP_TES_WHITE_IPV4_CIDR=127.0.0.1/24
+
 # Other params, specified on command line
 #
