@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -76,6 +77,7 @@ public class PodMonitor extends AbstractSchedulingManager {
     private static final String CLUSTER_ID_LABEL = "cluster_id";
     private static final int DELETE_RETRY_ATTEMPTS = 5;
     private static final long DELETE_RETRY_DELAY = 5L;
+    private static final int POD_RELEASE_TIMEOUT = 3000;
 
     private BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
 
@@ -109,7 +111,6 @@ public class PodMonitor extends AbstractSchedulingManager {
     @PostConstruct
     public void setup() {
         scheduleFixedDelay(this::updateStatus, SystemPreferences.LAUNCH_TASK_STATUS_UPDATE_RATE, "Task Status Update");
-        scheduleFixedDelay(this::releaseUnusedPods, SystemPreferences.RELEASE_UNUSED_NODES_RATE, "Release Unused Pods");
     }
 
     /**
@@ -176,6 +177,31 @@ public class PodMonitor extends AbstractSchedulingManager {
             }
         }
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_FINISHED));
+    }
+
+    @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
+    public void releaseUnusedPods() {
+        while (!queueToKill.isEmpty()) {
+            try {
+                PipelineRun pipelineRun = queueToKill.take();
+                if (!pipelineRun.getExecutionPreferences().getEnvironment().isMonitored()) {
+                    LOGGER.debug("Finishing non monitored run {} in {}",
+                            pipelineRun.getId(), pipelineRun.getExecutionPreferences().getEnvironment());
+                    finishRun(pipelineRun);
+                    continue;
+                }
+                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK,
+                        pipelineRun.getPodId()));
+                boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
+                if (isPipelineDeleted) {
+                    finishRun(pipelineRun);
+                }
+            } catch (Exception e) {
+                LOGGER.error(messageHelper
+                        .getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
+                LOGGER.error(e.getMessage(), e);
+            }
+        }
     }
 
     /**
@@ -399,30 +425,6 @@ public class PodMonitor extends AbstractSchedulingManager {
             return null;
         }
         return nodes.get(0);
-    }
-
-    private void releaseUnusedPods() {
-        while (!queueToKill.isEmpty()) {
-            try {
-                PipelineRun pipelineRun = queueToKill.take();
-                if (!pipelineRun.getExecutionPreferences().getEnvironment().isMonitored()) {
-                    LOGGER.debug("Finishing non monitored run {} in {}",
-                                 pipelineRun.getId(), pipelineRun.getExecutionPreferences().getEnvironment());
-                    finishRun(pipelineRun);
-                    continue;
-                }
-                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK,
-                                                     pipelineRun.getPodId()));
-                boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
-                if (isPipelineDeleted) {
-                    finishRun(pipelineRun);
-                }
-            } catch (Exception e) {
-                LOGGER.error(messageHelper
-                                 .getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
-                LOGGER.error(e.getMessage(), e);
-            }
-        }
     }
 
     private void finishRun(PipelineRun pipelineRun) {
