@@ -80,6 +80,14 @@ function build_pipe {
     [ "\$onefile" ] && bundle_type="one-file"
     echo "\$bundle_type" > /tmp/bundle.info
 
+    if [ -f "/etc/os-release" ]; then
+        source /etc/os-release
+        echo "${ID}:${VERSION_ID}" >> /tmp/bundle.info
+    elif [ -f "/etc/centos-release" ]; then
+        VERSION_ID=$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
+        echo "centos:${VERSION_ID}" >> /tmp/bundle.info
+    fi
+
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
