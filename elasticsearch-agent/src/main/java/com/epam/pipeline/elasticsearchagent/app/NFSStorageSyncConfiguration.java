@@ -76,12 +76,14 @@ public class NFSStorageSyncConfiguration {
             final PipelineEventDao eventDao,
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
-            final @Value("${sync.nfs-storage.index.mapping}") String nfsStorageMapping) {
+            final @Value("${sync.nfs-storage.index.mapping}") String nfsStorageMapping,
+            final @Value("${sync.load.common.entity.chunk.size:1000}") int chunkSize) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.NFS,
                 nfsStorageMapping,
                 nfsEventConverter,
                 indexService,
-                requestSender);
+                requestSender,
+                chunkSize);
     }
 }

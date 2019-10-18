@@ -50,11 +50,18 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
                                                               final LocalDateTime before) {
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
+        return loadPipelineEventsByObjectType(objectType, before, null);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<PipelineEvent> loadPipelineEventsByObjectType(final PipelineEvent.ObjectType objectType,
+                                                              final LocalDateTime before, final Integer rowLimit) {
+        final MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue(PipelineEventsParameters.OBJECT_TYPE.name(), objectType.getDbName());
         parameterSource.addValue(PipelineEventsParameters.STAMP.name(),
                 OffsetDateTime.of(before, ZoneOffset.ofHours(0)));
-        List<PipelineEvent> pipelineEvents = getNamedParameterJdbcTemplate()
+        parameterSource.addValue(PipelineEventsParameters.LIMIT.name(), rowLimit);
+        final List<PipelineEvent> pipelineEvents = getNamedParameterJdbcTemplate()
                 .query(loadAllEventsByObjectTypeQuery,
                         parameterSource, PipelineEventsParameters.getRowMapper());
         return ListUtils.emptyIfNull(pipelineEvents);
@@ -86,7 +93,8 @@ public class PipelineEventDao extends NamedParameterJdbcDaoSupport {
         STAMP,
         OBJECT_TYPE,
         OBJECT_ID,
-        DATA;
+        DATA,
+        LIMIT;
 
 
         static RowMapper<PipelineEvent> getRowMapper() {

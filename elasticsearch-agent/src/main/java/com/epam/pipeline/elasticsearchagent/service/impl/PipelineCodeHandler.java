@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.action.DocWriteRequest;
@@ -67,6 +68,7 @@ public class PipelineCodeHandler {
     private final PipelineCodeMapper codeMapper;
     private final PipelineLoader pipelineLoader;
     private final String defaultBranchName;
+    private final int codeLimitBytes;
 
     public PipelineCodeHandler(final @Value("${sync.index.common.prefix}") String indexPrefix,
                                final @Value("${sync.pipeline-code.index.name}") String pipelineCodeIndexName,
@@ -76,7 +78,8 @@ public class PipelineCodeHandler {
                                final ObjectMapper objectMapper,
                                final PipelineLoader pipelineLoader,
                                final PipelineCodeMapper codeMapper,
-                               final @Value("${sync.pipeline-code.default-branch}") String defaultBranchName) {
+                               final @Value("${sync.pipeline-code.default-branch}") String defaultBranchName,
+                               final @Value("${sync.pipeline-code.max.bytes:10240}") Integer codeLimitBytes) {
         this.indexPrefix = indexPrefix;
         this.pipelineCodeIndexName = pipelineCodeIndexName;
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
@@ -86,6 +89,7 @@ public class PipelineCodeHandler {
         this.codeMapper = codeMapper;
         this.pipelineLoader = pipelineLoader;
         this.defaultBranchName = defaultBranchName;
+        this.codeLimitBytes = codeLimitBytes;
     }
 
     public List<DocWriteRequest> processGitEvents(final Long id,
@@ -244,9 +248,10 @@ public class PipelineCodeHandler {
                                             final String repoEntryPath,
                                             final PermissionsContainer permissionsContainer) {
         log.debug("Indexing entry {}", repoEntryPath);
-        final String fileContent =
-                cloudPipelineAPIClient.getPipelineFile(pipeline.getId(), revisionName, repoEntryPath);
-        if (StringUtils.isBlank(fileContent)) {
+        final byte[] fileContent =
+                cloudPipelineAPIClient.getTruncatedPipelineFile(pipeline.getId(), revisionName, repoEntryPath,
+                                                                codeLimitBytes);
+        if (ArrayUtils.isEmpty(fileContent)) {
             log.debug("Missing file content for path {} revision {}", repoEntryPath, revisionName);
             return null;
         }

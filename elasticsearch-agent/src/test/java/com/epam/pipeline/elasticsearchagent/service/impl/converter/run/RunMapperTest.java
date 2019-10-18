@@ -49,10 +49,11 @@ class RunMapperTest {
 
     private static final int NODE_DISK = 40;
     private static final BigDecimal PRICE = new BigDecimal("1.2");
+    private static final int MAX_LOG_LINES = 100;
 
     @Test
     void shouldMapRun() throws IOException {
-        PipelineRunMapper mapper = new PipelineRunMapper();
+        PipelineRunMapper mapper = new PipelineRunMapper(MAX_LOG_LINES);
 
         PipelineRunWithLog pipelineRunWithLog = new PipelineRunWithLog();
 

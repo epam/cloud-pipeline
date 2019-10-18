@@ -652,6 +652,11 @@ public class GitManager {
                 .getFileContents(path, getRevisionName(version));
     }
 
+    public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String version,
+                                                  final String path, int byteLimit) throws GitClientException {
+        return this.getGitlabClientForPipeline(pipeline)
+            .getTruncatedFileContents(path, getRevisionName(version), byteLimit);
+    }
 
     /**
      * Returns docs file list of specified pipeline version
