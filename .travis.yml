@@ -60,6 +60,17 @@ jobs:
       after_success:
         - aws s3 mv cli-linux.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
 
+    # This stage builds the "pipe" binary for el6-alike linux distributions (e.g. centos6/rhel6.5/etc)
+    - stage: "Build"
+      name: "Build CLI Linux (el6)"
+      install: true
+      language: java
+      script:
+        - _BUILD_DOCKER_IMAGE="lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon
+        - tar -zcf cli-linux-el6.tgz pipe-cli/dist
+      after_success:
+        - aws s3 mv cli-linux-el6.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
+
     - stage: "Build"
       name: "Build CLI Win"
       install: true
