@@ -128,7 +128,7 @@ public interface CloudPipelineAPI {
     Call<byte[]> loadFileContent(@Path(ID) Long pipelineId, @Query(VERSION) String version, @Query(PATH) String path);
 
     @GET("pipeline/{id}/file/truncate")
-    Call<Result<byte[]>> loadTruncatedFileContent(@Path(ID) Long pipelineId, @Query(VERSION) String version,
+    Call<byte[]> loadTruncatedFileContent(@Path(ID) Long pipelineId, @Query(VERSION) String version,
                                                   @Query(PATH) String path, @Query("byteLimit") Integer byteLimit);
 
     @GET("datastorage/loadAll")

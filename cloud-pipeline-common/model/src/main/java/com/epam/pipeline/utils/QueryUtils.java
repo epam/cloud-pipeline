@@ -64,13 +64,21 @@ public interface QueryUtils {
     static String executeFileContent(Call<byte[]> call) {
         try {
             Response<byte[]> response = call.execute();
-
-            if (!response.isSuccessful()) {
-                throw new PipelineResponseException(String.format("Unexpected status code: %d, %s", response.code(),
-                        response.errorBody() != null ? response.errorBody().string() : ""));
-            }
-
+            validateResponseStatus(response);
             return getFileContent(response);
+        } catch (JsonMappingException e) {
+            // case with empty output
+            return null;
+        } catch (IOException e) {
+            throw new PipelineResponseException(e);
+        }
+    }
+
+    static byte[] getByteResponse(Call<byte[]> call) {
+        try {
+            Response<byte[]> response = call.execute();
+            validateResponseStatus(response);
+            return response.body();
         } catch (JsonMappingException e) {
             // case with empty output
             return null;
@@ -83,6 +91,13 @@ public interface QueryUtils {
         InputStream in = new ByteArrayInputStream(Objects.requireNonNull(response.body()));
         try (BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
             return IOUtils.toString(br);
+        }
+    }
+
+    static void validateResponseStatus(Response<byte[]> response) throws IOException {
+        if (!response.isSuccessful()) {
+            throw new PipelineResponseException(String.format("Unexpected status code: %d, %s", response.code(),
+                    response.errorBody() != null ? response.errorBody().string() : ""));
         }
     }
 }
