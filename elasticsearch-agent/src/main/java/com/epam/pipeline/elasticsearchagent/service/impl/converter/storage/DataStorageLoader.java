@@ -40,14 +40,15 @@ public class DataStorageLoader extends AbstractCloudPipelineEntityLoader<DataSto
         DataStorageDoc.DataStorageDocBuilder docBuilder = DataStorageDoc
                 .builder()
                 .storage(dataStorage);
-        docBuilder
-                .regionName(
-                        cloudRegions.stream()
-                                .filter(region -> region.getProvider() == CloudProvider.AWS
-                                        && region.getId().equals(((S3bucketDataStorage) dataStorage).getRegionId()))
-                                .findFirst()
-                                .map(AbstractCloudRegion::getRegionCode)
-                .orElse(StringUtils.EMPTY));
+        if (dataStorage instanceof S3bucketDataStorage) {
+            docBuilder.regionName(
+                    cloudRegions.stream()
+                            .filter(region -> region.getProvider() == CloudProvider.AWS
+                                    && region.getId().equals(((S3bucketDataStorage) dataStorage).getRegionId()))
+                            .findFirst()
+                            .map(AbstractCloudRegion::getRegionCode)
+                            .orElse(StringUtils.EMPTY));
+        }
         return docBuilder.build();
     }
 
