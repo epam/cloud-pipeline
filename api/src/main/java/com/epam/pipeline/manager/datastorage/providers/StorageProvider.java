@@ -31,7 +31,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
 
 public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();

@@ -48,6 +48,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RequestCallback;
+import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -60,6 +62,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -97,6 +100,7 @@ public class GitlabClient {
     private static final String GIT_GET_SOURCES_ROOT_URL = GITLAB_API_ROOT +
             "projects/%s/repository/tree";
     private static final String GIT_GET_SOURCE_FILE_URL = GITLAB_API_ROOT + "projects/%s/repository/files";
+    private static final String GIT_GET_SOURCE_FILE_RAW_URL = GITLAB_API_V4_ROOT + "projects/%s/repository/files/%s/raw";
     private static final String GIT_REVISIONS = GITLAB_API_ROOT + "projects/%s/repository/tags";
     private static final String GIT_REVISION = GITLAB_API_ROOT + "projects/%s/repository/tags/%s";
     private static final String GIT_POST_PROJECT_URL = GITLAB_API_ROOT + "projects";
@@ -587,6 +591,56 @@ public class GitlabClient {
                 throw new UnexpectedResponseStatusException(sourcesResponse.getStatusCode());
             }
         } catch (UnsupportedEncodingException | URISyntaxException | UnexpectedResponseStatusException e) {
+            throw new GitClientException(e);
+        }
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public byte[] getTruncatedFileContents(String path, String revision, int byteLimit)
+            throws GitClientException {
+        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
+        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
+        try {
+            String projectId = makeProjectId(namespace, projectName);
+            Map<String, Object> params = new HashMap<>();
+            params.put("ref", revision);
+
+            String encodedPath = URLEncoder.encode(path, StandardCharsets.UTF_8.displayName())
+                    .replaceAll("\\.", "%2E");
+
+            String url = addUrlParameters(String.format(GIT_GET_SOURCE_FILE_RAW_URL, gitHost, projectId, encodedPath),
+                    params);
+            URI uri = new URI(url);
+
+            LOGGER.trace("Getting file contents on path {}, URL: {}", path, uri);
+
+            RestTemplate template = new RestTemplate();
+
+            RequestCallback requestCallback = request -> request.getHeaders()
+                    .set(TOKEN_HEADER, token);
+
+            ResponseExtractor<byte[]> responseExtractor = response -> {
+                try {
+                    if (response.getStatusCode() != HttpStatus.OK) {
+                        throw new IOException("Failed to get file content.");
+                    }
+                    if (response.getBody() == null) {
+                        return null;
+                    }
+                    long contentLength = response.getHeaders().getContentLength();
+                    final int bufferSize = (contentLength >= 0 && contentLength <= Integer.MAX_VALUE)
+                            ? Math.min((int) contentLength, byteLimit) : byteLimit;
+                    final byte[] receivedContent = new byte[bufferSize];
+                    response.getBody().read(receivedContent);
+                    return receivedContent;
+                } finally {
+                    if (response.getBody() != null) {
+                        response.getBody().close();
+                    }
+                }
+            };
+            return template.execute(uri, HttpMethod.GET, requestCallback, responseExtractor);
+        } catch (Exception e) {
             throw new GitClientException(e);
         }
     }
