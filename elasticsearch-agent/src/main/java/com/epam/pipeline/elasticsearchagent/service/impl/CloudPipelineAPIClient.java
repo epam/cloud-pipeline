@@ -154,7 +154,8 @@ public class CloudPipelineAPIClient {
 
     public byte[] getTruncatedPipelineFile(final Long id, final String version, final String path,
                                            final int byteLimit) {
-        return QueryUtils.execute(cloudPipelineAPI.loadTruncatedFileContent(id, version, path, byteLimit));
+        return QueryUtils.getByteResponse(cloudPipelineAPI
+                .loadTruncatedFileContent(id, version, path, byteLimit));
     }
 
     public List<GitRepositoryEntry> loadRepositoryContents(final Long id, final String version, final String path) {
