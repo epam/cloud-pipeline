@@ -783,9 +783,7 @@ public class PipelineRunManager {
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
         }
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-
+        PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.isTrue(pipelineRun.getInitialized(),
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_INITIALIZED, runId));
         Assert.notNull(pipelineRun.getDockerImage(),
@@ -804,9 +802,7 @@ public class PipelineRunManager {
      * @return resumed {@link PipelineRun}
      */
     public PipelineRun resumeRun(Long runId) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
+        PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
         if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
@@ -1279,5 +1275,12 @@ public class PipelineRunManager {
             runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
         }).orElse(new RunInstance());
+    }
+
+    private PipelineRun loadRunForPauseResume(Long runId) {
+        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        verifyPipelineRunForPauseResume(pipelineRun, runId);
+        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
+        return pipelineRun;
     }
 }
