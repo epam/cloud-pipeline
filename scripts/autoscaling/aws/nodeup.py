@@ -543,8 +543,10 @@ def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
     pipe_log('- Waiting for instance boot up...')
     result = poll_instance(sock, time_rep, ipaddr, port)
     rep = 0
-    while result != 0:
+    active = False
+    while result != 0 or not active:
         sleep(time_rep)
+        active = instance_is_active(ec2, ins_id)
         result = poll_instance(sock, time_rep, ipaddr, port)
         rep = increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                 ec2_client=ec2,
