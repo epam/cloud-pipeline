@@ -85,7 +85,8 @@ public class CPURequester extends AbstractMetricRequester {
                                               final Duration interval) {
 
         return request(from, to,
-                nodeStatsQuery(nodeName, from, to)
+                statsQuery(nodeName, NODE, from, to)
+                        .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
                                 .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));

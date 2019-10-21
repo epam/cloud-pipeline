@@ -153,7 +153,8 @@ public class FSRequester extends AbstractMetricRequester {
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
         return request(from, to,
-                nodeStatsQuery(nodeName, from, to)
+                statsQuery(nodeName, NODE, from, to)
+                        .size(0)
                         .aggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                 .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
