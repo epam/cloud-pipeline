@@ -45,6 +45,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/
 rm -rf pipe-cli/dist
 tar -zxf cli-linux-el6.tgz
 mv pipe-cli/dist/dist-file/pipe $API_STATIC_PATH/pipe-el6
+mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/pipe-el6.tar.gz
 
 # Untar pipe-cli windows binary and move it to the pipeline.jar static assets
 tar -zxf cli-win.tgz
