@@ -18,15 +18,15 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-search-elk
-          image: sebp/elk:651
+          image: elasticsearch:6.8.3
           securityContext:
             privileged: true
           imagePullPolicy: "IfNotPresent"
           command: ["bash"]
-          args: ["-c", "ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/start.sh"]
+          args: ["-c", "ulimit -n 65536 && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh"]
           env:
-          - name: ES_HEAP_SIZE
-            value: 4g
+          - name: ES_JAVA_OPTS
+            value: "-Xmx4g -Xms4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
           envFrom:
           - configMapRef:
               name: cp-config-global
