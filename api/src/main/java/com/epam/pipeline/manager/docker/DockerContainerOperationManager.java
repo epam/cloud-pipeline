@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.docker;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
@@ -35,6 +34,7 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.execution.SystemParams;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Service
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -234,8 +235,9 @@ public class DockerContainerOperationManager {
                     TaskStatus.PAUSED.name());
 
             run.setPodIP(null);
-            runManager.updatePodIP(run);
-            runManager.updateServiceUrl(run.getId(), new PipelineRunServiceUrlVO());
+            run.setServiceUrl(null);
+            removeUtilizationLevelTags(run);
+            runManager.updateRunInfo(run);
 
             Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
 
@@ -257,7 +259,6 @@ public class DockerContainerOperationManager {
             kubernetesManager.deletePod(run.getPodId());
             cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
             kubernetesManager.deleteNode(instance.getNodeName());
-
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
@@ -325,7 +326,7 @@ public class DockerContainerOperationManager {
         runManager.updatePipelineStatus(run);
     }
 
-    private Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
+    Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
         String kubePipelineNodeUserName  = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
@@ -366,6 +367,13 @@ public class DockerContainerOperationManager {
                 .logText(logMessage)
                 .build();
         runLogManager.saveLog(runLog);
+    }
+
+    private void removeUtilizationLevelTags(final PipelineRun run) {
+        Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH)
+            .filter(run::hasTag)
+            .forEach(run::removeTag);
     }
 }
 

@@ -842,6 +842,21 @@ public class PipelineRunManager {
     }
 
     /**
+     * Update whole pipeline info (use instead of calling few specific update methods if need).
+     * @param run {@link PipelineRun} which will be updated
+     * @return updated pipeline run
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunInfo(final PipelineRun run) {
+        final Long runId = run.getId();
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(loadedRun,
+                       messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        pipelineRunDao.updateRun(run);
+        return run;
+    }
+
+    /**
      * Updates run's tags
      * @param runId is ID of pipeline run which tags should be updated
      * @param newTags object, containing a map with tags to set for a pipeline
