@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.docker;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
@@ -236,8 +235,9 @@ public class DockerContainerOperationManager {
                     TaskStatus.PAUSED.name());
 
             run.setPodIP(null);
-            runManager.updatePodIP(run);
-            runManager.updateServiceUrl(run.getId(), new PipelineRunServiceUrlVO());
+            run.setServiceUrl(null);
+            removeUtilizationLevelTags(run);
+            runManager.updateRunInfo(run);
 
             Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
 
@@ -259,9 +259,8 @@ public class DockerContainerOperationManager {
             kubernetesManager.deletePod(run.getPodId());
             cloudFacade.stopInstance(instance.getCloudRegionId(), instance.getNodeId());
             kubernetesManager.deleteNode(instance.getNodeName());
-            removeUtilizationLevelTags(run);
             run.setStatus(TaskStatus.PAUSED);
-            runManager.updateRunInfo(run);
+            runManager.updatePipelineStatus(run);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
