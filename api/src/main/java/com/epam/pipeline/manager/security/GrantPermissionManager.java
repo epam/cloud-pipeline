@@ -33,7 +33,6 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.PathDescription;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -41,14 +40,11 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineWithPermissions;
 import com.epam.pipeline.entity.pipeline.RepositoryTool;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
-import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
-import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
@@ -56,7 +52,6 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -64,8 +59,6 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
-import com.epam.pipeline.manager.pipeline.PipelineApiService;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
@@ -115,7 +108,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -138,15 +130,11 @@ public class GrantPermissionManager {
 
     @Autowired private JdbcMutableAclServiceImpl aclService;
 
-    @Autowired private PipelineApiService pipelineApiService;
-
     @Autowired private ToolManager toolManager;
 
     @Autowired private ToolGroupManager toolGroupManager;
 
     @Autowired private DockerRegistryManager registryManager;
-
-    @Autowired private PipelineRunManager runManager;
 
     @Autowired private MessageHelper messageHelper;
 
@@ -177,6 +165,8 @@ public class GrantPermissionManager {
     @Autowired private AbstractEntityPermissionMapper entityPermissionMapper;
 
     @Autowired private EntityEventServiceManager entityEventServiceManager;
+
+    @Autowired private RunPermissionManager runPermissionManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -369,10 +359,6 @@ public class GrantPermissionManager {
         final AbstractSecuredEntity entity = entityManager.load(aclClass, id);
         final UserContext userContext = userManager.loadUserContext(userName);
         Assert.notNull(userContext, String.format("The user with name %s doesn't exist.", userName));
-        if (entity.getOwner().equalsIgnoreCase(userName)) {
-            LOGGER.info("The resource you're trying to change owner is already owned by this user.");
-            return new AclSecuredEntry(entity);
-        }
         aclService.changeOwner(entity, userName);
         return new AclSecuredEntry(entityManager.changeOwner(aclClass, id, userName));
     }
@@ -413,53 +399,6 @@ public class GrantPermissionManager {
             return false;
         }
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
-    }
-
-    public boolean isRunSshAllowed(Long runId) {
-        return isRunSshAllowed(runManager.loadPipelineRun(runId));
-    }
-
-    public boolean isRunSshAllowed(PipelineRun pipelineRun) {
-        if (isOwnerOrAdmin(pipelineRun.getOwner())) {
-            return true;
-        }
-        final List<RunSid> sshSharedSids = ListUtils.emptyIfNull(pipelineRun.getRunSids())
-                .stream()
-                .filter(sid -> RunAccessType.SSH.equals(sid.getAccessType()))
-                .collect(toList());
-        if (CollectionUtils.isEmpty(sshSharedSids)) {
-            return false;
-        }
-        final PipelineUser currentUser = authManager.getCurrentUser();
-        if (currentUser == null) {
-            return false;
-        }
-        return isSharedWithPrincipal(sshSharedSids, currentUser) || isSharedWithGroup(sshSharedSids, currentUser);
-    }
-
-    public boolean runPermission(Long runId, String permissionName) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        if (permissionsHelper.isOwner(pipelineRun)) {
-            return true;
-        }
-        if (isRunSshAllowed(pipelineRun)) {
-            return true;
-        }
-        AbstractSecuredEntity parent = pipelineRun.getParent();
-        if (parent == null) {
-            return false;
-        }
-        return permissionEvaluator
-                .hasPermission(SecurityContextHolder.getContext().getAuthentication(), parent,
-                        permissionName);
-    }
-
-    public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        if (taskStatus.isFinal()) {
-            return isOwnerOrAdmin(pipelineRun.getOwner());
-        }
-        return runPermission(pipelineRun, permissionName);
     }
 
     public boolean storagePermission(Long storageId, String permissionName) {
@@ -551,32 +490,6 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, tool);
     }
 
-    /**
-     * Method will check permission for a {@link Tool} if it is registered, or for {@link ToolGroup}
-     * if this is a new {@link Tool}. If both {@link Tool} and {@link ToolGroup} do not exist,
-     * permission for {@link DockerRegistry} will be checked. Image is expected in format 'group/image'.
-     * @param registryId
-     * @param image
-     * @param permission
-     * @return
-     */
-    public boolean commitPermission(Long registryId, String image, String permission) {
-        DockerRegistry registry = (DockerRegistry)entityManager.load(AclClass.DOCKER_REGISTRY, registryId);
-        try {
-            String trimmedImage = image.startsWith(registry.getPath()) ?
-                    image.substring(registry.getPath().length() + 1) : image;
-            ToolGroup toolGroup = toolGroupManager.loadToolGroupByImage(registry.getPath(), trimmedImage);
-            Optional<Tool> tool = toolManager.loadToolInGroup(trimmedImage, toolGroup.getId());
-            return tool.map(t -> permissionsHelper.isAllowed(permission, t))
-                    .orElseGet(() -> permissionsHelper.isAllowed(permission, toolGroup));
-        } catch (IllegalArgumentException e) {
-            //case when tool group doesn't exist
-            LOGGER.trace(e.getMessage(), e);
-            return permissionsHelper.isAllowed(permission, registry);
-        }
-
-    }
-
     public boolean toolGroupPermission(String groupId, String permissionName) {
         ToolGroup group = toolGroupManager.loadByNameOrId(groupId);
         return permissionsHelper.isAllowed(permissionName, group);
@@ -587,25 +500,6 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, group) &&
                 ListUtils.emptyIfNull(group.getTools()).stream()
                         .allMatch(tool -> permissionsHelper.isAllowed(permissionName, tool));
-    }
-
-    public boolean runPermission(PipelineRun run, String permissionName) {
-        if (permissionsHelper.isOwner(run)) {
-            run.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
-            return true;
-        }
-        AbstractSecuredEntity parent = runManager.loadRunParent(run);
-        if (parent == null) {
-            run.setMask(0);
-            return false;
-        }
-        boolean allowed = permissionEvaluator
-                .hasPermission(SecurityContextHolder.getContext().getAuthentication(), parent,
-                        permissionName);
-        if (allowed) {
-            run.setMask(getPermissionsMask(parent, true, true));
-        }
-        return allowed;
     }
 
     public boolean metadataEntityPermission(Long entityId, String permissionName) {
@@ -686,26 +580,12 @@ public class GrantPermissionManager {
         return metadataPermission(issue.getEntity().getEntityId(), issue.getEntity().getEntityClass(), permissionName);
     }
 
-    public void extendFilter(AclSecuredFilter filter) {
-        List<Sid> sids = getSids();
-        if (isAdmin(sids)) {
-            return;
-        }
-        filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
-        List<Long> allowedPipelinesList =
-                pipelineApiService.loadAllPipelinesWithoutVersion()
-                        .stream()
-                        .map(BaseEntity::getId)
-                        .collect(toList());
-        filter.setAllowedPipelines(allowedPipelinesList);
-    }
-
     public boolean nodePermission(NodeInstance node, String permissionName) {
         // not labeled nodes are available only for admins
         if (node.getPipelineRun() == null) {
             return false;
         }
-        boolean allowed = runPermission(node.getPipelineRun(), permissionName);
+        boolean allowed = runPermissionManager.runPermission(node.getPipelineRun(), permissionName);
         if (allowed) {
             node.setMask(node.getPipelineRun().getMask());
         }
@@ -718,7 +598,7 @@ public class GrantPermissionManager {
         if (nodeInstance.getPipelineRun() == null) {
             return false;
         }
-        return runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
+        return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
     }
 
     public boolean nodeStopPermission(String nodeName, String permissionName) {
@@ -727,7 +607,8 @@ public class GrantPermissionManager {
         if (nodeInstance.getPipelineRun() == null) {
             return false;
         }
-        return runStatusPermission(nodeInstance.getPipelineRun().getId(), TaskStatus.STOPPED, permissionName);
+        return runPermissionManager.runStatusPermission(nodeInstance.getPipelineRun().getId(),
+                TaskStatus.STOPPED, permissionName);
     }
 
     public EntityPermissionVO loadEntityPermission(final AclClass entityClass, final Long id) {
@@ -1207,20 +1088,6 @@ public class GrantPermissionManager {
             LOGGER.error(String.format("An error occurred during event update for entity %s with ID %d",
                     entity.getAclClass(), entity.getId()), e);
         }
-    }
-
-    private boolean isSharedWithGroup(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
-        final Set<String> userClaims = new HashSet<>();
-        userClaims.addAll(ListUtils.emptyIfNull(currentUser.getRoles()).stream().map(Role::getName)
-                .collect(toList()));
-        userClaims.addAll(ListUtils.emptyIfNull(currentUser.getGroups()));
-        return sshSharedSids.stream().anyMatch(sid -> Boolean.FALSE.equals(sid.getIsPrincipal()) &&
-                userClaims.contains(sid.getName()));
-    }
-
-    private boolean isSharedWithPrincipal(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
-        return sshSharedSids.stream().anyMatch(sid -> Boolean.TRUE.equals(sid.getIsPrincipal()) &&
-                sid.getName().equalsIgnoreCase(currentUser.getUserName()));
     }
 
     @Data

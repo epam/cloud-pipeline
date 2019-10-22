@@ -27,8 +27,10 @@ import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.RunPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -36,22 +38,23 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.MutableAcl;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-@Aspect @Component
+@Aspect
+@Component
+@RequiredArgsConstructor
 public class AclAspect {
 
     private static final String RETURN_OBJECT = "entity";
     private static final Logger LOGGER = LoggerFactory.getLogger(AclAspect.class);
 
-    @Autowired private JdbcMutableAclServiceImpl aclService;
-
-    @Autowired private GrantPermissionManager permissionManager;
+    private final JdbcMutableAclServiceImpl aclService;
+    private final GrantPermissionManager permissionManager;
+    private final RunPermissionManager runPermissionManager;
 
 
     @AfterReturning(pointcut = "@within(com.epam.pipeline.manager.security.acl.AclSync) && "
@@ -142,7 +145,7 @@ public class AclAspect {
 
     @Before("@annotation(com.epam.pipeline.manager.security.acl.AclFilter) && args(filter,..)")
     public void extendFilter(JoinPoint joinPoint, AclSecuredFilter filter) {
-        permissionManager.extendFilter(filter);
+        runPermissionManager.extendFilter(filter);
     }
 
     private void createEntity(final AbstractSecuredEntity entity) {
