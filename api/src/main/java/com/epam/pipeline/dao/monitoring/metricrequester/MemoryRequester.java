@@ -73,7 +73,8 @@ public class MemoryRequester extends AbstractMetricRequester {
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
-                .filter(b -> Double.isFinite(((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()))
+                .filter(b -> Double.isFinite(((Avg) b.getAggregations()
+                        .get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()))
                 .collect(Collectors.toMap(
                     b -> b.getKey().toString(),
                     b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()));

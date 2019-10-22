@@ -140,7 +140,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
         final Map<ELKUsageMetric, Double> thresholds = getThresholds();
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
-                "MEMORY, DISK ",running.size(), String.join(", ", running.keySet())));
+                "MEMORY, DISK ", running.size(), String.join(", ", running.keySet())));
 
         final LocalDateTime previousMinute = previousMinuteTime();
         final Map<ELKUsageMetric, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
@@ -273,7 +273,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         InstanceType.builder().vCPU(1).build());
                 double cpuUsageRate = metric / MILLIS / type.getVCPU();
                 if (Precision.compareTo(cpuUsageRate, idleCpuLevel, ONE_THOUSANDTH) < 0) {
-                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLED, run.getPodId(), cpuUsageRate));
                     processIdleRun(run, actionTimeout, action, runsToNotify,
                                    runsToUpdateNotificationTime, cpuUsageRate, runsToUpdateTags);
                 } else if (run.getLastIdleNotificationTime() != null) { // No action is longer needed, clear timeout
