@@ -75,6 +75,7 @@ public class CPURequester extends AbstractMetricRequester {
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return ((Terms)response.getAggregations().get(AGGREGATION_POD_NAME)).getBuckets().stream()
+                .filter(b -> Double.isFinite(((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()))
                 .collect(Collectors.toMap(
                     b -> b.getKey().toString(),
                     b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()));
