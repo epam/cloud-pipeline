@@ -76,6 +76,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     public static final String UTILIZATION_LEVEL_LOW = "IDLE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
+    private static final long ONE = 1L;
 
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
@@ -140,11 +141,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final Map<ELKUsageMetric, Double> thresholds = getThresholds();
         log.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
 
-        final LocalDateTime now = DateUtils.nowUTC();
+        final LocalDateTime previousMinute = previousMinuteTime();
         final Map<ELKUsageMetric, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
                 .collect(Collectors.toMap(metric -> metric, metric ->
                         monitoringDao.loadMetrics(metric, running.keySet(),
-                            now.minusMinutes(timeRange), now)));
+                                previousMinute.minusMinutes(timeRange), previousMinute)));
 
         log.debug("memory and disk metrics received: " + metrics.entrySet().stream()
                 .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
@@ -162,6 +163,10 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
         pipelineRunManager.updateRunsTags(runsToUpdateTags);
+    }
+
+    private LocalDateTime previousMinuteTime() {
+        return DateUtils.nowUTC().minusMinutes(ONE);
     }
 
     private List<PipelineRun> getRunsToUpdatePressuredTags(final Map<String, PipelineRun> running,
@@ -231,9 +236,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         log.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
 
-        final LocalDateTime now = DateUtils.nowUTC();
+        final LocalDateTime previousMinute = previousMinuteTime();
         final Map<String, Double> cpuMetrics = monitoringDao.loadMetrics(ELKUsageMetric.CPU,
-                notProlongedRuns.keySet(), now.minusMinutes(idleTimeout), now);
+                notProlongedRuns.keySet(), previousMinute.minusMinutes(idleTimeout), previousMinute);
 
         log.debug("CPU Metrics received: " + cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
             .collect(Collectors.joining(", ")));
