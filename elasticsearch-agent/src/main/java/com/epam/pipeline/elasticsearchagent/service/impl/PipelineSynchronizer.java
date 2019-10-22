@@ -83,6 +83,7 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
             final @Value("${sync.pipeline-code.index.name}") String pipelineCodeIndexName,
             final @Value("${sync.pipeline-code.index.paths}") String pipelineFileIndexPaths,
             final @Value("${sync.pipeline-code.bulk.insert.size}") Integer bulkInsertSize,
+            final @Value("${elastic.request.limit.size.mb}") Integer requestLimitMb,
             final CloudPipelineAPIClient cloudPipelineAPIClient,
             final ElasticsearchServiceClient elasticsearchServiceClient,
             final ElasticIndexService indexService,
@@ -106,7 +107,7 @@ public class PipelineSynchronizer implements ElasticsearchSynchronizer {
         PipelineIdConverter idConverter = new PipelineIdConverter(indexPrefix + pipelineIndexName,
                 indexPrefix + pipelineCodeIndexName);
         this.requestSender = new BulkRequestSender(
-                elasticsearchClient, bulkResponsePostProcessor, idConverter, bulkInsertSize);
+                elasticsearchClient, bulkResponsePostProcessor, idConverter, bulkInsertSize, requestLimitMb);
     }
 
     @Override
