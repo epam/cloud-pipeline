@@ -6,6 +6,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.filter.FilterManager;
@@ -128,6 +129,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected CloudRegionDao cloudRegionDao;
+
+    @MockBean
+    protected ContextualPreferenceManager contextualPreferenceManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

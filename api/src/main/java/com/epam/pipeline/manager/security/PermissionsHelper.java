@@ -25,7 +25,6 @@ import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,8 +41,7 @@ public class PermissionsHelper {
             return true;
         }
         return permissionEvaluator
-                .hasPermission(SecurityContextHolder.getContext().getAuthentication(), entity,
-                        permissionName);
+                .hasPermission(authManager.getAuthentication(), entity, permissionName);
     }
 
     public boolean isOwner(final AbstractSecuredEntity entity) {

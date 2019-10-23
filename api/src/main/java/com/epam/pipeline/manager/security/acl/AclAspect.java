@@ -27,7 +27,7 @@ import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
-import com.epam.pipeline.manager.security.RunPermissionManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import lombok.RequiredArgsConstructor;

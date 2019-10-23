@@ -1,6 +1,7 @@
-package com.epam.pipeline.manager.security;
+package com.epam.pipeline.manager.security.run;
 
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -11,17 +12,23 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.PermissionsHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +41,8 @@ import static java.util.stream.Collectors.toList;
 @RequiredArgsConstructor
 public class RunPermissionManager {
 
+    private static final RunVisibilityPolicy DEFAULT_POLICY = RunVisibilityPolicy.INHERIT;
+
     private final PipelineRunManager runManager;
     private final PipelineApiService pipelineApiService;
     private final PermissionsHelper permissionsHelper;
@@ -41,6 +50,7 @@ public class RunPermissionManager {
     private final DockerRegistryManager registryManager;
     private final ToolGroupManager toolGroupManager;
     private final ToolManager toolManager;
+    private final ContextualPreferenceManager preferenceManager;
 
     /**
      * Run permissions: owner and admin have full access to PipelineRun
@@ -53,7 +63,7 @@ public class RunPermissionManager {
         if (permissionsHelper.isOwnerOrAdmin(run.getOwner()) || isRunSshAllowed(run)) {
             return true;
         }
-        return Optional.ofNullable(runManager.loadRunParent(run))
+        return inheritPermissions() && Optional.ofNullable(runManager.loadRunParent(run))
                 .map(parent -> permissionsHelper.isAllowed(permissionName, parent))
                 .orElse(false);
     }
@@ -121,12 +131,14 @@ public class RunPermissionManager {
             return;
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
-        final List<Long> allowedPipelinesList =
-                pipelineApiService.loadAllPipelinesWithoutVersion()
-                        .stream()
-                        .map(BaseEntity::getId)
-                        .collect(toList());
-        filter.setAllowedPipelines(allowedPipelinesList);
+        if (inheritPermissions()) {
+            final List<Long> allowedPipelinesList =
+                    pipelineApiService.loadAllPipelinesWithoutVersion()
+                            .stream()
+                            .map(BaseEntity::getId)
+                            .collect(toList());
+            filter.setAllowedPipelines(allowedPipelinesList);
+        }
     }
 
     private boolean isSharedWithPrincipal(final List<RunSid> sshSharedSids, final PipelineUser currentUser) {
@@ -141,5 +153,16 @@ public class RunPermissionManager {
         userClaims.addAll(ListUtils.emptyIfNull(currentUser.getGroups()));
         return sshSharedSids.stream().anyMatch(sid -> Boolean.FALSE.equals(sid.getIsPrincipal()) &&
                 userClaims.contains(sid.getName()));
+    }
+
+    private boolean inheritPermissions() {
+        final ContextualPreference visibilityPreference = preferenceManager.search(
+                Collections.singletonList(SystemPreferences.RUN_VISIBILITY_POLICY.getKey()));
+        final RunVisibilityPolicy visibilityPolicy = Optional.ofNullable(visibilityPreference)
+                .map(ContextualPreference::getValue)
+                .filter(value -> EnumUtils.isValidEnum(RunVisibilityPolicy.class, value))
+                .map(RunVisibilityPolicy::valueOf)
+                .orElse(DEFAULT_POLICY);
+        return RunVisibilityPolicy.INHERIT == visibilityPolicy;
     }
 }

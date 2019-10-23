@@ -3,25 +3,34 @@ package com.epam.pipeline.acl.run;
 import com.epam.pipeline.app.AclTestConfiguration;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
 
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.eq;
@@ -39,9 +48,13 @@ public class RunApiServiceTest {
     private static final String TEST_ADMIN_NAME = "ADMIN";
     private static final String TEST_ADMIN_ROLE = "ADMIN";
     private static final Long TEST_PIPELINE_ID = 10L;
+    private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
 
     @Autowired
     private RunApiService runApiService;
+
+    @Autowired
+    private AclCache aclCache;
 
     @Autowired
     private GrantPermissionManager grantPermissionManager;
@@ -57,6 +70,14 @@ public class RunApiServiceTest {
 
     @Autowired
     private UserManager mockUserManager;
+
+    @Autowired
+    private ContextualPreferenceManager mockPreferenceManager;
+
+    @After
+    public void tearDown() {
+        aclCache.clearCache();
+    }
 
     @Test
     @WithMockUser(username = TEST_OWNER)
@@ -116,6 +137,17 @@ public class RunApiServiceTest {
         Assert.assertEquals(TEST_RUN_ID, loaded.getId());
     }
 
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = TEST_USER1)
+    public void loadPipelineRunShouldNotInheritPermissionsWithOwnerVisibilityEnabled() {
+        final Pipeline pipeline = initTestPipeline();
+        initTestPipelineRun(pipeline);
+        grantPermissionOnPipeline(pipeline, TEST_USER1, TEST_OWNER, AclPermission.READ.getMask());
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+        final PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
+        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+    }
+
     @Test
     @WithMockUser(username = TEST_ADMIN_NAME, roles = {TEST_ADMIN_ROLE})
     public void loadPipelineRunShouldBeAllowedForAdmin() {
@@ -170,5 +202,12 @@ public class RunApiServiceTest {
 
         doReturn(new UserContext(null, owner)).when(mockUserManager).loadUserContext(eq(owner));
         grantPermissionManager.changeOwner(entity.getId(), entity.getAclClass(), owner);
+    }
+
+    private void enableVisibilityPolicy(final RunVisibilityPolicy policy) {
+        final ContextualPreference preference = new ContextualPreference(VISIBILITY_PREFERENCE_KEY,
+                policy.name(), PreferenceType.OBJECT);
+        doReturn(preference).when(mockPreferenceManager)
+                .search(eq(Collections.singletonList(VISIBILITY_PREFERENCE_KEY)));
     }
 }

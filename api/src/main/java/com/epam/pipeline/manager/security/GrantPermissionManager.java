@@ -62,6 +62,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;

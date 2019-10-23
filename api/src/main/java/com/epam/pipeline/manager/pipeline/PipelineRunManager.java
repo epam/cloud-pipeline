@@ -65,7 +65,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.security.RunPermissionManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
