@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.common.bytes.BytesReference;
 import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,8 +93,7 @@ public class BulkRequestSender {
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
                                               Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
         final RequestChunk requestChunk = new RequestChunk(partitionSize);
-        documentRequests.stream()
-            .filter(this::fitsDocSizeLimit)
+        documentRequests
             .forEach(request -> tryToProceedRequestsInChunk(indexName, objectTypes, syncStart, requestChunk, request));
         if (!requestChunk.isEmpty()) {
             tryToIndexChunk(indexName, objectTypes, syncStart, requestChunk);
@@ -102,6 +103,10 @@ public class BulkRequestSender {
     private void tryToProceedRequestsInChunk(final String indexName, final List<PipelineEvent.ObjectType> objectTypes,
                                              final LocalDateTime syncStart, final RequestChunk chunk,
                                              final DocWriteRequest request) {
+        if (exceedsDocSizeLimit(request)) {
+            log.warn("Can't index {} doc with id:{} due to its oversize!", objectTypes, request.id());
+            return;
+        }
         if (chunk.isFull()
                 || (chunk.getSizeMB() + RequestChunk.getRequestSizeMb(request)) > requestLimitMb) {
             tryToIndexChunk(indexName, objectTypes, syncStart, chunk);
@@ -136,13 +141,8 @@ public class BulkRequestSender {
             .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
     }
 
-    private boolean fitsDocSizeLimit(final DocWriteRequest request) {
-        if (RequestChunk.getRequestSizeMb(request) < requestLimitMb) {
-            return true;
-        } else {
-            log.warn("Can't index {} due to the doc oversize!", request.id());
-            return false;
-        }
+    private boolean exceedsDocSizeLimit(final DocWriteRequest request) {
+        return RequestChunk.getRequestSizeMb(request) > requestLimitMb;
     }
 
     @Getter
@@ -183,7 +183,10 @@ public class BulkRequestSender {
          */
         public static double getRequestSizeMb(final DocWriteRequest request) {
             try {
-                return ((IndexRequest) request).source().length() / (2 << 20);
+                return Optional.ofNullable(((IndexRequest) request).source())
+                           .map(BytesReference::length)
+                           .map(Integer::doubleValue)
+                           .orElse(0.0) / (2 << 20);
             } catch (ClassCastException e) {
                 return 0;
             }
