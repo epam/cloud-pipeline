@@ -142,11 +142,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
                 "MEMORY, DISK ", running.size(), String.join(", ", running.keySet())));
 
-        final LocalDateTime previousMinute = previousMinuteTime();
+        final LocalDateTime now = DateUtils.nowUTC();
         final Map<ELKUsageMetric, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
                 .collect(Collectors.toMap(metric -> metric, metric ->
                         monitoringDao.loadMetrics(metric, running.keySet(),
-                                previousMinute.minusMinutes(timeRange), previousMinute)));
+                                now.minusMinutes(timeRange + ONE), now)));
 
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_MEMORY_METRICS, metrics.entrySet().stream()
                 .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
@@ -164,10 +164,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
         notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
         pipelineRunManager.updateRunsTags(runsToUpdateTags);
-    }
-
-    private LocalDateTime previousMinuteTime() {
-        return DateUtils.nowUTC().minusMinutes(ONE);
     }
 
     private List<PipelineRun> getRunsToUpdatePressuredTags(final Map<String, PipelineRun> running,
@@ -238,9 +234,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
                 "CPU", notProlongedRuns.size(), String.join(", ", notProlongedRuns.keySet())));
 
-        final LocalDateTime previousMinute = previousMinuteTime();
+        final LocalDateTime now = DateUtils.nowUTC();
         final Map<String, Double> cpuMetrics = monitoringDao.loadMetrics(ELKUsageMetric.CPU,
-                notProlongedRuns.keySet(), previousMinute.minusMinutes(idleTimeout), previousMinute);
+                notProlongedRuns.keySet(), now.minusMinutes(idleTimeout + ONE), now);
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_CPU_RUN_METRICS_RECEIVED,
                 cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
                         .collect(Collectors.joining(", ")))

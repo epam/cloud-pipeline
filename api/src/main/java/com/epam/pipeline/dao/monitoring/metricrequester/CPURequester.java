@@ -26,8 +26,6 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
@@ -74,11 +72,7 @@ public class CPURequester extends AbstractMetricRequester {
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms)response.getAggregations().get(AGGREGATION_POD_NAME)).getBuckets().stream()
-                .filter(b -> Double.isFinite(((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()))
-                .collect(Collectors.toMap(
-                    b -> b.getKey().toString(),
-                    b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()));
+        return collectAggregation(response, AGGREGATION_POD_NAME, AVG_AGGREGATION + USAGE_RATE);
     }
 
     @Override

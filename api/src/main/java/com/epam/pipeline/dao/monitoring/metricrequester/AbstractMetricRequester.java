@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -29,6 +30,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -45,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class AbstractMetricRequester implements MetricRequester, MonitoringRequester {
@@ -149,6 +152,17 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                         buildRequest(
                                 resourceIds, from, to, null))
         );
+    }
+
+    public Map<String, Double> collectAggregation(final SearchResponse response,
+                                                  final String aggName, final String subAggName) {
+        return ((Terms)response.getAggregations().get(aggName)).getBuckets()
+                .stream()
+                .map(b -> Pair.of(b.getKey().toString(),
+                        doubleValue(aggregations(b), subAggName))
+                )
+                .filter(pair -> pair.getRight().isPresent())
+                .collect(Collectors.toMap(Pair::getLeft, p -> p.getRight().get()));
     }
 
     protected SearchResponse executeRequest(final SearchRequest searchRequest) {
