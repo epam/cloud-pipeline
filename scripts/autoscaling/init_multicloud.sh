@@ -130,6 +130,7 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
+  "max-concurrent-uploads": 1,
   "storage-opts": [
     "overlay2.override_kernel_check=true"
   ],
@@ -148,6 +149,7 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
   "storage-driver": "overlay2",
+  "max-concurrent-uploads": 1,
   "storage-opts": [
     "overlay2.override_kernel_check=true"
   ]
