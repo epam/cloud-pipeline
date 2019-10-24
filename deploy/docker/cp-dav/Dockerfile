@@ -70,7 +70,7 @@ RUN yum install -y cronie \
                    python
 RUN curl -s https://bootstrap.pypa.io/get-pip.py | python && \
     pip install -I requests==2.21.0 && \
-    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 ENV SYNC_HOME=/opt/sync
 ENV SYNC_LOG_DIR=/var/log/dav/sync

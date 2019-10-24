@@ -25,7 +25,7 @@ RUN apt-get update && \
                         lsb-release \
                         gpg
 
-RUN wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python - && \

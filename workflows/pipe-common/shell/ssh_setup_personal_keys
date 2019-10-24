@@ -43,12 +43,6 @@ if [ -z "$OWNER" ]; then
     exit 1
 fi
 
-if ! command -v "jq" >/dev/null 2>&1 ; then
-    echo "Installing jq"
-    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
-    chmod +x /usr/bin/jq
-fi
-
 OWNER_SSH_PRV_LOCATION=/home/$OWNER/.ssh/id_${OWNER}
 OWNER_SSH_PUB_LOCATION=/home/$OWNER/.ssh/id_${OWNER}.pub
 OWNER_SSH_CONFIG_LOCATION=/home/$OWNER/.ssh/config

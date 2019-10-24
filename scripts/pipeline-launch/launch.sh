@@ -398,22 +398,6 @@ function symlink_common_locations {
       fi
 }
 
-function copy_git_credentials {
-
-      local _OWNER="$1"
-      local _OWNER_HOME="$2"
-
-      # Symlink git credentials
-      _GIT_CONFIG_FILE=".gitconfig"
-      _GIT_CREDENTIALS_FOLDER="/git/config"
-      _GIT_CREDENTIALS_FILE="${_GIT_CREDENTIALS_FOLDER}/credentials"
-      cp /root/${_GIT_CONFIG_FILE} ${_OWNER_HOME}/${_GIT_CONFIG_FILE}
-      chmod g+rwx ${_OWNER_HOME}/${_GIT_CONFIG_FILE}
-      chmod g+rwx ${_GIT_CREDENTIALS_FILE}
-      chmod g+rwx ${_GIT_CREDENTIALS_FOLDER}
-
-}
-
 function create_sys_dir {
       local _DIR_NAME="$1"
       mkdir -p "$_DIR_NAME"
@@ -516,6 +500,16 @@ then
 fi
 
 check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
+
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    pipe_log_info "Installing jq"
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+    if [ $? -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
 
 echo "------"
 echo
@@ -1174,7 +1168,6 @@ echo "-"
 if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
-      copy_git_credentials "$OWNER" "$OWNER_HOME"
 else
       echo "Owner $OWNER account is not configured, no symlinks will be created"
 fi
