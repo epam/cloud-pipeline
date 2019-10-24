@@ -18,6 +18,7 @@ package com.epam.pipeline.vmmonitor.service;
 
 import com.epam.pipeline.vmmonitor.model.cert.PkiCertificate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -64,6 +65,9 @@ public class CertificateMonitor {
     }
 
     private void scanDirForCertificates(final String dirPath) {
+        if (StringUtils.isBlank(dirPath)) {
+            return;
+        }
         try (Stream<Path> paths = Files.walk(Paths.get(dirPath))) {
             paths
                 .filter(this::isCertFile)
@@ -93,7 +97,7 @@ public class CertificateMonitor {
 
     private boolean isCertFile(final Path pathToFile) {
         return Files.isRegularFile(pathToFile)
-               && certificateMasks.stream().anyMatch(pathToFile::endsWith);
+               && certificateMasks.stream().anyMatch(mask -> pathToFile.toString().endsWith(mask));
     }
 
     private boolean isExpiring(final X509Certificate certificate) {
