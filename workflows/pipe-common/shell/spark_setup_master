@@ -264,13 +264,6 @@ fi
 
 pipe_log_info "Spark installed into $CP_CAP_SPARK_INSTALL_DIR" "$SPARK_MASTER_SETUP_TASK"
 
-# Check jq is installed (used to parse the Spark API responses)
-if ! jq --version > /dev/null 2>&1; then
-    pipe_log_info "Installing jq"
-    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
-    chmod +x /usr/bin/jq
-fi
-
 # Install java
 if ! java -version > /dev/null 2>&1 || [ ! -d "$JAVA_HOME" ]; then
     export CP_CAP_SPARK_JAVA_VERSION="${CP_CAP_SPARK_JAVA_VERSION:-1.8.0_222}"
