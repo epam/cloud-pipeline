@@ -38,7 +38,7 @@ import java.util.List;
 // and provide integration tests for ACL permissions
 @Service
 @RequiredArgsConstructor
-public class PermissionsHelper {
+public class CheckPermissionHelper {
     private final PermissionEvaluator permissionEvaluator;
     private final AuthManager authManager;
     private final SidRetrievalStrategy sidRetrievalStrategy;

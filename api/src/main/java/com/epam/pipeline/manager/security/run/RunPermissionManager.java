@@ -36,7 +36,7 @@ import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.security.PermissionsHelper;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -61,7 +61,7 @@ public class RunPermissionManager {
 
     private final PipelineRunManager runManager;
     private final PipelineApiService pipelineApiService;
-    private final PermissionsHelper permissionsHelper;
+    private final CheckPermissionHelper permissionsHelper;
     private final AuthManager authManager;
     private final DockerRegistryManager registryManager;
     private final ToolGroupManager toolGroupManager;

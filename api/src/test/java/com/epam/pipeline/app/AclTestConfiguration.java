@@ -45,7 +45,7 @@ import javax.sql.DataSource;
 
 @SpringBootConfiguration
 @Import({AclSecurityConfiguration.class, DBConfiguration.class, MappersConfiguration.class})
-@ComponentScan(basePackages = {"com.epam.pipeline.manager.security", "com.epam.pipeline.acl"})
+@ComponentScan(basePackages = {"com.epam.pipeline.manager.security"})
 @TestPropertySource(value={"classpath:test-application.properties"})
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableAspectJAutoProxy

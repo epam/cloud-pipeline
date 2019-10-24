@@ -168,7 +168,7 @@ public class GrantPermissionManager {
 
     @Autowired private ConfigurationProviderManager configurationProviderManager;
 
-    @Autowired private PermissionsHelper permissionsHelper;
+    @Autowired private CheckPermissionHelper permissionsHelper;
 
     @Autowired private AbstractEntityPermissionMapper entityPermissionMapper;
 

@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -66,7 +67,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     public AWSInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
-                              final InstanceOfferManager instanceOfferManager,
+                              final @Lazy InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
                               final ClusterCommandService commandService,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,

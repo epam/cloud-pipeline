@@ -30,6 +30,7 @@ import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
@@ -158,6 +159,10 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isLessThan(int x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) < x;
+    }
+
+    public static BiPredicate<String, Map<String, Preference>> isValidEnum(final Class<? extends Enum> enumClass) {
+        return (pref, dependencies) -> EnumUtils.isValidEnum(enumClass, pref);
     }
 
     /**
