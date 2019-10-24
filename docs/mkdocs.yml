@@ -87,9 +87,10 @@ nav:
     - 14.3 Manage Data Storage: 'manual/14_CLI/14.3._Manage_Storage_via_CLI.md'
     - 14.4 View and manage Permissions: 'manual/14_CLI/14.4._View_and_manage_Permissions_via_CLI.md'
   - 15. Interactive services:
-    - 15.0 Overview: 'manual/15_Interactive_services/15._Interactive_services.md'
-    - 15.1 Starting an interactive application: 'manual/15_Interactive_services/15.1_Starting_an_Interactive_application.md'
-    - 15.2 Using terminal access: 'manual/15_Interactive_services/15.2_Using_Terminal_access.md'
+    - 15.0. Overview: 'manual/15_Interactive_services/15._Interactive_services.md'
+    - 15.1. Starting an interactive application: 'manual/15_Interactive_services/15.1_Starting_an_Interactive_application.md'
+    - 15.2. Using terminal access: 'manual/15_Interactive_services/15.2_Using_Terminal_access.md'
+    - 15.3. Interactive service examples: 'manual/15_Interactive_services/15.3_Interactive_service_examples.md'
   - 16. Issues: 'manual/16_Issues/16._Issues.md'
   - 17. CP objects tagging by additional attributes: 'manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes.md'
   - 18. Home page: 'manual/18_Home_page/18._Home_page.md'

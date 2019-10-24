@@ -67,6 +67,7 @@
 - [15. Interactive services](15_Interactive_services/15._Interactive_services.md)
     - [15.1 Starting an Interactive application](15_Interactive_services/15.1_Starting_an_Interactive_application.md)
     - [15.2 Using Terminal access](15_Interactive_services/15.2_Using_Terminal_access.md)
+    - [15.3 Interactive service examples](15_Interactive_services/15.3_Interactive_service_examples.md)
 - [16. Issues](16_Issues/16._Issues.md)
 - [17. CP objects tagging by additional attributes](17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes.md)
 - [18. Home page](18_Home_page/18._Home_page.md)

@@ -5,6 +5,7 @@
 - [Limit mounted storages](#limit-mounted-storages)
 - [Personal SSH keys configuration](#personal-ssh-keys-configuration)
 - [Allow to set the Grid Engine capability for the "fixed" cluster](#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster)
+- [Enable Apache Spark for the Cloud Pipeline's clusters](#enable-apache-spark-for-the-cloud-pipelines-clusters)
 - [Consider Cloud Providers' resource limitations when scheduling a job](#consider-cloud-providers-resource-limitations-when-scheduling-a-job)
 - [Allow to terminate paused runs](#allow-to-terminate-paused-runs)
 - [Pre/Post-commit hooks implementation](#prepost-commit-hooks-implementation)
@@ -23,6 +24,7 @@
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
 - [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
+- [Allow to limit the number of concurrent SSH sessions](#allow-to-limit-the-number-of-concurrent-ssh-sessions)
 - [Verification of docker/storage permissions when launching a run](#verification-of-dockerstorage-permissions-when-launching-a-run)
 - [Ability to override the queue/PE configuration in the GE configuration](#ability-to-override-the-queuepe-configuration-in-the-ge-configuration)
 - [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
@@ -131,13 +133,42 @@ This is accomplished by using the `Enable GridEngine` checkbox. By default, this
 Also a number of help icons is added to the `Cluster configuration` dialog to clarify the controls purpose:
 
 - Popup header (E.g. next to the tabs line) - displays information on different cluster modes
-- (Cluster) `Enable GridEngine checkbox` - displays information on the GridEngine usage
+- (Cluster) `Enable GridEngine` checkbox - displays information on the GridEngine usage
+- (Cluster) `Enable Apache Spark` checkbox - displays information on the Apache Spark usage (see [below](#enable-apache-spark-for-the-cloud-pipelines-clusters))
 - (Auto-scaled cluster) `Auto-scaled up` - displays information on the autoscaling logic
 - (Auto-scaled cluster) `Default child nodes` - displays information on the initial node pool size
 
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_GE_Autoconfig_1.png)
 
 See more information about cluster launch [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
+
+## Enable Apache Spark for the Cloud Pipeline's clusters
+
+Another one feature for the Cloud Pipeline's clusters was implemented in **`v0.15`**.  
+Now, [**`Apache Spark`**](https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-overview.html) with the access to File/Object Storages from the `Spark Applications` can be configured within the `Cluster` tab. It is available only for the fixed size clusters.
+
+To enable this feature - tick the `Enable Apache Spark` checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable `Spark` functionality by the `CP_CAP_SPARK` system parameter:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_1.png)
+
+This feature, for example, allows you to run `Apache Spark` cluster with RStudio where you may code in R using `sparklyr` to run the workload over the cluster:
+
+1. Open the **RStudio** tool  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_2.png)
+2. Select the node type, set the `Apache Spark` cluster as shown above, and launch the tool:
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_3.png)
+3. Open main **Dashboard** and wait until the **OPEN** hyperlink for the launched tool will appear. Hover over it:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_4.png)  
+    Two endpoints will appear:
+    - **_RStudio_** (as the main endpoint it is in bold) - it exposes RStudio's Web IDE
+    - **_SparkUI_** - it exposes Web GUI of the Spark. It allows to monitor Spark master/workers/application via the web-browser. Details are available in the [Spark UI manual](https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html)
+4. Click the **RStudio** endpoint:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_5.png)  
+    Here you can start create scripts in `R` using the pre-installed `sparklyr` package to distribute the workload over the cluster.
+5. Click the **SparkUI** endpoint:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_6.png)  
+    Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.
+
+For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.3_Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
 
 ## Consider Cloud Providers' resource limitations when scheduling a job
 
@@ -473,6 +504,14 @@ To get SSH-access to the shared instance user should hover over service "card" a
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
 
 For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
+
+## Allow to limit the number of concurrent SSH sessions
+
+Previously, some users could try to start a real big number of Web SSH sessions. If 1000+ SSH sessions are established via EDGE service, the performance will degrade. It is not common, but it could be critical as it affects all the users of the platform deploment.
+
+To avoid such cases, in **`v0.15`** the [`pipectl`](#installation-via-pipectl) parameter **`CP_EDGE_MAX_SSH_CONNECTIONS`** (with default value `25`) for the EDGE server is introduced, that allows to control a number of simultaneous SSH connections to a single job.  
+Now, if this max number will be reached, the next attemp to open another one Web SSH session to the same job will return a notification to the user and a new session will not be opened until the any one previous is closed:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SSH_SessionLimits_1.png)
 
 ## Verification of docker/storage permissions when launching a run
 
