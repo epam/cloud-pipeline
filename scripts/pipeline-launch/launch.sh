@@ -520,7 +520,7 @@ check_python_module_installed "pip --version" || { curl -s https://bootstrap.pyp
 
 # Check jq is installed
 if ! jq --version > /dev/null 2>&1; then
-    pipe_log_info "Installing jq"
+    echo "Installing jq"
     wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
     if [ $? -ne 0 ]; then
       echo "[ERROR] Unable to install 'jq', downstream setup may fail"
