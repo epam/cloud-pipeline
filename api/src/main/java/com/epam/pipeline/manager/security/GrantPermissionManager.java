@@ -118,6 +118,13 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * {@code GrantPermissionManager} provides methods for ACL permissions handling
+ */
+//TODO: 24-10-2019
+// This class shall be split into smaller parts,
+// - all operations regarding permission granting shall be moved to GrantPermissionHandler.class;
+// - entity specific permission checks shall be extracted into separate classes, like RunPermissionManager.class
 @Service
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class GrantPermissionManager {
@@ -326,16 +333,6 @@ public class GrantPermissionManager {
         acl.insertAce(Math.max(entryIndex, 0), newPermission, userRoleSid, true);
         aclService.updateAcl(acl);
 
-    }
-
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteGrantedAuthority(String name) {
-        Long sidId = aclService.getSidId(name, false);
-        if (sidId == null) {
-            LOGGER.debug("Granted authority with name {} was not found in ACL", name);
-            return;
-        }
-        aclService.deleteSidById(sidId);
     }
 
     public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,

@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
-import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class RoleManager {
 
     @Autowired
-    private GrantPermissionManager permissionManager;
+    private GrantPermissionHandler permissionHandler;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -93,7 +93,7 @@ public class RoleManager {
     public Role deleteRole(Long id) {
         Role role = loadRole(id);
         Assert.isTrue(!role.isPredefined(), "Predefined system roles cannot be deleted");
-        permissionManager.deleteGrantedAuthority(role.getName());
+        permissionHandler.deleteGrantedAuthority(role.getName());
         roleDao.deleteRoleReferences(id);
         roleDao.deleteRole(id);
         return role;

@@ -29,6 +29,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * {@code PermissionsHelper} provides methods for ACL permissions check.
+ */
+// TODO: 24-10-2019
+// All common code (not entity specific) methods shall be moved to this class from GrantPermissionManager.class
+// For now some of methods are duplicated, this shall be removed as soon we'll refactor GrantPermissionManager.class
+// and provide integration tests for ACL permissions
 @Service
 @RequiredArgsConstructor
 public class PermissionsHelper {
@@ -44,22 +51,17 @@ public class PermissionsHelper {
                 .hasPermission(authManager.getAuthentication(), entity, permissionName);
     }
 
-    public boolean isOwner(final AbstractSecuredEntity entity) {
-        return isOwner(entity.getOwner());
-    }
-
     public boolean isOwnerOrAdmin(final String owner) {
         return isOwner(owner) || isAdmin();
+    }
+
+    public boolean isOwner(final AbstractSecuredEntity entity) {
+        return isOwner(entity.getOwner());
     }
 
     public boolean isAdmin() {
         final GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
         return getSids().stream().anyMatch(sid -> sid.equals(admin));
-    }
-
-    private List<Sid> getSids() {
-        final Authentication authentication = authManager.getAuthentication();
-        return sidRetrievalStrategy.getSids(authentication);
     }
 
     private boolean isOwner(final String owner) {
@@ -71,5 +73,10 @@ public class PermissionsHelper {
             return false;
         }
         return owner.equalsIgnoreCase(currentUser);
+    }
+
+    private List<Sid> getSids() {
+        final Authentication authentication = authManager.getAuthentication();
+        return sidRetrievalStrategy.getSids(authentication);
     }
 }

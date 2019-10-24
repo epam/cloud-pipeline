@@ -197,6 +197,7 @@ public class RunApiServiceTest {
                 .when(mockRunManager)
                 .searchPipelineRuns(eq(filter), eq(false));
         final PagedResult<List<PipelineRun>> result = runApiService.searchPipelineRuns(filter, false);
+
         assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
         assertThat(filter.getAllowedPipelines(), contains(TEST_PIPELINE_ID));
         assertThat(result.getTotalCount(), equalTo(1));
