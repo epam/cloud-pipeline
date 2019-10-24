@@ -33,6 +33,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.security.acls.domain.PermissionFactory;
@@ -47,6 +48,7 @@ import javax.sql.DataSource;
 @ComponentScan(basePackages = {"com.epam.pipeline.manager.security", "com.epam.pipeline.acl"})
 @TestPropertySource(value={"classpath:test-application.properties"})
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
+@EnableAspectJAutoProxy
 public class AclTestConfiguration {
 
     @MockBean

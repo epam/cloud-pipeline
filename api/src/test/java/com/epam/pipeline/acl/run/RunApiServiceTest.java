@@ -1,8 +1,24 @@
+/*
+ * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.acl.run;
 
 import com.epam.pipeline.app.AclTestConfiguration;
-import com.epam.pipeline.controller.vo.PermissionGrantVO;
-import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -12,13 +28,13 @@ import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,9 +46,14 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
-import static org.mockito.Matchers.anyBoolean;
+import static com.epam.pipeline.acl.run.PipelineAclFactory.TEST_PIPELINE_ID;
+import static com.epam.pipeline.acl.run.RunAclFactory.TEST_RUN_ID;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 
@@ -42,12 +63,10 @@ import static org.mockito.Mockito.doReturn;
 @Transactional
 public class RunApiServiceTest {
 
-    private static final Long TEST_RUN_ID = 1L;
     private static final String TEST_OWNER = "OWNER";
     private static final String TEST_USER1 = "USER_1";
     private static final String TEST_ADMIN_NAME = "ADMIN";
     private static final String TEST_ADMIN_ROLE = "ADMIN";
-    private static final Long TEST_PIPELINE_ID = 10L;
     private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
 
     @Autowired
@@ -57,22 +76,34 @@ public class RunApiServiceTest {
     private AclCache aclCache;
 
     @Autowired
-    private GrantPermissionManager grantPermissionManager;
-
-    @Autowired
     private PipelineRunManager mockRunManager;
 
     @Autowired
     private PipelineManager mockPipelineManager;
 
     @Autowired
-    private EntityManager mockEntityManager;
-
-    @Autowired
-    private UserManager mockUserManager;
-
-    @Autowired
     private ContextualPreferenceManager mockPreferenceManager;
+
+    private RunAclFactory runAclFactory;
+    private PipelineAclFactory pipelineAclFactory;
+
+    @Autowired
+    public void setRunAclFactory(final AuthManager authManager,
+                                 final PipelineRunManager mockRunManager) {
+        this.runAclFactory = new RunAclFactory(authManager, mockRunManager);
+    }
+
+    @Autowired
+    public void setPipelineAclFactory(final AuthManager authManager,
+                                      final GrantPermissionManager grantPermissionManager,
+                                      final JdbcMutableAclServiceImpl aclService,
+                                      final UserManager mockUserManager,
+                                      final PipelineManager mockPipelineManager,
+                                      final EntityManager mockEntityManager) {
+        this.pipelineAclFactory = new PipelineAclFactory(authManager,
+                grantPermissionManager, aclService, mockUserManager,
+                mockPipelineManager, mockEntityManager);
+    }
 
     @After
     public void tearDown() {
@@ -82,132 +113,101 @@ public class RunApiServiceTest {
     @Test
     @WithMockUser(username = TEST_OWNER)
     public void loadToolRunShouldBeAllowedForOwner() {
-        initTestToolPipelineRun();
-        PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        runAclFactory.initToolPipelineRunForCurrentUser();
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(username = TEST_USER1)
     public void loadToolRunShouldBeDeniedForNonOwner() {
-        initTestToolPipelineRun();
+        runAclFactory.initToolPipelineRunForOwner(TEST_OWNER);
         runApiService.loadPipelineRun(TEST_RUN_ID);
     }
 
     @Test
     @WithMockUser(username = TEST_ADMIN_NAME, roles = {TEST_ADMIN_ROLE})
     public void loadToolRunShouldBeAllowedForAdmin() {
-        initTestToolPipelineRun();
-        PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        runAclFactory.initToolPipelineRunForOwner(TEST_OWNER);
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
     @Test
-    @WithMockUser(username = TEST_OWNER)
+    @WithMockUser(username = TEST_USER1)
     public void loadPipelineRunShouldBeAllowedForOwner() {
-        initTestPipelineRun();
-        PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        runAclFactory.initPipelineRunForCurrentUser(pipeline);
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(username = TEST_USER1)
     public void loadPipelineRunShouldBeDeniedForNonOwner() {
-        initTestPipelineRun();
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_OWNER);
+        runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
         runApiService.loadPipelineRun(TEST_RUN_ID);
     }
 
     @Test
     @WithMockUser(username = TEST_USER1)
     public void loadPipelineRunShouldBeAllowedWhenUserIsOwnerOfPipeline() {
-        final Pipeline pipeline = initTestPipeline();
-        pipeline.setOwner(TEST_USER1);
-        initTestPipelineRun(pipeline);
-        final PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
     @Test
     @WithMockUser(username = TEST_USER1)
     public void loadPipelineRunShouldBeAllowedWhenUserHasReadPermissionOnPipeline() {
-        final Pipeline pipeline = initTestPipeline();
-        initTestPipelineRun(pipeline);
-        grantPermissionOnPipeline(pipeline, TEST_USER1, TEST_OWNER, AclPermission.READ.getMask());
-        final PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwnerWithPermissions(TEST_OWNER, TEST_USER1,
+                AclPermission.READ.getMask());
+        runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
     @Test(expected = AccessDeniedException.class)
     @WithMockUser(username = TEST_USER1)
     public void loadPipelineRunShouldNotInheritPermissionsWithOwnerVisibilityEnabled() {
-        final Pipeline pipeline = initTestPipeline();
-        initTestPipelineRun(pipeline);
-        grantPermissionOnPipeline(pipeline, TEST_USER1, TEST_OWNER, AclPermission.READ.getMask());
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwnerWithPermissions(TEST_OWNER, TEST_USER1,
+                AclPermission.READ.getMask());
+        runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
         enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
-        final PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        runApiService.loadPipelineRun(TEST_RUN_ID);
     }
 
     @Test
     @WithMockUser(username = TEST_ADMIN_NAME, roles = {TEST_ADMIN_ROLE})
     public void loadPipelineRunShouldBeAllowedForAdmin() {
-        initTestToolPipelineRun();
-        final PipelineRun loaded = runApiService.loadPipelineRun(TEST_RUN_ID);
-        Assert.assertEquals(TEST_RUN_ID, loaded.getId());
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_OWNER);
+        runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
+        assertThat(runApiService.loadPipelineRun(TEST_RUN_ID).getId(), equalTo(TEST_RUN_ID));
     }
 
-    private PipelineRun initTestToolPipelineRun() {
-        final PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(TEST_RUN_ID);
-        pipelineRun.setOwner(TEST_OWNER);
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(eq(TEST_RUN_ID));
-        return pipelineRun;
-    }
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void filterShallIncludeOwnerAndPipelinesWithInheritedVisibility() {
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        final PipelineRun run = runAclFactory.initPipelineRunForOwner(pipeline, TEST_OWNER);
+        //we need a mutable list for ACL @PostFilter annotation
+        doReturn(new ArrayList<>(Collections.singletonList(pipeline)))
+                .when(mockPipelineManager)
+                .loadAllPipelines(eq(false));
 
-    private PipelineRun initTestPipelineRun() {
-        return initTestPipelineRun(null);
-    }
-
-    private PipelineRun initTestPipelineRun(final Pipeline parent) {
-        final PipelineRun pipelineRun = new PipelineRun();
-        pipelineRun.setId(TEST_RUN_ID);
-        pipelineRun.setOwner(TEST_OWNER);
-        pipelineRun.setPipelineId(TEST_PIPELINE_ID);
-        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(eq(TEST_RUN_ID));
-        doReturn(parent).when(mockRunManager).loadRunParent(eq(pipelineRun));
-        return pipelineRun;
-    }
-
-    private Pipeline initTestPipeline() {
-        final Pipeline pipeline = new Pipeline();
-        pipeline.setId(TEST_PIPELINE_ID);
-        pipeline.setOwner(TEST_OWNER);
-        doReturn(pipeline).when(mockPipelineManager).load(eq(TEST_PIPELINE_ID));
-        doReturn(pipeline).when(mockPipelineManager).load(eq(TEST_PIPELINE_ID), anyBoolean());
-        return pipeline;
-    }
-
-    private void grantPermissionOnPipeline(final AbstractSecuredEntity entity,
-                                           final String userName,
-                                           final String owner,
-                                           final int mask) {
-        final PermissionGrantVO permissionGrant = new PermissionGrantVO();
-        permissionGrant.setAclClass(entity.getAclClass());
-        permissionGrant.setId(entity.getId());
-        permissionGrant.setPrincipal(true);
-        permissionGrant.setUserName(userName);
-        permissionGrant.setMask(mask);
-        doReturn(entity).when(mockEntityManager).load(eq(entity.getAclClass()), eq(entity.getId()));
-        grantPermissionManager.setPermissions(permissionGrant);
-
-        doReturn(new UserContext(null, owner)).when(mockUserManager).loadUserContext(eq(owner));
-        grantPermissionManager.changeOwner(entity.getId(), entity.getAclClass(), owner);
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(run), 1))
+                .when(mockRunManager)
+                .searchPipelineRuns(eq(filter), eq(false));
+        final PagedResult<List<PipelineRun>> result = runApiService.searchPipelineRuns(filter, false);
+        assertThat(filter.getOwnershipFilter(), equalToIgnoringCase(TEST_USER1));
+        assertThat(filter.getAllowedPipelines(), contains(TEST_PIPELINE_ID));
+        assertThat(result.getTotalCount(), equalTo(1));
+        assertThat(result.getElements(), contains(run));
     }
 
     private void enableVisibilityPolicy(final RunVisibilityPolicy policy) {
         final ContextualPreference preference = new ContextualPreference(VISIBILITY_PREFERENCE_KEY,
                 policy.name(), PreferenceType.OBJECT);
-        doReturn(preference).when(mockPreferenceManager)
+        doReturn(preference)
+                .when(mockPreferenceManager)
                 .search(eq(Collections.singletonList(VISIBILITY_PREFERENCE_KEY)));
     }
 }
