@@ -21,8 +21,9 @@ ENV PATH="$JAVA_HOME/bin:${PATH}"
 COPY get_jar-file.sh /init
 # change rule
 RUN chmod +x /init
+WORKDIR /opt
 # start script
-RUN ["/init", "tes-support", "https://github.com/SilinPavel/cloud-pipeline.git"]
+RUN ["/init", "tes-dev", "https://github.com/SilinPavel/cloud-pipeline.git"]
 # copy application.properties
 RUN mkdir config
 COPY application.properties config/
