@@ -17,6 +17,7 @@
 package com.epam.pipeline.vmmonitor.service;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.vmmonitor.model.cert.PkiCertificate;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 
 import java.util.List;
@@ -28,4 +29,5 @@ public interface VMNotificationService {
 
     void notifyMissingNode(VirtualMachine vm);
     void notifyMissingLabels(VirtualMachine vm, NodeInstance node, List<String> labels);
+    void notifyExpiringCertificate(PkiCertificate certificate);
 }

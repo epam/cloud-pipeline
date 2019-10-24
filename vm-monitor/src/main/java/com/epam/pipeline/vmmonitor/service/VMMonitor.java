@@ -49,6 +49,7 @@ public class VMMonitor {
 
     private final CloudPipelineAPIClient apiClient;
     private final VMNotificationService notificationService;
+    private final CertificateMonitor certificateMonitor;
     private final Map<CloudProvider, VMMonitorService> services;
     private final List<String> requiredLabels;
     private final String runIdLabel;
@@ -56,6 +57,7 @@ public class VMMonitor {
     public VMMonitor(final CloudPipelineAPIClient apiClient,
                      final VMNotificationService notificationService,
                      final List<VMMonitorService> services,
+                     final CertificateMonitor certificateMonitor,
                      @Value("${monitor.required.labels:}") final String requiredLabels,
                      @Value("${monitor.runid.label:}") final String runIdLabel) {
         this.apiClient = apiClient;
@@ -64,6 +66,7 @@ public class VMMonitor {
                 .collect(Collectors.toMap(VMMonitorService::provider, Function.identity()));
         this.requiredLabels = Arrays.asList(requiredLabels.split(","));
         this.runIdLabel = runIdLabel;
+        this.certificateMonitor = certificateMonitor;
     }
 
     @Scheduled(cron = "${monitor.schedule.cron}")
@@ -75,6 +78,17 @@ public class VMMonitor {
             log.debug("Finished VM monitoring");
         } catch (Exception e) {
             log.error("Un error occurred during VM monitoring", e);
+        }
+    }
+
+    @Scheduled(cron = "${monitor.cert.schedule.cron}")
+    public void monitorCerts() {
+        try {
+            log.debug("Starting PKI certificates checking.");
+            certificateMonitor.checkCertificates();
+            log.debug("Finished PKI certificates checking.");
+        } catch (Exception e) {
+            log.error("An error occurred during PKI certificates checking!", e);
         }
     }
 
