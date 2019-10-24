@@ -85,6 +85,8 @@
         
             <li><a class="toctree-l4" href="#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a></li>
         
+            <li><a class="toctree-l4" href="#enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</a></li>
+        
             <li><a class="toctree-l4" href="#consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</a></li>
         
             <li><a class="toctree-l4" href="#allow-to-terminate-paused-runs">Allow to terminate paused runs</a></li>
@@ -116,6 +118,8 @@
             <li><a class="toctree-l4" href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</a></li>
         
             <li><a class="toctree-l4" href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
+        
+            <li><a class="toctree-l4" href="#allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</a></li>
         
             <li><a class="toctree-l4" href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
         
@@ -501,6 +505,10 @@
                     
     <a class="" href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -569,6 +577,7 @@
 <li><a href="#limit-mounted-storages">Limit mounted storages</a></li>
 <li><a href="#personal-ssh-keys-configuration">Personal SSH keys configuration</a></li>
 <li><a href="#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a></li>
+<li><a href="#enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</a></li>
 <li><a href="#consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</a></li>
 <li><a href="#allow-to-terminate-paused-runs">Allow to terminate paused runs</a></li>
 <li><a href="#prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</a></li>
@@ -585,6 +594,7 @@
 <li><a href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs</a></li>
 <li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
 <li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
+<li><a href="#allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</a></li>
 <li><a href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
 <li><a href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
 <li><a href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
@@ -685,12 +695,39 @@ When memory or disk consuming will be higher than a threshold value for a specif
 <p>Also a number of help icons is added to the <code>Cluster configuration</code> dialog to clarify the controls purpose:</p>
 <ul>
 <li>Popup header (E.g. next to the tabs line) - displays information on different cluster modes</li>
-<li>(Cluster) <code>Enable GridEngine checkbox</code> - displays information on the GridEngine usage</li>
+<li>(Cluster) <code>Enable GridEngine</code> checkbox - displays information on the GridEngine usage</li>
+<li>(Cluster) <code>Enable Apache Spark</code> checkbox - displays information on the Apache Spark usage (see <a href="#enable-apache-spark-for-the-cloud-pipelines-clusters">below</a>)</li>
 <li>(Auto-scaled cluster) <code>Auto-scaled up</code> - displays information on the autoscaling logic</li>
 <li>(Auto-scaled cluster) <code>Default child nodes</code> - displays information on the initial node pool size</li>
 </ul>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GE_Autoconfig_1.png" /></p>
 <p>See more information about cluster launch <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>.</p>
+<h2 id="enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</h2>
+<p>Another one feature for the Cloud Pipeline's clusters was implemented in <strong><code>v0.15</code></strong>.<br />
+Now, <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-overview.html"><strong><code>Apache Spark</code></strong></a> with the access to File/Object Storages from the <code>Spark Applications</code> can be configured within the <code>Cluster</code> tab. It is available only for the fixed size clusters.</p>
+<p>To enable this feature - tick the <code>Enable Apache Spark</code> checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable <code>Spark</code> functionality by the <code>CP_CAP_SPARK</code> system parameter:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_1.png" /></p>
+<p>This feature, for example, allows you to run <code>Apache Spark</code> cluster with RStudio where you may code in R using <code>sparklyr</code> to run the workload over the cluster:</p>
+<ol>
+<li>Open the <strong>RStudio</strong> tool<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_2.png" /></li>
+<li>Select the node type, set the <code>Apache Spark</code> cluster as shown above, and launch the tool:
+    <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_3.png" /></li>
+<li>Open main <strong>Dashboard</strong> and wait until the <strong>OPEN</strong> hyperlink for the launched tool will appear. Hover over it:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_4.png" /><br />
+    Two endpoints will appear:<ul>
+<li><strong><em>RStudio</em></strong> (as the main endpoint it is in bold) - it exposes RStudio's Web IDE</li>
+<li><strong><em>SparkUI</em></strong> - it exposes Web GUI of the Spark. It allows to monitor Spark master/workers/application via the web-browser. Details are available in the <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html">Spark UI manual</a></li>
+</ul>
+</li>
+<li>Click the <strong>RStudio</strong> endpoint:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_5.png" /><br />
+    Here you can start create scripts in <code>R</code> using the pre-installed <code>sparklyr</code> package to distribute the workload over the cluster.</li>
+<li>Click the <strong>SparkUI</strong> endpoint:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_6.png" /><br />
+    Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.</li>
+</ol>
+<p>For more information about using <code>Apache Spark</code> via the <code>Cloud Pipeline</code> see <a href="../../../manual/15_Interactive_services/15.3_Interactive_service_examples/#running-apache-spark-cluster-with-rstudio-web-gui">here</a>.</p>
 <h2 id="consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</h2>
 <p><code>Cloud Pipeline</code> supports queueing of the jobs, that cannot be scheduled to the existing or new compute nodes immediately.</p>
 <p>Queueing occurs if:</p>
@@ -908,6 +945,11 @@ To get SSH-access to the shared instance user should hover over service "card" a
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
 </ol>
 <p>For more information about runs sharing see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users or groups of users</a>.</p>
+<h2 id="allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</h2>
+<p>Previously, some users could try to start a real big number of Web SSH sessions. If 1000+ SSH sessions are established via EDGE service, the performance will degrade. It is not common, but it could be critical as it affects all the users of the platform deploment.</p>
+<p>To avoid such cases, in <strong><code>v0.15</code></strong> the <a href="#installation-via-pipectl"><code>pipectl</code></a> parameter <strong><code>CP_EDGE_MAX_SSH_CONNECTIONS</code></strong> (with default value <code>25</code>) for the EDGE server is introduced, that allows to control a number of simultaneous SSH connections to a single job.<br />
+Now, if this max number will be reached, the next attemp to open another one Web SSH session to the same job will return a notification to the user and a new session will not be opened until the any one previous is closed:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSH_SessionLimits_1.png" /></p>
 <h2 id="verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</h2>
 <p>Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding <strong>permission</strong> for that executable.<br />
 But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.</p>

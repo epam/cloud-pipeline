@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>15.3. Interactive service examples - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "15.3. Interactive service examples";
+    var mkdocs_page_input_path = "manual/15_Interactive_services/15.3_Interactive_service_examples.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+    </ul>
+                </li>
+                <li class=" current">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l3 current">
+                    
+    <a class="current" href="./">15.3. Interactive service examples</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l4"><a href="#153-interactive-service-examples">15.3. Interactive service examples</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l5" href="#running-apache-spark-cluster-with-rstudio-web-gui">Running Apache Spark cluster with RStudio Web GUI</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>15. Interactive services &raquo;</li>
+        
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>15.3. Interactive service examples</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="153-interactive-service-examples">15.3. Interactive service examples</h1>
+<ul>
+<li><a href="#running-apache-spark-cluster-with-rstudio-web-gui">Running Apache Spark cluster with RStudio Web GUI</a><ul>
+<li><a href="#launch-the-rstudio-tool-with-apache-cluster">Launch the RStudio tool with Apache Cluster</a></li>
+<li><a href="#example-of-sparklyr-script">Example of <code>sparklyr</code> script</a></li>
+<li><a href="#monitoring-execution-via-spark-ui">Monitoring execution via Spark UI</a></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>To run a <strong>Tool</strong> or a <strong>Pipeline</strong> as an <strong>Interactive service</strong> you need to have <strong>EXECUTE</strong> permissions for that Tool/Pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<p>On this page, you'll find examples of launching Interactive applications with various features.</p>
+<h2 id="running-apache-spark-cluster-with-rstudio-web-gui">Running Apache Spark cluster with RStudio Web GUI</h2>
+<h3 id="launch-the-rstudio-tool-with-apache-cluster">Launch the RStudio tool with Apache Cluster</h3>
+<ol>
+<li>Navigate to the list of registered <strong>Tools</strong> and search for the <strong>RStudio</strong> Tool:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_01.png" /></li>
+<li>Go to the <strong>Tool</strong> page and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/TerminalAccess_2.png" /></li>
+<li>At the <strong>Launch</strong> page select <strong>Node type</strong> (from which the subsequent cluster will consist).<br />
+<strong><em>Note</em></strong>: it is recommended to select nodes with more memory volume, because it is critical for Spark's in-memory processing</li>
+<li>Click the <strong>Configure cluster</strong> button:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_02.png" /></li>
+<li>At the popup select the <strong>Cluster</strong> tab, set the number of <strong>Child nodes</strong> to create (e.g. 2 or more), then tick the <strong>Enable Apache Spark</strong> checkbox and confirm by the <strong>OK</strong> button:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_03.png" /><br />
+    Or you could enable Apache Spark by manually adding the system parameter <code>CP_CAP_SPARK</code> with <code>true</code> value:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_04.png" /></li>
+<li>Click the <strong>Launch</strong> button:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_05.png" />
+    At the popup confirm the launch.</li>
+<li>Check that the cluster has appeared in the <strong>ACTIVE RUNS</strong> tab of the <strong>Runs</strong> page:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_06.png" /></li>
+<li>Wait until all components are initialized. The cluster tile in the <strong>ACTIVE RUNS</strong> tab will turn into yellow. Click on the parent run to open the <strong>Run logs</strong> page:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_07.png" /></li>
+<li>At the <strong>Run logs</strong> page there are two endpoints:<ul>
+<li><strong><em>RStudio</em></strong> - it exposes RStudio's Web IDE</li>
+<li><strong><em>SparkUI</em></strong> - it exposes Web GUI of the Spark. It allows to monitor Spark master/workers/application via the web-browser. Details are
+available in the <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html">Spark UI manual</a><br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_08.png" /></li>
+</ul>
+</li>
+<li>Click the <strong>RStudio</strong> endpoint. This will load RStudio Web GUI with the pre-installed <code>sparklyr</code> package in the new tab of the web-browser:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_09.png" /></li>
+</ol>
+<p>From here one can start coding in R using <code>sparklyr</code> to run the workload over the cluster.</p>
+<h3 id="example-of-sparklyr-script">Example of <code>sparklyr</code> script</h3>
+<p>It is assumed that a <strong>Spark</strong> cluster with the RStudio Web GUI and <code>sparklyr</code> package is up and running, as shown in the previous section.</p>
+<h4 id="accessing-datasets-from-the-cloud-pipelines-spark">Accessing datasets from the Cloud Pipeline's Spark</h4>
+<ol>
+<li><strong>Access to data via File Storages</strong><br />
+If the user has an access to the FS storage - then datasets from such storage can be accessed via the <strong><code>file://</code></strong> schema or without a schema at all. But this approach may start to degrade once there is 100+ cores cluster with a lot of
+I/O operations.</li>
+<li><strong>Access to data via Object Storages</strong><br />
+<strong><em>Note</em></strong>: this feature is available only for <code>AWS</code> Cloud Provider.<br />
+    Spark cluster configuration uses the stable version of the <a href="https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html">Hadoop-AWS module</a>, that allows to directly access (read/write) the datasets in the S3 buckets using Spark jobs.<br />
+    The only difference with the filesystem access - is the URL schema. <strong><code>s3a://</code></strong> prefix shall be used instead of <strong><code>s3://</code></strong>. E.g. if there is a user's S3 bucket named "<strong><em>test-object-storage</em></strong>" with the "<strong><em>test_dataset.parquet</em></strong>" dataset - then it can be accessed as "<strong><em>s3a://test-object-storage/test_dataset.parquet</em></strong>" from the <code>sparklyr</code> code (or any other Spark job).</li>
+</ol>
+<h4 id="prepare-and-run-sparklyr-script">Prepare and run <code>sparklyr</code> script</h4>
+<p>This section provides prepare and run of R script that shows how to connect to the Spark cluster, deployed in the Cloud Pipeline, and read/write the data from/to object data storage.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: we will use S3 bucket with directly access to data as described above. This script will not work for other Cloud Providers.</p>
+</blockquote>
+<p>For this example, a small public VCF file will be used. It is located in some S3 bucket e.g.:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_10.png" /></p>
+<p>So, prepare the following script:</p>
+<pre><code class="R">library(sparklyr)
+# Cloud Pipeline provides the SPARK's master URL in SPARK_MASTER variable
+# SPARK_HOME variabe is set by the Cloud Pipeline and will be used by sparklyr - no need to specify it explicitly
+# Spark version will be retrieved by sparklyr from the $SPARK_HOME/RELEASE file - no need to specify it explicitly
+master &lt;- Sys.getenv(&quot;SPARK_MASTER&quot;)
+sc &lt;- spark_connect(master=master)
+# Get the current Cloud Pipeline's unique Run ID to write the results into the unique directory
+unique_id &lt;- Sys.getenv(&quot;RUN_ID&quot;)
+# Setup input VCF (tab-delimited) file location and the resulting parquet file
+# Note that both input and output are located in the S3 bucket and are addressed via s3a:// schema
+example_data_vcf_path &lt;- &quot;s3a://objstor/TestSample.vcf&quot;
+example_data_parquet_path &lt;- paste(&quot;s3a://objstor/results&quot;, unique_id, &quot;example_data.parquet&quot;, sep=&quot;/&quot;)
+# Read VCF from the storage and convert to the DataFrame
+example_data_df &lt;- spark_read_csv(sc = sc,
+                                  name = &quot;example_data_vcf&quot;,
+                                  path = example_data_vcf_path,
+                                  header = F,
+                                  delimiter = &quot;\t&quot;)
+# Write DataFrame as a parquet to the storage
+spark_write_parquet(example_data_df, path = example_data_parquet_path)
+</code></pre>
+
+<ol>
+<li>Paste that script into the RStudio console and launch it:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_11.png" /></li>
+<li>Once script is finished - resulting parquet will be written to the storage. To check it open in the <strong>Library</strong> the storage, that was specified for output results:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_12.png" /></li>
+<li>Open the path for output results - you will see the directory with the name equal to the Run ID that contains resulting files:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_13.png" /><br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_14.png" /><br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_15.png" /></li>
+</ol>
+<h3 id="monitoring-execution-via-spark-ui">Monitoring execution via Spark UI</h3>
+<ol>
+<li>To view the details of the jobs being executed in Spark, how the memory is used and get other useful information - the <strong>SparkUI</strong> endpoint from the <strong>Run logs</strong> page shall be opened.<br />
+While executing the example <a href="#prepare-and-run-sparklyr-script">script</a>, open the Spark UI endpoint:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_19.png" /></li>
+<li>A list of active applications and workers will be shown:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_16.png" /></li>
+<li>To get the details of the underlying jobs, executed by the Spark instance, click the application name:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_17.png" /><br />
+    The following page will be opened:<br />
+<img alt="CP_InteractiveServiceExamples" src="../attachments/ServiceExamples_18.png" /></li>
+</ol>
+<p>For more details about Spark UI opportunities see <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html">here</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../16_Issues/16._Issues/" class="btn btn-neutral float-right" title="16. Issues">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../15.2_Using_Terminal_access/" class="btn btn-neutral" title="15.2. Using terminal access"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../15.2_Using_Terminal_access/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../16_Issues/16._Issues/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>
