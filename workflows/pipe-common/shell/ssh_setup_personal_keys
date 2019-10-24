@@ -109,7 +109,7 @@ GIT_HOST_EXTERNAL_PREF=$(curl -s \
                 --header 'Accept: application/json' \
                 --header "Authorization: Bearer $API_TOKEN" \
                 "$API/preferences/git.external.url" | jq -r '.payload.value')
-GIT_HOST_EXTERNAL_PREF=$(python -c "from urlparse import urlparse; print urlparse('$GIT_HOST_EXTERNAL_PREF').hostname")
+GIT_HOST_EXTERNAL_PREF=$($CP_PYTHON2_PATH -c "from urlparse import urlparse; print urlparse('$GIT_HOST_EXTERNAL_PREF').hostname")
 
 if [ -z "$GIT_HOST_EXTERNAL_PREF" ] || [ "$GIT_HOST_EXTERNAL_PREF" == "null" ] || [ "$GIT_HOST_EXTERNAL_PREF" == "None" ]; then
     echo "Cannot get the git.external.url value. Git configuration cannot be finished"
@@ -124,7 +124,7 @@ GIT_HOST_PREF=$(curl -s \
                 --header 'Accept: application/json' \
                 --header "Authorization: Bearer $API_TOKEN" \
                 "$API/preferences/git.host" | jq -r '.payload.value')
-GIT_HOST_PREF=$(python -c "from urlparse import urlparse; print urlparse('$GIT_HOST_PREF').hostname")
+GIT_HOST_PREF=$($CP_PYTHON2_PATH -c "from urlparse import urlparse; print urlparse('$GIT_HOST_PREF').hostname")
 
 if [ -z "$GIT_HOST_PREF" ] || [ "$GIT_HOST_PREF" == "null" ] || [ "$GIT_HOST_PREF" == "None" ]; then
     echo "Cannot get the git.host value. External address ($GIT_HOST_EXTERNAL_PREF) will be used"
