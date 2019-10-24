@@ -59,12 +59,7 @@ public class PermissionsHelper {
         return isOwner(entity.getOwner());
     }
 
-    public boolean isAdmin() {
-        final GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
-        return getSids().stream().anyMatch(sid -> sid.equals(admin));
-    }
-
-    private boolean isOwner(final String owner) {
+    public boolean isOwner(final String owner) {
         if (StringUtils.isBlank(owner)) {
             return false;
         }
@@ -73,6 +68,11 @@ public class PermissionsHelper {
             return false;
         }
         return owner.equalsIgnoreCase(currentUser);
+    }
+
+    public boolean isAdmin() {
+        final GrantedAuthoritySid admin = new GrantedAuthoritySid(DefaultRoles.ROLE_ADMIN.getName());
+        return getSids().stream().anyMatch(sid -> sid.equals(admin));
     }
 
     private List<Sid> getSids() {
