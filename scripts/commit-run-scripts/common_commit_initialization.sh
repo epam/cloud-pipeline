@@ -26,15 +26,15 @@ check_last_exit_code() {
    msg_if_fail=$2
    msg_if_success=$3
 
-   if [[ "$#" -eq 4 ]]; then
-       cmd_on_failure=$4
+   if [[ "$#" -ge 4 ]]; then
+       cmd_on_failure=${@:4}
    fi
 
    if [[ "$exit_code" -ne 0 ]]; then
         pipe_log_fail "$msg_if_fail" "$TASK_NAME"
 
         if [[ ${cmd_on_failure} ]]; then
-           eval ${cmd_on_failure}
+           eval "${cmd_on_failure}"
         fi
         exit 1
     else

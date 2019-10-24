@@ -44,7 +44,8 @@ commit_file_and_stop_docker() {
 
     commit_file ${NEW_IMAGE_NAME}
     check_last_exit_code $? "[ERROR] Error occured while committing temporary container" \
-                            "[INFO] Temporary container was successfully committed with name: ${NEW_IMAGE_NAME}"
+                            "[INFO] Temporary container was successfully committed with name: ${NEW_IMAGE_NAME}" \
+                            "exit 126"
 
     export tmp_container=`docker run --entrypoint "/bin/sleep" -d ${NEW_IMAGE_NAME} 1d`
 
@@ -52,11 +53,13 @@ commit_file_and_stop_docker() {
 
     pipe_exec "docker commit ${tmp_container} ${NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
     check_last_exit_code $? "[ERROR] Error occured while committing container" \
-                            "[INFO] Container was successfully committed with name: $NEW_IMAGE_NAME"
+                            "[INFO] Container was successfully committed with name: $NEW_IMAGE_NAME" \
+                            "exit 126"
 
     pipe_exec "docker logs ${CONTAINER_ID}" "${DEFAULT_TASK_NAME}"
     check_last_exit_code $? "[ERROR] Error occurred while retrieving logs from docker container ${CONTAINER_ID}" \
-                            "[INFO] Docker container logs were successfully retrieved."
+                            "[INFO] Docker container logs were successfully retrieved." \
+                            "exit 126"
 
     stop_service kubelet
     kubeadm reset
