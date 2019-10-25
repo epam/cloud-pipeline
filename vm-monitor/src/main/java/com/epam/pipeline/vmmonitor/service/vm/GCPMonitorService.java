@@ -12,16 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service.impl;
+package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.vmmonitor.exception.GCPMonitorException;
 import com.epam.pipeline.vmmonitor.model.vm.VMTag;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
-import com.epam.pipeline.vmmonitor.service.VMMonitorService;
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;

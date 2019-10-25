@@ -12,22 +12,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service;
+package com.epam.pipeline.vmmonitor.service.notification;
 
-import com.epam.pipeline.entity.region.AbstractCloudRegion;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
-
-import java.util.List;
+import com.epam.pipeline.vo.notification.NotificationMessageVO;
 
 /**
- * Cloud provider specific service for getting list of VMs from the cloud
- * @param <T> supported region
+ * Service for sending notifications
  */
-public interface VMMonitorService<T extends AbstractCloudRegion> {
+public interface NotificationSender {
 
-    List<VirtualMachine> fetchRunningVms(T region);
-    CloudProvider provider();
+    void sendMessage(NotificationMessageVO messageVO);
 }

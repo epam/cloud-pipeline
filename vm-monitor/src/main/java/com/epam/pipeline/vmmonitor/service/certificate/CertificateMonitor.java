@@ -5,16 +5,17 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service;
+package com.epam.pipeline.vmmonitor.service.certificate;
 
 import com.epam.pipeline.vmmonitor.model.cert.PkiCertificate;
 import lombok.extern.slf4j.Slf4j;
@@ -47,14 +48,14 @@ public class CertificateMonitor {
     private final List<String> directoriesToScan;
     private final List<String> certificateMasks;
     private final int daysToNotify;
-    private final VMNotificationService notificationService;
+    private final CertificateNotifier notifier;
 
     @Autowired
-    public CertificateMonitor(final VMNotificationService notificationService,
+    public CertificateMonitor(final CertificateNotifier notifier,
                               @Value("${monitor.cert.scan.folders}") final String directoriesToScan,
                               @Value("${monitor.cert.file.masks:pem}") final String certificateMasks,
                               @Value("${monitor.cert.expiration.notification.days:5}") final int daysToNotify) {
-        this.notificationService = notificationService;
+        this.notifier = notifier;
         this.directoriesToScan = Arrays.asList(directoriesToScan.split(DELIMITER));
         this.certificateMasks = Arrays.asList(certificateMasks.split(DELIMITER));
         this.daysToNotify = daysToNotify;
@@ -81,7 +82,7 @@ public class CertificateMonitor {
         generateX509Certificate(filePath)
             .filter(this::isExpiring)
             .map(x509cert -> new PkiCertificate(x509cert, filePath))
-            .ifPresent(notificationService::notifyExpiringCertificate);
+            .ifPresent(notifier::notifyExpiringCertificate);
     }
 
     private Optional<X509Certificate> generateX509Certificate(final Path pathToFile) {

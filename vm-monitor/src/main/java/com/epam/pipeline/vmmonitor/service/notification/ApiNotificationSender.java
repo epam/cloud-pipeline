@@ -12,13 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service.impl;
+package com.epam.pipeline.vmmonitor.service.notification;
 
 import com.epam.pipeline.exception.PipelineResponseException;
-import com.epam.pipeline.vmmonitor.service.CloudPipelineAPIClient;
-import com.epam.pipeline.vmmonitor.service.NotificationSender;
+import com.epam.pipeline.vmmonitor.service.pipeline.CloudPipelineAPIClient;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
