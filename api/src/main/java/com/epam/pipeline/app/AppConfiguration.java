@@ -40,7 +40,6 @@ import java.util.concurrent.Executors;
 @EnableAsync
 @ComponentScan(basePackages = {"com.epam.pipeline.dao",
         "com.epam.pipeline.manager",
-        "com.epam.pipeline.acl",
         "com.epam.pipeline.security",
         "com.epam.pipeline.aspect",
         "com.epam.pipeline.event"})
