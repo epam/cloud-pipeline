@@ -47,12 +47,12 @@ public class KubernetesNotifier {
         this.notReadyDeploymentTemplate = notReadyDeploymentTemplate;
     }
 
-    void notifyMissingDeployment(final String deploymentName) {
+    public void notifyMissingDeployment(final String deploymentName) {
         notificationService.sendMessage(Collections.singletonMap("deploymentName", deploymentName),
                 missingDeploymentSubject, missingDeploymentTemplate);
     }
 
-    void notifyDeploymentNotComplete(final String deploymentName,
+    public void notifyDeploymentNotComplete(final String deploymentName,
                                      final int required,
                                      final int ready) {
         final Map<String, Object> parameters = new HashMap<>();
