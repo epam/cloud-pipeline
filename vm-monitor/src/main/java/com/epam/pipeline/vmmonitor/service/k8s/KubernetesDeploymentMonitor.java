@@ -15,14 +15,12 @@
  *
  */
 
-package com.epam.pipeline.vmmonitor.service.notification;
-
-import java.util.Map;
+package com.epam.pipeline.vmmonitor.service.k8s;
 
 /**
- * Service for building and sending supported types of notifications
+ * Monitors state of k8s deployments
  */
-public interface VMNotificationService {
+public interface KubernetesDeploymentMonitor {
 
-    void sendMessage(Map<String, Object> parameters, String subject, String template);
+    void monitorDeployments();
 }
