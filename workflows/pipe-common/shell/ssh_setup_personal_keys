@@ -82,12 +82,12 @@ OWNER_SSH_PUB=$(echo "$OWNER_ATTRIBUTES" | jq -r '.payload[].data.ssh_pub.value 
 
 ### Write keys to the ~/.ssh/...
 if [ -z "$OWNER_SSH_PRV" ] || [ "$OWNER_SSH_PRV" == 0 ]; then
-    echo "Cannot determine owner's SSH private key"
+    echo "[ERROR] Cannot determine owner's SSH private key"
     exit 1
 fi
 
 if [ -z "$OWNER_SSH_PUB" ] || [ "$OWNER_SSH_PUB" == 0 ]; then
-    echo "Cannot determine owner's SSH public key, process will continue"
+    echo "[WARN] Cannot determine owner's SSH public key, process will continue"
 else
     echo "$OWNER_SSH_PUB" > "$OWNER_SSH_PUB_LOCATION"
     chown $OWNER "$OWNER_SSH_PUB_LOCATION"
