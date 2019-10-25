@@ -15,20 +15,31 @@
  */
 package com.epam.pipeline.elasticsearchagent.service.impl;
 
+import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import com.epam.pipeline.elasticsearchagent.service.BulkRequestCreator;
+import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
+import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class IndexRequestContainer implements AutoCloseable {
-    private List<IndexRequest> requests;
+
+    protected List<IndexRequest> requests;
+    protected List<PipelineEvent.ObjectType> objectTypes;
     private BulkRequestCreator bulkRequestCreator;
+    private BulkResponsePostProcessor responsePostProcessor;
+    private ResponseIdConverter idConverter = new ResponseIdConverter() {};
+    private LocalDateTime syncStart;
     private Integer bulkSize;
 
     public IndexRequestContainer(BulkRequestCreator bulkRequestCreator, Integer bulkSize) {
@@ -44,6 +55,16 @@ public class IndexRequestContainer implements AutoCloseable {
         }
     }
 
+    public void enablePostProcessing(@NonNull final BulkResponsePostProcessor responsePostProcessor,
+                                     @NonNull final ResponseIdConverter idConverter,
+                                     final List<PipelineEvent.ObjectType> objectTypes,
+                                     final LocalDateTime syncStart) {
+        this.responsePostProcessor = responsePostProcessor;
+        this.idConverter = idConverter;
+        this.objectTypes = objectTypes;
+        this.syncStart = syncStart;
+    }
+
     @Override
     public void close() {
         if (CollectionUtils.isEmpty(requests)) {
@@ -52,7 +73,7 @@ public class IndexRequestContainer implements AutoCloseable {
         flush();
     }
 
-    private void flush() {
+    protected void flush() {
         BulkResponse documents = bulkRequestCreator.sendRequest(requests);
         long successfulRequestsCount = 0L;
         if (documents != null && documents.getItems() != null) {
@@ -60,8 +81,17 @@ public class IndexRequestContainer implements AutoCloseable {
                     .stream(documents.getItems())
                     .filter(response -> !response.isFailed())
                     .count();
+            if (responsePostProcessor != null) {
+                performPostProcessing(documents);
+            }
         }
         log.info("{} files has been uploaded", successfulRequestsCount);
         requests.clear();
+    }
+
+    private void performPostProcessing(BulkResponse documents) {
+        Arrays.stream(documents.getItems())
+            .collect(Collectors.groupingBy(idConverter::getId))
+            .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
     }
 }

@@ -20,22 +20,15 @@ import com.epam.pipeline.elasticsearchagent.service.BulkResponsePostProcessor;
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ResponseIdConverter;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.common.bytes.BytesReference;
-import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -45,18 +38,27 @@ public class BulkRequestSender {
     private static final int DEFAULT_BULK_SIZE = 1000;
     private static final int MAX_PARTITION_SIZE = 200;
     private static final int MIN_PARTITION_SIZE = 10;
-    private static final int DEFAULT_MAX_REQUEST_SIZE_MB = 100;
     private final ElasticsearchServiceClient elasticsearchClient;
     private final BulkResponsePostProcessor responsePostProcessor;
     private ResponseIdConverter idConverter = new ResponseIdConverter() {};
     private int currentBulkSize = DEFAULT_BULK_SIZE;
-    private int requestLimitMb = DEFAULT_MAX_REQUEST_SIZE_MB;
+    private long requestLimitMb = MemLimitIndexRequestContainer.DEFAULT_MAX_REQUEST_SIZE_MB;
 
     public BulkRequestSender(final ElasticsearchServiceClient elasticsearchClient,
                              final BulkResponsePostProcessor responsePostProcessor,
                              final ResponseIdConverter idConverter) {
         this(elasticsearchClient, responsePostProcessor);
         this.idConverter = idConverter;
+    }
+
+    public BulkRequestSender(final ElasticsearchServiceClient elasticsearchClient,
+                             final BulkResponsePostProcessor responsePostProcessor,
+                             final ResponseIdConverter idConverter,
+                             final Integer bulkSize,
+                             final Integer requestLimitMb) {
+        this(elasticsearchClient, responsePostProcessor, idConverter);
+        this.currentBulkSize = bulkSize;
+        this.requestLimitMb = requestLimitMb;
     }
 
     public void indexDocuments(final String indexName,
@@ -92,104 +94,22 @@ public class BulkRequestSender {
                                final int bulkSize) {
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
                                               Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
-        final RequestChunk requestChunk = new RequestChunk(partitionSize);
-        documentRequests
-            .forEach(request -> tryToProceedRequestsInChunk(indexName, objectTypes, syncStart, requestChunk, request));
-        if (!requestChunk.isEmpty()) {
-            tryToIndexChunk(indexName, objectTypes, syncStart, requestChunk);
+        try (IndexRequestContainer requestContainer =
+                 new MemLimitIndexRequestContainer(requests -> elasticsearchClient.sendRequests(indexName, requests),
+                                                   partitionSize, requestLimitMb)) {
+            requestContainer.enablePostProcessing(responsePostProcessor, idConverter, objectTypes, syncStart);
+            documentRequests.stream()
+                .map(this::tryToCastToIndexRequest)
+                .filter(Objects::nonNull)
+                .forEach(requestContainer::add);
         }
     }
 
-    private void tryToProceedRequestsInChunk(final String indexName, final List<PipelineEvent.ObjectType> objectTypes,
-                                             final LocalDateTime syncStart, final RequestChunk chunk,
-                                             final DocWriteRequest request) {
-        if (exceedsDocSizeLimit(request)) {
-            log.warn("Can't index {} doc with id:{} due to its oversize!", objectTypes, request.id());
-            return;
-        }
-        if (chunk.isFull()
-                || (chunk.getSizeMB() + RequestChunk.getRequestSizeMb(request)) > requestLimitMb) {
-            tryToIndexChunk(indexName, objectTypes, syncStart, chunk);
-            chunk.clear();
-        }
-        chunk.add(request);
-    }
-
-    private void tryToIndexChunk(final String indexName, final List<PipelineEvent.ObjectType> objectTypes,
-                                 final LocalDateTime syncStart, final RequestChunk chunk) {
+    private IndexRequest tryToCastToIndexRequest(final DocWriteRequest request) {
         try {
-            indexChunk(indexName, chunk.getRequests(), objectTypes, syncStart);
-        } catch (Exception e) {
-            log.error("Partial error during {} index sync: {}.", indexName, e.getMessage());
-        }
-    }
-
-    private void indexChunk(final String indexName,
-                            final List<DocWriteRequest> documentRequests,
-                            final List<PipelineEvent.ObjectType> objectTypes,
-                            final LocalDateTime syncStart) {
-        log.debug("Inserting {} documents for {}", documentRequests.size(), objectTypes);
-        final BulkResponse response = elasticsearchClient
-                .sendRequests(indexName, documentRequests);
-
-        if (ObjectUtils.isEmpty(response)) {
-            log.error("Elasticsearch documents for {} were not created.", objectTypes);
-            return;
-        }
-        Arrays.stream(response.getItems())
-            .collect(Collectors.groupingBy(idConverter::getId))
-            .forEach((id, items) -> responsePostProcessor.postProcessResponse(items, objectTypes, id, syncStart));
-    }
-
-    private boolean exceedsDocSizeLimit(final DocWriteRequest request) {
-        return RequestChunk.getRequestSizeMb(request) > requestLimitMb;
-    }
-
-    @Getter
-    private static class RequestChunk {
-
-        private double sizeMB;
-        private final int maxElementsInChunk;
-        private final List<DocWriteRequest> requests;
-
-        public RequestChunk(final int maxElementsInChunk) {
-            this.requests = new ArrayList<>();
-            this.maxElementsInChunk = maxElementsInChunk;
-        }
-
-        public void add(final DocWriteRequest request) {
-            requests.add(request);
-            sizeMB += getRequestSizeMb(request);
-        }
-
-        public void clear() {
-            requests.clear();
-            sizeMB = 0;
-        }
-
-        public boolean isFull() {
-            return requests.size() == maxElementsInChunk;
-        }
-
-        public boolean isEmpty() {
-            return requests.isEmpty();
-        }
-
-        /**
-         * Tries to cast request to {@link IndexRequest} and calculate its content size.
-         *
-         * @param request request to be evaluated
-         * @return estimated size of a request in MB or 0 if unable to evaluate
-         */
-        public static double getRequestSizeMb(final DocWriteRequest request) {
-            try {
-                return Optional.ofNullable(((IndexRequest) request).source())
-                           .map(BytesReference::length)
-                           .map(Integer::doubleValue)
-                           .orElse(0.0) / (2 << 20);
-            } catch (ClassCastException e) {
-                return 0;
-            }
+            return (IndexRequest) request;
+        } catch (ClassCastException e) {
+            return null;
         }
     }
 }
