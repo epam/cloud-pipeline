@@ -51,8 +51,12 @@ public class CheckPermissionHelper {
                 .hasPermission(authManager.getAuthentication(), entity, permissionName);
     }
 
-    public boolean isOwnerOrAdmin(final String owner) {
-        return isOwner(owner) || isAdmin();
+    public boolean isOwnerOrAdmin(String owner) {
+        final String user = authManager.getAuthorizedUser();
+        if (user == null || user.equals(AuthManager.UNAUTHORIZED_USER)) {
+            return false;
+        }
+        return user.equalsIgnoreCase(owner) || isAdmin();
     }
 
     public boolean isOwner(final AbstractSecuredEntity entity) {
