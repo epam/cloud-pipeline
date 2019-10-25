@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.vmmonitor.model.cert;
 
-import lombok.Data;
+import lombok.Value;
 
 import java.nio.file.Path;
 import java.security.cert.X509Certificate;
 
-@Data
+@Value
 public class PkiCertificate {
 
     private final X509Certificate x509Certificate;

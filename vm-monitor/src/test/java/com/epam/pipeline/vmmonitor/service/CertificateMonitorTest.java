@@ -104,7 +104,7 @@ public class CertificateMonitorTest {
                                                   X509Factory.END_CERT);
             os.write(certText.getBytes());
         } catch (Exception e) {
-            throw new RuntimeException("Error during certificate saving!");
+            System.out.println("Error during certificate saving: " + e.getMessage());
         }
     }
 }

@@ -101,8 +101,7 @@ public class VMNotificationServiceImpl implements VMNotificationService {
 
     @Override
     public void notifyExpiringCertificate(final PkiCertificate certificate) {
-        final Map<String, Object> parameters = new HashMap<>();
-        addCertParameters(certificate, parameters);
+        final Map<String, Object> parameters = createCertParameters(certificate);
         log.debug("Sending {} certificate expiration notification", certificate.getX509Certificate().getSubjectDN());
         sendMessage(parameters, certificateExpirationSubject, certificateExpirationTemplatePath);
     }
@@ -118,7 +117,8 @@ public class VMNotificationServiceImpl implements VMNotificationService {
         parameters.put("instanceName", vm.getInstanceName());
     }
 
-    private void addCertParameters(final PkiCertificate certificate, final Map<String, Object> parameters) {
+    private Map<String, Object> createCertParameters(final PkiCertificate certificate) {
+        final Map<String, Object> parameters = new HashMap<>();
         final X509Certificate x509Cert = certificate.getX509Certificate();
         try {
             parameters.put("san", x509Cert.getSubjectAlternativeNames());
@@ -131,6 +131,7 @@ public class VMNotificationServiceImpl implements VMNotificationService {
         parameters.put("issuer", x509Cert.getIssuerDN());
         parameters.put("notAfter", x509Cert.getNotAfter());
         parameters.put("filePath", certificate.getPathToCertFile());
+        return parameters;
     }
 
     private void sendMessage(final Map<String, Object> parameters, final String subject, final String template) {
