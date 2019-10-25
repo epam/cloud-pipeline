@@ -70,7 +70,7 @@ public class PipelineAclFactory {
         // we need to grant permissions before changing the owner,
         // because it may cause AccessDeniedException for non-owner, non-admin user
         Optional.ofNullable(user)
-                .ifPresent(u -> grantPermission(pipeline, user, permissionMask));
+                .ifPresent(userName -> grantPermission(pipeline, userName, permissionMask));
         if (!owner.equals(authManager.getAuthorizedUser())) {
             doReturn(new UserContext(null, owner))
                     .when(mockUserManager)

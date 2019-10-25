@@ -43,6 +43,12 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
 
+/**
+ * Provides basic configuration for writing tests for ACL security layers (ApiService classes).
+ * This configuration configures all ACL related beans and DB access and provides mock beans for
+ * all dependent classes. For now you can check whether bean is mock or not by checking list of mocks
+ * defined in this class.
+ */
 @SpringBootConfiguration
 @Import({AclSecurityConfiguration.class, DBConfiguration.class, MappersConfiguration.class})
 @ComponentScan(basePackages = {"com.epam.pipeline.manager.security"})

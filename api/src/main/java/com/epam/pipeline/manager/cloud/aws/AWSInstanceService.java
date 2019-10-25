@@ -65,6 +65,9 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private final String nodeTerminateScript;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
+    // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
+    // It would be great fix this issue by actually removing this dependency:
+    // CloudFacade  -> AWSInstanceService -> InstanceOfferManager -> CloudFacade
     public AWSInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
                               final @Lazy InstanceOfferManager instanceOfferManager,
