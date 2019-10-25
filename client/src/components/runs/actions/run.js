@@ -517,7 +517,7 @@ export class RunConfirmation extends React.Component {
                   <b>You are going to launch a job using a {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  <b>While this is much cheaper, this type of instance may be OCCASINALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
+                  <b>While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
                   Consider {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance for batch jobs and short living runs.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
