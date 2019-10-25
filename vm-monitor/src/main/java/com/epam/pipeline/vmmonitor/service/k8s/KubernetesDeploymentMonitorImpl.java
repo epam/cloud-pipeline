@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 public class KubernetesDeploymentMonitorImpl implements KubernetesDeploymentMonitor {
 
     private static final String NAMESPACE_DELIMITER = "@";
+    private static final String DELIMITER = ",";
 
     private final KubernetesNotifier kubernetesNotifier;
     private final List<String> monitoredDeployments;
@@ -43,11 +45,10 @@ public class KubernetesDeploymentMonitorImpl implements KubernetesDeploymentMoni
 
     public KubernetesDeploymentMonitorImpl(
             final KubernetesNotifier kubernetesNotifier,
-            final @Value("${monitor.k8s.deployment.names}") List<String> monitoredDeployments,
+            final @Value("${monitor.k8s.deployment.names}") String monitoredDeployments,
             final @Value("${monitor.k8s.deployment.default.namespace}") String defaultNamespace) {
         this.kubernetesNotifier = kubernetesNotifier;
-        this.monitoredDeployments = ListUtils.emptyIfNull(monitoredDeployments)
-                .stream()
+        this.monitoredDeployments =  Arrays.stream(monitoredDeployments.split(DELIMITER))
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toList());
         this.defaultNamespace = defaultNamespace;
