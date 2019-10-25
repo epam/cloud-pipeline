@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
+import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -318,7 +319,9 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
-
+    public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference(
+            "launch.run.visibility", RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP,
+            PreferenceValidators.isValidEnum(RunVisibilityPolicy.class));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",

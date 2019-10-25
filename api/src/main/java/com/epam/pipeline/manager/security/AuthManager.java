@@ -53,6 +53,10 @@ public class AuthManager {
     @Value("${flyway.placeholders.default.admin.id:1}")
     private Long defaultAdminId;
 
+    public Authentication getAuthentication() {
+        return SecurityContextHolder.getContext().getAuthentication();
+    }
+
     /**
      * @return user name of currently logged in user
      */
@@ -158,7 +162,7 @@ public class AuthManager {
     }
 
     private Object getPrincipal() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
             return UNAUTHORIZED_USER;
         }
