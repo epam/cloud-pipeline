@@ -31,7 +31,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.security.PermissionsHelper;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -47,7 +47,7 @@ public class RunConfigurationProvider implements ConfigurationProvider<RunConfig
         CloudPlatformPreferences> {
     private final PipelineManager pipelineManager;
     private final ToolManager toolManager;
-    private final PermissionsHelper permissionsHelper;
+    private final CheckPermissionHelper permissionsHelper;
     private final PipelineConfigurationManager pipelineConfigurationManager;
     private final InstanceOfferManager instanceOfferManager;
     private final MessageHelper messageHelper;

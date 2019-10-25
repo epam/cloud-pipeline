@@ -21,7 +21,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.manager.pipeline.RunApiService;
+import com.epam.pipeline.acl.run.RunApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

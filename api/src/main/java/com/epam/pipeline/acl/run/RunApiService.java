@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.acl.run;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
@@ -39,6 +39,9 @@ import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -55,6 +58,7 @@ import java.util.List;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
+import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_SSH;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_WRITE;
 
 @Service
@@ -95,7 +99,7 @@ public class RunApiService {
         return configurationLauncher.runConfiguration(refreshToken, configuration, expansionExpression);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runLog.runId, 'EXECUTE')")
+    @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(#runLog.runId, 'EXECUTE')")
     public RunLog saveLog(final RunLog runLog) {
         return logManager.saveLog(runLog);
     }
@@ -137,7 +141,7 @@ public class RunApiService {
         return logManager.loadAllLogsForTask(runId, taskName, parameters);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
+    @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
     @AclMask
     public PipelineRun updatePipelineStatusIfNotFinal(Long runId, TaskStatus status) {
         return runManager.updatePipelineStatusIfNotFinal(runId, status);
@@ -189,13 +193,13 @@ public class RunApiService {
         return runManager.countPipelineRuns(filter);
     }
 
-    @PreAuthorize("@grantPermissionManager.isRunSshAllowed(#runId)")
+    @PreAuthorize(RUN_ID_SSH)
     public String buildSshUrl(Long runId) {
         return utilsManager.buildSshUrl(runId);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (@grantPermissionManager.runPermission(#runId, 'EXECUTE')"
-            + " AND @grantPermissionManager.commitPermission(#registryId, #imageName, 'WRITE'))")
+    @PreAuthorize("hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
+            + " AND @runPermissionManager.commitPermission(#registryId, #imageName, 'WRITE'))")
     @AclMask
     public PipelineRun commitRun(Long runId, Long registryId, String imageName, boolean deleteFiles,
                                  boolean stopPipeline, boolean checkSize) {
@@ -212,13 +216,13 @@ public class RunApiService {
         return utilsManager.getSystemParameters();
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'EXECUTE')")
+    @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun pauseRun(Long runId, boolean checkSize) {
         return runManager.pauseRun(runId, checkSize);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'EXECUTE')")
+    @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun resumeRun(Long runId) {
         return runManager.resumeRun(runId);
@@ -247,6 +251,7 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_OWNER)
+    @AclMask
     public PipelineRun terminateRun(final Long runId) {
         return runManager.terminateRun(runId);
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.pipeline;
+package com.epam.pipeline.acl.pipeline;
 
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
@@ -37,6 +37,11 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
+import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskList;

@@ -33,7 +33,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.security.PermissionsHelper;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -51,7 +51,7 @@ public class RunConfigurationProviderTest {
 
     private final PipelineManager pipelineManager = mock(PipelineManager.class);
     private final ToolManager toolManager = mock(ToolManager.class);
-    private final PermissionsHelper permissionsHelper = mock(PermissionsHelper.class);
+    private final CheckPermissionHelper permissionsHelper = mock(CheckPermissionHelper.class);
     private final PipelineConfigurationManager pipelineConfigurationManager = mock(PipelineConfigurationManager.class);
     private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);

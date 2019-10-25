@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -66,9 +67,12 @@ public class AwsInstanceService implements CloudInstanceService<AwsRegion> {
     private final String kubeMasterIP;
     private final String kubeToken;
 
+    // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
+    // It would be great fix this issue by actually removing this dependency:
+    // CloudFacade  -> AWSInstanceService -> InstanceOfferManager -> CloudFacade
     public AwsInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
-                              final InstanceOfferManager instanceOfferManager,
+                              final @Lazy InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.nodedown.script}") final String nodeDownScript,
