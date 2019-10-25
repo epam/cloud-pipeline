@@ -26,10 +26,9 @@ public class TesSwaggerConfig {
 
     private ApiInfo getApiInfo() {
         return new ApiInfoBuilder()
-                .title("TES adapter API Documentation")
-                .description("Simple TES adapter application. " +
-                        "Without Security Configuration and Context")
-                .version("1.0.0")
+                .title("Task Execution Service (GA4GH TES) API")
+                .description("Represents implementation of GA4GH TES " +
+                        "(https://github.com/ga4gh/task-execution-schemas) API for Cloud Pipeline")
                 .build();
     }
 }
