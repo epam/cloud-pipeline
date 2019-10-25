@@ -26,8 +26,9 @@ public class TesSwaggerConfig {
 
     private ApiInfo getApiInfo() {
         return new ApiInfoBuilder()
-                .title("Task Execution Service (TES) API")
-                .description("Describes the REST API provided by a Cloud-Pipeline Task Execution Service")
+                .title("Task Execution Service (GA4GH TES) API")
+                .description("Represents implementation of GA4GH TES " +
+                        "(https://github.com/ga4gh/task-execution-schemas) API for Cloud Pipeline")
                 .build();
     }
 }
