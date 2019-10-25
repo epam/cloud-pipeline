@@ -12,22 +12,23 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service;
+package com.epam.pipeline.vmmonitor.service.vm;
 
-import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.vmmonitor.model.cert.PkiCertificate;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 
 import java.util.List;
 
 /**
- * Service for building and sending supported types of notifications
+ * Cloud provider specific service for getting list of VMs from the cloud
+ * @param <T> supported region
  */
-public interface VMNotificationService {
+public interface VMMonitorService<T extends AbstractCloudRegion> {
 
-    void notifyMissingNode(VirtualMachine vm);
-    void notifyMissingLabels(VirtualMachine vm, NodeInstance node, List<String> labels);
-    void notifyExpiringCertificate(PkiCertificate certificate);
+    List<VirtualMachine> fetchRunningVms(T region);
+    CloudProvider provider();
 }

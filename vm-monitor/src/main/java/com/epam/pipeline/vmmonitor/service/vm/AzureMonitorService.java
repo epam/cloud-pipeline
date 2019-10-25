@@ -12,15 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service.impl;
+package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.vmmonitor.model.vm.VMTag;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
-import com.epam.pipeline.vmmonitor.service.VMMonitorService;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.PowerState;

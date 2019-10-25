@@ -32,14 +32,14 @@
 <body>
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
-<p>Looks like certificate $templateParameters["serialNumber"] for $templateParameters["dn"] expires soon!</p>
+<p>Looks like certificate $templateParameters["serialNumber"] for $templateParameters["dn"] expires soon.</p>
 <p> Expiring on: $templateParameters["notAfter"]</p>
 <p> Issued by: $templateParameters["issuer"]</p>
 <p> Stored at: $templateParameters["filePath"]</p>
 <p> SAN: [$templateParameters["san"]]</p>
-<p>This won't be managed automatically by Cloud Pipeline Platform, please verify validity period and renew it manually.</p>
+<p>Please verify validity period and renew it manually.</p>
 <p>Best regards,</p>
-<p>Cloud Pipeline Platform</p>
+<p>$templateParameters["platformName"] Platform</p>
 </body>
 
 </html>
