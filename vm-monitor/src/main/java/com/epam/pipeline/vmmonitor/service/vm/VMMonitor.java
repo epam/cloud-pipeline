@@ -12,9 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package com.epam.pipeline.vmmonitor.service;
+package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -22,6 +23,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
+import com.epam.pipeline.vmmonitor.service.pipeline.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -29,7 +31,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -44,52 +45,30 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class VMMonitor {
 
     private final CloudPipelineAPIClient apiClient;
-    private final VMNotificationService notificationService;
-    private final CertificateMonitor certificateMonitor;
+    private final VMNotifier notifier;
     private final Map<CloudProvider, VMMonitorService> services;
     private final List<String> requiredLabels;
     private final String runIdLabel;
 
     public VMMonitor(final CloudPipelineAPIClient apiClient,
-                     final VMNotificationService notificationService,
+                     final VMNotifier notifier,
                      final List<VMMonitorService> services,
-                     final CertificateMonitor certificateMonitor,
                      @Value("${monitor.required.labels:}") final String requiredLabels,
                      @Value("${monitor.runid.label:}") final String runIdLabel) {
         this.apiClient = apiClient;
-        this.notificationService = notificationService;
+        this.notifier = notifier;
         this.services = ListUtils.emptyIfNull(services).stream()
                 .collect(Collectors.toMap(VMMonitorService::provider, Function.identity()));
         this.requiredLabels = Arrays.asList(requiredLabels.split(","));
         this.runIdLabel = runIdLabel;
-        this.certificateMonitor = certificateMonitor;
     }
 
-    @Scheduled(cron = "${monitor.schedule.cron}")
     public void monitor() {
-        try {
-            log.debug("Starting VM monitoring");
-            ListUtils.emptyIfNull(apiClient.loadRegions())
-                    .forEach(this::checkVMs);
-            log.debug("Finished VM monitoring");
-        } catch (Exception e) {
-            log.error("Un error occurred during VM monitoring", e);
-        }
-    }
-
-    @Scheduled(cron = "${monitor.cert.schedule.cron}")
-    public void monitorCerts() {
-        try {
-            log.debug("Starting PKI certificates checking.");
-            certificateMonitor.checkCertificates();
-            log.debug("Finished PKI certificates checking.");
-        } catch (Exception e) {
-            log.error("An error occurred during PKI certificates checking!", e);
-        }
+        ListUtils.emptyIfNull(apiClient.loadRegions())
+                .forEach(this::checkVMs);
     }
 
     @SuppressWarnings("unchecked")
@@ -113,6 +92,7 @@ public class VMMonitor {
         return Optional.of(services.get(provider));
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void checkVmState(final VirtualMachine vm) {
         try {
             final List<NodeInstance> nodes = apiClient.findNodes(vm.getPrivateIp());
@@ -123,7 +103,7 @@ public class VMMonitor {
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
                 if (!matchingRunExists(vm)) {
-                    notificationService.notifyMissingNode(vm);
+                    notifier.notifyMissingNode(vm);
                 }
             }
         } catch (Exception e) {
@@ -171,7 +151,7 @@ public class VMMonitor {
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
-            notificationService.notifyMissingLabels(vm, node, labels);
+            notifier.notifyMissingLabels(vm, node, labels);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }

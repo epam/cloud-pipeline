@@ -81,6 +81,9 @@ dependencies {
     implementation group: "com.microsoft.azure", name: "azure-mgmt-resources", version: "1.19.0"
     implementation group: "com.microsoft.azure", name: "azure", version: "1.19.0"
 
+    //K8s
+    implementation group: "io.fabric8", name: "kubernetes-client", version: k8sLibraryVersion
+
     //Tests
     implementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion
     testImplementation group: "org.projectlombok", name: "lombok", version: lombokVersion

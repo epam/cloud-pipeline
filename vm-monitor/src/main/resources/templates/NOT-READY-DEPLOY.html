@@ -12,6 +12,7 @@
   ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
+  ~
   -->
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -32,8 +33,9 @@
 <body>
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
-<p>Looks like there is a Virtual Machine [ instance ID $templateParameters["instanceId"], IP address $templateParameters["privateIp"] ] in the $templateParameters["provider"] cloud that is not registered in the $templateParameters["platformName"] cluster.</p>
-<p>Please verify the state of this Virtual Machine and terminate it from $templateParameters["provider"] console if Virtual Machine is not needed anymore.</p>
+<p>Looks like $templateParameters["deploymentName"] deployment in $templateParameters["platformName"] cluster is not in ready state.</p>
+<p>Currently only $templateParameters["readyReplicas"] replica(s) are in Ready state, while $templateParameters["requiredReplicas"] replica(s) are expected.</p>
+<p>Please verify the state of $templateParameters["platformName"] cluster.</p>
 <p>Best regards,</p>
 <p>$templateParameters["platformName"] Platform</p>
 </body>
