@@ -92,7 +92,7 @@ class LinuxUpdater(CLIVersionUpdater):
         return 'pipe'
 
     def update_version(self, path):
-        path_to_script = os.path.realpath(sys.argv[0])
+        path_to_script = os.path.realpath(sys.executable)
         self.check_write_permissions(os.path.dirname(path_to_script))
         self.replace_executable(path_to_script, path)
         self.set_x_permission(path_to_script)
