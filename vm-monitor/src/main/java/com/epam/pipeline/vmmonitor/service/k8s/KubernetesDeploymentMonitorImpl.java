@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,8 +75,8 @@ public class KubernetesDeploymentMonitorImpl implements KubernetesDeploymentMoni
                 kubernetesNotifier.notifyMissingDeployment(deploymentName);
                 return;
             }
-            final Integer requiredReplicas = deployment.getSpec().getReplicas();
-            final Integer readyReplicas = deployment.getStatus().getReadyReplicas();
+            final Integer requiredReplicas = Optional.ofNullable(deployment.getSpec().getReplicas()).orElse(0);
+            final Integer readyReplicas = Optional.ofNullable(deployment.getStatus().getReadyReplicas()).orElse(0);
             log.debug("Checking deployment {} status: required replicas {} - available replicas {}.",
                     deploymentName, requiredReplicas, readyReplicas);
             if (!requiredReplicas.equals(readyReplicas)) {
