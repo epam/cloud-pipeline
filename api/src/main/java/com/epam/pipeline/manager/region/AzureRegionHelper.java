@@ -100,7 +100,10 @@ public class AzureRegionHelper implements CloudRegionHelper<AzureRegion, AzureRe
     @Override
     public AzureRegionCredentials mergeCredentials(final AzureRegionCredentials oldCredentials,
                                                    final AzureRegionCredentials updatedCredentials) {
-        return updatedCredentials;
+        if (StringUtils.isNotBlank(updatedCredentials.getStorageAccountKey())) {
+            oldCredentials.setStorageAccountKey(updatedCredentials.getStorageAccountKey());
+        }
+        return oldCredentials;
     }
 
     void validateStorageAccount(final String storageAccountName, final String storageAccountKey) {
