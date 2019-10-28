@@ -17,17 +17,34 @@
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
-import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageFolder;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.region.AwsRegionHelper;
+import com.epam.pipeline.manager.region.AzureRegionHelper;
+import com.epam.pipeline.manager.region.CloudRegionHelper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -45,6 +62,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.manager.CmdExecutor;
+
 
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 public class NFSStorageProviderTest extends AbstractSpringTest {
@@ -66,7 +84,20 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
     private FileShareMountManager fileShareMountManager;
 
     @Autowired
-    private CloudRegionManager regionManager;
+    private CloudRegionMapper cloudRegionMapper;
+
+    @Autowired
+    private CloudRegionDao cloudRegionDao;
+
+    @Autowired
+    private MessageHelper messageHelper;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
+
+    @Autowired
+    private AuthManager authManager;
+
 
     private FileShareMount awsFileShareMount;
     private FileShareMount azureFileShareMount;
@@ -84,13 +115,16 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
 
     @Before
     public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
 
+        MockitoAnnotations.initMocks(this);
         Whitebox.setInternalState(nfsProvider, "dataStorageDao", dataStorageDao);
         Whitebox.setInternalState(nfsProvider, "rootMountPoint", testMountPoint.getAbsolutePath());
         Whitebox.setInternalState(nfsProvider, "cmdExecutor", mockCmdExecutor);
 
         when(mockCmdExecutor.executeCommand(anyString())).thenReturn("");
+
+        CloudRegionManager regionManager = new CloudRegionManager(cloudRegionDao, cloudRegionMapper,
+                fileShareMountManager, messageHelper, preferenceManager, authManager, helpers());
 
         AWSRegionDTO awsRegion = new AWSRegionDTO();
         awsRegion.setName("region");
@@ -300,5 +334,13 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
                 newContent,
                 nfsProvider.getFile(dataStorage, testFileName, updatedFile.getVersion(), Long.MAX_VALUE).getContent()
         );
+    }
+
+    List<CloudRegionHelper> helpers() {
+        AzureRegionHelper azure = mock(AzureRegionHelper.class);
+        when(azure.getProvider()).thenReturn(CloudProvider.AZURE);
+        AwsRegionHelper aws = mock(AwsRegionHelper.class);
+        when(aws.getProvider()).thenReturn(CloudProvider.AWS);
+        return Arrays.asList(new CloudRegionHelper[]{azure, aws});
     }
 }
