@@ -99,14 +99,16 @@ class CLIVersionUpdater:
 class LinuxUpdater(CLIVersionUpdater):
 
     def __init__(self):
-        self.one_file_dist = self.is_one_file()
+        self.one_file_dist, self.centos_6_dist = self.get_bundle_info()
 
     BUNDLE_FILE_NAME = "bundle.info"
     ONE_FOLDER = "one-folder"
     ONE_FILE = "one-file"
+    CENTOS_6 = "centos:6"
 
     def get_download_suffix(self):
-        return 'pipe' if self.one_file_dist else 'pipe.tar.gz'
+        prefix = 'pipe-el6' if self.centos_6_dist else 'pipe'
+        return prefix + '' if self.one_file_dist else 'tar.gz'
 
     def update_version(self, path):
         if self.one_file_dist:
@@ -139,18 +141,18 @@ class LinuxUpdater(CLIVersionUpdater):
         self.download_executable(path_to_script, path)
         self.set_x_permission(path_to_script)
 
-    def is_one_file(self):
+    def get_bundle_info(self):
         bundle_file = self.get_bundle_file_path()
         if not os.path.exists(bundle_file):
-            return True
-        bundle_file_content = self.get_bundle_file_content(bundle_file).strip()
-        if bundle_file_content == self.ONE_FILE:
-            return True
-        elif bundle_file_content == self.ONE_FOLDER:
-            return False
+            return True, False
+        dist_type, dist_version = self.get_bundle_file_content(bundle_file)
+        is_centos_6_dist = dist_version == self.CENTOS_6
+        if dist_type == self.ONE_FILE:
+            return True, is_centos_6_dist
+        elif dist_type == self.ONE_FOLDER:
+            return False, is_centos_6_dist
         else:
-            click.echo("Failed to update Cloud Pipeline CLI: update type '%s' not found" % bundle_file_content,
-                       err=True)
+            click.echo("Failed to update Cloud Pipeline CLI: update type '%s' not found" % dist_type, err=True)
 
     @staticmethod
     def download_executable(path_to_file, path):
@@ -174,7 +176,8 @@ class LinuxUpdater(CLIVersionUpdater):
     @staticmethod
     def get_bundle_file_content(bundle_file_path):
         with open(bundle_file_path, 'r') as bundle_file:
-            return bundle_file.read()
+            content = bundle_file.readlines()
+        return content[0].strip(), content[1].strip()
 
     @staticmethod
     def delete_folder_tree(path):
