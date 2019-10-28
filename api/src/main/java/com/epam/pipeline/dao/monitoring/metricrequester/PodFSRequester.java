@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 
 public class PodFSRequester extends FSRequester {
 
-    public static final String FILE_SYSTEM_METRICS_TIMESTAMP = "FilesystemMetricsTimestamp";
     public static final String FILESYSTEM = "filesystem";
 
     PodFSRequester(final RestHighLevelClient client) {

@@ -26,8 +26,6 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
@@ -72,10 +70,7 @@ public class MemoryRequester extends AbstractMetricRequester {
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
-                .collect(Collectors.toMap(
-                    b -> b.getKey().toString(),
-                    b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + NODE_UTILIZATION)).getValue()));
+        return collectAggregation(response, AGGREGATION_NODE_NAME, AVG_AGGREGATION + NODE_UTILIZATION);
     }
 
     @Override
