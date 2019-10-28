@@ -23,7 +23,8 @@ import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.Test;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.Date;
@@ -103,16 +104,6 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
         final AzureRegion actualRegion = regionCaptor.getValue();
         assertThat(actualRegion.getSubscription(), is(SUBSCRIPTION));
-    }
-
-    @Test
-    public void updateShouldThrowIfAccountKeyIsNotSpecified() {
-        assertThrows(IllegalArgumentException.class,
-            () -> {
-                final AzureRegionDTO regionDTO = updateRegionDTO();
-                regionDTO.setStorageAccountKey(null);
-                cloudRegionManager.update(ID, regionDTO);
-            });
     }
 
     @Test
