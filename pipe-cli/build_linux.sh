@@ -15,7 +15,7 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="python:2.7-stretch"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
@@ -25,7 +25,7 @@ cat >$_BUILD_SCRIPT_NAME <<EOL
 
 mkdir -p $PYINSTALLER_PATH
 cd $PYINSTALLER_PATH
-git clone --single-branch --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
+git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
 cd pyinstaller/bootloader/
 python2 ./waf all
 
@@ -79,6 +79,14 @@ function build_pipe {
     bundle_type="one-folder"
     [ "\$onefile" ] && bundle_type="one-file"
     echo "\$bundle_type" > /tmp/bundle.info
+
+    if [ -f "/etc/os-release" ]; then
+        source /etc/os-release
+        echo "\${ID}:\${VERSION_ID}" >> /tmp/bundle.info
+    elif [ -f "/etc/centos-release" ]; then
+        VERSION_ID=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
+        echo "centos:\${VERSION_ID}" >> /tmp/bundle.info
+    fi
 
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \

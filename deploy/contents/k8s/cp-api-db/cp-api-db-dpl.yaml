@@ -41,6 +41,12 @@ spec:
               port: ${PSG_PORT}
             initialDelaySeconds: 5
             periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: ${PSG_PORT}
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            failureThreshold: 4
       volumes:
         - name: pgdata
           hostPath:

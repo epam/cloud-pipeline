@@ -20,6 +20,7 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineEvent;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +57,7 @@ public final class EventProcessorUtils {
             return deleteEvent;
         }
         return events.stream().filter(event -> event.getEventType() != EventType.DELETE)
-                .findFirst();
+            .max(Comparator.comparing(PipelineEvent::getCreatedDate));
     }
 
 }

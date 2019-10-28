@@ -39,14 +39,21 @@ spec:
               name: docker-api-pki
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
-          # TODO: deal with 401 response from /v2/
-          # readinessProbe:
-          #   httpGet:
-          #     path: /v2/
-          #     port: 443
-          #     scheme: HTTPS
-          #   initialDelaySeconds: 5
-          #   periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 4
       volumes:
         - name: docker-pki
           hostPath:

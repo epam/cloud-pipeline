@@ -35,6 +35,7 @@ public final class TestConstants {
     public static final String ADMIN_GROUP = "ROLE_ADMIN";
     public static final String TEST_KEY = "key";
     public static final String TEST_VALUE = "value";
+    public static final byte[] TEST_VALUE_BYTE = TEST_VALUE.getBytes();
     public static final String ALLOW_USER = "allow_user_name";
     public static final String ALLOW_GROUP = "allow_group_name";
     public static final String DENY_USER = "deny_user_name";

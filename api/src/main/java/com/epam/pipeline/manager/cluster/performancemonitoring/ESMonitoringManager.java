@@ -52,6 +52,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
+    public static final int TWO = 2;
 
     private final RestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
@@ -77,14 +78,18 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final MonitoringStats.DisksUsage.DiskStats diskStats =
                 AbstractMetricRequester.getStatsRequester(ELKUsageMetric.POD_FS, client)
                         .requestStats(nodeName,
-                                DateUtils.nowUTC().minus(duration),
+                                DateUtils.nowUTC().minus(duration.multipliedBy(Math.max(numberOfIntervals(), TWO))),
                                 DateUtils.nowUTC(),
                                 duration
                         )
-                        .stream().map(MonitoringStats::getDisksUsage)
+                        .stream()
+                        .max(Comparator.comparing(MonitoringStats::getStartTime,
+                                Comparator.comparing(this::asDateTime)))
+                        .map(MonitoringStats::getDisksUsage)
                         .map(MonitoringStats.DisksUsage::getStatsByDevices)
                         //get disks stats (in fact here only one stats for one disk)
-                        .flatMap(stats -> stats.values().stream())
+                        .orElse(Collections.emptyMap())
+                        .values().stream()
                         //get stats for the only Pod disk
                         .findFirst()
                         .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
@@ -186,6 +191,11 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private LocalDateTime asMonitoringDateTime(final String dateTimeString) {
         return LocalDateTime.parse(dateTimeString, MonitoringConstants.FORMATTER);
     }
+
+    private LocalDateTime asDateTime(final String dateTimeString) {
+        return LocalDateTime.parse(dateTimeString, MonitoringConstants.DATE_TIME_FORMATTER);
+    }
+
 
     private Optional<MonitoringStats> statsWithinRegion(final MonitoringStats stats, final LocalDateTime regionStart,
                                               final LocalDateTime regionEnd, final Duration interval) {

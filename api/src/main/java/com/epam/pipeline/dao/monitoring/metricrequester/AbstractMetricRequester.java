@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.exception.PipelineException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
@@ -29,6 +30,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -45,6 +47,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class AbstractMetricRequester implements MetricRequester, MonitoringRequester {
@@ -151,6 +154,17 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         );
     }
 
+    public Map<String, Double> collectAggregation(final SearchResponse response,
+                                                  final String aggName, final String subAggName) {
+        return ((Terms)response.getAggregations().get(aggName)).getBuckets()
+                .stream()
+                .map(b -> Pair.of(b.getKey().toString(),
+                        doubleValue(aggregations(b), subAggName))
+                )
+                .filter(pair -> pair.getRight().isPresent())
+                .collect(Collectors.toMap(Pair::getLeft, p -> p.getRight().get()));
+    }
+
     protected SearchResponse executeRequest(final SearchRequest searchRequest) {
         try {
             return client.search(searchRequest);
@@ -202,30 +216,16 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         return parseStatsResponse(executeRequest(request));
     }
 
-    protected SearchSourceBuilder nodeStatsQuery(final String nodeName, final LocalDateTime from,
-                                                 final LocalDateTime to) {
+    protected SearchSourceBuilder statsQuery(final String nodeName, final String type,
+                                             final LocalDateTime from, final LocalDateTime to) {
         return new SearchSourceBuilder()
                 .query(QueryBuilders.boolQuery()
                         .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), type))
                         .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
                         .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
                                 .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0);
-    }
-
-    protected SearchSourceBuilder podStatsQuery(final String nodeName, final LocalDateTime from,
-                                                 final LocalDateTime to) {
-        return new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery()
-                        .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW), nodeName))
-                        .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), POD_CONTAINER))
-                        .filter(QueryBuilders.termQuery(path(FIELD_DOCUMENT_TYPE), metric().getName()))
-                        .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
-                                .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
-                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
-                .size(0);
+                                .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())));
     }
 
     protected DateHistogramAggregationBuilder dateHistogram(final String name, final Duration interval) {

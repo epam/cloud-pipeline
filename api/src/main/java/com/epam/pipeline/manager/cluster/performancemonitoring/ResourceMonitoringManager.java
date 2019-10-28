@@ -73,9 +73,10 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     private static final int MILLIS = 1000;
     private static final double PERCENT = 100.0;
     private static final double ONE_THOUSANDTH = 0.001;
-    private static final String UTILIZATION_LEVEL_LOW = "IDLE";
-    private static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
-    private static final String TRUE_VALUE_STRING = "true";
+    public static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
+    public static final String TRUE_VALUE_STRING = "true";
+    private static final long ONE = 1L;
 
     private final PipelineRunManager pipelineRunManager;
     private final NotificationManager notificationManager;
@@ -131,27 +132,28 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     final boolean hasNodeName = Objects.nonNull(r.getInstance())
                             && Objects.nonNull(r.getInstance().getNodeName());
                     if (!hasNodeName) {
-                        log.debug("Pipeline with id: " + r.getId() + " has not node name.");
+                        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_HAS_NOT_NODE_NAME, r.getId()));
                     }
                     return hasNodeName;
                 })
                 .collect(Collectors.toMap(r -> r.getInstance().getNodeName(), r -> r));
         final int timeRange = preferenceManager.getPreference(SystemPreferences.SYSTEM_MONITORING_METRIC_TIME_RANGE);
         final Map<ELKUsageMetric, Double> thresholds = getThresholds();
-        log.debug("Checking memory and disk stats for pipelines: " + String.join(", ", running.keySet()));
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
+                "MEMORY, DISK ", running.size(), String.join(", ", running.keySet())));
 
         final LocalDateTime now = DateUtils.nowUTC();
         final Map<ELKUsageMetric, Map<String, Double>> metrics = Stream.of(ELKUsageMetric.MEM, ELKUsageMetric.FS)
                 .collect(Collectors.toMap(metric -> metric, metric ->
                         monitoringDao.loadMetrics(metric, running.keySet(),
-                            now.minusMinutes(timeRange), now)));
+                                now.minusMinutes(timeRange + ONE), now)));
 
-        log.debug("memory and disk metrics received: " + metrics.entrySet().stream()
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_MEMORY_METRICS, metrics.entrySet().stream()
                 .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
                         .map(metric -> metric.getKey() + ":" + metric.getValue())
                         .collect(Collectors.joining(", ")) + " }"
                 )
-                .collect(Collectors.joining("; ")));
+                .collect(Collectors.joining("; "))));
 
         final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> runsToNotify = running.entrySet()
                 .stream()
@@ -229,14 +231,16 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         .orElse(Boolean.FALSE))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        log.debug("Checking cpu stats for pipelines: " + String.join(", ", notProlongedRuns.keySet()));
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
+                "CPU", notProlongedRuns.size(), String.join(", ", notProlongedRuns.keySet())));
 
         final LocalDateTime now = DateUtils.nowUTC();
         final Map<String, Double> cpuMetrics = monitoringDao.loadMetrics(ELKUsageMetric.CPU,
-                notProlongedRuns.keySet(), now.minusMinutes(idleTimeout), now);
-
-        log.debug("CPU Metrics received: " + cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-            .collect(Collectors.joining(", ")));
+                notProlongedRuns.keySet(), now.minusMinutes(idleTimeout + ONE), now);
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_CPU_RUN_METRICS_RECEIVED,
+                cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+                        .collect(Collectors.joining(", ")))
+        );
 
         final double idleCpuLevel = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT) / PERCENT;
@@ -256,6 +260,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
             if (run.isNonPause() || isClusterRun(run)) {
+                log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
                 continue;
             }
             Double metric = cpuMetrics.get(entry.getKey());
@@ -267,6 +272,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     processIdleRun(run, actionTimeout, action, runsToNotify,
                                    runsToUpdateNotificationTime, cpuUsageRate, runsToUpdateTags);
                 } else if (run.getLastIdleNotificationTime() != null) { // No action is longer needed, clear timeout
+                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
+                            run.getPodId(), cpuUsageRate));
                     processFormerIdleRun(run, runsToUpdateNotificationTime, runsToUpdateTags);
                 }
             }

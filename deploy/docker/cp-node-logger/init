@@ -24,7 +24,7 @@
 # CP_LOGGER_SOURCE_DIRECTORY
 
 echo "Install jq"
-curl -sL "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -o /usr/bin/jq
+curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
 chmod +x /usr/bin/jq
 
 echo "Install pipe cli"

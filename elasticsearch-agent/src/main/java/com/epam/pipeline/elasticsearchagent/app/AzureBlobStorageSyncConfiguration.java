@@ -78,12 +78,14 @@ public class AzureBlobStorageSyncConfiguration {
             final PipelineEventDao eventDao,
             final ElasticIndexService indexService,
             final BulkRequestSender requestSender,
-            final @Value("${sync.az-blob-storage.index.mapping}") String azStorageMapping) {
+            final @Value("${sync.az-blob-storage.index.mapping}") String azStorageMapping,
+            final @Value("${sync.load.common.entity.chunk.size:1000}") int chunkSize) {
         return new EntitySynchronizer(eventDao,
                 PipelineEvent.ObjectType.AZ,
                 azStorageMapping,
                 azEventConverter,
                 indexService,
-                requestSender);
+                requestSender,
+                chunkSize);
     }
 }

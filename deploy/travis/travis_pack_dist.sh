@@ -23,6 +23,7 @@ mkdir -p $API_STATIC_PATH
 # - cloud-pipeline.${VERSION}.tgz
 # - client.tgz
 # - cli-linux.tgz
+# - cli-linux-el6.tgz
 # - cli-win.tgz
 # - fsbrowser.tgz
 mkdir assemble
@@ -38,6 +39,13 @@ tar -zxf cli-linux.tgz
 mv pipe-cli/dist/PipelineCLI-* $API_STATIC_PATH/PipelineCLI.tar.gz
 mv pipe-cli/dist/dist-file/pipe $API_STATIC_PATH/
 mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/
+
+# Untar pipe-cli linux el6 binary. Move them to the pipeline.jar static assets
+# Clean the previous cli version (non-el6)
+rm -rf pipe-cli/dist
+tar -zxf cli-linux-el6.tgz
+mv pipe-cli/dist/dist-file/pipe $API_STATIC_PATH/pipe-el6
+mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/pipe-el6.tar.gz
 
 # Untar pipe-cli windows binary and move it to the pipeline.jar static assets
 tar -zxf cli-win.tgz

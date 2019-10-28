@@ -46,6 +46,8 @@ def silent_print_api_version():
             click.echo('Cloud Pipeline API, version {}'.format(api_info['version']))
     except ConfigNotFoundError:
         return
+    except Exception as e:
+        click.echo("Error: {}".format(str(e)), err=True)
 
 
 def print_version(ctx, param, value):

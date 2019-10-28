@@ -39,6 +39,10 @@ spec:
               name: api-pipe-templates
             - mountPath: ${CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT}
               name: api-folder-templates
+            - mountPath: ${CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT}
+              name: api-error-templates
+            - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
+              name: api-static-assets
             - mountPath: /opt/idp/pki
               name: idp-pki
             - mountPath: /opt/common/pki
@@ -65,10 +69,15 @@ spec:
               scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "kill -9 $(pgrep -f pipeline.jar); sleep 1"]
+          livenessProbe:
+            httpGet:
+              path: /pipeline/launch.sh
+              port: 8080
+              scheme: HTTPS
+            # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
+            initialDelaySeconds: 150
+            periodSeconds: 15
+            failureThreshold: 4
       volumes:
         - name: api-pki
           hostPath:
@@ -85,6 +94,12 @@ spec:
         - name: api-folder-templates
           hostPath:
             path: /opt/api/templates/folder-templates
+        - name: api-error-templates
+          hostPath:
+            path: /opt/api/templates/error-templates
+        - name: api-static-assets
+          hostPath:
+            path: /opt/api/templates/static
         - name: idp-pki
           hostPath:
             path: /opt/idp/pki

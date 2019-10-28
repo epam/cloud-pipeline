@@ -26,8 +26,6 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.avg.Avg;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
@@ -74,10 +72,7 @@ public class CPURequester extends AbstractMetricRequester {
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        return ((Terms)response.getAggregations().get(AGGREGATION_POD_NAME)).getBuckets().stream()
-                .collect(Collectors.toMap(
-                    b -> b.getKey().toString(),
-                    b -> ((Avg) b.getAggregations().get(AVG_AGGREGATION + USAGE_RATE)).getValue()));
+        return collectAggregation(response, AGGREGATION_POD_NAME, AVG_AGGREGATION + USAGE_RATE);
     }
 
     @Override
@@ -85,7 +80,8 @@ public class CPURequester extends AbstractMetricRequester {
                                               final Duration interval) {
 
         return request(from, to,
-                nodeStatsQuery(nodeName, from, to)
+                statsQuery(nodeName, NODE, from, to)
+                        .size(0)
                         .aggregation(dateHistogram(CPU_HISTOGRAM, interval)
                                 .subAggregation(average(AVG_AGGREGATION + CPU_UTILIZATION, NODE_UTILIZATION))
                                 .subAggregation(average(AVG_AGGREGATION + CPU_CAPACITY, NODE_CAPACITY))));

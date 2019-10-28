@@ -32,20 +32,22 @@ yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2
 
+# User 18.03 to overcome the 8Gb layer commit limit of 18.06 (see https://github.com/moby/moby/issues/37581)
+# 18.09 and up are not yet available for Amzn Linux 2
 # Try to install from the docker repo
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
+yum install -y  docker-ce-18.03* \
+                docker-ce-cli-18.03* \
                 containerd.io
 if [ $? -ne 0 ]; then
-  echo "Unable to install docker from the official repository, trying to use default docker-18.06*"
+  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
   # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-18.06*
+  yum install -y docker-18.03*
   if [ $? -ne 0 ]; then
-    echo "Unable to install default docker-18.06* too, exiting"
+    echo "Unable to install default docker-18.03* too, exiting"
     exit 1
   fi
 fi
@@ -94,13 +96,13 @@ sh NVIDIA-Linux-x86_64-384.145.run --silent
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
 curl -s -L https://nvidia.github.io/nvidia-container-runtime/$distribution/nvidia-container-runtime.repo | \
   sudo tee /etc/yum.repos.d/nvidia-container-runtime.repo
-curl -s -L https://nvidia.github.io/libnvidia-container/$DIST/libnvidia-container.repo | \
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | \
   sudo tee /etc/yum.repos.d/libnvidia-container.repo
 curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.repo | \
   sudo tee /etc/yum.repos.d/nvidia-docker.repo
 
-yum install nvidia-docker2 -y && \
-yum install libnvidia-container1 -y
+yum install nvidia-docker2-2.0.3-1.docker18.03* \
+    nvidia-container-runtime-2.0.0-1.docker18.03* -y
 
 
 # create a script that will parse and run user data every start up time

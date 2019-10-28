@@ -145,12 +145,19 @@ public final class MessageConstants {
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
     public static final String DEBUG_MONITOR_CHECK_FINISHED = "debug.monitor.check.finished";
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
-    public static final String ERROR_KILLER_THREAD_FAILED = "error.killer.thread.failed";
+    public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
+    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
+    public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
+    public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
+    public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
+    public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
+
 
     // Kubernetes messages
     public static final String ERROR_NODE_NOT_FOUND = "error.node.not.found";

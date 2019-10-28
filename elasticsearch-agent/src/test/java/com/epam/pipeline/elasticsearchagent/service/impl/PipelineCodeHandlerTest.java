@@ -49,11 +49,12 @@ import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_DESCRIPTIO
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_REPO;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_TEMPLATE;
-import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE;
+import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VALUE_BYTE;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_VERSION;
 import static com.epam.pipeline.elasticsearchagent.TestConstants.USER;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -68,6 +69,7 @@ class PipelineCodeHandlerTest {
     private static final String FILE_INDEX_PATHS = "config.json";
     private static final String FOLDER_INDEX_PATHS = "docs/";
     private static final String VERSION = "1";
+    private static final int CODE_LIMIT_BYTES = 100;
 
     @Mock
     private PipelineLoader pipelineLoader;
@@ -90,7 +92,7 @@ class PipelineCodeHandlerTest {
     void setup() {
         pipelineCodeHandler = new PipelineCodeHandler(INDEX_PREFIX, INDEX_NAME, apiClient,
                 new ElasticIndexService(), FILE_INDEX_PATHS, objectMapper, pipelineLoader,
-                new PipelineCodeMapper(), "master");
+                new PipelineCodeMapper(), "master", CODE_LIMIT_BYTES);
 
         expectedPipelineEvent = new PipelineEvent();
         expectedPipelineEvent.setEventType(EventType.INSERT);
@@ -143,7 +145,8 @@ class PipelineCodeHandlerTest {
     void shouldProcessGitPushEventTest() throws EntityNotFoundException, IOException {
         when(pipelineLoader.loadEntity(anyLong())).thenReturn(Optional.ofNullable(container));
         when(objectMapper.readValue(anyString(), ArgumentMatchers.eq(GitEventData.class))).thenReturn(gitPushEventData);
-        when(apiClient.getPipelineFile(anyLong(), anyString(), anyString())).thenReturn(TEST_VALUE);
+        when(apiClient.getTruncatedPipelineFile(anyLong(), anyString(), anyString(), anyInt()))
+                .thenReturn(TEST_VALUE_BYTE);
 
         List<DocWriteRequest> docWriteRequests =
                 pipelineCodeHandler.processGitEvents(1L, Collections.singletonList(expectedPipelineEvent));
@@ -160,8 +163,8 @@ class PipelineCodeHandlerTest {
     void shouldProcessGitTagEventTest() throws EntityNotFoundException, IOException {
         when(pipelineLoader.loadEntity(anyLong())).thenReturn(Optional.ofNullable(container));
         when(objectMapper.readValue(anyString(), ArgumentMatchers.eq(GitEventData.class))).thenReturn(gitTagEventData);
-        when(apiClient.getPipelineFile(anyLong(), anyString(), anyString())).thenReturn(TEST_VALUE);
-
+        when(apiClient.getTruncatedPipelineFile(anyLong(), anyString(), anyString(), anyInt()))
+                .thenReturn(TEST_VALUE_BYTE);
         List<DocWriteRequest> docWriteRequests =
                 pipelineCodeHandler.processGitEvents(1L, Collections.singletonList(expectedPipelineEvent));
         assertEquals(1, docWriteRequests.size());
@@ -177,7 +180,8 @@ class PipelineCodeHandlerTest {
     void shouldCreatePipelineCodeDocumentsTest() {
         when(apiClient.loadRepositoryContents(anyLong(), anyString(), anyString()))
                 .thenReturn(Collections.singletonList(gitRepositoryEntry));
-        when(apiClient.getPipelineFile(anyLong(), anyString(), anyString())).thenReturn(TEST_VALUE);
+        when(apiClient.getTruncatedPipelineFile(anyLong(), anyString(), anyString(), anyInt()))
+                .thenReturn(TEST_VALUE_BYTE);
         List<DocWriteRequest> docWriteRequests = pipelineCodeHandler.createPipelineCodeDocuments(pipeline,
                 PERMISSIONS_CONTAINER, TEST_VERSION, INDEX_NAME, Collections.singletonList(FOLDER_INDEX_PATHS));
         assertEquals(1, docWriteRequests.size());

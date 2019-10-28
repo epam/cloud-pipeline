@@ -53,6 +53,8 @@ public class CommonSyncConfiguration {
     private static final String FALSE = "false";
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+    @Value("${sync.load.common.entity.chunk.size:1000}")
+    private int syncChunkSize;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -80,7 +82,8 @@ public class CommonSyncConfiguration {
                 runMapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -99,7 +102,8 @@ public class CommonSyncConfiguration {
                 toolMapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -117,7 +121,8 @@ public class CommonSyncConfiguration {
                 folderMapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -135,7 +140,8 @@ public class CommonSyncConfiguration {
                 mapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -153,7 +159,8 @@ public class CommonSyncConfiguration {
                 mapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -171,7 +178,8 @@ public class CommonSyncConfiguration {
                 mapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -189,7 +197,8 @@ public class CommonSyncConfiguration {
                 mapping,
                 new EventToRequestConverterImpl<>(commonIndexPrefix, indexName, loader, mapper),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 
     @Bean
@@ -213,6 +222,7 @@ public class CommonSyncConfiguration {
                 new RunConfigurationEventConverter(commonIndexPrefix, indexName,
                         loader, documentBuilder, elasticsearchClient, indexService),
                 indexService,
-                requestSender);
+                requestSender,
+                syncChunkSize);
     }
 }

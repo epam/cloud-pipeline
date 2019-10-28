@@ -595,7 +595,7 @@ if ! check_installed "pip"; then
 fi
 if ! check_installed "jq"; then
     echo "Installing jq"
-    wget -q "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64" -O /usr/bin/jq
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
     chmod +x /usr/bin/jq
 fi
 
