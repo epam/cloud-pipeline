@@ -19,6 +19,7 @@ package com.epam.pipeline.vmmonitor.service.notification;
 
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,9 +33,9 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -68,10 +69,13 @@ public class VMNotificationServiceImpl implements VMNotificationService {
         notificationSender.sendMessage(build);
     }
 
-    private Map<String, Object> withCommonParams(Map<String, Object> parameters) {
-        final Map<String, String> commonParams = Collections.singletonMap("platformName", this.platformName);
+    private Map<String, Object> withCommonParams(final Map<String, Object> parameters) {
+        final Map<String, Object> commonParams = Collections.singletonMap("platformName", this.platformName);
+        if (MapUtils.isEmpty(parameters)) {
+            return commonParams;
+        }
         return Stream.concat(parameters.entrySet().stream(), commonParams.entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (val1, val2) -> val1));
+                .collect(HashMap::new, (map, param) -> map.put(param.getKey(), param.getValue()), HashMap::putAll);
     }
 
     private String getTemplateContent(final String template) {
