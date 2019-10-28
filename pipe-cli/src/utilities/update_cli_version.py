@@ -108,7 +108,7 @@ class LinuxUpdater(CLIVersionUpdater):
 
     def get_download_suffix(self):
         prefix = 'pipe-el6' if self.centos_6_dist else 'pipe'
-        return prefix + '' if self.one_file_dist else 'tar.gz'
+        return prefix + ('' if self.one_file_dist else '.tar.gz')
 
     def update_version(self, path):
         if self.one_file_dist:
@@ -177,7 +177,7 @@ class LinuxUpdater(CLIVersionUpdater):
     def get_bundle_file_content(bundle_file_path):
         with open(bundle_file_path, 'r') as bundle_file:
             content = bundle_file.readlines()
-        return content[0].strip(), content[1].strip()
+        return content[0].strip(), content[1].strip() if len(content) > 1 else ""
 
     @staticmethod
     def delete_folder_tree(path):
