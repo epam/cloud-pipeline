@@ -38,6 +38,9 @@ import socket
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
 
+RUNNING = 16
+PENDING = 0
+
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
@@ -327,7 +330,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     status_code = get_current_status(ec2, ins_id)
 
     rep = 0
-    while status_code != 16:
+    while status_code != RUNNING:
         pipe_log('- Waiting for status checks completion...')
         sleep(time_rep)
         status_code = get_current_status(ec2, ins_id)
@@ -579,7 +582,7 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
 
 def instance_is_active(ec2, instance_id):
     status = get_current_status(ec2, instance_id)
-    return status == 16 or status == 0
+    return status == RUNNING or status == PENDING
 
 
 def verify_run_id(ec2, run_id):
