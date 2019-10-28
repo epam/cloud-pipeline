@@ -51,7 +51,7 @@ public final class AclExpressions {
             "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'OWNER')";
 
     public static final String RUN_ID_SSH =
-            "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'WRITE')";
+            "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
