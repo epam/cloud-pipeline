@@ -56,7 +56,6 @@ public class TesAdapterControllerTest {
     private static final TaskView DEFAULT_VIEW = TaskView.MINIMAL;
     private static final String STUBBED_SUBMIT_JSON_REQUEST = "{}";
     private static final String STUBBED_SUBMIT_JSON_RESPONSE = "{\"id\":\"5\"}";
-    private static final String CANCEL_REQUEST_DESCRIPTION = "uri=/v1/tasks/%20:cancel;client=127.0.0.1";
     private static final String JSON_CONTENT_TYPE = "application/json";
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
     private static final String WRONG_TOKEN = "wrongPipelineToken";
@@ -143,8 +142,7 @@ public class TesAdapterControllerTest {
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(containsString(messageHelper
-                        .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "taskId")
-                        + CANCEL_REQUEST_DESCRIPTION)));
+                        .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT,"taskId"))));
     }
 
     @Test
