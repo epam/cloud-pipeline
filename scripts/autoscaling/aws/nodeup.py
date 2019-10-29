@@ -38,6 +38,9 @@ import socket
 SPOT_UNAVAILABLE_EXIT_CODE = 5
 LIMIT_EXCEEDED_EXIT_CODE = 6
 
+RUNNING = 16
+PENDING = 0
+
 NETWORKS_PARAM = "cluster.networks.config"
 NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
@@ -327,7 +330,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     status_code = get_current_status(ec2, ins_id)
 
     rep = 0
-    while status_code != 16:
+    while status_code != RUNNING:
         pipe_log('- Waiting for status checks completion...')
         sleep(time_rep)
         status_code = get_current_status(ec2, ins_id)
@@ -543,8 +546,10 @@ def check_instance(ec2, ins_id, run_id, num_rep, time_rep):
     pipe_log('- Waiting for instance boot up...')
     result = poll_instance(sock, time_rep, ipaddr, port)
     rep = 0
-    while result != 0:
+    active = False
+    while result != 0 or not active:
         sleep(time_rep)
+        active = instance_is_active(ec2, ins_id)
         result = poll_instance(sock, time_rep, ipaddr, port)
         rep = increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                 ec2_client=ec2,
@@ -575,6 +580,11 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region):
     pipe_log('Instance {} is assigned to RunID: {}\n-'.format(nodename, run_id))
 
 
+def instance_is_active(ec2, instance_id):
+    status = get_current_status(ec2, instance_id)
+    return status == RUNNING or status == PENDING
+
+
 def verify_run_id(ec2, run_id):
     pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
     response = ec2.describe_instances(
@@ -586,13 +596,13 @@ def verify_run_id(ec2, run_id):
             }
         ]
     )
-    if len(response['Reservations']) > 0:
+    ins_id = ''
+    ins_ip = ''
+    if len(response['Reservations']) > 0 and  instance_is_active(ec2, response['Reservations'][0]['Instances'][0]['InstanceId']):
         ins_id = response['Reservations'][0]['Instances'][0]['InstanceId']
         ins_ip = response['Reservations'][0]['Instances'][0]['PrivateIpAddress']
         pipe_log('Found existing instance (ID: {}, IP: {}) for RunID {}\n-'.format(ins_id, ins_ip, run_id))
     else:
-        ins_id = ''
-        ins_ip = ''
         pipe_log('No existing instance found for RunID {}\n-'.format(run_id))
     return ins_id, ins_ip
 
@@ -647,12 +657,16 @@ def verify_regnode(ec2, ins_id, num_rep, time_rep, run_id, api):
     return ret_namenode
 
 
-def terminate_instance(ec2_client, instance_id):
+def terminate_instance(ec2_client, instance_id, spot_request_id=None):
     if not instance_id or len(instance_id) == 0:
         pipe_log('[ERROR] None or empty string specified when calling terminate_instance, nothing will be done')
         return
 
     try:
+        if spot_request_id:
+            pipe_log('Cancel Spot request ({})'.format(spot_request_id))
+            ec2_client.cancel_spot_instance_requests(request_ids=[spot_request_id])
+
         response = ec2_client.terminate_instances(
             InstanceIds=[
                 instance_id
@@ -677,10 +691,13 @@ def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instanc
     rep = rep + 1
     if rep > num_rep:
         if kill_instance_id_on_fail:
+            spot_request_id = None
             pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
-                    'See more details below'.format(kill_instance_id_on_fail))
-            terminate_instance(ec2_client, kill_instance_id_on_fail)
-
+                     'See more details below'.format(kill_instance_id_on_fail))
+            instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
+            if instance["SpotInstanceRequestId"]:
+                spot_request_id = instance["SpotInstanceRequestId"]
+            terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id)
         raise RuntimeError(error_message)
     return rep
 
@@ -903,36 +920,45 @@ def wait_for_fulfilment(status):
 def check_spot_request_exists(ec2, num_rep, run_id, time_rep):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
     for interation in range(0, 5):
-        response = ec2.describe_spot_instance_requests(Filters=[run_id_filter(run_id)])
-        if len(response['SpotInstanceRequests']) > 0:
-            request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
-            status = response['SpotInstanceRequests'][0]['Status']['Code']
+        spot_req = get_spot_req_by_run_id(ec2, run_id)
+        if spot_req:
+            request_id = spot_req['SpotInstanceRequestId']
+            status = spot_req['Status']['Code']
             pipe_log('- Spot request for RunID {} already exists: SpotInstanceRequestId: {}, Status: {}'.format(run_id, request_id, status))
             rep = 0
-            if status == 'request-canceled-and-instance-running':
-                return tag_and_get_instance(ec2, response, run_id)
+            if status == 'request-canceled-and-instance-running' and instance_is_active(ec2, spot_req['InstanceId']):
+                return tag_and_get_instance(ec2, spot_req, run_id)
             if wait_for_fulfilment(status):
                 while status != 'fulfilled':
                     pipe_log('- Spot request ({}) is not yet fulfilled. Waiting...'.format(request_id))
                     sleep(time_rep)
-                    response = ec2.describe_spot_instance_requests(
-                        SpotInstanceRequestIds=[request_id]
-                    )
-                    status = response['SpotInstanceRequests'][0]['Status']['Code']
+                    spot_req = ec2.describe_spot_instance_requests(
+                        SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
+                    status = spot_req['Status']['Code']
                     pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
                                 .format(num_rep, request_id, status))
                     rep = rep + 1
                     if rep > num_rep:
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
-                return tag_and_get_instance(ec2, response, run_id)
+                if  instance_is_active(ec2, spot_req['InstanceId']):
+                    return tag_and_get_instance(ec2, spot_req, run_id)
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
 
 
-def tag_and_get_instance(ec2, response, run_id):
-    ins_id = response['SpotInstanceRequests'][0]['InstanceId']
+def get_spot_req_by_run_id(ec2, run_id):
+    response = ec2.describe_spot_instance_requests(Filters=[run_id_filter(run_id)])
+    for spot_req in response['SpotInstanceRequests']:
+        status = spot_req['Status']['Code']
+        if wait_for_fulfilment(status) or status == 'request-canceled-and-instance-running':
+            return spot_req
+    return None
+
+
+def tag_and_get_instance(ec2, spot_req, run_id):
+    ins_id = spot_req['InstanceId']
     pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
     instance = ec2.describe_instances(InstanceIds=[ins_id])
     ins_ip = instance['Reservations'][0]['Instances'][0]['PrivateIpAddress']
