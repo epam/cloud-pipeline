@@ -44,15 +44,6 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 public class TaskMapper {
-
-    private final Integer defaultHddSize;
-    private final Double defaultRamGb;
-    private final Long defaultCpuCore;
-    private final Boolean defaultPreemptible;
-    private final String defaultRegion;
-    private MessageHelper messageHelper;
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private static final String SEPARATOR = " ";
     private static final Integer DEFAULT_HDD_SIZE = 30;
     private static final Double DEFAULT_RAM_GB = 4.0;
@@ -80,6 +71,14 @@ public class TaskMapper {
     private static final Double TIB_TO_GIB = 1024.0;
     private static final Double PIB_TO_GIB = 1048576.0;
     private static final Double EIB_TO_GIB = 1073741824.0;
+
+    private final Integer defaultHddSize;
+    private final Double defaultRamGb;
+    private final Long defaultCpuCore;
+    private final Boolean defaultPreemptible;
+    private final String defaultRegion;
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private MessageHelper messageHelper;
 
     @Autowired
     public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,

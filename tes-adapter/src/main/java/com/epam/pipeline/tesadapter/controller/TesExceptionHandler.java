@@ -12,7 +12,6 @@ import org.springframework.web.context.request.WebRequest;
 @Slf4j
 @RestControllerAdvice()
 public class TesExceptionHandler {
-
     private static final String ERROR_MESSAGE_FORMAT = "%s\n%s";
 
     private MessageHelper messageHelper;

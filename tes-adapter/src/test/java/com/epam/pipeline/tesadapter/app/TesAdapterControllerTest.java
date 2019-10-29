@@ -13,6 +13,7 @@ import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.tesadapter.service.CloudPipelineAPIClient;
 import com.epam.pipeline.tesadapter.service.TesTaskServiceImpl;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -164,7 +165,8 @@ public class TesAdapterControllerTest {
                 .header(HttpHeaders.AUTHORIZATION, defaultPipelineToken)
                 .contentType(JSON_CONTENT_TYPE))
                 .andDo(print()).andExpect(status().isOk()).andExpect(content()
-                .json(new ObjectMapper().writeValueAsString(tesTask)));
+                .json(new ObjectMapper().setSerializationInclusion(JsonInclude.Include.NON_NULL)
+                        .writeValueAsString(tesTask)));
     }
 
     @Test

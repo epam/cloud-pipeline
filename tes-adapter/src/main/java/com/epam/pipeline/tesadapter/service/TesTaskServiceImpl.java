@@ -33,12 +33,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
-
-    private String nameOfService;
-    private String doc;
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-    private final TaskMapper taskMapper;
-    private final MessageHelper messageHelper;
     private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
@@ -47,6 +41,12 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final String DEFAULT_DOC = " ";
     private static final Boolean LOAD_STORAGE_LINKS = true;
     private static final Long DEFAULT_PAGE_SIZE = 256L;
+
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private final TaskMapper taskMapper;
+    private final MessageHelper messageHelper;
+    private String nameOfService;
+    private String doc;
 
     @Autowired
     public TesTaskServiceImpl(@Value("${cloud.pipeline.service.name}") String nameOfService,
