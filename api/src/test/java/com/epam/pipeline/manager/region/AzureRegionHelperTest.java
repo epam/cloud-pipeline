@@ -52,16 +52,6 @@ public class AzureRegionHelperTest {
     }
 
     @Test
-    public void shouldValidateStoragePolicy() {
-        final AzureRegionHelper azureRegionHelper = new AzureRegionHelper(messageHelper);
-
-        final AzurePolicy policy = new AzurePolicy();
-        policy.setIpMax(MAX_IP);
-        policy.setIpMin(MIN_IP);
-        azureRegionHelper.validateStoragePolicy(policy);
-    }
-
-    @Test
     public void shouldThrowIfMinIpMoreThanMaxIp() {
         final AzureRegionHelper azureRegionHelper = new AzureRegionHelper(messageHelper);
 

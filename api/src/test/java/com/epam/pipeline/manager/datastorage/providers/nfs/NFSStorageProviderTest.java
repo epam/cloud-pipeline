@@ -336,7 +336,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         );
     }
 
-    List<CloudRegionHelper> helpers() {
+    private List<CloudRegionHelper> helpers() {
         AzureRegionHelper azure = mock(AzureRegionHelper.class);
         when(azure.getProvider()).thenReturn(CloudProvider.AZURE);
         AwsRegionHelper aws = mock(AwsRegionHelper.class);
