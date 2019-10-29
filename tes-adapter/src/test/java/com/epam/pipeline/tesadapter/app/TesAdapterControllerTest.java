@@ -1,6 +1,5 @@
 package com.epam.pipeline.tesadapter.app;
 
-
 import com.epam.pipeline.tesadapter.common.MessageConstants;
 import com.epam.pipeline.tesadapter.common.MessageHelper;
 import com.epam.pipeline.tesadapter.controller.TesAdapterController;
@@ -38,7 +37,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 
 @WebMvcTest(TesAdapterController.class)
 @SuppressWarnings({"unused", "PMD.TooManyStaticImports", "PMD.AvoidUsingHardCodedIP",
