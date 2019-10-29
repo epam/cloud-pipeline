@@ -23,9 +23,9 @@ import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
-import com.microsoft.azure.credentials.AzureCliCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.InstanceViewStatus;
 import com.microsoft.azure.management.compute.PowerState;
@@ -36,14 +36,11 @@ import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.resources.GenericResource;
 import com.microsoft.azure.management.resources.fluentcore.arm.models.Resource;
-import com.microsoft.rest.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -114,7 +111,7 @@ public class AzureVMService {
     }
 
     public void terminateInstance(final AzureRegion region, final String instanceId) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final String instanceName = getInstanceResourceName(region, instanceId);
         resourcesByTag(region, instanceName)
                 .sorted(this::resourcesTerminationOrder)
@@ -124,7 +121,7 @@ public class AzureVMService {
 
     public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
         final String interfaceId = vm.primaryNetworkInterfaceId();
-        return buildClient(authFile).networkInterfaces().getById(interfaceId);
+        return AzureHelper.buildClient(authFile).networkInterfaces().getById(interfaceId);
     }
 
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
@@ -234,19 +231,19 @@ public class AzureVMService {
     private Optional<VirtualMachine> findVmByName(final String authFile,
                                                   final String resourceGroup,
                                                   final String instanceId) {
-        return Optional.of(buildClient(authFile).virtualMachines())
+        return Optional.of(AzureHelper.buildClient(authFile).virtualMachines())
                 .map(client -> client.getByResourceGroup(resourceGroup, instanceId));
     }
 
     private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final String authFile,
                                                   final String resourceGroup,
                                                   final String scaleSetName) {
-        return Optional.of(buildClient(authFile).virtualMachineScaleSets())
+        return Optional.of(AzureHelper.buildClient(authFile).virtualMachineScaleSets())
                 .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
     }
 
     private AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return findVMContainerInPagedResult(resources.currentPage(), resources)
@@ -292,7 +289,7 @@ public class AzureVMService {
     }
 
     private Stream<GenericResource> resourcesByTag(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return resourcesInPagedResult(resources.currentPage(), resources);
@@ -316,25 +313,5 @@ public class AzureVMService {
             }
         }
         return Stream.empty();
-    }
-
-    private Azure buildClient(final String authFile) {
-        try {
-            final Azure.Configurable builder = Azure.configure()
-                    .withLogLevel(LogLevel.BASIC);
-            return authenticate(authFile, builder)
-                    .withDefaultSubscription();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new AzureException(e);
-        }
-    }
-
-    private Azure.Authenticated authenticate(final String authFile,
-                                             Azure.Configurable builder) throws IOException {
-        if (StringUtils.isBlank(authFile)) {
-            return builder.authenticate(AzureCliCredentials.create());
-        }
-        return builder.authenticate(new File(authFile));
     }
 }
