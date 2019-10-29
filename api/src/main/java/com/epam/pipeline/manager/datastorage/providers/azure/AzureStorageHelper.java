@@ -131,6 +131,13 @@ public class AzureStorageHelper {
     }
 
     public String createBlobStorage(final AzureBlobStorage storage) {
+        if(checkStorage(storage)) {
+            throw new DataStorageException(
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST,
+                            storage.getName(),
+                            storage.getPath())
+            );
+        }
         unwrap(getContainerURL(storage).create());
         return storage.getPath();
     }
