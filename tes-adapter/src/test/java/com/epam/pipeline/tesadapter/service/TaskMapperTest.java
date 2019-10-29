@@ -76,7 +76,7 @@ class TaskMapperTest {
     private static final String DEFAULT_COMMAND = "sleep 300";
     private static final Long STUBBED_REGION_ID = 1L;
     private static final Long STUBBED_TOOL_ID = 11584L;
-    private static final Long TOOL_ID = 1l;
+    private static final Long TOOL_ID = 1L;
     private static final String STUBBED_IMAGE = "cp-docker-registry.default.svc.cluster.local:31443/library/centos:latest";
     private static final String INPUT = "input";
     private static final String OUTPUT = "output";
@@ -88,48 +88,39 @@ class TaskMapperTest {
     private static final String PIPELINE_TASK_NAME_CONSOLE = "Console";
     private static final String PIPELINE_TASK_NAME_InitializeEnvironment = "InitializeEnvironment";
     private static final String ANY_STRING = "any_string";
-    private static List<InstanceType> allowedInstanceTypes;
     private static final String GIB = "GiB";
     private static final Double KIB_TO_GIB = 0.00000095367432;
-    private static final Double MIB_TO_GIB = 0.0009765625;
-    private static final Double GIB_TO_GIB = 1.0;
-    private static final Double TIB_TO_GIB = 1024.0;
-    private static final Double PIB_TO_GIB = 1048576.0;
-    private static final Double EIB_TO_GIB = 1073741824.0;
+    private static List<InstanceType> allowedInstanceTypes;
+    private static TaskMapper taskMapper;
+    private static PipelineRun run = getPipelineRun();
+    private static CloudPipelineAPIClient cloudPipelineAPIClient = mock(CloudPipelineAPIClient.class);
 
     @Autowired
     private MessageHelper messageHelper;
 
-    private static TaskMapper taskMapper;
-    private static PipelineRun run = getPipelineRun();
     private List<String> zones = new ArrayList<>();
     private TesExecutor tesExecutor = new TesExecutor();
-    private TesInput tesInput = mock(TesInput.class);
-    private TesOutput tesOutput = mock(TesOutput.class);
     private List<TesExecutor> tesExecutors = new ArrayList<>();
     private List<TesInput> tesInputs = new ArrayList<>();
     private List<TesOutput> tesOutputs = new ArrayList<>();
     private List<AbstractCloudRegion> abstractCloudRegions = new ArrayList<>();
 
-    private AbstractCloudRegion abstractCloudRegion = mock(AbstractCloudRegion.class);
-    private static CloudPipelineAPIClient cloudPipelineAPIClient = mock(CloudPipelineAPIClient.class);
-    private AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = mock(AllowedInstanceAndPriceTypes.class);
     private Tool tool = mock(Tool.class);
     private TesTask tesTask = mock(TesTask.class);
-    private PipelineRun pipelineRun = mock(PipelineRun.class);
-
+    private TesInput tesInput = mock(TesInput.class);
+    private TesOutput tesOutput = mock(TesOutput.class);
+    private AbstractCloudRegion abstractCloudRegion = mock(AbstractCloudRegion.class);
+    private AllowedInstanceAndPriceTypes allowedInstanceAndPriceTypes = mock(AllowedInstanceAndPriceTypes.class);
 
     @BeforeAll
     public static void setUpAll() {
         allowedInstanceTypes = new ArrayList<>();
         fillWithAllowedInstanceTypes(allowedInstanceTypes);
-
         AwsRegion awsRegion = new AwsRegion();
         awsRegion.setRegionCode(DEFAULT_REGION_NAME);
         when(cloudPipelineAPIClient.loadRegion(anyLong())).thenReturn(awsRegion);
-        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(TOOL_ID, 1l,
+        when(cloudPipelineAPIClient.loadAllowedInstanceAndPriceTypes(TOOL_ID, STUBBED_REGION_ID,
                 true)).thenReturn(getAllowedInstanceAndPriceTypes(run));
-
     }
 
     @BeforeEach

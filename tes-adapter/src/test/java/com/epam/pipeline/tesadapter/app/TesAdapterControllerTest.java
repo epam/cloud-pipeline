@@ -11,7 +11,6 @@ import com.epam.pipeline.tesadapter.entity.TesExecutor;
 import com.epam.pipeline.tesadapter.entity.TesListTasksResponse;
 import com.epam.pipeline.tesadapter.entity.TesServiceInfo;
 import com.epam.pipeline.tesadapter.entity.TesTask;
-import com.epam.pipeline.tesadapter.service.CloudPipelineAPIClient;
 import com.epam.pipeline.tesadapter.service.TesTaskServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,11 +53,8 @@ public class TesAdapterControllerTest {
     private static final Long PAGE_SIZE = 20L;
     private static final TaskView DEFAULT_VIEW = TaskView.MINIMAL;
     private static final String STUBBED_SUBMIT_JSON_REQUEST = "{}";
-    private static final String STUBBED_SUBMIT_JSON_RESPONSE = "{\"id\":\"5\"}";
-    private static final String CANCEL_REQUEST_DESCRIPTION = "uri=/v1/tasks/%20:cancel;client=127.0.0.1";
     private static final String JSON_CONTENT_TYPE = "application/json";
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
-    private static final String WRONG_TOKEN = "wrongPipelineToken";
     private static final String GET_SERVICE_INFO = "/v1/tasks/service-info";
     private static final String IP_IN_RANGE = "192.168.1.1";
     private static final String IP_OUT_OF_RANGE = "10.0.0.0";
@@ -81,9 +77,6 @@ public class TesAdapterControllerTest {
     @MockBean
     private TesTaskServiceImpl tesTaskService;
 
-    @MockBean
-    private CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private TesCreateTaskResponse tesCreateTaskResponse = new TesCreateTaskResponse();
     private TesServiceInfo tesServiceInfo = new TesServiceInfo();
     private TesTask tesTask = new TesTask();
@@ -91,7 +84,6 @@ public class TesAdapterControllerTest {
 
     @BeforeEach
     private void setUp() {
-
         when(tesTaskService.cancelTesTask(DEFAULT_TASK_ID)).thenReturn(new TesCancelTaskResponse());
         when(tesTaskService.listTesTask(NAME_PREFIX, PAGE_SIZE, PAGE_TOKEN, DEFAULT_VIEW))
                 .thenReturn(mock(TesListTasksResponse.class));
@@ -142,8 +134,7 @@ public class TesAdapterControllerTest {
                 .andDo(print())
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string(containsString(messageHelper
-                        .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "taskId")
-                        + CANCEL_REQUEST_DESCRIPTION)));
+                        .getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, "taskId"))));
     }
 
     @Test

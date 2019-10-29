@@ -2,7 +2,6 @@ package com.epam.pipeline.tesadapter.common;
 
 @SuppressWarnings({"PMD.UseUtilityClass", "checkstyle:HideUtilityClassConstructor"})
 public final class MessageConstants {
-
     //Common errors
     public static final String ERROR_PARAMETER_REQUIRED = "error.parameter.required";
     public static final String ERROR_PARAMETER_NULL_OR_EMPTY = "error.null.param";
@@ -21,5 +20,4 @@ public final class MessageConstants {
     public static final String CANCEL_PIPELINE_RUN_BY_ID = "debug.cancel.pipeline.run.by.id";
     public static final String GET_PIPELINE_RUN_BY_ID = "debug.get.pipeline.run.by.id";
     public static final String GET_SERVICE_INFO = "debug.get.service.info";
-
 }

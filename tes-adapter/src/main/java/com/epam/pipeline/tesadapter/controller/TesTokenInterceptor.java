@@ -24,19 +24,16 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 @Component
 public class TesTokenInterceptor implements HandlerInterceptor {
-
     private static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String EMPTY_PREFIX = "";
     private static final String ERROR_PATH = "/error";
 
-    private TesTokenHolder tesTokenHolder;
-
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
 
+    private TesTokenHolder tesTokenHolder;
     private MessageHelper messageHelper;
-
     private final IpAddressMatcher ipAddressMatcherV4;
     private final IpAddressMatcher ipAddressMatcherV6;
 
