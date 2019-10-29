@@ -80,7 +80,8 @@ class TesTaskServiceImplTest {
         when(taskMapper.mapToPipelineStart(tesTask)).thenReturn(pipelineStart);
         when(taskMapper.mapToTesTask(pipelineRun, DEFAULT_TASK_VIEW)).thenReturn(tesTask);
         when(cloudPipelineAPIClient.runPipeline(pipelineStart)).thenReturn(pipelineRun);
-        when(cloudPipelineAPIClient.searchRuns(any(PagingRunFilterExpressionVO.class))).thenReturn(pagedPipelineRunList);
+        when(cloudPipelineAPIClient.searchRuns(any(PagingRunFilterExpressionVO.class)))
+                .thenReturn(pagedPipelineRunList);
         when(cloudPipelineAPIClient.filterRuns(any(PagingRunFilterVO.class), eq(LOAD_STORAGE_LINKS)))
                 .thenReturn(pagedPipelineRunList);
         pipelineRun.setId(DEFAULT_PIPELINE_ID);
@@ -98,7 +99,7 @@ class TesTaskServiceImplTest {
     public void expectIllegalArgExceptionWhenRunSubmitTesTaskWithNullIdResponse() {
         pipelineRun.setId(null);
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> tesTaskService.submitTesTask(tesTask));
+            () -> tesTaskService.submitTesTask(tesTask));
         assertTrue(exception.getMessage().contains(messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, ID)));
     }
@@ -116,7 +117,7 @@ class TesTaskServiceImplTest {
     @MethodSource("provideWrongIdInputForCancelTesTask")
     public void expectIllegalStateExceptionWhenRunCancelTesTaskWithWrongId(String id) {
         IllegalStateException exception = assertThrows(IllegalStateException.class,
-                () -> tesTaskService.cancelTesTask(id));
+            () -> tesTaskService.cancelTesTask(id));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ID));
     }

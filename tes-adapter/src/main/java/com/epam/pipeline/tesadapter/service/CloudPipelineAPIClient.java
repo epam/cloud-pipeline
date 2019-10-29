@@ -28,11 +28,10 @@ import java.util.Optional;
 
 @Service
 public class CloudPipelineAPIClient {
-    private TesTokenHolder tesTokenHolder;
-
-    private String cloudPipelineHostUrl;
-
     private static final String CLOUD_PIPELINE_HOST = "cloudPipelineHost";
+
+    private TesTokenHolder tesTokenHolder;
+    private String cloudPipelineHostUrl;
 
     @Autowired
     public CloudPipelineAPIClient(TesTokenHolder tesTokenHolder,

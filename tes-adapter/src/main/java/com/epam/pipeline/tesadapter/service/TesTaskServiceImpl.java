@@ -33,12 +33,6 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class TesTaskServiceImpl implements TesTaskService {
-
-    private String nameOfService;
-    private String doc;
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-    private final TaskMapper taskMapper;
-    private final MessageHelper messageHelper;
     private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
@@ -48,12 +42,19 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final Boolean LOAD_STORAGE_LINKS = true;
     private static final Long DEFAULT_PAGE_SIZE = 256L;
 
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private final TaskMapper taskMapper;
+    private final MessageHelper messageHelper;
+    private String nameOfService;
+    private String doc;
+
     @Autowired
     public TesTaskServiceImpl(@Value("${cloud.pipeline.service.name}") String nameOfService,
                               @Value("${cloud.pipeline.doc}") String doc,
                               CloudPipelineAPIClient cloudPipelineAPIClient, TaskMapper taskMapper,
                               MessageHelper messageHelper) {
-        this.nameOfService = Optional.ofNullable(nameOfService).filter(StringUtils::isNotEmpty).orElse(DEFAULT_NAME_SERVICE);
+        this.nameOfService = Optional.ofNullable(nameOfService).filter(StringUtils::isNotEmpty)
+                .orElse(DEFAULT_NAME_SERVICE);
         this.doc = Optional.ofNullable(doc).filter(StringUtils::isNotEmpty).orElse(DEFAULT_DOC);
         this.cloudPipelineAPIClient = cloudPipelineAPIClient;
         this.taskMapper = taskMapper;

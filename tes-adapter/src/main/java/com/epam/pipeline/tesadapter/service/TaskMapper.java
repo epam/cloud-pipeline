@@ -44,15 +44,6 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 public class TaskMapper {
-
-    private final Integer defaultHddSize;
-    private final Double defaultRamGb;
-    private final Long defaultCpuCore;
-    private final Boolean defaultPreemptible;
-    private final String defaultRegion;
-    private MessageHelper messageHelper;
-    private final CloudPipelineAPIClient cloudPipelineAPIClient;
-
     private static final String SEPARATOR = " ";
     private static final Integer DEFAULT_HDD_SIZE = 30;
     private static final Double DEFAULT_RAM_GB = 4.0;
@@ -80,6 +71,14 @@ public class TaskMapper {
     private static final Double TIB_TO_GIB = 1024.0;
     private static final Double PIB_TO_GIB = 1048576.0;
     private static final Double EIB_TO_GIB = 1073741824.0;
+
+    private final Integer defaultHddSize;
+    private final Double defaultRamGb;
+    private final Long defaultCpuCore;
+    private final Boolean defaultPreemptible;
+    private final String defaultRegion;
+    private final CloudPipelineAPIClient cloudPipelineAPIClient;
+    private MessageHelper messageHelper;
 
     @Autowired
     public TaskMapper(@Value("${cloud.pipeline.hddSize}") Integer hddSize,
@@ -167,8 +166,8 @@ public class TaskMapper {
     private Long getProperRegionIdInCloudRegionsByTesZone(List<String> zones) {
         Assert.isTrue(zones.size() == ONLY_ONE, messageHelper.getMessage(
                 MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ZONES));
-        return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream().filter(
-                region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
+        return Optional.ofNullable(cloudPipelineAPIClient.loadAllRegions().stream()
+                .filter(region -> region.getName().equalsIgnoreCase(zones.get(FIRST)))
                 .collect(Collectors.toList()).get(FIRST).getId()).orElseThrow(() ->
                 new IllegalArgumentException(messageHelper
                         .getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, REGION_ID)));
@@ -294,14 +293,16 @@ public class TaskMapper {
         return TesResources.builder()
                 .preemptible(run.getInstance().getSpot())
                 .diskGb(new Double(run.getInstance().getNodeDisk()))
-                .ramGb(getInstanceType(run).getMemory() * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
+                .ramGb(getInstanceType(run).getMemory()
+                        * convertMemoryUnitTypeToGiB(getInstanceType(run).getMemoryUnit()))
                 .cpuCores((long) getInstanceType(run).getVCPU())
                 .zones(getPipelineRunZone(run))
                 .build();
     }
 
     private List<String> getPipelineRunZone(PipelineRun run) {
-        return Collections.singletonList(cloudPipelineAPIClient.loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
+        return Collections.singletonList(cloudPipelineAPIClient
+                .loadRegion(run.getInstance().getCloudRegionId()).getRegionCode());
     }
 
     private List<TesExecutor> createListExecutor(PipelineRun run) {
