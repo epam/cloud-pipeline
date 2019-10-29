@@ -13,7 +13,6 @@ import com.epam.pipeline.tesadapter.entity.TesTask;
 import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
-import com.epam.pipeline.vo.filter.FilterExpressionVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,37 +40,28 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {AppConfiguration.class})
 @SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
 class TesTaskServiceImplTest {
+    private static final Integer NUMBER_OF_RUNS = 20;
+    private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
+    private static final Long DEFAULT_PIPELINE_ID = 12410L;
+    private static final String ID = "id";
+    private static final Boolean LOAD_STORAGE_LINKS = true;
+
     @Value("${cloud.pipeline.service.name}")
     private String nameOfService;
 
     @Value("${cloud.pipeline.doc}")
     private String doc;
 
-    private TesTaskServiceImpl tesTaskService;
-
     @Autowired
     private MessageHelper messageHelper;
 
-    private static final String DEFAULT_PAGE_TOKEN = "1";
-    private static final String PREFIX_FIELD = "pod.id";
-    private static final String PREFIX_NAME = "pipeline-12410";
-
-    private static final Integer NUMBER_OF_RUNS = 20;
-    private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
-    private static final Long DEFAULT_PIPELINE_ID = 12410L;
-    private static final String ID = "id";
-    private static final Integer FIRST = 0;
-    private static final Boolean LOAD_STORAGE_LINKS = true;
-    private static final Long DEFAULT_PAGE_SIZE = 256L;
-
-    private List<PipelineRun> pipelineRunList = new ArrayList<>();
+    private TesTaskServiceImpl tesTaskService;
     private TesTask tesTask = new TesTask();
-    private PipelineStart pipelineStart = new PipelineStart();
     private PipelineRun pipelineRun = new PipelineRun();
-    private PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
-    private FilterExpressionVO expression = new FilterExpressionVO();
-
+    private PipelineStart pipelineStart = new PipelineStart();
+    private List<PipelineRun> pipelineRunList = new ArrayList<>();
     private PagedResult<List<PipelineRun>> pagedPipelineRunList = new PagedResult<>(pipelineRunList, NUMBER_OF_RUNS);
+
     private TaskMapper taskMapper = mock(TaskMapper.class);
     private CloudPipelineAPIClient cloudPipelineAPIClient = mock(CloudPipelineAPIClient.class);
 
@@ -119,7 +109,7 @@ class TesTaskServiceImplTest {
         IllegalStateException exception = assertThrows(IllegalStateException.class,
             () -> tesTaskService.cancelTesTask(id));
         assertEquals(exception.getMessage(), messageHelper.getMessage(
-                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ID));
+                MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, id));
     }
 
     private static Stream<Arguments> provideWrongIdInputForCancelTesTask() {

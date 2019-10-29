@@ -29,13 +29,13 @@ public class TesTokenInterceptor implements HandlerInterceptor {
     private static final String EMPTY_PREFIX = "";
     private static final String ERROR_PATH = "/error";
 
-    private final IpAddressMatcher ipAddressMatcherV4;
-    private final IpAddressMatcher ipAddressMatcherV6;
-    private TesTokenHolder tesTokenHolder;
-    private MessageHelper messageHelper;
-
     @Value("${cloud.pipeline.token}")
     private String defaultPipelineToken;
+
+    private TesTokenHolder tesTokenHolder;
+    private MessageHelper messageHelper;
+    private final IpAddressMatcher ipAddressMatcherV4;
+    private final IpAddressMatcher ipAddressMatcherV6;
 
     @Autowired
     public TesTokenInterceptor(TesTokenHolder tesTokenHolder,

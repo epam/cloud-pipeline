@@ -23,7 +23,6 @@ import java.util.Locale;
 
 @Component
 public class MessageHelper {
-
     private MessageSource messageSource;
 
     public MessageHelper(final MessageSource messageSource) {
@@ -50,5 +49,4 @@ public class MessageHelper {
     public String getMessage(final String code, final Object... args) {
         return getMessageSource().getMessage(code, args, code, Locale.getDefault());
     }
-
 }

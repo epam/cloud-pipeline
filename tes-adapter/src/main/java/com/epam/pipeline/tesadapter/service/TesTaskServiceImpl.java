@@ -36,7 +36,7 @@ public class TesTaskServiceImpl implements TesTaskService {
     private static final TaskView DEFAULT_TASK_VIEW = TaskView.MINIMAL;
     private static final String ID = "id";
     private static final String NAME_PREFIX = "pod.id";
-    private static final String DEFAULT_PAGE_TOKEN = "1";
+    private static final Integer DEFAULT_PAGE_TOKEN = 1;
     private static final String DEFAULT_NAME_SERVICE = "CloudPipeline";
     private static final String DEFAULT_DOC = " ";
     private static final Boolean LOAD_STORAGE_LINKS = true;
@@ -74,9 +74,11 @@ public class TesTaskServiceImpl implements TesTaskService {
 
     @Override
     public TesListTasksResponse listTesTask(String namePrefix, Long pageSize, String pageToken, TaskView view) {
+        final int pageNumber = Optional.ofNullable(pageToken).map(p -> parseStringNumber(p).intValue())
+                .orElse(DEFAULT_PAGE_TOKEN);
         final List<TesTask> tesTaskList = (StringUtils.isNotEmpty(namePrefix)
-                ? searchRunsWithNamePrefix(namePrefix, pageSize, pageToken)
-                : filterRunsWithOutNamePrefix(pageSize, pageToken)
+                ? searchRunsWithNamePrefix(namePrefix, pageSize, pageNumber)
+                : filterRunsWithOutNamePrefix(pageSize, pageNumber)
         ).stream()
                 .map(pipelineRun ->
                         taskMapper.mapToTesTask(
@@ -84,10 +86,13 @@ public class TesTaskServiceImpl implements TesTaskService {
                                 Optional.ofNullable(view).orElse(DEFAULT_TASK_VIEW)
                         ))
                 .collect(Collectors.toList());
-        return new TesListTasksResponse(tesTaskList);
+        return TesListTasksResponse.builder()
+                .tasks(tesTaskList)
+                .nextPageToken(String.valueOf(pageNumber + 1))
+                .build();
     }
 
-    private List<PipelineRun> searchRunsWithNamePrefix(String namePrefix, Long pageSize, String pageToken) {
+    private List<PipelineRun> searchRunsWithNamePrefix(String namePrefix, Long pageSize, Integer pageNumber) {
         PagingRunFilterExpressionVO filterExpressionVO = new PagingRunFilterExpressionVO();
         FilterExpressionVO expression = new FilterExpressionVO();
         expression.setField(NAME_PREFIX);
@@ -95,15 +100,15 @@ public class TesTaskServiceImpl implements TesTaskService {
         expression.setOperand(FilterOperandTypeVO.EQUALS.getOperand());
         expression.setFilterExpressionType(FilterExpressionTypeVO.LOGICAL);
         filterExpressionVO.setFilterExpression(expression);
-        filterExpressionVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
+        filterExpressionVO.setPage(pageNumber);
         filterExpressionVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
         log.debug(messageHelper.getMessage(MessageConstants.GET_LIST_TASKS_BY_NAME_PREFIX, namePrefix));
         return ListUtils.emptyIfNull(cloudPipelineAPIClient.searchRuns(filterExpressionVO).getElements());
     }
 
-    private List<PipelineRun> filterRunsWithOutNamePrefix(Long pageSize, String pageToken) {
+    private List<PipelineRun> filterRunsWithOutNamePrefix(Long pageSize, Integer pageNumber) {
         PagingRunFilterVO filterVO = new PagingRunFilterVO();
-        filterVO.setPage(Integer.parseInt(Optional.ofNullable(pageToken).orElse(DEFAULT_PAGE_TOKEN)));
+        filterVO.setPage(pageNumber);
         filterVO.setPageSize(Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE).intValue());
         log.debug(messageHelper.getMessage(MessageConstants.GET_LIST_TASKS_BY_DEFAULT_PREFIX));
         return ListUtils.emptyIfNull(cloudPipelineAPIClient.filterRuns(filterVO, LOAD_STORAGE_LINKS).getElements());
@@ -113,7 +118,7 @@ public class TesTaskServiceImpl implements TesTaskService {
     public TesCancelTaskResponse cancelTesTask(String id) {
         RunStatusVO updateStatus = new RunStatusVO();
         updateStatus.setStatus(TaskStatus.STOPPED);
-        cloudPipelineAPIClient.updateRunStatus(parseRunId(id), updateStatus);
+        cloudPipelineAPIClient.updateRunStatus(parseStringNumber(id), updateStatus);
         log.debug(messageHelper.getMessage(MessageConstants.CANCEL_PIPELINE_RUN_BY_ID, id));
         return new TesCancelTaskResponse();
     }
@@ -121,13 +126,13 @@ public class TesTaskServiceImpl implements TesTaskService {
     @Override
     public TesTask getTesTask(String id, TaskView view) {
         log.debug(messageHelper.getMessage(MessageConstants.GET_PIPELINE_RUN_BY_ID, id));
-        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseRunId(id)), view);
+        return taskMapper.mapToTesTask(cloudPipelineAPIClient.loadPipelineRun(parseStringNumber(id)), view);
     }
 
-    private Long parseRunId(String id) {
-        Assert.state(StringUtils.isNumeric(id),
-                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, ID));
-        return Long.parseLong(id);
+    private Long parseStringNumber(String number) {
+        Assert.state(StringUtils.isNumeric(number),
+                messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_INCOMPATIBLE_CONTENT, number));
+        return Long.parseLong(number);
     }
 
     @Override

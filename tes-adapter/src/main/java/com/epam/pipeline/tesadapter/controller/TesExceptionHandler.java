@@ -27,7 +27,5 @@ public class TesExceptionHandler {
         log.error(messageHelper.getMessage("logger.error", request.getDescription(true)), exception);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(String.format(ERROR_MESSAGE_FORMAT, exception.getMessage(), request.getDescription(true)));
-
     }
-
 }
