@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.Date;
@@ -33,6 +34,7 @@ import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -102,16 +104,6 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
         verify(cloudRegionDao).update(regionCaptor.capture(), eq(credentials()));
         final AzureRegion actualRegion = regionCaptor.getValue();
         assertThat(actualRegion.getSubscription(), is(SUBSCRIPTION));
-    }
-
-    @Test
-    public void updateShouldThrowIfAccountKeyIsNotSpecified() {
-        assertThrows(IllegalArgumentException.class,
-            () -> {
-                final AzureRegionDTO regionDTO = updateRegionDTO();
-                regionDTO.setStorageAccountKey(null);
-                cloudRegionManager.update(ID, regionDTO);
-            });
     }
 
     @Test
@@ -187,7 +179,10 @@ public class AzureCloudRegionManagerTest extends AbstractCloudRegionManagerTest 
 
     @Override
     List<CloudRegionHelper> helpers() {
-        return Collections.singletonList(new AzureRegionHelper(messageHelper));
+        AzureRegionHelper spy = Mockito.spy(new AzureRegionHelper(messageHelper));
+        Mockito.doNothing().when(spy).checkThatCredentialsIsActive(any(), any());
+        Mockito.doNothing().when(spy).checkResourceGroupExistence(any(), any());
+        return Collections.singletonList(spy);
     }
 
     @Override
