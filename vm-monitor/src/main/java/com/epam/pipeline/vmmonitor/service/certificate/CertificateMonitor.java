@@ -88,6 +88,7 @@ public class CertificateMonitor {
     private Optional<X509Certificate> generateX509Certificate(final Path pathToFile) {
         try (FileInputStream fis = new FileInputStream(pathToFile.toString());
              BufferedInputStream bis = new BufferedInputStream(fis)) {
+            log.debug("Reading certificate from file {}", pathToFile.toAbsolutePath());
             final CertificateFactory factory = CertificateFactory.getInstance("X.509");
             return Optional.of((X509Certificate) factory.generateCertificate(bis));
         } catch (CertificateException | IOException e) {
@@ -102,6 +103,7 @@ public class CertificateMonitor {
     }
 
     private boolean isExpiring(final X509Certificate certificate) {
+        log.debug("Certificate for {} expires after {}", certificate.getSubjectDN(), certificate.getNotAfter());
         final LocalDateTime expirationDate = LocalDateTime
             .ofInstant(certificate.getNotAfter().toInstant(), ZoneId.systemDefault());
         return LocalDateTime.now().plusDays(daysToNotify).isAfter(expirationDate);
