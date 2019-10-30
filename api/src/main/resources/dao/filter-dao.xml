@@ -65,6 +65,7 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
+                        r.tags,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
