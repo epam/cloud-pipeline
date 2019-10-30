@@ -187,6 +187,8 @@ public class PipelineLauncher {
             collectSids(systemParamsWithValue, SystemParams.ALLOWED_GROUPS,
                     run.getRunSids(), principalFilter.negate());
         }
+        systemParamsWithValue.put(SystemParams.CONTAINER_CPU_RESOURCE, String.valueOf(
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_CPU_RESOURCE)));
         String securedEnvVars = Arrays
                 .stream(SystemParams.values())
                 .filter(SystemParams::isSecure)

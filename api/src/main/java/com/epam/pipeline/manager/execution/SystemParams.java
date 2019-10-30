@@ -59,7 +59,8 @@ public enum SystemParams {
     GS_OAUTH_CLIENT_ID("google-client-id", "GS_CLIENT_ID", true),
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
     PARENT_ID("parent-id", "parent_id", false),
-    RESUMED_RUN("resumed-run", "RESUMED_RUN", false);
+    RESUMED_RUN("resumed-run", "RESUMED_RUN", false),
+    CONTAINER_CPU_RESOURCE("container-cpu-resource", "CP_CONTAINER_CPU_RESOURCE", false, true);
 
     public static final String CLOUD_REGION_PREFIX = "CP_ACCOUNT_REGION_";
     public static final String CLOUD_ACCOUNT_PREFIX = "CP_ACCOUNT_ID_";

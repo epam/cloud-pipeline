@@ -295,7 +295,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
-
+    public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
+            "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
