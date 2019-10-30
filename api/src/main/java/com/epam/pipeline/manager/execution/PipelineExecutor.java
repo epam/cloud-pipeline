@@ -98,9 +98,9 @@ public class PipelineExecutor {
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());
             Map<String, String> nodeSelector = new HashMap<>();
+            String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                String runIdLabel = String.valueOf(run.getId());
                 nodeSelector.put("runid", nodeIdLabel);
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
@@ -116,7 +116,7 @@ public class PipelineExecutor {
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
             PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getDockerImage(), command,
-                    pullImage, StringUtils.isBlank(getChildLabel(clusterId, run)));
+                    pullImage, nodeIdLabel.equals(runIdLabel));
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
