@@ -191,7 +191,7 @@ public class PipelineExecutor {
                 .findFirst()
                 .map(var -> {
                     if (NumberUtils.isDigits(var.getValue())) {
-                        var.getValue();
+                        return var.getValue();
                     }
                     return DEFAULT_CPU_REQUEST;
                 })
