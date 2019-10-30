@@ -62,10 +62,8 @@ public class AzureRegionHelperTest {
     }
 
     @Test
-    public void shouldThrowIfAzurePolicyIsEmpty() {
+    public void shouldPassIfPolicyExistsButEmpty() {
         final AzureRegionHelper azureRegionHelper = new AzureRegionHelper(messageHelper);
-
-        final AzurePolicy policy = new AzurePolicy();
-        assertThrows(IllegalArgumentException.class, () -> azureRegionHelper.validateStoragePolicy(policy));
+        azureRegionHelper.validateStoragePolicy(new AzurePolicy());
     }
 }
