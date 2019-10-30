@@ -404,8 +404,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .uploadFile(fileWithTheSameName)
                 .selectFile(file.getName())
                 .delete()
+                .sleep(2, SECONDS)
                 .showFilesVersions(true)
                 .selectFile(file.getName())
+                .sleep(2, SECONDS)
                 .delete()
                 .validateElementIsPresent(fileWithTheSameName.getName());
     }
