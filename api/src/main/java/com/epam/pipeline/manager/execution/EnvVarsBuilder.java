@@ -25,8 +25,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -43,7 +45,7 @@ public final class EnvVarsBuilder {
 
     public static List<EnvVar> buildEnvVars(PipelineRun run, PipelineConfiguration configuration,
                                      Map<SystemParams, String> sysParams, Map<String, String> externalProperties) {
-        List<EnvVar> fullEnvVars = new ArrayList<>();
+        Set<EnvVar> fullEnvVars = new HashSet<>();
         Map<String, String> envVarsMap = new HashMap<>();
 
         sysParams
@@ -102,7 +104,7 @@ public final class EnvVarsBuilder {
                 .filter(e -> StringUtils.isNotBlank(e.getKey()))
                 .filter(e -> SystemParams.SECURED_PREFIXES.stream().noneMatch(prefix -> e.getKey().startsWith(prefix)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e2)));
-        return fullEnvVars;
+        return new ArrayList<>(fullEnvVars);
     }
 
     private static EnvVar[] matchParameterToEnvVars(String name, String value, String type,
