@@ -179,7 +179,7 @@ This feature, for example, allows you to run `Apache Spark` cluster with RStudio
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_6.png)  
     Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.
 
-For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.3_Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
+For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.3._Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
 
 ## Consider Cloud Providers' resource limitations when scheduling a job
 
@@ -444,7 +444,7 @@ For using facilities of the `Environment Modules` package, a new system paramete
 
 If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
 
-See an example [here](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
+See an example [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
 
 ## Sharing SSH access to running instances with other user(s)/group(s)
 
@@ -655,7 +655,7 @@ For the certain purposes, it could be conveniently to start an interactive sessi
 For such cases, in **`v0.15`** the `pipe ssh` command was implemented. It allows you, if you are the **ADMIN** or the run **OWNER**, to perform a single command or launch an interactive session for the specified job run.  
 Launching of an interactive session:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_1.png)  
-This session is similar to the [terminal access](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#using-terminal-access) that user can get via the GUI.
+This session is similar to the [terminal access](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#using-terminal-access) that user can get via the GUI.
 
 Performing the same single command without launching an interactive session:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)  
