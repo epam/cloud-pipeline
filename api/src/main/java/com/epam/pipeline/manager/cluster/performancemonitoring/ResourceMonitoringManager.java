@@ -259,10 +259,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
         for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
             PipelineRun run = entry.getValue();
-            if (run.isNonPause() || isClusterRun(run)) {
-                log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
-                continue;
-            }
             Double metric = cpuMetrics.get(entry.getKey());
             if (metric != null) {
                 InstanceType type = instanceTypeMap.getOrDefault(run.getInstance().getNodeType(),
@@ -296,7 +292,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_NOTIFY, run.getPodId(), cpuUsageRate));
         } else { // run was already notified - we need to take some action
             performActionOnIdleRun(run, action, cpuUsageRate,
-                                   actionTimeout, pipelinesToNotify, runsToUpdateNotificationTime);
+                    actionTimeout, pipelinesToNotify, runsToUpdateNotificationTime);
         }
     }
 
@@ -349,12 +345,20 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void performStop(PipelineRun run, double cpuUsageRate) {
+        if (run.isNonPause() || isClusterRun(run)) {
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
+            return;
+        }
         pipelineRunManager.stop(run.getId());
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_STOPPED);
     }
 
     private void performPause(PipelineRun run, double cpuUsageRate) {
+        if (run.isNonPause() || isClusterRun(run)) {
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
+            return;
+        }
         run.setLastIdleNotificationTime(null);
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
