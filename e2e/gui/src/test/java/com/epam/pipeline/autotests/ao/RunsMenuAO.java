@@ -333,7 +333,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 ".//*[contains(., 'InitializeNode')]]//*[contains(@class, 'anticon')]";
         int attempts = 15;
 
-        $(taskWithName("InitializeNode")).shouldBe(visible).click();
+        $(taskWithName("InitializeNode")).waitUntil(visible, C.ENDPOINT_INITIALIZATION_TIMEOUT).click();
         while (!$(byXpath(initializeNodeTaskPath)).has(cssClass("status-icon__icon-green"))) {
             if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
                     .count() > 2 || attempts == 0) {
