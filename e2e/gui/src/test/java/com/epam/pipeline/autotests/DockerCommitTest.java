@@ -371,7 +371,8 @@ public class DockerCommitTest
                 )
                 .showLog(getLastRunId())
                 .instanceParameters(parameters ->
-                                parameters.ensure(IMAGE, text(String.format(dockerFormat, registryIp, group, nameWithoutGroup(tool), customTag)))
+                        parameters.ensure(IMAGE, text(String.format(dockerFormat, registryIp, group,
+                                nameWithoutGroup(tool), customTag)))
                 );
 
         runsMenu()

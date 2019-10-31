@@ -288,6 +288,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .setPriceType(priceType)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .show(getLastRunId())
+                .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
         Utils.restartBrowser(C.ROOT_ADDRESS);

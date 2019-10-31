@@ -95,6 +95,7 @@ public class PipelineDockerCommitTest
                 .firstVersion()
                 .codeTab()
                 .clearAndFillPipelineFile(fileInPipeline, "sleep 10000")
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .setLaunchOptions(diskSize, instanceType, null)
                 .setPriceType(priceType)
