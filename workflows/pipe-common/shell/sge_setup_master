@@ -168,37 +168,45 @@ EOL
         rm -f ./grid
 }
 
-configure_local_pe() {
-    _PE_NAME="${1:-local}"
+delete_pe() {
+    local pe_all="$1"
 
-    # Delete any existing-default parallel environments, before adding a new one
-    _CURRENT_PES=$(qconf -spl)
-    for _PE in $_CURRENT_PES; do 
-        qconf -dp "$_PE"
+    local current_pe_list="$pe_all"
+    if [ "$current_pe_list" == "all" ]; then
+        current_pe_list=$(qconf -spl)
+    fi
+
+    for _pe_name in $current_pe_list; do 
+        qconf -dp "$_pe_name"
     done
+}
 
-    _LOCAL_PE_SLOTS=$CLOUD_PIPELINE_CLUSTER_CORES
-    if [ -z $_LOCAL_PE_SLOTS ]
-    then
-        _LOCAL_PE_SLOTS=999999
+configure_pe() {
+    local pe_name="${1:-local}"
+    local pe_alloc_rule="${2:-\$pe_slots}"
+    local pe_job_is_first_task="${3:-TRUE}"
+    local pe_slots="${4}"
+
+    if [ -z "$pe_slots" ]; then
+        pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
     fi
     
     cat > ./local_pe.conf <<EOL
-        pe_name            $_PE_NAME
-        slots              $_LOCAL_PE_SLOTS
+        pe_name            $pe_name
+        slots              $pe_slots
         user_lists         NONE
         xuser_lists        NONE
         start_proc_args    NONE
         stop_proc_args     NONE
-        allocation_rule    \$pe_slots
+        allocation_rule    $pe_alloc_rule
         control_slaves     TRUE
-        job_is_first_task  TRUE
+        job_is_first_task  $pe_job_is_first_task
         urgency_slots      min
         accounting_summary FALSE
         qsort_args         NONE
 EOL
     qconf -Ap ./local_pe.conf
-    qconf -mattr queue pe_list "$_PE_NAME" "$CP_CAP_SGE_QUEUE_NAME"
+    qconf -mattr queue pe_list "$pe_name" "$CP_CAP_SGE_QUEUE_NAME"
     rm -f ./local_pe.conf
 }
 
@@ -287,6 +295,7 @@ export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"
@@ -298,7 +307,7 @@ echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
 echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
 echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> /etc/cp_env.sh
-
+echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> /etc/cp_env.sh
 
 # Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
 if [ "$RESUMED_RUN" = true ]; then
@@ -449,7 +458,17 @@ pipe_log_info "Add $OWNER_NAME as SGE manager and operator" "$SGE_MASTER_SETUP_T
 qconf -am $OWNER_NAME
 qconf -ao $OWNER_NAME
 
-configure_local_pe "$CP_CAP_SGE_PE_NAME"
+# Configure Parallel Environments and attach to the queue ($CP_CAP_SGE_QUEUE_NAME)
+# - First delete all default PEs
+delete_pe all
+# - Add a "threaded/smp" PE, which schedules all threads to a single machine
+configure_pe "$CP_CAP_SGE_PE_NAME" \
+             "\$pe_slots" \
+             "TRUE"
+# Add an "mpi" PE, which allows to spread processes across nodes
+configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
+             "\$fill_up" \
+             "FALSE"
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK"
