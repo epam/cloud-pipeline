@@ -43,7 +43,7 @@
     "cssnext": "^1.8.4",
     "detect-port": "1.1.1",
     "dotenv": "4.0.0",
-    "eslint": "3.19.0",
+    "eslint": "4.18.2",
     "eslint-config-react-app": "^0.6.2",
     "eslint-config-standard": "^10.2.0",
     "eslint-config-standard-flow": "^1.0.1",
