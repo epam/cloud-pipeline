@@ -191,7 +191,7 @@ configure_pe() {
         pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
     fi
     
-    cat > ./local_pe.conf <<EOL
+    cat > pe.conf <<EOL
         pe_name            $pe_name
         slots              $pe_slots
         user_lists         NONE
@@ -205,9 +205,9 @@ configure_pe() {
         accounting_summary FALSE
         qsort_args         NONE
 EOL
-    qconf -Ap ./local_pe.conf
+    qconf -Ap pe.conf
     qconf -mattr queue pe_list "$pe_name" "$CP_CAP_SGE_QUEUE_NAME"
-    rm -f ./local_pe.conf
+    rm -f pe.conf
 }
 
 run_redhat_installation() {
