@@ -10,6 +10,7 @@
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [`pipe`: not-handled error while trying to execute commands with invalid config](#pipe-not-handled-error-while-trying-to-execute-commands-with-invalid-config)
     - [Setting of the tool icon size](#setting-of-the-tool-icon-size)
     - [`NPE` while building cloud-specific environment variables for run](#npe-while-building-cloud-specific-environment-variables-for-run)
     - [Worker nodes fail due to mismatch of the regions with the parent run](#worker-nodes-fail-due-to-mismatch-of-the-regions-with-the-parent-run)
@@ -21,6 +22,7 @@
     - [Incorrect displaying of the "Start idle" checkbox](#incorrect-displaying-of-the-start-idle-checkbox)
     - [Limit check of the maximum cluster size is incorrect](#limit-check-of-the-maximum-cluster-size-is-incorrect)
     - [Fixed cluster with SGE and DIND capabilities fails to start](#fixed-cluster-with-sge-and-dind-capabilities-fails-to-start)
+    - [Azure: Server shall check Azure Blob existence when a new storage is created](#azure-server-shall-check-azure-blob-existence-when-a-new-storage-is-created)
     - [Azure: `pipe` CLI cannot transfer empty files between storages](#azure-pipe-cli-cannot-transfer-empty-files-between-storages)
     - [Azure: runs with enabled GE autoscaling doesn't stop](#azure-runs-with-enabled-ge-autoscaling-doesnt-stop)
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
@@ -119,9 +121,30 @@ In the current version, displaying of the date/time for the tool latest commit i
 
 For more details about tool commit see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#commit-a-tool).
 
+## Renaming of the GitLab repository in case of Pipeline renaming
+
+Pipeline in the Cloud Pipeline environment is a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.
+
+Previously, if the Pipeline object was renamed - the underlying GitLab repository was keeping the previous name.  
+In the current version, if user renames a Pipeline the corresponding GitLab repository will be also automatically renamed:  
+
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_1.png)
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_2.png)
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_3.png)
+
+Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the Pipeline somewhere else.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
+
 ***
 
 ## Notable Bug fixes
+
+### `pipe`: not-handled error while trying to execute commands with invalid config
+
+[#750](https://github.com/epam/cloud-pipeline/issues/750)
+
+Previously, if `pipe` config contained some invalid data (e.g. outdated or invalid access token), then trying to execute any `pipe` command had been causing an not-handled error.
 
 ### Setting of the tool icon size
 
@@ -193,6 +216,12 @@ Now, the "less or equal" check is used.
 [#392](https://github.com/epam/cloud-pipeline/issues/392)
 
 Previously, fixed cluster with both **`CP_CAP_SGE`** and **`CP_CAP_DIND_CONTAINER`** options enabled with more than one worker failed to start. Some of the workers failed on either `SGEWorkerSetup` or `SetupDind` task with different errors. Scripts were executed in the same one shared analysis directory. So, some workers could delete files downloaded by other workers.
+
+### Azure: Server shall check Azure Blob existence when a new storage is created
+
+[#768](https://github.com/epam/cloud-pipeline/issues/768)
+
+During the creation of `AZ` Storage, the validation whether `Azure Blob` exists or not didn't perform. In that case, if `Azure Blob` had already existed, the user was getting failed request with `Azure` exception.
 
 ### Azure: `pipe` CLI cannot transfer empty files between storages
 

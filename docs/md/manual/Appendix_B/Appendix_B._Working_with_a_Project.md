@@ -6,7 +6,7 @@
 
 ## Create a project
 
-> To create a project you need **WRITE** permissions for the parent folder and **FOLDER\_MANAGER** role. For more information see [13. Permissions](../13_Permissions/13._Permissions.md).
+> To create a project you need **WRITE** permissions for the parent folder and the **ROLE\_FOLDER\_MANAGER** role. For more information see [13. Permissions](../13_Permissions/13._Permissions.md).
 
 To create a project in the system, the following steps shall be performed:
 
