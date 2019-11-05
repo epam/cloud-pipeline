@@ -62,6 +62,7 @@ class DataStorageWrapper(object):
     def __init__(self, path):
         self.path = path
         self.items = []
+        self.path_separator = StorageOperations.PATH_SEPARATOR
 
     @classmethod
     def get_wrapper(cls, uri):
@@ -191,8 +192,8 @@ class DataStorageWrapper(object):
 
     def path_with_trailing_separator(self):
         return self.path \
-            if self.path.endswith(StorageOperations.PATH_SEPARATOR) \
-            else self.path + StorageOperations.PATH_SEPARATOR
+            if self.path.endswith(self.path_separator) \
+            else self.path + self.path_separator
 
 
 class CloudDataStorageWrapper(DataStorageWrapper):
@@ -345,6 +346,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             self.path = "./"
         if self.path.startswith("~"):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
+        self.path_separator = os.sep
 
     def exists(self):
         return os.path.exists(self.path)
