@@ -366,7 +366,7 @@ class GsRestoreManager(GsManager, AbstractRestoreManager):
         self.wrapper = wrapper
         self.listing_manager = GsListingManager(self.client, self.wrapper.bucket, show_versions=True)
 
-    def restore_version(self, version):
+    def restore_version(self, version, exclude, include, recursive):
         bucket = self.client.bucket(self.wrapper.bucket.path)
         if version:
             blob = bucket.blob(self.wrapper.path)

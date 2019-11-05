@@ -899,13 +899,18 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('restore')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Restore specified version')
+@click.option('-r', '--recursive', is_flag=True, help='Recursive deletion (required for deleting folders)')
+@click.option('-e', '--exclude', required=False, multiple=True,
+              help='Exclude all files matching this pattern from processing')
+@click.option('-i', '--include', required=False, multiple=True,
+              help='Include only files matching this pattern into processing')
 @Config.validate_access_token
-def storage_restore_item(path, version):
+def storage_restore_item(path, version, recursive, exclude, include):
     """ Restores file version in a datastorage.\n
     If version is not specified it will try to restore the latest non deleted version.
     Otherwise a specified version will be restored.
     """
-    DataStorageOperations.restore(path, version)
+    DataStorageOperations.restore(path, version, recursive, exclude, include)
 
 
 @storage.command('set-object-tags')
