@@ -196,6 +196,10 @@ public class PipelineLauncher {
                 .collect(Collectors.joining(ENV_DELIMITER));
 
         systemParamsWithValue.put(SystemParams.SECURE_ENV_VARS, securedEnvVars);
+        if (!MapUtils.emptyIfNull(configuration.getEnvironmentParams())
+                .containsKey(SystemParams.RESUMED_RUN.getEnvName())) {
+            systemParamsWithValue.put(SystemParams.RESUMED_RUN, "false");
+        }
         return systemParamsWithValue;
     }
 
