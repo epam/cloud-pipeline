@@ -106,7 +106,7 @@ public class FilterExpression {
         }
     }
 
-    private static FilterExpression prepare(FilterExpression expression) throws WrongFilterException {
+    public static FilterExpression prepare(FilterExpression expression) throws WrongFilterException {
         FilterExpression result = null;
         if (expression.getFilterExpressionType() == null) {
             throw new WrongFilterException("Unknown expression type");

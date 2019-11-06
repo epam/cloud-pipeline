@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.dao.filter.FilterDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
@@ -38,6 +39,11 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.filter.FilterExpression;
+import com.epam.pipeline.manager.filter.FilterExpressionType;
+import com.epam.pipeline.manager.filter.FilterOperandType;
+import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.util.TestUtils;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -110,6 +116,10 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private PipelineRunDao pipelineRunDao;
 
     @Autowired
+    private FilterDao filterDao;
+
+
+    @Autowired
     private RunLogDao logDao;
 
     @Autowired
@@ -138,6 +148,24 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         cloudRegion = ObjectCreatorUtils.getDefaultAwsRegion();
         regionDao.create(cloudRegion);
+    }
+
+    @Test
+    public void testFilterPipelineRuns() throws WrongFilterException {
+        PipelineRun run1 =  TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id", cloudRegion.getId());
+        PipelineRun run2 =  TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id2", cloudRegion.getId());
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+        FilterExpression logicalExpression = new FilterExpression();
+        logicalExpression.setFilterExpressionType(FilterExpressionType.LOGICAL);
+        logicalExpression.setField("pod.id");
+        logicalExpression.setOperand(FilterOperandType.EQUALS.getOperand());
+        logicalExpression.setValue(run1.getPodId());
+        List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(FilterExpression.prepare(logicalExpression), 1, 2, 0);
+        assertEquals(1, pipelineRuns.size());
+        assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
     }
 
     @Test
