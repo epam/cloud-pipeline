@@ -251,29 +251,32 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
         bucket = self.bucket.bucket.path
 
-        if recursive:
-            self.restore_folder(bucket, client, exclude, include)
-        elif version:
-            current_item = self.load_item(bucket, client)
-            if current_item['VersionId'] == version:
-                click.echo('Version "{}" is already the latest version'.format(version), err=True)
-                return
-            try:
-                client.copy_object(Bucket=bucket, Key=self.bucket.path,
-                                   CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
-            except ClientError as e:
-                if 'delete marker' in e.message:
-                    text = "Cannot restore a delete marker"
-                elif 'Invalid version' in e.message:
-                    text = 'Version "{}" doesn\'t exist.'.format(version)
-                else:
-                    text = e.message
-                raise RuntimeError(text)
-        else:
-            item = self.load_delete_marker(bucket, self.bucket.path, client)
-            delete_us = dict(Objects=[])
-            delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
-            client.delete_objects(Bucket=bucket, Delete=delete_us)
+        if not recursive:
+            if version:
+                current_item = self.load_item(bucket, client)
+                if current_item['VersionId'] == version:
+                    click.echo('Version "{}" is already the latest version'.format(version), err=True)
+                    return
+                try:
+                    client.copy_object(Bucket=bucket, Key=self.bucket.path,
+                                       CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
+                    return
+                except ClientError as e:
+                    if 'delete marker' in e.message:
+                        text = "Cannot restore a delete marker"
+                    elif 'Invalid version' in e.message:
+                        text = 'Version "{}" doesn\'t exist.'.format(version)
+                    else:
+                        text = e.message
+                    raise RuntimeError(text)
+            else:
+                item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
+                if item:
+                    delete_us = dict(Objects=[])
+                    delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
+                    client.delete_objects(Bucket=bucket, Delete=delete_us)
+                    return
+        self.restore_folder(bucket, client, exclude, include, recursive)
 
     def load_item(self, bucket, client):
         try:
@@ -286,7 +289,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             raise RuntimeError('Path "{}" doesn\'t exist'.format(self.bucket.path))
         return item
 
-    def load_delete_marker(self, bucket, path, client):
+    def load_delete_marker(self, bucket, path, client, quite=False):
         operation_parameters = {
             'Bucket': bucket,
             'Prefix': path
@@ -299,20 +302,25 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             if 'DeleteMarkers' not in page:
                 continue
             for item in page['DeleteMarkers']:
-                if 'IsLatest' in item and item['IsLatest']:
+                if 'IsLatest' in item and item['IsLatest'] and path == item['Key']:
                     return item
-        raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
+        if not quite:
+            raise RuntimeError('Latest file version is not deleted. Please specify "--version" parameter.')
 
-    def restore_folder(self, bucket, client, exclude, include):
+    def restore_folder(self, bucket, client, exclude, include, recursive):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         path = self.bucket.path
         prefix = StorageOperations.get_prefix(path)
+        if not prefix.endswith(delimiter):
+            prefix += delimiter
 
         operation_parameters = {
-            'Bucket': bucket,
+            'Bucket': bucket
         }
         if path:
             operation_parameters['Prefix'] = prefix
+        if not recursive:
+            operation_parameters['Delimiter'] = delimiter
         paginator = client.get_paginator('list_object_versions')
         pages = paginator.paginate(**operation_parameters)
         restore_us = dict(Objects=[])
@@ -320,9 +328,7 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
             S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_us, delimiter, exclude, include, prefix,
                                                versions=True)
             # flush once aws limit reached
-            if len(restore_us['Objects']) >= 1000:
-                client.delete_objects(Bucket=bucket, Delete=restore_us)
-                restore_us = dict(Objects=[])
+            restore_us = S3BucketOperations.send_delete_objects_request(client, bucket, restore_us)
         # flush rest
         if len(restore_us['Objects']):
             client.delete_objects(Bucket=bucket, Delete=restore_us)
@@ -364,9 +370,7 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
                 S3BucketOperations.process_listing(page, 'DeleteMarkers', delete_us, delimiter, exclude, include,
                                                    prefix, versions=True)
                 # flush once aws limit reached
-                if len(delete_us['Objects']) >= 1000:
-                    client.delete_objects(Bucket=bucket, Delete=delete_us)
-                    delete_us = dict(Objects=[])
+                delete_us = S3BucketOperations.send_delete_objects_request(client, bucket, delete_us)
             # flush rest
             if len(delete_us['Objects']):
                 client.delete_objects(Bucket=bucket, Delete=delete_us)
@@ -514,6 +518,7 @@ class S3BucketOperations(object):
 
     S3_ENDPOINT_URL = 'https://s3.amazonaws.com'
     S3_PATH_SEPARATOR = StorageOperations.PATH_SEPARATOR
+    S3_REQUEST_ELEMENTS_LIMIT = 1000
     __config__ = None
 
     @classmethod
@@ -801,4 +806,12 @@ class S3BucketOperations(object):
             delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
         else:
             delete_us['Objects'].append(dict(Key=item['Key']))
+
+    @staticmethod
+    def send_delete_objects_request(client, bucket, delete_us, limit=S3_REQUEST_ELEMENTS_LIMIT):
+        if len(delete_us['Objects']) >= limit:
+            client.delete_objects(Bucket=bucket, Delete=dict(Objects=delete_us['Objects'][:limit]))
+            return dict(Objects=delete_us['Objects'][limit:])
+        return delete_us
+
 

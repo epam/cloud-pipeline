@@ -899,7 +899,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 @storage.command('restore')
 @click.argument('path', required=True)
 @click.option('-v', '--version', required=False, help='Restore specified version')
-@click.option('-r', '--recursive', is_flag=True, help='Recursive deletion (required for deleting folders)')
+@click.option('-r', '--recursive', is_flag=True, help='Recursive restore')
 @click.option('-e', '--exclude', required=False, multiple=True,
               help='Exclude all files matching this pattern from processing')
 @click.option('-i', '--include', required=False, multiple=True,
