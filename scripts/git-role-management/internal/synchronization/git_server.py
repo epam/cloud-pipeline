@@ -424,6 +424,15 @@ class GitServer(object):
             return None
         return matches[0]
 
+    def replace_user_by_email(self, email, new_user):
+        if email is None:
+            return None
+        matches = [x for x in self.__users__ if x.email is not None and x.email.lower() == email.lower()]
+        if len(matches) == 0:
+            return None
+        index = self.__users__.index(matches[0])
+        self.__users__[index] = new_user
+
     def find_user_by_id(self, id):
         matches = [x for x in self.__users__ if x.id == id]
         if len(matches) == 0:
@@ -456,9 +465,38 @@ class GitServer(object):
                 return None
             git_user = self.find_user_by_email(pipeline_user.email)
             if git_user is not None:
-                print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
-                self.synchronize_ssh_keys(pipeline_user, git_user)
-                return git_user
+                git_username_modified = pipeline_user.git_username is not None and git_user.username != pipeline_user.git_username
+                git_name_modified = pipeline_user.friendly_name is not None and git_user.name != pipeline_user.friendly_name
+                if git_username_modified or git_name_modified:
+                    wrong_info = []
+                    if git_username_modified:
+                        wrong_info.append('username: expected {}, got {}'.format(
+                            pipeline_user.git_username,
+                            git_user.username
+                        ))
+                    if git_name_modified:
+                        wrong_info.append('name: expected {}, got {}'.format(
+                            pipeline_user.friendly_name,
+                            git_user.name
+                        ))
+                    wrong_info_str = '; '.join(wrong_info)
+                    print 'User {} ({}) already exists at git, but has wrong info ({}). User\'s info will be updated'.format(
+                        pipeline_user.friendly_name,
+                        pipeline_user.email,
+                        wrong_info_str
+                    )
+                    result = self.__api__.update_user(
+                        git_user.id,
+                        pipeline_user.git_username if pipeline_user.git_username is not None else git_user.username,
+                        pipeline_user.friendly_name if pipeline_user.friendly_name is not None else git_user.name
+                    )
+                    self.replace_user_by_email(pipeline_user.email, result)
+                    self.synchronize_ssh_keys(pipeline_user, result)
+                    return result
+                else:
+                    print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
+                    self.synchronize_ssh_keys(pipeline_user, git_user)
+                    return git_user
             if pipeline_user.friendly_name is not None:
                 print 'Creating user {} ({}).'.format(pipeline_user.friendly_name, pipeline_user.email)
                 result = self.__api__.create_user(
