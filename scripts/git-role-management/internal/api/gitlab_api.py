@@ -73,6 +73,12 @@ class GitLab(object):
                     response = requests.delete(url, data=data, headers=self.__headers__, verify=False)
                 else:
                     response = requests.delete(url, headers=self.__headers__, verify=False)
+            elif http_method.lower() == 'put':
+                if data:
+                    expected_status_codes = [200, 201]
+                    response = requests.put(url, json=data, headers=self.__headers__, verify=False)
+                else:
+                    response = requests.put(url, headers=self.__headers__, verify=False)
             else:
                 if data:
                     expected_status_codes = [201]
@@ -145,6 +151,14 @@ class GitLab(object):
             'users',
             payload,
             http_method='POST',
+            success_loader=lambda text: GitUser.load(json.loads(text))
+        )
+
+    def update_user(self, id, username, name):
+        return self.call(
+            'users/{}?name={}&username={}'.format(id, name, username),
+            None,
+            http_method='PUT',
             success_loader=lambda text: GitUser.load(json.loads(text))
         )
 
