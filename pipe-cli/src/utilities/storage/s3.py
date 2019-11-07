@@ -251,32 +251,36 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         client = self.session.client('s3', config=S3BucketOperations.get_proxy_config())
         bucket = self.bucket.bucket.path
 
-        if not recursive:
-            if version:
-                current_item = self.load_item(bucket, client)
-                if current_item['VersionId'] == version:
-                    click.echo('Version "{}" is already the latest version'.format(version), err=True)
-                    return
-                try:
-                    client.copy_object(Bucket=bucket, Key=self.bucket.path,
-                                       CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
-                    return
-                except ClientError as e:
-                    if 'delete marker' in e.message:
-                        text = "Cannot restore a delete marker"
-                    elif 'Invalid version' in e.message:
-                        text = 'Version "{}" doesn\'t exist.'.format(version)
-                    else:
-                        text = e.message
-                    raise RuntimeError(text)
+        if not recursive and version:
+            self.restore_file_version(version, bucket, client)
+        else:
+            item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
+            if item:
+                self.restore_last_file_version(item, client, bucket)
             else:
-                item = self.load_delete_marker(bucket, self.bucket.path, client, quite=True)
-                if item:
-                    delete_us = dict(Objects=[])
-                    delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
-                    client.delete_objects(Bucket=bucket, Delete=delete_us)
-                    return
-        self.restore_folder(bucket, client, exclude, include, recursive)
+                self.restore_folder(bucket, client, exclude, include, recursive)
+
+    @staticmethod
+    def restore_last_file_version(item, client, bucket):
+        delete_us = dict(Objects=[])
+        delete_us['Objects'].append(dict(Key=item['Key'], VersionId=item['VersionId']))
+        client.delete_objects(Bucket=bucket, Delete=delete_us)
+
+    def restore_file_version(self, version, bucket, client):
+        current_item = self.load_item(bucket, client)
+        if current_item['VersionId'] == version:
+            click.echo('Version "{}" is already the latest version'.format(version), err=True)
+        try:
+            client.copy_object(Bucket=bucket, Key=self.bucket.path,
+                               CopySource=dict(Bucket=bucket, Key=self.bucket.path, VersionId=version))
+        except ClientError as e:
+            if 'delete marker' in e.message:
+                text = "Cannot restore a delete marker"
+            elif 'Invalid version' in e.message:
+                text = 'Version "{}" doesn\'t exist.'.format(version)
+            else:
+                text = e.message
+            raise RuntimeError(text)
 
     def load_item(self, bucket, client):
         try:
