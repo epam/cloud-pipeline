@@ -7,13 +7,13 @@
         "name": { "type": "text", "store": true },
         "parentId": { "type": "keyword", "store": true, "index": false },
         "externalId": { "type": "keyword" },
-        "className": { "type": "keyword" },
+        "className": { "type": "text" },
         "classId": { "type": "keyword", "index": false },
         "fields": { "type": "text" },
-        "allowed_users": { "type": "keyword" },
-        "denied_users": { "type": "keyword" },
-        "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "allowed_users": { "type": "text" },
+        "denied_users": { "type": "text" },
+        "allowed_groups": { "type": "text" },
+        "denied_groups": { "type": "text" }
       }
     }
   },

@@ -3,7 +3,7 @@
     "_doc": {
       "properties": {
         "id": { "type": "keyword", "store": true },
-        "name": { "type": "keyword", "store": true, "index": false },
+        "name": { "type": "text", "store": true, "index": false },
         "description": { "type": "text", "store": true },
         "doc_type": { "type": "keyword", "store": true },
         "createdDate": { "type": "date",  "format": "yyyy-MM-dd HH:mm:ss.SSS" },
@@ -11,13 +11,13 @@
         "endDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "pipelineName": { "type": "text" },
         "pipelineVersion": { "type": "text" },
-        "status": { "type": "keyword" },
+        "status": { "type": "text" },
         "dockerImage": { "type": "text" },
         "actualCmd": { "type": "text" },
         "configurationName": { "type": "text" },
         "configurationId": { "type": "keyword" },
         "environment": { "type": "keyword" },
-        "podId": { "type": "keyword", "copy_to": "name" },
+        "podId": { "type": "text", "copy_to": "name" },
         "pricePerHour": { "type": "double" },
         "parentRunId": { "type": "keyword"},
         "nodeCount": { "type": "integer" },
@@ -35,15 +35,15 @@
         },
         "parameters": { "type": "text" },
         "ownerUserId": { "type": "keyword" },
-        "ownerUserName": {"type": "keyword" },
+        "ownerUserName": {"type": "text" },
         "ownerFriendlyName": {"type": "text" },
-        "ownerGroups": {"type": "keyword" },
+        "ownerGroups": {"type": "text" },
         "logs": { "type": "text" },
         "statuses": {
           "type": "nested",
           "properties": {
             "status": {
-              "type": "keyword"
+              "type": "text"
             },
             "timestamp": {
               "type": "date",
@@ -51,10 +51,10 @@
             }
           }
         },
-        "allowed_users": { "type": "keyword" },
-        "denied_users": { "type": "keyword" },
-        "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "allowed_users": { "type": "text" },
+        "denied_users": { "type": "text" },
+        "allowed_groups": { "type": "text" },
+        "denied_groups": { "type": "text" }
       }
     }
   },

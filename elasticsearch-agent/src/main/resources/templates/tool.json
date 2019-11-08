@@ -6,7 +6,7 @@
         "id": {"type": "keyword", "store": true },
         "name": {"type": "text", "store": true, "index": false},
         "parentId": {"type": "keyword", "store": true, "index": false },
-        "registry": {"type": "keyword" },
+        "registry": {"type": "text" },
         "registryId": { "type": "long", "index": false },
         "image": {"type": "text", "analyzer": "file_path_analyzer", "copy_to": "name"},
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
@@ -15,14 +15,14 @@
         "labels": { "type": "text" },
         "toolGroupId": { "type": "long", "copy_to": "parentId" },
         "ownerUserId": { "type": "keyword" },
-        "ownerUserName": { "type": "keyword" },
+        "ownerUserName": { "type": "text" },
         "ownerFriendlyName": { "type": "text" },
         "ownerGroups": { "type": "keyword" },
         "metadata": { "type": "text" },
-        "allowed_users": { "type": "keyword" },
-        "denied_users": { "type": "keyword" },
-        "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "allowed_users": { "type": "text" },
+        "denied_users": { "type": "text" },
+        "allowed_groups": { "type": "text" },
+        "denied_groups": { "type": "text" }
       }
     }
   },
