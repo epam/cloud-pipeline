@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
@@ -532,6 +533,12 @@ public class SystemPreferences {
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_POLLING_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.up.polling.timeout", 900,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
+    public static final IntPreference GE_AUTOSCALING_SCALE_UP_TO_MAX =
+            new IntPreference("ge.autoscaling.scale.up.to.max", null,
+                    GRID_ENGINE_AUTOSCALING_GROUP,
+                    isGreaterThanValueOrNull(LAUNCH_MAX_SCHEDULED_NUMBER.getKey()),
+                    LAUNCH_MAX_SCHEDULED_NUMBER);
+
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
