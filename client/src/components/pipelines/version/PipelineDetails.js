@@ -189,7 +189,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{display: 'inline-flex'}}>
           <Button
             id="launch-pipeline-button"
             size="small"
