@@ -9,21 +9,21 @@
         "path": { "type": "text", "analyzer": "file_path_analyzer"},
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
-        "storageType": { "type": "text" },
+        "storageType": { "type": "keyword" },
         "regionCode": { "type": "keyword" },
         "ownerUserId": { "type": "long" },
-        "ownerUserName": { "type": "text" },
+        "ownerUserName": { "type": "keyword" },
         "ownerFriendlyName": { "type": "text" },
-        "ownerGroups": { "type": "text" },
+        "ownerGroups": { "type": "keyword" },
         "storagePolicyBackupDuration": { "type": "long" },
         "storagePolicyLongTermStorageDuration": { "type": "long" },
         "storagePolicyShortTermStorageDuration": { "type": "long" },
         "storagePolicyVersioningEnabled": { "type": "text" },
         "metadata": { "type": "text" },
-        "allowed_users": { "type": "text" },
-        "denied_users": { "type": "text" },
-        "allowed_groups": { "type": "text" },
-        "denied_groups": { "type": "text" }
+        "allowed_users": { "type": "keyword" },
+        "denied_users": { "type": "keyword" },
+        "allowed_groups": { "type": "keyword" },
+        "denied_groups": { "type": "keyword" }
       }
     }
   },

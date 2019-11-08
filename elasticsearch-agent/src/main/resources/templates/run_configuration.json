@@ -26,10 +26,10 @@
         "methodConfigurationName": { "type": "text" },
         "methodConfigurationSnapshot": { "type": "text" },
         "metadata": { "type": "text" },
-        "allowed_users": { "type": "text" },
-        "denied_users": { "type": "text" },
-        "allowed_groups": { "type": "text" },
-        "denied_groups": { "type": "text" }
+        "allowed_users": { "type": "keyword" },
+        "denied_users": { "type": "keyword" },
+        "allowed_groups": { "type": "keyword" },
+        "denied_groups": { "type": "keyword" }
       }
     }
   },

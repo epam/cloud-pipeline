@@ -14,15 +14,15 @@
         "updatedDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "comments": { "type": "text" },
         "entityId": { "type": "long", "copy_to": "parentId"},
-        "entityClass": { "type": "text" },
+        "entityClass": { "type": "keyword" },
         "ownerUserId": { "type": "keyword" },
-        "ownerUserName": { "type": "text" },
+        "ownerUserName": { "type": "keyword" },
         "ownerFriendlyName": { "type": "text" },
-        "ownerGroups": { "type": "text" },
-        "allowed_users": { "type": "text" },
-        "denied_users": { "type": "text" },
-        "allowed_groups": { "type": "text" },
-        "denied_groups": { "type": "text" }
+        "ownerGroups": { "type": "keyword" },
+        "allowed_users": { "type": "keyword" },
+        "denied_users": { "type": "keyword" },
+        "allowed_groups": { "type": "keyword" },
+        "denied_groups": { "type": "keyword" }
       }
     }
   },
