@@ -22,3 +22,41 @@ export default class LoadToolTags extends Remote {
     this.url = `/tool/${id}/tags`;
   }
 }
+
+class ToolTagsCache {
+  /* eslint-disable */
+  static getCache (cache, id) {
+    if (!cache.has(`${id}`)) {
+      cache.set(`${id}`, new LoadToolTags(id));
+    }
+
+    return cache.get(`${id}`);
+  }
+
+  /* eslint-enable */
+  static invalidateCache (cache, id) {
+    if (cache.has(`${id}`)) {
+      if (cache.get(`${id}`).invalidateCache) {
+        cache.get(`${id}`).invalidateCache();
+      } else {
+        cache.delete(`${id}`);
+      }
+    }
+  }
+
+  cache = new Map();
+
+  getToolTags (id) {
+    return ToolTagsCache.getCache(this.cache, id);
+  }
+
+  invalidateToolTags (id) {
+    ToolTagsCache.invalidateCache(this.cache, id);
+  }
+
+  invalidateAllToolsTags () {
+    this.cache.clear();
+  }
+}
+
+export {ToolTagsCache};

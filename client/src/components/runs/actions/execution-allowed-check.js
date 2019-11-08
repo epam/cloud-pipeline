@@ -124,7 +124,7 @@ function parametersChanged (oldParameters, newParameters) {
   return false;
 }
 
-function checkDockerImage (props) {
+async function checkDockerImage (props) {
   const {
     dockerImage,
     dockerRegistries
@@ -135,10 +135,11 @@ function checkDockerImage (props) {
     const [reg] = registries.filter(r =>
       r.path.toLowerCase() === (registry || '').toLowerCase()
     );
-    const reportExecutionDenied = () => {
+    const reportExecutionDenied = (error) => {
       return [(
         <span key="docker image error">
           <b>{dockerImage}</b>: execution is denied
+          {error && <span style={{marginLeft: 5}}>({error})</span>}
         </span>
       )];
     };
@@ -148,12 +149,22 @@ function checkDockerImage (props) {
         g.name.toLowerCase() === (group || '').toLowerCase()
       );
       if (gr) {
-        let [imageName] = image.split(':');
+        let [imageName, version] = image.split(':');
         imageName = `${group}/${imageName}`.toLowerCase();
         const [tool] = (gr.tools || [])
           .filter(t => t.image.toLowerCase() === imageName);
         if (!tool || !roleModel.executeAllowed(tool)) {
           return reportExecutionDenied();
+        } else {
+          const tags = dockerRegistries.toolTags.getToolTags(tool.id);
+          await tags.fetchIfNeededOrWait();
+          if (tags.error) {
+            return reportExecutionDenied(tags.error);
+          }
+          const allTags = `^(${(tags.value || []).join('|')})$`;
+          if (!(new RegExp(allTags, 'i')).test(version)) {
+            return reportExecutionDenied(`version ${version} not found`);
+          }
         }
       } else {
         return reportExecutionDenied();
@@ -245,7 +256,7 @@ export async function performAsyncCheck (props, state = undefined) {
     outputsErrors = [];
   }
   if (!dockerImageChecked || props.dockerImage !== dockerImageChecked) {
-    dockerImageErrors = checkDockerImage(props).filter(Boolean);
+    dockerImageErrors = (await checkDockerImage(props)).filter(Boolean);
     dockerImageChecked = props.dockerImage;
   }
   if (!inputsChecked || parametersChanged(props.inputs, inputsChecked)) {

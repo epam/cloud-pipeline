@@ -15,11 +15,18 @@
  */
 
 import Remote from '../basic/Remote';
+import {ToolTagsCache} from './LoadToolTags';
 
 class DockerRegistriesTree extends Remote {
   constructor () {
     super();
     this.url = '/dockerRegistry/loadTree';
+    this.toolTags = new ToolTagsCache();
+  }
+
+  invalidateCache () {
+    super.invalidateCache();
+    this.toolTags.invalidateAllToolsTags();
   }
 }
 
