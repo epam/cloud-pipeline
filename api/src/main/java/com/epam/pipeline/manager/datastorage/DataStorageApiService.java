@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -199,9 +200,9 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(STORAGE_ID_OWNER)
-    public void restoreFileVersion(Long id, String path, String version)
+    public void restoreFileVersion(Long id, String path, String version, RestoreFolderVO restoreFolderVO)
             throws DataStorageException {
-        dataStorageManager.restoreVersion(id, path, version);
+        dataStorageManager.restoreVersion(id, path, version, restoreFolderVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "

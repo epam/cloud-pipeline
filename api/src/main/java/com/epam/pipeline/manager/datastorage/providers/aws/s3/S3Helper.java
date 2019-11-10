@@ -64,6 +64,7 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -90,6 +91,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -298,6 +300,21 @@ public class S3Helper {
                     "file size exceeds the limit of %s bytes", path, version, COPYING_FILE_SIZE_LIMIT));
         }
         moveS3Object(client, bucket, new MoveObjectRequest(path, version, path));
+    }
+
+    public void restoreFolderVersion(String bucket, String path, String version, RestoreFolderVO restoreFolderVO) {
+        AmazonS3 client = getDefaultS3Client();
+//        if (fileSizeExceedsLimit(client, bucket, path, version)) {
+//            throw new DataStorageException(String.format("Restoring file '%s' version '%s' was aborted because " +
+//                    "file size exceeds the limit of %s bytes", path, version, COPYING_FILE_SIZE_LIMIT));
+//        }
+        List<AbstractDataStorageItem> dataStorageItems = getItems(bucket, path, false, null, null)
+                .getResults();
+        if (restoreFolderVO.isRecursively()) {
+
+        } else {
+            dataStorageItems.forEach(item -> moveS3Object(client, bucket, new MoveObjectRequest(path, version, item.getPath())));
+        }
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {

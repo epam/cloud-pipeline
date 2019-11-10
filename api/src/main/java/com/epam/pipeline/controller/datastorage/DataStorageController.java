@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -427,8 +428,9 @@ public class DataStorageController extends AbstractRestController {
     public Result restoreFileVersion(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version) {
-        dataStorageApiService.restoreFileVersion(id, path, version);
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestBody(required = false) RestoreFolderVO restoreFolderVO) {
+        dataStorageApiService.restoreFileVersion(id, path, version, restoreFolderVO);
         return Result.success();
     }
 

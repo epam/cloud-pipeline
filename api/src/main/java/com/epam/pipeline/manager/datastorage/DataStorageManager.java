@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -82,6 +83,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -357,15 +359,23 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
-    public void restoreVersion(Long id, String path, String version) throws DataStorageException {
+    public void restoreVersion(Long id, String path, String version, RestoreFolderVO restoreFolderVO) throws DataStorageException {
         Assert.notNull(path, "Path is required to restore file version");
-        Assert.notNull(version, "Version is required to restore file version");
         AbstractDataStorage dataStorage = load(id);
         if (!dataStorage.isVersioningEnabled()) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        storageProviderManager.restoreFileVersion(dataStorage, path, version);
+        if (restoreFolderVO != null){
+            if (restoreFolderVO.isRecursively() && version != null) {
+                throw new DataStorageException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_FORBIDDEN_VERSION_WITH_RECURSION));
+            }
+            storageProviderManager.restoreFolderVersion(dataStorage, path, version, restoreFolderVO);
+        } else {
+            Assert.notNull(version, "Version is required to restore file version");
+            storageProviderManager.restoreFileVersion(dataStorage, path, version);
+        }
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,

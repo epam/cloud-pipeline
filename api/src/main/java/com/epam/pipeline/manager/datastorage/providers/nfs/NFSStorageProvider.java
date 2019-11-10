@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
@@ -263,6 +264,13 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public void restoreFileVersion(NFSDataStorage dataStorage, String path, String version)
         throws DataStorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void restoreFolderVersion(NFSDataStorage dataStorage, String path, String version,
+                                     RestoreFolderVO restoreFolderVO)
+            throws DataStorageException {
         throw new UnsupportedOperationException();
     }
 
