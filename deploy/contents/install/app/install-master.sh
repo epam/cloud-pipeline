@@ -52,7 +52,7 @@ EOF
 sysctl --system
 
 # 4
-setenforce 0
+setenforce 0 || true
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 #6.1 - Docker
@@ -62,9 +62,19 @@ yum install -y yum-utils \
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
+yum install -y  docker-ce-18.03* \
+                docker-ce-cli-18.03* \
                 containerd.io
+if [ $? -ne 0 ]; then
+  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
+
+  # Otherwise try to install default docker (e.g. if it's amazon linux)
+  yum install -y docker-18.03*
+  if [ $? -ne 0 ]; then
+    echo "Unable to install default docker-18.03* too, exiting"
+    exit 1
+  fi
+fi
 
 if [ "$CP_KUBE_MASTER_DOCKER_PATH" ]; then
   echo "CP_KUBE_MASTER_DOCKER_PATH is specified - docker will be configured to store data in $CP_KUBE_MASTER_DOCKER_PATH"

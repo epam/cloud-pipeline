@@ -48,6 +48,7 @@ CP_GITLAB_SLO_TARGET_URL="${CP_GITLAB_SLO_TARGET_URL:-"https://${CP_IDP_EXTERNAL
 CP_GITLAB_WINDOW_MEMORY="${CP_GITLAB_WINDOW_MEMORY:-"128m"}"
 CP_GITLAB_PACK_SIZE_LIMIT="${CP_GITLAB_PACK_SIZE_LIMIT:-"512m"}"
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
+CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -81,11 +82,11 @@ gitlab_rails['omniauth_providers'] = [
   name: 'saml',
   label: 'SSO Login',
   args: {
-    assertion_consumer_service_url: 'https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}/users/auth/saml/callback',
+    assertion_consumer_service_url: '${CP_GITLAB_SSO_ENDPOINT_ID}/users/auth/saml/callback',
     idp_cert: "$IDP_CERT_CONTENTS",
     idp_sso_target_url: '$CP_GITLAB_SSO_TARGET_URL',
     idp_slo_target_url: '$CP_GITLAB_SLO_TARGET_URL',
-    issuer: 'https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}',
+    issuer: '${CP_GITLAB_SSO_ENDPOINT_ID}',
     name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified',
     allowed_clock_drift: 60,
     certificate: "$GIT_SSO_CERT_CONTENTS",
