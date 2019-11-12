@@ -111,3 +111,5 @@ RUN chmod +x /init
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh
+
+ADD ingress-config /etc/nginx/ingress

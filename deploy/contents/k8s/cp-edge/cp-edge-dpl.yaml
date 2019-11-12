@@ -43,6 +43,9 @@ spec:
             - mountPath: /opt/edge/pki
               name: edge-pki
               readOnly: true
+            - mountPath: /opt/common/pki
+              name: common-pki
+              readOnly: true
       volumes:
         - name: edge-logs
           hostPath:
@@ -53,5 +56,8 @@ spec:
         - name: edge-pki
           hostPath:
             path: /opt/edge/pki
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
