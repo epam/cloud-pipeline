@@ -145,6 +145,8 @@
         
             <li><a class="toctree-l4" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via pipe</a></li>
         
+            <li><a class="toctree-l4" href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via pipe</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -607,6 +609,7 @@
 <li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 <li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
 <li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></a></li>
+<li><a href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></a></li>
 </ul>
 <hr />
 <ul>
@@ -1093,6 +1096,20 @@ Launching of an interactive session:<br />
 This session is similar to the <a href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/#using-terminal-access">terminal access</a> that user can get via the GUI.</p>
 <p>Performing the same single command without launching an interactive session:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_2.png" />  </p>
+<h2 id="perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></h2>
+<p>Users can restore files that were removed from the data storages with enabled versioning.<br />
+For these purposes, the Cloud Pipeline's CLI has the <code>restore</code> command which is capable of restoring a single object at a time.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to recursively restore the whole folder, deleted from the storage, was implemented.<br />
+Now, if the source path is a directory, the <code>pipe storage restore</code> command gets the top-level deleted files from the source directory and restore them to the latest version.<br />
+Also, to the <code>restore</code> command some options were added:</p>
+<ul>
+<li><code>-r</code> or <code>--recursive</code> - flag allows to restore the whole directory hierarchy</li>
+<li><code>-i</code> or <code>--include [TEXT]</code> - flag allows to restore only files which names match the [TEXT] pattern and skip all others</li>
+<li><code>-e</code> or <code>--exclude [TEXT]</code> - flag allows to skip restoring of files which names match the [TEXT] pattern and restore all others</li>
+</ul>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeRestoreRecursive.png" /></p>
+<p><strong><em>Note</em></strong>: this feature is yet supported for <code>AWS</code> only.</p>
+<p>For more details about file restoring via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#restore-files">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>

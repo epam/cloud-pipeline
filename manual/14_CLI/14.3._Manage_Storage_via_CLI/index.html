@@ -929,7 +929,7 @@ As you can see - "<strong>file1</strong>" and "<strong>file3</strong>" each has 
 <pre><code class="bash">pipe storage restore [OPTIONS] &lt;Path&gt;
 </code></pre>
 
-<p><strong>Path</strong> - defines a full path to the file in a datastorage.</p>
+<p><strong>Path</strong> - defines a full path to the file/directory in a datastorage.</p>
 <table>
 <thead>
 <tr>
@@ -946,9 +946,22 @@ As you can see - "<strong>file1</strong>" and "<strong>file3</strong>" each has 
 <td><code>-v</code> / <code>--version</code></td>
 <td>To restore a specified version</td>
 </tr>
+<tr>
+<td><code>-r</code> / <code>--recursive</code></td>
+<td>To restore the whole directory hierarchy.<br /><strong><em>Note</em></strong>: this feature is yet supported for the <code>AWS</code> Cloud Provider only</td>
+</tr>
+<tr>
+<td><code>-i</code> / <code>--include</code></td>
+<td>Include only files matching this pattern into processing</td>
+</tr>
+<tr>
+<td><code>-e</code> / <code>--exclude</code></td>
+<td>Exclude all files matching this pattern from processing</td>
+</tr>
 </tbody>
 </table>
-<p>By this command you can restore file version in a datastorage. If version is not specified via <code>-v</code> option it will try to restore the latest non-deleted version. Otherwise a specified version will be restored.</p>
+<p>By this command you can restore file version in a datastorage. If version is not specified via <code>-v</code> option it will try to restore the latest non-deleted version. Otherwise a specified version will be restored.<br />
+If the <strong>Path</strong> is a directory, the command gets the top-level deleted files from the <strong>Path</strong> directory and restore them to the latest version.  </p>
 <p>The example below shows how to set one of the previous versions for the "<strong>file2</strong>" as the latest:</p>
 <pre><code class="bash">pipe storage restore -v &lt;Version&gt; cp://versioning-storage/file2
 </code></pre>
@@ -961,6 +974,12 @@ As you can see - "<strong>file1</strong>" and "<strong>file3</strong>" each has 
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_08.png" /><br />
 <strong><em>Note</em></strong>: Before we restored the file "<strong>file4</strong>" its latest version was a <em>Delete marker</em>. After restoration this <em>marker</em> disappeared.</p>
+<p>The example below shows how to restore the latest version for only "*.txt" files recursively in the deleted directory (the directory that was marked with a <em>Delete marker</em> previously), e.g.:</p>
+<pre><code class="bash">pipe storage restore --recursive --include *.txt s3://objstor/examples/
+</code></pre>
+
+<p>After restoring, check that the "*.txt" file in the subfolder also restored:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_28.png" /></p>
 <h3 id="delete-an-object-from-a-datastorage">Delete an object from a datastorage</h3>
 <p>The command to delete an object from a storage:</p>
 <pre><code class="bash">pipe storage rm [OPTIONS] &lt;Path&gt;
