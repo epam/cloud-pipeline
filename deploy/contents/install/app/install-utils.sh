@@ -233,10 +233,15 @@ function validate_cloud_config {
             print_err "Default encryption key ARN for AWS KMS service is not defined, but it is required for the configuration. Please specify it using \"--env CP_AWS_KMS_ARN=\" option"
             return 1
         fi
+
+        export CP_CLOUD_CREDENTIALS_FILE=${CP_CLOUD_CREDENTIALS_FILE:-$CP_CLOUD_CREDENTIALS_LOCATION}
+        mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_FILE)
+
+        export CP_AWS_INSTANCE_PROFILE_STATUS=$(curl --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.Code')
+        export CP_AWS_INSTANCE_PROFILE_ARN=$(curl --max-time 3 --silent --fail http://169.254.169.254/latest/meta-data/iam/info | jq -r '.InstanceProfileArn')
+        local cp_aws_auth_type_used="cred"        
         if [ "$CP_AWS_ACCESS_KEY_ID" ] && [ "$CP_AWS_SECRET_ACCESS_KEY" ]; then
-            export CP_CLOUD_CREDENTIALS_FILE=${CP_CLOUD_CREDENTIALS_FILE:-$CP_CLOUD_CREDENTIALS_LOCATION}
             print_info "AWS access keys are defined via parameters"
-            mkdir -p $(dirname $CP_CLOUD_CREDENTIALS_FILE)
 
 cat > $CP_CLOUD_CREDENTIALS_FILE <<EOF
 [default]
@@ -246,6 +251,13 @@ EOF
 
         elif [ -f "$CP_CLOUD_CREDENTIALS_FILE" ]; then
             print_info "AWS access keys are defined via CP_CLOUD_CREDENTIALS_FILE"
+        elif [ "$CP_AWS_INSTANCE_PROFILE_STATUS" == "Success" ] && [ "$CP_AWS_INSTANCE_PROFILE_ARN" ]; then
+            print_info "AWS access keys are NOT defined, but an instance IAM role is available ($CP_AWS_INSTANCE_PROFILE_ARN). It will be used for the authentication"
+            echo "Instance Role Stub" > "$CP_CLOUD_CREDENTIALS_FILE"
+            cp_aws_auth_type_used="role"
+            update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                "CP_AWS_INSTANCE_PROFILE_ARN" \
+                                "$CP_AWS_INSTANCE_PROFILE_ARN"
         elif [ -f ~/.aws/credentials ]; then
             print_info "AWS access keys are defined via ~/.aws/credentials"
             export CP_CLOUD_CREDENTIALS_FILE=~/.aws/credentials
@@ -257,15 +269,17 @@ EOF
             return 1
         fi
 
-        # These variables are exposed to the pods - to point SDKs to the custom credentials location
+        # These variables are exposed to the pods - to point SDKs to the custom credentials location, unless IAM Profile is used
         # For java sdk v1 and v2 - different variables were used: https://docs.amazonaws.cn/en_us/sdk-for-java/v2/migration-guide/client-credential.html
-        update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                                "AWS_SHARED_CREDENTIALS_FILE" \
-                                "$CP_CLOUD_CREDENTIALS_LOCATION"
+        if [ "$cp_aws_auth_type_used" == "cred" ]; then
+            update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                    "AWS_SHARED_CREDENTIALS_FILE" \
+                                    "$CP_CLOUD_CREDENTIALS_LOCATION"
 
-        update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                                "AWS_CREDENTIAL_PROFILES_FILE" \
-                                "$CP_CLOUD_CREDENTIALS_LOCATION"
+            update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                    "AWS_CREDENTIAL_PROFILES_FILE" \
+                                    "$CP_CLOUD_CREDENTIALS_LOCATION"
+        fi
 
         if [ -z "$CP_PREF_CLUSTER_SSH_KEY_NAME" ]; then
             print_err "Name of the SSH key, used to access cluster nodes is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_SSH_KEY_NAME=\" option"
