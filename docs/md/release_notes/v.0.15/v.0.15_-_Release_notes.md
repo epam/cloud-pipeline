@@ -35,6 +35,7 @@
 - [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
 - [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
+- [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
 
 ***
 
@@ -659,6 +660,25 @@ This session is similar to the [terminal access](../../manual/15_Interactive_ser
 
 Performing the same single command without launching an interactive session:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)  
+
+## Perform objects restore in a batch mode via `pipe`
+
+Users can restore files that were removed from the data storages with enabled versioning.  
+For these purposes, the Cloud Pipeline's CLI has the `restore` command which is capable of restoring a single object at a time.
+
+In **`v0.15`** the ability to recursively restore the whole folder, deleted from the storage, was implemented.  
+Now, if the source path is a directory, the `pipe storage restore` command gets the top-level deleted files from the source directory and restore them to the latest version.  
+Also, to the `restore` command some options were added:
+
+- `-r` or `--recursive` - flag allows to restore the whole directory hierarchy
+- `-i` or `--include [TEXT]` - flag allows to restore only files which names match the \[TEXT\] pattern and skip all others
+- `-e` or `--exclude [TEXT]` - flag allows to skip restoring of files which names match the \[TEXT\] pattern and restore all others
+
+![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeRestoreRecursive.png)
+
+**_Note_**: this feature is yet supported for `AWS` only.
+
+For more details about file restoring via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#restore-files).
 
 ***
 
