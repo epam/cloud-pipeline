@@ -49,8 +49,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void restoreFileVersion(T dataStorage, String path, String version)
             throws DataStorageException;
 
-    void restoreFolderVersion(T dataStorage, String path, String version,
-                              RestoreFolderVO restoreFolderVO) throws DataStorageException;
+    void restoreFolderVersion(T dataStorage, String path, RestoreFolderVO restoreFolderVO)
+            throws DataStorageException;
 
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);

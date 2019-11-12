@@ -83,7 +83,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public void restoreFolderVersion(final AzureBlobStorage dataStorage, final String path, final String version,
+    public void restoreFolderVersion(final AzureBlobStorage dataStorage, final String path,
                                      RestoreFolderVO restoreFolderVO) {
         throw new UnsupportedOperationException();
     }

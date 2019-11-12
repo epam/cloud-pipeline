@@ -91,7 +91,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -100,6 +99,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -302,19 +302,53 @@ public class S3Helper {
         moveS3Object(client, bucket, new MoveObjectRequest(path, version, path));
     }
 
-    public void restoreFolderVersion(String bucket, String path, String version, RestoreFolderVO restoreFolderVO) {
+    public void restoreFolderVersion(String bucket, String path, RestoreFolderVO restoreFolderVO) {
         AmazonS3 client = getDefaultS3Client();
-//        if (fileSizeExceedsLimit(client, bucket, path, version)) {
-//            throw new DataStorageException(String.format("Restoring file '%s' version '%s' was aborted because " +
-//                    "file size exceeds the limit of %s bytes", path, version, COPYING_FILE_SIZE_LIMIT));
-//        }
-        List<AbstractDataStorageItem> dataStorageItems = getItems(bucket, path, false, null, null)
-                .getResults();
-        if (restoreFolderVO.isRecursively()) {
+        getDeletedItems(bucket, path, true, null, null, restoreFolderVO)
+                .forEach(item -> {
+                    Comparator<DataStorageFile> changedComparator = Comparator
+                            .comparing(DataStorageFile::getChanged, Comparator.reverseOrder());
+                    DataStorageFile file = (DataStorageFile) item;
+                    String lastVersion = file.getVersions().values().stream()
+                            .map(abstractDataStorageItem -> (DataStorageFile) abstractDataStorageItem)
+                            .sorted(changedComparator).skip(1).iterator().next()
+                            .getVersion();
+                    moveS3Object(client, bucket, new MoveObjectRequest(item.getPath(), lastVersion, item.getPath()));
+                });
+    }
 
-        } else {
-            dataStorageItems.forEach(item -> moveS3Object(client, bucket, new MoveObjectRequest(path, version, item.getPath())));
+    public List<AbstractDataStorageItem> getDeletedItems(String bucket, String path, Boolean showVersion,
+                                                         Integer pageSize, String marker, RestoreFolderVO restoreFolderVO) {
+        String requestPath = Optional.ofNullable(path).orElse("");
+        AmazonS3 client = getDefaultS3Client();
+        if (!StringUtils.isNullOrEmpty(requestPath)) {
+            DataStorageItemType type = checkItemType(client, bucket, requestPath, showVersion);
+            if (type == DataStorageItemType.Folder && !requestPath.endsWith(ProviderUtils.DELIMITER)) {
+                requestPath += ProviderUtils.DELIMITER;
+            }
         }
+        return listVersions(client, bucket, requestPath, pageSize, marker).getResults().stream()
+                .peek(item -> {
+                    if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+                        restoreFolderVersion(bucket, item.getPath(), restoreFolderVO);
+                    }
+                })
+                .filter(i -> i.getType() == DataStorageItemType.File)
+                .filter(i -> ((DataStorageFile) i).getDeleteMarker())
+                .filter(i -> {
+                    if (restoreFolderVO.getContentFilter() != null) {
+                        boolean matching = false;
+                        for (String prefix : restoreFolderVO.getContentFilter()) {
+                            if (i.getName().endsWith(prefix)) {
+                                matching = true;
+                                break;
+                            }
+                        }
+                        return matching;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {

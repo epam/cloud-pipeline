@@ -83,7 +83,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -366,12 +365,12 @@ public class DataStorageManager implements SecuredEntityManager {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        if (restoreFolderVO != null){
-            if (restoreFolderVO.isRecursively() && version != null) {
+        if (restoreFolderVO != null) {
+            if (version != null) {
                 throw new DataStorageException(messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_FORBIDDEN_VERSION_WITH_RECURSION));
+                        MessageConstants.ERROR_DATASTORAGE_FORBIDDEN_VERSION_WITH_FOLDER_RESTORE, version));
             }
-            storageProviderManager.restoreFolderVersion(dataStorage, path, version, restoreFolderVO);
+            storageProviderManager.restoreFolderVersion(dataStorage, path, restoreFolderVO);
         } else {
             Assert.notNull(version, "Version is required to restore file version");
             storageProviderManager.restoreFileVersion(dataStorage, path, version);
