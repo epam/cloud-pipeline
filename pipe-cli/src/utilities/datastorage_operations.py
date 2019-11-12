@@ -23,7 +23,7 @@ from future.utils import iteritems
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
-from src.model.data_storage_wrapper import DataStorageWrapper
+from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.mount import Mount
@@ -219,18 +219,23 @@ class DataStorageOperations(object):
             sys.exit(1)
 
     @classmethod
-    def restore(cls, path, version):
+    def restore(cls, path, version, recursive, exclude, include):
         try:
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path)
+            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
             if source_wrapper is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
+                sys.exit(1)
+            if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
+                click.echo('Folder restore allowed for S3 provider only', err=True)
                 sys.exit(1)
             if not source_wrapper.bucket.policy.versioning_enabled:
                 click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
                 sys.exit(1)
-
+            if version and recursive:
+                click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
+                sys.exit(1)
             manager = source_wrapper.get_restore_manager()
-            manager.restore_version(version)
+            manager.restore_version(version, exclude, include, recursive=recursive)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)

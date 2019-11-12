@@ -296,7 +296,7 @@ class AbstractRestoreManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def restore_version(self, version):
+    def restore_version(self, version, exclude, include, recursive):
         """
         Restores item version.
 
