@@ -156,6 +156,7 @@ async function checkDockerImage (props) {
         if (!tool || !roleModel.executeAllowed(tool)) {
           return reportExecutionDenied();
         } else {
+          version = version || 'latest';
           const tags = dockerRegistries.toolTags.getToolTags(tool.id);
           await tags.fetchIfNeededOrWait();
           if (tags.error) {
