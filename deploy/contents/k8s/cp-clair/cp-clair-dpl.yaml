@@ -29,6 +29,9 @@ spec:
             - mountPath: /usr/local/share/ca-certificates/cp-docker-registry
               name: docker-pki
               readOnly: true
+            - mountPath: /opt/common/pki
+              name: common-pki
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /health
@@ -40,5 +43,8 @@ spec:
         - name: docker-pki
           hostPath:
             path: /opt/docker-registry/pki/
+        - name: common-pki
+          hostPath:
+            path: /opt/common/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
