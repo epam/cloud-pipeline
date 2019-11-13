@@ -87,6 +87,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -99,7 +100,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -108,6 +108,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -304,19 +305,12 @@ public class S3Helper {
 
     public void restoreFolderVersion(String bucket, String path, RestoreFolderVO restoreFolderVO) {
         AmazonS3 client = getDefaultS3Client();
-        getDeletedItems(bucket, path, true, null, null, restoreFolderVO)
-                .forEach(item -> {
-                    moveS3Object(client, bucket,
-                            new MoveObjectRequest(item.getPath(),
-                                    ((DataStorageFile) item).getVersions().values().stream()
-                                            .map(abstractDataStorageItem -> (DataStorageFile) abstractDataStorageItem)
-                                            .sorted(Comparator.comparing(DataStorageFile::getChanged, Comparator.reverseOrder()))
-                                            .skip(1).iterator().next()
-                                            .getVersion()
-                                    , item.getPath()
-                            )
-                    );
-                });
+        try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
+            getDeletedItems(bucket, path, true, null, null, restoreFolderVO)
+                    .forEach(item -> deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion()));
+        } catch (SdkClientException e) {
+            throw new DataStorageException(e.getMessage(), e.getCause());
+        }
     }
 
     public List<AbstractDataStorageItem> getDeletedItems(String bucket, String path, Boolean showVersion,
@@ -338,17 +332,11 @@ public class S3Helper {
                 .filter(i -> i.getType() == DataStorageItemType.File)
                 .filter(i -> ((DataStorageFile) i).getDeleteMarker())
                 .filter(i -> {
-                    if (restoreFolderVO.getContentFilter() != null) {
-                        boolean matching = false;
-                        for (String prefix : restoreFolderVO.getContentFilter()) {
-                            if (i.getName().endsWith(prefix)) {
-                                matching = true;
-                                break;
-                            }
-                        }
-                        return matching;
-                    }
-                    return true;
+                    final AntPathMatcher matcher = new AntPathMatcher();
+                    return Optional.ofNullable(restoreFolderVO.getIncludeList()).map(list ->
+                            list.stream().anyMatch(pattern -> matcher.match(pattern, i.getName()))).orElse(true)
+                            && Optional.ofNullable(restoreFolderVO.getExcludeList()).map(list ->
+                            list.stream().noneMatch(pattern -> matcher.match(pattern, i.getName()))).orElse(true);
                 })
                 .collect(Collectors.toList());
     }

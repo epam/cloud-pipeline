@@ -9,9 +9,6 @@ import java.util.List;
 @Setter
 public class RestoreFolderVO {
     private boolean recursively;
-    private List<String> contentFilter;
-
-
-
-
+    private List<String> includeList;
+    private List<String> excludeList;
 }
