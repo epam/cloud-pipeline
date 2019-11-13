@@ -306,14 +306,16 @@ public class S3Helper {
         AmazonS3 client = getDefaultS3Client();
         getDeletedItems(bucket, path, true, null, null, restoreFolderVO)
                 .forEach(item -> {
-                    Comparator<DataStorageFile> changedComparator = Comparator
-                            .comparing(DataStorageFile::getChanged, Comparator.reverseOrder());
-                    DataStorageFile file = (DataStorageFile) item;
-                    String lastVersion = file.getVersions().values().stream()
-                            .map(abstractDataStorageItem -> (DataStorageFile) abstractDataStorageItem)
-                            .sorted(changedComparator).skip(1).iterator().next()
-                            .getVersion();
-                    moveS3Object(client, bucket, new MoveObjectRequest(item.getPath(), lastVersion, item.getPath()));
+                    moveS3Object(client, bucket,
+                            new MoveObjectRequest(item.getPath(),
+                                    ((DataStorageFile) item).getVersions().values().stream()
+                                            .map(abstractDataStorageItem -> (DataStorageFile) abstractDataStorageItem)
+                                            .sorted(Comparator.comparing(DataStorageFile::getChanged, Comparator.reverseOrder()))
+                                            .skip(1).iterator().next()
+                                            .getVersion()
+                                    , item.getPath()
+                            )
+                    );
                 });
     }
 
