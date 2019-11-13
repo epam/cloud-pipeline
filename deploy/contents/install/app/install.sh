@@ -637,6 +637,15 @@ if is_service_requested cp-edge; then
         print_ok "   EDGE_EXTERNAL:         $EDGE_EXTERNAL"
 
         print_info "-> Deploying EDGE"
+        # If the "ingress" service type is used - EDGE shall still use "external-ip" or "node-port", as EDGE will act as an ingress proxy
+        # By default, "external-ip" is used. Unless overridden by "$CP_EDGE_KUBE_SERVICES_TYPE"
+        # After the external ip is set - CP_KUBE_SERVICES_TYPE is reverted back to "ingress"
+        CP_KUBE_SERVICES_TYPE_BKP="$CP_KUBE_SERVICES_TYPE"
+        if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
+            export CP_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-external-ip}"
+            print_info "\"ingress\" service types are used for the deployment. EDGE will be deployed as ${CP_KUBE_SERVICES_TYPE}. If this is not desired, override this by setting \"-env CP_EDGE_KUBE_SERVICES_TYPE=\""
+        fi
+
         set_kube_service_external_ip CP_EDGE_SVC_EXTERNAL_IP_LIST \
                                      CP_EDGE_NODE_IP \
                                      CP_EDGE_KUBE_NODE_NAME \
@@ -675,6 +684,9 @@ if is_service_requested cp-edge; then
         kubectl label svc cp-edge $__edge_external_schema__
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
+
+        export CP_KUBE_SERVICES_TYPE="$CP_KUBE_SERVICES_TYPE_BKP"
+        unset CP_KUBE_SERVICES_TYPE_BKP
     fi
     echo
 fi
