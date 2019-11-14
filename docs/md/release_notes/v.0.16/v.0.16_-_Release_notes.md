@@ -6,6 +6,7 @@
 - [Storage mounts data transfer restrictor](#storage-mounts-data-transfer-restrictor)
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
+- [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
 
 ***
 
