@@ -22,6 +22,7 @@ import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -317,7 +318,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(NFSDataStorage dataStorage, String path,
-                                                          String version) {
+                                                          String version, ContentDisposition contentDisposition) {
 
         String baseApiHostExternal = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST_EXTERNAL);
         String baseApiHost = StringUtils.isNotBlank(baseApiHostExternal) ? baseApiHostExternal :

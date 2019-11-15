@@ -42,6 +42,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
@@ -67,6 +68,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -84,6 +86,7 @@ import com.epam.pipeline.utils.FileContentUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -334,12 +337,16 @@ public class S3Helper {
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
-            String version) {
+                                                          String version, ContentDisposition contentDisposition) {
         AmazonS3 client = getDefaultS3Client();
         Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, path);
         request.setVersionId(version);
         request.setExpiration(expires);
+        if (contentDisposition != null) {
+            request.setResponseHeaders(new ResponseHeaderOverrides()
+                    .withContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path))));
+        }
         return generatePresignedUrl(client, expires, request);
     }
 

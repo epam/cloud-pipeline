@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -101,8 +102,9 @@ public final class StorageProviderManager {
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
-            String path, String version) {
-        return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version);
+                                                          String path, String version,
+                                                          ContentDisposition contentDisposition) {
+        return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,

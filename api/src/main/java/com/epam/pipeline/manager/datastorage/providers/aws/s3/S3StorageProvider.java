@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -133,8 +134,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override public DataStorageDownloadFileUrl generateDownloadURL(S3bucketDataStorage dataStorage,
-            String path, String version) {
-        return getS3Helper(dataStorage).generateDownloadURL(dataStorage.getPath(), path, version);
+                                                                    String path, String version,
+                                                                    ContentDisposition contentDisposition) {
+        return getS3Helper(dataStorage).generateDownloadURL(dataStorage.getPath(), path, version, contentDisposition);
     }
 
     @Override

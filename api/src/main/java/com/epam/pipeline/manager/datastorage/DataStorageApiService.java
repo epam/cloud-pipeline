@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -172,14 +173,15 @@ public class DataStorageApiService {
 
     @PreAuthorize(STORAGE_ID_READ)
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long id, final String path,
-            String version) {
-        return dataStorageManager.generateDataStorageItemUrl(id, path, version);
+            String version, ContentDisposition contentDisposition) {
+        return dataStorageManager.generateDataStorageItemUrl(id, path, version, contentDisposition);
     }
 
     @PreAuthorize(STORAGE_ID_OWNER)
-    public DataStorageDownloadFileUrl generateDataStorageItemUrlOwner(Long id, String path,
-            String version) {
-        return dataStorageManager.generateDataStorageItemUrl(id, path, version);
+    public DataStorageDownloadFileUrl generateDataStorageItemUrlOwner(
+            Long id, String path,
+            String version, ContentDisposition contentDisposition) {
+        return dataStorageManager.generateDataStorageItemUrl(id, path, version, contentDisposition);
     }
 
     @PreAuthorize(STORAGE_ID_READ)
