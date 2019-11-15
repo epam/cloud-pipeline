@@ -957,12 +957,24 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </Row>
       );
     }
+    const renderDownloadLink = (downloadUrl) => {
+      return (
+        <a
+          href={downloadUrl}
+          target="_blank"
+          download={this.props.entityId}
+          style={{marginLeft: 5, marginRight: 5}}
+        >
+          Download file
+        </a>
+      );
+    };
     if (mayBeBinary) {
       const downloadUrl = this.downloadUrl;
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File preview is not available. <a style={{marginLeft: 5, marginRight: 5}} href={downloadUrl} download={this.props.entityId}>Download file</a> to view full contents
+            File preview is not available. {renderDownloadLink(downloadUrl)} to view full contents
           </Row>
         );
       }
@@ -971,7 +983,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File is too large to be shown. <a style={{marginLeft: 5, marginRight: 5}} href={downloadUrl} download={this.props.entityId}>Download file</a> to view full contents
+            File is too large to be shown. {renderDownloadLink(downloadUrl)} to view full contents
           </Row>
         );
       }

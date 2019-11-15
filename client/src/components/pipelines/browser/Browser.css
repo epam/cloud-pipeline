@@ -159,6 +159,12 @@ th.metadata-column-value {
   text-align: right;
 }
 
+.item-actions-container {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .item-actions-container a,
 .item-actions-container button {
   margin-left: 5px;
@@ -525,4 +531,37 @@ tr.table-row-selected {
 .md-preview li {
   display: list-item;
   margin: 5px;
+}
+
+.download-button {
+  padding: 0 7px;
+  font-size: 12px;
+  border-radius: 4px;
+  height: 22px;
+  margin-bottom: 0;
+  font-weight: 500;
+  text-align: center;
+  touch-action: manipulation;
+  cursor: pointer;
+  background-image: none;
+  border: 1px solid #d9d9d9;
+  white-space: nowrap;
+  line-height: 22px;
+  user-select: none;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+  position: relative;
+  color: rgba(0, 0, 0, 0.65);
+  background-color: #fff;
+}
+
+.download-button i {
+  line-height: 1;
+  text-decoration: none;
+}
+
+.download-button:hover {
+  color: #108ee9;
+  background-color: #fff;
+  border-color: #108ee9;
+  text-decoration: none;
 }

@@ -351,26 +351,6 @@ export default class DataStorage extends React.Component {
     return labelsList.map(l => (<span className={styles.label} key={l.key}>{l.value}</span>));
   };
 
-  downloadSingleFile = async (event, item) => {
-    event.stopPropagation();
-    const hide = message.loading(`Fetching ${item.name} url...`, 0);
-    const request = new GenerateDownloadUrlRequest(this.props.storageId, item.path, item.version);
-    await request.fetch();
-    if (request.error) {
-      hide();
-      message.error(request.error);
-    } else {
-      hide();
-      const a = document.createElement('a');
-      a.href = request.value.url;
-      a.download = item.name;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-  };
-
   toggleGenerateDownloadUrlsModalFn = () => {
     let downloadUrlModalVisible = !this.state.downloadUrlModalVisible;
     if (downloadUrlModalVisible && this.state.selectedItems) {
@@ -708,11 +688,16 @@ export default class DataStorage extends React.Component {
     };
     if (item.downloadable) {
       actions.push(
-        <Button
-          id={`download ${item.name}`}
+        <a
           key="download"
-          onClick={(event) => this.downloadSingleFile(event, item)}
-          size="small"><Icon type="download" /></Button>
+          id={`download ${item.name}`}
+          className={styles.downloadButton}
+          href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
+          target="_blank"
+          download={item.name}
+        >
+          <Icon type="download" />
+        </a>
       );
     }
     if (item.editable) {
