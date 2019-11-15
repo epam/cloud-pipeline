@@ -217,7 +217,7 @@ export default class S3FilePreview extends React.Component {
     }
     if (this.filePreview.mayBeBinary) {
       if (this.props.downloadUrl.loaded) {
-        return <div className={styles.contentPreview}>Preview not available. <a href={this.props.downloadUrl.value.url} download={this.props.item.name}>Download file</a> to view full contents</div>;
+        return <div className={styles.contentPreview}>Preview not available. <a href={this.props.downloadUrl.value.url} target="_blank" download={this.props.item.name}>Download file</a> to view full contents</div>;
       }
       return <div className={styles.contentPreview}>Preview not available.</div>;
     }

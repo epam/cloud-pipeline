@@ -353,6 +353,7 @@ export default class DataStorage extends React.Component {
 
   downloadSingleFile = async (event, item) => {
     event.stopPropagation();
+    event.preventDefault();
     const hide = message.loading(`Fetching ${item.name} url...`, 0);
     const request = new GenerateDownloadUrlRequest(this.props.storageId, item.path, item.version);
     await request.fetch();
@@ -369,6 +370,7 @@ export default class DataStorage extends React.Component {
       a.click();
       document.body.removeChild(a);
     }
+    return false;
   };
 
   toggleGenerateDownloadUrlsModalFn = () => {
@@ -708,11 +710,17 @@ export default class DataStorage extends React.Component {
     };
     if (item.downloadable) {
       actions.push(
-        <Button
-          id={`download ${item.name}`}
+        <a
           key="download"
-          onClick={(event) => this.downloadSingleFile(event, item)}
-          size="small"><Icon type="download" /></Button>
+          id={`download ${item.name}`}
+          className={styles.downloadButton}
+          href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
+          target="_blank"
+          download={item.name}
+          onClick={(e) => this.downloadSingleFile(e, item)}
+        >
+          <Icon type="download" />
+        </a>
       );
     }
     if (item.editable) {

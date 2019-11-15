@@ -329,7 +329,7 @@ export default class DataStorageCodeForm extends React.Component {
           {
             this.codeTruncated && this.downloadUrl &&
             <Col>
-              File is too large to be shown. <a href={this.downloadUrl} download={this.props.file.name}>Download file</a> to view full contents
+              File is too large to be shown. <a href={this.downloadUrl} target="_blank" download={this.props.file.name}>Download file</a> to view full contents
             </Col>
           }
           <Col>
