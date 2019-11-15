@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -90,7 +91,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final AzureBlobStorage dataStorage,
                                                           final String path,
-                                                          final String version) {
+                                                          final String version, ContentDisposition contentDisposition) {
         final BlobSASPermission permission = new BlobSASPermission()
             .withRead(true)
             .withAdd(false)
