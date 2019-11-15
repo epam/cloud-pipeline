@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -93,7 +94,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final GSBucketStorage dataStorage, final String path,
-                                                          final String version) {
+                                                          final String version, ContentDisposition contentDisposition) {
         return getHelper(dataStorage).generateDownloadUrl(dataStorage, path, version);
     }
 

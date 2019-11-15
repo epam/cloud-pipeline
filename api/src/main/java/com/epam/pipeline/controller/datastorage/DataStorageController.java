@@ -26,6 +26,7 @@ import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -333,6 +334,26 @@ public class DataStorageController extends AbstractRestController {
         }
     }
 
+    @RequestMapping(value = "/datastorage/{id}/downloadRedirect", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Generates item's download url and redirect to it.",
+            notes = "Generates item's download url and redirect to it",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public String generateItemUrlAndRedirect(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(required = false) final ContentDisposition contentDisposition) {
+        final DataStorageDownloadFileUrl url = StringUtils.hasText(version) ?
+                dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version, contentDisposition) :
+                dataStorageApiService.generateDataStorageItemUrl(id, path, version, contentDisposition);
+        return String.format("redirect:%s", url.getUrl());
+    }
+
+
     @RequestMapping(value = "/datastorage/{id}/generateUrl", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
@@ -345,11 +366,14 @@ public class DataStorageController extends AbstractRestController {
     public Result<DataStorageDownloadFileUrl> generateDataStorageItemUrl(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version) {
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(required = false) final ContentDisposition contentDisposition) {
         if (StringUtils.hasText(version)) {
-            return Result.success(dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version));
+            return Result.success(dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version,
+                    contentDisposition));
         } else {
-            return Result.success(dataStorageApiService.generateDataStorageItemUrl(id, path, version));
+            return Result.success(dataStorageApiService.generateDataStorageItemUrl(id, path, version,
+                    contentDisposition));
         }
     }
 

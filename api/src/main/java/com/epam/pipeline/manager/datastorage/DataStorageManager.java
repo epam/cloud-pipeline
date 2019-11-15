@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -369,13 +370,13 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,
-            final String path, String version) {
+            final String path, String version, ContentDisposition contentDisposition) {
         AbstractDataStorage dataStorage = load(dataStorageId);
         if (StringUtils.isNotBlank(version)) {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        return storageProviderManager.generateDownloadURL(dataStorage, path, version);
+        return storageProviderManager.generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long dataStorageId,
@@ -385,7 +386,7 @@ public class DataStorageManager implements SecuredEntityManager {
         if (paths == null) {
             return urls;
         }
-        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null)));
+        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null, null)));
         return urls;
     }
 
