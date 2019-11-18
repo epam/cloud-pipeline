@@ -137,6 +137,10 @@ Need to consider in such case that the clone/pull/push URL changes too. Make sur
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
 
+## Allowing to expose compute node's FS to upload/download files
+
+The Cloud Pipeline GUI now displayes a "Browse filesystem" hyperlink in the Active Runs dashboard. User can click the link and a Storage browser Web GUI will be loaded. User is able to to view/download/upload/delete files/directories
+
 ***
 
 ## Notable Bug fixes
