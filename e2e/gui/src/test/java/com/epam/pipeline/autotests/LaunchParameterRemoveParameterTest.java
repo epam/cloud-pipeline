@@ -25,7 +25,8 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
 
-public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipelineRunningTest implements StorageHandling {
+public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipelineRunningTest
+        implements StorageHandling {
 
     private final static String shellTemplate = "/fileKeeper.sh";
 
