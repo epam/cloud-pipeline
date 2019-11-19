@@ -358,23 +358,25 @@ public class DataStorageManager implements SecuredEntityManager {
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
-    public void restoreVersion(Long id, String path, String version, RestoreFolderVO restoreFolderVO) throws DataStorageException {
+    public void restoreFileVersion(Long id, String path, String version) throws DataStorageException {
         Assert.notNull(path, "Path is required to restore file version");
+        Assert.notNull(version, "Version is required to restore file version");
         AbstractDataStorage dataStorage = load(id);
         if (!dataStorage.isVersioningEnabled()) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        if (restoreFolderVO != null) {
-            if (version != null) {
-                throw new DataStorageException(messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_FORBIDDEN_VERSION_WITH_FOLDER_RESTORE, version));
-            }
-            storageProviderManager.restoreFolderVersion(dataStorage, path, restoreFolderVO);
-        } else {
-            Assert.notNull(version, "Version is required to restore file version");
-            storageProviderManager.restoreFileVersion(dataStorage, path, version);
+        storageProviderManager.restoreFileVersion(dataStorage, path, version);
+    }
+
+    public void restoreFolderVersion(Long id, String path, RestoreFolderVO restoreFolderVO) throws DataStorageException{
+        Assert.notNull(path, "Path is required to restore folder");
+        AbstractDataStorage dataStorage = load(id);
+        if (!dataStorage.isVersioningEnabled()) {
+            throw new DataStorageException(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
+        storageProviderManager.restoreFolderVersion(dataStorage, path, restoreFolderVO);
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,

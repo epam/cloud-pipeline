@@ -67,6 +67,7 @@ public final class MessageConstants {
     public static final String ERROR_TEMPLATE_FOLDER_NAME_IS_EMPTY = "error.template.folder.name.empty";
     public static final String ERROR_FOLDER_INVALID_TEMPLATE = "error.folder.template.invalid";
     public static final String ERROR_FOLDER_INVALID_ID = "error.invalid.folder.id";
+    public static final String ERROR_FOLDER_INVALID_PATH = "error.invalid.folder.path";
 
     //Tools errors
     public static final String ERROR_TOOL_NOT_FOUND = "error.tool.not.found";
@@ -184,7 +185,6 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_ILLEGAL_DURATION_COMBINATION =
             "error.datastorage.rule.illegal.duration.combination";
     public static final String ERROR_INVALID_CREDENTIALS_REQUEST = "error.datastorage.invalid.request";
-    public static final String ERROR_DATASTORAGE_FORBIDDEN_VERSION_WITH_FOLDER_RESTORE = "error.datastorage.forbidden.version.recursion";
     public static final String ERROR_DATASTORAGE_VERSIONING_REQUIRED = "error.datastorage.versioning.required";
     public static final String ERROR_DATASTORAGE_CREATE_FAILED = "error.datastorage.create.failed";
     public static final String ERROR_DATASTORAGE_DELETE_FAILED = "error.datastorage.delete.failed";

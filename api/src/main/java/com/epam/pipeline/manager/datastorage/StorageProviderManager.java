@@ -95,6 +95,7 @@ public final class StorageProviderManager {
             throws DataStorageException {
         getStorageProvider(dataStorage).restoreFileVersion(dataStorage, path, version);
     }
+
     public void restoreFolderVersion(AbstractDataStorage dataStorage, String path, RestoreFolderVO restoreFolderVO)
             throws DataStorageException {
         getStorageProvider(dataStorage).restoreFolderVersion(dataStorage, path, restoreFolderVO);

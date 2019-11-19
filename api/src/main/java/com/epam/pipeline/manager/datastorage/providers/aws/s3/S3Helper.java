@@ -108,7 +108,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -303,42 +303,52 @@ public class S3Helper {
         moveS3Object(client, bucket, new MoveObjectRequest(path, version, path));
     }
 
-    public void restoreFolderVersion(String bucket, String path, RestoreFolderVO restoreFolderVO) {
+    public void restoreFolder(String bucket, String path, RestoreFolderVO restoreFolderVO) {
         AmazonS3 client = getDefaultS3Client();
+        String requestPath = Optional.ofNullable(path).orElse("");
+        if (!StringUtils.isNullOrEmpty(requestPath)) {
+            Assert.isTrue(checkItemType(client, bucket, requestPath, true) == DataStorageItemType.Folder,
+                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_INVALID_PATH, path));
+            ProviderUtils.withTrailingDelimiter(requestPath);
+        }
         try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
-            getDeletedItems(bucket, path, true, null, null, restoreFolderVO)
-                    .forEach(item -> deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion()));
+            restoreFolderFiles(client, bucket, path, restoreFolderVO, deleter);
         } catch (SdkClientException e) {
             throw new DataStorageException(e.getMessage(), e.getCause());
         }
     }
 
-    public List<AbstractDataStorageItem> getDeletedItems(String bucket, String path, Boolean showVersion,
-                                                         Integer pageSize, String marker, RestoreFolderVO restoreFolderVO) {
-        String requestPath = Optional.ofNullable(path).orElse("");
-        AmazonS3 client = getDefaultS3Client();
-        if (!StringUtils.isNullOrEmpty(requestPath)) {
-            DataStorageItemType type = checkItemType(client, bucket, requestPath, showVersion);
-            if (type == DataStorageItemType.Folder && !requestPath.endsWith(ProviderUtils.DELIMITER)) {
-                requestPath += ProviderUtils.DELIMITER;
-            }
-        }
-        return listVersions(client, bucket, requestPath, pageSize, marker).getResults().stream()
-                .peek(item -> {
-                    if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
-                        restoreFolderVersion(bucket, item.getPath(), restoreFolderVO);
-                    }
-                })
-                .filter(i -> i.getType() == DataStorageItemType.File)
-                .filter(i -> ((DataStorageFile) i).getDeleteMarker())
-                .filter(i -> {
-                    final AntPathMatcher matcher = new AntPathMatcher();
-                    return Optional.ofNullable(restoreFolderVO.getIncludeList()).map(list ->
-                            list.stream().anyMatch(pattern -> matcher.match(pattern, i.getName()))).orElse(true)
-                            && Optional.ofNullable(restoreFolderVO.getExcludeList()).map(list ->
-                            list.stream().noneMatch(pattern -> matcher.match(pattern, i.getName()))).orElse(true);
-                })
+    private void restoreFolderFiles(AmazonS3 client, String bucket, String path, RestoreFolderVO restoreFolderVO,
+                                    S3ObjectDeleter deleter) {
+        getDeletedFiles(client, bucket, path, restoreFolderVO, deleter)
+                .forEach(item -> deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion()));
+    }
+
+    private List<AbstractDataStorageItem> getDeletedFiles(AmazonS3 client, String bucket, String path,
+                                                          RestoreFolderVO restoreFolderVO, S3ObjectDeleter deleter) {
+        return listVersions(client, bucket, path, null, null).getResults().stream()
+                .peek(item -> recursiveRestoreFolderCall(item, client, bucket, restoreFolderVO, deleter))
+                .filter(item -> isFileDeletedAndShouldBeRestore(item, restoreFolderVO))
                 .collect(Collectors.toList());
+    }
+
+    private void recursiveRestoreFolderCall(AbstractDataStorageItem item, AmazonS3 client, String bucket,
+                                            RestoreFolderVO restoreFolderVO, S3ObjectDeleter deleter) {
+        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+            restoreFolderFiles(client, bucket, item.getPath(), restoreFolderVO, deleter);
+        }
+    }
+
+    private Boolean isFileDeletedAndShouldBeRestore(AbstractDataStorageItem item, RestoreFolderVO restoreFolderVO) {
+        final AntPathMatcher matcher = new AntPathMatcher();
+        return item.getType() == DataStorageItemType.File &&
+                ((DataStorageFile) item).getDeleteMarker() &&
+                isFileFromRestoreList(restoreFolderVO.getIncludeList(), pattern -> matcher.match(pattern, item.getName())) &&
+                isFileFromRestoreList(restoreFolderVO.getExcludeList(), pattern -> !matcher.match(pattern, item.getName()));
+    }
+
+    private Boolean isFileFromRestoreList(List<String> includeOrExcludeList, Predicate<String> pattern) {
+        return Optional.ofNullable(includeOrExcludeList).map(list -> list.stream().anyMatch(pattern)).orElse(true);
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {

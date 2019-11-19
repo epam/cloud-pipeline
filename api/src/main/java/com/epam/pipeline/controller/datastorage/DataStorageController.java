@@ -428,9 +428,25 @@ public class DataStorageController extends AbstractRestController {
     public Result restoreFileVersion(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version,
-            @RequestBody(required = false) RestoreFolderVO restoreFolderVO) {
-        dataStorageApiService.restoreFileVersion(id, path, version, restoreFolderVO);
+            @RequestParam(value = VERSION, required = false) final String version) {
+        dataStorageApiService.restoreFileVersion(id, path, version);
+        return Result.success();
+    }
+
+    @RequestMapping(value = "/datastorage/{id}/list/restore/folder", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Restores folder version.",
+            notes = "Restores folder version",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result restoreFolder(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestBody final RestoreFolderVO restoreFolderVO) {
+        dataStorageApiService.restoreFolderVersion(id, path, restoreFolderVO);
         return Result.success();
     }
 
