@@ -369,7 +369,8 @@ public class DataStorageManager implements SecuredEntityManager {
         storageProviderManager.restoreFileVersion(dataStorage, path, version);
     }
 
-    public void restoreFolder(Long id, String path, RestoreFolderVO restoreFolderVO) throws DataStorageException{
+    public void restoreFolder(final Long id, final String path, final RestoreFolderVO restoreFolderVO)
+            throws DataStorageException{
         Assert.notNull(path, "Path is required to restore folder");
         AbstractDataStorage dataStorage = load(id);
         if (!dataStorage.isVersioningEnabled()) {

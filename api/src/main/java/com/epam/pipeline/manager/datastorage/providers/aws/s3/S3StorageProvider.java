@@ -116,8 +116,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public void restoreFolder(S3bucketDataStorage dataStorage, String path, RestoreFolderVO restoreFolderVO)
-            throws DataStorageException {
+    public void restoreFolder(final S3bucketDataStorage dataStorage, final String path,
+                              final RestoreFolderVO restoreFolderVO) throws DataStorageException {
         getS3Helper(dataStorage).restoreFolder(dataStorage.getPath(), path, restoreFolderVO);
     }
 

@@ -433,11 +433,11 @@ public class DataStorageController extends AbstractRestController {
         return Result.success();
     }
 
-    @RequestMapping(value = "/datastorage/{id}/list/restore/folder", method = RequestMethod.POST)
+    @PostMapping(value = "/datastorage/{id}/list/restore/folder")
     @ResponseBody
     @ApiOperation(
-            value = "Restores folder version.",
-            notes = "Restores folder version",
+            value = "Restores folder.",
+            notes = "Restores folder.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)

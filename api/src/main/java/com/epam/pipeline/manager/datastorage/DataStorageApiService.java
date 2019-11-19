@@ -206,7 +206,7 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(STORAGE_ID_OWNER)
-    public void restoreFolder(Long id, String path, RestoreFolderVO restoreFolderVO)
+    public void restoreFolder(final Long id, final String path, final RestoreFolderVO restoreFolderVO)
             throws DataStorageException {
         dataStorageManager.restoreFolder(id, path, restoreFolderVO);
     }

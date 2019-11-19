@@ -303,9 +303,9 @@ public class S3Helper {
         moveS3Object(client, bucket, new MoveObjectRequest(path, version, path));
     }
 
-    public void restoreFolder(String bucket, String path, RestoreFolderVO restoreFolderVO) {
-        AmazonS3 client = getDefaultS3Client();
-        String requestPath = Optional.ofNullable(path).orElse("");
+    public void restoreFolder(final String bucket, final String path, final RestoreFolderVO restoreFolderVO) {
+        final AmazonS3 client = getDefaultS3Client();
+        final String requestPath = Optional.ofNullable(path).orElse("");
         if (!StringUtils.isNullOrEmpty(requestPath)) {
             Assert.isTrue(checkItemType(client, bucket, requestPath, true) == DataStorageItemType.Folder,
                     messageHelper.getMessage(MessageConstants.ERROR_FOLDER_INVALID_PATH, requestPath));
@@ -317,36 +317,41 @@ public class S3Helper {
         }
     }
 
-    private void restoreFolderFiles(AmazonS3 client, String bucket, String path, RestoreFolderVO restoreFolderVO,
-                                    S3ObjectDeleter deleter) {
+    private void restoreFolderFiles(final AmazonS3 client, final String bucket, final String path,
+                                    final RestoreFolderVO restoreFolderVO, final S3ObjectDeleter deleter) {
         getDeletedFiles(client, bucket, ProviderUtils.withTrailingDelimiter(path), restoreFolderVO, deleter)
                 .forEach(item -> deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion()));
     }
 
-    private List<AbstractDataStorageItem> getDeletedFiles(AmazonS3 client, String bucket, String path,
-                                                          RestoreFolderVO restoreFolderVO, S3ObjectDeleter deleter) {
+    private List<AbstractDataStorageItem> getDeletedFiles(final AmazonS3 client, final String bucket, final String path,
+                                                          final RestoreFolderVO restoreFolderVO,
+                                                          final S3ObjectDeleter deleter) {
         return listVersions(client, bucket, path, null, null).getResults().stream()
                 .peek(item -> recursiveRestoreFolderCall(item, client, bucket, restoreFolderVO, deleter))
                 .filter(item -> isFileDeletedAndShouldBeRestore(item, restoreFolderVO))
                 .collect(Collectors.toList());
     }
 
-    private void recursiveRestoreFolderCall(AbstractDataStorageItem item, AmazonS3 client, String bucket,
-                                            RestoreFolderVO restoreFolderVO, S3ObjectDeleter deleter) {
+    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final AmazonS3 client,
+                                            final String bucket, final RestoreFolderVO restoreFolderVO,
+                                            final S3ObjectDeleter deleter) {
         if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
             restoreFolderFiles(client, bucket, item.getPath(), restoreFolderVO, deleter);
         }
     }
 
-    private Boolean isFileDeletedAndShouldBeRestore(AbstractDataStorageItem item, RestoreFolderVO restoreFolderVO) {
+    private boolean isFileDeletedAndShouldBeRestore(final AbstractDataStorageItem item,
+                                                    final RestoreFolderVO restoreFolderVO) {
         final AntPathMatcher matcher = new AntPathMatcher();
         return item.getType() == DataStorageItemType.File &&
                 ((DataStorageFile) item).getDeleteMarker() &&
-                isFileFromRestoreList(restoreFolderVO.getIncludeList(), pattern -> matcher.match(pattern, item.getName())) &&
-                isFileFromRestoreList(restoreFolderVO.getExcludeList(), pattern -> !matcher.match(pattern, item.getName()));
+                isFileFromRestoreList(restoreFolderVO.getIncludeList(),
+                        includePattern -> matcher.match(includePattern, item.getName())) &&
+                !isFileFromRestoreList(restoreFolderVO.getExcludeList(),
+                        excludePattern -> matcher.match(excludePattern, item.getName()));
     }
 
-    private Boolean isFileFromRestoreList(List<String> includeOrExcludeList, Predicate<String> pattern) {
+    private boolean isFileFromRestoreList(final List<String> includeOrExcludeList, final Predicate<String> pattern) {
         return Optional.ofNullable(includeOrExcludeList).map(list -> list.stream().anyMatch(pattern)).orElse(true);
     }
 
