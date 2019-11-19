@@ -268,7 +268,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public void restoreFolderVersion(NFSDataStorage dataStorage, String path, RestoreFolderVO restoreFolderVO)
+    public void restoreFolder(NFSDataStorage dataStorage, String path, RestoreFolderVO restoreFolderVO)
             throws DataStorageException {
         throw new UnsupportedOperationException();
     }

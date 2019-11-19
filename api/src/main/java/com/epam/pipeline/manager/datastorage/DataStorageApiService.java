@@ -206,9 +206,9 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(STORAGE_ID_OWNER)
-    public void restoreFolderVersion(Long id, String path, RestoreFolderVO restoreFolderVO)
+    public void restoreFolder(Long id, String path, RestoreFolderVO restoreFolderVO)
             throws DataStorageException {
-        dataStorageManager.restoreFolderVersion(id, path, restoreFolderVO);
+        dataStorageManager.restoreFolder(id, path, restoreFolderVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "

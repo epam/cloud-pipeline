@@ -308,11 +308,10 @@ public class S3Helper {
         String requestPath = Optional.ofNullable(path).orElse("");
         if (!StringUtils.isNullOrEmpty(requestPath)) {
             Assert.isTrue(checkItemType(client, bucket, requestPath, true) == DataStorageItemType.Folder,
-                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_INVALID_PATH, path));
-            ProviderUtils.withTrailingDelimiter(requestPath);
+                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_INVALID_PATH, requestPath));
         }
         try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
-            restoreFolderFiles(client, bucket, path, restoreFolderVO, deleter);
+            restoreFolderFiles(client, bucket, requestPath, restoreFolderVO, deleter);
         } catch (SdkClientException e) {
             throw new DataStorageException(e.getMessage(), e.getCause());
         }
@@ -320,7 +319,7 @@ public class S3Helper {
 
     private void restoreFolderFiles(AmazonS3 client, String bucket, String path, RestoreFolderVO restoreFolderVO,
                                     S3ObjectDeleter deleter) {
-        getDeletedFiles(client, bucket, path, restoreFolderVO, deleter)
+        getDeletedFiles(client, bucket, ProviderUtils.withTrailingDelimiter(path), restoreFolderVO, deleter)
                 .forEach(item -> deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion()));
     }
 
