@@ -421,7 +421,7 @@ class ConfigureClusterDialog extends React.Component {
         <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
         <InputNumber
           min={this.state.setDefaultNodesCount ? 2 : 1}
-          max={this.launchMaxScheduledNumber}
+          max={this.launchMaxAutoScaledNumber}
           disabled={this.props.disabled}
           style={Object.assign({flex: 1}, this.getInputStyle('maxNodesCount'))}
           value={this.state.maxNodesCount}
@@ -507,6 +507,23 @@ class ConfigureClusterDialog extends React.Component {
     return undefined;
   }
 
+  @computed
+  get launchMaxAutoScaledNumber () {
+    const scheduledMaxPreferenceValue = this.launchMaxScheduledNumber;
+    if (this.props.preferences && this.props.preferences.loaded) {
+      const autoScalingMaxPreferenceValue = this.props.preferences
+        .getPreferenceValue('ge.autoscaling.scale.up.to.max');
+      if (autoScalingMaxPreferenceValue && !isNaN(autoScalingMaxPreferenceValue)) {
+        if (scheduledMaxPreferenceValue && !isNaN(scheduledMaxPreferenceValue)) {
+          // 'ge.autoscaling.scale.up.to.max' should not be less then 'launch.max.scheduled.number'
+          return Math.max(+autoScalingMaxPreferenceValue - 1, +scheduledMaxPreferenceValue);
+        }
+        return +autoScalingMaxPreferenceValue - 1;
+      }
+    }
+    return scheduledMaxPreferenceValue;
+  }
+
   validate = () => {
     let nodesCount = null;
     let maxNodesCount = null;
@@ -533,7 +550,7 @@ class ConfigureClusterDialog extends React.Component {
         } else if (+this.state.maxNodesCount <= 0) {
           maxNodesCount = 'Value should be greater than 0';
         } else {
-          const maxValue = this.launchMaxScheduledNumber;
+          const maxValue = this.launchMaxAutoScaledNumber;
           if (
             maxValue &&
             !isNaN(maxValue) && +maxValue > 0 &&
