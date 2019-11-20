@@ -139,14 +139,31 @@ For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_conf
 
 ## Allowing to expose compute node's FS to upload/download files
 
-For the interactive runs users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+For the `interactive runs` users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+Cloud Pipeline supports a number of options for the user to perform that data transfers for the interactive runs:
 
-Previously, view, download, upload and delete operations required an intermediate location to be used. 
-In the current version, a Browse filesystem hyperlink is displayed in the Active Runs dashboard:
+- via the Object Storage (using Web GUI or CLI)
+- via the File Storage (using Web GUI, CLI, WebDav-mounted-drive)
+
+Previously, view, download, upload and delete operations required an intermediate location (bucket or fs) to be used. It might confuse user when a small dataset shall be loaded to the specific location within a run's filesystem.
+
+In the current version, direct exposure of the run's filesystem is supported. The "Browse" hyperlink is displayed in the **Active Run** dashboard after a job had been initialized:         
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_1.png)
 
 User can click the link and a Storage browser Web GUI will be loaded:
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_2.png)
+
+User is able to:
+- view files and directories
+- download and delete files and directories
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_3.png)
+- upload files and directories          
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_4.png)
+- search files and directories
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_5.png)
+
+For more details see [here](../..\manual\15_Interactive_services\15.4._Expose_node_filesystem.md).
+
 
 ***
 
