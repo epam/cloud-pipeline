@@ -60,6 +60,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings({"unused", "PMD.TooManyStaticImports"})
 public class S3HelperTest {
 
     private static final String BUCKET = "bucket";
@@ -234,13 +235,6 @@ public class S3HelperTest {
                 Arguments.of(true, null, Collections.singletonList("*.jpg"), Collections.emptyMap())
         );
     }
-
-
-
-    public void testRestoreFolderShouldRestoreProperFiles() {
-
-    }
-
 
     @Test
     public void testMoveFolderShouldThrowIfAtLeastOneOfItsFilesSizeExceedTheLimit() {
