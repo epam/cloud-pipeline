@@ -108,7 +108,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -345,14 +344,10 @@ public class S3Helper {
         final AntPathMatcher matcher = new AntPathMatcher();
         return item.getType() == DataStorageItemType.File &&
                 ((DataStorageFile) item).getDeleteMarker() &&
-                isFileFromRestoreList(restoreFolderVO.getIncludeList(),
-                        includePattern -> matcher.match(includePattern, item.getName())) &&
-                !isFileFromRestoreList(restoreFolderVO.getExcludeList(),
-                        excludePattern -> matcher.match(excludePattern, item.getName()));
-    }
-
-    private boolean isFileFromRestoreList(final List<String> includeOrExcludeList, final Predicate<String> pattern) {
-        return Optional.ofNullable(includeOrExcludeList).map(list -> list.stream().anyMatch(pattern)).orElse(true);
+                Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
+                        .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
+                Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
+                        .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {
