@@ -7,6 +7,7 @@
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
 - [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
+- [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-FS-to-upload-and-download-files)
 
 ***
 
@@ -137,7 +138,7 @@ Need to consider in such case that the clone/pull/push URL changes too. Make sur
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
 
-## Allowing to expose compute node's FS to upload/download files
+## Allowing to expose compute node FS to upload and download files
 
 For the `interactive runs` users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
 Cloud Pipeline supports a number of options for the user to perform that data transfers for the interactive runs:
