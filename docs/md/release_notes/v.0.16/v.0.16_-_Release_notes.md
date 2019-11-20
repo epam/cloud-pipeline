@@ -139,7 +139,14 @@ For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_conf
 
 ## Allowing to expose compute node's FS to upload/download files
 
-The Cloud Pipeline GUI now displayes a "Browse filesystem" hyperlink in the Active Runs dashboard. User can click the link and a Storage browser Web GUI will be loaded. User is able to to view/download/upload/delete files/directories
+For the interactive runs users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+
+Previously, view, download, upload and delete operations required an intermediate location to be used. 
+In the current version, a Browse filesystem hyperlink is displayed in the Active Runs dashboard:
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_1.png)
+
+User can click the link and a Storage browser Web GUI will be loaded:
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_2.png)
 
 ***
 
