@@ -56,7 +56,6 @@ test {
             println "Results: ${result.resultType} (${result.testCount} total, ${result.successfulTestCount} success, ${result.failedTestCount} failure, ${result.skippedTestCount} skipped)"
         }
     }
-    useJUnitPlatform()
 }
 
 sourceCompatibility = 1.8
@@ -202,12 +201,6 @@ dependencies {
 
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
-    // JUnit Jupiter
-    testImplementation('org.junit.jupiter:junit-jupiter:5.4.0')
-
-// JUnit Vintage
-    testCompileOnly('junit:junit:4.12')
-    testRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.4.0')
 }
 
 // >>>>> processes profiles
