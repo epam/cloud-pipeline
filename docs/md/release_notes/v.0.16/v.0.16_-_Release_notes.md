@@ -163,7 +163,7 @@ User is able to:
 - search files and directories  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_5.png)
 
-For more details see [here](../..\manual\15_Interactive_services\15.4._Expose_node_filesystem.md).
+For more details see [here](../../manual/15_Interactive_services/15.4._Expose_node_filesystem.md).
 
 ***
 
