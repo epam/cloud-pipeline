@@ -20,6 +20,8 @@ import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthAzurePageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.WebDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -30,6 +32,8 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.*;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest {
 
@@ -52,11 +56,17 @@ public abstract class AbstractBfxPipelineTest {
         new AuthAzurePageAO()
                 .login(C.LOGIN)
                 .signIn();
-        open(String.format("https://%s:%s@%s", C.LOGIN, C.PASSWORD, C.ROOT_ADDRESS));
+        sleep(3, SECONDS);
+
+        WebDriver webDriver = WebDriverRunner.getWebDriver();
+        webDriver.switchTo().alert().sendKeys(C.LOGIN);
+        webDriver.switchTo().alert().sendKeys(String.valueOf(Keys.TAB));
+        webDriver.switchTo().alert().sendKeys(C.PASSWORD);
+        webDriver.switchTo().alert().accept();
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
-        sleep(2000);
+        sleep(3, SECONDS);
     }
 
     @AfterMethod
