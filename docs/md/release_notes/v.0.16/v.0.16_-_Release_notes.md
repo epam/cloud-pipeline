@@ -165,7 +165,6 @@ User is able to:
 
 For more details see [here](../..\manual\15_Interactive_services\15.4._Expose_node_filesystem.md).
 
-
 ***
 
 ## Notable Bug fixes
