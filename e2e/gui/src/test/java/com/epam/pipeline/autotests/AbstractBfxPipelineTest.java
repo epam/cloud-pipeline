@@ -17,7 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.WebDriverRunner;
-import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
+import com.epam.pipeline.autotests.ao.AuthAzurePageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.ITestResult;
@@ -49,10 +49,10 @@ public abstract class AbstractBfxPipelineTest {
         robot.keyPress(122);
         robot.keyRelease(122);
 
-        new AuthenticationPageAO()
+        new AuthAzurePageAO()
                 .login(C.LOGIN)
-                .password(C.PASSWORD)
                 .signIn();
+        open(String.format("https://%s:%s@%s", C.LOGIN, C.PASSWORD, C.ROOT_ADDRESS));
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
