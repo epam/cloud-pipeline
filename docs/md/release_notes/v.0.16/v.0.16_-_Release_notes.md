@@ -158,13 +158,12 @@ User is able to:
 - view files and directories
 - download and delete files and directories
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_3.png)
-- upload files and directories          
+- upload files and directories  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_4.png)
-- search files and directories
+- search files and directories  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_5.png)
 
-For more details see [here](../..\manual\15_Interactive_services\15.4._Expose_node_filesystem.md).
-
+For more details see [here](../../manual/15_Interactive_services/15.4._Expose_node_filesystem.md).
 
 ***
 
