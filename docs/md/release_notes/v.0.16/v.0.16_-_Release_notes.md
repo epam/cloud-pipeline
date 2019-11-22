@@ -7,7 +7,7 @@
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
 - [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
-- [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-FS-to-upload-and-download-files)
+- [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 
 ***
 
@@ -148,15 +148,16 @@ Cloud Pipeline supports a number of options for the user to perform that data tr
 
 Previously, view, download, upload and delete operations required an intermediate location (bucket or fs) to be used. It might confuse user when a small dataset shall be loaded to the specific location within a run's filesystem.
 
-In the current version, direct exposure of the run's filesystem is supported. The "Browse" hyperlink is displayed in the **Active Run** dashboard after a job had been initialized:         
+In the current version, direct exposure of the run's filesystem is supported. The **BROWSE** hyperlink is displayed on the **Run logs** page after a job had been initialized:  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_1.png)
 
-User can click the link and a Storage browser Web GUI will be loaded:
+User can click the link and a Storage browser Web GUI will be loaded:  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_2.png)
 
 User is able to:
+
 - view files and directories
-- download and delete files and directories
+- download and delete files and directories  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_3.png)
 - upload files and directories  
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_4.png)
