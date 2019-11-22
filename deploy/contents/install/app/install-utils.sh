@@ -804,35 +804,75 @@ function prepare_kube_dns {
     if ! is_kube_dns_configured_for_custom_entries; then
         # 1. Mount hosts config map into dnsmasq
         print_info "Configuring kube-dns for custom entries support"
+        export CP_KUBE_DNS_RESOLV_CONF="${CP_KUBE_DNS_RESOLV_CONF:-/opt/dns/resolv.conf}"
+        if [ ! -f "$CP_KUBE_DNS_RESOLV_CONF" ]; then
+            mkdir -p $(dirname "$CP_KUBE_DNS_RESOLV_CONF")
+            \cp /etc/resolv.conf "$CP_KUBE_DNS_RESOLV_CONF"
+        fi
+        export CP_KUBE_DNS_NO_FORWARD_DOMAIN="${CP_KUBE_DNS_NO_FORWARD_DOMAIN:-localhost}"
+
+local kube_dns_config_patch="{}"
+read -r -d '' search_elastic_index_type_prefix <<-EOF
+[
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/-",
+        "value": {
+            "configMap": {
+                "name": "cp-dnsmasq-hosts",
+                "optional": true
+            },
+            "name": "cp-dnsmasq-hosts"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/1/volumeMounts/-",
+        "value": {
+            "mountPath": "/etc/hosts.d",
+            "name": "cp-dnsmasq-hosts"
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/1/args/-",
+        "value": "--hostsdir=/etc/hosts.d"
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/volumes/-",
+        "value": {
+            "name": "cp-kubedns-resolv-conf",
+            "hostPath": {
+                "path": "$CP_KUBE_DNS_RESOLV_CONF"
+            }
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/volumeMounts/-",
+        "value": {
+            "mountPath": "/etc/resolv.conf",
+            "name": "cp-kubedns-resolv-conf",
+            "readOnly": true
+        }
+    },
+    {
+        "op": "add",
+        "path": "/spec/template/spec/containers/0/args/-",
+        "value": [ 
+            "--bind-interfaces",
+            "--cache-size=15000",
+            "--local=/$CP_KUBE_DNS_NO_FORWARD_DOMAIN/"
+        ]
+    }
+]
+EOF
+
         kubectl patch deployment kube-dns \
             --namespace kube-system \
             --type='json' \
-            -p='[
-                    {
-                        "op": "add",
-                        "path": "/spec/template/spec/volumes/-",
-                        "value": {
-                            "configMap": {
-                                "name": "cp-dnsmasq-hosts",
-                                "optional": true
-                            },
-                            "name": "cp-dnsmasq-hosts"
-                        }
-                    },
-                    {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/volumeMounts/-",
-                        "value": {
-                            "mountPath": "/etc/hosts.d",
-                            "name": "cp-dnsmasq-hosts"
-                        }
-                    },
-                    {
-                        "op": "add",
-                        "path": "/spec/template/spec/containers/1/args/-",
-                        "value": "--hostsdir=/etc/hosts.d"
-                    }
-                ]'
+            -p="$search_elastic_index_type_prefix"
         if [ $? -ne 0 ]; then
             print_err "Unable to patch kube-dns deployment"
             return 1
