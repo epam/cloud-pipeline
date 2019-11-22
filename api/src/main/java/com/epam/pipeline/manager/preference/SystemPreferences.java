@@ -66,6 +66,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -494,6 +496,12 @@ public class SystemPreferences {
     public static final IntPreference GE_AUTOSCALING_SCALE_DOWN_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.down.timeout", null,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
+    public static final IntPreference GE_AUTOSCALING_SCALE_UP_TO_MAX =
+            new IntPreference("ge.autoscaling.scale.up.to.max", null,
+                    GRID_ENGINE_AUTOSCALING_GROUP,
+                    isNotLessThanValueOrNull(LAUNCH_MAX_SCHEDULED_NUMBER.getKey()),
+                    LAUNCH_MAX_SCHEDULED_NUMBER);
+
 
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
