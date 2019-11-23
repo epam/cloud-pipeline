@@ -340,6 +340,7 @@ public class S3Helper {
         final AntPathMatcher matcher = new AntPathMatcher();
         return item.getType() == DataStorageItemType.File &&
                 ((DataStorageFile) item).getDeleteMarker() &&
+                ((DataStorageFile) item).getVersion() != null &&
                 Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
                         .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
                 Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
