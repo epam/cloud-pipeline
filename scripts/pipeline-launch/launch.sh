@@ -940,6 +940,7 @@ then
     cp_cap_publish
 
     echo "Waiting for cluster of $node_count nodes"
+    ssh_setup_global_keys
     cluster_setup_workers "$node_count"
     _SETUP_RESULT=$?
 
@@ -954,6 +955,8 @@ then
       # If this is a common run (not a cluster - still publish scripts for CAPs)
       export cluster_role="master"
       cp_cap_publish
+
+      ssh_setup_global_keys
 fi
 
 if [ "$_SETUP_RESULT" -ne 0 ];
