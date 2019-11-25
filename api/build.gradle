@@ -126,6 +126,7 @@ dependencies {
 
     //Lombok
     compileOnly "org.projectlombok:lombok:1.16.16"
+    annotationProcessor "org.projectlombok:lombok:1.16.16"
     testCompileOnly "org.projectlombok:lombok:1.16.16"
 
 
