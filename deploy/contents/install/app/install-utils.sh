@@ -836,7 +836,12 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     {
         "op": "add",
         "path": "/spec/template/spec/containers/1/args/-",
-        "value": "--hostsdir=/etc/hosts.d"
+        "value": [ 
+            "--hostsdir=/etc/hosts.d",
+            "--bind-interfaces",
+            "--cache-size=15000",
+            "--local=/$CP_KUBE_DNS_NO_FORWARD_DOMAIN/"
+        ]
     },
     {
         "op": "add",
@@ -856,15 +861,6 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
             "name": "cp-kubedns-resolv-conf",
             "readOnly": true
         }
-    },
-    {
-        "op": "add",
-        "path": "/spec/template/spec/containers/0/args/-",
-        "value": [ 
-            "--bind-interfaces",
-            "--cache-size=15000",
-            "--local=/$CP_KUBE_DNS_NO_FORWARD_DOMAIN/"
-        ]
     }
 ]
 EOF
