@@ -695,8 +695,8 @@ def increment_or_fail(num_rep, rep, error_message, ec2_client=None, kill_instanc
             pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                      'See more details below'.format(kill_instance_id_on_fail))
             instance = ec2_client.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
-            if instance["SpotInstanceRequestId"]:
-                spot_request_id = instance["SpotInstanceRequestId"]
+            if 'SpotInstanceRequestId' in instance and instance['SpotInstanceRequestId']:
+                spot_request_id = instance['SpotInstanceRequestId']
             terminate_instance(ec2_client, kill_instance_id_on_fail, spot_request_id)
         raise RuntimeError(error_message)
     return rep
