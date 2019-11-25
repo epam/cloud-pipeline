@@ -67,7 +67,6 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
-import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
