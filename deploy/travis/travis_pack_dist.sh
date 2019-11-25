@@ -52,7 +52,7 @@ mv pipe-cli/dist/win/pipe.zip $API_STATIC_PATH/
 
 # Create distribution tgz
 cd ..
-./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
+./gradlew clean distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
                     -Pprofile=release \
                     -x test \
                     -x client:buildUI \
