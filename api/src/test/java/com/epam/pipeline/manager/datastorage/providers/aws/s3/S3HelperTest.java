@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -64,10 +65,11 @@ public class S3HelperTest {
     private static final String OLD_PATH = "oldPath";
     private static final String NEW_PATH = "newPath";
     private static final String VERSION = "version";
+    private static final String OLD_VERSION = "oldVersion";
     private static final String NO_VERSION = null;
     private static final String FIRST_FILE_PATH = OLD_PATH + "/firstFile.jpg";
     private static final String SECOND_FILE_PATH = OLD_PATH + "/" + NEW_PATH + "/secondFile.png";
-    private static final String THIRD_FILE_PATH = OLD_PATH + "/" + NEW_PATH + "/secondFile.png";
+    private static final String JPG_PATTERN = "*.jpg";
     private static final long EXCEEDED_OBJECT_SIZE = Long.MAX_VALUE;
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
 
@@ -189,49 +191,49 @@ public class S3HelperTest {
     @Test
     public void testRestoreFolderWithExcludeListShouldNotRestoreExcludeFiles() {
         helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true,
-                null, Collections.singletonList("*.jpg"), null));
+                null, Collections.singletonList(JPG_PATTERN), null));
         verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
                 Collections.singletonMap(SECOND_FILE_PATH, VERSION))));
     }
 
     @Test
-    public void testRestoreFolderWithIncludeListShouldRestoreOnlyIncludeFiles0() {
+    public void testRestoreFolderWithIncludeListAndNoRecursionShouldRestoreOnlyIncludeFiles() {
         helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false,
-                Collections.singletonList("*.jpg"), null, null));
+                Collections.singletonList(JPG_PATTERN), null, null));
         verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
                 Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
     }
 
     @Test
-    public void testRestoreFolderWithIncludeListShouldRestoreOnlyIncludeFiles1() {
+    public void testRestoreFolderWithIncludeListAndWithRecursionShouldRestoreOnlyIncludeFiles() {
         helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true,
-                Collections.singletonList("*.jpg"), null, null));
+                Collections.singletonList(JPG_PATTERN), null, null));
         verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
                 Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
     }
 
     @Test
     public void testRestoreFolderShouldRestoreOnlyFilesWithDeleteMarker(){
-        final S3VersionSummary thirdFileSummary = new S3VersionSummary();
-        thirdFileSummary.setKey(THIRD_FILE_PATH);
-        thirdFileSummary.setIsDeleteMarker(false); // This condition means that this file should NOT be restore
-        thirdFileSummary.setVersionId(VERSION);
-        thirdFileSummary.setLastModified(new Date());
-        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true, null, null,
-                thirdFileSummary));
+        final S3VersionSummary withoutDeleteMarkerFileSummary = new S3VersionSummary();
+        withoutDeleteMarkerFileSummary.setKey(SECOND_FILE_PATH);
+        withoutDeleteMarkerFileSummary.setIsDeleteMarker(false); // File should NOT be restore
+        withoutDeleteMarkerFileSummary.setVersionId(VERSION);
+        withoutDeleteMarkerFileSummary.setLastModified(new Date());
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false, null, null,
+                withoutDeleteMarkerFileSummary));
         verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
                 Collections.singletonMap(OLD_PATH + "/firstFile.jpg", VERSION))));
     }
 
     @Test
     public void testRestoreFolderShouldRestoreOnlyLastFileVersion(){
-        final S3VersionSummary thirdFileSummary = new S3VersionSummary();
-        thirdFileSummary.setKey(THIRD_FILE_PATH);
-        thirdFileSummary.setIsDeleteMarker(true);
-        thirdFileSummary.setVersionId(NO_VERSION); // This condition means that this file should NOT be restore
-        thirdFileSummary.setLastModified(new Date());
-        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true, null, null,
-                thirdFileSummary));
+        final S3VersionSummary anotherFirstFileSummary = new S3VersionSummary();
+        anotherFirstFileSummary.setKey(FIRST_FILE_PATH);
+        anotherFirstFileSummary.setIsDeleteMarker(true);
+        anotherFirstFileSummary.setVersionId(OLD_VERSION);
+        anotherFirstFileSummary.setLastModified(LocalDate.parse("1995-01-24").toDate()); // Old version of file
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false, null, null,
+                anotherFirstFileSummary));
         verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
                 Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
     }
@@ -351,12 +353,12 @@ public class S3HelperTest {
         secondFileSummary.setVersionId(VERSION);
         secondFileSummary.setLastModified(new Date());
         when(firstFolder.getCommonPrefixes()).thenReturn(Collections.singletonList(OLD_PATH + "/" + NEW_PATH));
-        when(firstFolder.getVersionSummaries()).thenReturn(Collections.singletonList(firstFileSummary));
-        when(secondFolder.getVersionSummaries()).thenReturn(
+        when(firstFolder.getVersionSummaries()).thenReturn(
                 Optional.ofNullable(optionalFileSummary)
-                        .map(Collections::singletonList)
-                        .orElse(Collections.singletonList(secondFileSummary))
+                        .map(fileSummary -> Arrays.asList(firstFileSummary, fileSummary))
+                        .orElse(Collections.singletonList(firstFileSummary))
         );
+        when(secondFolder.getVersionSummaries()).thenReturn(Collections.singletonList(secondFileSummary));
         when(amazonS3.listVersions(any(ListVersionsRequest.class))).thenReturn(firstFolder, firstFolder, secondFolder);
         final RestoreFolderVO restoreFolderVO = new RestoreFolderVO();
         restoreFolderVO.setRecursively(recursive);
