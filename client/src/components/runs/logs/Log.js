@@ -1069,30 +1069,30 @@ class Logs extends localization.LocalizedReactComponent {
             </td>
           </tr>
         );
-        if (this.props.run.value.status === 'RUNNING' && roleModel.isOwner(this.props.run.value)) {
-          let shareList = 'Not shared (click to configure)';
-          if (this.props.run.value.runSids && (this.props.run.value.runSids || []).length > 0) {
-            shareList = (this.props.run.value.runSids || [])
-              .map((s, index, array) => {
-                return (
-                  <span
-                    key={s.name}
-                    style={{marginRight: 5}}>
-                    <UserName userName={s.name} />
-                    {
-                      index < array.length - 1 ? ',' : undefined
-                    }
-                  </span>
-                );
-              });
-          }
-          share = (
-            <tr>
-              <th>Share with:</th>
-              <td><a onClick={this.openShareDialog}>{shareList}</a></td>
-            </tr>
-          );
+      }
+      if (this.props.run.value.status === 'RUNNING' && roleModel.isOwner(this.props.run.value)) {
+        let shareList = 'Not shared (click to configure)';
+        if (this.props.run.value.runSids && (this.props.run.value.runSids || []).length > 0) {
+          shareList = (this.props.run.value.runSids || [])
+            .map((s, index, array) => {
+              return (
+                <span
+                  key={s.name}
+                  style={{marginRight: 5}}>
+                  <UserName userName={s.name} />
+                  {
+                    index < array.length - 1 ? ',' : undefined
+                  }
+                </span>
+              );
+            });
         }
+        share = (
+          <tr>
+            <th>Share with:</th>
+            <td><a onClick={this.openShareDialog}>{shareList}</a></td>
+          </tr>
+        );
       }
       const pipeline = pipelineName && pipelineId && version
         ? {name: pipelineName, id: pipelineId, version: version}
@@ -1451,6 +1451,7 @@ class Logs extends localization.LocalizedReactComponent {
           {this.renderContent(selectedTask)}
         </Row>
         <ShareWithForm
+          endpointsAvailable={!!this.endpointAvailable}
           visible={this.state.shareDialogOpened}
           roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
           sids={this.props.run.loaded ? (this.props.run.value.runSids || []).map(s => s) : []}
