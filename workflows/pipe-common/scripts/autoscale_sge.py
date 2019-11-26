@@ -165,10 +165,14 @@ class GridEngineJob:
 class GridEngine:
     _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     _PARALLEL_ENVIRONMENT = os.getenv('CP_CAP_SGE_PE_NAME', 'local')
+    _NODE_CORES = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', 0))
     _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -sp %s | grep "^slots" | awk \'{print $2}\''
     _REPLACE_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -rattr pe slots %s %s'
+    _SHOW_JOB_PARALLEL_ENVIRONMENT = 'qstat -j %s | grep "^parallel environment" | awk \'{print $3}\''
+    _SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS = 'qstat -j %s | grep "^parallel environment" | awk \'{print $5}\''
+    _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
@@ -242,6 +246,21 @@ class GridEngine:
         else:
             return line[indentations[index]:indentations[min(len(indentations) - 1, index + 1)]].strip()
 
+    def validate_job(self, job_id, max_nodes):
+        result = True
+        pe = self.get_job_parallel_environment(job_id)
+        job_slots = self.get_job_slots(job_id)
+        allocation_rule = self.get_pe_allocation_rule(pe) if pe else "$pe_slots"
+        Logger.info('Validation of job with id: {job_id}'.format(job_id=job_id))
+        Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule, slots=job_slots))
+        if job_slots and allocation_rule:
+            if allocation_rule == "$pe_slots":
+                result = job_slots <= self._NODE_CORES
+            elif allocation_rule == "$round_robin" or allocation_rule == "$fill_up":
+                result = job_slots <= self._NODE_CORES * max_nodes
+        Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job_id, res=result))
+        return result
+
     def disable_host(self, host, queue=_MAIN_Q):
         """
         Disables host to prevent receiving new jobs from the given queue.
@@ -288,6 +307,30 @@ class GridEngine:
         :param pe: Parallel environment to return number of slots for.
         """
         return int(self.cmd_executor.execute(GridEngine._SHOW_PARALLEL_ENVIRONMENT_SLOTS % pe).strip())
+
+    def get_pe_allocation_rule(self, pe):
+        """
+        Returns number of the parallel environment slots.
+
+        :param pe: Parallel environment to return number of slots for.
+        """
+        return self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe).strip()
+
+    def get_job_parallel_environment(self, job_id):
+        """
+        Returns PE of the specific job.
+
+        :param job_id: id of a SGE job
+        """
+        return str(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT % job_id).strip())
+
+    def get_job_slots(self, job_id):
+        """
+        Returns PE of the specific job.
+
+        :param job_id: id of a SGE job
+        """
+        return int(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS % job_id).strip())
 
     def delete_host(self, host, queue=_MAIN_Q, hostgroup=_ALL_HOSTS, skip_on_failure=False):
         """
@@ -775,7 +818,8 @@ class GridEngineAutoscaler:
         additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(additional_hosts))
         updated_jobs = self.grid_engine.get_jobs()
-        pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]
+        pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING
+                                                       and self.cancel_job_if_invalid(job)]
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
@@ -845,6 +889,14 @@ class GridEngineAutoscaler:
         """
         Logger.info('Start grid engine SCALING DOWN for %s host.' % child_host)
         return self.scale_down_handler.scale_down(child_host)
+
+    def cancel_job_if_invalid(self, job):
+        if not self.grid_engine.validate_job(job.id, int(self.max_additional_hosts) + 1):
+            Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
+                        'it will rejected.'.format(job_id=job.id))
+            self.grid_engine.kill_jobs([job])
+            return False
+        return True
 
 
 class GridEngineWorkerValidator:
