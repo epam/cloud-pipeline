@@ -444,7 +444,7 @@ public class DataStorageController extends AbstractRestController {
             })
     public Result restoreFolder(
             @PathVariable(value = ID) final Long id,
-            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = PATH, required = false) final String path,
             @RequestBody final RestoreFolderVO restoreFolderVO) {
         dataStorageApiService.restoreFolder(id, path, restoreFolderVO);
         return Result.success();
