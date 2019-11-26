@@ -126,7 +126,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/restapi/swagger-ui.html",
             "/restapi/webjars/springfox-swagger-ui/**",
             "/restapi/v2/api-docs/**",
-            "/restapi/proxy/**"
+            "/restapi/proxy/**",
+            "/launch.sh", "/PipelineCLI.tar.gz",
+            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/pipe",
+            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
+            "/pipe-el6", "/pipe-el6.tar.gz"
         };
     }
 
