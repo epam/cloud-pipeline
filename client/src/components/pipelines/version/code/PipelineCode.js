@@ -292,12 +292,12 @@ export default class PipelineCode extends Component {
     }
   };
 
-  saveEditableFile = async (contents, message) => {
+  saveEditableFile = async (contents, comment) => {
     const request = new PipelineFileUpdate(this.props.pipeline.value.id);
     const hide = message.loading('Committing changes...');
     await request.send({
       contents: contents,
-      comment: message,
+      comment,
       path: this.state.editFile.path,
       lastCommitId: this.props.pipeline.value.currentVersion.commitId
     });
