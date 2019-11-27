@@ -1070,7 +1070,11 @@ class Logs extends localization.LocalizedReactComponent {
           </tr>
         );
       }
-      if (this.props.run.value.status === 'RUNNING' && roleModel.isOwner(this.props.run.value)) {
+      if (
+        this.initializeEnvironmentFinished &&
+        this.props.run.value.status === 'RUNNING' &&
+        roleModel.isOwner(this.props.run.value)
+      ) {
         let shareList = 'Not shared (click to configure)';
         if (this.props.run.value.runSids && (this.props.run.value.runSids || []).length > 0) {
           shareList = (this.props.run.value.runSids || [])
