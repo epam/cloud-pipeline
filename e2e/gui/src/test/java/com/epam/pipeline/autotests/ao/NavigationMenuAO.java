@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Selenide;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.exist;
@@ -87,6 +88,7 @@ public class NavigationMenuAO {
     public void logout() {
         boolean successfullyLoggedOut = false;
         for (int i = 0; i < 15; i++){
+            Selenide.clearBrowserCookies();
             $(byId("navigation-button-logout")).shouldBe(visible).click();
             sleep(1, SECONDS);
             if ($(byId("navigation-button-logout")).is(not(exist))){
