@@ -53,10 +53,9 @@ public interface Authorization extends Navigation {
         return new NavigationMenuAO();
     }
 
-    default AuthenticationPageAO logout() {
+    default void logout() {
         sleep(LOGIN_DELAY);
-        return new NavigationMenuAO()
-                .logout();
+        new NavigationMenuAO().logout();
     }
 
     default void logoutIfNeededAndPerform(Runnable runnable) {

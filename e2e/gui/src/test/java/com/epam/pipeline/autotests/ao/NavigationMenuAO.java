@@ -84,7 +84,7 @@ public class NavigationMenuAO {
                 .clickOnPipeline(name);
     }
 
-    public AuthenticationPageAO logout() {
+    public void logout() {
         boolean successfullyLoggedOut = false;
         for (int i = 0; i < 15; i++){
             $(byId("navigation-button-logout")).shouldBe(visible).click();
@@ -95,7 +95,7 @@ public class NavigationMenuAO {
             }
         }
         if (successfullyLoggedOut) {
-            return new AuthenticationPageAO();
+            return;
         }
         throw new RuntimeException("Could not login");
     }
