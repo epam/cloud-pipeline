@@ -89,6 +89,7 @@ public class NavigationMenuAO {
         boolean successfullyLoggedOut = false;
         for (int i = 0; i < 15; i++){
             Selenide.clearBrowserCookies();
+            sleep(1, SECONDS);
             $(byId("navigation-button-logout")).shouldBe(visible).click();
             sleep(1, SECONDS);
             if ($(byId("navigation-button-logout")).is(not(exist))){

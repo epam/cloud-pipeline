@@ -57,7 +57,7 @@ public abstract class AbstractBfxPipelineTest {
         robot.keyPress(122);
         robot.keyRelease(122);
 
-        sleep(1, SECONDS);
+        sleep(3, SECONDS);
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
