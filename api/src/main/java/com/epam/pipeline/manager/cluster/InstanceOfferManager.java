@@ -219,7 +219,8 @@ public class InstanceOfferManager {
     public InstancePrice getInstanceEstimatedPrice(
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId),
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId) ||
+                        isToolInstanceAllowed(instanceType, null, actualRegionId),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
