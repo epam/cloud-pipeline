@@ -218,7 +218,8 @@ public class InstanceOfferManager {
             String instanceType, int instanceDisk, Boolean spot, Long regionId) {
         final boolean isSpot = isSpotRequest(spot);
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, isSpot),
+        Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, isSpot) ||
+                        isToolInstanceAllowed(instanceType, null, actualRegionId, isSpot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double pricePerHourForInstance =
