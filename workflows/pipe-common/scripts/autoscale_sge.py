@@ -152,14 +152,16 @@ class GridEngineJobState:
 
 class GridEngineJob:
 
-    def __init__(self, id, name, user, state, datetime, host=None, array=None):
+    def __init__(self, id, name, user, state, datetime, hosts=[], array=None, slots=0, pe="local"):
         self.id = id
         self.name = name
         self.user = user
         self.state = state
         self.datetime = datetime
-        self.host = host
+        self.hosts = hosts
         self.array = array
+        self.slots = slots
+        self.pe = pe
 
 
 class GridEngine:
@@ -177,9 +179,9 @@ class GridEngine:
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
-    _QSTAT = 'qstat -u "*"'
+    _QSTAT = 'qstat -f -u "*"'
     _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
-    _QSTAT_COLUMNS = ['job-ID', 'prior', 'name', 'user', 'state', 'submit/start at', 'queue', 'slots', 'ja-task-ID']
+    _QSTAT_COLUMNS = ['job-ID', 'prior', 'name', 'user', 'state', 'submit/start at', 'slots']
     _QMOD_DISABLE = 'qmod -d %s@%s'
     _QMOD_ENABLE = 'qmod -e %s@%s'
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
@@ -188,43 +190,70 @@ class GridEngine:
     _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
-    def __init__(self, cmd_executor):
+    def __init__(self, cmd_executor, max_cluster_size):
         self.cmd_executor = cmd_executor
+        self.max_cluster_size = max_cluster_size
 
     def get_jobs(self):
         """
         Executes command and parse its output. The expected output is something like the following:
 
-            job-ID  prior   name       user         state submit/start at     queue                          slots ja-task-ID
-            -----------------------------------------------------------------------------------------------------------------
-                  2 0.75000 sleep      root         r     12/21/2018 11:48:00 main.q@pipeline-38415              1
-                  9 0.25000 sleep      root         qw    12/21/2018 12:39:38                                    1
-                 11 0.25000 sleep      root         qw    12/21/2018 14:34:43                                    1 1-10:1
+            queuename                      qtype resv/used/tot. load_avg arch          states
+            ---------------------------------------------------------------------------------
+            main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
+                 20 0.50000 sleep.sh   root         r     11/27/2019 14:48:59     2
+            ---------------------------------------------------------------------------------
+            main.q@pipeline-18031          BIP   0/2/2          0.46     lx-amd64
+                 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
+            ---------------------------------------------------------------------------------
+            main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
+            ############################################################################
+             - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS
+            ############################################################################
+                 21 0.50000 sleep.sh   root         qw    11/27/2019 14:48:58     2
 
         :return: Grid engine jobs list.
         """
         lines = self.cmd_executor.execute_to_lines(GridEngine._QSTAT)
         if len(lines) == 0:
             return []
-        jobs = []
-        indentations = [lines[0].index(column) for column in GridEngine._QSTAT_COLUMNS]
+        jobs = {}
+        current_host = None
         for line in lines[2:]:
-            jobs.append(GridEngineJob(
-                id=self._by_indent(line, indentations, 0),
-                name=self._by_indent(line, indentations, 2),
-                user=self._by_indent(line, indentations, 3),
-                state=GridEngineJobState.from_letter_code(self._by_indent(line, indentations, 4)),
-                datetime=self._parse_date(line, indentations),
-                host=self._parse_host(line, indentations),
-                array=self._parse_array(line, indentations)
-            ))
-        return jobs
+            tokens = line.split()
+            if tokens[0].startswith(self._MAIN_Q):
+                current_host = tokens[0]
+                continue
+            elif tokens[0].isdigit():
+                job_id = tokens[0]
+                if job_id in jobs:
+                    job = jobs[job_id]
+                    job.hosts.append(self._parse_host(current_host))
+                else:
+                    pe = self.get_job_parallel_environment(job_id)
+                    job_slots = self.get_job_slots(job_id)
+                    jobs[job_id] = GridEngineJob(
+                        id=job_id,
+                        name=tokens[2],
+                        user=tokens[3],
+                        state=GridEngineJobState.from_letter_code(tokens[4]),
+                        datetime= datetime.strptime(tokens[5] + " " + tokens[6], GridEngine._QSTAT_DATETIME_FORMAT),
+                        hosts=[self._parse_host(current_host)] if current_host else [],
+                        slots=job_slots,
+                        pe=pe
+                    )
+            else:
+                current_host = None
+        return jobs.values()
 
     def _parse_date(self, line, indentations):
         return datetime.strptime(self._by_indent(line, indentations, 5), GridEngine._QSTAT_DATETIME_FORMAT)
 
     def _parse_host(self, line, indentations):
         queue_and_host = self._by_indent(line, indentations, 6)
+        return queue_and_host.split('@')[1] if queue_and_host else None
+
+    def _parse_host(self, queue_and_host):
         return queue_and_host.split('@')[1] if queue_and_host else None
 
     def _parse_array(self, line, indentations):
@@ -246,19 +275,17 @@ class GridEngine:
         else:
             return line[indentations[index]:indentations[min(len(indentations) - 1, index + 1)]].strip()
 
-    def validate_job(self, job_id, max_nodes):
+    def validate_job(self, job):
         result = True
-        pe = self.get_job_parallel_environment(job_id)
-        job_slots = self.get_job_slots(job_id)
-        allocation_rule = self.get_pe_allocation_rule(pe) if pe else "$pe_slots"
-        Logger.info('Validation of job with id: {job_id}'.format(job_id=job_id))
-        Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule, slots=job_slots))
-        if job_slots and allocation_rule:
+        allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else "$pe_slots"
+        Logger.info('Validation of job with id: {job_id}'.format(job_id=job.id))
+        Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule, slots=job.slots))
+        if job.slots and allocation_rule:
             if allocation_rule == "$pe_slots":
-                result = job_slots <= self._NODE_CORES
+                result = job.slots <= self._NODE_CORES
             elif allocation_rule == "$round_robin" or allocation_rule == "$fill_up":
-                result = job_slots <= self._NODE_CORES * max_nodes
-        Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job_id, res=result))
+                result = job.slots <= self._NODE_CORES * self.max_cluster_size
+        Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job.id, res=result))
         return result
 
     def disable_host(self, host, queue=_MAIN_Q):
@@ -314,7 +341,7 @@ class GridEngine:
 
         :param pe: Parallel environment to return number of slots for.
         """
-        return self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe).strip()
+        return self._or_default(self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe), "$pe_slots").strip()
 
     def get_job_parallel_environment(self, job_id):
         """
@@ -322,7 +349,7 @@ class GridEngine:
 
         :param job_id: id of a SGE job
         """
-        return str(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT % job_id).strip())
+        return str(self._or_default(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT % job_id))).strip()
 
     def get_job_slots(self, job_id):
         """
@@ -330,7 +357,7 @@ class GridEngine:
 
         :param job_id: id of a SGE job
         """
-        return int(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS % job_id).strip())
+        return int(self._or_default(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS % job_id), 0))
 
     def delete_host(self, host, queue=_MAIN_Q, hostgroup=_ALL_HOSTS, skip_on_failure=False):
         """
@@ -401,6 +428,9 @@ class GridEngine:
             Logger.warn(error_msg)
             if not skip_on_failure:
                 raise RuntimeError(error_msg, e)
+
+    def _or_default(self, value, default=None):
+        return value if value else default
 
     def is_valid(self, host, queue=_MAIN_Q):
         """
@@ -638,7 +668,7 @@ class GridEngineScaleDownHandler:
         Logger.info('Disable additional worker with host=%s.' % child_host)
         self.grid_engine.disable_host(child_host)
         jobs = self.grid_engine.get_jobs()
-        disabled_host_jobs = [job for job in jobs if job.host == child_host]
+        disabled_host_jobs = [job for job in jobs if child_host in job.hosts]
         if disabled_host_jobs:
             Logger.warn('Disabled additional worker with host=%s has %s associated jobs. Scaling down is interrupted.'
                         % (child_host, len(disabled_host_jobs)))
@@ -819,7 +849,7 @@ class GridEngineAutoscaler:
         Logger.info('There are %s additional pipelines.' % len(additional_hosts))
         updated_jobs = self.grid_engine.get_jobs()
         pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING
-                                                       and self.cancel_job_if_invalid(job)]
+                        and self.is_job_fit_or_cancel(job)]
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
@@ -868,7 +898,7 @@ class GridEngineAutoscaler:
         return self.scale_up_handler.scale_up()
 
     def _scale_down(self, running_jobs, additional_hosts):
-        active_hosts = set([job.host for job in running_jobs])
+        active_hosts = set([host for job in running_jobs for host in job.hosts])
         inactive_additional_hosts = [host for host in additional_hosts if host not in active_hosts]
         if inactive_additional_hosts:
             Logger.info('There are %s inactive additional child pipelines. '
@@ -890,8 +920,8 @@ class GridEngineAutoscaler:
         Logger.info('Start grid engine SCALING DOWN for %s host.' % child_host)
         return self.scale_down_handler.scale_down(child_host)
 
-    def cancel_job_if_invalid(self, job):
-        if not self.grid_engine.validate_job(job.id, int(self.max_additional_hosts) + 1):
+    def is_job_fit_or_cancel(self, job):
+        if not self.grid_engine.validate_job(job):
             Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
                         'it will rejected.'.format(job_id=job.id))
             self.grid_engine.kill_jobs([job])
@@ -978,7 +1008,7 @@ class GridEngineWorkerValidator:
             Logger.warn('Invalid additional worker disabling has failed.')
 
     def _try_kill_invalid_host_jobs(self, host):
-        invalid_host_jobs = [job for job in self.grid_engine.get_jobs() if job.host == host]
+        invalid_host_jobs = [job for job in self.grid_engine.get_jobs() if host in job.hosts]
         if invalid_host_jobs:
             self.grid_engine.kill_jobs(invalid_host_jobs, force=True)
 
@@ -1113,7 +1143,7 @@ if __name__ == '__main__':
                 task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
-    grid_engine = GridEngine(cmd_executor=cmd_executor)
+    grid_engine = GridEngine(cmd_executor=cmd_executor, max_cluster_size=max_additional_hosts + 1)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
