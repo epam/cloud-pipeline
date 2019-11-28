@@ -220,10 +220,12 @@ class GridEngine:
         jobs = {}
         current_host = None
         for line in lines[2:]:
-            tokens = line.split()
+            tokens = line.strip().split()
+            # host line e.g. main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
             if tokens[0].startswith(self._MAIN_Q):
                 current_host = tokens[0]
                 continue
+            # job line 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
             elif tokens[0].isdigit():
                 job_id = tokens[0]
                 if job_id in jobs:
@@ -237,7 +239,7 @@ class GridEngine:
                         name=tokens[2],
                         user=tokens[3],
                         state=GridEngineJobState.from_letter_code(tokens[4]),
-                        datetime= datetime.strptime(tokens[5] + " " + tokens[6], GridEngine._QSTAT_DATETIME_FORMAT),
+                        datetime=datetime.strptime("%s %s" % (tokens[5], tokens[6]), GridEngine._QSTAT_DATETIME_FORMAT),
                         hosts=[self._parse_host(current_host)] if current_host else [],
                         slots=job_slots,
                         pe=pe
