@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.mixins;
 
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
 import com.epam.pipeline.autotests.ao.PipelinesLibraryAO;
 import com.epam.pipeline.autotests.utils.C;
@@ -46,6 +47,12 @@ public interface Authorization extends Navigation {
 
     default NavigationMenuAO loginAs(Account account) {
         sleep(LOGIN_DELAY);
+        if ("false".equals(C.AUTH_TOKEN)) {
+            return new AuthenticationPageAO()
+                    .login(account.login)
+                    .password(account.password)
+                    .signIn();
+        }
         Cookie cookie = new Cookie("HttpAuthorization", account.password);
         WebDriverRunner.getWebDriver().manage().addCookie(cookie);
         Selenide.open(C.ROOT_ADDRESS);

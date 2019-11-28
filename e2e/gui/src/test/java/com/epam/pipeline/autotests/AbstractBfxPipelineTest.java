@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
+import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.openqa.selenium.Cookie;
@@ -31,6 +32,7 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.ShellAO.open;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -43,10 +45,14 @@ public abstract class AbstractBfxPipelineTest {
         Configuration.startMaximized = true;
         System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
 
-        Selenide.open(C.ROOT_ADDRESS);
-        Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
-        WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-        Selenide.open(C.ROOT_ADDRESS);
+        if ("true".equals(C.AUTH_TOKEN)) {
+            Selenide.open(C.ROOT_ADDRESS);
+            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
+            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+            Selenide.open(C.ROOT_ADDRESS);
+        } else {
+            open(C.ROOT_ADDRESS);
+        }
 
         Robot robot;
         try {
@@ -57,6 +63,12 @@ public abstract class AbstractBfxPipelineTest {
         robot.keyPress(122);
         robot.keyRelease(122);
 
+        if ("false".equals(C.AUTH_TOKEN)) {
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(C.PASSWORD)
+                    .signIn();
+        }
         sleep(3, SECONDS);
 
         //reset mouse

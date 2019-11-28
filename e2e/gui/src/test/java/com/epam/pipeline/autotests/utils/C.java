@@ -70,6 +70,7 @@ public class C {
         DEFAULT_INSTANCE_PRICE_TYPE = conf.getProperty("e2e.ui.default.instance.price.type");
         CLOUD_PROVIDER = conf.getProperty("e2e.ui.cloud.provider");
         SPOT_PRICE_NAME = conf.getProperty("e2e.ui.spot.price.name");
+        AUTH_TOKEN = conf.getProperty("e2e.ui.auth.token");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -118,4 +119,5 @@ public class C {
     public static final String CLOUD_PROVIDER;
 
     public static final String SPOT_PRICE_NAME;
+    public static final String AUTH_TOKEN;
 }
