@@ -125,7 +125,7 @@ public interface Authorization extends Navigation {
     }
 
     default String getUserNameByAccountLogin(final String login) {
-        return login.replaceAll("_", " ").split("@")[0].toLowerCase();
+        return login.replaceAll("_", " ").split("@")[0];
     }
 
     class Account {
