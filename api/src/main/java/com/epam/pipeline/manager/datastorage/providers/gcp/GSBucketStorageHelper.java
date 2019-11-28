@@ -383,9 +383,7 @@ public class GSBucketStorageHelper {
 
     public void restoreFolder(final GSBucketStorage storage, final String path,
                               final RestoreFolderVO restoreFolderVO) {
-        final String folderPath = Optional.ofNullable(path)
-                .filter(StringUtils::isNotBlank).map(this::normalizeFolderPath)
-                .orElse(EMPTY_PREFIX);
+        final String folderPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
         cleanDeleteMarkers(client, bucketName, folderPath, restoreFolderVO);
@@ -394,28 +392,26 @@ public class GSBucketStorageHelper {
     private void cleanDeleteMarkers(final Storage client,
                                     final String bucketName, final String folderPath,
                                     final RestoreFolderVO restoreFolderVO) {
-        Page<Blob> blobs = client.list(bucketName,
+        final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.currentDirectory(),
-                Storage.BlobListOption.prefix(folderPath),
+                Storage.BlobListOption.prefix(ProviderUtils.withTrailingDelimiter(folderPath)),
                 Storage.BlobListOption.pageToken(EMPTY_PREFIX),
                 Storage.BlobListOption.pageSize(Integer.MAX_VALUE));
         listItemsWithVersions(blobs)
                 .forEach(item -> {
-                            recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
-                            if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
-                                String fileVersion = ((DataStorageFile) item).getVersion().substring(
-                                        0, ((DataStorageFile) item).getVersion().length() - 2);
-
-                                Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                                        .setSource(checkBlobExistsAndGet(bucketName, item.getPath(), client, fileVersion).getBlobId())
-                                        .setSourceOptions(Storage.BlobSourceOption.generationMatch())
-                                        .setTarget(BlobId.of(bucketName, item.getPath()))
-                                        .build();
-                                client.copy(request).getResult();
-                            }
-                        }
-                );
+                    recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
+                    if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                        final String fileVersion = ((DataStorageFile) item).getVersion().substring(
+                                0, ((DataStorageFile) item).getVersion().length() - 2);
+                        final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                                .setSource(checkBlobExistsAndGet(bucketName, item.getPath(), client, fileVersion).getBlobId())
+                                .setSourceOptions(Storage.BlobSourceOption.generationMatch())
+                                .setTarget(BlobId.of(bucketName, item.getPath()))
+                                .build();
+                        client.copy(request).getResult();
+                    }
+                });
     }
 
     private boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
