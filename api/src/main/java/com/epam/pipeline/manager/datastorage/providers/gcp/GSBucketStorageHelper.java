@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage.providers.gcp;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -61,6 +63,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
@@ -376,6 +379,62 @@ public class GSBucketStorageHelper {
                 .build();
         client.copy(request).getResult();
         deleteBlob(blob, client, true);
+    }
+
+    public void restoreFolder(final GSBucketStorage storage, final String path,
+                              final RestoreFolderVO restoreFolderVO) {
+        final String folderPath = Optional.ofNullable(path)
+                .filter(StringUtils::isNotBlank).map(this::normalizeFolderPath)
+                .orElse(EMPTY_PREFIX);
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        cleanDeleteMarkers(client, bucketName, folderPath, restoreFolderVO);
+    }
+
+    private void cleanDeleteMarkers(final Storage client,
+                                    final String bucketName, final String folderPath,
+                                    final RestoreFolderVO restoreFolderVO) {
+        Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(true),
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(folderPath),
+                Storage.BlobListOption.pageToken(EMPTY_PREFIX),
+                Storage.BlobListOption.pageSize(Integer.MAX_VALUE));
+        listItemsWithVersions(blobs)
+                .forEach(item -> {
+                            recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
+                            if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                                String fileVersion = ((DataStorageFile) item).getVersion().substring(
+                                        0, ((DataStorageFile) item).getVersion().length() - 2);
+
+                                Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
+                                        .setSource(checkBlobExistsAndGet(bucketName, item.getPath(), client, fileVersion).getBlobId())
+                                        .setSourceOptions(Storage.BlobSourceOption.generationMatch())
+                                        .setTarget(BlobId.of(bucketName, item.getPath()))
+                                        .build();
+                                client.copy(request).getResult();
+                            }
+                        }
+                );
+    }
+
+    private boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
+                                                             final RestoreFolderVO restoreFolderVO) {
+        final AntPathMatcher matcher = new AntPathMatcher();
+        return item.getType() == DataStorageItemType.File &&
+                ((DataStorageFile) item).getDeleteMarker() &&
+                ((DataStorageFile) item).getVersion() != null &&
+                Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
+                        .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
+                Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
+                        .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
+    }
+
+    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final Storage client,
+                                            final String bucketName, final RestoreFolderVO restoreFolderVO) {
+        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+            cleanDeleteMarkers(client, bucketName, item.getPath(), restoreFolderVO);
+        }
     }
 
     public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
