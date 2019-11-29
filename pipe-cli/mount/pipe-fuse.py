@@ -20,6 +20,11 @@ import sys
 
 from cachetools import TTLCache
 
+source_path = sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
+libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse/libfuse.so.2'))
+print(str(libfuse_path))
+os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
+
 from pipefuse.fuseutils import MB, GB
 from pipefuse.cache import CachingFileSystemClient
 from pipefuse.buff import BufferedFileSystemClient

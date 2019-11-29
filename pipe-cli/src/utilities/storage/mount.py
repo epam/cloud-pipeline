@@ -21,6 +21,7 @@ import time
 import uuid
 from abc import abstractmethod, ABCMeta
 from os.path import dirname
+from src.version import __bundle_info__
 
 import click
 
@@ -62,20 +63,32 @@ class FrozenMount(AbstractMount):
         with open(mount_script, 'w') as script:
             # run pipe-fuse
             script.write(mount_cmd + '\n')
-            # delete tmp pipe-fuse
-            script.write('rm -f %s\n' % mount_bin)
+            # delete tmp pipe-fuse directory if it is "one-file" bundle
+            if self._needs_pipe_fuse_copy():
+                script.write('rm -rf %s\n' % os.path.dirname(mount_bin))
             # self delete launch script
             script.write('rm -- "$0"\n')
         st = os.stat(mount_script)
         os.chmod(mount_script, st.st_mode | stat.S_IEXEC)
         return mount_script
 
+    # The pipe-fuse "one-file" distr is copied to the ~/.pipe/pipe-fuseUID
+    # This is required, as it shall keep running, when the "pipe" process exits and cleans it's temp dir
+    # Otherwise (i.e. "one-folder") - packed binary is used directly
     def get_mount_executable(self, config):
-        mount_packed = config.build_inner_module_path('mount/pipe-fuse')
+        mount_packed = config.build_inner_module_path('mount')
         config_folder = os.path.dirname(Config.config_path())
-        mount_bin = os.path.join(config_folder, 'pipe-fuse' + str(uuid.uuid4()))
-        shutil.copy(mount_packed, mount_bin)
-        return mount_bin
+        mount_bin = os.path.join(mount_packed, 'pipe-fuse')
+
+        if self._needs_pipe_fuse_copy():
+            mount_tmp_folder = os.path.join(config_folder, 'pipe-fuse' + str(uuid.uuid4()))
+            shutil.copytree(mount_packed, mount_tmp_folder)
+            return os.path.join(mount_tmp_folder, 'pipe-fuse')
+        else:
+            return mount_bin
+
+    def _needs_pipe_fuse_copy(self):
+        return __bundle_info__['bundle_type'] == 'one-file'
 
 
 class SourceMount(AbstractMount):
