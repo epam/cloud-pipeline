@@ -46,10 +46,10 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath /tmp/mount/dist \
-                                ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py \
-                                --onefile
+                                --add-data ${PIPE_MOUNT_SOURCES_DIR}/libfuse:libfuse \
+                                ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
-chmod +x /tmp/mount/dist/pipe-fuse
+chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
 
 ###
 # Build ntlm proxy
@@ -76,18 +76,24 @@ function build_pipe {
     local distpath="\$1"
     local onefile="\$2"
 
-    bundle_type="one-folder"
+    local version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+    sed -i '/__bundle_info__/d' $version_file
+    
+    local bundle_type="one-folder"
     [ "\$onefile" ] && bundle_type="one-file"
-    echo "\$bundle_type" > /tmp/bundle.info
 
+    local build_os_id=''
+    local build_os_version_id=''
     if [ -f "/etc/os-release" ]; then
         source /etc/os-release
-        echo "\${ID}:\${VERSION_ID}" >> /tmp/bundle.info
+        build_os_id="\${ID}"
+        build_os_version_id="\${VERSION_ID}"
     elif [ -f "/etc/centos-release" ]; then
-        VERSION_ID=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
-        echo "centos:\${VERSION_ID}" >> /tmp/bundle.info
+        build_os_id="centos"
+        build_os_version_id=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
     fi
 
+    echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
@@ -114,7 +120,6 @@ function build_pipe {
                                     --distpath \$distpath \
                                     --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
-                                    --add-data /tmp/bundle.info:. \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py \$onefile
 }
 build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile
