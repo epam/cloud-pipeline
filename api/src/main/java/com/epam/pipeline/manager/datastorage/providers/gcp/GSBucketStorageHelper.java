@@ -20,18 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.entity.datastorage.ActionStatus;
-import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageFolder;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
-import com.epam.pipeline.entity.datastorage.DataStorageItemType;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
-import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.PathDescription;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
@@ -46,15 +35,7 @@ import com.google.cloud.Identity;
 import com.google.cloud.Policy;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.Role;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Bucket;
-import com.google.cloud.storage.BucketInfo;
-import com.google.cloud.storage.CopyWriter;
-import com.google.cloud.storage.Cors;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageClass;
+import com.google.cloud.storage.*;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -73,18 +54,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -402,16 +372,32 @@ public class GSBucketStorageHelper {
                 .forEach(item -> {
                     recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
                     if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
-                        final String fileVersion = ((DataStorageFile) item).getVersion().substring(
-                                0, ((DataStorageFile) item).getVersion().length() - 2);
+                        final Blob blob = checkBlobExistsAndGet(bucketName, item.getPath(), client,
+                                removeDeletedMarkerFromVersion(((DataStorageFile) item).getVersion()));
                         final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                                .setSource(checkBlobExistsAndGet(bucketName, item.getPath(), client, fileVersion).getBlobId())
+                                .setSource(blob.getBlobId())
                                 .setSourceOptions(Storage.BlobSourceOption.generationMatch())
                                 .setTarget(BlobId.of(bucketName, item.getPath()))
                                 .build();
                         client.copy(request).getResult();
                     }
                 });
+    }
+
+    private String removeDeletedMarkerFromVersion(final String versionWithDeletedMarker) {
+        if (latestVersionHasDeletedMarker(versionWithDeletedMarker)) {
+            return versionWithDeletedMarker.substring(0, versionWithDeletedMarker.length() - 2);
+        }
+        throw new DataStorageException(
+                String.format("Corresponded version: '%s' should has deleted marker: '%s'", versionWithDeletedMarker,
+                        LATEST_VERSION_DELETION_MARKER));
+    }
+
+    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final Storage client,
+                                            final String bucketName, final RestoreFolderVO restoreFolderVO) {
+        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+            cleanDeleteMarkers(client, bucketName, item.getPath(), restoreFolderVO);
+        }
     }
 
     private boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
@@ -424,13 +410,6 @@ public class GSBucketStorageHelper {
                         .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
                 Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
                         .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
-    }
-
-    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final Storage client,
-                                            final String bucketName, final RestoreFolderVO restoreFolderVO) {
-        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
-            cleanDeleteMarkers(client, bucketName, item.getPath(), restoreFolderVO);
-        }
     }
 
     public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
