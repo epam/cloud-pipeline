@@ -179,6 +179,7 @@ class GridEngine:
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
     _QSTAT = 'qstat -f -u "*"'
+    _SHOW_EXECUTION_HOSTS_SLOTS = 'qstat -f -u "*" | grep %s' % _MAIN_Q
     _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
     _QSTAT_COLUMNS = ['job-ID', 'prior', 'name', 'user', 'state', 'submit/start at', 'slots']
     _QMOD_DISABLE = 'qmod -d %s@%s'
@@ -383,10 +384,21 @@ class GridEngine:
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
     def get_resource_demand(self, expired_jobs):
-        demand_cpus = 0
+        avaliable_slots = 0
+        demand_slots = 0
+        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS):
+            rsrv_used_total = line.strip().split()[2].split("/")
+            avaliable_slots += int(rsrv_used_total[2]) - int(rsrv_used_total[1]) - int(rsrv_used_total[0])
         for job in expired_jobs:
-            demand_cpus += job.slots
-        return ComputeResource(demand_cpus)
+            if self.get_pe_allocation_rule(job.pe) == "$round_robin" or self.get_pe_allocation_rule(job.pe) == "$fill_up":
+                if avaliable_slots >= job.slots:
+                    avaliable_slots -= job.slots
+                else:
+                    demand_slots += job.slots - avaliable_slots
+                    avaliable_slots = 0
+            else:
+                demand_slots += job.slots
+        return ComputeResource(demand_slots)
 
     def get_host_resource(self, host):
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
