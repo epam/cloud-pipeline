@@ -35,7 +35,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
             entry(TOOLS, context().find(type("TOOL"))),
             entry(DATA, context().find(type("DATA"))),
             entry(ISSUES, context().find(type("ISSUE"))),
-            entry(SEARCH, context().find(byAttribute("placeholder", "CloudPipeline search"))),
+            entry(SEARCH, context().find(byAttribute("placeholder", "MagellanDev search"))),
             entry(QUESTION_MARK, context().find(byClassName("earch__hint-icon-container"))),
             entry(SEARCH_RESULT, context().find(byId("search-results")))
     );

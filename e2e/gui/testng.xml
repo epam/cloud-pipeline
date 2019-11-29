@@ -2,6 +2,12 @@
 
 <suite name="UITests" verbose="1" parallel="classes" thread-count="1">
 
+    <test name="GlobalSearchTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.GlobalSearchTest"/>
+        </classes>
+    </test>
+
     <test name="RunToolsInSandBoxTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RunToolsInSandBoxTest"/>
@@ -14,17 +20,17 @@
         </classes>
     </test>
 
-    <test name="StorageRulesTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.StorageRulesTest"/>
-        </classes>
-    </test>
+    <!--<test name="StorageRulesTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.StorageRulesTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
-    <test name="NfsDataStorageTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.NfsDataStorageTest"/>
-        </classes>
-    </test>
+    <!--<test name="NfsDataStorageTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.NfsDataStorageTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="PipelineReleaseTest">
         <classes>
@@ -134,23 +140,23 @@
         </classes>
     </test>
 
-    <test name="RunPipelineWithOutputParameterTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.RunPipelineWithOutputParameterTest"/>
-        </classes>
-    </test>
+    <!--<test name="RunPipelineWithOutputParameterTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.RunPipelineWithOutputParameterTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
-    <test name="RunPipelineWithSeveralOutputParametersTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.RunPipelineWithSeveralOutputParametersTest"/>
-        </classes>
-    </test>
+    <!--<test name="RunPipelineWithSeveralOutputParametersTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.RunPipelineWithSeveralOutputParametersTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
-    <test name="LaunchParametersNavigationTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.LaunchParametersNavigationTest"/>
-        </classes>
-    </test>
+    <!--<test name="LaunchParametersNavigationTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.LaunchParametersNavigationTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="LaunchParametersRoleModelTest">
         <classes>
@@ -158,11 +164,11 @@
         </classes>
     </test>
 
-    <test name="LaunchParametersTypesTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.LaunchParametersTypesTest"/>
-        </classes>
-    </test>
+    <!--<test name="LaunchParametersTypesTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.LaunchParametersTypesTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="Launch_NonRequiredParameterTest">
         <classes>
@@ -170,11 +176,11 @@
         </classes>
     </test>
 
-    <test name="Launch_InstanceConfigTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_InstanceConfigTest"/>
-        </classes>
-    </test>
+    <!--<test name="Launch_InstanceConfigTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_InstanceConfigTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="Launch_ParameterWithNoValueTest">
         <classes>
@@ -188,11 +194,11 @@
         </classes>
     </test>
 
-    <test name="Launch_DifferentTypesParametersValidationTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_DifferentTypesParametersValidationTest"/>
-        </classes>
-    </test>
+    <!--<test name="Launch_DifferentTypesParametersValidationTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_DifferentTypesParametersValidationTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="FolderNavigationTest">
         <classes>
@@ -224,11 +230,11 @@
         </classes>
     </test>
 
-    <test name="Launch_InputDataValidationTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_InputDataValidationTest"/>
-        </classes>
-    </test>
+    <!--<test name="Launch_InputDataValidationTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_InputDataValidationTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 <!--Disabled. Reason - CP doesn't support new EPAM GitLab 12-->
     <!--<test name="RemotePipelineRepositoryTest">-->
         <!--<classes>-->
@@ -284,11 +290,11 @@
         </classes>
     </test>
 
-    <test name="LaunchParameterRemoveParameterTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.LaunchParameterRemoveParameterTest"/>
-        </classes>
-    </test>
+    <!--<test name="LaunchParameterRemoveParameterTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.LaunchParameterRemoveParameterTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="DetachedConfigurationsTest">
         <classes>
@@ -302,11 +308,11 @@
         </classes>
     </test>
 
-    <test name="AutopauseTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.AutopauseTest"/>
-        </classes>
-    </test>
+    <!--<test name="AutopauseTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.AutopauseTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <!-- SLOW TESTS BELOW -->
 
@@ -316,11 +322,11 @@
         </classes>
     </test>
 
-    <test name="Launch_PipelineRunTimeoutTest" >
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_PipelineRunTimeoutTest" />
-        </classes>
-    </test>
+    <!--<test name="Launch_PipelineRunTimeoutTest" >-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_PipelineRunTimeoutTest" />-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="RunPipelineTest" >
         <classes>
@@ -334,17 +340,17 @@
         </classes>
     </test>
 
-    <test name="Launch_OutputParameterTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_OutputParameterTest"/>
-        </classes>
-    </test>
+    <!--<test name="Launch_OutputParameterTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_OutputParameterTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
-    <test name="Launch_JsonOutputFileTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.Launch_JsonOutputFileTest"/>
-        </classes>
-    </test>
+    <!--<test name="Launch_JsonOutputFileTest">-->
+        <!--<classes>-->
+            <!--<class name="com.epam.pipeline.autotests.Launch_JsonOutputFileTest"/>-->
+        <!--</classes>-->
+    <!--</test>-->
 
     <test name="ToolsParametersTest">
         <classes>
@@ -370,9 +376,5 @@
         </classes>
     </test>
 
-    <test name="GlobalSearchTest">
-        <classes>
-            <class name="com.epam.pipeline.autotests.GlobalSearchTest"/>
-        </classes>
-    </test>
+
 </suite>

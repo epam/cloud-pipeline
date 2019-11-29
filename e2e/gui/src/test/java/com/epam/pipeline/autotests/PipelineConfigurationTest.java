@@ -86,7 +86,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .removePipelineIfExists(pipeline1500);
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase("EPMCMBIBPC-1256")
     public void changeInstancePriceTypeInConfigurationFile() {
         library()
@@ -276,11 +276,12 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .sleep(2, SECONDS)
                                .click(SAVE)
                 )
                 .messageShouldAppear(String.format("Updating '%s' configuration", configurationName))
                 // Because the page refreshes
-                .sleep(1, SECONDS)
+                .sleep(3, SECONDS)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .shouldContainInCode("\"name\" : \"conf\"")

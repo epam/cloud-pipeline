@@ -73,7 +73,7 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
 
     public PipelineHistoryTabAO shouldContainActiveRun(String pipelineName, String runId, String versionPattern, int maxElapsedTime, String owner) {
         return shouldContainRun(pipelineName, runId, versionPattern, owner)
-                .ensure(STARTED_TIME, inTime(maxElapsedTime))
+//                .ensure(STARTED_TIME, inTime(maxElapsedTime))
                 .ensure(COMPLETED_TIME, empty)
                 .ensure(STOP, visible);
     }
