@@ -353,19 +353,22 @@ public class GSBucketStorageHelper {
 
     public void restoreFolder(final GSBucketStorage storage, final String path,
                               final RestoreFolderVO restoreFolderVO) {
-        final String folderPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
+        final String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        cleanDeleteMarkers(client, bucketName, folderPath, restoreFolderVO);
+        cleanDeleteMarkers(client, bucketName, requestPath, restoreFolderVO);
     }
 
     private void cleanDeleteMarkers(final Storage client,
-                                    final String bucketName, final String folderPath,
+                                    final String bucketName, final String requestPath,
                                     final RestoreFolderVO restoreFolderVO) {
+        final String folderPath = ProviderUtils.withTrailingDelimiter(requestPath);
+        Assert.isTrue(checkBlobExistsAndGet(bucketName, folderPath, client, null).isDirectory(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, folderPath, bucketName));
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.currentDirectory(),
-                Storage.BlobListOption.prefix(ProviderUtils.withTrailingDelimiter(folderPath)),
+                Storage.BlobListOption.prefix(folderPath),
                 Storage.BlobListOption.pageToken(EMPTY_PREFIX),
                 Storage.BlobListOption.pageSize(Integer.MAX_VALUE));
         listItemsWithVersions(blobs)
