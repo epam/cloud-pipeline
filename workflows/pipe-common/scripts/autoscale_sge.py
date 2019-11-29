@@ -167,7 +167,6 @@ class GridEngineJob:
 class GridEngine:
     _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     _PARALLEL_ENVIRONMENT = os.getenv('CP_CAP_SGE_PE_NAME', 'local')
-    _NODE_CORES = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', 0))
     _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_PARALLEL_ENVIRONMENT_SLOTS = 'qconf -sp %s | grep "^slots" | awk \'{print $2}\''
@@ -190,9 +189,10 @@ class GridEngine:
     _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
-    def __init__(self, cmd_executor, max_cluster_size):
+    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores):
         self.cmd_executor = cmd_executor
-        self.max_cluster_size = max_cluster_size
+        self.max_instance_cores = max_instance_cores
+        self.max_cluster_cores = max_cluster_cores
 
     def get_jobs(self):
         """
@@ -284,9 +284,9 @@ class GridEngine:
         Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule, slots=job.slots))
         if job.slots and allocation_rule:
             if allocation_rule == "$pe_slots":
-                result = job.slots <= self._NODE_CORES
+                result = job.slots <= self.max_instance_cores
             elif allocation_rule == "$round_robin" or allocation_rule == "$fill_up":
-                result = job.slots <= self._NODE_CORES * self.max_cluster_size
+                result = job.slots <= self.max_cluster_cores
         Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job.id, res=result))
         return result
 
@@ -382,6 +382,17 @@ class GridEngine:
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
+    def get_resource_demand(self, expired_jobs):
+        demand_cpus = 0
+        for job in expired_jobs:
+            demand_cpus += job.slots
+        return ComputeResource(demand_cpus)
+
+    def get_host_resource(self, host):
+        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
+            if "processors" in line:
+                return ComputeResource(int(line.strip().split()[1]))
+
     def _shutdown_execution_host(self, host, skip_on_failure):
         self._perform_command(
             action=lambda: self.cmd_executor.execute(GridEngine._SHUTDOWN_HOST_EXECUTION_DAEMON % host),
@@ -471,6 +482,14 @@ class GridEngine:
         self.cmd_executor.execute((GridEngine._FORCE_KILL_JOBS if force else GridEngine._KILL_JOBS) % ' '.join(job_ids))
 
 
+class ComputeResource:
+
+    def __init__(self, cpu, memory=None, disk=None):
+        self.cpu = cpu
+        self.memory = memory
+        self.disk = disk
+
+
 class Clock:
 
     def __init__(self):
@@ -485,8 +504,8 @@ class GridEngineScaleUpHandler:
     _POLL_DELAY = 10
 
     def __init__(self, cmd_executor, pipe, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_type, instance_image, price_type, region_id, cloud_provider, instance_cores, polling_timeout,
-                 polling_delay=_POLL_DELAY, instance_family=None):
+                 instance_type, instance_image, price_type, region_id, cloud_provider, polling_timeout,
+                 polling_delay=_POLL_DELAY, instance_family=None, hybrid_autoscale=False):
         """
         Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
         and self.default_hostfile).
@@ -502,7 +521,6 @@ class GridEngineScaleUpHandler:
         :param instance_image: Additional nodes docker image.
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
-        :param instance_cores:  Additional nodes cores number.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
         """
@@ -518,12 +536,12 @@ class GridEngineScaleUpHandler:
         self.price_type = price_type
         self.region_id = region_id
         self.cloud_provider = cloud_provider
-        self.instance_cores = instance_cores
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.instance_family = instance_family
+        self.hybrid_autoscale = hybrid_autoscale
 
-    def scale_up(self):
+    def scale_up(self, resource):
         """
         Launches new pipeline and configures local hosts files.
 
@@ -536,14 +554,22 @@ class GridEngineScaleUpHandler:
 
         :return: Host name of the launched pipeline.
         """
-        run_id = self._launch_additional_worker()
+        instance_to_run = _match_with_allowed(resource, _get_allowed_instances(self.pipe,
+                                                                               self.cloud_provider,
+                                                                               self.region_id,
+                                                                               self.instance_family,
+                                                                               self.price_type,
+                                                                               self.hybrid_autoscale,
+                                                                               self.instance_type))
+        Logger.info('The next instance is matched according to allowed: %s' % instance_to_run['name'])
+        run_id = self._launch_additional_worker(instance_to_run['name'])
         host = self._retrieve_pod_name(run_id)
         self.host_storage.add_host(host)
         pod = self._await_pod_initialization(run_id)
         self._add_worker_to_master_hosts(pod)
         self._await_worker_initialization(run_id)
         self.grid_engine.enable_host(pod.name)
-        self._increase_parallel_environment_slots(self.instance_cores)
+        self._increase_parallel_environment_slots(instance_to_run['vcpu'])
         Logger.info('Additional worker with host=%s has been created.' % pod.name, crucial=True)
 
         # todo: Some delay is needed for GE to submit task to a new host.
@@ -553,7 +579,7 @@ class GridEngineScaleUpHandler:
 
         return pod.name
 
-    def _launch_additional_worker(self):
+    def _launch_additional_worker(self, instance):
         Logger.info('Launch additional worker.')
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
@@ -568,17 +594,11 @@ class GridEngineScaleUpHandler:
                            'CP_CAP_SGE false ' \
                            'CP_CAP_AUTOSCALE false ' \
                            'CP_CAP_AUTOSCALE_WORKERS 0' \
-                           % (self.instance_disk, self.instance_type, self.instance_image, self.parent_run_id,
+                           % (self.instance_disk, instance, self.instance_image, self.parent_run_id,
                               self._pipe_cli_price_type(self.price_type), self.region_id)
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker run id is %s.' % run_id)
         return run_id
-
-    def _get_allowed_instance(self):
-        is_spot = self._pipe_cli_price_type(self.price_type) == "on-demand"
-        allowed = self.pipe.get_allowed_instance_types(self.region_id, is_spot)["cluster.allowed.instance.types"]
-        return [instance for instance in allowed
-                if _instance_from_family(self.cloud_provider, instance["name"], self.instance_family)]
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -652,7 +672,7 @@ class GridEngineScaleDownHandler:
                            'cp %(file)s_MODIFIED %(file)s; ' \
                            'rm %(file)s_MODIFIED'
 
-    def __init__(self, cmd_executor, grid_engine, default_hostfile, instance_cores):
+    def __init__(self, cmd_executor, grid_engine, default_hostfile):
         """
         Grid engine scale down implementation. It handles grid engine host removal, hosts configuration (/etc/hosts
         and self.default_hostfile) and additional nodes stopping.
@@ -660,12 +680,10 @@ class GridEngineScaleDownHandler:
         :param cmd_executor: Cmd executor.
         :param grid_engine: Grid engine client.
         :param default_hostfile: Default host file location.
-        :param instance_cores:  Additional nodes cores number.
         """
         self.executor = cmd_executor
         self.grid_engine = grid_engine
         self.default_hostfile = default_hostfile
-        self.instance_cores = instance_cores
 
     def scale_down(self, child_host):
         """
@@ -686,7 +704,7 @@ class GridEngineScaleDownHandler:
             self.grid_engine.enable_host(child_host)
             return False
         self._remove_host_from_grid_engine_configuration(child_host)
-        self._decrease_parallel_environment_slots(self.instance_cores)
+        self._decrease_parallel_environment_slots(self.grid_engine.get_host_resource(child_host).cpu)
         self._stop_pipeline(child_host)
         self._remove_host_from_hosts(child_host)
         self._remove_host_from_default_hostfile(child_host)
@@ -873,7 +891,9 @@ class GridEngineAutoscaler:
                 if len(additional_hosts) < self.max_additional_hosts:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up will be performed.' %
                                 (len(additional_hosts), self.max_additional_hosts))
-                    self.scale_up()
+                    resource = self.grid_engine.get_resource_demand(expired_jobs)
+                    Logger.info('The next resource is requested by pending jobs to be run: cpu - {cpu} memory - {mem} disk - {disk}'.format(cpu=resource.cpu, mem=resource.memory, disk=resource.disk))
+                    self.scale_up(resource)
                 else:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up is aborted.' %
                                 (len(additional_hosts), self.max_additional_hosts))
@@ -898,14 +918,14 @@ class GridEngineAutoscaler:
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
 
-    def scale_up(self):
+    def scale_up(self, resource):
         """
         Launches new child pipeline.
 
         :return: Launched pipeline host.
         """
         Logger.info('Start grid engine SCALING UP.')
-        return self.scale_up_handler.scale_up()
+        return self.scale_up_handler.scale_up(resource)
 
     def _scale_down(self, running_jobs, additional_hosts):
         active_hosts = set([host for job in running_jobs for host in job.hosts])
@@ -1133,8 +1153,30 @@ def _get_family_from_type(cloud_provider, instance_type):
     else:
         return None
 
+
 def _instance_from_family(cloud_provider, instance_type, instance_family):
     return _get_family_from_type(cloud_provider, instance_type) == instance_family
+
+
+def _get_allowed_instances(pipe, cloud_provider, region_id, instance_family, price_type, hybrid_autoscale, default_instance):
+    is_spot = price_type == "on-demand" or price_type == "on_demand"
+    allowed = pipe.get_allowed_instance_types(region_id, is_spot)["cluster.allowed.instance.types"]
+    if hybrid_autoscale:
+        return sorted(
+                [instance for instance in allowed if _instance_from_family(cloud_provider, instance["name"], instance_family)],
+                cmp=lambda i1, i2: i1['vcpu'] - i2['vcpu']
+        )
+    else:
+        Logger.info("Hybrid autoscaling is disabled, allowed list of instances will be trimmed to master instance type: {type}"
+                    .format(type=default_instance))
+        return [instance for instance in allowed if instance['name'] == default_instance]
+
+
+def _match_with_allowed(resource, allowed):
+    for instance in allowed:
+        if instance['vcpu'] >= resource.cpu:
+            return instance
+    return allowed.pop()
 
 
 if __name__ == '__main__':
@@ -1164,29 +1206,37 @@ if __name__ == '__main__':
     log_verbose = os.environ['CP_CAP_AUTOSCALE_VERBOSE'].strip().lower() == "true" \
         if 'CP_CAP_AUTOSCALE_VERBOSE' in os.environ else False
     shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
-    autoscale_instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY', _get_family_from_type(cloud_provider, instance_type))
+    hybrid_autoscale = os.getenv('CP_CAP_AUTOSCALE_HYBRID', False)
+    instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY', _get_family_from_type(cloud_provider, instance_type))
+
+    # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
+    api = CloudPipelineAPI(pipe=pipe)
+    
+    max_instance_cores = _get_allowed_instances(pipe, cloud_provider, region_id, instance_family, price_type,
+                                               hybrid_autoscale, instance_type).pop()['vcpu']
+    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores
 
     Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 
                 task='GridEngineAutoscaling', verbose=log_verbose)
 
     cmd_executor = CmdExecutor()
-    grid_engine = GridEngine(cmd_executor=cmd_executor, max_cluster_size=max_additional_hosts + 1)
+    grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
+                             max_cluster_cores=max_cluster_cores)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'))
-    # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
-    api = CloudPipelineAPI(pipe=pipe)
-    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
-    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
-    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default_value=600))
+    scale_up_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.timeout', default_value=30))
+    scale_down_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.down.timeout', default_value=30))
+    scale_up_polling_timeout = int(_retrieve_preference(pipe, 'ge.autoscaling.scale.up.polling.timeout',
+                                                        default_value=600))
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
                                                 host_storage=host_storage, parent_run_id=master_run_id,
                                                 default_hostfile=default_hostfile, instance_disk=instance_disk,
                                                 instance_type=instance_type, instance_image=instance_image,
                                                 price_type=price_type, region_id=region_id, cloud_provider=cloud_provider,
-                                                instance_cores=instance_cores, polling_timeout=scale_up_polling_timeout,
-                                                instance_family=autoscale_instance_family)
+                                                polling_timeout=scale_up_polling_timeout,
+                                                instance_family=instance_family, hybrid_autoscale=hybrid_autoscale)
     scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
-                                                    default_hostfile=default_hostfile, instance_cores=instance_cores)
+                                                    default_hostfile=default_hostfile)
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
