@@ -25,6 +25,7 @@ cmd_executor = Mock()
 grid_engine = Mock()
 pipe = Mock()
 host_storage = MemoryHostStorage()
+instance_helper = Mock()
 parent_run_id = 'parent_run_id'
 default_hostfile = 'default_hostfile'
 instance_disk = 'instance_disk'
@@ -36,10 +37,9 @@ instance_cores = 4
 polling_timeout = 600
 compute_resource = ComputeResource(4)
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
-                                            host_storage=host_storage, parent_run_id=parent_run_id,
+                                            host_storage=host_storage, parent_run_id=parent_run_id, instance_helper=instance_helper,
                                             default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                            instance_type=instance_type, instance_image=instance_image,
-                                            price_type=price_type, region_id=region_id, cloud_provider='AWS',
+                                            instance_image=instance_image,  price_type=price_type, region_id=region_id,
                                             polling_timeout=polling_timeout, polling_delay=0, instance_family='c5',
                                             hybrid_autoscale=True)
 
@@ -50,7 +50,7 @@ def setup_function():
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
     pipe.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
-    pipe.get_allowed_instance_types = MagicMock(return_value={"cluster.allowed.instance.types":
+    instance_helper.get_allowed_instances = MagicMock(return_value=
         [{
         "sku": "78J32SRETMXEPY86",
         "name": "c5.xlarge",
@@ -62,7 +62,7 @@ def setup_function():
         "gpu": 0,
         "regionId": 1,
         "vcpu": instance_cores
-    }]})
+    }])
     cmd_executor.execute = MagicMock()
     grid_engine.enable_host = MagicMock()
     host_storage.clear()

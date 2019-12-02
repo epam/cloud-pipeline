@@ -56,7 +56,7 @@ def test_qstat_parsing():
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
     assert 'pipeline-38415' in job_1.hosts
-    assert job_1.array is None
+    assert job_1.array == []
 
     assert job_2.name == 'name2'
     assert job_2.user == 'someUser'
@@ -64,7 +64,7 @@ def test_qstat_parsing():
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)
     assert len(job_2.hosts) == 0
-    assert job_2.array is None
+    assert job_2.array == []
 
 
 def test_qstat_array_job_parsing():
