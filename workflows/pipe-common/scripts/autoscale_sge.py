@@ -219,19 +219,20 @@ class GridEngine:
             return []
         jobs = {}
         current_host = None
-        for line in lines[2:]:
+        for line in lines:
             tokens = line.strip().split()
-            # host line e.g. main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
+            # host line like: main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
             if tokens[0].startswith(self._MAIN_Q):
                 current_host = tokens[0]
                 continue
-            # job line 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
+            # job line: 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
             elif tokens[0].isdigit():
                 job_id = tokens[0]
+                job_array = self._parse_array(tokens[8] if len(tokens) >= 9 else None)
                 if job_id in jobs:
                     job = jobs[job_id]
                     job.hosts.append(self._parse_host(current_host))
-                    job.array = sorted(job.array + self._parse_array(tokens[8] if len(tokens) >= 9 else None))
+                    job.array = sorted(job.array + job_array)
                 else:
                     pe = self.get_job_parallel_environment(job_id)
                     job_slots = self.get_job_slots(job_id)
@@ -243,7 +244,7 @@ class GridEngine:
                         datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
                         hosts=[self._parse_host(current_host)] if current_host else [],
                         slots=job_slots,
-                        array=self._parse_array(tokens[8] if len(tokens) >= 9 else None),
+                        array=job_array,
                         pe=pe
                     )
             else:
@@ -258,7 +259,7 @@ class GridEngine:
 
     def _parse_array(self, array_jobs):
         if not array_jobs:
-            return None
+            return []
         if ':' in array_jobs:
             array_borders, _ = array_jobs.split(':')
             start, stop = array_borders.split('-')
