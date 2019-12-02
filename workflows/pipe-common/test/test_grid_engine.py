@@ -19,8 +19,11 @@ from mock import MagicMock, Mock
 from scripts.autoscale_sge import GridEngine, GridEngineJobState, GridEngineJob
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
+MAX_CLUSTER_CORES = 6
+MAX_INSTANCE_CORES = 2
+
 executor = Mock()
-grid_engine = GridEngine(executor)
+grid_engine = GridEngine(executor, MAX_INSTANCE_CORES, MAX_CLUSTER_CORES)
 
 
 def setup_function():
@@ -29,10 +32,15 @@ def setup_function():
 
 def test_qstat_parsing():
     stdout = """
-    job-ID  prior   name       user         state submit/start at     queue                          slots ja-task-ID
-    -----------------------------------------------------------------------------------------------------------------
-          1 0.75000 name1      root         r     12/21/2018 11:48:00 main.q@pipeline-38415              1
-          2 0.25000 name2      someUser     qw    12/21/2018 12:39:38                                    1
+    queuename                      qtype resv/used/tot. load_avg arch          states
+    ------------------------------------------------------------------------------------
+    main.q@pipeline-38415          BIP   0/2/2          0.11     lx-amd64      
+          1 0.75000 name1      root         r     12/21/2018 11:48:00            1
+    ------------------------------------------------------------------------------------
+    ####################################################################################
+     - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS -
+    ####################################################################################
+          2 0.25000 name2      someUser     qw    12/21/2018 12:39:38            1
     """
 
     executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
@@ -47,7 +55,7 @@ def test_qstat_parsing():
     assert job_1.state == GridEngineJobState.RUNNING
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
-    assert job_1.host == 'pipeline-38415'
+    assert 'pipeline-38415' in job_1.hosts
     assert job_1.array is None
 
     assert job_2.name == 'name2'
@@ -55,28 +63,33 @@ def test_qstat_parsing():
     assert job_2.state == GridEngineJobState.PENDING
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)
-    assert job_2.host is None
+    assert len(job_2.hosts) == 0
     assert job_2.array is None
 
 
 def test_qstat_array_job_parsing():
     stdout = """
-    job-ID  prior   name       user         state submit/start at     queue                          slots ja-task-ID
-    -----------------------------------------------------------------------------------------------------------------
-          1 0.75000 name1      root         r     12/21/2018 12:48:00 main.q@pipeline-38415              1
-          2 0.25000 name2      root         qw    12/21/2018 14:52:43                                    1 1
-          2 0.25000 name2      root         qw    12/21/2018 14:51:43                                    1 2-10:1
-          3 0.25000 name3      root         qw    12/21/2018 14:51:43                                    1 1-5:1
-          4 0.25000 name4      root         qw    12/21/2018 14:51:43                                    1 8,9
+    queuename                      qtype resv/used/tot. load_avg arch          states
+    ------------------------------------------------------------------------------------
+    main.q@pipeline-38415          BIP   0/2/2          0.11     lx-amd64      
+          1 0.75000 name1      root         r     12/21/2018 11:48:00            1
+    ------------------------------------------------------------------------------------
+    ####################################################################################
+     - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS -
+    ####################################################################################
+          2 0.25000 name2      root         qw    12/21/2018 14:51:43            1 1
+          2 0.25000 name2      root         qw    12/21/2018 14:51:43            1 2-10:1
+          3 0.25000 name3      root         qw    12/21/2018 14:51:43            1 1-5:1
+          4 0.25000 name4      root         qw    12/21/2018 14:51:43            1 8,9
     """
 
     executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
     jobs = grid_engine.get_jobs()
-
-    _, job_2_1, job_2_array, job_3_array, job_4_array = jobs
-
+    _, job_2_array, job_3_array, job_4_array = sorted(jobs, key=lambda job: job.id)
+    for job in jobs:
+        print job.id
     assert [1] == [1]
-    assert job_2_array.array == list(range(2, 10 + 1))
+    assert job_2_array.array == list(range(1, 10 + 1))
     assert job_3_array.array == list(range(1, 5 + 1))
     assert job_4_array.array == list(range(8, 9 + 1))
 

@@ -207,7 +207,6 @@ class GridEngine:
             main.q@pipeline-18031          BIP   0/2/2          0.46     lx-amd64
                  15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
             ---------------------------------------------------------------------------------
-            main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
             ############################################################################
              - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS
             ############################################################################
@@ -232,6 +231,7 @@ class GridEngine:
                 if job_id in jobs:
                     job = jobs[job_id]
                     job.hosts.append(self._parse_host(current_host))
+                    job.array = sorted(job.array + self._parse_array(tokens[8] if len(tokens) >= 9 else None))
                 else:
                     pe = self.get_job_parallel_environment(job_id)
                     job_slots = self.get_job_slots(job_id)
@@ -240,27 +240,23 @@ class GridEngine:
                         name=tokens[2],
                         user=tokens[3],
                         state=GridEngineJobState.from_letter_code(tokens[4]),
-                        datetime=datetime.strptime("%s %s" % (tokens[5], tokens[6]), GridEngine._QSTAT_DATETIME_FORMAT),
+                        datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
                         hosts=[self._parse_host(current_host)] if current_host else [],
                         slots=job_slots,
+                        array=self._parse_array(tokens[8] if len(tokens) >= 9 else None),
                         pe=pe
                     )
             else:
                 current_host = None
         return jobs.values()
 
-    def _parse_date(self, line, indentations):
-        return datetime.strptime(self._by_indent(line, indentations, 5), GridEngine._QSTAT_DATETIME_FORMAT)
-
-    def _parse_host(self, line, indentations):
-        queue_and_host = self._by_indent(line, indentations, 6)
-        return queue_and_host.split('@')[1] if queue_and_host else None
+    def _parse_date(self, date):
+        return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
     def _parse_host(self, queue_and_host):
         return queue_and_host.split('@')[1] if queue_and_host else None
 
-    def _parse_array(self, line, indentations):
-        array_jobs = self._by_indent(line, indentations, 8)
+    def _parse_array(self, array_jobs):
         if not array_jobs:
             return None
         if ':' in array_jobs:
@@ -271,12 +267,6 @@ class GridEngine:
             return list(map(int, array_jobs.split(',')))
         else:
             return [int(array_jobs)]
-
-    def _by_indent(self, line, indentations, index):
-        if index >= len(indentations) - 1:
-            return line[indentations[index]:].strip()
-        else:
-            return line[indentations[index]:indentations[min(len(indentations) - 1, index + 1)]].strip()
 
     def validate_job(self, job):
         result = True
@@ -1160,6 +1150,7 @@ def _get_family_from_type(cloud_provider, instance_type):
     elif cloud_provider == "GCP":
         return instance_type.rsplit('-', 2)[1] if "custom" not in instance_type else None
     elif cloud_provider == "AZURE":
+        # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
         search = re.search("([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
         return search.group(1) + search.group(2) if search else None
     else:

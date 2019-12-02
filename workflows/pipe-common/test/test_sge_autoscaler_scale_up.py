@@ -41,7 +41,7 @@ autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
 def setup_function():
     hosts = [str(run_id) for run_id in range(0, 2 * max_additional_hosts)]
 
-    def add_host():
+    def add_host(_):
         host = hosts.pop()
         host_storage.add_host(host)
         return host
@@ -59,7 +59,7 @@ def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeou
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -86,7 +86,7 @@ def test_not_scale_up_if_none_of_the_jobs_are_in_queue_for_more_than_scale_up_ti
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -113,7 +113,7 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -142,7 +142,7 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -170,7 +170,7 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -198,7 +198,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
@@ -227,7 +227,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
             user='user',
             state=GridEngineJobState.RUNNING,
             datetime=submit_datetime,
-            host=MASTER_HOST
+            hosts=[MASTER_HOST]
         ),
         GridEngineJob(
             id=2,
