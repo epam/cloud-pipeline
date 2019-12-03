@@ -881,7 +881,9 @@ class GridEngineAutoscaler:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up will be performed.' %
                                 (len(additional_hosts), self.max_additional_hosts))
                     resource = self.grid_engine.get_resource_demand(expired_jobs)
-                    Logger.info('The next resource is requested by pending jobs to be run: cpu - {cpu} memory - {mem} disk - {disk}'.format(cpu=resource.cpu, mem=resource.memory, disk=resource.disk))
+                    Logger.info('The next resource is requested by pending jobs to be run: '
+                                'cpu - {cpu} memory - {mem} disk - {disk}'.
+                                format(cpu=resource.cpu, mem=resource.memory, disk=resource.disk))
                     self.scale_up(resource)
                 else:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up is aborted.' %
