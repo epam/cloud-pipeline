@@ -26,26 +26,26 @@ AWS_P2 = "p2"
 
 
 def test_aws_familes():
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.AWS, "c5.xlarge")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.aws(), "c5.xlarge")
     assert family == AWS_C5
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.AWS, "p2.xlarge")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.aws(), "p2.xlarge")
     assert family == AWS_P2
 
 
 def test_gcp_familes():
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.GCP, "n2-standard-2")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.gcp(), "n2-standard-2")
     assert family == GCP_STANDARD
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.GCP, "n2-highcpu-2")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.gcp(), "n2-highcpu-2")
     assert family == GCP_HIGHCPU
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.GCP, "custom-12-16")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.gcp(), "custom-12-16")
     assert family is None
 
 
 def test_azure_familes():
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.AZURE, "Standard_B1ms")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.azure(), "Standard_B1ms")
     assert family == AZURE_BMS
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.AZURE, "Standard_D2s_v3")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.azure(), "Standard_D2s_v3")
     assert family == AZURE_DSV
-    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.AZURE, "Standard_D16s_v3")
+    family = CloudPipelineInstanceHelper.get_family_from_type(CloudProvider.azure(), "Standard_D16s_v3")
     assert family == AZURE_DSV
 

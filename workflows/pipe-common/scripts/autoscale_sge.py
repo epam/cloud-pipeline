@@ -23,7 +23,6 @@ import time
 import multiprocessing
 import requests
 import re
-from enum import Enum
 
 class ExecutionError(RuntimeError):
     pass
@@ -206,7 +205,6 @@ class GridEngine:
             ---------------------------------------------------------------------------------
             main.q@pipeline-18031          BIP   0/2/2          0.46     lx-amd64
                  15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
-            ---------------------------------------------------------------------------------
             ############################################################################
              - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS
             ############################################################################
@@ -270,13 +268,13 @@ class GridEngine:
 
     def is_job_valid(self, job):
         result = True
-        allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.PE_SLOTS
+        allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.pe_slots()
         Logger.info('Validation of job with id: {job_id}'.format(job_id=job.id))
         Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule.value, slots=job.slots))
         if job.slots and allocation_rule:
-            if allocation_rule == AllocationRule.PE_SLOTS:
+            if allocation_rule == AllocationRule.pe_slots():
                 result = job.slots <= self.max_instance_cores
-            elif allocation_rule in [AllocationRule.FILL_UP, AllocationRule.ROUND_ROBIN]:
+            elif allocation_rule in [AllocationRule.fill_up(), AllocationRule.round_robin()]:
                 result = job.slots <= self.max_cluster_cores
         Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job.id, res=result))
         return result
@@ -330,11 +328,12 @@ class GridEngine:
 
     def get_pe_allocation_rule(self, pe):
         """
-        Returns allocation rule of the pe as string, e.g. '$round_robin'
+        Returns allocation rule of the pe
 
         :param pe: Parallel environment to return allocation rule.
         """
-        return AllocationRule(self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe or "$pe_slots").strip())
+        exec_result = self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe)
+        return AllocationRule(exec_result.strip()) if exec_result else AllocationRule.pe_slots()
 
     def get_job_parallel_environment(self, job_id):
         """
@@ -377,7 +376,7 @@ class GridEngine:
         demand_slots = 0
         available_slots = self._get_available_slots()
         for job in expired_jobs:
-            if self.get_pe_allocation_rule(job.pe) in [AllocationRule.ROUND_ROBIN, AllocationRule.FILL_UP]:
+            if self.get_pe_allocation_rule(job.pe) in [AllocationRule.round_robin(), AllocationRule.fill_up()]:
                 if available_slots >= job.slots:
                     available_slots -= job.slots
                 else:
@@ -555,10 +554,8 @@ class GridEngineScaleUpHandler:
 
         :return: Host name of the launched pipeline.
         """
-        instance_to_run = CloudPipelineInstanceHelper.match_with_allowed(
-            resource,
-            self.instance_helper.get_allowed_instances(self.price_type, self.hybrid_autoscale)
-        )
+        allowed_instances = self.instance_helper.get_allowed_instances(self.price_type, self.hybrid_autoscale)
+        instance_to_run = CloudPipelineInstanceHelper.get_nearest_instance(resource, allowed_instances)
         Logger.info('The next instance is matched according to allowed: %s' % instance_to_run['name'])
         run_id = self._launch_additional_worker(instance_to_run['name'])
         host = self._retrieve_pod_name(run_id)
@@ -875,17 +872,7 @@ class GridEngineAutoscaler:
         Logger.info('There are %s additional pipelines.' % len(additional_hosts))
         updated_jobs = self.grid_engine.get_jobs()
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
-
-        # kill jobs that are pending and can't be satisfied with requested resource
-        # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 cores
-        pending_jobs = []
-        for pending_job in [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]:
-            if not self.grid_engine.is_job_valid(pending_job):
-                Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
-                            'it will rejected.'.format(job_id=pending_job.id))
-                self.grid_engine.kill_jobs([pending_job])
-            else:
-                pending_jobs.append(pending_job)
+        pending_jobs = self._filter_pending_job(updated_jobs)
 
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
@@ -925,6 +912,19 @@ class GridEngineAutoscaler:
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
+
+    def _filter_pending_job(self, updated_jobs):
+        # kill jobs that are pending and can't be satisfied with requested resource
+        # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
+        pending_jobs = []
+        for pending_job in [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]:
+            if not self.grid_engine.is_job_valid(pending_job):
+                Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
+                            'it will rejected.'.format(job_id=pending_job.id))
+                self.grid_engine.kill_jobs([pending_job])
+            else:
+                pending_jobs.append(pending_job)
+        return pending_jobs
 
     def scale_up(self, resource):
         """
@@ -1057,22 +1057,6 @@ class CloudPipelineInstanceHelper:
         self.master_instance_type = master_instance_type
         self.cloud_provider = cloud_provider
 
-    @staticmethod
-    def get_family_from_type(cloud_provider, instance_type):
-        if cloud_provider == CloudProvider.AWS:
-            return instance_type.rsplit('.', 1)[0]
-        elif cloud_provider == CloudProvider.GCP:
-            return instance_type.rsplit('-', 2)[1] if "custom" not in instance_type else None
-        elif cloud_provider == CloudProvider.AZURE:
-            # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
-            search = re.search("([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
-            return search.group(1) + search.group(2) if search else None
-        else:
-            return None
-
-    def _is_instance_from_family(self, instance_type):
-        return CloudPipelineInstanceHelper.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
-
     def get_allowed_instances(self, price_type, hybrid_autoscale):
         is_spot = price_type == "on-demand" or price_type == "on_demand"
         allowed = pipe.get_allowed_instance_types(self.region_id, is_spot)["cluster.allowed.instance.types"]
@@ -1087,23 +1071,76 @@ class CloudPipelineInstanceHelper:
             return [instance for instance in allowed if instance['name'] == self.master_instance_type]
 
     @staticmethod
-    def match_with_allowed(resource, allowed):
+    def get_family_from_type(cloud_provider, instance_type):
+        if cloud_provider == CloudProvider.aws():
+            return instance_type.rsplit('.', 1)[0]
+        elif cloud_provider == CloudProvider.gcp():
+            return instance_type.rsplit('-', 2)[1] if "custom" not in instance_type else None
+        elif cloud_provider == CloudProvider.azure():
+            # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
+            search = re.search("([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
+            return search.group(1) + search.group(2) if search else None
+        else:
+            return None
+
+    @staticmethod
+    def get_nearest_instance(resource, allowed):
         for instance in allowed:
             if instance['vcpu'] >= resource.cpu:
                 return instance
         return allowed.pop()
 
-
-class CloudProvider(Enum):
-    AWS = "AWS"
-    GCP = "GCP"
-    AZURE = "AZURE"
+    def _is_instance_from_family(self, instance_type):
+        return CloudPipelineInstanceHelper.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
 
 
-class AllocationRule(Enum):
-    PE_SLOTS = "$pe_slots"
-    FILL_UP = "$fill_up"
-    ROUND_ROBIN = "$round_robin"
+class CloudProvider:
+
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def aws():
+        return CloudProvider("AWS")
+
+    @staticmethod
+    def gcp():
+        return CloudProvider("GCP")
+
+    @staticmethod
+    def azure():
+        return CloudProvider("AZURE")
+
+    def __eq__(self, other):
+        if not isinstance(other, CloudProvider):
+            # don't attempt to compare against unrelated types
+            return False
+        return other.value == self.value
+
+
+class AllocationRule:
+
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def pe_slots():
+        return CloudProvider("$pe_slots")
+
+    @staticmethod
+    def fill_up():
+        return CloudProvider("$fill_up")
+
+    @staticmethod
+    def round_robin():
+        return CloudProvider("$round_robin")
+
+    def __eq__(self, other):
+        if not isinstance(other, CloudProvider):
+            # don't attempt to compare against unrelated types
+            return False
+        return other.value == self.value
+
 
 class GridEngineAutoscalingDaemon:
 
@@ -1210,7 +1247,7 @@ if __name__ == '__main__':
                         help='Autoscaling polling interval in seconds.')
     args = parser.parse_args()
 
-    cloud_provider = CloudProvider[os.environ['CLOUD_PROVIDER']]
+    cloud_provider = CloudProvider(os.environ['CLOUD_PROVIDER'])
     pipeline_api = os.environ['API']
     master_run_id = os.environ['RUN_ID']
     default_hostfile = os.environ['DEFAULT_HOSTFILE']
