@@ -45,8 +45,8 @@ public class GSBucketStorageHelperTest {
 
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final GCPRegion region = new GCPRegion();
-    private GCPClient gcpClient = mock(GCPClient.class);
-    private GSBucketStorage dataStorage = mock(GSBucketStorage.class);
+    private final GCPClient gcpClient = mock(GCPClient.class);
+    private final GSBucketStorage dataStorage = mock(GSBucketStorage.class);
 
     private final GSBucketStorageHelper storageHelper = spy(
             new GSBucketStorageHelper(messageHelper, region, gcpClient));
@@ -170,7 +170,7 @@ public class GSBucketStorageHelperTest {
         when(client.get(secondFileID)).thenReturn(secondFile);
 
         final Page<Blob> firstFolderBlobs = (Page<Blob>) spy(Page.class);
-        List<Blob> firstFolderBlobsList = Optional.ofNullable(optionalBlob)
+        final List<Blob> firstFolderBlobsList = Optional.ofNullable(optionalBlob)
                 .map(blob -> Arrays.asList(firstFile, blob, secondFolder))
                 .orElse(Arrays.asList(firstFile, secondFolder));
         when(firstFolderBlobs.getValues()).thenReturn(firstFolderBlobsList);
