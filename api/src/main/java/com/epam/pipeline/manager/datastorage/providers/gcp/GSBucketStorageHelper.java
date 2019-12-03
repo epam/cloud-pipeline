@@ -383,24 +383,26 @@ public class GSBucketStorageHelper {
 
     public void restoreFolder(final GSBucketStorage storage, final String path,
                               final RestoreFolderVO restoreFolderVO) {
-        final String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        cleanDeleteMarkers(client, bucketName, requestPath, restoreFolderVO);
+        cleanDeleteMarkers(client, bucketName, path, restoreFolderVO);
     }
 
     private void cleanDeleteMarkers(final Storage client,
                                     final String bucketName, final String requestPath,
                                     final RestoreFolderVO restoreFolderVO) {
-        final String folderPath = ProviderUtils.withTrailingDelimiter(requestPath);
-        Assert.isTrue(checkBlobExistsAndGet(bucketName, folderPath, client, null).isDirectory(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, folderPath, bucketName));
+        String folderPath = Optional.ofNullable(requestPath).orElse(EMPTY_PREFIX);
+        if (StringUtils.isNotBlank(folderPath)) {
+            folderPath = normalizeFolderPath(requestPath);
+        }
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.currentDirectory(),
                 Storage.BlobListOption.prefix(folderPath),
                 Storage.BlobListOption.pageToken(EMPTY_PREFIX),
                 Storage.BlobListOption.pageSize(Integer.MAX_VALUE));
+        Assert.isTrue(Objects.nonNull(blobs) && blobs.iterateAll().iterator().hasNext(), messageHelper
+                .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, folderPath, bucketName));
         listItemsWithVersions(blobs)
                 .forEach(item -> {
                     recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
