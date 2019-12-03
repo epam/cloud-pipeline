@@ -145,12 +145,46 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
             hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -173,12 +207,46 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
             hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
@@ -230,12 +298,46 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
             hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2.5',
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
             datetime=submit_datetime,
-            array=range(5, 10)
+        ),
+        GridEngineJob(
+            id='2.6',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.7',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.8',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.9',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
+        ),
+        GridEngineJob(
+            id='2.10',
+            name='name2',
+            user='user',
+            state=GridEngineJobState.PENDING,
+            datetime=submit_datetime,
         )
     ]
     for run_id in range(0, autoscaler.max_additional_hosts):

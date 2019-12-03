@@ -152,14 +152,13 @@ class GridEngineJobState:
 
 class GridEngineJob:
 
-    def __init__(self, id, name, user, state, datetime, hosts=None, array=None, slots=0, pe='local'):
+    def __init__(self, id, name, user, state, datetime, hosts=None, slots=0, pe='local'):
         self.id = id
         self.name = name
         self.user = user
         self.state = state
         self.datetime = datetime
         self.hosts = hosts if hosts else []
-        self.array = array
         self.slots = slots
         self.pe = pe
 
@@ -224,26 +223,25 @@ class GridEngine:
                 current_host = self._parse_host(tokens[0])
             # job line: 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
             elif tokens[0].isdigit():
-                job_id = tokens[0]
                 job_array = self._parse_array(tokens[8] if len(tokens) >= 9 else None)
-                if job_id in jobs:
-                    job = jobs[job_id]
-                    job.hosts.append(current_host)
-                    job.array = sorted(job.array + job_array)
-                else:
-                    pe = self.get_job_parallel_environment(job_id)
-                    job_slots = self.get_job_slots(job_id)
-                    jobs[job_id] = GridEngineJob(
-                        id=job_id,
-                        name=tokens[2],
-                        user=tokens[3],
-                        state=GridEngineJobState.from_letter_code(tokens[4]),
-                        datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
-                        hosts=[current_host] if current_host else [],
-                        slots=job_slots,
-                        array=job_array,
-                        pe=pe
-                    )
+                job_ids = [tokens[0] + "." + str(sub_id) for sub_id in job_array] if job_array else [tokens[0]]
+                for job_id in job_ids:
+                    if job_id in jobs:
+                        job = jobs[job_id]
+                        job.hosts.append(current_host)
+                    else:
+                        pe = self.get_job_parallel_environment(job_id)
+                        job_slots = self.get_job_slots(job_id)
+                        jobs[job_id] = GridEngineJob(
+                            id=job_id,
+                            name=tokens[2],
+                            user=tokens[3],
+                            state=GridEngineJobState.from_letter_code(tokens[4]),
+                            datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
+                            hosts=[current_host] if current_host else [],
+                            slots=job_slots,
+                            pe=pe
+                        )
             else:
                 current_host = None
         return jobs.values()
@@ -255,16 +253,17 @@ class GridEngine:
         return queue_and_host.split('@')[1] if queue_and_host else None
 
     def _parse_array(self, array_jobs):
+        result = []
         if not array_jobs:
-            return []
-        if ':' in array_jobs:
-            array_borders, _ = array_jobs.split(':')
-            start, stop = array_borders.split('-')
-            return list(range(int(start), int(stop) + 1))
-        elif ',' in array_jobs:
-            return list(map(int, array_jobs.split(',')))
-        else:
-            return [int(array_jobs)]
+            return result
+        for interval in array_jobs.split(","):
+            if ':' in interval:
+                array_borders, _ = interval.split(':')
+                start, stop = array_borders.split('-')
+                result += list(range(int(start), int(stop) + 1))
+            else:
+                result += [int(interval)]
+        return result
 
     def is_job_valid(self, job):
         result = True
@@ -475,12 +474,7 @@ class GridEngine:
         :param jobs: Grid engine jobs.
         :param force: Specifies if this command should be performed with -f flag.
         """
-        job_ids = []
-        for job in jobs:
-            job_id = str(job.id)
-            job_array_index = '' if not job.array or len(job.array) > 1 else ('.%s' % job.array[0])
-            job_ids.append(job_id + job_array_index)
-
+        job_ids = [str(job.id) for job in jobs]
         self.cmd_executor.execute((GridEngine._FORCE_KILL_JOBS if force else GridEngine._KILL_JOBS) % ' '.join(job_ids))
 
 
@@ -917,13 +911,17 @@ class GridEngineAutoscaler:
         # kill jobs that are pending and can't be satisfied with requested resource
         # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
         pending_jobs = []
+        invalid_jobs = []
         for pending_job in [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]:
             if not self.grid_engine.is_job_valid(pending_job):
                 Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
                             'it will rejected.'.format(job_id=pending_job.id))
-                self.grid_engine.kill_jobs([pending_job])
+                invalid_jobs.append(pending_job)
             else:
                 pending_jobs.append(pending_job)
+
+        if invalid_jobs:
+            self.grid_engine.kill_jobs(invalid_jobs)
         return pending_jobs
 
     def scale_up(self, resource):

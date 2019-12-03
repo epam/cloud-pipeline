@@ -56,7 +56,6 @@ def test_qstat_parsing():
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
     assert 'pipeline-38415' in job_1.hosts
-    assert job_1.array == []
 
     assert job_2.name == 'name2'
     assert job_2.user == 'someUser'
@@ -64,7 +63,6 @@ def test_qstat_parsing():
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)
     assert len(job_2.hosts) == 0
-    assert job_2.array == []
 
 
 def test_qstat_array_job_parsing():
@@ -84,13 +82,11 @@ def test_qstat_array_job_parsing():
 
     executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
     jobs = grid_engine.get_jobs()
-    _, job_2_array, job_3_array, job_4_array = sorted(jobs, key=lambda job: job.id)
-    for job in jobs:
-        print job.id
+
     assert [1] == [1]
-    assert job_2_array.array == list(range(1, 10 + 1))
-    assert job_3_array.array == list(range(1, 5 + 1))
-    assert job_4_array.array == list(range(8, 9 + 1))
+    assert len([job for job in jobs if '2.' in job.id]) == 10
+    assert len([job for job in jobs if '3.' in job.id]) == 5
+    assert len([job for job in jobs if '4.' in job.id]) == 2
 
 
 def test_qstat_empty_parsing():
@@ -125,19 +121,6 @@ def test_force_kill_jobs():
     assert_first_argument_contained(executor.execute, 'qdel ')
     assert_first_argument_contained(executor.execute, ' 1 2')
     assert_first_argument_contained(executor.execute, '-f')
-
-
-def test_kill_array_jobs():
-    jobs = [
-        GridEngineJob(id=1, name='', user='', state='', datetime=''),
-        GridEngineJob(id=2, name='', user='', state='', datetime='', array=[3]),
-        GridEngineJob(id=3, name='', user='', state='', datetime='', array=[5, 6])
-    ]
-
-    grid_engine.kill_jobs(jobs)
-    assert_first_argument_contained(executor.execute, 'qdel ')
-    assert_first_argument_contained(executor.execute, ' 1 2.3 3')
-    assert_first_argument_not_contained(executor.execute, '-f')
 
 
 def __to_lines(stdout):
