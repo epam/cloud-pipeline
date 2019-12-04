@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.RunCommitVO;
 import com.epam.pipeline.controller.vo.RunStatusVO;
@@ -36,6 +37,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
@@ -50,9 +52,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -485,5 +489,63 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRun>  updateRunTags(@PathVariable(value = RUN_ID) final Long runId,
                                               @RequestBody final TagsVO tagsVO) {
         return Result.success(runApiService.updateTags(runId, tagsVO));
+    }
+
+    @PostMapping(value = "/run/{runId}/schedule/create")
+    @ResponseBody
+    @ApiOperation(
+        value = "Creates pipeline run schedule.",
+        notes = "Creates pipeline run schedule.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunSchedule> createRunSchedule(@PathVariable(value = RUN_ID) Long runId,
+                                                 @RequestBody final PipelineRunScheduleVO schedule) {
+        return Result.success(runApiService.createRunSchedule(runId, schedule));
+    }
+
+    @PutMapping(value = "/run/{runId}/schedule/update")
+    @ResponseBody
+    @ApiOperation(
+        value = "Updates pipeline run schedule.",
+        notes = "Updates pipeline run schedule.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunSchedule> updateRunSchedule(@PathVariable(value = RUN_ID) Long runId,
+                                                 @RequestBody final PipelineRunScheduleVO schedule) {
+        return Result.success(runApiService.updateRunSchedule(runId, schedule));
+    }
+
+    @GetMapping(value = "/run/{runId}/schedule/loadAll")
+    @ResponseBody
+    @ApiOperation(
+        value = "Loads all schedules for a given pipeline run.",
+        notes = "Loads all schedules for a given pipeline run.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunSchedule>> loadAllRunSchedules(@PathVariable(value = RUN_ID) final Long runId) {
+        return Result.success(runApiService.loadAllRunSchedulesByRunId(runId));
+    }
+
+    @DeleteMapping(value = "/run/{runId}/schedule/delete")
+    @ResponseBody
+    @ApiOperation(
+        value = "Deletes pipeline run schedule by schedule id.",
+        notes = "Deletes pipeline run schedule by schedule id.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunSchedule> deleteRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
+                                                 @RequestBody final PipelineRunScheduleVO schedule) {
+        return Result.success(runApiService.deleteRunSchedule(runId, schedule.getScheduleId()));
+    }
+
+    @DeleteMapping(value = "/run/{runId}/schedule/deleteAll")
+    @ResponseBody
+    @ApiOperation(
+        value = "Deletes all pipeline run's schedules.",
+        notes = "Deletes all pipeline run's schedules.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void deleteAllRunSchedules(@PathVariable(value = RUN_ID) final Long runId) {
+        runApiService.deleteAllRunSchedules(runId);
     }
 }

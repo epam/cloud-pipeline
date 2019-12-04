@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
@@ -35,12 +36,14 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunScheduleManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
@@ -74,6 +77,7 @@ public class RunApiService {
     private final MessageHelper messageHelper;
     private final UtilsManager utilsManager;
     private final ConfigurationRunner configurationLauncher;
+    private final PipelineRunScheduleManager runScheduleManager;
 
     @AclMask
     public PipelineRun runCmd(PipelineStart runVO) {
@@ -266,5 +270,34 @@ public class RunApiService {
     @AclMask
     public PipelineRun terminateRun(final Long runId) {
         return runManager.terminateRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    @AclMask
+    public RunSchedule createRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
+        return runScheduleManager.createRunSchedule(runId, runScheduleVO);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    @AclMask
+    public RunSchedule updateRunSchedule(final Long runId, final PipelineRunScheduleVO schedule) {
+        return runScheduleManager.updateRunSchedule(runId, schedule);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    @AclMask
+    public RunSchedule deleteRunSchedule(final Long runId, final Long scheduleId) {
+        return runScheduleManager.deleteRunSchedule(runId, scheduleId);
+    }
+
+    @PreAuthorize(RUN_ID_EXECUTE)
+    @AclMask
+    public void deleteAllRunSchedules(final Long runId) {
+        runScheduleManager.deleteRunSchedulesForRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public List<RunSchedule> loadAllRunSchedulesByRunId(final Long runId) {
+        return runScheduleManager.loadAllRunSchedulesByRunId(runId);
     }
 }
