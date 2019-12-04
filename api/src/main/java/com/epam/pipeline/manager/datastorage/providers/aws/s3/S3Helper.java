@@ -321,7 +321,7 @@ public class S3Helper {
         listVersions(client, bucket, ProviderUtils.withTrailingDelimiter(path), null, null).getResults()
                 .forEach(item -> {
                     recursiveRestoreFolderCall(item, client, bucket, restoreFolderVO, deleter);
-                    if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                    if (ProviderUtils.isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
                         deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion());
                     }
                 });
@@ -333,18 +333,6 @@ public class S3Helper {
         if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
             cleanDeleteMarkers(client, bucket, item.getPath(), restoreFolderVO, deleter);
         }
-    }
-
-    private boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
-                                                             final RestoreFolderVO restoreFolderVO) {
-        final AntPathMatcher matcher = new AntPathMatcher();
-        return item.getType() == DataStorageItemType.File &&
-                ((DataStorageFile) item).getDeleteMarker() &&
-                ((DataStorageFile) item).getVersion() != null &&
-                Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
-                        .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
-                Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
-                        .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {
