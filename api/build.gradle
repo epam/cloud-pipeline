@@ -199,6 +199,9 @@ dependencies {
     compile group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: project.ext.versionElasticsearch
     testCompile group: "org.elasticsearch.client", name: "transport", version: project.ext.versionElasticsearch
 
+    // Pipeline run scheduling
+    compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'
+
     //Tests
     compile group: "org.springframework.boot", name: "spring-boot-starter-test", version: project.ext.versionSpringBoot
 }
