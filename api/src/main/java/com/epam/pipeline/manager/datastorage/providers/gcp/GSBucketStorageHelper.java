@@ -63,7 +63,6 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
@@ -122,10 +121,7 @@ public class GSBucketStorageHelper {
 
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
-        String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
-        if (StringUtils.isNotBlank(requestPath)) {
-            requestPath = normalizeFolderPath(requestPath);
-        }
+        final String requestPath = prepareRequestPathToViewFolderContent(path);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
 
@@ -370,15 +366,8 @@ public class GSBucketStorageHelper {
         checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
-
-        final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                .setSource(blob.getBlobId())
-                .setSourceOptions(Storage.BlobSourceOption.generationMatch())
-                .setTarget(BlobId.of(bucketName, path))
-                .build();
-        client.copy(request).getResult();
-        deleteBlob(blob, client, true);
+        client.copy(buildCopyRequestForFileRestore(bucketName, path, client, version)).getResult();
+        deleteBlob(checkBlobExistsAndGet(bucketName, path, client, version), client, true);
     }
 
     public void restoreFolder(final GSBucketStorage storage, final String path,
@@ -391,10 +380,7 @@ public class GSBucketStorageHelper {
     private void cleanDeleteMarkers(final Storage client,
                                     final String bucketName, final String requestPath,
                                     final RestoreFolderVO restoreFolderVO) {
-        String folderPath = Optional.ofNullable(requestPath).orElse(EMPTY_PREFIX);
-        if (StringUtils.isNotBlank(folderPath)) {
-            folderPath = normalizeFolderPath(requestPath);
-        }
+        final String folderPath = prepareRequestPathToViewFolderContent(requestPath);
         final Page<Blob> blobs = client.list(bucketName,
                 Storage.BlobListOption.versions(true),
                 Storage.BlobListOption.currentDirectory(),
@@ -406,17 +392,28 @@ public class GSBucketStorageHelper {
         listItemsWithVersions(blobs)
                 .forEach(item -> {
                     recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
-                    if (isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
-                        final Blob blob = checkBlobExistsAndGet(bucketName, item.getPath(), client,
-                                removeDeletedMarkerFromVersion(((DataStorageFile) item).getVersion()));
-                        final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                                .setSource(blob.getBlobId())
-                                .setSourceOptions(Storage.BlobSourceOption.generationMatch())
-                                .setTarget(BlobId.of(bucketName, item.getPath()))
-                                .build();
-                        client.copy(request).getResult();
+                    if (ProviderUtils.isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                        client.copy(buildCopyRequestForFileRestore(bucketName, item.getPath(), client,
+                                removeDeletedMarkerFromVersion(((DataStorageFile) item).getVersion())))
+                                .getResult();
                     }
                 });
+    }
+
+    private String prepareRequestPathToViewFolderContent(final String requestPath) {
+        return Optional.ofNullable(requestPath)
+                .filter(StringUtils::isNotBlank)
+                .map(this::normalizeFolderPath)
+                .orElse(EMPTY_PREFIX);
+    }
+
+    private Storage.CopyRequest buildCopyRequestForFileRestore(final String bucketName, final String destinationPath,
+                                                               final Storage client, final String version) {
+        return Storage.CopyRequest.newBuilder()
+                .setSource(checkBlobExistsAndGet(bucketName, destinationPath, client, version).getBlobId())
+                .setSourceOptions(Storage.BlobSourceOption.generationMatch())
+                .setTarget(BlobId.of(bucketName, destinationPath))
+                .build();
     }
 
     private String removeDeletedMarkerFromVersion(final String versionWithDeletedMarker) {
@@ -433,18 +430,6 @@ public class GSBucketStorageHelper {
         if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
             cleanDeleteMarkers(client, bucketName, item.getPath(), restoreFolderVO);
         }
-    }
-
-    private boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
-                                                             final RestoreFolderVO restoreFolderVO) {
-        final AntPathMatcher matcher = new AntPathMatcher();
-        return item.getType() == DataStorageItemType.File &&
-                ((DataStorageFile) item).getDeleteMarker() &&
-                ((DataStorageFile) item).getVersion() != null &&
-                Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
-                        .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
-                Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
-                        .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
     }
 
     public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
