@@ -548,8 +548,7 @@ class GridEngineScaleUpHandler:
 
         :return: Host name of the launched pipeline.
         """
-        allowed_instances = self.instance_helper.get_allowed_instances(self.price_type, self.hybrid_autoscale)
-        instance_to_run = CloudPipelineInstanceHelper.get_nearest_instance(resource, allowed_instances)
+        instance_to_run = self.instance_helper.select_instance(resource, self.price_type, self.hybrid_autoscale)
         Logger.info('The next instance is matched according to allowed: %s' % instance_to_run['name'])
         run_id = self._launch_additional_worker(instance_to_run['name'])
         host = self._retrieve_pod_name(run_id)
@@ -1057,7 +1056,17 @@ class CloudPipelineInstanceHelper:
         self.master_instance_type = master_instance_type
         self.cloud_provider = cloud_provider
 
-    def get_allowed_instances(self, price_type, hybrid_autoscale):
+    def select_instance(self, resource, price_type, hybrid_autoscale):
+        allowed = self._get_allowed_instances(price_type, hybrid_autoscale)
+        for instance in allowed:
+            if instance['vcpu'] >= resource.cpu:
+                return instance
+        return allowed.pop()
+
+    def get_max_allowed(self, price_type, hybrid_autoscale):
+        return self._get_allowed_instances(price_type, hybrid_autoscale).pop()
+
+    def _get_allowed_instances(self, price_type, hybrid_autoscale):
         is_spot = price_type == "on-demand" or price_type == "on_demand"
         allowed = pipe.get_allowed_instance_types(self.region_id, is_spot)["cluster.allowed.instance.types"]
         if hybrid_autoscale:
@@ -1082,13 +1091,6 @@ class CloudPipelineInstanceHelper:
             return search.group(1) + search.group(2) if search else None
         else:
             return None
-
-    @staticmethod
-    def get_nearest_instance(resource, allowed):
-        for instance in allowed:
-            if instance['vcpu'] >= resource.cpu:
-                return instance
-        return allowed.pop()
 
     def _is_instance_from_family(self, instance_type):
         return CloudPipelineInstanceHelper.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
@@ -1274,7 +1276,7 @@ if __name__ == '__main__':
     instance_helper = CloudPipelineInstanceHelper(cloud_provider=cloud_provider, region_id=region_id,
                                                   instance_family=instance_family, master_instance_type=instance_type,
                                                   pipe=pipe)
-    max_instance_cores = instance_helper.get_allowed_instances(price_type, hybrid_autoscale).pop()['vcpu']
+    max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale)['vcpu']
     max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores
 
     Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 

@@ -50,8 +50,8 @@ def setup_function():
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
     pipe.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
-    instance_helper.get_allowed_instances = MagicMock(return_value=
-        [{
+    instance_helper.select_instance = MagicMock(return_value=
+        {
         "sku": "78J32SRETMXEPY86",
         "name": "c5.xlarge",
         "termType": "OnDemand",
@@ -62,7 +62,7 @@ def setup_function():
         "gpu": 0,
         "regionId": 1,
         "vcpu": instance_cores
-    }])
+    })
     cmd_executor.execute = MagicMock()
     grid_engine.enable_host = MagicMock()
     host_storage.clear()
