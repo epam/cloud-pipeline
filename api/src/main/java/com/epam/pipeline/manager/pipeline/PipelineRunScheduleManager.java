@@ -23,9 +23,10 @@ import com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
+import com.epam.pipeline.manager.scheduling.PipelineRunSchedulerPureJava;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -43,13 +44,13 @@ public class PipelineRunScheduleManager {
 
     private final PipelineRunScheduleDao runScheduleDao;
     private final PipelineRunManager pipelineRunManager;
-    private final PipelineRunScheduler scheduler;
+    private final PipelineRunSchedulerPureJava scheduler;
     private final MessageHelper messageHelper;
 
     @Autowired
     PipelineRunScheduleManager(final PipelineRunScheduleDao runScheduleDao,
                                final PipelineRunManager pipelineRunManager,
-                               final PipelineRunScheduler scheduler,
+                               @Lazy final PipelineRunSchedulerPureJava scheduler,
                                final MessageHelper messageHelper) {
         this.runScheduleDao = runScheduleDao;
         this.pipelineRunManager = pipelineRunManager;
