@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage.providers.gcp;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -119,19 +121,10 @@ public class GSBucketStorageHelper {
 
     public DataStorageListing listItems(final GSBucketStorage storage, final String path, final Boolean showVersion,
                                         final Integer pageSize, final String marker) {
-        String requestPath = Optional.ofNullable(path).orElse(EMPTY_PREFIX);
-        if (StringUtils.isNotBlank(requestPath)) {
-            requestPath = normalizeFolderPath(requestPath);
-        }
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-
-        final Page<Blob> blobs = client.list(bucketName,
-                Storage.BlobListOption.versions(showVersion),
-                Storage.BlobListOption.currentDirectory(),
-                Storage.BlobListOption.prefix(requestPath),
-                Storage.BlobListOption.pageToken(Optional.ofNullable(marker).orElse(EMPTY_PREFIX)),
-                Storage.BlobListOption.pageSize(Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE)));
+        final Page<Blob> blobs = listFolderItemsBySpecifiedPath(client, path, bucketName,
+                showVersion, pageSize, marker);
         final List<AbstractDataStorageItem> items = showVersion
                 ? listItemsWithVersions(blobs)
                 : listItemsWithoutVersions(blobs);
@@ -367,15 +360,76 @@ public class GSBucketStorageHelper {
         checkVersionHasNotDeletedMarker(version);
         final Storage client = gcpClient.buildStorageClient(region);
         final String bucketName = storage.getPath();
-        final Blob blob = checkBlobExistsAndGet(bucketName, path, client, version);
+        client.copy(buildCopyRequestForFileRestore(bucketName, path, client, version)).getResult();
+        deleteBlob(checkBlobExistsAndGet(bucketName, path, client, version), client, true);
+    }
 
-        final Storage.CopyRequest request = Storage.CopyRequest.newBuilder()
-                .setSource(blob.getBlobId())
+    public void restoreFolder(final GSBucketStorage storage, final String path,
+                              final RestoreFolderVO restoreFolderVO) {
+        final Storage client = gcpClient.buildStorageClient(region);
+        final String bucketName = storage.getPath();
+        cleanDeleteMarkers(client, bucketName, path, restoreFolderVO);
+    }
+
+    private void cleanDeleteMarkers(final Storage client,
+                                    final String bucketName, final String requestPath,
+                                    final RestoreFolderVO restoreFolderVO) {
+        listItemsWithVersions(listFolderItemsBySpecifiedPath(client, requestPath, bucketName, true, null, null))
+                .forEach(item -> {
+                    recursiveRestoreFolderCall(item, client, bucketName, restoreFolderVO);
+                    if (ProviderUtils.isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                        client.copy(buildCopyRequestForFileRestore(bucketName, item.getPath(), client,
+                                removeDeletedMarkerFromVersion(((DataStorageFile) item).getVersion())))
+                                .getResult();
+                    }
+                });
+    }
+
+    private Page<Blob> listFolderItemsBySpecifiedPath(final Storage client, final String requestPath,
+                                                      final String bucketName, final Boolean showVersion,
+                                                      final Integer pageSize, final String marker) {
+        final String folderPath = prepareRequestPathToViewFolderContent(requestPath);
+        final Page<Blob> blobs = client.list(bucketName,
+                Storage.BlobListOption.versions(showVersion),
+                Storage.BlobListOption.currentDirectory(),
+                Storage.BlobListOption.prefix(folderPath),
+                Storage.BlobListOption.pageToken(Optional.ofNullable(marker).orElse(EMPTY_PREFIX)),
+                Storage.BlobListOption.pageSize(Optional.ofNullable(pageSize).orElse(Integer.MAX_VALUE)));
+        Assert.isTrue(Objects.nonNull(blobs) && blobs.iterateAll().iterator().hasNext(), messageHelper
+                .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, folderPath, bucketName));
+        return blobs;
+    }
+
+    private String prepareRequestPathToViewFolderContent(final String requestPath) {
+        return Optional.ofNullable(requestPath)
+                .filter(StringUtils::isNotBlank)
+                .map(this::normalizeFolderPath)
+                .orElse(EMPTY_PREFIX);
+    }
+
+    private Storage.CopyRequest buildCopyRequestForFileRestore(final String bucketName, final String destinationPath,
+                                                               final Storage client, final String version) {
+        return Storage.CopyRequest.newBuilder()
+                .setSource(checkBlobExistsAndGet(bucketName, destinationPath, client, version).getBlobId())
                 .setSourceOptions(Storage.BlobSourceOption.generationMatch())
-                .setTarget(BlobId.of(bucketName, path))
+                .setTarget(BlobId.of(bucketName, destinationPath))
                 .build();
-        client.copy(request).getResult();
-        deleteBlob(blob, client, true);
+    }
+
+    private String removeDeletedMarkerFromVersion(final String versionWithDeletedMarker) {
+        if (latestVersionHasDeletedMarker(versionWithDeletedMarker)) {
+            return versionWithDeletedMarker.substring(0, versionWithDeletedMarker.length() - 2);
+        }
+        throw new DataStorageException(
+                String.format("Corresponded version: '%s' should has deleted marker: '%s'", versionWithDeletedMarker,
+                        LATEST_VERSION_DELETION_MARKER));
+    }
+
+    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final Storage client,
+                                            final String bucketName, final RestoreFolderVO restoreFolderVO) {
+        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+            cleanDeleteMarkers(client, bucketName, item.getPath(), restoreFolderVO);
+        }
     }
 
     public void applyStoragePolicy(final GSBucketStorage storage, final StoragePolicy policy) {
