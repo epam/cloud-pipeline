@@ -395,6 +395,8 @@ class GridEngine:
 
     def _get_available_slots(self):
         available_slots = 0
+        # there should be lines like:  main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
+        # and we are interested in 0/2/2 - slots status
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS):
             rsrv_used_total = line.strip().split()[2].split("/")
             available_slots += int(rsrv_used_total[2]) - int(rsrv_used_total[1]) - int(rsrv_used_total[0])
@@ -488,11 +490,29 @@ class GridEngine:
 
 class ComputeResource:
 
-    def __init__(self, cpu, memory=None, disk=None):
+    def __init__(self, cpu, gpu=None, memory=None, disk=None):
         self.cpu = cpu
+        self.gpu = gpu
         self.memory = memory
         self.disk = disk
 
+
+class CPInstance:
+
+    def __init__(self, name, price_type, memory, gpu, cpu):
+        self.name = name
+        self.price_type = price_type
+        self.memory = memory
+        self.gpu = gpu
+        self.cpu = cpu
+
+    @staticmethod
+    def from_cp_response(instance):
+        return CPInstance(name=instance['name'],
+                          price_type=instance['termType'],
+                          cpu=int(instance['vcpu']),
+                          gpu=int(instance['gpu']),
+                          memory=int(instance['memory']))
 
 class Clock:
 
@@ -525,7 +545,11 @@ class GridEngineScaleUpHandler:
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
+        :param instance_helper: Object to get information from CloupPipeline about instance types
         :param polling_delay: Polling delay - in seconds.
+        :param instance_family: Instance family for launching additional instance,
+                e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
+        :param hybrid_autoscale: If True not only master instance type can be run for additional instance
         """
         self.executor = cmd_executor
         self.pipe = pipe
@@ -557,15 +581,15 @@ class GridEngineScaleUpHandler:
         :return: Host name of the launched pipeline.
         """
         instance_to_run = self.instance_helper.select_instance(resource, self.price_type, self.hybrid_autoscale)
-        Logger.info('The next instance is matched according to allowed: %s' % instance_to_run['name'])
-        run_id = self._launch_additional_worker(instance_to_run['name'])
+        Logger.info('The next instance is matched according to allowed: %s' % instance_to_run.name)
+        run_id = self._launch_additional_worker(instance_to_run.name)
         host = self._retrieve_pod_name(run_id)
         self.host_storage.add_host(host)
         pod = self._await_pod_initialization(run_id)
         self._add_worker_to_master_hosts(pod)
         self._await_worker_initialization(run_id)
         self.grid_engine.enable_host(pod.name)
-        self._increase_parallel_environment_slots(instance_to_run['vcpu'])
+        self._increase_parallel_environment_slots(instance_to_run.cpu)
         Logger.info('Additional worker with host=%s has been created.' % pod.name, crucial=True)
 
         # todo: Some delay is needed for GE to submit task to a new host.
@@ -1057,18 +1081,19 @@ class GridEngineWorkerValidator:
 
 class CloudPipelineInstanceHelper:
 
-    def __init__(self, cloud_provider, region_id, master_instance_type, instance_family, max_core_per_instance, pipe):
+    def __init__(self, cloud_provider, region_id, master_instance_type, instance_family, max_core_per_instance, pipe, pipeline_version):
         self.region_id = region_id
         self.pipe = pipe
         self.instance_family = instance_family
         self.master_instance_type = master_instance_type
         self.cloud_provider = cloud_provider
         self.max_core_per_instance = max_core_per_instance
+        self.pipeline_version = pipeline_version
 
     def select_instance(self, resource, price_type, hybrid_autoscale):
         allowed = self._get_allowed_instances(price_type, hybrid_autoscale)
         for instance in allowed:
-            if instance['vcpu'] >= resource.cpu:
+            if instance.cpu >= resource.cpu:
                 return instance
         return allowed.pop()
 
@@ -1077,17 +1102,20 @@ class CloudPipelineInstanceHelper:
 
     def _get_allowed_instances(self, price_type, hybrid_autoscale):
         is_spot = price_type == "on-demand" or price_type == "on_demand"
-        allowed = pipe.get_allowed_instance_types(self.region_id, is_spot)["cluster.allowed.instance.types"]
+        all_types = pipe.get_allowed_instance_types(self.region_id, is_spot)
+        allowed = all_types["cluster.allowed.instance.types"] if self.pipeline_version \
+                  else all_types["cluster.allowed.instance.types.docker"]
+        cp_instances = [CPInstance.from_cp_response(i) for i in allowed]
         if hybrid_autoscale:
-            return sorted(
-                    [instance for instance in allowed if self._is_instance_from_family(instance["name"])
-                     and instance['vcpu'] <= self.max_core_per_instance],
-                    cmp=lambda i1, i2: i1['vcpu'] - i2['vcpu']
-            )
+            return sorted(self._filter_instance_types(cp_instances), cmp=lambda i1, i2: i1.cpu - i2.cpu)
         else:
             Logger.info("Hybrid autoscaling is disabled, allowed list of instances will be trimmed to master instance type: {type}"
                         .format(type=self.master_instance_type))
-            return [instance for instance in allowed if instance['name'] == self.master_instance_type]
+            return [instance for instance in cp_instances if instance.name == self.master_instance_type]
+
+    def _filter_instance_types(self, allowed):
+        return [instance for instance in allowed if self._is_instance_from_family(instance.name)
+                and instance.cpu <= self.max_core_per_instance]
 
     @staticmethod
     def get_family_from_type(cloud_provider, instance_type):
@@ -1100,7 +1128,7 @@ class CloudPipelineInstanceHelper:
             search = re.search("([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
             return search.group(1) + search.group(2) if search else None
         else:
-            return None
+            raise ParsingError("Wrong CloudProvider valueis provided, only %s is available!" % CloudProvider.ALLOWED_VALUES)
 
     def _is_instance_from_family(self, instance_type):
         return CloudPipelineInstanceHelper.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
@@ -1108,8 +1136,13 @@ class CloudPipelineInstanceHelper:
 
 class CloudProvider:
 
+    ALLOWED_VALUES = ["AWS", "GCP", "AZURE"]
+
     def __init__(self, value):
-        self.value = value
+        if value in CloudProvider.ALLOWED_VALUES:
+            self.value = value
+        else:
+            raise ParsingError("Wrong CloudProvider value, only %s is available!" % CloudProvider.ALLOWED_VALUES)
 
     @staticmethod
     def aws():
@@ -1132,23 +1165,28 @@ class CloudProvider:
 
 class AllocationRule:
 
+    ALLOWED_VALUES = ["$pe_slots", "$fill_up", "$round_robin"]
+
     def __init__(self, value):
-        self.value = value
+        if value in AllocationRule.ALLOWED_VALUES:
+            self.value = value
+        else:
+            raise ParsingError("Wrong AllocationRule value, only %s is available!" % AllocationRule.ALLOWED_VALUES)
 
     @staticmethod
     def pe_slots():
-        return CloudProvider("$pe_slots")
+        return AllocationRule("$pe_slots")
 
     @staticmethod
     def fill_up():
-        return CloudProvider("$fill_up")
+        return AllocationRule("$fill_up")
 
     @staticmethod
     def round_robin():
-        return CloudProvider("$round_robin")
+        return AllocationRule("$round_robin")
 
     def __eq__(self, other):
-        if not isinstance(other, CloudProvider):
+        if not isinstance(other, AllocationRule):
             # don't attempt to compare against unrelated types
             return False
         return other.value == self.value
@@ -1248,6 +1286,13 @@ class CloudPipelineAPI:
         raise exceptions[-1]
 
 
+def get_pipeline_version():
+    pipeline_version = os.getenv('PIPELINE_VERSION')
+    if not pipeline_version:
+        pipeline_version = os.getenv('VERSION')
+    return pipeline_version
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Launches grid engine autoscaler long running process.',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -1281,15 +1326,18 @@ if __name__ == '__main__':
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceHelper.get_family_from_type(cloud_provider, instance_type))
 
+    pipeline_version = get_pipeline_version()
+    
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
     pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
     api = CloudPipelineAPI(pipe=pipe)
     
     instance_helper = CloudPipelineInstanceHelper(cloud_provider=cloud_provider, region_id=region_id,
                                                   instance_family=instance_family, master_instance_type=instance_type,
-                                                  pipe=pipe, max_core_per_instance=autoscale_max_core_per_instance)
+                                                  pipe=pipe, pipeline_version=pipeline_version,
+                                                  max_core_per_instance=autoscale_max_core_per_instance)
 
-    max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale)['vcpu']
+    max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale).cpu
     max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores
 
     Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 

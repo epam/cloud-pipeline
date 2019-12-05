@@ -15,7 +15,7 @@
 from mock import MagicMock, Mock
 from utils import assert_first_argument_contained
 
-from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, ComputeResource
+from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, ComputeResource, CPInstance
 
 HOSTNAME = 'hostname'
 POD_IP = '127.0.0.1'
@@ -51,18 +51,18 @@ def setup_function():
     pipe.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
     instance_helper.select_instance = MagicMock(return_value=
-        {
-        "sku": "78J32SRETMXEPY86",
-        "name": "c5.xlarge",
-        "termType": "OnDemand",
-        "operatingSystem": "Linux",
-        "memory": 96,
-        "memoryUnit": "GiB",
-        "instanceFamily": "Compute optimized",
-        "gpu": 0,
-        "regionId": 1,
-        "vcpu": instance_cores
-    })
+        CPInstance.from_cp_response({
+            "sku": "78J32SRETMXEPY86",
+            "name": "c5.xlarge",
+            "termType": "OnDemand",
+            "operatingSystem": "Linux",
+            "memory": 96,
+            "memoryUnit": "GiB",
+            "instanceFamily": "Compute optimized",
+            "gpu": 0,
+            "regionId": 1,
+            "vcpu": instance_cores
+        }))
     cmd_executor.execute = MagicMock()
     grid_engine.enable_host = MagicMock()
     host_storage.clear()
