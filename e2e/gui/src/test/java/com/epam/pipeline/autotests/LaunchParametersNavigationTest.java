@@ -28,6 +28,7 @@ import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersNavigationTest extends AbstractAutoRemovingPipelineRunningTest
         implements StorageHandling, FolderHandling {
@@ -80,6 +81,7 @@ public class LaunchParametersNavigationTest extends AbstractAutoRemovingPipeline
                         getPipelineName().toLowerCase() + ".sh",
                         Utils.readResourceFully(shellTemplate)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .clickAddOutputParameter()
                 .setName("parameter")

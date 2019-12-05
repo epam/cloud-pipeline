@@ -21,6 +21,8 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunningTest {
 
     public final String NEW_VERSION = "1.1.1-" + getPipelineName();
@@ -43,6 +45,7 @@ public class Launch_VersionReleaseTest extends AbstractAutoRemovingPipelineRunni
     public void exceptionShouldBeHandledWhenInvalidJson() {
         new PipelineCodeTabAO(getPipelineName())
                 .clearAndFillPipelineFile("config.json", JSON_CONTENT)
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .validateException("Failed to load pipeline configuration from file: " + JSON_CONTENT);
     }
