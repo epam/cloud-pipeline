@@ -86,7 +86,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .removePipelineIfExists(pipeline1500);
     }
 
-    @Test(enabled = false)
+    @Test
     @TestCase("EPMCMBIBPC-1256")
     public void changeInstancePriceTypeInConfigurationFile() {
         library()

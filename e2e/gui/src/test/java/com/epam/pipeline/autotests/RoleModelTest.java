@@ -699,7 +699,7 @@ public class RoleModelTest
                 .closeAll();
     }
 
-    @Test(priority = 28, enabled = false)
+    @Test(priority = 28)
     @TestCase({"EPMCMBIBPC-579"})
     public void setPipelinePermissionsAndCheckItForGroup() {
         logoutIfNeeded();
@@ -732,7 +732,7 @@ public class RoleModelTest
                 .assertRunButtonIsDisplayed();
     }
 
-    @Test(priority = 29, enabled = false)
+    @Test(priority = 29)
     @TestCase({"EPMCMBIBPC-580"})
     public void setToolPermissionsAndCheckItForGroup() {
         logoutIfNeeded();
