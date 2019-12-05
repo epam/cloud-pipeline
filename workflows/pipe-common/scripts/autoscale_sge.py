@@ -590,7 +590,7 @@ class GridEngineScaleUpHandler:
         self._await_worker_initialization(run_id)
         self.grid_engine.enable_host(pod.name)
         self._increase_parallel_environment_slots(instance_to_run.cpu)
-        Logger.info('Additional worker with host=%s has been created.' % pod.name, crucial=True)
+        Logger.info('Additional worker with host=%s and instance type=%s has been created.' % (pod.name, instance_to_run.name), crucial=True)
 
         # todo: Some delay is needed for GE to submit task to a new host.
         #  Probably, we should check if some jobs is scheduled on the host and release the block only after that.
