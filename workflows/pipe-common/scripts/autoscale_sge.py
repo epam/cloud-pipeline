@@ -269,14 +269,14 @@ class GridEngine:
     def is_job_valid(self, job):
         result = True
         allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.pe_slots()
-        Logger.info('Validation of job with id: {job_id}'.format(job_id=job.id))
-        Logger.info('Allocation rule: {alloc_rule} job slots: {slots}'.format(alloc_rule=allocation_rule.value, slots=job.slots))
+        Logger.info('Validation job # {job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
+            job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots))
         if job.slots and allocation_rule:
             if allocation_rule == AllocationRule.pe_slots():
                 result = job.slots <= self.max_instance_cores
             elif allocation_rule in [AllocationRule.fill_up(), AllocationRule.round_robin()]:
                 result = job.slots <= self.max_cluster_cores
-        Logger.info('Validation result for job: {job_id} is: {res}'.format(job_id=job.id, res=result))
+        Logger.info('Validation of job # {job_id}: {res}'.format(job_id=job.id, res=result))
         return result
 
     def disable_host(self, host, queue=_MAIN_Q):
@@ -490,7 +490,7 @@ class GridEngine:
 
 class ComputeResource:
 
-    def __init__(self, cpu, gpu=None, memory=None, disk=None):
+    def __init__(self, cpu, gpu=0, memory=0, disk=0):
         self.cpu = cpu
         self.gpu = gpu
         self.memory = memory
@@ -947,8 +947,8 @@ class GridEngineAutoscaler:
         invalid_jobs = []
         for pending_job in [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]:
             if not self.grid_engine.is_job_valid(pending_job):
-                Logger.info('Job with id: {job_id} cannot be satisfied with requested resources, '
-                            'it will rejected.'.format(job_id=pending_job.id))
+                Logger.warn('Job with id: {job_id} cannot be satisfied with requested resources, '
+                            'it will rejected.'.format(job_id=pending_job.id), crucial=True)
                 invalid_jobs.append(pending_job)
             else:
                 pending_jobs.append(pending_job)
@@ -1106,7 +1106,7 @@ class CloudPipelineInstanceHelper:
         allowed = all_types["cluster.allowed.instance.types"] if self.pipeline_version \
                   else all_types["cluster.allowed.instance.types.docker"]
         cp_instances = [CPInstance.from_cp_response(i) for i in allowed]
-        if hybrid_autoscale:
+        if hybrid_autoscale and self.instance_family:
             return sorted(self._filter_instance_types(cp_instances), cmp=lambda i1, i2: i1.cpu - i2.cpu)
         else:
             Logger.info("Hybrid autoscaling is disabled, allowed list of instances will be trimmed to master instance type: {type}"
@@ -1120,15 +1120,17 @@ class CloudPipelineInstanceHelper:
     @staticmethod
     def get_family_from_type(cloud_provider, instance_type):
         if cloud_provider == CloudProvider.aws():
-            return instance_type.rsplit('.', 1)[0]
+            search = re.search("^([a-z]\d+)\..*", instance_type)
+            return search.group(1) if search else None
         elif cloud_provider == CloudProvider.gcp():
-            return instance_type.rsplit('-', 2)[1] if "custom" not in instance_type else None
+            search = re.search("^\w\d\-(\w+)-.*", instance_type)
+            return search.group(1) if search else None
         elif cloud_provider == CloudProvider.azure():
             # will return Bms for Standard_B1ms or Dsv3 for Standard_D2s_v3 instance types
-            search = re.search("([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
+            search = re.search("^([a-zA-Z]+)\d+(.*)", instance_type.split('_', 1)[1].replace("_", ""))
             return search.group(1) + search.group(2) if search else None
         else:
-            raise ParsingError("Wrong CloudProvider valueis provided, only %s is available!" % CloudProvider.ALLOWED_VALUES)
+            return None
 
     def _is_instance_from_family(self, instance_type):
         return CloudPipelineInstanceHelper.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
