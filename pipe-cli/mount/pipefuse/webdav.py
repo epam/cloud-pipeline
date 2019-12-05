@@ -31,8 +31,10 @@ from fsclient import FileSystemClient, File
 py_version, _, _ = platform.python_version_tuple()
 if py_version == '2':
     from urlparse import urlparse
+    from urllib import quote, unquote
 else:
     from urllib.parse import urlparse
+    from urllib.parse import quote, unquote
 
 # add additional methods
 easywebdav.OperationFailed._OPERATIONS = dict(
@@ -98,7 +100,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
 
     def prop_value(self, elem, name, default=None):
         child = self.get_elem_value(elem, name)
-        return default if child is None or child.text is None else urllib.unquote(child.text).decode('utf8')
+        return default if child is None or child.text is None else unquote(child.text).decode('utf8')
 
     def prop_exists(self, elem, name):
         return self.get_elem_value(elem, name) is not None
@@ -165,7 +167,7 @@ class CPWebDavClient(easywebdav.Client, FileSystemClient):
         return response
 
     def _get_url(self, path):
-        path = str(path).strip()
+        path = quote(str(path).strip())
         if path.startswith(self.root_path):
             return self.host + path
         if path.startswith('/'):
