@@ -33,8 +33,7 @@ if py_version == '2':
     from urlparse import urlparse
     from urllib import quote, unquote
 else:
-    from urllib.parse import urlparse
-    from urllib.parse import quote, unquote
+    from urllib.parse import urlparse, quote, unquote
 
 # add additional methods
 easywebdav.OperationFailed._OPERATIONS = dict(
