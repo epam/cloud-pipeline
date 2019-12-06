@@ -51,3 +51,29 @@ def get_cmd_command_output(command, executable=None):
     exit_code = p.returncode
     if error: print(error)
     return exit_code, output.splitlines()
+
+def pack_script(script_path):
+    with open(script_path, 'r') as script_contents:
+        return pack_script_contents(script_contents.read()) 
+
+def pack_script_contents(script_contents):
+    import gzip
+    import io
+    import base64
+    gzipped_stream = io.BytesIO()
+    with gzip.GzipFile(fileobj=gzipped_stream, mode='wb') as compressed:
+        compressed.write(str(script_contents))
+    b64_contents = base64.b64encode(gzipped_stream.getvalue())
+
+    packed_template = """#!/bin/bash
+o=$(mktemp)
+(base64 -d | gzip -d > $o) << EOF
+{payload}
+EOF
+chmod +x $o
+$o
+c=$?
+rm -f $o
+exit $c
+"""
+    return packed_template.format(payload=b64_contents)

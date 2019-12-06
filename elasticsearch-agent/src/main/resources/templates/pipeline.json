@@ -4,12 +4,12 @@
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "id": { "type": "keyword", "store": true },
-        "name": { "type": "keyword", "store": true },
+        "name": { "type": "text", "store": true },
         "description": { "type": "text", "store": true },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "parentId": { "type": "keyword", "store": true, "index": false },
-        "repository": { "type": "keyword", "store": true },
-        "versions": { "type": "keyword" },
+        "repository": { "type": "text", "store": true },
+        "versions": { "type": "text" },
         "templateId": { "type": "text" },
         "ownerUserId": { "type": "long" },
         "ownerUserName": { "type": "keyword" },
@@ -21,6 +21,12 @@
         "allowed_groups": { "type": "keyword" },
         "denied_groups": { "type": "keyword" }
       }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
     }
   }
 }

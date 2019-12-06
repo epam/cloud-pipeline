@@ -38,6 +38,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class NotificationAspect {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationAspect.class);
+    public static final String RESUME_RUN_FAILED = "Resume run failed.";
 
     @Autowired
     private PipelineManager pipelineManager;
@@ -66,10 +67,12 @@ public class NotificationAspect {
         )
     @Async("notificationsExecutor")
     public void notifyRunStatusChanged(JoinPoint joinPoint, PipelineRun run) {
-        runStatusManager.saveStatus(RunStatus.builder()
+        final RunStatus newStatus = RunStatus.builder()
                 .runId(run.getId()).status(run.getStatus())
                 .timestamp(DateUtils.nowUTC())
-                .build());
+                .reason(run.getStateReasonMessage())
+                .build();
+        runStatusManager.saveStatus(newStatus);
         if (run.isTerminating()) {
             LOGGER.debug("Won't send a notification [{} {}: {}] (filtered by status type)", run.getPipelineName(),
                           run.getVersion(), run.getStatus());
@@ -89,5 +92,6 @@ public class NotificationAspect {
                      run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
     }
+
 }
 

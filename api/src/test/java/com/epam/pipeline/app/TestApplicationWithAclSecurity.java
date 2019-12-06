@@ -48,7 +48,9 @@ import org.springframework.test.context.TestPropertySource;
     ManagementWebSecurityAutoConfiguration.class,
     SecurityFilterAutoConfiguration.class})
 @ComponentScan(
-    basePackages = {"com.epam.pipeline.dao", "com.epam.pipeline.manager",  "com.epam.pipeline.security"},
+    basePackages = {
+            "com.epam.pipeline.dao", "com.epam.pipeline.manager",
+            "com.epam.pipeline.acl", "com.epam.pipeline.security"},
     excludeFilters = {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern="com.epam.pipeline.manager.security.Test*"),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = InstanceOfferScheduler.class)

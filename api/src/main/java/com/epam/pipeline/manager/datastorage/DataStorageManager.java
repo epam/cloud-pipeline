@@ -23,9 +23,11 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -36,6 +38,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.StorageServiceType;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -56,8 +59,8 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -70,15 +73,24 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -120,6 +132,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private UserManager userManager;
+
+    @Autowired
+    private Executor dataStoragePathExecutor;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -234,8 +249,10 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public AbstractDataStorage create(DataStorageVO dataStorageVO, Boolean proceedOnCloud, Boolean checkExistence,
-                                      boolean replaceStoragePath)
+    public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
+                                                               final Boolean proceedOnCloud,
+                                                               final Boolean checkExistence,
+                                                               final boolean replaceStoragePath)
             throws DataStorageException {
         Assert.isTrue(!StringUtils.isEmpty(dataStorageVO.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_PARAMETER_NULL_OR_EMPTY, "name"));
@@ -257,6 +274,8 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
+        final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
+        createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
             dataStorage.setMountOptions(
                 storageProviderManager.getStorageProvider(dataStorage).getDefaultMountOptions(dataStorage));
@@ -268,6 +287,8 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             String created = storageProviderManager.createBucket(dataStorage);
             dataStorage.setPath(created);
+
+            createdStorage.setActionStatus(storageProviderManager.postCreationProcessing(dataStorage));
         } else if (checkExistence && !storageProviderManager.checkStorage(dataStorage)) {
             throw new IllegalStateException(messageHelper
                     .getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND_BY_NAME, dataStorage.getName(),
@@ -286,7 +307,8 @@ public class DataStorageManager implements SecuredEntityManager {
         if (dataStorage.isPolicySupported()) {
             storageProviderManager.applyStoragePolicy(dataStorage);
         }
-        return dataStorage;
+
+        return createdStorage;
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -348,13 +370,13 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUrl(final Long dataStorageId,
-            final String path, String version) {
+            final String path, String version, ContentDisposition contentDisposition) {
         AbstractDataStorage dataStorage = load(dataStorageId);
         if (StringUtils.isNotBlank(version)) {
             Assert.isTrue(dataStorage.isVersioningEnabled(), messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_VERSIONING_REQUIRED, dataStorage.getName()));
         }
-        return storageProviderManager.generateDownloadURL(dataStorage, path, version);
+        return storageProviderManager.generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
     public List<DataStorageDownloadFileUrl> generateDataStorageItemUrl(final Long dataStorageId,
@@ -364,7 +386,7 @@ public class DataStorageManager implements SecuredEntityManager {
         if (paths == null) {
             return urls;
         }
-        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null)));
+        paths.forEach(path -> urls.add(storageProviderManager.generateDownloadURL(dataStorage, path, null, null)));
         return urls;
     }
 
@@ -573,6 +595,68 @@ public class DataStorageManager implements SecuredEntityManager {
             return name;
         }
         return prefix + name;
+    }
+
+    public List<PathDescription> getDataSizes(final List<String> paths) {
+        if (CollectionUtils.isEmpty(paths)) {
+            return Collections.emptyList();
+        }
+        final Long timeout = preferenceManager.getPreference(SystemPreferences.STORAGE_LISTING_TIME_LIMIT);
+        final Map<String, PathDescription> container = new ConcurrentHashMap<>();
+        try {
+            CompletableFuture.runAsync(
+                () -> getRootPaths(paths)
+                        .forEach(path -> computeDataSize(path, container)),
+                    dataStoragePathExecutor)
+                    .get(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+
+        return new ArrayList<>(container.values());
+    }
+
+    private Collection<String> getRootPaths(final List<String> paths) {
+        final Set<String> initialPaths = new HashSet<>(paths);
+        final List<String> childPaths = initialPaths.stream()
+                .map(path -> initialPaths.stream().filter(p -> !p.equals(path) &&
+                        p.startsWith(ProviderUtils.withTrailingDelimiter(path))))
+                .flatMap(Function.identity())
+                .collect(Collectors.toList());
+        return CollectionUtils.subtract(initialPaths, childPaths);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void computeDataSize(final String path, final Map<String, PathDescription> container) {
+        try {
+            final PathDescription pathDescription = PathDescription.builder()
+                    .path(path)
+                    .completed(false)
+                    .size(-1L)
+                    .build();
+            container.put(path, pathDescription);
+
+            Assert.state(StringUtils.isNotBlank(path), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_IS_EMPTY));
+            final URI pathUri = new URI(path);
+            final String bucketName = pathUri.getHost();
+            Assert.state(StringUtils.isNotBlank(bucketName), messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_NAME_IS_EMPTY));
+            final String relativePath = ProviderUtils.withoutLeadingDelimiter(pathUri.getPath());
+
+            final AbstractDataStorage dataStorage = loadByNameOrId(bucketName);
+            Assert.state(StringUtils.startsWithIgnoreCase(path, dataStorage.getPathMask()),
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_INVALID_SCHEMA, path,
+                            dataStorage.getPathMask()));
+
+            pathDescription.setDataStorageId(dataStorage.getId());
+            pathDescription.setSize(0L);
+            storageProviderManager.getDataSize(dataStorage, relativePath, pathDescription);
+        } catch (Exception e) {
+            LOGGER.error(messageHelper.getMessage(
+                    MessageConstants.ERROR_DATASTORAGE_PATH_PROCCESSING, path, e.getMessage()));
+            LOGGER.error(e.getMessage(), e);
+        }
     }
 
     private void assertDataStorageMountPoint(DataStorageVO dataStorageVO) {
@@ -801,5 +885,4 @@ public class DataStorageManager implements SecuredEntityManager {
                         values.stream().findFirst().map(v -> v.getClass().getSimpleName()).orElse("CLASS"),
                         values.stream().map(v -> String.valueOf(v.getId())).collect(Collectors.joining(","))));
     }
-
 }

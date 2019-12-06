@@ -25,11 +25,9 @@ import {
 } from './launch-cluster-tooltips';
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
+export const CP_CAP_SPARK = 'CP_CAP_SPARK';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
-
-const NODE_COUNT_FORM_FIELD = 'node_count';
-const MAX_NODE_COUNT_FORM_FIELD = 'max_node_count';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -39,13 +37,10 @@ const PARAMETER_TITLE_STYLE = {
   marginRight: PARAMETER_TITLE_RIGHT_MARGIN
 };
 
-export const ClusterFormItemNames = {
-  nodesCount: NODE_COUNT_FORM_FIELD,
-  maxNodesCount: MAX_NODE_COUNT_FORM_FIELD
-};
-
 function booleanParameterIsSetToValue (parameters, parameter, value = true) {
-  return !!parameters && parameters[parameter] && `${parameters[parameter].value}` === `${value}`;
+  return !!parameters &&
+    parameters.hasOwnProperty(parameter) &&
+    `${parameters[parameter].value}` === `${value}`;
 }
 
 export function autoScaledClusterEnabled (parameters) {
@@ -57,6 +52,10 @@ export function gridEngineEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SGE);
 }
 
+export function sparkEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_SPARK);
+}
+
 export const CLUSTER_TYPE = {
   singleNode: 0,
   fixedCluster: 1,
@@ -65,8 +64,12 @@ export const CLUSTER_TYPE = {
 
 export function getSkippedSystemParametersList (controller) {
   if (controller && controller.state && controller.state.launchCluster &&
-    (controller.state.autoScaledCluster || controller.state.gridEngineEnabled)) {
-    return [CP_CAP_SGE, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+    (
+      controller.state.autoScaledCluster ||
+      controller.state.gridEngineEnabled ||
+      controller.state.sparkEnabled
+    )) {
+    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
@@ -75,12 +78,52 @@ export function getSystemParameterDisabledState (controller, parameterName) {
   return getSkippedSystemParametersList(controller).indexOf(parameterName) >= 0;
 }
 
+export function setClusterParameterValue (form, sectionName, configuration) {
+  if (!form || !configuration) {
+    return;
+  }
+  const {
+    gridEngineEnabled,
+    sparkEnabled
+  } = configuration;
+  const formValue = form.getFieldValue(sectionName);
+  if (!formValue || !formValue.hasOwnProperty('params')) {
+    return;
+  }
+  const {params} = formValue;
+  const keys = Object.keys(params);
+  let modified = false;
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const value = params[key];
+    if (!value || !value.name) {
+      continue;
+    }
+    if (value.name === CP_CAP_SGE) {
+      value.value = `${gridEngineEnabled}`;
+      modified = true;
+    }
+    if (value.name === CP_CAP_SPARK) {
+      value.value = `${sparkEnabled}`;
+      modified = true;
+    }
+  }
+  if (modified) {
+    form.setFieldsValue(
+      {
+        [sectionName]: formValue
+      }
+    );
+  }
+}
+
 export function setSingleNodeMode (controller, callback) {
   controller.setState({
     launchCluster: false,
     autoScaledCluster: false,
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
+    sparkEnabled: false
   }, callback);
 }
 
@@ -90,6 +133,7 @@ export function setFixedClusterMode (controller, callback) {
     autoScaledCluster: false,
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
+    sparkEnabled: false,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -105,6 +149,7 @@ export function setAutoScaledMode (controller, callback) {
     setDefaultNodesCount: false,
     nodesCount: undefined,
     gridEngineEnabled: false,
+    sparkEnabled: false,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -113,108 +158,58 @@ export function setAutoScaledMode (controller, callback) {
   }, callback);
 }
 
-export const validateNodesCountFn = (ctrl, options) => {
-  let nodesCountFieldName = ClusterFormItemNames.nodesCount;
-  let maxNodesCountFieldName = ClusterFormItemNames.maxNodesCount;
-  if (options) {
-    if (options.fieldsPrefix) {
-      nodesCountFieldName = `${options.fieldsPrefix}.${nodesCountFieldName}`;
-      maxNodesCountFieldName = `${options.fieldsPrefix}.${maxNodesCountFieldName}`;
-    } else {
-      if (options.nodesCountFieldName) {
-        nodesCountFieldName = options.nodesCountFieldName;
-      }
-      if (options.maxNodesCountFieldName) {
-        maxNodesCountFieldName = options.maxNodesCountFieldName;
-      }
-    }
+const range = ({nodesCount, maxNodesCount}) => {
+  return `${nodesCount} - ${maxNodesCount}`;
+};
+
+const plural = (count, str) => {
+  if (count === 1) {
+    return `${count} ${str}`;
   }
-  return function (rule, value, callback) {
-    if (!!ctrl.state.fireCloudMethodName || !ctrl.state.launchCluster) {
-      callback();
-      return;
-    }
-    if (rule.field === maxNodesCountFieldName && !ctrl.state.autoScaledCluster) {
-      callback();
-      return;
-    }
-    if (ctrl.props.preferences && ctrl.props.preferences.loaded) {
-      const maxValue = ctrl.props.preferences.getPreferenceValue('launch.max.scheduled.number');
-      if (maxValue && !isNaN(maxValue) && +maxValue > 0 && !isNaN(value) && +value >= maxValue) {
-        callback(`Maximum nodes count is ${+maxValue - 1}`);
-        return;
-      }
-    }
-    const validatePositiveNumber = (rule, value, callback) => {
-      if (value && +value > 0 && Number.isInteger(+value) && `${value}` === `${+value}`) {
-        callback();
-      } else {
-        callback('Please enter positive number');
-      }
-    };
-    validatePositiveNumber(rule, value, (error) => {
-      if (error) {
-        callback(error);
-      } else if (ctrl.state.autoScaledCluster) {
-        const nodesCount = rule.field === nodesCountFieldName
-          ? value
-          : ctrl.props.form.getFieldValue(nodesCountFieldName);
-        const maxNodesCount = rule.field === maxNodesCountFieldName
-          ? value
-          : ctrl.props.form.getFieldValue(maxNodesCountFieldName);
-        let nodesRangeError;
-        if (!isNaN(nodesCount) && !isNaN(maxNodesCount) && +nodesCount >= +maxNodesCount) {
-          nodesRangeError = 'Max nodes count should be greater than nodes count';
-        }
-        const oppositeField = rule.field === nodesCountFieldName
-          ? maxNodesCountFieldName
-          : nodesCountFieldName;
-        if (!ctrl.props.form.isFieldValidating(oppositeField)) {
-          ctrl.props.form.validateFields([oppositeField], {force: true}, () => {
-            callback(nodesRangeError);
-          });
-        } else {
-          callback(nodesRangeError);
-        }
-      } else {
-        callback();
-      }
-    });
-  };
+  return `${count} ${str}s`;
+};
+
+const lowerCasedString = (string, lowercased) => {
+  if (lowercased) {
+    return (string || '').toLowerCase();
+  }
+  return string;
 };
 
 @inject('preferences')
 @observer
-export class ConfigureClusterDialog extends React.Component {
-
-  static getClusterDescription = (ctrl) => {
+class ConfigureClusterDialog extends React.Component {
+  static getClusterName = (ctrl, lowerCased) => {
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
+      const name = lowerCasedString('Auto-scaled cluster', lowerCased);
       if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
-        return `Auto-scaled cluster (${ctrl.state.nodesCount} - ${ctrl.state.maxNodesCount} child nodes)`;
+        return `${name} (${range(ctrl.state)} child nodes)`;
       }
-      return 'Auto-scaled cluster';
+      return name;
     } else if (ctrl.state.launchCluster) {
-      if (!isNaN(ctrl.state.nodesCount)) {
-        return `Cluster (${ctrl.state.nodesCount} child ${ctrl.state.nodesCount > 1 ? 'nodes' : 'node'})`;
+      let clusterName = lowerCasedString('Cluster', lowerCased);
+      if (ctrl.state.gridEngineEnabled) {
+        clusterName = `GridEngine ${lowerCasedString('Cluster', lowerCased)}`;
       }
-      return 'Cluster';
+      if (ctrl.state.sparkEnabled) {
+        clusterName = `Apache Spark ${lowerCasedString('Cluster', lowerCased)}`;
+      }
+      if (!isNaN(ctrl.state.nodesCount)) {
+        return `${clusterName} (${plural(ctrl.state.nodesCount, 'child node')})`;
+      }
+      return clusterName;
     }
-    return 'Single node';
+    return null;
   };
 
-  static getConfigureClusterButtonDescription = (ctrl) => {
-    if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
-      if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
-        return `Auto-scaled cluster (${ctrl.state.nodesCount} - ${ctrl.state.maxNodesCount} child nodes)`;
-      }
-      return 'Auto-scaled cluster';
-    } else if (ctrl.state.launchCluster) {
-      if (!isNaN(ctrl.state.nodesCount)) {
-        return `Cluster (${ctrl.state.nodesCount} child ${ctrl.state.nodesCount > 1 ? 'nodes' : 'node'})`;
-      }
-      return 'Cluster';
-    }
-    return 'Configure cluster';
+  static getClusterDescription = (ctrl, lowerCased = false) => {
+    return ConfigureClusterDialog.getClusterName(ctrl, lowerCased) ||
+      lowerCasedString('Single node', lowerCased);
+  };
+
+  static getConfigureClusterButtonDescription = (ctrl, lowerCased = false) => {
+    return ConfigureClusterDialog.getClusterName(ctrl, lowerCased) ||
+      lowerCasedString('Configure cluster', lowerCased);
   };
 
   static propTypes = {
@@ -223,6 +218,7 @@ export class ConfigureClusterDialog extends React.Component {
     launchCluster: PropTypes.bool,
     autoScaledCluster: PropTypes.bool,
     gridEngineEnabled: PropTypes.bool,
+    sparkEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -235,6 +231,7 @@ export class ConfigureClusterDialog extends React.Component {
     autoScaledCluster: false,
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
+    sparkEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -246,7 +243,7 @@ export class ConfigureClusterDialog extends React.Component {
   @computed
   get selectedClusterType () {
     if (this.state.launchCluster) {
-      return this.state.autoScaledCluster
+      return this.state.autoScaledCluster && !this.state.sparkEnabled
         ? CLUSTER_TYPE.autoScaledCluster
         : CLUSTER_TYPE.fixedCluster;
     } else {
@@ -311,8 +308,16 @@ export class ConfigureClusterDialog extends React.Component {
 
   onChangeEnableGridEngine = (e) => {
     this.setState({
-      gridEngineEnabled: e.target.checked
-    })
+      gridEngineEnabled: e.target.checked,
+      sparkEnabled: false
+    });
+  };
+
+  onChangeEnableSpark = (e) => {
+    this.setState({
+      gridEngineEnabled: false,
+      sparkEnabled: e.target.checked
+    });
   };
 
   renderFixedClusterConfiguration = () => {
@@ -336,6 +341,15 @@ export class ConfigureClusterDialog extends React.Component {
           Enable GridEngine
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableGridEngine)}
+      </Row>,
+      <Row key="enable spark" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.sparkEnabled}
+          onChange={this.onChangeEnableSpark}>
+          Enable Apache Spark
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.cluster.enableSpark)}
       </Row>
     ].filter(r => !!r);
   };
@@ -369,7 +383,12 @@ export class ConfigureClusterDialog extends React.Component {
               style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
               value={this.state.nodesCount}
               onChange={this.onChangeNodeCount} />
-            {renderTooltip(LaunchClusterTooltip.autoScaledCluster.defaultNodesCount, {marginLeft: 5})}
+            {
+              renderTooltip(
+                LaunchClusterTooltip.autoScaledCluster.defaultNodesCount,
+                {marginLeft: 5}
+              )
+            }
             <a
               onClick={onUnsetChildNodes}
               style={{color: '#666', textDecoration: 'underline', marginLeft: 5}}>
@@ -386,7 +405,12 @@ export class ConfigureClusterDialog extends React.Component {
                 style={{color: '#666', textDecoration: 'underline'}}>
                 Setup default child nodes count
               </a>
-              {renderTooltip(LaunchClusterTooltip.autoScaledCluster.defaultNodesCount, {marginLeft: 5})}
+              {
+                renderTooltip(
+                  LaunchClusterTooltip.autoScaledCluster.defaultNodesCount,
+                  {marginLeft: 5}
+                )
+              }
             </span>
           </Row>
         ];
@@ -397,7 +421,7 @@ export class ConfigureClusterDialog extends React.Component {
         <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
         <InputNumber
           min={this.state.setDefaultNodesCount ? 2 : 1}
-          max={this.launchMaxScheduledNumber}
+          max={this.launchMaxAutoScaledNumber}
           disabled={this.props.disabled}
           style={Object.assign({flex: 1}, this.getInputStyle('maxNodesCount'))}
           value={this.state.maxNodesCount}
@@ -417,22 +441,29 @@ export class ConfigureClusterDialog extends React.Component {
     }
     if (this.validate()) {
       this.props.onChange && this.props.onChange({
-        nodesCount: this.state.launchCluster && (!this.state.autoScaledCluster || this.state.setDefaultNodesCount)
+        nodesCount: this.state.launchCluster &&
+        (!this.state.autoScaledCluster || this.state.setDefaultNodesCount)
           ? this.state.nodesCount
           : undefined,
         maxNodesCount: this.state.launchCluster && this.state.autoScaledCluster
           ? this.state.maxNodesCount : undefined,
         launchCluster: this.state.launchCluster,
         autoScaledCluster: this.state.autoScaledCluster,
-        gridEngineEnabled: this.state.gridEngineEnabled
+        gridEngineEnabled: this.state.gridEngineEnabled,
+        sparkEnabled: this.state.sparkEnabled
       });
     }
   };
 
   render () {
+    const {sparkEnabled} = this.state;
     return (
       <Modal
-        title={this.props.instanceName ? `Configure cluster (${this.props.instanceName})` : 'Configure cluster'}
+        title={
+          this.props.instanceName
+            ? `Configure cluster (${this.props.instanceName})`
+            : 'Configure cluster'
+        }
         onCancel={this.props.onClose}
         onOk={this.onOkClicked}
         visible={this.props.visible}
@@ -445,7 +476,12 @@ export class ConfigureClusterDialog extends React.Component {
                 value={this.selectedClusterType}>
                 <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
                 <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
-                <Radio.Button value={CLUSTER_TYPE.autoScaledCluster}>Auto-scaled cluster</Radio.Button>
+                <Radio.Button
+                  disabled={sparkEnabled}
+                  value={CLUSTER_TYPE.autoScaledCluster}
+                >
+                  Auto-scaled cluster
+                </Radio.Button>
               </Radio.Group>
               {renderTooltip(LaunchClusterTooltip.clusterMode, {marginLeft: 10})}
             </div>
@@ -471,13 +507,36 @@ export class ConfigureClusterDialog extends React.Component {
     return undefined;
   }
 
+  @computed
+  get launchMaxAutoScaledNumber () {
+    const scheduledMaxPreferenceValue = this.launchMaxScheduledNumber;
+    if (this.props.preferences && this.props.preferences.loaded) {
+      const autoScalingMaxPreferenceValue = this.props.preferences
+        .getPreferenceValue('ge.autoscaling.scale.up.to.max');
+      if (autoScalingMaxPreferenceValue && !isNaN(autoScalingMaxPreferenceValue)) {
+        if (scheduledMaxPreferenceValue && !isNaN(scheduledMaxPreferenceValue)) {
+          // 'ge.autoscaling.scale.up.to.max' should not be less then 'launch.max.scheduled.number'
+          return Math.max(+autoScalingMaxPreferenceValue - 1, +scheduledMaxPreferenceValue);
+        }
+        return +autoScalingMaxPreferenceValue - 1;
+      }
+    }
+    return scheduledMaxPreferenceValue;
+  }
+
   validate = () => {
     let nodesCount = null;
     let maxNodesCount = null;
     if (this.state.launchCluster) {
-      if ((!this.state.autoScaledCluster || this.state.setDefaultNodesCount) && isNaN(this.state.nodesCount)) {
+      if (
+        (!this.state.autoScaledCluster || this.state.setDefaultNodesCount) &&
+        isNaN(this.state.nodesCount)
+      ) {
         nodesCount = 'Enter positive number';
-      } else if ((!this.state.autoScaledCluster || this.state.setDefaultNodesCount) && +this.state.nodesCount <= 0) {
+      } else if (
+        (!this.state.autoScaledCluster || this.state.setDefaultNodesCount) &&
+        +this.state.nodesCount <= 0
+      ) {
         nodesCount = 'Value should be greater than 0';
       } else if (!this.state.autoScaledCluster || this.state.setDefaultNodesCount) {
         const maxValue = this.launchMaxScheduledNumber;
@@ -491,12 +550,21 @@ export class ConfigureClusterDialog extends React.Component {
         } else if (+this.state.maxNodesCount <= 0) {
           maxNodesCount = 'Value should be greater than 0';
         } else {
-          const maxValue = this.launchMaxScheduledNumber;
-          if (maxValue && !isNaN(maxValue) && +maxValue > 0 && +this.state.maxNodesCount > maxValue) {
+          const maxValue = this.launchMaxAutoScaledNumber;
+          if (
+            maxValue &&
+            !isNaN(maxValue) && +maxValue > 0 &&
+            +this.state.maxNodesCount > maxValue
+          ) {
             maxNodesCount = `Maximum value is ${+maxValue}`;
           }
         }
-        if (this.state.setDefaultNodesCount && !nodesCount && !maxNodesCount && +this.state.nodesCount >= +this.state.maxNodesCount) {
+        if (
+          this.state.setDefaultNodesCount &&
+          !nodesCount &&
+          !maxNodesCount &&
+          +this.state.nodesCount >= +this.state.maxNodesCount
+        ) {
           nodesCount = 'Max child nodes count should be greater than child nodes count';
           maxNodesCount = 'Max child nodes count should be greater than child nodes count';
         }
@@ -508,12 +576,13 @@ export class ConfigureClusterDialog extends React.Component {
     return !nodesCount && !maxNodesCount;
   };
 
-  componentWillReceiveProps(nextProps, nextContext) {
+  componentWillReceiveProps (nextProps, nextContext) {
     if (nextProps.visible !== this.props.visible && nextProps.visible) {
       this.setState({
         launchCluster: nextProps.launchCluster,
         autoScaledCluster: nextProps.autoScaledCluster,
         gridEngineEnabled: nextProps.gridEngineEnabled,
+        sparkEnabled: nextProps.sparkEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,
@@ -525,3 +594,5 @@ export class ConfigureClusterDialog extends React.Component {
     }
   }
 }
+
+export {ConfigureClusterDialog};

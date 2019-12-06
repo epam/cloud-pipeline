@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -106,7 +108,6 @@ public class GSBucketStorageHelper {
                 .setStorageClass(StorageClass.REGIONAL)
                 .setLocation(trimRegionZone(region.getRegionCode()))
                 .build());
-        applyIamPolicy(storage, client);
         return bucket.getName();
     }
 
@@ -407,6 +408,19 @@ public class GSBucketStorageHelper {
         client.update(bucketInfoBuilder.build());
     }
 
+    public PathDescription getDataSize(final GSBucketStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final Storage client = gcpClient.buildStorageClient(region);
+        final Page<Blob> blobs = client.list(dataStorage.getPath(), Storage.BlobListOption.prefix(requestPath));
+
+        ProviderUtils.getSizeByPath(blobs.iterateAll(), requestPath, BlobInfo::getSize, BlobInfo::getName,
+                pathDescription);
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
+    }
+
     private List<Cors> buildCors() {
         if (StringUtils.isBlank(region.getCorsRules())) {
             return null;
@@ -430,7 +444,9 @@ public class GSBucketStorageHelper {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void applyIamPolicy(final GSBucketStorage storage, final Storage client) {
+    public ActionStatus applyIamPolicy(final GSBucketStorage storage) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
         if (StringUtils.isNotBlank(region.getPolicy())) {
             try {
                 final Policy currentPolicy = client.getIamPolicy(storage.getPath());
@@ -438,8 +454,10 @@ public class GSBucketStorageHelper {
                         buildIamPolicy(MapUtils.emptyIfNull(currentPolicy.getBindings())));
             } catch(Exception e) {
                 log.error(e.getMessage(), e);
+                return ActionStatus.error(e.getMessage());
             }
         }
+        return ActionStatus.success();
     }
 
     private Policy buildIamPolicy(final Map<Role, Set<Identity>> currentPolicy) {

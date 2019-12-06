@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.manager.cluster.ClusterApiService;
@@ -29,9 +30,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,16 +42,34 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
 @Api(value = "Cluster methods")
+@RequiredArgsConstructor
 public class ClusterController extends AbstractRestController {
 
     private static final String NAME = "name";
+    private static final String FROM = "from";
+    private static final String TO = "to";
+    private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
-    @Autowired
-    private ClusterApiService clusterApiService;
+    private final ClusterApiService clusterApiService;
+
+    @GetMapping(value = "/cluster/master")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns kubernetes nodes used in cluster as a master API node",
+            notes = "Returns kubernetes nodes used in cluster as a master API node",
+            produces = MediaType.APPLICATION_JSON_VALUE
+        )
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)}
+    )
+    public Result<List<MasterNode>> loadMasterNodes() {
+        return Result.success(clusterApiService.getMasterNodes());
+    }
 
     @RequestMapping(value = "/cluster/node/loadAll", method = RequestMethod.GET)
     @ResponseBody
@@ -168,7 +189,12 @@ public class ClusterController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<MonitoringStats>> getNodeUsageStatistics(@PathVariable(value = NAME) final String name) {
-        return Result.success(clusterApiService.getStatsForNode(name));
+    public Result<List<MonitoringStats>> getNodeUsageStatistics(
+            @PathVariable(value = NAME) final String name,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = FROM, required = false) final LocalDateTime from,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = TO, required = false) final LocalDateTime to) {
+        return Result.success(clusterApiService.getStatsForNode(name, from, to));
     }
 }

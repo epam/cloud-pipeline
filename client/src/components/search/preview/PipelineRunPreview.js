@@ -32,6 +32,7 @@ import moment from 'moment';
 import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import RunTags from '../../runs/run-tags';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -230,6 +231,19 @@ export default class PipelineRunPreview extends React.Component {
       const {instance} = run;
       const details = [];
       if (instance) {
+        if (RunTags.shouldDisplayTags(run, true)) {
+          details.push({
+            key: 'Tags',
+            value: (
+              <RunTags
+                run={run}
+                onlyKnown
+                theme="black"
+              />
+            ),
+            additionalStyle: {backgroundColor: 'transparent'}
+          });
+        }
         if (run.executionPreferences && run.executionPreferences.environment) {
           details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
         }
@@ -241,7 +255,7 @@ export default class PipelineRunPreview extends React.Component {
                 <span>
                   <AWSRegionTag
                     darkMode
-                    style={{verticalAlign: 'top', marginRight: -3, marginLeft: -3}}
+                    style={{verticalAlign: 'baseline', marginRight: -3, marginLeft: -3}}
                     regionId={instance.cloudRegionId} />
                   {instance.nodeType}
                 </span>
@@ -281,16 +295,17 @@ export default class PipelineRunPreview extends React.Component {
         return (
           <Row className={`${styles.description} ${styles.tags}`}>
             {
-            details.map(d => {
-              return (
-                <span
-                  key={d.key}
-                  className={styles.instanceHeaderItem}>
-                  {d.value}
-                </span>
-              );
-            })
-          }
+              details.map(d => {
+                return (
+                  <span
+                    key={d.key}
+                    style={d.additionalStyle}
+                    className={styles.instanceHeaderItem}>
+                    {d.value}
+                  </span>
+                );
+              })
+            }
           </Row>
         );
       }

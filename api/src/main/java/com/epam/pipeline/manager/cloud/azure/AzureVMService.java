@@ -18,9 +18,12 @@ package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.exception.cloud.azure.AzureException;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.datastorage.providers.azure.AzureHelper;
 import com.microsoft.azure.Page;
 import com.microsoft.azure.PagedList;
 import com.microsoft.azure.management.Azure;
@@ -33,13 +36,11 @@ import com.microsoft.azure.management.compute.VirtualMachineScaleSetVM;
 import com.microsoft.azure.management.network.NetworkInterface;
 import com.microsoft.azure.management.resources.GenericResource;
 import com.microsoft.azure.management.resources.fluentcore.arm.models.Resource;
-import com.microsoft.rest.LogLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -65,6 +66,7 @@ public class AzureVMService {
     private static final String LOW_PRIORITY_INSTANCE_ID_TEMPLATE = "(az-[a-z0-9]{16})[0-9A-Z]{6}";
     private static final Pattern LOW_PRIORITY_VM_NAME_PATTERN = Pattern.compile(LOW_PRIORITY_INSTANCE_ID_TEMPLATE);
     private static final String SUCCEEDED = "Succeeded";
+    private static final String KUBE_PREEMPTED_LABEL = "cloud-pipeline/preempted";
     private static final String PREEMPTED = "preempted";
     private static final String INSTANCE_WAS_PREEMPTED = "Low priority instance was preempted";
     private static final InstanceViewStatus SCALE_SET_FAILED_STATUS;
@@ -77,8 +79,13 @@ public class AzureVMService {
 
     private final MessageHelper messageHelper;
 
-    public void startInstance(final AzureRegion region, final String instanceId) {
+    private final KubernetesManager kubernetesManager;
+
+    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
         getVmByName(region.getAuthFile(), region.getResourceGroup(), instanceId).start();
+        return CloudInstanceOperationResult.success(
+                messageHelper.getMessage(MessageConstants.INFO_INSTANCE_STARTED, instanceId)
+        );
     }
 
     public void stopInstance(final AzureRegion region, final String instanceId) {
@@ -104,7 +111,7 @@ public class AzureVMService {
     }
 
     public void terminateInstance(final AzureRegion region, final String instanceId) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final String instanceName = getInstanceResourceName(region, instanceId);
         resourcesByTag(region, instanceName)
                 .sorted(this::resourcesTerminationOrder)
@@ -114,13 +121,13 @@ public class AzureVMService {
 
     public NetworkInterface getVMNetworkInterface(final String authFile, final VirtualMachine vm) {
         final String interfaceId = vm.primaryNetworkInterfaceId();
-        return buildClient(authFile).networkInterfaces().getById(interfaceId);
+        return AzureHelper.buildClient(authFile).networkInterfaces().getById(interfaceId);
     }
 
     public Optional<InstanceViewStatus> getFailingVMStatus(final AzureRegion region, final String vmName) {
         final Optional<String> scaleSetName = getScaleSetName(vmName);
         return scaleSetName.isPresent()
-                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get())
+                ? fetchFailingStatusFromScaleSet(region, scaleSetName.get(), vmName)
                 : fetchFailingStatusFromVm(region, vmName);
     }
 
@@ -171,10 +178,17 @@ public class AzureVMService {
     }
 
     private Optional<InstanceViewStatus> fetchFailingStatusFromScaleSet(final AzureRegion region,
-                                                                        final String scaleSetName) {
+                                                                        final String scaleSetName,
+                                                                        final String nodeName) {
+        final Map<String, String> nodeLabels = kubernetesManager.findNodeByName(nodeName)
+                .map(node -> node.getMetadata().getLabels())
+                .orElse(Collections.emptyMap());
+        if (nodeLabels.containsKey(KUBE_PREEMPTED_LABEL)) {
+            return Optional.of(SCALE_SET_FAILED_STATUS);
+        }
         final Optional<VirtualMachineScaleSet> scaleSet = findVmScaleSetByName(region, scaleSetName);
         if (scaleSet.isPresent() && scaleSet.get().inner().provisioningState().equals(SUCCEEDED)) {
-            PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
+            final PagedList<VirtualMachineScaleSetVM> scaleSetVMs = scaleSet.get().virtualMachines().list();
             return scaleSetVMs.size() > 0
                     ? findFailedStatus(scaleSetVMs.get(0).instanceView().statuses())
                     : Optional.of(SCALE_SET_FAILED_STATUS);
@@ -217,19 +231,19 @@ public class AzureVMService {
     private Optional<VirtualMachine> findVmByName(final String authFile,
                                                   final String resourceGroup,
                                                   final String instanceId) {
-        return Optional.of(buildClient(authFile).virtualMachines())
+        return Optional.of(AzureHelper.buildClient(authFile).virtualMachines())
                 .map(client -> client.getByResourceGroup(resourceGroup, instanceId));
     }
 
     private Optional<VirtualMachineScaleSet> findVmScaleSetByName(final String authFile,
                                                   final String resourceGroup,
                                                   final String scaleSetName) {
-        return Optional.of(buildClient(authFile).virtualMachineScaleSets())
+        return Optional.of(AzureHelper.buildClient(authFile).virtualMachineScaleSets())
                 .map(client -> client.getByResourceGroup(resourceGroup, scaleSetName));
     }
 
     private AzureVirtualMachineStats getVMStatsByTag(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return findVMContainerInPagedResult(resources.currentPage(), resources)
@@ -275,7 +289,7 @@ public class AzureVMService {
     }
 
     private Stream<GenericResource> resourcesByTag(final AzureRegion region, final String tagValue) {
-        final Azure azure = buildClient(region.getAuthFile());
+        final Azure azure = AzureHelper.buildClient(region.getAuthFile());
         final PagedList<GenericResource> resources = azure.genericResources()
                 .listByTag(region.getResourceGroup(), TAG_NAME, tagValue);
         return resourcesInPagedResult(resources.currentPage(), resources);
@@ -299,18 +313,5 @@ public class AzureVMService {
             }
         }
         return Stream.empty();
-    }
-
-    private Azure buildClient(final String authFile) {
-        try {
-            final File credFile = new File(authFile);
-            return Azure.configure()
-                    .withLogLevel(LogLevel.BASIC)
-                    .authenticate(credFile)
-                    .withDefaultSubscription();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            throw new AzureException(e);
-        }
     }
 }

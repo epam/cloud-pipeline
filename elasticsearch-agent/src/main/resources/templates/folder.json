@@ -4,7 +4,7 @@
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "id": { "type": "keyword", "store": true },
-        "name": { "type": "keyword", "store": true },
+        "name": { "type": "text", "store": true },
         "parentId": { "type": "keyword", "store": true, "index": false },
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "ownerUserId": { "type": "long" },
@@ -17,6 +17,12 @@
         "allowed_groups": { "type": "keyword" },
         "denied_groups": { "type": "keyword" }
       }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
     }
   }
 }

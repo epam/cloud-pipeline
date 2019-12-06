@@ -179,7 +179,7 @@ public class KubernetesManager {
     }
 
     public String getPodLogs(final String podId, final int limit) {
-        try (final KubernetesClient client = getKubernetesClient()) {
+        try (KubernetesClient client = getKubernetesClient()) {
             final String tail = client.pods().inNamespace(kubeNamespace)
                     .withName(podId)
                     .tailingLines(limit + 1).getLog();
@@ -240,6 +240,15 @@ public class KubernetesManager {
             return Optional.ofNullable(list)
                     .map(l -> ListUtils.emptyIfNull(l.getItems()))
                     .flatMap(items -> items.stream().findFirst());
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<Node> findNodeByName(final String nodeName) {
+        try(KubernetesClient client = getKubernetesClient()) {
+            return Optional.ofNullable(client.nodes().withName(nodeName).get());
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return Optional.empty();

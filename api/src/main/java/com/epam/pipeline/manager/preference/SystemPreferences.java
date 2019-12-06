@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
+import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,6 +69,8 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -131,6 +135,20 @@ public class SystemPreferences {
             "storage.transfer.pipeline.version", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
+    public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
+            new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+
+    /**
+     * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
+     */
+    public static final BooleanPreference STORAGE_FSBROWSER_ENABLED =
+            new BooleanPreference("storage.fsbrowser.enabled", true, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_FSBROWSER_PORT =
+            new IntPreference("storage.fsbrowser.port", 8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
+    public static final StringPreference STORAGE_FSBROWSER_WD =
+            new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
+            new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -276,10 +294,20 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
             "instance.restart.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final ObjectPreference<List<String>> INSTANCE_LIMIT_STATE_REASONS = new ObjectPreference<>(
+            "instance.limit.state.reasons", null, new TypeReference<List<String>>() {}, CLUSTER_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}));
     public static final IntPreference CLUSTER_INSTANCE_HDD_EXTRA_MULTI =
             new IntPreference("cluster.instance.hdd_extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_DOCKER_EXTRA_MULTI =
             new IntPreference("cluster.docker.extra_multi", 3, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_MONITORING_ELASTIC_INTERVALS_NUMBER = new IntPreference(
+            "cluster.monitoring.elastic.intervals.number", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final LongPreference CLUSTER_MONITORING_ELASTIC_MINIMAL_INTERVAL = new LongPreference(
+            "cluster.monitoring.elastic.minimal.interval", TimeUnit.MILLISECONDS.convert(1, TimeUnit.MINUTES),
+            CLUSTER_GROUP, isGreaterThan(0L));
+    public static final IntPreference CLUSTER_KUBE_MASTER_PORT =
+            new IntPreference("cluster.kube.master.port", 6443, CLUSTER_GROUP, isGreaterThan(0));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
@@ -292,7 +320,11 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
-
+    public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference(
+            "launch.run.visibility", RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP,
+            PreferenceValidators.isValidEnum(RunVisibilityPolicy.class));
+    public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
+            "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -319,6 +351,14 @@ public class SystemPreferences {
         "launch.task.status.update.rate", 30000, LAUNCH_GROUP, isGreaterThan(5000));
     public static final StringPreference LAUNCH_DOCKER_IMAGE = new StringPreference("launch.docker.image", null,
                                                                                     LAUNCH_GROUP, null);
+    /**
+     * Sets unused pods release rate, on which application will kill Kubernetes pods, which were used by finished
+     * pipeline runs, milliseconds. This rate should be less, than
+     * @see #LAUNCH_TASK_STATUS_UPDATE_RATE
+     * to kill unused pods as soon as possible
+     */
+    public static final IntPreference RELEASE_UNUSED_NODES_RATE = new IntPreference(
+        "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
@@ -445,6 +485,9 @@ public class SystemPreferences {
     // Misc
     public static final IntPreference MISC_MAX_TOOL_ICON_SIZE_KB = new IntPreference("misc.max.tool.icon.size.kb", 50,
                                                                                      MISC_GROUP, isGreaterThan(0));
+    public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
+            "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
+            PreferenceValidators.isNotBlank);
 
     // Search
     public static final StringPreference SEARCH_ELASTIC_SCHEME = new StringPreference("search.elastic.scheme",
@@ -490,6 +533,12 @@ public class SystemPreferences {
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_POLLING_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.up.polling.timeout", 900,
                     GRID_ENGINE_AUTOSCALING_GROUP, pass);
+    public static final IntPreference GE_AUTOSCALING_SCALE_UP_TO_MAX =
+            new IntPreference("ge.autoscaling.scale.up.to.max", null,
+                    GRID_ENGINE_AUTOSCALING_GROUP,
+                    isNotLessThanValueOrNull(LAUNCH_MAX_SCHEDULED_NUMBER.getKey()),
+                    LAUNCH_MAX_SCHEDULED_NUMBER);
+
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
@@ -654,8 +703,8 @@ public class SystemPreferences {
                 gitPreferences.get(GIT_TOKEN.getKey()).getValue(),
                 adminId,
                 gitPreferences.get(GIT_USER_NAME.getKey()).getValue());
-        client.buildCloneCredentials(false, false, 1L);
         try {
+            client.buildCloneCredentials(false, false, 1L);
             GitlabVersion version = client.getVersion();
             Matcher matcher = GIT_VERSION_PATTERN.matcher(version.getVersion());
             if (matcher.find()) {

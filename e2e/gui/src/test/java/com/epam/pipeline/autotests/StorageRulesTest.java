@@ -46,7 +46,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
     @Test
     @TestCase("EPMCMBIBPC-363")
     public void preparePipeline() {
-        final String pathToFile = String.format("%s://%s/%s/%s", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
+        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
                 getPipelineName());
         final String parameterName = "result";
         navigationMenu()
@@ -60,8 +60,9 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 .clickOnFile(getPipelineName().toLowerCase() + ".sh")
                 .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
                 .saveAndCommitWithMessage("test: Prepare pipeline script")
+                .sleep(2, SECONDS)
                 .clickOnFile("config.json")
-                .sleep(1, SECONDS)
+                .sleep(5, SECONDS)
                 .editFile(transferringJsonToObject(profiles -> {
                     final ConfigurationProfile profile = selectProfileWithName("default", profiles);
                     profile.configuration.parameters.put(parameterName, Parameter.required("output", pathToFile));
@@ -76,11 +77,12 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
     @Test(dependsOnMethods = {"preparePipeline"})
     @TestCase("EPMCMBIBPC-363")
     public void runPipelineAndWaitUntilFinished() {
-        final String pathToFile = String.format("%s://%s/%s/%s", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
+        final String pathToFile = String.format("%s://%s/%s/%s/", C.STORAGE_PREFIX, storage, STORAGE_RULES_FOLDER,
                 getPipelineName());
         new StorageRulesTabAO(getPipelineName())
                 .runPipeline()
                 .validateThereIsParameterOfType("result", pathToFile, ParameterType.OUTPUT,true)
+                .waitUntilLaunchButtonAppear()
                 .launchAndWaitUntilFinished(this);
     }
 

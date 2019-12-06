@@ -100,6 +100,7 @@ const MarkdownRenderer = new Remarkable('full', {
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
+const DEFAULT_FILE_SIZE_KB = 50;
 
 @localization.localizedComponent
 @connect({
@@ -345,13 +346,14 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Row>
       );
     }
+
     const doUpload = (file) => {
-      const MAX_FILE_SIZE_KB = 50;
+      const maxFileSize = this.props.preferences.maximumFileSize || DEFAULT_FILE_SIZE_KB;
       if (file.type.toLowerCase().indexOf('png') === -1) {
         message.error('Only PNG image files are supported', 5);
         return false;
-      } else if (file.size > MAX_FILE_SIZE_KB * 1024) {
-        message.error(`Maximum file size is ${MAX_FILE_SIZE_KB}kb`, 5);
+      } else if (file.size > maxFileSize * 1024) {
+        message.error(`Maximum file size is ${maxFileSize} kB`, 5);
         return false;
       }
       const hide = message.loading('Uploading new image...', 0);

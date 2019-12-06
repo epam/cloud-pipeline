@@ -168,38 +168,46 @@ EOL
         rm -f ./grid
 }
 
-configure_local_pe() {
-    _PE_NAME="local"
+delete_pe() {
+    local pe_all="$1"
 
-    # Delete any existing-default parallel environments, before adding a new one
-    _CURRENT_PES=$(qconf -spl)
-    for _PE in $_CURRENT_PES; do 
-        qconf -dp "$_PE"
+    local current_pe_list="$pe_all"
+    if [ "$current_pe_list" == "all" ]; then
+        current_pe_list=$(qconf -spl)
+    fi
+
+    for _pe_name in $current_pe_list; do 
+        qconf -dp "$_pe_name"
     done
+}
 
-    _LOCAL_PE_SLOTS=$CLOUD_PIPELINE_CLUSTER_CORES
-    if [ -z $_LOCAL_PE_SLOTS ]
-    then
-        _LOCAL_PE_SLOTS=999999
+configure_pe() {
+    local pe_name="${1:-local}"
+    local pe_alloc_rule="${2:-\$pe_slots}"
+    local pe_job_is_first_task="${3:-TRUE}"
+    local pe_slots="${4}"
+
+    if [ -z "$pe_slots" ]; then
+        pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
     fi
     
-    cat > ./local_pe.conf <<EOL
-        pe_name            $_PE_NAME
-        slots              $_LOCAL_PE_SLOTS
+    cat > pe.conf <<EOL
+        pe_name            $pe_name
+        slots              $pe_slots
         user_lists         NONE
         xuser_lists        NONE
         start_proc_args    NONE
         stop_proc_args     NONE
-        allocation_rule    \$pe_slots
+        allocation_rule    $pe_alloc_rule
         control_slaves     TRUE
-        job_is_first_task  TRUE
+        job_is_first_task  $pe_job_is_first_task
         urgency_slots      min
         accounting_summary FALSE
         qsort_args         NONE
 EOL
-    qconf -Ap ./local_pe.conf
-    qconf -mattr queue pe_list "$_PE_NAME" "main.q"
-    rm -f ./local_pe.conf
+    qconf -Ap pe.conf
+    qconf -mattr queue pe_list "$pe_name" "$CP_CAP_SGE_QUEUE_NAME"
+    rm -f pe.conf
 }
 
 run_redhat_installation() {
@@ -285,6 +293,10 @@ pipe_log_info "Installing SGE master" "$SGE_MASTER_SETUP_TASK"
 # Set SGE env vars, and store in cp_env.sh for further ssh sessions
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
+export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
+export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     export SGE_ROOT="/var/lib/gridengine"
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
@@ -293,6 +305,9 @@ fi
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> /etc/cp_env.sh
 
 # Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
 if [ "$RESUMED_RUN" = true ]; then
@@ -326,30 +341,21 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 
     # Install Grid Engine
     # Configure the master hostname for Grid Engine
-    if [ ! -z $CP_CAP_DISTR_STORAGE_SGE ]; then
-        local_package_install $CP_CAP_DISTR_STORAGE_SGE
-    else
-        CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
-        apt-get clean
-        rm -rf /var/lib/apt/lists/*
-        apt-get clean
-        echo "deb [trusted=yes] http://ftp.us.debian.org/debian/ stretch main" > /etc/apt/sources.list.d/sge.list
-        apt-get update
-        
-        # First install SGE, and fail if error occurs
-        DEBIAN_FRONTEND=noninteractive apt-get install -t stretch -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
-            gridengine-client="$CP_CAP_SGE_VERSION" \
-            gridengine-common="$CP_CAP_SGE_VERSION" \
-            gridengine-master="$CP_CAP_SGE_VERSION" > /dev/null
+    CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
+    
+    # First install SGE, and fail if error occurs
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
+        gridengine-client="$CP_CAP_SGE_VERSION" \
+        gridengine-common="$CP_CAP_SGE_VERSION" \
+        gridengine-master="$CP_CAP_SGE_VERSION" > /dev/null
 
-        check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE master"
+    check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE master"
 
-        # Next - try to install any non-mandatory packages, and igore them if error occurs
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" sudo locales > /dev/null
+    # Next - try to install any non-mandatory packages, and igore them if error occurs
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" sudo locales > /dev/null
 
-        if [ $? -ne 0 ]; then
-            pipe_log_warn "Additional SGE packages were not installed, error is ignored" "$SGE_MASTER_SETUP_TASK"
-        fi
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "Additional SGE packages were not installed, error is ignored" "$SGE_MASTER_SETUP_TASK"
     fi
 
     ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
@@ -383,29 +389,23 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     yum remove -y -q gridengine-*
     rm -rf /opt/sge/*
     rm -rf /etc/rc.d/init.d/*.CLOUD_PIPELINE
-    if [ "$CP_CAP_DISTR_STORAGE_SGE" ]; then
-        local_package_install $CP_CAP_DISTR_STORAGE_SGE
-    else
-        rpm -Uvh http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-        yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
-                          perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
-                          perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
-                          ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
-                          xorg-x11-fonts-ISO8859-1-75dpi mailx \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-debuginfo-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-devel-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-drmaa4ruby-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-execd-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-guiinst-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-qmaster-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-qmon-8.1.9-1.el6.x86_64.rpm
+    
+    yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
+                        perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
+                        perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
+                        ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
+                        xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
+                        compat-db-headers compat-db47 libpipeline man-db \
+    && yum install -y -q gridengine \
+                        gridengine-debuginfo \
+                        gridengine-devel \
+                        gridengine-drmaa4ruby \
+                        gridengine-execd \
+                        gridengine-guiinst \
+                        gridengine-qmaster \
+                        gridengine-qmon
 
-        yum localinstall -q -y gridengine-* \
-        && rm -f gridengine-*
-
-        check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
-    fi
+    check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
 
     QMASTER_HOST="$HOSTNAME"
 
@@ -427,7 +427,7 @@ check_last_exit_code $? "Global settings were configured" "Failed to configure g
 configure_scheduler
 check_last_exit_code $? "Scheduler was configured" "Fail to configure scheduler"
 
-add_queue "main.q"
+add_queue "$CP_CAP_SGE_QUEUE_NAME"
 check_last_exit_code $? "Queue was configured" "Fail to configure queue"
 
 #add local worker
@@ -444,7 +444,7 @@ else
     CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
     _MASTER_WORKER_CORES=$((_MASTER_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _MASTER_WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
 
-    add_worker main.q "$_MASTER_WORKER_CORES"
+    add_worker "$CP_CAP_SGE_QUEUE_NAME" "$_MASTER_WORKER_CORES"
     check_last_exit_code $? "Master host was added as a worker with $_MASTER_WORKER_CORES slots" "Fail to add master host as a SGE worker"
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
@@ -458,7 +458,17 @@ pipe_log_info "Add $OWNER_NAME as SGE manager and operator" "$SGE_MASTER_SETUP_T
 qconf -am $OWNER_NAME
 qconf -ao $OWNER_NAME
 
-configure_local_pe
+# Configure Parallel Environments and attach to the queue ($CP_CAP_SGE_QUEUE_NAME)
+# - First delete all default PEs
+delete_pe all
+# - Add a "threaded/smp" PE, which schedules all threads to a single machine
+configure_pe "$CP_CAP_SGE_PE_NAME" \
+             "\$pe_slots" \
+             "TRUE"
+# Add an "mpi" PE, which allows to spread processes across nodes
+configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
+             "\$fill_up" \
+             "FALSE"
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK"
@@ -479,7 +489,7 @@ else
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
-            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reashed" "$SGE_MASTER_SETUP_TASK_WORKERS"
+            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SGE_MASTER_SETUP_TASK_WORKERS"
             exit 0
         fi
     done

@@ -160,6 +160,7 @@ pipe_log_info "Installing SGE worker" "$SGE_WORKER_SETUP_TASK"
 
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
+export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 
 IFS='@' read -r -a owner_info <<< "$OWNER"
 OWNER_NAME="${owner_info[0]}"
@@ -184,30 +185,20 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     echo "gridengine-client       shared/gridengineconfig boolean false" |  debconf-set-selections
     echo "postfix postfix/main_mailer_type        select  No configuration" |  debconf-set-selections
 
-    if [ ! -z $CP_CAP_DISTR_STORAGE_SGE ]; then
-        local_package_install $CP_CAP_DISTR_STORAGE_SGE
-    else
-        CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
-        apt-get clean
-        rm -rf /var/lib/apt/lists/*
-        apt-get clean
+    CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
 
-        echo "deb [trusted=yes] http://ftp.us.debian.org/debian/ stretch main" > /etc/apt/sources.list.d/sge.list
-        apt-get update
+    # First install SGE, and fail if error occurs
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
+        gridengine-client="$CP_CAP_SGE_VERSION" \
+        gridengine-common="$CP_CAP_SGE_VERSION" > /dev/null
 
-         # First install SGE, and fail if error occurs
-        DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
-            gridengine-client="$CP_CAP_SGE_VERSION" \
-            gridengine-common="$CP_CAP_SGE_VERSION" > /dev/null
+    check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
 
-        check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
+    # Next - try to install any non-mandatory packages, and igore them if error occurs
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" sudo locales > /dev/null
 
-        # Next - try to install any non-mandatory packages, and igore them if error occurs
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" sudo locales > /dev/null
-
-        if [ $? -ne 0 ]; then
-            pipe_log_warn "Additional SGE packages were not installed, error is ignored" "$SGE_MASTER_SETUP_TASK"
-        fi
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "Additional SGE packages were not installed, error is ignored" "$SGE_MASTER_SETUP_TASK"
     fi
 
     ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
@@ -226,38 +217,32 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     rm -rf /etc/rc.d/init.d/*.CLOUD_PIPELINE
 
     export SGE_ROOT="/opt/sge"
-    if [ ! -z $CP_CAP_DISTR_STORAGE_SGE ]; then
-        local_package_install $CP_CAP_DISTR_STORAGE_SGE
-    else
-        rpm -Uvh http://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-        yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
-                          perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
-                          perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
-                          ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
-                          xorg-x11-fonts-ISO8859-1-75dpi mailx \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-debuginfo-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-devel-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-drmaa4ruby-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-execd-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-guiinst-8.1.9-1.el6.noarch.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-qmaster-8.1.9-1.el6.x86_64.rpm \
-        && wget -q https://arc.liv.ac.uk/downloads/SGE/releases/8.1.9/gridengine-qmon-8.1.9-1.el6.x86_64.rpm
+    yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDir.noarch \
+                        perl-Getopt-Long.noarch perl-libs perl-POSIX-strptime.x86_64 \
+                        perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
+                        ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
+                        xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
+                        compat-db-headers compat-db47 libpipeline man-db \
+    && yum install -y -q gridengine \
+                        gridengine-debuginfo \
+                        gridengine-devel \
+                        gridengine-drmaa4ruby \
+                        gridengine-execd \
+                        gridengine-guiinst \
+                        gridengine-qmaster \
+                        gridengine-qmon
 
-        yum localinstall -q -y gridengine-* && \
-        rm -f gridengine-*
-
-        check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
-    fi
+    check_last_exit_code $? "All SGE packages were installed" "Fail to install SGE worker"
 fi
 
 pipe_log_info "Adding worker node to SGE cluster" "$SGE_WORKER_SETUP_TASK"
-add_worker main.q "$(nproc)" $MASTER_NAME
+add_worker "$CP_CAP_SGE_QUEUE_NAME" "$(nproc)" $MASTER_NAME
 check_last_exit_code $? "Host was added as a worker to the SGE cluster" "Fail to add SGE worker host"
 
 echo "export SGE_ROOT=$SGE_ROOT" >> /etc/cp_env.sh
 echo "export SGE_CELL=$SGE_CELL" >> /etc/cp_env.sh
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> /etc/cp_env.sh
+echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> /etc/cp_env.sh
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_WORKER_SETUP_TASK"

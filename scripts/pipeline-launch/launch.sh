@@ -205,6 +205,24 @@ function cp_cap_publish {
             sed -i "/$_DIND_CONTAINER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_DIND_CONTAINER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
+
+      if check_cp_cap "CP_CAP_SPARK"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _SPARK_MASTER_INIT="spark_setup_master"
+            _SPARK_WORKER_INIT="spark_setup_worker"
+            echo "Requested Spark capability, setting init scripts:"
+            echo "--> Master: $_SPARK_MASTER_INIT"
+            echo "--> Worker: $_SPARK_WORKER_INIT"
+
+            sed -i "/$_SPARK_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_SPARK_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+            
+            sed -i "/$_SPARK_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_SPARK_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+      fi
 }
 
 function cp_cap_init {
@@ -300,6 +318,32 @@ function configure_package_manager {
             echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/10-nocheckvalid
             apt-get update
       fi
+
+      # Add a Cloud Pipeline repo, which contains the required runtime packages
+      local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+      local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
+      if [ "$CP_OS" == "centos" ]; then
+            yum install curl yum-priorities -y -q && \
+            curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
+            yum --disablerepo=* --enablerepo=cloud-pipeline list available > /dev/null 2>&1
+            
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
+                  rm -f /etc/yum.repos.d/cloud-pipeline.repo
+            fi
+      elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+            apt-get update -qq && \
+            apt-get install curl apt-transport-https gnupg -y -qq && \
+            sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
+            curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
+            sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
+            apt-get update -qq
+            
+            if [ $? -ne 0 ]; then
+                  echo "[ERROR] Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                  sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+            fi
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -321,45 +365,6 @@ function get_install_command_by_current_distr {
       check_installed "yum" && { _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL";  };
       check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL";  };
       eval $_RESULT_VAR=\$_INSTALL_COMMAND_TEXT
-}
-
-function local_package_install {
-
-    local _SOURCE=$1
-
-    # This script will download archive with sources to be installed
-
-    if [ -z $_SOURCE ]; then
-         echo "Env var SOURCE not found, no package will be installed"
-         return 1
-    fi
-
-    local _PATH_TO_PACKAGES=/tmp/localinstall
-    local _ARCH_NAME=$(basename "$_SOURCE")
-    local _BIN_DIR=${_ARCH_NAME%.*}
-
-    mkdir -p $_PATH_TO_PACKAGES
-    wget -q --no-check-certificate $_SOURCE --directory-prefix=$_PATH_TO_PACKAGES > /dev/null
-    tar -xf "$_PATH_TO_PACKAGES/$_ARCH_NAME" -C $_PATH_TO_PACKAGES
-
-    check_installed "dpkg" && check_installed "apt-get" && {
-        echo "Local installation deb packages"
-        apt-get update
-        export DEBIAN_FRONTEND=noninteractive
-        dpkg -i $_PATH_TO_PACKAGES/$_BIN_DIR/*.deb &> /dev/null
-        dpkg --configure -a > /dev/null
-        apt-get install -f -y
-    };
-
-    check_installed "yum" && {
-        echo "Local installation rpm packages"
-        yum localinstall $_PATH_TO_PACKAGES/$_BIN_DIR/*.rpm -y -q > /dev/null
-    };
-
-    rm -rf $_PATH_TO_PACKAGES
-
-    echo "Done with packages installation"
-
 }
 
 function symlink_common_locations {
@@ -393,27 +398,37 @@ function symlink_common_locations {
       fi
 }
 
-function copy_git_credentials {
-
-      local _OWNER="$1"
-      local _OWNER_HOME="$2"
-
-      # Symlink git credentials
-      _GIT_CONFIG_FILE=".gitconfig"
-      _GIT_CREDENTIALS_FOLDER="/git/config"
-      _GIT_CREDENTIALS_FILE="${_GIT_CREDENTIALS_FOLDER}/credentials"
-      cp /root/${_GIT_CONFIG_FILE} ${_OWNER_HOME}/${_GIT_CONFIG_FILE}
-      chmod g+rwx ${_OWNER_HOME}/${_GIT_CONFIG_FILE}
-      chmod g+rwx ${_GIT_CREDENTIALS_FILE}
-      chmod g+rwx ${_GIT_CREDENTIALS_FOLDER}
-
-}
-
 function create_sys_dir {
       local _DIR_NAME="$1"
       mkdir -p "$_DIR_NAME"
       chmod g+rw "$_DIR_NAME" -R
       setfacl -d -m user::rwx -m group::rwx -m other::rx "$_DIR_NAME"
+}
+
+function initialise_restrictors {
+    local _RESTRICTING_COMMANDS="$1"
+    local _RESTRICTOR="$2"
+    local _RESTRICTORS_BIN="$3"
+    IFS=',' read -r -a RESTRICTING_COMMANDS_LIST <<< "$_RESTRICTING_COMMANDS"
+    for COMMAND in "${RESTRICTING_COMMANDS_LIST[@]}"
+    do
+        COMMAND_PATH=$(command -v "$COMMAND")
+        if [[ "$?" == 0 ]]
+        then
+            COMMAND_WRAPPER_PATH="$_RESTRICTORS_BIN/$COMMAND"
+            COMMAND_PERMISSIONS=$(stat -c %a "$COMMAND_PATH")
+            if [[ "$?" == 0 ]]
+            then
+                echo "$COMMON_REPO_DIR/shell/$_RESTRICTOR \"$COMMAND_PATH\" \"\$@\"" > "$COMMAND_WRAPPER_PATH"
+                chmod "$COMMAND_PERMISSIONS" "$COMMAND_WRAPPER_PATH"
+            fi
+        fi
+    done
+}
+
+function list_storage_mounts() {
+    local _MOUNT_ROOT="$1"
+    echo $(df -T | awk '$2 == "fuse"' | awk '{ print $7 }' | grep "^$_MOUNT_ROOT")
 }
 
 ######################################################
@@ -456,7 +471,7 @@ fi
 configure_package_manager
 
 # First check whether all packages upgrade required
-if [ ${CP_UPGRADE_PACKAGES,,} == 'true' ] || [ ${CP_UPGRADE_PACKAGES,,} == 'yes' ]
+if [ "${CP_UPGRADE_PACKAGES,,}" == 'true' ] || [ "${CP_UPGRADE_PACKAGES,,}" == 'yes' ]
 then
       echo "Packages upgrade requested. Performing upgrade"
       upgrade_installed_packages
@@ -471,13 +486,10 @@ then
 fi
 
 # Install dependencies
-if [ "$CP_CAP_DISTR_STORAGE_COMMON" ]; then
-    local_package_install $CP_CAP_DISTR_STORAGE_COMMON
-else
-    _DEPS_INSTALL_COMMAND=
-    get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl"
-    eval "$_DEPS_INSTALL_COMMAND"
-fi
+_DEPS_INSTALL_COMMAND=
+get_install_command_by_current_distr _DEPS_INSTALL_COMMAND "python git curl wget fuse python-docutils tzdata acl \
+                                                            coreutils"
+eval "$_DEPS_INSTALL_COMMAND"
 
 # Check if python2 installed, if no - fail, as we'll not be able to run Pipe CLI commands
 export CP_PYTHON2_PATH=$(command -v python2)
@@ -488,6 +500,16 @@ then
 fi
 
 check_python_module_installed "pip --version" || { curl -s https://bootstrap.pypa.io/get-pip.py | $CP_PYTHON2_PATH; };
+
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+    if [ $? -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
 
 echo "------"
 echo
@@ -754,6 +776,15 @@ then
     sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
+    # Allow clients to be idle for 1 hour (30 sec * 120 times)
+    CP_CAP_SSH_CLIENT_ALIVE_INTERVAL=${CP_CAP_SSH_CLIENT_ALIVE_INTERVAL:-30}
+    sed -i '/ClientAliveInterval/d' /etc/ssh/sshd_config
+    echo "ClientAliveInterval $CP_CAP_SSH_CLIENT_ALIVE_INTERVAL" >> /etc/ssh/sshd_config
+    
+    CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX=${CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX:-120}
+    sed -i '/ClientAliveCountMax/d' /etc/ssh/sshd_config
+    echo "ClientAliveCountMax $CP_CAP_SSH_CLIENT_ALIVE_COUNT_MAX" >> /etc/ssh/sshd_config
+
     eval "$SSH_SERVER_EXEC_PATH"
     echo "SSH server is started"
 else
@@ -799,12 +830,44 @@ else
 fi
 
 #install pipe CLI
-install_pip_package PipelineCLI
+if [ "$CP_PIPELINE_CLI_FROM_DIST_TAR" ]; then
+      install_pip_package PipelineCLI
+else
+      echo "Installing 'pipe' CLI"
+      echo "-"
+      CP_PIPELINE_CLI_BINARY_NAME="${CP_PIPELINE_CLI_BINARY_NAME:-pipe}"
+      download_file "${DISTRIBUTION_URL}${CP_PIPELINE_CLI_BINARY_NAME}"
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] 'pipe' CLI download failed. Exiting"
+            exit 1
+      fi
+      mv pipe /usr/bin/
+      chmod +x /usr/bin/pipe
+fi
+
+#install FS Browser
+if [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
+      echo "Setup FSBrowser"
+      echo "-"
+
+      echo "Installing fsbrowser"
+      install_pip_package fsbrowser
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Unable to install FSBrowser"
+            exit 1
+      fi
+      fsbrowser_setup
+      echo "------"
+      echo
+fi
 
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then
       echo "GIT_REPO is not defined, skipping clone"
+elif  [ "$RESUMED_RUN" == true ] ;
+then
+      echo "Skipping pipeline repository clone for a resumed run"
 else
       # clone current pipeline repo
       clone_repository $GIT_REPO $SCRIPTS_DIR 3 10
@@ -877,6 +940,7 @@ then
     cp_cap_publish
 
     echo "Waiting for cluster of $node_count nodes"
+    ssh_setup_global_keys
     cluster_setup_workers "$node_count"
     _SETUP_RESULT=$?
 
@@ -891,6 +955,8 @@ then
       # If this is a common run (not a cluster - still publish scripts for CAPs)
       export cluster_role="master"
       cp_cap_publish
+
+      ssh_setup_global_keys
 fi
 
 if [ "$_SETUP_RESULT" -ne 0 ];
@@ -915,27 +981,29 @@ echo
 ######################################################
 
 
-
-
-
-######################################################
-echo "Checking if remote data needs localizing"
-echo "-"
-######################################################
-LOCALIZATION_TASK_NAME="InputData"
-INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
-
-upload_inputs ${INPUT_ENV_FILE} ${LOCALIZATION_TASK_NAME}
-
-if [ $? -ne 0 ];
+if [ "$RESUMED_RUN" == true ];
 then
-    echo "Failed to upload input data"
-    exit 1
+    echo "Skipping data localization for resumed run"
+else
+    ######################################################
+    echo "Checking if remote data needs localizing"
+    echo "-"
+    ######################################################
+    LOCALIZATION_TASK_NAME="InputData"
+    INPUT_ENV_FILE=${RUN_DIR}/input-env.txt
+
+    upload_inputs "${INPUT_ENV_FILE}" "${LOCALIZATION_TASK_NAME}"
+
+    if [ $? -ne 0 ];
+    then
+        echo "Failed to upload input data"
+        exit 1
+    fi
+    echo
+
+    [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
 fi
-echo
-
-source ${INPUT_ENV_FILE}
-
 echo "------"
 echo
 ######################################################
@@ -1025,7 +1093,7 @@ do
 	fi
       _var_value="\"${!var}\""
       if [[ "$var" == "PATH" ]]; then
-            _var_value="\"${!var}:\$$var\""
+            _var_value="\"${!var}:\${$var}\""
       fi
 	echo "export $var=$_var_value" >> $CP_ENV_FILE_TO_SOURCE
 done
@@ -1070,33 +1138,25 @@ echo
 
 
 ######################################################
-echo "Create package manager restriction wrappers"
+echo "Create restriction wrappers"
 echo "-"
 ######################################################
 
 CP_USR_BIN="/usr/cpbin"
 
 mkdir -p "$CP_USR_BIN"
-IFS=',' read -r -a RESTRICTING_PACKAGE_MANAGERS <<< "$CP_RESTRICTING_PACKAGE_MANAGERS"
 
-for MANAGER in "${RESTRICTING_PACKAGE_MANAGERS[@]}"
-do
-    MANAGER_PATH=$(command -v "$MANAGER")
-    if [[ "$?" == 0 ]]
-    then
-        MANAGER_WRAPPER_PATH="$CP_USR_BIN/$MANAGER"
-        MANAGER_PERMISSIONS=$(stat -c %a "$MANAGER_PATH")
-        if [[ "$?" == 0 ]]
-        then
-            echo "$COMMON_REPO_DIR/shell/package_manager_restrictor \"$MANAGER_PATH\" \"\$@\"" > "$MANAGER_WRAPPER_PATH"
-            chmod "$MANAGER_PERMISSIONS" "$MANAGER_WRAPPER_PATH"
-        fi
-    fi
-done
+initialise_restrictors "$CP_RESTRICTING_PACKAGE_MANAGERS" "package_manager_restrictor" "$CP_USR_BIN"
 
-echo "export PATH=\"$CP_USR_BIN:\$PATH\"" >> "$CP_ENV_FILE_TO_SOURCE"
+if [[ "$CP_ALLOWED_MOUNT_TRANSFER_SIZE" ]]
+then
+    MOUNTED_PATHS=$(list_storage_mounts "$DATA_STORAGE_MOUNT_ROOT")
+    initialise_restrictors "cp,mv" "transfer_restrictor \"$MOUNTED_PATHS\" \"$DATA_STORAGE_MOUNT_ROOT\"" "$CP_USR_BIN"
+fi
 
-echo "Finished creating package manager restriction wrappers"
+echo "export PATH=\"$CP_USR_BIN:\${PATH}\"" >> "$CP_ENV_FILE_TO_SOURCE"
+
+echo "Finished creating restriction wrappers"
 
 echo "------"
 echo
@@ -1111,7 +1171,6 @@ echo "-"
 if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
-      copy_git_credentials "$OWNER" "$OWNER_HOME"
 else
       echo "Owner $OWNER account is not configured, no symlinks will be created"
 fi

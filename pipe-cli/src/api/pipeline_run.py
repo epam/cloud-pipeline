@@ -77,3 +77,10 @@ class PipelineRun(API):
         api = cls.instance()
         response_data = api.call('run/{}/price'.format(run_id), None)
         return PipelineRunPrice.load(response_data['payload'])
+
+    @classmethod
+    def get_ssh_url(cls, run_id):
+        api = cls.instance()
+        response_data = api.call('run/{}/ssh'.format(run_id), None)
+        if 'payload' in response_data:
+            return response_data['payload']

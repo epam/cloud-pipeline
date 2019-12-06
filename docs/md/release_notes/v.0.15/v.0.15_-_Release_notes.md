@@ -5,6 +5,7 @@
 - [Limit mounted storages](#limit-mounted-storages)
 - [Personal SSH keys configuration](#personal-ssh-keys-configuration)
 - [Allow to set the Grid Engine capability for the "fixed" cluster](#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster)
+- [Enable Apache Spark for the Cloud Pipeline's clusters](#enable-apache-spark-for-the-cloud-pipelines-clusters)
 - [Consider Cloud Providers' resource limitations when scheduling a job](#consider-cloud-providers-resource-limitations-when-scheduling-a-job)
 - [Allow to terminate paused runs](#allow-to-terminate-paused-runs)
 - [Pre/Post-commit hooks implementation](#prepost-commit-hooks-implementation)
@@ -19,9 +20,22 @@
 - [Installation via pipectl](#installation-via-pipectl)
 - [Add more logging to troubleshoot unexpected pods failures](#add-more-logging-to-troubleshoot-unexpected-pods-failures)
 - [Displaying information on the nested runs](#displaying-information-on-the-nested-runs-within-a-parent-log-form)
-- [pipe CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
-- [pipe configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
 - [Environment Modules support](#environment-modules-support-for-the-cloud-pipeline-runs)
+- [Sharing SSH access to running instances with other user(s)/group(s)](#sharing-ssh-access-to-running-instances-with-other-usersgroups)
+- [Allow to limit the number of concurrent SSH sessions](#allow-to-limit-the-number-of-concurrent-ssh-sessions)
+- [Verification of docker/storage permissions when launching a run](#verification-of-dockerstorage-permissions-when-launching-a-run)
+- [Ability to override the queue/PE configuration in the GE configuration](#ability-to-override-the-queuepe-configuration-in-the-ge-configuration)
+- [Estimation run's disk size according to the input/common parameters](#estimation-runs-disk-size-according-to-the-inputcommon-parameters)
+- [Disabling of the Global Search form if a corresponding service is not installed](#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed)
+- [Disabling of the FS mounts creation if no FS mount points are registered](#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered)
+- [Displaying resource limit errors during run resuming](#displaying-resource-limit-errors-during-run-resuming)
+- [Object storage creation in despite of that the CORS/Policies could not be applied](#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied)
+- [Track the confirmation of the "Blocking" notifications](#track-the-confirmation-of-the-blocking-notifications)
+- [`pipe` CLI warnings on the JWT expiration](#pipe-cli-warnings-on-the-jwt-expiration)
+- [`pipe` configuration for using NTLM Authentication Proxy](#pipe-configuration-for-using-ntlm-authentication-proxy)
+- [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
+- [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
+- [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
 
 ***
 
@@ -34,6 +48,18 @@
     - [Cannot specify region when an existing object storage is added](#cannot-specify-region-when-an-existing-object-storage-is-added)
     - [ACL control for PIPELINE_USER and ROLE entities for metadata API](#acl-control-for-pipeline_user-and-role-entities-for-metadata-api)
     - [Getting logs from Kubernetes may cause `OutOfMemory` error](#getting-logs-from-kubernetes-may-cause-outofmemory-error)
+    - [AWS: Incorrect `nodeup` handling of spot request status](#aws-incorrect-nodeup-handling-of-spot-request-status)
+    - [Not handling clusters in `autopause` daemon](#not-handling-clusters-in-autopause-daemon)
+    - [Incorrect `pipe` CLI version displaying](#incorrect-pipe-cli-version-displaying)
+    - [JWT token shall be updated for the jobs being resumed](#jwt-token-shall-be-updated-for-the-jobs-being-resumed)
+    - [Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error](#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error)
+    - [`pipe`: incorrect behavior of the `-nc` option for the `run` command](#pipe-incorrect-behavior-of-the-nc-option-for-the-run-command)
+    - [Cluster run cannot be launched with a Pretty URL](#cluster-run-cannot-be-launched-with-a-pretty-url)
+    - [Cloning of large repositories might fail](#cloning-of-large-repositories-might-fail)
+    - [System events HTML overflow](#system-events-html-overflow)
+    - [AWS: Pipeline run `InitializeNode` task fails](#aws-pipeline-run-initializenode-task-fails)
+    - [`git-sync` shall not fail the whole object synchronization if a single entry errors](#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors)
+    - [Broken layouts](#broken-layouts)
 
 ***
 
@@ -119,13 +145,42 @@ This is accomplished by using the `Enable GridEngine` checkbox. By default, this
 Also a number of help icons is added to the `Cluster configuration` dialog to clarify the controls purpose:
 
 - Popup header (E.g. next to the tabs line) - displays information on different cluster modes
-- (Cluster) `Enable GridEngine checkbox` - displays information on the GridEngine usage
+- (Cluster) `Enable GridEngine` checkbox - displays information on the GridEngine usage
+- (Cluster) `Enable Apache Spark` checkbox - displays information on the Apache Spark usage (see [below](#enable-apache-spark-for-the-cloud-pipelines-clusters))
 - (Auto-scaled cluster) `Auto-scaled up` - displays information on the autoscaling logic
 - (Auto-scaled cluster) `Default child nodes` - displays information on the initial node pool size
 
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_GE_Autoconfig_1.png)
 
 See more information about cluster launch [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
+
+## Enable Apache Spark for the Cloud Pipeline's clusters
+
+Another one feature for the Cloud Pipeline's clusters was implemented in **`v0.15`**.  
+Now, [**`Apache Spark`**](https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-overview.html) with the access to File/Object Storages from the `Spark Applications` can be configured within the `Cluster` tab. It is available only for the fixed size clusters.
+
+To enable this feature - tick the `Enable Apache Spark` checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable `Spark` functionality by the `CP_CAP_SPARK` system parameter:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_1.png)
+
+This feature, for example, allows you to run `Apache Spark` cluster with RStudio where you may code in R using `sparklyr` to run the workload over the cluster:
+
+1. Open the **RStudio** tool  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_2.png)
+2. Select the node type, set the `Apache Spark` cluster as shown above, and launch the tool:
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_3.png)
+3. Open main **Dashboard** and wait until the **OPEN** hyperlink for the launched tool will appear. Hover over it:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_4.png)  
+    Two endpoints will appear:
+    - **_RStudio_** (as the main endpoint it is in bold) - it exposes RStudio's Web IDE
+    - **_SparkUI_** - it exposes Web GUI of the Spark. It allows to monitor Spark master/workers/application via the web-browser. Details are available in the [Spark UI manual](https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html)
+4. Click the **RStudio** endpoint:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_5.png)  
+    Here you can start create scripts in `R` using the pre-installed `sparklyr` package to distribute the workload over the cluster.
+5. Click the **SparkUI** endpoint:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_6.png)  
+    Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.
+
+For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.3_Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
 
 ## Consider Cloud Providers' resource limitations when scheduling a job
 
@@ -227,10 +282,10 @@ This feature is addresses the same issues as the previous **Notifications about 
 
 In certain cases jobs may fail with unexpected errors if the compute node runs `Out Of Memory`.
 
-**`v0.15`** provides an ability for admin users to configure a default `swap` file to the compute node being created.
-This allow to avoid runs failures due to memory limits.
+**`v0.15`** provides an ability for admin users to configure a default `swap` volume to the compute node being created.
+This allows to avoid runs failures due to memory limits.
 
-The size and the location of the `swap` can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
+The size of the `swap` volume can be configured via `cluster.networks.config` item of the `Preferences`. It is accomplished by adding the similar `json` object to the platform's global or a region/cloud specific configuration:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_SwapFiles_1.png)
 
 Options that can be used to configure `swap`:
@@ -332,13 +387,13 @@ More sophisticated documentation on the installation procedure and resulting dep
 When a `Cloud Pipeline` is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
 I.e. the following behavior was observed couple of times over the last year:
 
-_Scenario 1_
+### _Scenario 1_
 
 1. Run is launched and initialized fine
 2. During processing execution - run fails
 3. Console logs print nothing, compute node is fine and is attached to the cluster
 
-_Scenario 2_
+### _Scenario 2_
 
 1. Run is launched, compute node is up
 2. Run fails during initialization
@@ -376,7 +431,168 @@ If you click any of the children-runs, you will navigate to its log page.
 That feature is implemented for the comleted runs too:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_NestedRunsIcons_2.png)
 
-## pipe CLI warnings on the JWT expiration
+More information about nested runs displaying see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#active-cluster-runs) and [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#general-information).
+
+## Environment Modules support for the Cloud Pipeline runs
+
+The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
+
+In current version, an ability to configure the `Modules` support for the compute jobs is introduced, if this is required by any use case.
+
+For using facilities of the `Environment Modules` package, a new system parameter was added to the Cloud Pipeline:
+
+- **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
+
+If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
+
+See an example [here](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#example-using-of-environment-modules-for-the-cloud-pipeline-runs).
+
+## Sharing SSH access to running instances with other user(s)/group(s)
+
+As was introduced in [Release Notes v.0.13](../v.0.13/v.0.13_-_Release_notes.md#running-instances-sharing-with-other-users-or-groups-of-users), for certain use cases it is beneficial to be able to share applications with other users/groups.  
+
+**`v0.15`** introduces a feature that allows to share SSH-sessions for such shared runs:
+
+1. User can share a run with others:
+    - "Share with: ..." parameter, within a run log form, can be used for this  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_1.png)
+    - Specific users or whole groups can be set for sharing  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_2.png)
+    - Once this is set - other users will be able to access run's endpoints
+    - Also you can share SSH access to the running instance via setting "**Enable SSH connection**" checkbox  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_3.png)
+2. **SERVICES** widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.  
+To open shared instance application user should click the service name.  
+To get SSH-access to the shared instance user should hover over service "card" and click the **SSH** hyperlink  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SharingInstancesSSH_4.png)
+
+For more information about runs sharing see [11.3. Sharing with other users or groups of users](../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md).
+
+## Allow to limit the number of concurrent SSH sessions
+
+Previously, some users could try to start a real big number of Web SSH sessions. If 1000+ SSH sessions are established via EDGE service, the performance will degrade. It is not common, but it could be critical as it affects all the users of the platform deploment.
+
+To avoid such cases, in **`v0.15`** the [`pipectl`](#installation-via-pipectl) parameter **`CP_EDGE_MAX_SSH_CONNECTIONS`** (with default value `25`) for the EDGE server is introduced, that allows to control a number of simultaneous SSH connections to a single job.  
+Now, if this max number will be reached, the next attemp to open another one Web SSH session to the same job will return a notification to the user and a new session will not be opened until the any one previous is closed:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SSH_SessionLimits_1.png)
+
+## Verification of docker/storage permissions when launching a run
+
+Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding **permission** for that executable.  
+But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.
+
+In **`v0.15`** additional verification implemented that checks if:
+
+- `execution` is allowed for specified docker image;
+- `read` operations are allowed for **input** and **common** path parameters;
+- `write` operations are allowed for **output** path parameters.
+
+If there are such permission issues, run won't be launched and special warning notifications will be shown to a user, e.g.:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_1.png)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PermissionsVerification_2.png)
+
+For more details see sections [6.2. Launch a pipeline](../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md), [7.2. Launch Detached Configuration](../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md) and [10.5. Launch a Tool](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md).
+
+## Ability to override the `queue`/`PE` configuration in the GE configuration
+
+Previously, if the Grid Engine was enabled, the following was configured:
+
+- a single `queue` with all the hosts was creating, named "**main.q**"
+- a single `PE` (Parallel Environment) was creating, named "**local**"
+
+In **`v0.15`**, the overriding of the names of the `queue`/`PE` is implemented to be compatible with any existing scripts, that rely on a specific GE configuration (e.g. hardcoded).  
+You can do it using two new System Parameters at the Launch or the Configuration forms:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_GE_QueueAndPeRenaming_1.png)
+
+- **`CP_CAP_SGE_QUEUE_NAME`** _(string)_ - allows to override the GE's `queue` name (default: "**main.q**")
+- **`CP_CAP_SGE_PE_NAME`** _(string)_ - allows to override the GE's `PE` name (default: "**local**")
+
+More information how to use System Parameters when a job is launched see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#example-create-a-configuration-that-uses-system-parameter).
+
+## Estimation run's disk size according to the input/common parameters
+
+Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using `STAR` aligner, where the genome index file is 20Gb).
+
+In **`v0.15`**, an attempt to handle some of such cases is implemented. Now, the Cloud Pipeline try to estimate the required disk size using the input/common parameters and warn the user if the requested disk is not enough.
+
+When a job is launching, the system try to get the size of all input/common parameters. The time of the size getting for all files is limited, as this may take too much for lots of small files. Limit for this time is set by the **`storage.listing.time.limit`** system preference (in milliseconds). Default: 3 sec (3000 milliseconds). If computation doesn't end in this timeout, accumulated size will return as is.
+
+If the resulting size of all input/common parameters is greater than requested disk size (considering cluster configuration) - the user will be warned:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_EstimateDiskSize_1.png)  
+    User can set suggested disk size or launch a job at user's own risk with the requested size.
+
+If calculated suggested disk size exceeds 16Tb (hard limit) a different warning message will be shown:
+
+``` text
+The requested disk size for this run is <N> Gb, but the data that is going to be processed exceeds 16 Tb (which is a hard limit).
+Please use the cluster run configuration to scale the disks horizontally or reduce the input data volume.
+Do you want to use the maximum disk size 16 Tb anyway?
+```
+
+## Disabling of the Global Search form if a corresponding service is not installed
+
+Version **`0.14`** introduced the [Global Search](../v.0.14/v.0.14_-_Release_notes.md#global-search) feature over all Cloud Pipeline objects.  
+In current version, a small enhancement for the Global Search is implemented. Now, if the **`search.elastic.host`** system preference is not set by admin - other users will not be able to try search performing:
+
+- the "Search" button will be hidden from the left menu
+- keyboard search shortcut will be disabled
+
+## Disabling of the FS mounts creation if no FS mount points are registered
+
+In the `Cloud Pipeline`, along with the regular data storages user can also create [FS mounts](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md) - data storages based on the network file system:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DisablingFSmounts_1.png)
+
+For the correct FS mount creation, at least one mount point shall be registered in the `Cloud Pipeline` Preferences.  
+Now, if no FS mount points are registered for any Cloud Region in the System Preferences - user can not create a new FS mount, the corresponding button becomes invisible:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_DisablingFSmounts_2.png)
+
+## Displaying resource limit errors during run resuming
+
+User may hit a situation of resource limits while trying to resume previously paused run. E.g. instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type. Previously, in this case run could be failed with an error of insufficient resources.
+
+In **`v0.15`** the following approach is implemented for such cases:
+
+- resuming run doesn't fail if resource limits are hit. That run returns to the `Paused` state
+- log message that contains a reason for resume failure and returning back to the `Paused` state is being added to the `ResumeRun` task
+- user is notified about such event. The corresponding warning messages are displayed:
+    - at the **Run logs** page  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_1.png)
+    - at the **ACTIVE RUNS** page (hint message while hovering the **RESUME** button)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_3.png)
+    - at the **ACTIVE RUNS** panel of the Dashboard (hint message while hovering the **RESUME** button)  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_FailedResuming_2.png)
+
+## Object storage creation in despite of that the CORS/Policies could not be applied
+
+Previously, if the Cloud service account/role had permissions to create object storages, but lacked permissions to apply `CORS` or other policies - object storage was created, but the `Cloud Pipeline API` threw an exception and storage was not being registered.  
+This led to the creation of a "zombie" storage, which was not available via GUI, but existed in the Cloud.
+
+Currently, the `Cloud Pipeline API` doesn't fail such requests and storage is being registered normally.  
+But the corresponding warning will be displayed to the user like this:
+
+```
+The storage {storage_name} was created, but certain policies were not applied.
+This can be caused by insufficient permissions.
+```
+
+## Track the confirmation of the "Blocking" notifications
+
+System events allow to create popup notifications for users.  
+One of the notification types - the "Blocking" notification. Such event emerges in the middle of the window and requires confirmation from the user to disappear for proceeding with the GUI operations.  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_1.png)
+
+In certain cases (e.g. for some important messages), it is handy to be able to check which users confirmed the notification.  
+For that, in the current version the ability to view, which "blocking" notifications confirmed by specific user, was implemented for admins.  
+Information about confirmed notifications can be viewed at the "**Attributes**" section of the specific user's profile page:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_2.png)
+
+Confirmed notifications are displayed as user attribute with the **KEY** `confirmed_notifications` (that name could be changed via the system-level preference **`system.events.confirmation.metadata.key`**) and the **VALUE** link that shows summary count of confirmed notifications for the user.  
+Click the **VALUE** link with the notification count to open the detailed table with confirmed notifications:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_TrackBlockingNotifications_3.png)
+
+For more details see ["blocking" notifications track](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#blocking-notifications-track).
+
+## `pipe` CLI warnings on the JWT expiration
 
 By default, when `pipe` CLI is being configured JWT token is given for one month, if user didn't select another expiration date.
 
@@ -389,7 +605,9 @@ In **`v.0.15`** extra `pipe` CLI warnings are introduced to provide users an inf
 - When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:  
 ![CP_v.0.15_ReleaseNotes](attachments/RN015_JWTtokenExp_3.png)
 
-## pipe configuration for using NTLM Authentication Proxy
+See more information about `pipe` CLI installation [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#how-to-install-and-setup-pipe-cli).
+
+## `pipe` configuration for using NTLM Authentication Proxy
 
 For some special customer needs, `pipe` configuration for using NTLM Authentication Proxy, when running in Linux, could be required.
 
@@ -421,17 +639,46 @@ Password of the user1 user:
 pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy "http://myproxy:3128"
 ```
 
-## Environment Modules support for the Cloud Pipeline runs
+See more information about `pipe` CLI installation and configure [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md).
 
-The `Environment Modules` [package](http://modules.sourceforge.net/index.html) provides for the dynamic modification of a user's environment via `modulefiles`.
+## Execution of files uploading via `pipe` without failures in case of lacks read permissions
 
-In current version, an ability to configure the `Modules` support for the compute jobs is introduced, if this is required by any use case.
+Previously, `pipe storage cp`/`mv` commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the `pipe` process had reached one of files that was not readable for the `pipe` process, then the whole command was being failed, remaining files did not upload.
 
-For using facilities of the `Environment Modules` package, a new system parameter was added to the Cloud Pipeline:
+In current version, the `pipe` process checks read permission for the "local" source (directories and files) and skip those that are not readable:
 
-- **`CP_CAP_MODULES`** _(boolean)_ - enables installation and using the `Modules` for the current run (for all supported Linux distributions)
+![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeCPforNotReadable_1.png)
 
-If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed and made available. While installing, `Modules` will be configured to the source `modulefiles` path from the `CP_CAP_MODULES_FILES_DIR` launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default `modulefiles` location will be used.
+## Run a single command or an interactive session over the SSH protocol via `pipe`
+
+For the certain purposes, it could be conveniently to start an interactive session over the SSH protocol for the job run via the `pipe` CLI.
+
+For such cases, in **`v0.15`** the `pipe ssh` command was implemented. It allows you, if you are the **ADMIN** or the run **OWNER**, to perform a single command or launch an interactive session for the specified job run.  
+Launching of an interactive session:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_1.png)  
+This session is similar to the [terminal access](../../manual/15_Interactive_services/15.2_Using_Terminal_access.md#using-terminal-access) that user can get via the GUI.
+
+Performing the same single command without launching an interactive session:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeSsh_2.png)  
+
+## Perform objects restore in a batch mode via `pipe`
+
+Users can restore files that were removed from the data storages with enabled versioning.  
+For these purposes, the Cloud Pipeline's CLI has the `restore` command which is capable of restoring a single object at a time.
+
+In **`v0.15`** the ability to recursively restore the whole folder, deleted from the storage, was implemented.  
+Now, if the source path is a directory, the `pipe storage restore` command gets the top-level deleted files from the source directory and restore them to the latest version.  
+Also, to the `restore` command some options were added:
+
+- `-r` or `--recursive` - flag allows to restore the whole directory hierarchy
+- `-i` or `--include [TEXT]` - flag allows to restore only files which names match the \[TEXT\] pattern and skip all others
+- `-e` or `--exclude [TEXT]` - flag allows to skip restoring of files which names match the \[TEXT\] pattern and restore all others
+
+![CP_v.0.15_ReleaseNotes](attachments/RN015_PipeRestoreRecursive.png)
+
+**_Note_**: this feature is yet supported for `AWS` only.
+
+For more details about file restoring via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#restore-files).
 
 ***
 
@@ -441,7 +688,7 @@ If `CP_CAP_MODULES` system parameter is set - the `Modules` will be installed an
 
 [#221](https://github.com/epam/cloud-pipeline/issues/221)
 
-When user was searching for an entry, that may belong to different classes (e.g. `issues` and `folders`) - user was not able to filter the results by the class
+When user was searching for an entry, that may belong to different classes (e.g. `issues` and `folders`) - user was not able to filter the results by the class.
 
 ### "COMMITTING..." status hangs
 
@@ -454,6 +701,7 @@ In certain cases, while committing pipeline with the stop flag enabled - the run
 [#150](https://github.com/epam/cloud-pipeline/issues/150)
 
 Metadata entities (i.e. project-related metadata) sorting was faulty:
+
 1. Sort direction indicator (Web GUI) was displaying an inverted direction
 2. Entities were not sorted correctly
 
@@ -461,11 +709,9 @@ Metadata entities (i.e. project-related metadata) sorting was faulty:
 
 [#144](https://github.com/epam/cloud-pipeline/issues/144)
 
-If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.
-
-It works fine if the child tools are dropped beforehand.
-
-Now it is possible to delete such a group if a `force` flag is set in the confirmation dialog.
+If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.  
+It works fine if the child tools are dropped beforehand.  
+Now, it is possible to delete such a group if a `force` flag is set in the confirmation dialog.
 
 ### Missing region while estimating a run price
 
@@ -483,9 +729,8 @@ Web GUI interface was not providing an option to select a region when adding an 
 
 [#265](https://github.com/epam/cloud-pipeline/issues/265)
 
-All authorized users were permitted to browse the metadata of `users` and `roles` entities. But those entries may contain a sensitive data, that shall not be shared across users.
-
-Now a general user may list only personal `user-level` metadata. Administrators may list both `users` and `roles` metadata across all entries.
+All authorized users were permitted to browse the metadata of `users` and `roles` entities. But those entries may contain a sensitive data, that shall not be shared across users.  
+Now, a general user may list only personal `user-level` metadata. Administrators may list both `users` and `roles` metadata across all entries.
 
 ### Getting logs from Kubernetes may cause `OutOfMemory` error
 
@@ -493,3 +738,88 @@ Now a general user may list only personal `user-level` metadata. Administrators 
 
 For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause `OutOfMemory` error, since Kubernetes library tries to load it into a single String object.  
 In current version, a new system preference was introduced: **`system.logs.line.limit`**. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.
+
+### AWS: Incorrect `nodeup` handling of spot request status
+
+[#556](https://github.com/epam/cloud-pipeline/issues/556)
+
+Previously, in a situation when an `AWS` spot instance created after some timeout - spot status wasn't updated correctly in the handling of `spot request status`. It might cause errors while getting spot instance info.
+
+### Not handling clusters in `autopause` daemon
+
+[#557](https://github.com/epam/cloud-pipeline/issues/557)
+
+Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).  
+In current version, `autopause` daemon doesn't handle any clusters ("Static" or "Autoscaled").  
+Also now, if the cluster is configured - **Auto pause** checkbox doesn't display in the **Launch Form** for the `On-Demand` node types.
+
+### Incorrect `pipe` CLI version displaying
+
+[#561](https://github.com/epam/cloud-pipeline/issues/561)
+
+Previously, `pipe` CLI version displayed incorrectly for the `pipe` CLI installations performed via hints from the **Cloud Pipeline** System Settings menu.
+
+### JWT token shall be updated for the jobs being resumed
+
+[#579](https://github.com/epam/cloud-pipeline/issues/579)
+
+In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.  
+Now, the JWT token and other variables as well are being updated when a job is being resumed.
+
+### Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error
+
+[#520](https://github.com/epam/cloud-pipeline/issues/520)
+
+Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.
+
+### `pipe`: incorrect behavior of the `-nc` option for the `run` command
+
+[#609](https://github.com/epam/cloud-pipeline/issues/609)
+Previously, trying to launch a pipeline via the `pipe run` command with the single `-nc` option threw an error.
+
+### Cluster run cannot be launched with a Pretty URL
+
+[#620](https://github.com/epam/cloud-pipeline/issues/620)
+
+Previously, if user tried to launch any interactive tool with [Pretty URL](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#launch-a-tool-with-friendly-url) and configured cluster - an error appeared `URL {Pretty URL} is already used for run {Run ID}`.  
+Now, pretty URL could be set only for the parent runs, for the child runs regular URLs are set.
+
+### Cloning of large repositories might fail
+
+[#626](https://github.com/epam/cloud-pipeline/issues/626)
+
+When large repository (> 1Gb) was cloned (e.g. when a pipeline was being run) - `git clone` could fail with the OOM error happened at the GitLab server if it is not powerful enough.  
+OOM was produced by the `git pack-objects` process, which tries to pack all the data in-memory.  
+Now, `git pack-objects` memory usage is limited to avoid errors in cases described above.
+
+### System events HTML overflow
+
+[#630](https://github.com/epam/cloud-pipeline/issues/630)
+
+If admin set a quite long text (without separators) into the message body of the [system event notifications](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-events) - the resulting notification text "overflowed" the browser window.  
+Now, text wrapping is considered for such cases.
+
+Also, support of [Markdown](https://en.wikipedia.org/wiki/Markdown) was added for the system notification messages:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_NotificationsMarkdown.png)
+
+### AWS: Pipeline run `InitializeNode` task fails
+
+[#635](https://github.com/epam/cloud-pipeline/issues/635)
+
+Previously, if `AWS` spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: `Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available`.  
+Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to `on-demand` and run initialization continues.
+
+### `git-sync` shall not fail the whole object synchronization if a single entry errors
+
+[#648](https://github.com/epam/cloud-pipeline/issues/648)
+
+When the `git-sync` script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.  
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issue with the synchronization of users with duplicate email addresses was resolved.
+
+### Broken layouts
+
+[#553](https://github.com/epam/cloud-pipeline/issues/553), [#619](https://github.com/epam/cloud-pipeline/issues/619), [#643](https://github.com/epam/cloud-pipeline/issues/643), [#644](https://github.com/epam/cloud-pipeline/issues/644)
+
+Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.  
+**Global search page** was not rendered correctly when the search results table had too many records.  
+Some of the other page layouts also were broken.

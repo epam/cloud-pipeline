@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
@@ -52,7 +53,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
-import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
@@ -64,7 +65,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
-import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -102,7 +103,6 @@ public class PipelineRunManager {
 
     private static final int POD_ID_LENGTH = 63;
     private static final String EMPTY_STING = "";
-    private static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final Long EMPTY_PIPELINE_ID = null;
     private static final int MILLS_IN_SEC = 1000;
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
@@ -144,7 +144,7 @@ public class PipelineRunManager {
     private ToolManager toolManager;
 
     @Autowired
-    private GrantPermissionManager permissionManager;
+    private RunPermissionManager permissionManager;
 
     @Autowired
     private PipelineConfigurationManager configurationManager;
@@ -174,7 +174,7 @@ public class PipelineRunManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
-    private CAdvisorMonitoringManager cAdvisorMonitoringManager;
+    private UsageMonitoringManager usageMonitoringManager;
 
     @Autowired
     private NodesManager nodesManager;
@@ -236,7 +236,7 @@ public class PipelineRunManager {
         run.setId(runVO.getUseRunId());
         run.setStartDate(DateUtils.now());
         run.setStatus(TaskStatus.RUNNING);
-        run.setPipelineName(DEFAULT_PIPELINE_NAME);
+        run.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         run.setPodId(getRootPodIDFromTool(tool.getImage(), run.getId()));
         run.setDockerImage(configuration.getDockerImage());
         run.setCmdTemplate(determinateCmdTemplateForRun(configuration));
@@ -417,7 +417,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
         setParent(pipelineRun);
         checkCommitRunStatus(pipelineRun);
-        if (permissionManager.isOwnerOrAdmin(pipelineRun.getOwner())) {
+        if (permissionManager.isRunSshAllowed(pipelineRun)) {
             pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(id));
         }
         pipelineRun.setPipelineRunParameters(
@@ -783,9 +783,7 @@ public class PipelineRunManager {
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
         }
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-
+        PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.isTrue(pipelineRun.getInitialized(),
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_INITIALIZED, runId));
         Assert.notNull(pipelineRun.getDockerImage(),
@@ -804,9 +802,7 @@ public class PipelineRunManager {
      * @return resumed {@link PipelineRun}
      */
     public PipelineRun resumeRun(Long runId) {
-        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
-        verifyPipelineRunForPauseResume(pipelineRun, runId);
-
+        PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
         if (StringUtils.isEmpty(pipelineRun.getActualCmd())) {
@@ -839,6 +835,42 @@ public class PipelineRunManager {
         pipelineRunDao.createRunSids(runId, runSids);
         pipelineRun.setRunSids(runSids);
         return pipelineRun;
+    }
+
+    /**
+     * Update whole pipeline info (use instead of calling few specific update methods if need).
+     * @param run {@link PipelineRun} which will be updated
+     * @return updated pipeline run
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateRunInfo(final PipelineRun run) {
+        final Long runId = run.getId();
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(loadedRun,
+                       messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        pipelineRunDao.updateRun(run);
+        return run;
+    }
+
+    /**
+     * Updates run's tags
+     * @param runId is ID of pipeline run which tags should be updated
+     * @param newTags object, containing a map with tags to set for a pipeline
+     * @return
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun updateTags(final Long runId, final TagsVO newTags) {
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        run.setTags(newTags.getTags());
+        pipelineRunDao.updateRunTags(run);
+        return run;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void updateRunsTags(final Collection<PipelineRun> runs) {
+        pipelineRunDao.updateRunsTags(runs);
     }
 
     /**
@@ -889,7 +921,7 @@ public class PipelineRunManager {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        final long availableDisk = cAdvisorMonitoringManager.getDiskAvailableForDocker(
+        final long availableDisk = usageMonitoringManager.getPodDiskSpaceAvailable(
                 pipelineRun.getInstance().getNodeName(), pipelineRun.getPodId(), pipelineRun.getDockerImage());
         final long requiredImageSize = (long)Math.ceil(
                 (double)toolManager.getCurrentImageSize(pipelineRun.getDockerImage())
@@ -919,6 +951,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_TERMINATION_WRONG_STATUS, runId,
                         pipelineRun.getStatus()));
         pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setEndDate(DateUtils.now());
         updatePipelineStatus(pipelineRun);
         nodesManager.terminateRun(pipelineRun);
         return pipelineRun;
@@ -1223,7 +1256,7 @@ public class PipelineRunManager {
     }
 
     private void fillMissingPipelineFields(final PipelineRun restartedRun) {
-        restartedRun.setPipelineName(DEFAULT_PIPELINE_NAME);
+        restartedRun.setPipelineName(PipelineRun.DEFAULT_PIPELINE_NAME);
         restartedRun.setRepository(EMPTY_STING);
         restartedRun.setPipelineId(EMPTY_PIPELINE_ID);
         restartedRun.setVersion(EMPTY_STING);
@@ -1242,5 +1275,12 @@ public class PipelineRunManager {
             runInstance.setCloudProvider(i.getCloudProvider());
             return runInstance;
         }).orElse(new RunInstance());
+    }
+
+    private PipelineRun loadRunForPauseResume(Long runId) {
+        PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        verifyPipelineRunForPauseResume(pipelineRun, runId);
+        pipelineRun.setSshPassword(pipelineRunDao.loadSshPassword(runId));
+        return pipelineRun;
     }
 }

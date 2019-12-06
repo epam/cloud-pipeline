@@ -36,6 +36,11 @@ ROOT_DEVICE_DEFAULT = {
     "Ebs": {"VolumeSize": 40}
 }
 
+BOTO3_RETRY_COUNT = 6
+SPOT_UNAVAILABLE_EXIT_CODE = 5
+
+RUNNING = 16
+PENDING = 0
 
 class AWSInstanceProvider(AbstractInstanceProvider):
 
@@ -56,11 +61,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             try:
                 self.ec2 = boto3.client('ec2')
                 if hasattr(self.ec2.meta.events, "_unique_id_handlers"):
-                    self.ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = num_rep
+                    self.ec2.meta.events._unique_id_handlers['retry-config-ec2']['handler']._checker.__dict__['_max_attempts'] = BOTO3_RETRY_COUNT
             except Exception as inner_exception:
                 utils.pipe_log('Unable to modify retry config:\n{}'.format(str(inner_exception)))
         else:
-            self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': num_rep}))
+            self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
@@ -68,15 +73,15 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)
         if ins_id:
             return ins_id, ins_ip
-
-        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+        swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
+        user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, kube_ip, kubeadm_token,
+                                                      swap_size)
         if is_spot:
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
-                                                             kms_encyr_key_id, user_data_script, num_rep, time_rep)
+                                                       kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size)
         else:
-            ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd,
-                                                                 kms_encyr_key_id, run_id, user_data_script,
-                                                                 num_rep, time_rep)
+            ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id,
+                                                           run_id, user_data_script, num_rep, time_rep, swap_size)
         return ins_id, ins_ip
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
@@ -88,8 +93,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         utils.pipe_log('- Waiting for instance boot up...')
         result = utils.poll_instance(sock, time_rep, ipaddr, port)
         rep = 0
-        while result != 0:
+        active = False
+        while result != 0 or not active:
             sleep(time_rep)
+            active = self.__instance_is_active(ins_id)
             result = utils.poll_instance(sock, time_rep, ipaddr, port)
             rep = self.__increment_or_fail(num_rep, rep, 'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(num_rep, ins_id, port),
                                            kill_instance_id_on_fail=ins_id)
@@ -109,6 +116,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             raise RuntimeError("Failed to find instance {}".format(old_id))
 
+    def __instance_is_active(self, instance_id):
+        status = self.get_current_status(instance_id)
+        return status == RUNNING or status == PENDING
+
     def verify_run_id(self, run_id):
         utils.pipe_log('Checking if instance already exists for RunID {}'.format(run_id))
         response = self.ec2.describe_instances(
@@ -120,13 +131,13 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 }
             ]
         )
-        if len(response['Reservations']) > 0:
+        ins_id = ''
+        ins_ip = ''
+        if len(response['Reservations']) > 0 and self.__instance_is_active(response['Reservations'][0]['Instances'][0]['InstanceId']):
             ins_id = response['Reservations'][0]['Instances'][0]['InstanceId']
             ins_ip = response['Reservations'][0]['Instances'][0]['PrivateIpAddress']
             utils.pipe_log('Found existing instance (ID: {}, IP: {}) for RunID {}\n-'.format(ins_id, ins_ip, run_id))
         else:
-            ins_id = ''
-            ins_ip = ''
             utils.pipe_log('No existing instance found for RunID {}\n-'.format(run_id))
         return ins_id, ins_ip
 
@@ -201,7 +212,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         }
 
     def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
-                                 num_rep, time_rep):
+                                 num_rep, time_rep, swap_size):
         utils.pipe_log('Creating on demand instance')
         allowed_networks = utils.get_networks_config(self.cloud_region)
         additional_args = {}
@@ -224,8 +235,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 KeyName=ins_key,
                 InstanceType=ins_type,
                 UserData=user_data_script,
-                BlockDeviceMappings=[self.__root_device(ins_img),
-                                     AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+                BlockDeviceMappings=self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
                 TagSpecifications=[
                     {
                         'ResourceType': 'instance',
@@ -249,7 +259,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         status_code = self.get_current_status(ins_id)
 
         rep = 0
-        while status_code != 16:
+        while status_code != RUNNING:
             utils.pipe_log('- Waiting for status checks completion...')
             sleep(time_rep)
             status_code = self.get_current_status(ins_id)
@@ -309,10 +319,16 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                                                                                            str(e)))
             return ROOT_DEVICE_DEFAULT
 
+    def __get_block_devices(self, ins_img, ins_hdd, kms_encyr_key_id, swap_size):
+        block_devices = [self.__root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)]
+        if swap_size is not None and swap_size > 0:
+            block_devices.append(AWSInstanceProvider.block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
+        return block_devices
+
     @staticmethod
-    def block_device(ins_hdd, kms_encyr_key_id):
+    def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
         block_device_spec = {
-            "DeviceName": "/dev/sdb",
+            "DeviceName": name,
             "Ebs": {
                 "VolumeSize": ins_hdd,
                 "VolumeType": "gp2",
@@ -355,9 +371,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         if last_status in ['capacity-not-available', 'capacity-oversubscribed', 'constraint-not-fulfillable']:
             utils.pipe_log('[ERROR] Could not fulfill spot request for run {}, status: {}'.format(run_id, last_status),
                            status=TaskStatus.FAILURE)
-            sys.exit(5)
+            sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
-    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep):
+    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+                             kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size):
         utils.pipe_log('Creating spot request')
 
         utils.pipe_log('- Checking spot prices for current region...')
@@ -378,7 +395,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             'InstanceType': ins_type,
             'KeyName': ins_key,
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
-            'BlockDeviceMappings': [self.__root_device(ins_img), AWSInstanceProvider.block_device(ins_hdd, kms_encyr_key_id)],
+            'BlockDeviceMappings': self.__get_block_devices(ins_img, ins_hdd, kms_encyr_key_id, swap_size=swap_size),
         }
         if allowed_networks and cheapest_zone in allowed_networks:
             subnet_id = allowed_networks[cheapest_zone]
@@ -492,6 +509,9 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 break
             last_status = status
             utils.pipe_log('- Spot request {} is not yet fulfilled. Still waiting...'.format(request_id))
+            # TODO: review all this logic, it is difficult to read and maintain
+            if rep >= num_rep:
+                self.exit_if_spot_unavailable(run_id, last_status)
             rep = self.__increment_or_fail(num_rep, rep,
                                            'Exceeded retry count ({}) for spot instance. Spot instance request status code: {}.'.format(num_rep, status),
                                            kill_instance_id_on_fail=ins_id)
@@ -502,7 +522,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         return ins_id, ins_ip
 
     @staticmethod
-    def tag_name_is_present(instance):
+    def tag_name_is_present(instance) :
         return 'Tags' in instance and len([tag for tag in instance['Tags'] if tag['Key'] == 'Name']) > 0
 
     @staticmethod
@@ -513,32 +533,40 @@ class AWSInstanceProvider(AbstractInstanceProvider):
     def __check_spot_request_exists(self, num_rep, run_id, time_rep):
         utils.pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
         for _ in range(0, 5):
-            response = self.ec2.describe_spot_instance_requests(Filters=[self.run_id_filter(run_id)])
-            if len(response['SpotInstanceRequests']) > 0:
-                request_id = response['SpotInstanceRequests'][0]['SpotInstanceRequestId']
-                status = response['SpotInstanceRequests'][0]['Status']['Code']
+            spot_req = self.__get_spot_req_by_run_id(run_id)
+            if spot_req:
+                request_id = spot_req['SpotInstanceRequestId']
+                status = spot_req['Status']['Code']
                 utils.pipe_log('- Spot request for RunID {} already exists: SpotInstanceRequestId: {}, Status: {}'.format(run_id, request_id, status))
                 rep = 0
-                if status == 'request-canceled-and-instance-running':
-                    return self.__tag_and_get_instance(response, run_id)
+                if status == 'request-canceled-and-instance-running' and self.__instance_is_active(spot_req['InstanceId']):
+                    return self.__tag_and_get_instance(spot_req, run_id)
                 if AWSInstanceProvider.wait_for_fulfilment(status):
                     while status != 'fulfilled':
                         utils.pipe_log('- Spot request ({}) is not yet fulfilled. Waiting...'.format(request_id))
                         sleep(time_rep)
-                        response = self.ec2.describe_spot_instance_requests(
-                            SpotInstanceRequestIds=[request_id]
-                        )
-                        status = response['SpotInstanceRequests'][0]['Status']['Code']
+                        spot_req = self.ec2.describe_spot_instance_requests(
+                            SpotInstanceRequestIds=[request_id])['SpotInstanceRequests'][0]
+                        status = spot_req['Status']['Code']
                         utils.pipe_log('Exceeded retry count ({}) for spot instance (SpotInstanceRequestId: {}). Spot instance request status code: {}.'
                                        .format(num_rep, request_id, status))
                         rep = rep + 1
                         if rep > num_rep:
                             AWSInstanceProvider.exit_if_spot_unavailable(run_id, status)
                             return '', ''
-                    return self.__tag_and_get_instance(response, run_id)
+                    if self.__instance_is_active(spot_req['InstanceId']):
+                        return self.__tag_and_get_instance(spot_req, run_id)
             sleep(5)
         utils.pipe_log('No spot request for RunID {} found\n-'.format(run_id))
         return '', ''
+
+    def __get_spot_req_by_run_id(self, run_id):
+        response = self.ec2.describe_spot_instance_requests(Filters=[self.run_id_filter(run_id)])
+        for spot_req in response['SpotInstanceRequests']:
+            status = spot_req['Status']['Code']
+            if self.wait_for_fulfilment(status) or status == 'request-canceled-and-instance-running':
+                return spot_req
+        return None
 
     def __get_aws_instance_id(self, node_internal_ip):
         if node_internal_ip is None:
@@ -554,8 +582,8 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                     return instances[0]['InstanceId']
         return None
 
-    def __tag_and_get_instance(self, response, run_id):
-        ins_id = response['SpotInstanceRequests'][0]['InstanceId']
+    def __tag_and_get_instance(self, spot_req, run_id):
+        ins_id = spot_req['InstanceId']
         utils.pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
         instance = self.ec2.describe_instances(InstanceIds=[ins_id])
         ins_ip = instance['Reservations'][0]['Instances'][0]['PrivateIpAddress']
@@ -573,6 +601,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         rep = rep + 1
         if rep > num_rep:
             if kill_instance_id_on_fail:
+                instance = self.ec2.describe_instances(InstanceIds=[kill_instance_id_on_fail])['Reservations'][0]['Instances'][0]
+                if instance["SpotInstanceRequestId"]:
+                    utils.pipe_log('Cancel Spot request ({})'.format(instance["SpotInstanceRequestId"]))
+                    self.ec2.cancel_spot_instance_requests(request_ids=[instance["SpotInstanceRequestId"]])
+
                 utils.pipe_log('[ERROR] Operation timed out and an instance {} will be terminated\n'
                          'See more details below'.format(kill_instance_id_on_fail))
                 self.ec2.terminate_instance(kill_instance_id_on_fail)

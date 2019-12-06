@@ -41,11 +41,11 @@ public class PipelineHistoryTabAO extends AbstractPipelineTabAO<PipelineHistoryT
         this.elements = initialiseElements(
                 super.elements(),
                 entry(RERUN, $(cssSelector("[id$=rerun-button]"))),
-                entry(RUN_NAME, firstRowColumns().get(0)),
-                entry(PIPELINE, firstRowColumns().get(2)),
-                entry(STARTED_TIME, firstRowColumns().get(4)),
-                entry(COMPLETED_TIME, firstRowColumns().get(5)),
-                entry(OWNER, firstRowColumns().get(7)),
+                entry(RUN_NAME, firstRowColumns().get(1)),
+                entry(PIPELINE, firstRowColumns().get(4)),
+                entry(STARTED_TIME, firstRowColumns().get(6)),
+                entry(COMPLETED_TIME, firstRowColumns().get(7)),
+                entry(OWNER, firstRowColumns().get(9)),
                 entry(STOP, $(cssSelector("[id$=stop-button]"))),
                 entry(LOG, $(cssSelector("[id$=logs-button]")))
         );

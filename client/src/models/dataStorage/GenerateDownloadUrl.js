@@ -19,6 +19,23 @@ import Remote from '../basic/Remote';
 class GenerateDownloadUrl extends Remote {
   url;
 
+  static buildQuery (path, version, contentDisposition) {
+    const query = [
+      !!path && `path=${encodeURIComponent(path)}`,
+      !!version && `version=${version}`,
+      !!contentDisposition && `contentDisposition=${contentDisposition}`
+    ]
+      .filter(Boolean)
+      .join('&');
+    return `${!!query && query.length > 0 ? '?' : ''}${query}`;
+  }
+
+  static getRedirectUrl = (id, path, version) => {
+    const prefix = this.prefix;
+    const query = this.buildQuery(path, version, 'ATTACHMENT');
+    return `${prefix}/datastorage/${id}/downloadRedirect${query}`;
+  };
+
   constructor (id, path, version) {
     super();
     this.id = id;
@@ -28,14 +45,8 @@ class GenerateDownloadUrl extends Remote {
   };
 
   buildUrl () {
-    const query = [
-      !!this.path && `path=${encodeURIComponent(this.path)}`,
-      !!this.version && `version=${this.version}`
-    ]
-      .filter(Boolean)
-      .join('&');
-    const queryStr = `${!!query && query.length > 0 ? '?' : ''}${query}`;
-    this.url = `/datastorage/${this.id}/generateUrl${queryStr}`;
+    const query = this.constructor.buildQuery(this.path, this.version, 'ATTACHMENT');
+    this.url = `/datastorage/${this.id}/generateUrl${query}`;
   }
 }
 

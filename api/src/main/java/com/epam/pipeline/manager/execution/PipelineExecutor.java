@@ -31,6 +31,8 @@ import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
@@ -42,6 +44,7 @@ import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,7 +68,9 @@ public class PipelineExecutor {
     private static final String NGINX_ENDPOINT = "nginx";
     private static final long KUBE_TERMINATION_PERIOD = 30L;
     private static final String TRUE = "true";
-    public static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
+    private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
+    private static final String DEFAULT_CPU_REQUEST = "1";
+    private static final String CPU_REQUEST_NAME = "cpu";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -93,9 +98,9 @@ public class PipelineExecutor {
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());
             Map<String, String> nodeSelector = new HashMap<>();
+            String runIdLabel = String.valueOf(run.getId());
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
-                String runIdLabel = String.valueOf(run.getId());
                 nodeSelector.put("runid", nodeIdLabel);
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) && nodeIdLabel.equals(runIdLabel)) {
@@ -110,7 +115,8 @@ public class PipelineExecutor {
 
             OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             ObjectMeta metadata = getObjectMeta(run, labels);
-            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getDockerImage(), command, pullImage);
+            PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, run.getDockerImage(), command,
+                    pullImage, nodeIdLabel.equals(runIdLabel));
             Pod pod = new Pod("v1", "Pod", metadata, spec, null);
             Pod created = new PodOperationsImpl(httpClient, client.getConfiguration(), kubeNamespace).create(pod);
             LOGGER.debug("Created POD: {}", created.toString());
@@ -118,16 +124,20 @@ public class PipelineExecutor {
     }
 
     private void addWorkerLabel(final String clusterId, final Map<String, String> labels, final PipelineRun run) {
-        final String clusterLabel = StringUtils.defaultIfBlank(clusterId,
-                Optional.ofNullable(run.getParentRunId()).map(String::valueOf).orElse(StringUtils.EMPTY));
+        final String clusterLabel = getChildLabel(clusterId, run);
         if (StringUtils.isNotBlank(clusterLabel)) {
             labels.put(KubernetesConstants.POD_WORKER_NODE_LABEL, clusterLabel);
         }
     }
 
+    private String getChildLabel(final String clusterId, final PipelineRun run) {
+        return StringUtils.defaultIfBlank(clusterId,
+                Optional.ofNullable(run.getParentRunId()).map(String::valueOf).orElse(StringUtils.EMPTY));
+    }
+
     private PodSpec getPodSpec(PipelineRun run, List<EnvVar> envVars, String secretName,
                                Map<String, String> nodeSelector, String dockerImage,
-                               String command, boolean pullImage) {
+                               String command, boolean pullImage, boolean isParentPod) {
         PodSpec spec = new PodSpec();
         spec.setRestartPolicy("Never");
         spec.setTerminationGracePeriodSeconds(KUBE_TERMINATION_PERIOD);
@@ -150,7 +160,7 @@ public class PipelineExecutor {
         }
 
         spec.setContainers(Collections.singletonList(getContainer(
-                envVars, dockerImage, command, pullImage, isDockerInDockerEnabled)));
+                envVars, dockerImage, command, pullImage, isDockerInDockerEnabled, isParentPod)));
         return spec;
     }
 
@@ -159,7 +169,8 @@ public class PipelineExecutor {
                                    String dockerImage,
                                    String command,
                                    boolean pullImage,
-                                   boolean isDockerInDockerEnabled) {
+                                   boolean isDockerInDockerEnabled,
+                                   boolean isParentPod) {
         Container container = new Container();
         container.setName("pipeline");
         SecurityContext securityContext = new SecurityContext();
@@ -174,7 +185,28 @@ public class PipelineExecutor {
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(pullImage ? "Always" : "Never");
         container.setVolumeMounts(getMounts(isDockerInDockerEnabled));
+        if (isParentPod) {
+            setCpuRequestIfRequired(envVars, container);
+        }
         return container;
+    }
+
+    private void setCpuRequestIfRequired(List<EnvVar> envVars, Container container) {
+        ListUtils.emptyIfNull(envVars).stream()
+                .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
+                .findFirst()
+                .map(var -> {
+                    if (NumberUtils.isDigits(var.getValue())) {
+                        return var.getValue();
+                    }
+                    return DEFAULT_CPU_REQUEST;
+                })
+                .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
+                .ifPresent(cpuRequest -> {
+                    ResourceRequirements resources = new ResourceRequirements();
+                    resources.setRequests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)));
+                    container.setResources(resources);
+                });
     }
 
     private List<Volume> getVolumes(final boolean isDockerInDockerEnabled) {

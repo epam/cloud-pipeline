@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -29,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 
@@ -36,6 +39,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageType getStorageType();
 
     String createStorage(T storage) throws DataStorageException;
+
+    ActionStatus postCreationProcessing(T storage);
 
     void deleteStorage(T dataStorage) throws DataStorageException;
 
@@ -47,7 +52,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageListing getItems(T dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker);
 
-    DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version);
+    DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
+                                                   ContentDisposition contentDisposition);
 
     DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path);
 
@@ -105,4 +111,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
         }
         return storagePolicy;
     }
+
+    PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
 }

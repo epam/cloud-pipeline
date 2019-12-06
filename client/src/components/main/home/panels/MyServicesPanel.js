@@ -23,6 +23,7 @@ import localization from '../../../../utils/localization';
 import parseRunServiceUrl from '../../../../utils/parseRunServiceUrl';
 import {Alert, Icon, Row} from 'antd';
 import CardsPanel from './components/CardsPanel';
+import getServiceActions from './components/getServiceActions';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
 
@@ -137,6 +138,12 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           onClick={navigate}
           emptyMessage="There are no services"
           cardStyle={{width: '100%'}}
+          actions={
+            getServiceActions(
+              this.props.authenticatedUserInfo,{
+              ssh: (url) => window.open(url, '_blank').focus()
+            })
+          }
           childRenderer={this.renderService}>
           {services}
         </CardsPanel>

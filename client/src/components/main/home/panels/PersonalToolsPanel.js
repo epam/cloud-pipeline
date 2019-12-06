@@ -32,6 +32,9 @@ import roleModel from '../../../../utils/roleModel';
 import highlightText from '../../../special/highlightText';
 import {Alert, Button, Col, Icon, message, Modal, Row} from 'antd';
 import {
+  getInputPaths,
+  getOutputPaths,
+  performAsyncCheck,
   submitsRun,
   modifyPayloadForAllowedInstanceTypes,
   run,
@@ -195,6 +198,9 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.state.runToolInfo.instanceType !== undefined) {
       payload.instanceType = this.state.runToolInfo.instanceType;
     }
+    if (this.state.runToolInfo.hddSize !== undefined) {
+      payload.hddSize = this.state.runToolInfo.hddSize;
+    }
     if (this.state.runToolInfo.limitMounts !== undefined) {
       if (!payload.params) {
         payload.params = {};
@@ -208,7 +214,7 @@ export default class PersonalToolsPanel extends React.Component {
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null
-      });
+      }, this.props.refresh);
     }
   };
 
@@ -421,6 +427,15 @@ export default class PersonalToolsPanel extends React.Component {
           regionId: defaultPayload.cloudRegionId
         });
         if (allowedToExecute) {
+          const inputs = getInputPaths(null, defaultPayload.params);
+          const outputs = getOutputPaths(null, defaultPayload.params);
+          const {errors: permissionErrors} = await performAsyncCheck({
+            inputs,
+            outputs,
+            dockerImage: defaultPayload.dockerImage,
+            dockerRegistries: this.props.dockerRegistries,
+            dataStorages: this.props.dataStorageAvailable
+          });
           this.setState({
             runToolInfo: {
               tool,
@@ -431,7 +446,8 @@ export default class PersonalToolsPanel extends React.Component {
               pricePerHour: estimatedPriceRequest.loaded ? estimatedPriceRequest.value.pricePerHour : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
-              availablePriceTypes
+              availablePriceTypes,
+              permissionErrors
             }
           });
         } else {
@@ -491,6 +507,17 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  getToolActions = (tool) => {
+    if (roleModel.executeAllowed(tool)) {
+      return [{
+        title: 'RUN',
+        icon: 'play-circle-o',
+        action: this.onRunToolClicked
+      }];
+    }
+    return [];
+  };
+
   onChange = (e) => {
     this.setState({
       search: e.target.value
@@ -518,11 +545,7 @@ export default class PersonalToolsPanel extends React.Component {
             search && search.length
               ? `No personal tools found for '${search}'`
               : 'There are no personal tools'}
-          actions={[{
-            title: 'RUN',
-            icon: 'play-circle-o',
-            action: this.onRunToolClicked
-          }]}
+          actions={this.getToolActions}
           childRenderer={this.renderTool}>
           {this.tools}
         </CardsPanel>
@@ -545,7 +568,9 @@ export default class PersonalToolsPanel extends React.Component {
         instanceType: runToolInfo.instanceType !== undefined
           ? runToolInfo.instanceType
           : runToolInfo.payload.instanceType,
-        instanceDisk: runToolInfo.payload.hddSize,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
         spot: isSpot,
         regionId: runToolInfo.payload.cloudRegionId
       });
@@ -563,7 +588,33 @@ export default class PersonalToolsPanel extends React.Component {
       const estimatedPriceRequest = new PipelineRunEstimatedPrice();
       await estimatedPriceRequest.send({
         instanceType: instanceType,
-        instanceDisk: runToolInfo.payload.hddSize,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
+        spot: runToolInfo.isSpot !== undefined
+          ? runToolInfo.isSpot
+          : runToolInfo.payload.isSpot,
+        regionId: runToolInfo.payload.cloudRegionId
+      });
+      runToolInfo.pricePerHour = estimatedPriceRequest.value.pricePerHour;
+      this.setState({
+        runToolInfo
+      });
+    }
+  };
+
+  onChangeDiskSize = async (diskSize) => {
+    if (this.state.runToolInfo) {
+      const runToolInfo = this.state.runToolInfo;
+      runToolInfo.hddSize = diskSize;
+      const estimatedPriceRequest = new PipelineRunEstimatedPrice();
+      await estimatedPriceRequest.send({
+        instanceType: runToolInfo.instanceType !== undefined
+          ? runToolInfo.instanceType
+          : runToolInfo.payload.instanceType,
+        instanceDisk: runToolInfo.hddSize !== undefined
+          ? runToolInfo.hddSize
+          : runToolInfo.payload.hddSize,
         spot: runToolInfo.isSpot !== undefined
           ? runToolInfo.isSpot
           : runToolInfo.payload.isSpot,
@@ -630,7 +681,11 @@ export default class PersonalToolsPanel extends React.Component {
                   disabled={
                     !this.state.runToolInfo ||
                     !this.state.runToolInfo.payload ||
-                    !this.state.runToolInfo.payload.instanceType
+                    !this.state.runToolInfo.payload.instanceType ||
+                    (
+                      this.state.runToolInfo.permissionErrors &&
+                      this.state.runToolInfo.permissionErrors.length > 0
+                    )
                   }
                   onClick={this.runToolWithDefaultSettings}
                   type="primary">
@@ -674,7 +729,13 @@ export default class PersonalToolsPanel extends React.Component {
                     ? this.state.runToolInfo.payload.params[LIMIT_MOUNTS_PARAMETER].value
                     : undefined
                 }
-                onChangeLimitMounts={this.onChangeLimitMounts} />
+                onChangeLimitMounts={this.onChangeLimitMounts}
+                onChangeHddSize={this.onChangeDiskSize}
+                nodeCount={+this.state.runToolInfo.payload.nodeCount || 0}
+                hddSize={this.state.runToolInfo.payload.hddSize}
+                parameters={this.state.runToolInfo.payload.params}
+                permissionErrors={this.state.runToolInfo.permissionErrors}
+              />
           }
           {
             this.state.runToolInfo && this.state.runToolInfo.pricePerHour &&

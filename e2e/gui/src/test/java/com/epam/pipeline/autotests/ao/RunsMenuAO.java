@@ -34,6 +34,7 @@ import static com.codeborne.selenide.CollectionCondition.*;
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -81,8 +82,13 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO stopRun(String runId) {
-        $("#run-" + runId + "-stop-button").shouldBe(visible).click();
-        $(button("STOP")).shouldBe(visible).click();
+        final SelenideElement runStopButton = $("#run-" + runId + "-stop-button");
+        runStopButton.waitUntil(enabled, 5000).click();
+        sleep(3, SECONDS);
+        if (!$(button("STOP")).isEnabled()) {
+            runStopButton.waitUntil(enabled, 5000).click();
+        }
+        $(button("STOP")).click();
         return this;
     }
 
@@ -164,7 +170,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .find(withText(runId))
                 .closest(".ant-table-row")
                 .findAll("td")
-                .get(0)
+                .get(1)
                 .find("i")
                 .shouldHave(cssClass("status-icon__icon-yellow"));
         return this;
@@ -319,6 +325,24 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO waitForCompletion(final String runId) {
         $(byClassName("run-" + runId)).find(byCssSelector("i")).waitUntil(hidden, COMPLETION_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO waitForInitializeNode(final String runId) {
+        final String initializeNodeTaskPath = "//*[contains(@class, 'ant-menu-item') and " +
+                ".//*[contains(., 'InitializeNode')]]//*[contains(@class, 'anticon')]";
+        int attempts = 15;
+
+        $(taskWithName("InitializeNode")).waitUntil(visible, C.ENDPOINT_INITIALIZATION_TIMEOUT).click();
+        while (!$(byXpath(initializeNodeTaskPath)).has(cssClass("status-icon__icon-green"))) {
+            if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
+                    .count() > 2 || attempts == 0) {
+                screenshot("failed_node_for_run_" + runId);
+                throw new IllegalArgumentException(String.format("Node for %s run was not initialized", runId));
+            }
+            sleep(1, MINUTES);
+            attempts--;
+        }
         return this;
     }
 

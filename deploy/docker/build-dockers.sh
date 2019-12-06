@@ -123,6 +123,7 @@ if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
+
 docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
@@ -192,6 +193,14 @@ docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_VM_MONITOR_DIST_NAME"
 
+# Drive Mapping
+CP_DRIVE_MAPPING_DIST_NAME=${CP_DRIVE_MAPPING_DIST_NAME:-"$CP_DIST_REPO_NAME:dav-${DOCKERS_VERSION}"}
+\cp -r $DOCKERS_SOURCES_PATH/../../scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
+docker build    $DOCKERS_SOURCES_PATH/cp-dav \
+                -t "$CP_DRIVE_MAPPING_DIST_NAME"
+docker push "$CP_DRIVE_MAPPING_DIST_NAME"
+rm -rf $DOCKERS_SOURCES_PATH/cp-dav
+
 # Share Service
 CP_SHARE_SRV_DIST_NAME=${CP_SHARE_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:share-srv-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \
@@ -233,6 +242,9 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/cromwell "$CP_DIST_REPO_NAM
 # Nextflow
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/nextflow "$CP_DIST_REPO_NAME:tools-base-nextflow-${DOCKERS_VERSION}" "library/nextflow:latest"
 
+# Snakemake
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/snakemake "$CP_DIST_REPO_NAME:tools-base-snakemake-${DOCKERS_VERSION}" "library/snakemake:latest"
+
 # Luigi
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:tools-base-luigi-${DOCKERS_VERSION}" "library/luigi:latest"
 
@@ -245,7 +257,20 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME
 ## - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-2-cuda9" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="2-latest"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-3-cuda9" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="3-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-cuda10-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-3-cuda10" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="3-latest"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="3-latest"
+
+# JupyterLab
+# Python2 version is not built due to https://github.com/jupyterlab/jupyterlab/issues/2096 (Python2 support is dropped since JupyterLab 0.33)
+## - Vanilla
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-3-${DOCKERS_VERSION}" "library/jupyter-lab:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-${DOCKERS_VERSION}" "library/jupyter-lab:latest" --spec "vanilla" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
+
+## - CUDA
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-3-cuda9-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-3-cuda9" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-3-cuda9-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-3-cuda10-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:conda-3-cuda10" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-3-cuda10-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_NAME:tools-base-jupyter-lab-cuda9-${DOCKERS_VERSION}" "library/jupyter-lab-cuda:latest" --spec "cuda" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-jupyter-cuda9-${DOCKERS_VERSION}" --build-arg ANACONDA_VERSION="3-latest"
+
 
 # Desktop
 ## - Ubuntu
@@ -253,6 +278,11 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:16.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:16.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:18.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+
+### -- Vanilla + noVNC
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-16.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:16.04" --build-arg BASE_IMAGE="library/ubuntu:16.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:18.04" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}" "library/ubuntu-novnc:latest" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 
 ### -- CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-cuda9-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:16-cuda9" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
@@ -291,6 +321,21 @@ build_and_push_tool $NGS_TOOLS_DOCKERS_SOURCES_PATH/msgen "$CP_DIST_REPO_NAME:to
 
 # bioconductor
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-ngs-bioconductor-${DOCKERS_VERSION}" "ngs/bioconductor:latest" --spec "../../ngs/bioconductor" --build-arg BASE_IMAGE="bioconductor/release_core2:R3.5.3_Bioc3.8"
+
+########################
+# Research environments dockers
+########################
+
+RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
+
+# Spyder with noVNC
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-py37-${DOCKERS_VERSION}" "library/spyder-novnc:3.7" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-${DOCKERS_VERSION}" "library/spyder-novnc:latest" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+
+# Spyder with nomachine
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-py37-${DOCKERS_VERSION}" "library/spyder-nomachine:3.7" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-${DOCKERS_VERSION}" "library/spyder-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+
 
 ########################
 # MD tools dockers

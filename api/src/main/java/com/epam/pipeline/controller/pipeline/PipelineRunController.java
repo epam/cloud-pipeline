@@ -28,6 +28,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.RunCommitVO;
 import com.epam.pipeline.controller.vo.RunStatusVO;
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -38,7 +39,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.manager.pipeline.RunApiService;
+import com.epam.pipeline.acl.run.RunApiService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -70,7 +71,6 @@ import java.util.List;
 public class PipelineRunController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
-    public static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final String TRUE = "true";
 
     @Autowired
@@ -169,7 +169,7 @@ public class PipelineRunController extends AbstractRestController {
         byte[] logs = runApiService.downloadLogs(runId).getBytes(Charset.defaultCharset());
         response.setContentType(MediaType.TEXT_PLAIN_VALUE);
         String pipelineName = !StringUtils.isEmpty(run.getPipelineName())
-                ? run.getPipelineName() : DEFAULT_PIPELINE_NAME;
+                ? run.getPipelineName() : PipelineRun.DEFAULT_PIPELINE_NAME;
         String pipelineVersion = !StringUtils.isEmpty(run.getVersion()) ? run.getVersion() : "";
         response.setHeader("Content-Disposition", String.format("attachment;filename=%s_%s_%d.log",
                         pipelineName, pipelineVersion, run.getId()));
@@ -322,6 +322,19 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
+    @RequestMapping(value = "/run/{runId}/fsbrowser", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Return URL to access run fsbrowser client.",
+            notes = "Return URL to access run fsbrowser client.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<String> buildFSBrowserUrl(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.buildFSBrowserUrl(runId));
+    }
+
     @RequestMapping(value = "/run/filter", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
@@ -460,5 +473,17 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun>  terminateRun(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.terminateRun(runId));
+    }
+
+    @PostMapping(value = "/run/{runId}/tag")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates tags for pipeline run.",
+            notes = "Updates tags for pipeline run. To remove all the tags pass empty map or null inside VO.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun>  updateRunTags(@PathVariable(value = RUN_ID) final Long runId,
+                                              @RequestBody final TagsVO tagsVO) {
+        return Result.success(runApiService.updateTags(runId, tagsVO));
     }
 }

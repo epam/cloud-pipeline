@@ -26,8 +26,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum DefaultRoles {
 
-    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null)),
-    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null));
+    ROLE_ADMIN(new Role(1L, "ROLE_ADMIN", true, false, null, null)),
+    ROLE_USER(new Role(2L, "ROLE_USER", true, true, null, null));
 
     private Role role;
 

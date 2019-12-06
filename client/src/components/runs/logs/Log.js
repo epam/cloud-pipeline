@@ -31,6 +31,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
+import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
@@ -64,6 +65,8 @@ import AWSRegionTag from '../../special/AWSRegionTag';
 import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
+import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import RunTags from '../run-tags';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -92,17 +95,14 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runId: params.runId,
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
-    nestedRuns: pipelineRun.runFilter({
-      page: 1,
-      pageSize: MAX_NESTED_RUNS_TO_DISPLAY,
-      parentId: params.runId,
-      userModified: true
-    }, false),
+    nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
     runSSH: new PipelineRunSSH(params.runId),
+    runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
     task,
     pipelines,
-    roles: new Roles()
+    roles: new Roles(),
+    routing
   };
 })
 @observer
@@ -403,6 +403,18 @@ class Logs extends localization.LocalizedReactComponent {
     }
     const details = [];
     if (instance) {
+      if (RunTags.shouldDisplayTags(run, true)) {
+        details.push({
+          key: 'tags',
+          value: (
+            <RunTags
+              run={run}
+              onlyKnown
+            />
+          ),
+          additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
+        });
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }
@@ -452,16 +464,17 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Row>
           Instance: {
-          details.map(d => {
-            return (
-              <span
-                key={d.key}
-                className={styles.instanceHeaderItem}>
-                {d.value}
-              </span>
-            );
-          })
-        }
+            details.map(d => {
+              return (
+                <span
+                  key={d.key}
+                  style={d.additionalStyle}
+                  className={styles.instanceHeaderItem}>
+                  {d.value}
+                </span>
+              );
+            })
+          }
         </Row>
       );
     }
@@ -471,6 +484,19 @@ class Logs extends localization.LocalizedReactComponent {
   renderInstanceDetails = (instance, run) => {
     const details = [];
     if (instance) {
+      if (RunTags.shouldDisplayTags(run)) {
+        const {routing: {location}} = this.props;
+        details.push({
+          key: 'Tags',
+          value: (
+            <RunTags
+              run={run}
+              location={location}
+              overflow={false}
+            />
+          )
+        });
+      }
       if (run.executionPreferences && run.executionPreferences.environment) {
         details.push({key: 'Execution environment', value: this.getExecEnvString(run)});
       }
@@ -742,7 +768,7 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%'}}>
+          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
@@ -892,6 +918,22 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get fsBrowserEnabled () {
+    if (
+      this.props.run.loaded &&
+      this.props.runFSBrowser.loaded &&
+      this.initializeEnvironmentFinished &&
+      !this.isDtsEnvironment
+    ) {
+      const {status, podIP} = this.props.run.value;
+      return status.toLowerCase() === 'running' &&
+        roleModel.executeAllowed(this.props.run.value) &&
+        podIP;
+    }
+    return false;
+  }
+
+  @computed
   get endpointAvailable () {
     if (this.props.run.loaded && this.initializeEnvironmentFinished) {
       const {serviceUrl} = this.props.run.value;
@@ -1018,11 +1060,13 @@ class Logs extends localization.LocalizedReactComponent {
     let PauseResumeButton;
     let ActionButton;
     let SSHButton;
+    let FSBrowserButton;
     let ExportLogsButton;
     let SwitchTimingsButton;
     let SwitchModeButton;
     let CommitStatusButton;
     let dockerImage;
+    let ResumeFailureReason;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -1069,30 +1113,34 @@ class Logs extends localization.LocalizedReactComponent {
             </td>
           </tr>
         );
-        if (this.props.run.value.status === 'RUNNING' && roleModel.isOwner(this.props.run.value)) {
-          let shareList = 'Not shared (click to configure)';
-          if (this.props.run.value.runSids && (this.props.run.value.runSids || []).length > 0) {
-            shareList = (this.props.run.value.runSids || [])
-              .map((s, index, array) => {
-                return (
-                  <span
-                    key={s.name}
-                    style={{marginRight: 5}}>
-                    <UserName userName={s.name} />
-                    {
-                      index < array.length - 1 ? ',' : undefined
-                    }
-                  </span>
-                );
-              });
-          }
-          share = (
-            <tr>
-              <th>Share with:</th>
-              <td><a onClick={this.openShareDialog}>{shareList}</a></td>
-            </tr>
-          );
+      }
+      if (
+        this.initializeEnvironmentFinished &&
+        this.props.run.value.status === 'RUNNING' &&
+        roleModel.isOwner(this.props.run.value)
+      ) {
+        let shareList = 'Not shared (click to configure)';
+        if (this.props.run.value.runSids && (this.props.run.value.runSids || []).length > 0) {
+          shareList = (this.props.run.value.runSids || [])
+            .map((s, index, array) => {
+              return (
+                <span
+                  key={s.name}
+                  style={{marginRight: 5}}>
+                  <UserName userName={s.name} />
+                  {
+                    index < array.length - 1 ? ',' : undefined
+                  }
+                </span>
+              );
+            });
         }
+        share = (
+          <tr>
+            <th>Share with:</th>
+            <td><a onClick={this.openShareDialog}>{shareList}</a></td>
+          </tr>
+        );
       }
       const pipeline = pipelineName && pipelineId && version
         ? {name: pipelineName, id: pipelineId, version: version}
@@ -1105,9 +1153,13 @@ class Logs extends localization.LocalizedReactComponent {
         pipelineRunParameters,
         status,
         instance,
-        commitStatus
-      } = this.props.run.value;
+        commitStatus,
+        resumeFailureReason
+      } = mapResumeFailureReason(this.props.run.value);
       dockerImage = this.props.run.value.dockerImage;
+      ResumeFailureReason = resumeFailureReason
+        ? (<Alert type="warning" message={resumeFailureReason} />)
+        : null;
       const pipelineLink = pipeline
         ? (
           <Link className={styles.pipelineLink} to={`/${pipeline.id}/${pipeline.version}`}>
@@ -1335,6 +1387,9 @@ class Logs extends localization.LocalizedReactComponent {
       if (this.sshEnabled) {
         SSHButton = (<a href={this.props.runSSH.value} target="_blank">SSH</a>);
       }
+      if (this.fsBrowserEnabled) {
+        FSBrowserButton = (<a href={this.props.runFSBrowser.value} target="_blank">BROWSE</a>);
+      }
 
       if (!(this.props.run.value.nodeCount > 0) &&
         !(this.props.run.value.parentRunId && this.props.run.value.parentRunId > 0) && podIP) {
@@ -1342,11 +1397,12 @@ class Logs extends localization.LocalizedReactComponent {
           (commitStatus || '').toLowerCase() !== 'committing' &&
           roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': previousStatus = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': previousStatus = <span>COMMIT FAILURE</span>; break;
-            case 'success': previousStatus = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': previousStatus = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': previousStatus = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
           if (previousStatus) {
@@ -1355,11 +1411,12 @@ class Logs extends localization.LocalizedReactComponent {
             CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
         } else {
+          const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
           switch ((commitStatus || '').toLowerCase()) {
             case 'not_committed': break;
             case 'committing': CommitStatusButton = <span><Icon type="loading" /> COMMITTING...</span>; break;
-            case 'failure': CommitStatusButton = <span>COMMIT FAILURE</span>; break;
-            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED</span>; break;
+            case 'failure': CommitStatusButton = <span>COMMIT FAILURE ({commitDate})</span>; break;
+            case 'success': CommitStatusButton = <span>COMMIT SUCCEEDED ({commitDate})</span>; break;
             default: break;
           }
         }
@@ -1414,13 +1471,14 @@ class Logs extends localization.LocalizedReactComponent {
                   type="error" />
               </Row>
             }
+            {ResumeFailureReason}
             <Row>
               {Details}
             </Row>
           </Col>
           <Col span={6}>
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {PauseResumeButton}{ActionButton}{SSHButton}{ExportLogsButton}
+              {PauseResumeButton}{ActionButton}{SSHButton}{FSBrowserButton}{ExportLogsButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
@@ -1446,6 +1504,7 @@ class Logs extends localization.LocalizedReactComponent {
           {this.renderContent(selectedTask)}
         </Row>
         <ShareWithForm
+          endpointsAvailable={!!this.endpointAvailable}
           visible={this.state.shareDialogOpened}
           roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
           sids={this.props.run.loaded ? (this.props.run.value.runSids || []).map(s => s) : []}

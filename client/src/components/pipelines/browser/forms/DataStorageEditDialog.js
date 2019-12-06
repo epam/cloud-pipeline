@@ -263,7 +263,7 @@ export class DataStorageEditDialog extends React.Component {
         callback('Storage path must begin with \'/\'');
       }
     } else if (!value || !value.path) {
-      callback('Bucket is required');
+      callback('Storage path is required');
     }
     callback();
   };

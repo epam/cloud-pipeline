@@ -41,12 +41,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Repository
 @ConditionalOnProperty("monitoring.elasticsearch.url")
 public class MonitoringESDao {
-    protected static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
+    protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     private static final String INDEX_NAME_TOKEN = "heapster-";
 
@@ -74,19 +76,10 @@ public class MonitoringESDao {
      */
     public void deleteIndices(final int retentionPeriodDays) {
         try {
-            final Response response = lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
+            final Response response = requestIndices();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String indicesToDelete = reader.lines()
-                        .flatMap(l -> Arrays.stream(l.split(" ")))
-                        .filter(str -> str.startsWith(INDEX_NAME_TOKEN)).map(name -> {
-                            final String dateString = name.substring(INDEX_NAME_TOKEN.length());
-                            try {
-                                return new ImmutablePair<>(name, LocalDate.parse(dateString, DATE_FORMATTER)
-                                        .atStartOfDay(ZoneOffset.UTC).toLocalDateTime());
-                            } catch (IllegalArgumentException e) {
-                                return new ImmutablePair<String, LocalDateTime>(name, null);
-                            }
-                        })
+                final String indicesToDelete = indices(reader)
+                        .map(this::withParsedDate)
                         .filter(pair -> pair.right != null && olderThanRetentionPeriod(retentionPeriodDays, pair.right))
                         .map(pair -> pair.left)
                         .collect(Collectors.joining(","));
@@ -98,9 +91,50 @@ public class MonitoringESDao {
         }
     }
 
+    private Response requestIndices() throws IOException {
+        return lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
+    }
+
+    private Stream<String> indices(final BufferedReader reader) {
+        return reader.lines()
+                .flatMap(l -> Arrays.stream(l.split(" ")))
+                .filter(str -> str.startsWith(INDEX_NAME_TOKEN));
+    }
+
+    private ImmutablePair<String, LocalDateTime> withParsedDate(final String name) {
+        return toLocalDateTime(name)
+                .map(it -> ImmutablePair.of(name, it))
+                .orElseGet(() -> ImmutablePair.of(name, null));
+    }
+
+    private Optional<LocalDateTime> toLocalDateTime(final String name) {
+        final String datetimeString = name.substring(INDEX_NAME_TOKEN.length());
+        try {
+            return Optional.of(LocalDate.parse(datetimeString, DATE_FORMATTER)
+                    .atStartOfDay(ZoneOffset.UTC)
+                    .toLocalDateTime());
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+    }
+
     private boolean olderThanRetentionPeriod(final int retentionPeriod, final LocalDateTime date) {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
     }
 
-
+    public Optional<LocalDateTime> oldestIndexDate() {
+        try {
+            final Response response = requestIndices();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
+                return indices(reader)
+                        .map(this::toLocalDateTime)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .sorted()
+                        .findFirst();
+            }
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+    }
 }

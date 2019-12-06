@@ -57,6 +57,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${jwt.key.public}")
     private String publicKey;
 
+    @Value("${jwt.use.for.all.requests:false}")
+    private boolean useJwtAuthForAllRequests;
+
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
 
@@ -80,7 +83,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .defaultAuthenticationEntryPointFor(
                             samlEntryPoint, getRedirectRequestMatcher())
                     .defaultAuthenticationEntryPointFor(
-                            new RestAuthenticationEntryPoint(), new AntPathRequestMatcher(REST_API_PREFIX))
+                            new RestAuthenticationEntryPoint(), new AntPathRequestMatcher(getSecuredResources()))
                 .and()
                 .requestMatcher(getFullRequestMatcher())
                 .authorizeRequests()
@@ -113,7 +116,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected String getSecuredResources() {
-        return REST_API_PREFIX;
+        return useJwtAuthForAllRequests ? "/**" : REST_API_PREFIX;
     }
 
     protected String[] getUnsecuredResources() {
@@ -123,7 +126,11 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
             "/restapi/swagger-ui.html",
             "/restapi/webjars/springfox-swagger-ui/**",
             "/restapi/v2/api-docs/**",
-            "/restapi/proxy/**"
+            "/restapi/proxy/**",
+            "/launch.sh", "/PipelineCLI.tar.gz",
+            "/pipe-common.tar.gz", "/commit-run-scripts/**", "/pipe",
+            "/fsbrowser.tar.gz", "/error", "/error/**", "/pipe.zip", "/pipe.tar.gz",
+            "/pipe-el6", "/pipe-el6.tar.gz"
         };
     }
 

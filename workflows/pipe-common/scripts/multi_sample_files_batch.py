@@ -81,7 +81,7 @@ def batch(cmd):
         pipeline_parameters[param] = resolve_env_params(param, value)
 
     pipeline_obj = EnvironmentParametersParser.get_env_value('PIPELINE_ID')
-    version = EnvironmentParametersParser.get_env_value('VERSION')
+    version = EnvironmentParametersParser.get_env_value('PIPELINE_VERSION')
     run_id = EnvironmentParametersParser.get_env_value('RUN_ID')
     instance_size = EnvironmentParametersParser.get_env_value('instance_size')
     instance_disk = EnvironmentParametersParser.get_env_value('instance_disk')

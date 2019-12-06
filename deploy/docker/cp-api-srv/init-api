@@ -37,13 +37,16 @@ function is_dir_empty {
     return $result
 }
 
-function update_config_json_templates {
+function update_resources_templates {
     local templates_key="$1"
     local external_storage_var_name="$2"
     local search_pattern="${3:-"config.json"}"
     local properties_file="${4:-$CP_API_HOME/config/application.properties}"
 
     IFS="=" read -r param_key param_value <<< $(grep $templates_key < $properties_file)
+    # This is used to expand any variable name, that can be used in the application.properties file
+    param_value="$(envsubst <<< "$param_value")"
+    
     if [ -z "$param_key" ] || [ -z "$param_value" ] || [ ! -d "$param_value" ]; then
         echo "$templates_key cannot be retrieved from $properties_file or that location does not exist (\"$param_value\""
         return 1
@@ -69,6 +72,58 @@ function update_config_json_templates {
         echo "$config_json_file"
     done
     echo
+}
+
+function sign_win_executable() {
+    local exec_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+
+    local signed_exec_path="signed-$(basename "$exec_path")"
+    if [ "$cert_pass" ]; then
+        local sign_with_pass_opt=(-pass "$cert_pass")
+    fi
+    
+    # osslsigncode requires openssl v1.1.x which is not available in the system by default.
+    local ORIGINAL_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    local ORIGINAL_PATH="$PATH"
+    export LD_LIBRARY_PATH="/opt/openssl/lib:$LD_LIBRARY_PATH"
+    export PATH="/opt/openssl/bin:$PATH"
+    
+    osslsigncode sign \
+                -pkcs12 "$cert_path" \
+                -n "$cert_desc" \
+                -i "$cert_url" \
+                -in "$exec_path" \
+                -out "$signed_exec_path" \
+                "${sign_with_pass_opt[@]}"
+
+    if [ $? -ne 0 ] || [ ! -f "$signed_exec_path" ]; then
+        echo "Windows CLI $exec_path executable signing has failed. Unsigned executable will be used instead"
+    else
+        mv -f "$signed_exec_path" "$exec_path"
+    fi
+
+    export LD_LIBRARY_PATH="$ORIGINAL_LD_LIBRARY_PATH"
+    export PATH="$ORIGINAL_PATH"
+}
+
+function sign_and_publish_pipe_win_distribution() {
+    local jar_path="$1"
+    local cert_path="$2"
+    local cert_pass="$3"
+    local cert_desc="$4"
+    local cert_url="$5"
+    local output_dir="$6"
+    unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
+    unzip -qq pipe.zip
+    rm -f pipe.zip
+    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    zip -q -r "$output_dir/pipe.zip" pipe
+    rm -rf pipe
 }
 
 # Validate SSO and SSL certificates
@@ -106,6 +161,16 @@ if [ ! -f "$CP_API_SRV_FED_META_DIR/cp-api-srv-fed-meta.xml" ]; then
     exit 1
 fi
 
+# Setup values for the error pages placeholders
+export CP_ERROR_REDIRECT_URL="${CP_ERROR_REDIRECT_URL:-https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/}"
+export CP_ERROR_PLATFORM_NAME="${CP_ERROR_PLATFORM_NAME:-$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME}"
+export CP_ERROR_SUPPORT_EMAIL="${CP_ERROR_SUPPORT_EMAIL:-$CP_DEFAULT_ADMIN_EMAIL}"
+
+# Setup SSO endpoint ID
+if [ -z "$CP_API_SRV_SSO_ENDPOINT_ID" ]; then
+    export CP_API_SRV_SSO_ENDPOINT_ID="https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}${CP_API_SRV_SAML_ID_TRAIL:-/pipeline/}"
+    echo "API SSO endpoint URL is not set explicetly, default value will be used: $CP_API_SRV_SSO_ENDPOINT_ID"
+fi
 
 mkdir -p $CP_API_HOME/keystore/
 
@@ -145,20 +210,44 @@ if [ -f "$ca_cert_path" ]; then
     /update-trust $ca_cert_path "cp-ca"
 fi
 
+# Create static distribution directory
+export CP_API_SRV_STATIC_DIR="${CP_API_SRV_STATIC_DIR:-$CP_API_HOME/static}"
+mkdir -p $CP_API_SRV_STATIC_DIR
+
+# Sign and export pipe win distribution
+export CP_WIN_CODE_SIGN_CERT_DESC="${CP_WIN_CODE_SIGN_CERT_DESC:-Cloud Pipeline}"
+export CP_WIN_CODE_SIGN_CERT_URL="${CP_WIN_CODE_SIGN_CERT_URL:-https://www.epam.com/}"
+
+win_code_sign_cert_path="$CP_API_SRV_CERT_DIR/win-code-sign-cert.pfx"
+if [ -f "$win_code_sign_cert_path" ]; then
+    echo "Signing Windows CLI with Code Signing Certificate"
+    sign_and_publish_pipe_win_distribution "$CP_API_HOME/pipeline.jar" "$win_code_sign_cert_path" "$CP_WIN_CODE_SIGN_CERT_PASS" \
+        "$CP_WIN_CODE_SIGN_CERT_DESC" "$CP_WIN_CODE_SIGN_CERT_URL" "$CP_API_SRV_STATIC_DIR"
+fi
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
-echo "Importing IdP signing cert into API keystore"
+CP_API_SRV_IDP_CERT_PATH="${CP_API_SRV_IDP_CERT_PATH:-$CP_IDP_CERT_DIR}"
+IDP_CERT_PATH=$CP_API_SRV_IDP_CERT_PATH/idp-public-cert.pem
+echo "Importing IdP signing cert into API keystore from $IDP_CERT_PATH"
 keytool  -import \
          -keystore $CP_API_HOME/keystore/store.jks \
          -storepass changeit \
          -noprompt \
          -alias idp \
-         -file $CP_IDP_CERT_DIR/idp-public-cert.pem
+         -file $IDP_CERT_PATH
 
-# Update pipe/folder templates with any specific values (e.g. instance/vm size)
-update_config_json_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
-update_config_json_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
+# Update pipe/folder/error templates with any specific values (e.g. instance/vm size)
+update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
+update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
+update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
+
+# Add any other static assets
+if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
+    echo "Importing static assets from $CP_PREF_API_STATIC_DIRECTORY_EXT to $CP_API_SRV_STATIC_DIR"
+    \cp -r $CP_PREF_API_STATIC_DIRECTORY_EXT/* "$CP_API_SRV_STATIC_DIR/"
+fi
 
 # Configure logging and launch
 API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
@@ -166,7 +255,19 @@ mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
 nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+APP_PID="$!"
 
 sleep 5
 
-tail -F $API_RUN_TIME_LOG
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+tail -F $API_RUN_TIME_LOG &
+wait "$!"

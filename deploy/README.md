@@ -58,7 +58,9 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
 
                 # Core API
                 -env CP_API_SRV_SAML_ID_TRAIL= \                    # SAML partner ID will be constructed as {CP_API_SRV_EXTERNAL_HOST}:{CP_API_SRV_EXTERNAL_PORT} and this parameter added in the end (default: /pipeline/)
-                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to aut register all users that passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions (default: false)
+                -env CP_API_SRV_SAML_AUTO_USER_CREATE= \            # Whether to register all users that have passed SAML authentication. Such users will be granted basic "ROLE_USER" permissions. The following value are available: AUTO (creates a new user if not exists), EXPLICIT (requires users pre-registration (performed by any admin), EXPLICIT_GROUP (requires specific groups pre-registration. If user's SAML groups have no intersections with registered groups the authentication will fail)
+                -env CP_API_SRV_SAML_USER_ATTRIBUTES= \             # Sets a list of the attributes, that will be parsed from the IdP SAML Response object and added to the user's profile. The value shall be comma-delimited list of "User_Attribute=IdP_Attribute" pairs (default: Email=email,FirstName=firstName,LastName=lastName,Name=firstName)
+                -env CP_API_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
                 -env CP_PREF_CLUSTER_CADVISOR_DISABLE_PROXY= \      # Disables the proxy settings when API communicates to the cAdvisor service within worker nodes (Default: true)
 
                 # GitLab
@@ -66,6 +68,8 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_GITLAB_SLO_TARGET_URL= \                    # Sets idp_slo_target_url value of the gitlab.rb, if not defined - it will be constructed as "https://${CP_IDP_EXTERNAL_HOST}:${CP_IDP_EXTERNAL_PORT}${CP_GITLAB_SLO_TARGET_URL_TRAIL}"
                 -env CP_GITLAB_SSO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_sso_target_url (default: "/saml/sso")
                 -env CP_GITLAB_SLO_TARGET_URL_TRAIL= \              # Allows to add a trailing part to the idp_slo_target_url (default: "/saml/sso")
+                -env CP_GITLAB_IDP_CERT_PATH= \                     # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+                -env CP_GITLAB_EXTERNAL_URL= \                      # Allows to specify a custom value for the gitlab's "external_url". This is used as a base URL for the repositories clone URLs. This value does not affect the gitlab's listen port. It will listen on $CP_GITLAB_INTERNAL_PORT(Default: https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT})
 
                 # SMTP notifications parameters
                 -env CP_NOTIFIER_SMTP_SERVER_HOST= \
@@ -93,6 +97,11 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 # Share Service
                 -env CP_SHARE_SRV_SAML_ID_TRAIL = \                 # SAML partner ID will for Share Service be constructed as {CP_SHARE_SRV_EXTERNAL_HOST}:{CP_SHARE_SRV_EXTERNAL_PORT} and this parameter 
                 -env CP_SHARE_SRV_SAMPLE_ROLE_CLAIMS = \            # SAML claims that shall be used as ROLEs while parsing user info receinved from IDP
+                -env CP_SHARE_SRV_IDP_CERT_PATH= \                    # Allows to set the path to the directory containing IdP's signing certificate (idp-public-cert.pem). If not set - $CP_IDP_CERT_DIR will be used. This is useful if the IdP provides different signing certificate for different services
+
+                # EDGE Service
+                -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)
+                -env CP_EDGE_MAX_SSH_CONNECTIONS = \                # Sets maximum number of the SSH connections to a single run (default: 25)
 
                 # Pipectl options
                 -m|--install-kube-master \                          # Install kuberneters master
@@ -100,6 +109,14 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -id|--deployment-id \                               # Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). If not set - random 10-char string will be generated
                 -s|--service \                                      # Limit services to be installed (e.g. cp-idp, cp-api-srv, etc.)
                 --keep-kubedm-proxies \                             # Allow (http/https/no)_proxy settings to be included in to kube-api manifest by kubeadm. If option is not set - variables will be dropped before the kubeadm init command and then restored
+
+                # Templates customization
+                -env CP_PREF_TEMPLATES_DIRECTORY_EXT \              # If defined, shall point to a directory with pipelines templates, which override the defaults (cloud-pipeline/workflows/pipe-templates)
+                -env CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT \        # If defined, shall point to a directory with folders templates (e.g. "Project" template), which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/folder-templates)
+                -env CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT \  # If defined, shall point to a directory with error pages templates, which override the defaults (cloud-pipeline/deploy/docker/cp-api-srv/error-pages)
+                -env CP_ERROR_REDIRECT_URL \                        # Allows to specify a custom value for the Cloud Pipeline main page redirection url to use in the error pages placeholders (default: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/)
+                -env CP_ERROR_PLATFORM_NAME \                       # Allows to specify a custom value for the deployment name to use in the error pages placeholders (default: $CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME from the install-config)
+                -env CP_ERROR_SUPPORT_EMAIL \                       # Allows to specify a custom value for the admins' support email to use in the error pages placeholders (default: $CP_DEFAULT_ADMIN_EMAIL from the install-config)
 
                 # Misc
                 -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME= \         # Name of the object storage, that is used to store system-level data (e.g. issues attachments)

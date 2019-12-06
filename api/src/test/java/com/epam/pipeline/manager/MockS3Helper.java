@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
@@ -30,13 +31,18 @@ public class MockS3Helper extends S3Helper {
         super(null);
     }
 
-    @Override public String createS3Bucket(String name,
-                                           String policy,
-                                           List<CORSRule> corsRulesFile,
-                                           List<String> allowedCidrs,
-                                           AwsRegion region,
-                                           Map<String, String> tags, final boolean shared) {
+    @Override public String createS3Bucket(final String name) {
         return name;
+    }
+
+    @Override public ActionStatus postCreationProcessing(final String name,
+                                                         final String policy,
+                                                         final List<String> allowedCidrs,
+                                                         final List<CORSRule> corsRules,
+                                                         final AwsRegion region,
+                                                         final boolean shared,
+                                                         final Map<String, String> tags) {
+        return ActionStatus.success();
     }
 
     @Override public void deleteS3Bucket(String name) {

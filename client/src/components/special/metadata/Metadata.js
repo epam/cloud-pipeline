@@ -28,6 +28,7 @@ import DataStorageTagsUpdate from '../../../models/dataStorage/tags/DataStorageT
 import DataStorageTagsDelete from '../../../models/dataStorage/tags/DataStorageTagsDelete';
 import LoadingView from '../../special/LoadingView';
 import {Alert, Button, Col, Icon, Input, message, Modal, Row} from 'antd';
+import ItemsTable, {isJson} from './items-table';
 import styles from './Metadata.css';
 import {SplitPanel} from '../splitPanel/SplitPanel';
 import localization from '../../../utils/localization';
@@ -319,6 +320,50 @@ export default class Metadata extends localization.LocalizedReactComponent {
     });
   };
 
+  saveItemsMetadata = (index) => async (value) => {
+    const metadata = this.metadata;
+    const [currentMetadataItem] = metadata.filter(m => m.index === index);
+    if (currentMetadataItem) {
+      if (currentMetadataItem.value === value) {
+        return;
+      }
+      currentMetadataItem.value = value;
+      let request;
+      if (this.props.dataStorageTags) {
+        const payload = {};
+        for (let i = 0; i < metadata.length; i++) {
+          payload[metadata[i].key] = metadata[i].value;
+        }
+        request = new DataStorageTagsUpdate(this.props.entityParentId, this.props.entityId, this.props.entityVersion);
+        await request.send(payload);
+      } else {
+        const payload = {};
+        for (let i = 0; i < metadata.length; i++) {
+          payload[metadata[i].key] = {
+            value: metadata[i].value,
+            type: metadata[i].type
+          };
+        }
+        request = new MetadataUpdate();
+        await request.send({
+          entity: {
+            entityId: this.props.entityId,
+            entityClass: this.props.entityClass,
+          },
+          data: payload
+        });
+      }
+      if (request.error) {
+        message.error(request.error, 5);
+        return false;
+      } else {
+        this.props.metadata.fetch();
+      }
+      return true;
+    }
+    return false;
+  };
+
   onMetadataEditStarted = (field, index, value) => () => {
     if (this.props.readOnly) {
       return;
@@ -606,7 +651,20 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </tr>
       );
     }
-    if (this.state.editableValueIndex === metadataItem.index) {
+    if (isJson(metadataItem.value)) {
+      valueElement = (
+        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+          <td colSpan={6}>
+            <ItemsTable
+              title={metadataItem.key}
+              disabled={this.props.readOnly}
+              value={metadataItem.value}
+              onChange={this.saveItemsMetadata(metadataItem.index)}
+            />
+          </td>
+        </tr>
+      );
+    } else if (this.state.editableValueIndex === metadataItem.index) {
       valueElement = (
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
@@ -641,7 +699,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
 
   @computed
   get metadata () {
-    if (this.props.metadata.error || this.props.metadata.pending) {
+    if (!this.props.metadata.loaded) {
       return [];
     }
     const value = [];
@@ -899,12 +957,24 @@ export default class Metadata extends localization.LocalizedReactComponent {
         </Row>
       );
     }
+    const renderDownloadLink = (downloadUrl) => {
+      return (
+        <a
+          href={downloadUrl}
+          target="_blank"
+          download={this.props.entityId}
+          style={{marginLeft: 5, marginRight: 5}}
+        >
+          Download file
+        </a>
+      );
+    };
     if (mayBeBinary) {
       const downloadUrl = this.downloadUrl;
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File preview is not available. <a style={{marginLeft: 5, marginRight: 5}} href={downloadUrl} download={this.props.entityId}>Download file</a> to view full contents
+            File preview is not available. {renderDownloadLink(downloadUrl)} to view full contents
           </Row>
         );
       }
@@ -913,7 +983,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
       if (downloadUrl) {
         previewRes.push(
           <Row type="flex" key="preview footer" style={{color: '#777', marginTop: 5, marginBottom: 5}}>
-            File is too large to be shown. <a style={{marginLeft: 5, marginRight: 5}} href={downloadUrl} download={this.props.entityId}>Download file</a> to view full contents
+            File is too large to be shown. {renderDownloadLink(downloadUrl)} to view full contents
           </Row>
         );
       }
@@ -1063,7 +1133,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
   };
 
   render () {
-    if (this.props.metadata.pending) {
+    if (this.props.metadata.pending && !this.props.metadata.loaded) {
       return <LoadingView />;
     }
     return (

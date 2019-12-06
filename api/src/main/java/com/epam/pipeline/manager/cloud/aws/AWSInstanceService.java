@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -36,6 +37,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -63,9 +65,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     private final String nodeTerminateScript;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
+    // TODO: 25-10-2019 @Lazy annotation added to resolve issue with circular dependency.
+    // It would be great fix this issue by actually removing this dependency:
+    // CloudFacade  -> AWSInstanceService -> InstanceOfferManager -> CloudFacade
     public AWSInstanceService(final EC2Helper ec2Helper,
                               final PreferenceManager preferenceManager,
-                              final InstanceOfferManager instanceOfferManager,
+                              final @Lazy InstanceOfferManager instanceOfferManager,
                               final CommonCloudInstanceService instanceService,
                               final ClusterCommandService commandService,
                               @Value("${cluster.nodeup.script}") final String nodeUpScript,
@@ -121,9 +126,9 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void startInstance(final AwsRegion region, final String instanceId) {
+    public CloudInstanceOperationResult startInstance(final AwsRegion region, final String instanceId) {
         log.debug("Starting AWS instance {}", instanceId);
-        ec2Helper.startInstance(instanceId, region.getRegionCode());
+        return ec2Helper.startInstance(instanceId, region.getRegionCode());
     }
 
     @Override

@@ -16,7 +16,7 @@
 
 const sizePostfix = ['bytes', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb'];
 
-const displaySize = (size) => {
+const displaySize = (size, digits = true) => {
   if (isNaN(size)) {
     return size;
   }
@@ -29,7 +29,10 @@ const displaySize = (size) => {
   if (index === 0) {
     return `${sizeValue} ${sizePostfix[index]}`;
   }
-  return `${sizeValue.toFixed(2)} ${sizePostfix[index]}`;
+  if (digits) {
+    return `${sizeValue.toFixed(2)} ${sizePostfix[index]}`;
+  }
+  return `${Math.round(sizeValue)} ${sizePostfix[index]}`;
 };
 
 export default displaySize;

@@ -45,6 +45,7 @@ import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import RegisterVersionFormDialog from './forms/RegisterVersionFormDialog';
+import UserName from '../../special/UserName';
 import styles from './Browser.css';
 
 @connect({
@@ -115,22 +116,31 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },
     {
       dataIndex: 'description',
       key: 'description',
-      className: styles.treeItemName,
+      className: `${styles.treeItemName} ${styles.treeItemNameWrap}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },
     {
       dataIndex: 'createdDate',
       key: 'createdDate',
-      className: styles.treeItemName,
-      render: (text, item) => this.renderTreeItemText(`Last updated: ${displayDate(text)}`, item),
+      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
+      render: (text, item) => {
+        return this.renderTreeItemText(
+          <span>
+            Last updated: {
+              item.author && 'by '
+            }{item.author && <UserName userName={item.author} />} {displayDate(text)}
+          </span>,
+          item
+        );
+      },
       onCellClick: (item) => this.navigate(item)
     },
     {
@@ -173,7 +183,17 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'createdDate',
       key: 'createdDate',
       className: styles.treeItemName,
-      render: (text, item) => this.renderTreeItemText(`Last updated: ${displayDate(text)}`, item),
+      render: (text, item) => {
+        console.log(item);
+        return this.renderTreeItemText(
+          <span>
+            Last updated: {
+            item.author && 'by '
+          }{item.author && <UserName userName={item.author} />} {displayDate(text)}
+          </span>,
+          item
+        );
+      },
       onCellClick: (item) => this.navigate(item)
     },
     {

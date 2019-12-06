@@ -23,6 +23,7 @@ import evaluateRunDuration from '../../../../../utils/evaluateRunDuration';
 import {getRunSpotTypeName} from '../../../../special/spot-instance-names';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import styles from './CardsPanel.css';
+import RunTags from '../../../../runs/run-tags';
 
 function renderTitle (run) {
   const podId = run.podId;
@@ -156,6 +157,11 @@ export default function renderRunCard (run) {
     <Row key="commit status">
       {renderCommitStatus(run)}
     </Row>,
-    renderRegion(run)
+    renderRegion(run),
+    <RunTags
+      key="run-tags"
+      run={run}
+      onlyKnown
+    />
   ];
 }

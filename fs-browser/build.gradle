@@ -1,0 +1,41 @@
+task build(type: Exec, dependsOn: ':fs-browser:fs-browser-client:build') {
+    group = 'build'
+    doFirst {
+        setFBVersion.execute()
+    }
+    commandLine 'python', "$project.rootDir/fs-browser/setup.py", 'sdist'
+    doLast {
+        cleanFBVersion.execute()
+        delete("$project.rootDir/api/src/main/resources/static/fsbrowser.tar.gz")
+        copy {
+            from "$project.rootDir/fs-browser/dist/fsbrowser-${version}.tar.gz"
+            into "$project.rootDir/api/src/main/resources/static/"
+            rename { String fileName ->
+                fileName.replace("fsbrowser-${version}", "fsbrowser")
+            }
+        }
+    }
+}
+
+task setFBVersion() {
+    doLast {
+        copy {
+            from('fsbrowser/version.py')
+            into('temp')
+        }
+        def proj = file('fsbrowser/version.py')
+        def text = proj.getText("UTF-8")
+        text = text.replaceAll(/(__version__='.+')/, "__version__=\'$version\'")
+        proj.write(text, "UTF-8")
+    }
+}
+
+task cleanFBVersion() {
+    doLast {
+        copy {
+            from('temp/version.py')
+            into('fsbrowser')
+        }
+        delete("temp")
+    }
+}

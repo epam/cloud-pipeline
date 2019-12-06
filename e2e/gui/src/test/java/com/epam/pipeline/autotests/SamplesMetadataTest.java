@@ -526,6 +526,7 @@ public class SamplesMetadataTest
                                         )
                                 ).click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
                                 .click(save())
+                                .sleep(1, SECONDS)
                 );
     }
 

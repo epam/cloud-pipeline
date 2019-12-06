@@ -65,7 +65,8 @@
                         state_reason,
                         non_pause,
                         node_real_disk,
-                        node_cloud_provider)
+                        node_cloud_provider,
+                        tags)
                     VALUES (
                         :RUN_ID,
                         :PIPELINE_ID,
@@ -108,7 +109,8 @@
                         :STATE_REASON,
                         :NON_PAUSE,
                         :NODE_REAL_DISK,
-                        :NODE_CLOUD_PROVIDER)
+                        :NODE_CLOUD_PROVIDER,
+                        to_jsonb(:TAGS::jsonb))
                 ]]>
             </value>
         </property>
@@ -158,26 +160,28 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        init_node_tasks.task_name IS NULL as queued,
+                        r.tags,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = :RUN_ID AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = :RUN_ID AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = ? AND task_name = ?) tasks ON tasks.run_id = r.run_id
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE run_id = ? AND task_name = ?) init_node_tasks ON init_node_tasks.run_id = r.run_id
                     WHERE
-                        r.run_id = ?
+                        r.run_id = :RUN_ID
                     ORDER BY
                         r.start_date
                 ]]>
@@ -242,7 +246,8 @@
                         state_reason,
                         non_pause,
                         node_real_disk,
-                        node_cloud_provider
+                        node_cloud_provider,
+                        tags
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -297,7 +302,8 @@
                         state_reason,
                         non_pause,
                         node_real_disk,
-                        node_cloud_provider
+                        node_cloud_provider,
+                        tags
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -352,7 +358,8 @@
                         state_reason,
                         non_pause,
                         node_real_disk,
-                        node_cloud_provider
+                        node_cloud_provider,
+                        tags
                     FROM
                         pipeline.pipeline_run
                     WHERE
@@ -445,7 +452,8 @@
                         price_per_hour = :PRICE_PER_HOUR,
                         state_reason = :STATE_REASON,
                         non_pause = :NON_PAUSE,
-                        node_real_disk =:NODE_REAL_DISK
+                        node_real_disk =:NODE_REAL_DISK,
+                        tags = to_jsonb(:TAGS::jsonb)
                     WHERE
                         run_id = :RUN_ID
                 ]]>
@@ -550,6 +558,7 @@
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
+                      r.tags,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -607,6 +616,7 @@
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,
+                      r.tags,
                       TRUE as initialization_finished,
                       FALSE as queued,
                       p.pipeline_name
@@ -663,7 +673,8 @@
                       r.state_reason,
                       r.non_pause,
                       r.node_real_disk,
-                      r.node_cloud_provider
+                      r.node_cloud_provider,
+                      r.tags
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -711,7 +722,8 @@
                       active_run.state_reason,
                       active_run.non_pause,
                       active_run.node_real_disk,
-                      active_run.node_cloud_provider
+                      active_run.node_cloud_provider,
+                      active_run.tags
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -772,7 +784,8 @@
                       r.state_reason,
                       r.non_pause,
                       r.node_real_disk,
-                      r.node_cloud_provider
+                      r.node_cloud_provider,
+                      r.tags
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -819,7 +832,8 @@
                       active_run.state_reason,
                       active_run.non_pause,
                       active_run.node_real_disk,
-                      active_run.node_cloud_provider
+                      active_run.node_cloud_provider,
+                      active_run.tags
                     FROM active_run
                     INNER JOIN
                         (SELECT DISTINCT run_id
@@ -877,7 +891,8 @@
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
-                        r.node_cloud_provider
+                        r.node_cloud_provider,
+                        r.tags
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -930,7 +945,8 @@
                         r.state_reason,
                         r.non_pause,
                         r.node_real_disk,
-                        r.node_cloud_provider
+                        r.node_cloud_provider,
+                        r.tags
                     FROM
                         pipeline.pipeline_run r
                     WHERE
@@ -984,24 +1000,26 @@
                         r.non_pause,
                         r.node_real_disk,
                         r.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        init_node_tasks.task_name IS NULL as queued,
+                        r.tags,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = r.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = r.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run r
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = r.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = r.run_id
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = r.run_id
                     @WHERE@
                     ORDER BY r.run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
@@ -1072,24 +1090,26 @@
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        init_node_tasks.task_name IS NULL as queued,
+                        runs.tags,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = runs.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         pipeline.pipeline_run runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline_run_log
-                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = runs.run_id
                     WHERE runs.run_id IN (:list)
                 ]]>
             </value>
@@ -1140,9 +1160,10 @@
                             p.state_reason,
                             p.non_pause,
                             p.node_real_disk,
-                            p.node_cloud_provider
+                            p.node_cloud_provider,
+                            p.tags
                         FROM (SELECT *
-                            FROM pipeline_run r
+                            FROM pipeline.pipeline_run r
                             WHERE parent_id ISNULL @WHERE@
                             ORDER BY run_id DESC
                             LIMIT :LIMIT OFFSET :OFFSET) as p
@@ -1189,7 +1210,8 @@
                             c.state_reason,
                             c.non_pause,
                             c.node_real_disk,
-                            c.node_cloud_provider
+                            c.node_cloud_provider,
+                            c.tags
                         FROM
                             pipeline.pipeline_run c
                         INNER JOIN runs ON runs.run_id = c.parent_id
@@ -1237,24 +1259,26 @@
                         runs.non_pause,
                         runs.node_real_disk,
                         runs.node_cloud_provider,
-                        tasks.task_name IS NOT NULL as initialization_finished,
-                        init_node_tasks.task_name IS NULL as queued,
+                        runs.tags,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log init_tasks
+				                WHERE init_tasks.run_id = runs.run_id AND init_tasks.task_name = :TASK_NAME
+				                    AND init_tasks.status = :TASK_STATUS)
+				            THEN TRUE
+				            ELSE FALSE
+				        END AS initialization_finished,
+                        CASE
+                            WHEN EXISTS (
+                                SELECT 1 FROM pipeline.pipeline_run_log nodeup_tasks
+				                WHERE nodeup_tasks.run_id = runs.run_id AND nodeup_tasks.task_name = :NODEUP_TASK)
+				            THEN FALSE
+				            ELSE TRUE
+				        END AS queued,
                         pipelines.pipeline_name
                     FROM
                         runs
                     LEFT JOIN pipeline.pipeline pipelines ON (pipelines.pipeline_id = runs.pipeline_id)
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline.pipeline_run_log
-                         WHERE status = :TASK_STATUS AND task_name = :TASK_NAME) tasks ON tasks.run_id = runs.run_id
-                    LEFT JOIN
-                        (SELECT DISTINCT
-                           run_id,
-                           task_name
-                         FROM pipeline.pipeline_run_log
-                         WHERE task_name = :NODEUP_TASK) init_node_tasks ON init_node_tasks.run_id = runs.run_id
                  ]]>
             </value>
         </property>
@@ -1275,11 +1299,13 @@
                     INSERT INTO pipeline.run_user (
                         run_id,
                         name,
-                        is_principal)
+                        is_principal,
+                        access_type)
                     VALUES (
                         :RUN_ID,
                         :NAME,
-                        :IS_PRINCIPAL)
+                        :IS_PRINCIPAL,
+                        :ACCESS_TYPE)
                 ]]>
             </value>
         </property>
@@ -1289,11 +1315,27 @@
                     SELECT
                         run_id,
                         name,
-                        is_principal
+                        is_principal,
+                        access_type
                     FROM
                         pipeline.run_user
                     WHERE
                         run_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunSidsQueryForList">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        name,
+                        is_principal,
+                        access_type
+                    FROM
+                        pipeline.run_user
+                    WHERE
+                        run_id IN (:list)
                 ]]>
             </value>
         </property>
@@ -1313,6 +1355,16 @@
                         pipeline.pipeline_run r
                     WHERE
                         r.run_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="updateTagsQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        tags = to_jsonb(:TAGS::jsonb)
+                    WHERE
+                        run_id = :RUN_ID
                 ]]>
             </value>
         </property>

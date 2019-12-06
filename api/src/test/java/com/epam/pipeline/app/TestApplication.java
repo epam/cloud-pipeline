@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
+import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -36,6 +37,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator;
@@ -45,6 +47,7 @@ import org.springframework.security.saml.key.KeyManager;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.FileNotFoundException;
+import java.util.concurrent.Executor;
 
 @SpringBootConfiguration
 @Import({AppMVCConfiguration.class,
@@ -56,7 +59,11 @@ import java.io.FileNotFoundException;
         ManagementWebSecurityAutoConfiguration.class,
         SecurityFilterAutoConfiguration.class})
 @ComponentScan(
-        basePackages = {"com.epam.pipeline.dao", "com.epam.pipeline.manager",  "com.epam.pipeline.security"},
+        basePackages = {
+                "com.epam.pipeline.dao",
+                "com.epam.pipeline.manager",
+                "com.epam.pipeline.security",
+                "com.epam.pipeline.acl"},
         excludeFilters = {
         @ComponentScan.Filter(type = FilterType.REGEX, pattern="com.epam.pipeline.manager.security.acl.*"),
         @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = InstanceOfferScheduler.class)})
@@ -72,6 +79,9 @@ public class TestApplication {
     public MonitoringESDao monitoringESDao;
 
     @MockBean
+    public ESMonitoringManager esMonitoringManager;
+
+    @MockBean
     public CloudFacade cloudFacade;
 
     @MockBean
@@ -82,6 +92,12 @@ public class TestApplication {
 
     @MockBean
     public JwtTokenVerifier jwtTokenVerifier;
+
+    @MockBean
+    public Executor dataStoragePathExecutor;
+
+    @MockBean
+    public TaskScheduler scheduler;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

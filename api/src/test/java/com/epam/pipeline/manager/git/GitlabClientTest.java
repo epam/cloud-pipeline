@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.exception.git.GitClientException;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -33,28 +34,17 @@ public class GitlabClientTest {
 
     @Test
     @Ignore
-    public void testBuildCloneCredentialsWithUser() {
+    public void testBuildCloneCredentialsWithUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITH_USER);
     }
 
     @Test
     @Ignore
-    public void testBuildCloneCredentialsWithoutUser() {
+    public void testBuildCloneCredentialsWithoutUser() throws GitClientException {
         testBuildCloneUrl(USER, URL_WITHOUT_USER);
     }
 
-    @Test
-    public void testBuildCloneCredentialsWithoutToken() {
-        GitlabClient client =
-                GitlabClient.initializeGitlabClientFromRepositoryAndToken(USER, URL_WITH_USER, "", null, null, false);
-        GitCredentials credentials = client.buildCloneCredentials(true, DURATION);
-        Assert.assertNotNull(credentials);
-        Assert.assertNull(credentials.getUserName());
-        Assert.assertNull(credentials.getToken());
-        Assert.assertEquals(URL_WITH_USER, credentials.getUrl());
-    }
-
-    private void testBuildCloneUrl(String user, String url) {
+    private void testBuildCloneUrl(String user, String url) throws GitClientException {
         GitlabClient client =
                 GitlabClient.initializeGitlabClientFromRepositoryAndToken(user, url, TOKEN, null, null, false);
         GitCredentials credentials = client.buildCloneCredentials(true, DURATION);

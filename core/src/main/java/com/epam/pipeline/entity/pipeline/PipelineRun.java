@@ -36,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -49,6 +50,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     public static final String PARENT_ID_PARAM = "parent-id";
     public static final String KEY_VALUE_DELIMITER = "=";
     public static final String PARAM_DELIMITER = "|";
+    public static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
 
     private Long pipelineId;
@@ -109,10 +111,12 @@ public class PipelineRun extends AbstractSecuredEntity {
     @JsonIgnore
     private AbstractSecuredEntity parent;
     private AclClass aclClass = AclClass.PIPELINE;
+    private Map<String, String> tags;
 
 
     public PipelineRun() {
         this.terminating = false;
+        this.tags = new HashMap<>();
     }
 
     public PipelineRun(Long id, String name) {
@@ -170,5 +174,31 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     public String getTaskName() {
         return StringUtils.isEmpty(pipelineName) ? podId : pipelineName;
+    }
+
+    /**
+     * Check if given key represented in tag map
+     * @param key key to be checked
+     * @return true - if tag map contains the given key, false - otherwise
+     */
+    public boolean hasTag(final String key) {
+        return tags.containsKey(key);
+    }
+
+    /**
+     * Add tag to the given run
+     * @param key key to be inserted
+     * @param value value to be checked
+     */
+    public void addTag(final String key, final String value) {
+        tags.putIfAbsent(key, value);
+    }
+
+    /**
+     * Remove tag from the given run
+     * @param key key to be removed
+     */
+    public void removeTag(final String key) {
+        tags.remove(key);
     }
 }

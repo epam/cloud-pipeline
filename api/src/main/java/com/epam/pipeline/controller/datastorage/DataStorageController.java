@@ -23,9 +23,10 @@ import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
@@ -34,6 +35,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
@@ -331,6 +334,26 @@ public class DataStorageController extends AbstractRestController {
         }
     }
 
+    @RequestMapping(value = "/datastorage/{id}/downloadRedirect", method = RequestMethod.GET)
+    @ApiOperation(
+            value = "Generates item's download url and redirect to it.",
+            notes = "Generates item's download url and redirect to it",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public String generateItemUrlAndRedirect(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(required = false) final ContentDisposition contentDisposition) {
+        final DataStorageDownloadFileUrl url = StringUtils.hasText(version) ?
+                dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version, contentDisposition) :
+                dataStorageApiService.generateDataStorageItemUrl(id, path, version, contentDisposition);
+        return String.format("redirect:%s", url.getUrl());
+    }
+
+
     @RequestMapping(value = "/datastorage/{id}/generateUrl", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(
@@ -343,11 +366,14 @@ public class DataStorageController extends AbstractRestController {
     public Result<DataStorageDownloadFileUrl> generateDataStorageItemUrl(
             @PathVariable(value = ID) final Long id,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = VERSION, required = false) final String version) {
+            @RequestParam(value = VERSION, required = false) final String version,
+            @RequestParam(required = false) final ContentDisposition contentDisposition) {
         if (StringUtils.hasText(version)) {
-            return Result.success(dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version));
+            return Result.success(dataStorageApiService.generateDataStorageItemUrlOwner(id, path, version,
+                    contentDisposition));
         } else {
-            return Result.success(dataStorageApiService.generateDataStorageItemUrl(id, path, version));
+            return Result.success(dataStorageApiService.generateDataStorageItemUrl(id, path, version,
+                    contentDisposition));
         }
     }
 
@@ -440,9 +466,9 @@ public class DataStorageController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<AbstractDataStorage> registerDataStorage(@RequestBody DataStorageVO dataStorageVO,
-                                                           @RequestParam(value = CLOUD, defaultValue = FALSE)
-                                                           final Boolean proceedOnCloud) {
+    public Result<SecuredEntityWithAction<AbstractDataStorage>> registerDataStorage(
+            @RequestBody DataStorageVO dataStorageVO,
+            @RequestParam(value = CLOUD, defaultValue = FALSE) final Boolean proceedOnCloud) {
         return Result.success(dataStorageApiService.create(dataStorageVO, proceedOnCloud));
     }
 
@@ -642,4 +668,16 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getStoragePermission(page, pageSize, filterMask));
     }
 
+    @PostMapping(value = "/datastorage/path/size")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns full size specified by path.",
+            notes = "Returns full size specified by path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<PathDescription>> getDataSizes(@RequestBody final List<String> paths) {
+        return Result.success(dataStorageApiService.getDataSizes(paths));
+    }
 }

@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.azure;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
@@ -37,6 +38,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -134,8 +136,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public void startInstance(final AzureRegion region, final String instanceId) {
-        vmService.startInstance(region, instanceId);
+    public CloudInstanceOperationResult startInstance(final AzureRegion region, final String instanceId) {
+        return vmService.startInstance(region, instanceId);
     }
 
     @Override
@@ -212,7 +214,9 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
         final Map<String, String> envVars = new HashMap<>();
-        envVars.put(AZURE_AUTH_LOCATION, region.getAuthFile());
+        if (StringUtils.isNotBlank(region.getAuthFile())) {
+            envVars.put(AZURE_AUTH_LOCATION, region.getAuthFile());
+        }
         envVars.put(AZURE_RESOURCE_GROUP, region.getResourceGroup());
         return envVars;
     }

@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Row, Col, Button, Icon, AutoComplete, Modal} from 'antd';
+import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox} from 'antd';
+import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
 import {observer} from 'mobx-react';
@@ -28,6 +29,7 @@ import UserName from '../../../special/UserName';
 export default class ShareWithForm extends React.Component {
 
   static propTypes = {
+    endpointsAvailable: PropTypes.bool,
     sids: PropTypes.array,
     onSave: PropTypes.func,
     onClose: PropTypes.func,
@@ -204,6 +206,7 @@ export default class ShareWithForm extends React.Component {
     });
     if (!sidItem) {
       sids.push({
+        accessType: this.props.endpointsAvailable ? AccessTypes.endpoint : AccessTypes.ssh,
         name,
         isPrincipal
       });
@@ -262,6 +265,11 @@ export default class ShareWithForm extends React.Component {
         }
       }
     };
+    const changeAccessLevel = (item) => (e) => {
+      const {sids} = this.state;
+      sids[item.id].accessType = e.target.checked ? AccessTypes.ssh : AccessTypes.endpoint;
+      this.setState({sids});
+    };
     const columns = [
       {
         key: 'icon',
@@ -278,6 +286,20 @@ export default class ShareWithForm extends React.Component {
         key: 'name',
         render: (name, item) => getSidName(name, item.isPrincipal)
       },
+      this.props.endpointsAvailable
+        ? {
+          dataIndex: 'accessType',
+          key: 'ssh',
+          render: (level, item) => (
+            <Checkbox
+              checked={level === AccessTypes.ssh}
+              onChange={changeAccessLevel(item)}
+            >
+              Enable SSH connection
+            </Checkbox>
+          )
+        }
+        : false,
       {
         key: 'actions',
         className: styles.userActions,
@@ -292,7 +314,7 @@ export default class ShareWithForm extends React.Component {
           </Row>
         )
       }
-    ];
+    ].filter(Boolean);
     const getRowClassName = (item) => {
       if (!this.state.selectedPermission || this.state.selectedPermission.name !== item.name) {
         return styles.row;

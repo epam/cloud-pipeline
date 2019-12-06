@@ -12,6 +12,10 @@
   height: 100vh;
 }
 
+.action-buttons-container {
+  text-align: right;
+}
+
 .action-buttons-container > div,
 .action-buttons-container > a {
   padding-left: 12px;
@@ -84,8 +88,7 @@
 .task-list,
 .task-list-timings {
   background-color: #fff;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  overflow: unset;
   font-family: Proggy, Courier;
   flex: 1;
 }

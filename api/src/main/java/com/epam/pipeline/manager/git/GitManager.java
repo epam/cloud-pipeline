@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -48,13 +49,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.web.client.HttpClientErrorException;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -125,26 +123,30 @@ public class GitManager {
         Assert.isTrue(result, "Could not create directory");
     }
 
-    public GitlabClient getGitlabClient(String gitHost,
-                                        String gitToken,
-                                        Long gitAdminId,
-                                        String gitAdminName) {
+    public GitlabClient getGitlabClient(String gitHost, String gitToken, Long gitAdminId, String gitAdminName) {
         return GitlabClient
-            .initializeGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+                .initializeGitlabClientFromHostAndToken(gitHost, gitToken, authManager.getAuthorizedUser(),
+                        gitAdminId, gitAdminName);
     }
 
     private GitlabClient getGitlabClientForPipeline(Pipeline pipeline) {
-        return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken());
+        return getGitlabClientForPipeline(pipeline, false);
     }
 
-    private GitlabClient getGitlabClientForRepository(String repository, String providedToken) {
+    private GitlabClient getGitlabClientForPipeline(Pipeline pipeline, boolean rootClient) {
+        return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken(), rootClient);
+    }
+
+    private GitlabClient getGitlabClientForRepository(String repository, String providedToken,
+                                                      final boolean rootClient) {
         Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
         String token = externalHost ? providedToken :
                 preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
-                authManager.getAuthorizedUser(), repository, token, adminId, adminName, externalHost);
+                rootClient ? adminName : authManager.getAuthorizedUser(),
+                repository, token, adminId, adminName, externalHost);
     }
 
     public GitCredentials getGitCredentials(Long id) {
@@ -157,16 +159,23 @@ public class GitManager {
 
     public GitCredentials getGitCredentials(Long id, boolean useEnvVars, boolean issueToken) {
         Pipeline pipeline = pipelineManager.load(id);
-        return getGitlabClientForPipeline(pipeline)
-                .buildCloneCredentials(useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+        try {
+            return getGitlabClientForPipeline(pipeline)
+                    .buildCloneCredentials(useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     public GitCredentials getGitlabCredentials(Long duration) {
         Long expiration = Optional.ofNullable(duration).orElse(DEFAULT_TOKEN_DURATION);
-        return getDefaultGitlabClient()
-                .withUserName(authManager.getAuthorizedUser())
-                .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
-                .buildCloneCredentials(false, true, expiration);
+        try {
+            return getDefaultGitlabClient()
+                    .withFullUrl(preferenceManager.getPreference(SystemPreferences.GIT_EXTERNAL_URL))
+                    .buildCloneCredentials(false, true, expiration);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
     }
 
     /**
@@ -251,7 +260,8 @@ public class GitManager {
         GitlabClient client = this.getGitlabClientForPipeline(pipeline);
         List<Revision> tags = client.getRepositoryRevisions(pageSize).stream()
                 .map(i -> new Revision(i.getName(), i.getMessage(),
-                        parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId()))
+                        parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId(),
+                        i.getCommit().getAuthorName(), i.getCommit().getAuthorEmail()))
                 .sorted(Comparator.comparing(Revision::getCreatedDate).reversed())
                 .collect(Collectors.toList());
         List<Revision> revisions = new ArrayList<>(tags.size());
@@ -271,7 +281,8 @@ public class GitManager {
         GitTagEntry gitTagEntry = client.createRepositoryRevision(revisionName, commit, message, releaseDescription);
         return new Revision(gitTagEntry.getName(),
                 gitTagEntry.getMessage(),
-                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId());
+                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
+                gitTagEntry.getCommit().getAuthorName(), gitTagEntry.getCommit().getAuthorEmail());
     }
 
     private void addDraftRevision(GitlabClient client, List<Revision> revisions,
@@ -282,7 +293,8 @@ public class GitManager {
             if (CollectionUtils.isEmpty(tags) || !tags.get(0).getCommitId()
                     .equals(commit.getId())) {
                 revisions.add(new Revision(DRAFT_PREFIX + commit.getShortId(), commit.getMessage(),
-                        parseGitDate(commit.getCreatedAt()), commit.getId(), Boolean.TRUE));
+                        parseGitDate(commit.getCreatedAt()), commit.getId(), Boolean.TRUE,
+                        commit.getAuthorName(), commit.getAuthorEmail()));
             }
         }
     }
@@ -310,7 +322,7 @@ public class GitManager {
         boolean fileExists = false;
         try {
             fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (HttpClientErrorException exception) {
+        } catch (UnexpectedResponseStatusException exception) {
             LOGGER.debug(exception.getMessage(), exception);
         }
         return fileExists;
@@ -473,7 +485,7 @@ public class GitManager {
         boolean fileExists = false;
         try {
             fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (HttpClientErrorException exception) {
+        } catch (UnexpectedResponseStatusException exception) {
             LOGGER.debug(exception.getMessage(), exception);
         }
 
@@ -518,7 +530,7 @@ public class GitManager {
                 boolean fileExists = false;
                 try {
                     fileExists = gitlabClient.getFileContents(sourcePath, GIT_MASTER_REPOSITORY) != null;
-                } catch (HttpClientErrorException exception) {
+                } catch (UnexpectedResponseStatusException exception) {
                     LOGGER.debug(exception.getMessage(), exception);
                 }
                 if (fileExists) {
@@ -595,7 +607,7 @@ public class GitManager {
             boolean fileExists = false;
             try {
                 fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-            } catch (HttpClientErrorException exception) {
+            } catch (UnexpectedResponseStatusException exception) {
                 LOGGER.debug(exception.getMessage(), exception);
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
@@ -652,6 +664,11 @@ public class GitManager {
                 .getFileContents(path, getRevisionName(version));
     }
 
+    public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String version,
+                                                  final String path, int byteLimit) throws GitClientException {
+        return this.getGitlabClientForPipeline(pipeline)
+            .getTruncatedFileContents(path, getRevisionName(version), byteLimit);
+    }
 
     /**
      * Returns docs file list of specified pipeline version
@@ -680,7 +697,7 @@ public class GitManager {
             Path path = Files.createTempDirectory(getBaseDir().toPath(), "git");
             return checkoutConfigToDirectory(pipeline, getRevisionName(version),
                     path.toFile().getAbsolutePath() + PATH_DELIMITER);
-        } catch (IOException e) {
+        } catch (IOException | GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new CmdExecutionException(e.getMessage(), e);
         }
@@ -722,8 +739,8 @@ public class GitManager {
         String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        return GitlabClient
-                .initializeGitlabClientFromHostAndToken(gitHost, gitToken, gitAdminId, gitAdminName);
+        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
     }
 
     public GitProject createRepository(String templateId,
@@ -734,16 +751,15 @@ public class GitManager {
         TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
         Template template = templatesScanner.listTemplates().get(templateId);
         Assert.notNull(template, "There is no such a template: " + templateId);
-        return getGitlabClientForRepository(repository, token)
+        return getGitlabClientForRepository(repository, token, true)
                 .createTemplateRepository(template,
                         description,
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
                         preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
-    public void deletePipelineRepository(Pipeline pipeline)
-            throws GitClientException, URISyntaxException, UnsupportedEncodingException {
-        this.getGitlabClientForPipeline(pipeline).deleteRepository();
+    public void deletePipelineRepository(Pipeline pipeline) throws GitClientException {
+        this.getGitlabClientForPipeline(pipeline, true).deleteRepository();
     }
 
     private void checkRevision(Pipeline pipeline, String version) {
@@ -755,12 +771,14 @@ public class GitManager {
         }
     }
 
-    private File checkoutConfigToDirectory(Pipeline pipeline, String version, String repoPath) {
+    private File checkoutConfigToDirectory(Pipeline pipeline, String version, String repoPath)
+            throws GitClientException {
         checkoutRepo(pipeline, version, repoPath);
         return new File(repoPath, CONFIG_FILE_NAME);
     }
 
-    private void checkoutRepo(Pipeline pipeline, String version, String repoPath) {
+    private void checkoutRepo(Pipeline pipeline, String version, String repoPath)
+            throws GitClientException {
         GitCredentials gitCredentials = getGitCredentials(pipeline.getId(), false);
         final String clone = String.format(GIT_CLONE_CMD, gitCredentials.getUrl(), repoPath);
         cmdExecutor.executeCommand(clone, null, new File(workingDirPath), true);
@@ -823,7 +841,7 @@ public class GitManager {
 
     public GitProject getRepository(String repository, String token) {
         try {
-            return getGitlabClientForRepository(repository, token).getProject();
+            return getGitlabClientForRepository(repository, token, false).getProject();
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
@@ -832,6 +850,14 @@ public class GitManager {
     public GitProject getRepository(String name) {
         try {
             return getDefaultGitlabClient().getProject(name);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    public GitProject updateRepositoryName(final String projectIdOrName, final String newName) {
+        try {
+            return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }

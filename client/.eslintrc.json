@@ -1,6 +1,11 @@
 {
   "parser": "babel-eslint",
   "extends": ["standard", "standard-react"],
+  "parserOptions": {
+    "ecmaFeatures": {
+      "legacyDecorators": true
+    }
+  },
   "env": {
     "browser": true
   },

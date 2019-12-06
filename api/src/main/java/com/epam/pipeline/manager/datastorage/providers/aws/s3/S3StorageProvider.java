@@ -17,10 +17,11 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import com.amazonaws.services.s3.model.CORSRule;
-import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -29,6 +30,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -44,7 +46,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -66,33 +67,34 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public String createStorage(S3bucketDataStorage storage) {
-        try {
-            AwsRegion awsRegion = getAwsRegion(storage);
-            if (storage.getRegionId() == null) {
-                storage.setRegionId(awsRegion.getId());
-            }
+    public String createStorage(final S3bucketDataStorage storage) {
+        return getS3Helper(storage).createS3Bucket(storage.getPath());
+    }
 
-            final ObjectMapper corsRulesMapper = JsonMapper.newInstance()
-                    .addMixIn(CORSRule.class, AbstractCORSRuleMixin.class)
-                    .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+    @Override
+    public ActionStatus postCreationProcessing(final S3bucketDataStorage storage) {
+        final AwsRegion awsRegion = getAwsRegion(storage);
 
-            final List<CORSRule> corsPolicyRules = JsonMapper.parseData(awsRegion.getCorsRules(),
-                    new TypeReference<List<CORSRule>>() {}, corsRulesMapper);
-
-            final Map<String, String> tags = new HashMap<>();
-            CloudRegionsConfiguration configuration = preferenceManager.getObjectPreferenceAs(
-                    SystemPreferences.CLUSTER_NETWORKS_CONFIG, new TypeReference<CloudRegionsConfiguration>() {});
-            if (configuration != null && !CollectionUtils.isEmpty(configuration.getTags())) {
-                tags.putAll(configuration.getTags());
-            }
-
-            return getS3Helper(storage).createS3Bucket(storage.getPath(), awsRegion.getPolicy(), corsPolicyRules,
-                                           storage.getAllowedCidrs(), awsRegion, tags, storage.isShared());
-        } catch (IOException e) {
-            throw new DataStorageException(messageHelper.getMessage(
-                            MessageConstants.ERROR_DATASTORAGE_CREATE_FAILED, storage.getName()), e);
+        final Map<String, String> tags = new HashMap<>();
+        final CloudRegionsConfiguration configuration = preferenceManager.getObjectPreferenceAs(
+                SystemPreferences.CLUSTER_NETWORKS_CONFIG, new TypeReference<CloudRegionsConfiguration>() {});
+        if (configuration != null && !CollectionUtils.isEmpty(configuration.getTags())) {
+            tags.putAll(configuration.getTags());
         }
+
+        if (storage.getRegionId() == null) {
+            storage.setRegionId(awsRegion.getId());
+        }
+
+        final ObjectMapper corsRulesMapper = JsonMapper.newInstance()
+                .addMixIn(CORSRule.class, AbstractCORSRuleMixin.class)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+
+        final List<CORSRule> corsPolicyRules = JsonMapper.parseData(awsRegion.getCorsRules(),
+                new TypeReference<List<CORSRule>>() {}, corsRulesMapper);
+
+        return getS3Helper(storage).postCreationProcessing(storage.getPath(), awsRegion.getPolicy(),
+                storage.getAllowedCidrs(), corsPolicyRules, awsRegion, storage.isShared(), tags);
     }
 
     @Override
@@ -131,8 +133,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override public DataStorageDownloadFileUrl generateDownloadURL(S3bucketDataStorage dataStorage,
-            String path, String version) {
-        return getS3Helper(dataStorage).generateDownloadURL(dataStorage.getPath(), path, version);
+                                                                    String path, String version,
+                                                                    ContentDisposition contentDisposition) {
+        return getS3Helper(dataStorage).generateDownloadURL(dataStorage.getPath(), path, version, contentDisposition);
     }
 
     @Override
@@ -214,6 +217,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public String getDefaultMountOptions(S3bucketDataStorage dataStorage) {
         return "--dir-mode 0774 --file-mode 0774 -o rw -o allow_other -f --gid 0";
+    }
+
+    @Override
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getS3Helper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

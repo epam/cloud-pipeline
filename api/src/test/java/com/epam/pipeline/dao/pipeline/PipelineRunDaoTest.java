@@ -19,13 +19,17 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.dao.filter.FilterDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -35,9 +39,16 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.filter.FilterExpression;
+import com.epam.pipeline.manager.filter.FilterExpressionType;
+import com.epam.pipeline.manager.filter.FilterOperandType;
+import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.util.TestUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -50,8 +61,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,6 +72,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThat;
 
 @Transactional
 public class PipelineRunDaoTest extends AbstractSpringTest {
@@ -93,14 +107,32 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
 
+    private static final String TAG_KEY_1 = "key1";
+    private static final String TAG_KEY_2 = "key2";
+    private static final String TAG_VALUE_1 = "value1";
+    private static final String TAG_VALUE_2 = "value2";
+
     @Autowired
     private PipelineRunDao pipelineRunDao;
+
+    @Autowired
+    private FilterDao filterDao;
+
+
+    @Autowired
+    private RunLogDao logDao;
 
     @Autowired
     private PipelineDao pipelineDao;
 
     @Autowired
     private CloudRegionDao regionDao;
+
+    @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
+    private String initTaskName;
+
+    @Value("${run.pipeline.nodeup.task.name?:InitializeNode}")
+    private String nodeUpTaskName;
 
     private Pipeline testPipeline;
     private AbstractCloudRegion cloudRegion;
@@ -116,6 +148,24 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         cloudRegion = ObjectCreatorUtils.getDefaultAwsRegion();
         regionDao.create(cloudRegion);
+    }
+
+    @Test
+    public void testFilterPipelineRuns() throws WrongFilterException {
+        PipelineRun run1 =  TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id", cloudRegion.getId());
+        PipelineRun run2 =  TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING, USER,
+                null, null, true, null, null, "pod-id2", cloudRegion.getId());
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+        FilterExpression logicalExpression = new FilterExpression();
+        logicalExpression.setFilterExpressionType(FilterExpressionType.LOGICAL);
+        logicalExpression.setField("pod.id");
+        logicalExpression.setOperand(FilterOperandType.EQUALS.getOperand());
+        logicalExpression.setValue(run1.getPodId());
+        List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(FilterExpression.prepare(logicalExpression), 1, 2, 0);
+        assertEquals(1, pipelineRuns.size());
+        assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
     }
 
     @Test
@@ -154,6 +204,37 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(run.getCommitStatus(), loadedRun.getCommitStatus());
+    }
+
+    @Test
+    public void testUpdateRunTags() {
+        final PipelineRun run = createTestPipelineRun();
+        final Map<String, String> tags = new HashMap<>();
+        loadTagsAndCompareWithExpected(run.getId(), tags);
+        tags.put(TAG_KEY_1, TAG_VALUE_1);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.put(TAG_KEY_2, TAG_VALUE_2);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.remove(TAG_KEY_1);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        tags.remove(TAG_KEY_2);
+        updateTagsAndVerifySaveIsCorrect(run, tags);
+        run.setTags(null);
+        loadTagsAndCompareWithExpected(run.getId(), Collections.emptyMap());
+    }
+
+    @Test
+    public void updateTagsForRuns() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+        run1.setTags(tags1);
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2);
+        run2.setTags(tags2);
+
+        pipelineRunDao.updateRunsTags(Arrays.asList(run1, run2));
+        loadTagsAndCompareWithExpected(run1.getId(), tags1);
+        loadTagsAndCompareWithExpected(run2.getId(), tags2);
     }
 
     @Test
@@ -204,7 +285,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertTrue(terminating.stream().anyMatch(r -> Objects.equals(r.getId(), run.getId())));
     }
 
-
     @Test
     public void searchRunsByParentId() {
         Pipeline testPipeline = getPipeline();
@@ -233,6 +313,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
+        parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
+        pipelineRunDao.updateRunTags(parent);
         PagingRunFilterVO filterVO = new PagingRunFilterVO();
         filterVO.setPage(1);
         filterVO.setPageSize(TEST_PAGE_SIZE);
@@ -245,6 +327,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(1, runs.get(1).getChildRuns().size());
         assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
 
+        assertThat(runs.get(1).getTags(), CoreMatchers.is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
 
     }
@@ -370,16 +453,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(2, runs.size());
     }
 
-    private Pipeline getPipeline() {
-        Pipeline testPipeline2 = new Pipeline();
-        testPipeline2.setName("Test");
-        testPipeline2.setRepository(TEST_REPO);
-        testPipeline2.setRepositorySsh(TEST_REPO_SSH);
-        testPipeline2.setOwner(TEST_USER);
-        pipelineDao.createPipeline(testPipeline2);
-        return testPipeline2;
-    }
-
     @Test
     public void testPaging() {
         createTestPipelineRun();
@@ -448,16 +521,18 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         runSid1.setName(TEST_USER);
         runSid1.setIsPrincipal(true);
         runSids.add(runSid1);
+        runSid1.setAccessType(RunAccessType.ENDPOINT);
 
         RunSid runSid2 = new RunSid();
         runSid2.setName(GROUP_NAME);
         runSid2.setIsPrincipal(false);
+        runSid2.setAccessType(RunAccessType.ENDPOINT);
         runSids.add(runSid2);
 
         Pipeline testPipeline = getPipeline();
         PipelineRun run = createRunWithRunSids(testPipeline.getId(), null, runSids);
         PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
-        assertEquals(runSids, loadedRun.getRunSids());
+        assertEquals(runSids.size(), loadedRun.getRunSids().size());
     }
 
     @Test
@@ -466,11 +541,13 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         RunSid runSid1 = new RunSid();
         runSid1.setName(TEST_USER);
         runSid1.setIsPrincipal(true);
+        runSid1.setAccessType(RunAccessType.ENDPOINT);
         runSids.add(runSid1);
 
         RunSid runSid2 = new RunSid();
         runSid2.setName(GROUP_NAME);
         runSid2.setIsPrincipal(false);
+        runSid2.setAccessType(RunAccessType.ENDPOINT);
 
         Pipeline testPipeline = getPipeline();
         PipelineRun run = createRunWithRunSids(testPipeline.getId(), null, runSids);
@@ -482,7 +559,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         pipelineRunDao.createRunSids(run.getId(), runSids);
         loadedRuns = pipelineRunDao.loadPipelineRun(run.getId());
         assertEquals(2, loadedRuns.getRunSids().size());
-        assertTrue(runSids.equals(loadedRuns.getRunSids()));
     }
 
     @Test
@@ -632,6 +708,30 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         assertEquals(PRICE_PER_HOUR, loaded.getPricePerHour());
     }
 
+    @Test
+    public void loadRunShouldReturnInitializedStatus() {
+        final PipelineRun run = createTestPipelineRun();
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
+
+        createLog(run, TaskStatus.RUNNING, initTaskName);
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getInitialized);
+
+        createLog(run, TaskStatus.SUCCESS, initTaskName);
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getInitialized);
+    }
+
+    @Test
+    public void loadRunShouldReturnQueuedStatus() {
+        final PipelineRun run = createTestPipelineRun();
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getQueued);
+
+        createLog(run, TaskStatus.RUNNING, initTaskName);
+        validateLoadRunBooleanFieldValue(true, run, PipelineRun::getQueued);
+
+        createLog(run, TaskStatus.RUNNING, nodeUpTaskName);
+        validateLoadRunBooleanFieldValue(false, run, PipelineRun::getQueued);
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }
@@ -745,6 +845,57 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         run.setConfigurationId(configurationId);
         pipelineRunDao.createPipelineRun(run);
         return run;
+    }
+
+    private Pipeline getPipeline() {
+        Pipeline testPipeline2 = new Pipeline();
+        testPipeline2.setName("Test");
+        testPipeline2.setRepository(TEST_REPO);
+        testPipeline2.setRepositorySsh(TEST_REPO_SSH);
+        testPipeline2.setOwner(TEST_USER);
+        pipelineDao.createPipeline(testPipeline2);
+        return testPipeline2;
+    }
+
+    private void updateTagsAndVerifySaveIsCorrect(final PipelineRun run, final Map<String, String> tags) {
+        run.setTags(tags);
+        pipelineRunDao.updateRunTags(run);
+        loadTagsAndCompareWithExpected(run.getId(), tags);
+    }
+
+    private void loadTagsAndCompareWithExpected(final Long runId, final Map<String, String> tags) {
+        final Map<String, String> loadedTags = pipelineRunDao.loadPipelineRun(runId).getTags();
+        assertThat(loadedTags, CoreMatchers.is(tags));
+    }
+
+    private RunLog createLog(final PipelineRun run,
+                             final TaskStatus running,
+                             final String taskName) {
+        RunLog runLog = new RunLog();
+        runLog.setDate(DateUtils.now());
+        runLog.setLogText("Log");
+        runLog.setStatus(running);
+        runLog.setRunId(run.getId());
+        runLog.setTaskName(taskName);
+        runLog.setTask(new PipelineTask(taskName));
+        logDao.createRunLog(runLog);
+        return runLog;
+    }
+
+    private void validateLoadRunBooleanFieldValue(final boolean expectedFieldValue,
+                                                  final PipelineRun run,
+                                                  final Function<PipelineRun, Boolean> fieldFunction) {
+        assertEquals(expectedFieldValue, fieldFunction.apply(pipelineRunDao.loadPipelineRun(run.getId())));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.loadPipelineRuns(Collections.singletonList(run.getId())).get(0)));
+        final PagingRunFilterVO pagingRunFilterVO = new PagingRunFilterVO();
+        pagingRunFilterVO.setPage(1);
+        pagingRunFilterVO.setPageSize(TEST_PAGE_SIZE);
+        pagingRunFilterVO.setPipelineIds(Collections.singletonList(run.getPipelineId()));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.searchPipelineRuns(pagingRunFilterVO).get(0)));
+        assertEquals(expectedFieldValue,
+                fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
     }
 
 }

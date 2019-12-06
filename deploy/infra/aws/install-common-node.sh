@@ -41,20 +41,22 @@ yum install -y yum-utils \
   device-mapper-persistent-data \
   lvm2
 
+# User 18.03 to overcome the 8Gb layer commit limit of 18.06 (see https://github.com/moby/moby/issues/37581)
+# 18.09 and up are not yet available for Amzn Linux 2
 # Try to install from the docker repo
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
+yum install -y  docker-ce-18.03* \
+                docker-ce-cli-18.03* \
                 containerd.io
 if [ $? -ne 0 ]; then
-  echo "Unable to install docker from the official repository, trying to use default docker-18.06*"
+  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
 
   # Otherwise try to install default docker (e.g. if it's amazon linux)
-  yum install -y docker-18.06*
+  yum install -y docker-18.03*
   if [ $? -ne 0 ]; then
-    echo "Unable to install default docker-18.06* too, exiting"
+    echo "Unable to install default docker-18.03* too, exiting"
     exit 1
   fi
 fi

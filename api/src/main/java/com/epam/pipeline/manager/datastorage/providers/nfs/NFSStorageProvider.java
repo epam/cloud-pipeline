@@ -21,6 +21,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -30,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
@@ -152,6 +155,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         }
 
         return storage.getPath();
+    }
+
+    @Override
+    public ActionStatus postCreationProcessing(final NFSDataStorage storage) {
+        return ActionStatus.notSupported();
     }
 
     private synchronized File mount(NFSDataStorage dataStorage) {
@@ -311,7 +319,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(NFSDataStorage dataStorage, String path,
-                                                          String version) {
+                                                          String version, ContentDisposition contentDisposition) {
 
         String baseApiHostExternal = preferenceManager.getPreference(SystemPreferences.BASE_API_HOST_EXTERNAL);
         String baseApiHost = StringUtils.isNotBlank(baseApiHostExternal) ? baseApiHostExternal :
@@ -523,5 +531,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     @Override
     public String getDefaultMountOptions(NFSDataStorage dataStorage) {
         return shareMountManager.load(dataStorage.getFileShareMountId()).getMountOptions();
+    }
+
+    @Override
+    public PathDescription getDataSize(final NFSDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
     }
 }

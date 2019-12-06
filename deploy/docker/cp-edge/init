@@ -55,8 +55,48 @@ if [ ! -f "$JWT_PUB_KEY" ]; then
     fi
 fi
 
+# Replace well-know environment variables placeholders in the assets
+export CP_EDGE_WEB_CLIENT_MAX_SIZE="${CP_EDGE_WEB_CLIENT_MAX_SIZE:-500M}"
+export CP_EDGE_CLUSTER_RESOLVER="${CP_EDGE_CLUSTER_RESOLVER:-$CP_PREF_CLUSTER_PROXIES_DNS_POST}"
+if [ -z "$CP_EDGE_CLUSTER_RESOLVER" ]; then
+    export CP_EDGE_CLUSTER_RESOLVER="10.96.0.10"
+    echo "Cluster resolve is NOT set by CP_EDGE_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_EDGE_CLUSTER_RESOLVER"
+fi
+export CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC="${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC:-10}"
+export CP_PREF_STORAGE_FSBROWSER_PORT="${CP_PREF_STORAGE_FSBROWSER_PORT:-8091}"
+export CP_DAV_URL_PATH="${CP_DAV_URL_PATH:-webdav}"
+export CP_DAV_INTERNAL_HOST="${CP_DAV_INTERNAL_HOST:-127.0.0.1}"
+export CP_DAV_INTERNAL_PORT="${CP_DAV_INTERNAL_PORT:-31085}"
+export CP_DAV_AUTH_URL_PATH="${CP_DAV_AUTH_URL_PATH:-webdav/auth-sso}"
+export CP_DAV_EXTERNAL_MAPPING_URL="${CP_DAV_EXTERNAL_MAPPING_URL:-$EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT/$CP_DAV_URL_PATH/}"
+export CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}"
+# FIXME: !!! For Windows - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
+#        !!! Reflect this in the documentation !!!
+#        !!! Anothing thing is the file size/timoute restrictions which require registry to be modified - reflect this is docs as well !!!
+export CP_DAV_INSTRUCTIONS_URL=${CP_DAV_INSTRUCTIONS_URL:-"#"}
+
+AUTH_HTML="$(envsubst '${CP_DAV_EXTERNAL_MAPPING_URL} ${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME} ${CP_DAV_INSTRUCTIONS_URL}' < /etc/nginx/dav/webdav/auth-sso/index.html)"
+echo "$AUTH_HTML" > /etc/nginx/dav/webdav/auth-sso/index.html
+
+NGINX_CONF="$(envsubst '${CP_EDGE_WEB_CLIENT_MAX_SIZE} ${CP_DAV_URL_PATH} ${CP_DAV_INTERNAL_HOST} ${CP_DAV_INTERNAL_PORT} ${CP_DAV_AUTH_URL_PATH} ${EDGE_EXTERNAL_SCHEMA} ${CP_EDGE_CLUSTER_RESOLVER} ${CP_EDGE_CLUSTER_RESOLVER_TIMEOUT_SEC} ${CP_PREF_STORAGE_FSBROWSER_PORT}' < /etc/nginx/nginx.conf)"
+echo "$NGINX_CONF" > /etc/nginx/nginx.conf
+
+# Add the "ingress" configuration to the nginx, which will force all the client traffic to flow via EDGE
+# Including API/GUI/Git/Docker
+if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
+    export CP_DOLLAR="$"
+    for ingress_config in $(ls /etc/nginx/ingress/cp-*.conf); do
+        config_content="$(envsubst < $ingress_config)"
+        echo "$config_content" > "$ingress_config"
+    done
+    unset CP_DOLLAR
+else
+    rm -f /etc/nginx/ingress/*
+fi
+
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
+WETTY_PID="$!"
 
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
@@ -67,5 +107,19 @@ crond
 # Start nginx
 nginx -p /etc/nginx/ -c /etc/nginx/nginx.conf
 
-# Pring wetty and cron logs to the stdout
-tail -f /var/log/wetty.log -f /var/log/sync-routes.log
+sleep 5
+
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping wetty (PID $WETTY_PID), quitting nginx and exiting"
+    if [ $WETTY_PID -ne 0 ]; then
+        kill -SIGTERM "$WETTY_PID"
+        wait "$WETTY_PID"
+    fi
+    nginx -s quit
+    exit 143
+}
+trap 'kill $! ; sig_handler' SIGTERM
+# Print wetty and cron logs to the stdout
+tail -f /var/log/wetty.log -f /var/log/sync-routes.log &
+wait "$!"

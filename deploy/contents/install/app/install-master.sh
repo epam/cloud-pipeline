@@ -16,6 +16,18 @@
 
 set -e
 
+# Check that we have enough disk space for the master compononents (root fs, docker, etcd)
+check_enough_disk "${CP_COMMON_ROOT_FS_MIN_DISK_MB:-20480}" \
+                  "/"
+
+check_enough_disk "${CP_KUBE_MASTER_DOCKER_MIN_DISK_MB:-102400}" \
+                  "$CP_KUBE_MASTER_DOCKER_PATH" "/var/lib/docker"
+
+check_enough_disk "${CP_KUBE_MASTER_ETCD_MIN_DISK_MB:-20480}" \
+                  "$CP_KUBE_MASTER_ETCD_HOST_PATH" "/var/lib/etcd"
+
+
+
 # 1
 cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -40,7 +52,7 @@ EOF
 sysctl --system
 
 # 4
-setenforce 0
+setenforce 0 || true
 sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
 #6.1 - Docker
@@ -50,9 +62,19 @@ yum install -y yum-utils \
 yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo && \
-yum install -y  docker-ce-18.09.1 \
-                docker-ce-cli-18.09.1 \
+yum install -y  docker-ce-18.03* \
+                docker-ce-cli-18.03* \
                 containerd.io
+if [ $? -ne 0 ]; then
+  echo "Unable to install docker from the official repository, trying to use default docker-18.03*"
+
+  # Otherwise try to install default docker (e.g. if it's amazon linux)
+  yum install -y docker-18.03*
+  if [ $? -ne 0 ]; then
+    echo "Unable to install default docker-18.03* too, exiting"
+    exit 1
+  fi
+fi
 
 if [ "$CP_KUBE_MASTER_DOCKER_PATH" ]; then
   echo "CP_KUBE_MASTER_DOCKER_PATH is specified - docker will be configured to store data in $CP_KUBE_MASTER_DOCKER_PATH"
@@ -97,7 +119,7 @@ systemctl enable kubelet
 systemctl start docker
 systemctl start kubelet
 
-# TODO: here and further - implement a smarter approach to wait for the kube service to init
+# FIXME: here and further - implement a smarter approach to wait for the kube service to init
 sleep 10
 
 #9
@@ -126,7 +148,7 @@ if [ "$CP_KUBE_KEEP_KUBEADM_PROXIES" != "1" ]; then
 fi
 
 FLANNEL_CIDR=${FLANNEL_CIDR:-"10.244.0.0/16"}
-kubeadm init --pod-network-cidr="$FLANNEL_CIDR" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
+kubeadm init --pod-network-cidr="10.244.0.0/16" --kubernetes-version v1.7.5 --skip-preflight-checks > $HOME/kubeadm_init.log
 
 sleep 30
 
@@ -163,3 +185,5 @@ sleep 10
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
 
 sleep 30
+
+set +e

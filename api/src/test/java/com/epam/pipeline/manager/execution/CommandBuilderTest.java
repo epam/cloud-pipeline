@@ -83,14 +83,14 @@ import org.mockito.junit.MockitoRule;
         return Arrays.asList(
             new Object[][] {
                 {
-                    PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] -a [api] -v [version]",
+                    PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] -a [api] -v [pipeline-version]",
                     PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
                         + " -a " + API_HOST + " -v " + TEST_VERSION
                 },
                 {
                     PYTHON_SRC + "[main_file] [main_class] [user-params] [sys-params]",
                     PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " --sample $" + SAMPLE + " --input-fastq $"
-                        + INPUT_FASTQ + " --api " + API_HOST + " --version " + TEST_VERSION
+                        + INPUT_FASTQ + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
                         + " --namespace " + KUBE_NAMESPACE + " --parent " + POD_ID + " --pipeline-name "
                         + PIPELINE_NAME + " --run-date " + RUN_DATE + " --run-time " + RUN_TIME + " --run-id " + RUN_ID
                         + " --pipeline-id " + PIPELINE_ID + " --autoscaling-enabled "
@@ -103,7 +103,8 @@ import org.mockito.junit.MockitoRule;
                 {
                     PYTHON_SRC + "[main_file] [main_class] [sample] -I [input-fastq] [sys-params]",
                     PYTHON_SRC + MAIN_FILE + " " + MAIN_CLASS + " " + SAMPLE + " -I " + INPUT_FASTQ
-                        + " --api " + API_HOST + " --version " + TEST_VERSION + " --namespace " + KUBE_NAMESPACE
+                        + " --api " + API_HOST + " --pipeline-version " + TEST_VERSION
+                        + " --namespace " + KUBE_NAMESPACE
                         + " --parent " + POD_ID + " --pipeline-name " + PIPELINE_NAME + " --run-date " + RUN_DATE
                         + " --run-time " + RUN_TIME + " --run-id " + RUN_ID + " --pipeline-id " + PIPELINE_ID
                         + " --autoscaling-enabled "
@@ -147,7 +148,7 @@ import org.mockito.junit.MockitoRule;
     private Map<SystemParams, String> matchSystemParams() {
         EnumMap<SystemParams, String> systemParamsWithValue = new EnumMap<>(SystemParams.class);
         systemParamsWithValue.put(SystemParams.API, API_HOST);
-        systemParamsWithValue.put(SystemParams.VERSION, TEST_VERSION);
+        systemParamsWithValue.put(SystemParams.PIPELINE_VERSION, TEST_VERSION);
         systemParamsWithValue.put(SystemParams.NAMESPACE, KUBE_NAMESPACE);
         systemParamsWithValue.put(SystemParams.PARENT, POD_ID);
         systemParamsWithValue.put(SystemParams.PIPELINE_NAME, PIPELINE_NAME);

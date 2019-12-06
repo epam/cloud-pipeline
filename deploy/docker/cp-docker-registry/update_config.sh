@@ -21,7 +21,9 @@ update-ca-certificates
 # Setup storage driver configuration (S3 / Azure BLOB / Local FS)
 storage_driver_config=""
 
+
 if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
+  CP_DOCKER_STORAGE_CHUNKSIZE="${CP_DOCKER_STORAGE_CHUNKSIZE:-52428800}"
   if [ "$CP_CLOUD_PLATFORM" == "aws" ]; then
     echo "S3 storage driver will be configured"
 
@@ -42,7 +44,7 @@ read -r -d '' storage_driver_config <<-EOF
     accesskey: ${CP_DOCKER_STORAGE_KEY_NAME}
     secretkey: ${CP_DOCKER_STORAGE_KEY_SECRET}
     secure: true
-    chunksize: 52428800
+    chunksize: ${CP_DOCKER_STORAGE_CHUNKSIZE}
     rootdirectory: ${CP_DOCKER_STORAGE_ROOT_DIR}
 EOF
 
@@ -71,7 +73,7 @@ read -r -d '' storage_driver_config <<-EOF
   gcs:
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
     keyfile: ${CP_CLOUD_CREDENTIALS_LOCATION}
-    chunksize: 52428800
+    chunksize: ${CP_DOCKER_STORAGE_CHUNKSIZE}
     rootdirectory: ${CP_DOCKER_STORAGE_ROOT_DIR}
 EOF
   else

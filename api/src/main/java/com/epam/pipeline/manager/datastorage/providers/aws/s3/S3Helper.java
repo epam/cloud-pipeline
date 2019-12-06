@@ -42,6 +42,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ObjectTagging;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
@@ -66,6 +67,8 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -74,13 +77,16 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -128,13 +134,7 @@ public class S3Helper {
         return AmazonS3ClientBuilder.defaultClient();
     }
 
-    public String createS3Bucket(final String name,
-                                 final String policy,
-                                 final List<CORSRule> corsRules,
-                                 final List<String> allowedCidrs,
-                                 final AwsRegion region,
-                                 final Map<String, String> tags,
-                                 final boolean shared) throws IOException {
+    public String createS3Bucket(final String name) {
         AmazonS3 s3client = getDefaultS3Client();
         if (s3client.doesBucketExistV2(name)) {
             throw new IllegalArgumentException(String.format("Bucket with name '%s' already exist", name));
@@ -143,27 +143,43 @@ public class S3Helper {
         final Waiter waiter = s3client.waiters().bucketExists();
         waiter.run(new WaiterParameters<>(new HeadBucketRequest(name)));
 
-        if (!StringUtils.isNullOrEmpty(policy)) {
-            String contents = populateBucketPolicy(name, policy, allowedCidrs, shared);
-            s3client.setBucketPolicy(bucket.getName(), contents);
-        }
-
-        String kmsDataEncryptionKeyId = region.getKmsKeyId();
-        if (!StringUtils.isNullOrEmpty(kmsDataEncryptionKeyId)) {
-            enableBucketEncryption(s3client, bucket.getName(), kmsDataEncryptionKeyId);
-        }
-
-        if (corsRules != null && !CollectionUtils.isEmpty(corsRules)) {
-            s3client.setBucketCrossOriginConfiguration(bucket.getName(),
-                    new BucketCrossOriginConfiguration().withRules(corsRules));
-        }
-
-        if (!CollectionUtils.isEmpty(tags)) {
-            s3client.setBucketTaggingConfiguration(bucket.getName(),
-                    new BucketTaggingConfiguration(Collections.singletonList(new TagSet(tags))));
-        }
-
         return bucket.getName();
+    }
+
+    public ActionStatus postCreationProcessing(final String name,
+                                               final String policy,
+                                               final List<String> allowedCidrs,
+                                               final List<CORSRule> corsRules,
+                                               final AwsRegion region,
+                                               final boolean shared,
+                                               final Map<String, String> tags) {
+        try {
+            final AmazonS3 s3client = getDefaultS3Client();
+
+            if (!CollectionUtils.isEmpty(tags)) {
+                s3client.setBucketTaggingConfiguration(name,
+                        new BucketTaggingConfiguration(Collections.singletonList(new TagSet(tags))));
+            }
+
+            if (!StringUtils.isNullOrEmpty(policy)) {
+                String contents = populateBucketPolicy(name, policy, allowedCidrs, shared);
+                s3client.setBucketPolicy(name, contents);
+            }
+
+            final String kmsDataEncryptionKeyId = region.getKmsKeyId();
+            if (!StringUtils.isNullOrEmpty(kmsDataEncryptionKeyId)) {
+                enableBucketEncryption(s3client, name, kmsDataEncryptionKeyId);
+            }
+
+            if (corsRules != null && !CollectionUtils.isEmpty(corsRules)) {
+                s3client.setBucketCrossOriginConfiguration(name,
+                        new BucketCrossOriginConfiguration().withRules(corsRules));
+            }
+        } catch (AmazonS3Exception | IOException e) {
+            LOGGER.error(e.getMessage(), e);
+            return ActionStatus.error(e.getMessage());
+        }
+        return ActionStatus.success();
     }
 
     String populateBucketPolicy(final String name,
@@ -320,12 +336,16 @@ public class S3Helper {
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(String bucket, String path,
-            String version) {
+                                                          String version, ContentDisposition contentDisposition) {
         AmazonS3 client = getDefaultS3Client();
         Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, path);
         request.setVersionId(version);
         request.setExpiration(expires);
+        if (contentDisposition != null) {
+            request.setResponseHeaders(new ResponseHeaderOverrides()
+                    .withContentDisposition(contentDisposition.getHeader(FilenameUtils.getName(path))));
+        }
         return generatePresignedUrl(client, expires, request);
     }
 
@@ -601,6 +621,24 @@ public class S3Helper {
     public boolean checkBucket(String bucket) {
         AmazonS3 client = getDefaultS3Client();
         return client.doesBucketExistV2(bucket);
+    }
+
+    public PathDescription getDataSize(final S3bucketDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        final AmazonS3 client = getDefaultS3Client();
+
+        ObjectListing listing = client.listObjects(dataStorage.getPath(), requestPath);
+        boolean hasNextPageMarker = true;
+        while (hasNextPageMarker && !pathDescription.getCompleted()) {
+            ProviderUtils.getSizeByPath(listing.getObjectSummaries(), requestPath,
+                    S3ObjectSummary::getSize, S3ObjectSummary::getKey, pathDescription);
+            hasNextPageMarker = listing.isTruncated();
+            listing = client.listNextBatchOfObjects(listing);
+        }
+
+        pathDescription.setCompleted(true);
+        return pathDescription;
     }
 
     private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {

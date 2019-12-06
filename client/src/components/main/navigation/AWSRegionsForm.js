@@ -1898,6 +1898,39 @@ const DefaultMountOptions = {
   AZURE: MountOptions.SMB
 };
 
+const MountRootFormat = {
+  AWS: {
+    [MountOptions.NFS]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
+    },
+    [MountOptions.SMB]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
+    }
+  },
+  AZURE: {
+    [MountOptions.NFS]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
+    },
+    [MountOptions.SMB]: {
+      mask: /^[^:]+(:[\d]+)?$/i,
+      format: 'server:port'
+    }
+  },
+  GCP: {
+    [MountOptions.NFS]: {
+      mask: /^[^:]+(:[\d]+)?:\/.+$/i,
+      format: 'server:port:/root'
+    },
+    [MountOptions.SMB]: {
+      mask: /^[^:]+(:[\d]+)?:\/.+$/i,
+      format: 'server:port:/root'
+    }
+  },
+};
+
 @observer
 class CloudRegionFileShareMountFormItem extends React.Component {
 
@@ -1910,7 +1943,8 @@ class CloudRegionFileShareMountFormItem extends React.Component {
     expanded: PropTypes.bool,
     disabled: PropTypes.bool,
     onMount: PropTypes.func,
-    onUnMount: PropTypes.func
+    onUnMount: PropTypes.func,
+    provider: PropTypes.string
   };
 
   state = {
@@ -1919,7 +1953,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
     mountRoot: undefined,
     mountType: undefined,
     mountOptions: undefined,
-    mountRootValid: true,
+    mountRootError: null,
     mountTypeValid: true
   };
 
@@ -1938,13 +1972,16 @@ class CloudRegionFileShareMountFormItem extends React.Component {
   };
 
   componentWillReceiveProps (nextProps, nextContext) {
-    if (!CloudRegionFileShareMountFormItem.valuesAreEqual(this.state, nextProps.value)) {
-      this.updateState(nextProps.value);
+    if (
+      !CloudRegionFileShareMountFormItem.valuesAreEqual(this.state, nextProps.value) ||
+      nextProps.provider !== this.props.provider
+    ) {
+      this.updateState(nextProps.value, nextProps.provider);
     }
   }
 
   componentDidMount () {
-    this.updateState(this.props.value);
+    this.updateState(this.props.value, this.props.provider);
     this.props.onMount && this.props.onMount(this);
   }
 
@@ -1952,7 +1989,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
     this.props.onUnMount && this.props.onUnMount(this);
   }
 
-  updateState = (newValue) => {
+  updateState = (newValue, provider) => {
     if (!newValue) {
       this.setState({
         id: undefined,
@@ -1960,7 +1997,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         mountRoot: undefined,
         mountType: undefined,
         mountOptions: undefined,
-        mountRootValid: true,
+        mountRootError: null,
         mountTypeValid: true
       });
     } else {
@@ -1970,7 +2007,7 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         mountRoot: newValue.mountRoot,
         mountType: newValue.mountType,
         mountOptions: newValue.mountOptions,
-        mountRootValid: !!newValue.mountRoot,
+        mountRootError: this.mountRootValidationError(newValue.mountRoot, provider),
         mountTypeValid: !!newValue.mountType
       });
     }
@@ -1981,14 +2018,30 @@ class CloudRegionFileShareMountFormItem extends React.Component {
     this.props.onChange && this.props.onChange(this.state);
   };
 
+  mountRootValidationError = (value, provider) => {
+    if (!value || value.trim().length === 0) {
+      return 'Host is required';
+    }
+    const option = this.state.mountType || DefaultMountOptions[provider];
+    if (
+      MountRootFormat.hasOwnProperty(provider) &&
+      MountRootFormat[provider].hasOwnProperty(option) &&
+      !MountRootFormat[provider][option].mask.test(value)
+    ) {
+      return `Host should be in "${MountRootFormat[provider][option].format}" format`;
+    }
+    return null;
+  };
+
   validate = (updateState = true) => {
     if (updateState) {
       this.setState({
-        mountRootValid: !!this.state.mountRoot,
+        mountRootError: this.mountRootValidationError(this.state.mountRoot, this.props.provider),
         mountTypeValid: !!this.state.mountType
       });
     }
-    return !!this.state.mountRoot && !!this.state.mountType;
+    return !!this.state.mountType &&
+      !this.mountRootValidationError(this.state.mountRoot, this.props.provider);
   };
 
   onChangeMountRoot = (e) => {
@@ -2022,10 +2075,15 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             style={
               Object.assign(
                 {flex: 1, marginTop: 1},
-                this.state.mountRootValid ? {} : {borderColor: 'red'}
+                !this.state.mountRootError ? {} : {borderColor: 'red'}
               )
             }
             disabled={this.props.disabled || !!this.state.id}
+            placeholder={
+              MountRootFormat.hasOwnProperty(this.props.provider)
+                ? MountRootFormat[this.props.provider].format
+                : null
+            }
             value={this.state.mountRoot}
             onChange={this.onChangeMountRoot} />
           <span style={{marginLeft: 5, marginRight: 5}}>Type:</span>
@@ -2060,6 +2118,18 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             <Icon type="close" />
           </Button>
         </Row>
+        {
+          this.state.mountRootError &&
+          <Row
+            style={{
+              color: 'red',
+              lineHeight: '12px',
+              paddingLeft: 50
+            }}
+          >
+            {this.state.mountRootError}
+          </Row>
+        }
         {
           this.props.expanded &&
           <Row type="flex" align="top" style={{marginBottom: 10}}>
@@ -2214,7 +2284,9 @@ class CloudRegionFileShareMountsFormItem extends React.Component {
                   onExpand={this.onExpand(index)}
                   onMount={this.childComponentMounted(index)}
                   onUnMount={this.childComponentUnMounted(index)}
-                  expanded={this.state.expandedIndex === index} />
+                  expanded={this.state.expandedIndex === index}
+                  provider={this.props.provider}
+                />
               );
             })
           }

@@ -1,0 +1,44 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-dav
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-dav: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-dav: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-dav
+          image: lifescience/cloud-pipeline:dav-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/log/dav
+              name: dav-logs
+          readinessProbe:
+            httpGet:
+              path: /${CP_DAV_URL_PATH}
+              port: ${CP_DAV_INTERNAL_PORT}
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: dav-logs
+          hostPath:
+            path: /opt/dav/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

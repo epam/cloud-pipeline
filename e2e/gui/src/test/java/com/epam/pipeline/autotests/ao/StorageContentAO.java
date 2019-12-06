@@ -465,12 +465,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         private final String fileName;
         private final int index;
 
-        public FileAO(String fileName, int index) {
+        FileAO(String fileName, int index) {
             this.fileName = fileName;
             this.index = index;
             elements().putAll(initialiseElements(
                     entry(RELOAD, context().find(buttonByIconClass("anticon-reload"))),
-                    entry(DOWNLOAD, context().find(buttonByIconClass("anticon-download"))),
+                    entry(DOWNLOAD, context().find(".anticon-download")),
                     entry(EDIT, context().find(editButton())),
                     entry(DELETE, context().find(deleteButton()))
             ));

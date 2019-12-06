@@ -18,10 +18,34 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_SGE_QUEUE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine queue",
+        "defaultValue": "main.q"
+    },
+    {
+        "name": "CP_CAP_SGE_PE_NAME",
+        "type": "string",
+        "description": "Overrides the default name of the Grid Engine PE",
+        "defaultValue": "local"
+    },
+    {
         "name": "CP_CAP_MODULES",
         "type": "boolean",
         "description": "Enables Environment Modules for a current run",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SPARK",
+        "type": "boolean",
+        "description": "Enables Spark for a current run",
+        "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_SPARK_VERSION",
+        "type": "string",
+        "description": "Allows to override a Spark version (2.3.3 or 2.4.3)",
+        "defaultValue": "2.4.3"
     },
     {
         "name": "CP_S3_FUSE_TYPE",

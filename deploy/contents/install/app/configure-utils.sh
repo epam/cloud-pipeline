@@ -339,7 +339,7 @@ function api_get_cluster_instance_details {
     local region_id="$2"
 
     local get_cluster_instance_details_json=$(call_api "/cluster/instance/loadAll?regionId=$region_id" "$CP_API_JWT_ADMIN")
-    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r ".payload[] | select(.name == \"$instance_type\")")"
+    local get_cluster_instance_details_result="$(echo "$get_cluster_instance_details_json" | jq -r "select(.payload != null) | .payload[] | select(.name == \"$instance_type\")")"
     if [ "$get_cluster_instance_details_result" ] && [ "$get_cluster_instance_details_result" != "null" ]; then
         echo "$get_cluster_instance_details_result"
         return 0
@@ -863,9 +863,13 @@ function api_setup_base_preferences {
     ## Launch
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
     api_set_preference "launch.cmd.template" "${CP_PREF_LAUNCH_CMD_TEMPLATE}" "true"
+    api_set_preference "launch.run.visibility" "${CP_PREF_LAUNCH_RUN_VISIBILITY:-INHERIT}" "true"
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
+    api_set_preference "security.tools.policy.max.medium.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_MEDIUM_VULNERABILITIES:-300}" "true"
+    api_set_preference "security.tools.policy.max.high.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_HIGH_VULNERABILITIES:-100}" "true"
+    api_set_preference "security.tools.policy.max.critical.vulnerabilities" "${CP_PREF_SECURITY_TOOLS_POLICY_MAX_CRITICAL_VULNERABILITIES:-50}" "true"
 
     ## UI templates
     api_set_preference "ui.pipeline.deployment.name" "${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-"Cloud Pipeline"}" "true"
@@ -940,7 +944,7 @@ function api_register_search {
     api_set_preference "search.elastic.denied.users.field" "denied_users" "false"
     api_set_preference "search.elastic.denied.groups.field" "denied_groups" "false"
     api_set_preference "search.elastic.type.field" "doc_type" "false"
-    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "false"
+    api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
@@ -956,6 +960,8 @@ read -r -d '' search_elastic_index_type_prefix <<-EOF
     "S3_STORAGE": "cp-s3-storage",
     "AZ_BLOB_STORAGE": "cp-az-storage",
     "NFS_STORAGE": "cp-nfs-storage",
+    "GS_FILE": "cp-gs-file*",
+    "GS_STORAGE": "cp-gs-storage",
     "TOOL": "cp-tool",
     "TOOL_GROUP": "cp-tool-group",
     "DOCKER_REGISTRY": "cp-docker-registry",
@@ -990,6 +996,37 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+}
+
+function api_register_drive_mapping {
+    local drive_mapping_host="${CP_DAV_EXTERNAL_HOST:-$CP_EDGE_EXTERNAL_HOST}"
+    if [ -z "$drive_mapping_host" ]; then
+        drive_mapping_host="$CP_DAV_INTERNAL_HOST"
+        print_warn "Cannot determine external HOST for the drive mapping, internal address will be used ($drive_mapping_host)"
+    fi
+
+    local drive_mapping_port="${CP_DAV_EXTERNAL_PORT:-$CP_EDGE_EXTERNAL_PORT}"
+    if [ -z "$drive_mapping_port" ]; then
+        drive_mapping_port="$CP_DAV_INTERNAL_PORT"
+        print_warn "Cannot determine external PORT for the drive mapping, internal port will be used ($drive_mapping_port)"
+    fi
+
+    local drive_mapping_schema="${CP_DAV_EXTERNAL_SCHEMA:-$EDGE_EXTERNAL_SCHEMA}"
+    if [ -z "$drive_mapping_schema" ]; then
+        drive_mapping_schema="https"
+        print_warn "Cannot determine external HTTP schema for the drive mapping, $drive_mapping_schema will be used)"
+    fi
+
+    export CP_DAV_EXTERNAL_MAPPING_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_URL_PATH}/
+    export CP_DAV_EXTERNAL_AUTH_URL=${drive_mapping_schema}://${drive_mapping_host}:${drive_mapping_port}/${CP_DAV_AUTH_URL_PATH}/
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_DAV_EXTERNAL_MAPPING_URL" \
+                            "$CP_DAV_EXTERNAL_MAPPING_URL"
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_DAV_EXTERNAL_AUTH_URL" \
+                            "$CP_DAV_EXTERNAL_AUTH_URL"
+
+    api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 }
 
 function api_register_share_service {
@@ -1072,7 +1109,7 @@ function api_register_system_folder {
 
 function api_register_system_storage {
     if [ -z "$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME" ]; then
-        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
+        print_err "\"storage.system.storage.name\" preference is NOT set. Issues attachments and FSBrowser will NOT work correctly. Specify it using \"-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\" option"
         return 1
     fi
 
@@ -1122,7 +1159,11 @@ EOF
         echo "========"
     else
         print_ok "System storage $CP_PREF_STORAGE_SYSTEM_STORAGE_NAME is registered"
-        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "false"
+        api_set_preference "storage.system.storage.name" "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}" "true"
+        api_set_preference "storage.fsbrowser.enabled" "${CP_PREF_STORAGE_FSBROWSER_ENABLED:-"true"}" "true"
+        api_set_preference "storage.fsbrowser.port" "${CP_PREF_STORAGE_FSBROWSER_PORT:-8091}" "true"
+        api_set_preference "storage.fsbrowser.wd" "${CP_PREF_STORAGE_FSBROWSER_WD:-"/"}" "true"
+        api_set_preference "storage.fsbrowser.transfer" "${CP_PREF_STORAGE_FSBROWSER_TRANSFER:-$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME/fsbrowser}" "true"
     fi
     return $call_api_register_system_storage_result
 }

@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import org.openqa.selenium.By;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
@@ -61,8 +62,6 @@ import static java.util.Objects.isNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Configuration implements AccessObject<Configuration> {
-
-    public static final int FIRST_PARAMETER_INDEX = 1;
 
     private final Map<Primitive, SelenideElement> elements;
     private final Profile profile = new Profile(this);
@@ -281,6 +280,26 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration addToParameter(final String name, final String value) {
         final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);
         getParameterByIndex(parameter.index()).addToValue(value);
+        return this;
+    }
+
+    public Configuration deleteParameter(final String name) {
+        final ParameterFieldAO parameter = ParameterFieldAO.parameterByName(name);
+        getParameterByIndex(parameter.index()).deleteParameter();
+        return this;
+    }
+
+    public Configuration resetChanges() {
+        new NavigationMenuAO().library();
+        sleep(2, SECONDS);
+        $(button("Yes")).shouldBe(visible).click();
+        return this;
+    }
+
+    public Configuration saveIfNeeded() {
+        if (get(SAVE).is(enabled)) {
+            click(SAVE);
+        }
         return this;
     }
 

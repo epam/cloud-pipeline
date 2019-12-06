@@ -50,8 +50,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -164,11 +162,25 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
+        final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
+        final boolean projectNameUpdated = !newProjectName.equals(currentProjectName);
+        if (projectNameUpdated) {
+            final String newRepository =
+                GitUtils.replaceGitProjectNameInUrl(dbPipeline.getRepository(), newProjectName);
+            final String newRepositorySsh =
+                GitUtils.replaceGitProjectNameInUrl(dbPipeline.getRepositorySsh(), newProjectName);
+            dbPipeline.setRepository(newRepository);
+            dbPipeline.setRepositorySsh(newRepositorySsh);
+        }
         dbPipeline.setName(pipelineVOName);
         dbPipeline.setDescription(pipelineVO.getDescription());
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         pipelineDao.updatePipeline(dbPipeline);
+        if (projectNameUpdated) {
+            gitManager.updateRepositoryName(currentProjectName, newProjectName);
+        }
         return dbPipeline;
     }
 
@@ -218,8 +230,7 @@ public class PipelineManager implements SecuredEntityManager {
         if (!keepRepository) {
             try {
                 gitManager.deletePipelineRepository(pipeline);
-            } catch (GitClientException | UnsupportedEncodingException |
-                    URISyntaxException | HttpClientErrorException e) {
+            } catch (GitClientException | HttpClientErrorException e) {
                 LOGGER.error(e.getMessage(), e);
             }
         }

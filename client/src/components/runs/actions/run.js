@@ -28,6 +28,7 @@ import {
   Select,
   Tooltip
 } from 'antd';
+import EstimatedDiskSizeWarning from './estimated-disk-size-warning';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
@@ -37,6 +38,13 @@ import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import awsRegions from '../../../models/cloudRegions/CloudRegions';
+import {
+  getInputPaths,
+  getOutputPaths,
+  performAsyncCheck,
+  PermissionErrors,
+  PermissionErrorsTitle
+} from './execution-allowed-check';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -155,6 +163,15 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
       await launchFn();
     } else {
       const {dataStorageAvailable} = stores;
+      const inputs = getInputPaths(null, payload.params);
+      const outputs = getOutputPaths(null, payload.params);
+      const {errors: permissionErrors} = await performAsyncCheck({
+        ...stores,
+        dataStorages: dataStorageAvailable,
+        inputs,
+        outputs,
+        dockerImage: payload.dockerImage
+      });
       let dataStorages;
       if (dataStorageAvailable) {
         await dataStorageAvailable.fetchIfNeededOrWait();
@@ -186,6 +203,8 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
             cloudRegions={(stores.awsRegions.value || []).map(p => p)}
             availableInstanceTypes={availableInstanceTypes}
             dataStorages={dataStorages}
+            parameters={payload.params}
+            permissionErrors={permissionErrors}
             limitMounts={
               payload.params && payload.params[LIMIT_MOUNTS_PARAMETER]
                 ? payload.params[LIMIT_MOUNTS_PARAMETER].value
@@ -200,6 +219,7 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
           if (component) {
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
+            payload.hddSize = component.state.hddSize;
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
               if (limitMounts) {
@@ -274,7 +294,12 @@ export class RunConfirmation extends React.Component {
     onChangeInstanceType: PropTypes.func,
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
-    onChangeLimitMounts: PropTypes.func
+    onChangeLimitMounts: PropTypes.func,
+    onChangeHddSize: PropTypes.func,
+    nodeCount: PropTypes.number,
+    hddSize: PropTypes.number,
+    parameters: PropTypes.object,
+    permissionErrors: PropTypes.array,
   };
 
   static defaultProps = {
@@ -492,7 +517,7 @@ export class RunConfirmation extends React.Component {
                   <b>You are going to launch a job using a {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  <b>While this is much cheaper, this type of instance may be OCCASINALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
+                  <b>While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
                   Consider {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance for batch jobs and short living runs.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
@@ -661,6 +686,28 @@ export class RunConfirmation extends React.Component {
             />
           )
         }
+        {
+          this.props.permissionErrors && this.props.permissionErrors.length > 0
+            ? (
+              <Alert
+                type="error"
+                style={{margin: 2}}
+                message={
+                  <div>
+                    <PermissionErrorsTitle />
+                    <PermissionErrors errors={this.props.permissionErrors} />
+                  </div>
+                }
+              />
+            )
+            : undefined
+        }
+        <EstimatedDiskSizeWarning
+          nodeCount={this.props.nodeCount}
+          parameters={this.props.parameters}
+          hddSize={this.props.hddSize}
+          onDiskSizeChanged={this.props.onChangeHddSize}
+        />
       </div>
     );
   }
@@ -697,7 +744,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     cloudRegions: PropTypes.array,
     dataStorages: PropTypes.array,
     limitMounts: PropTypes.string,
-    onChangeLimitMounts: PropTypes.func
+    onChangeHddSize: PropTypes.func,
+    onChangeLimitMounts: PropTypes.func,
+    parameters: PropTypes.object,
+    permissionErrors: PropTypes.array,
   };
 
   static defaultProps = {
@@ -708,6 +758,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
 
   state = {
     isSpot: false,
+    hddSize: 0,
     instanceType: null,
     limitMounts: null
   };
@@ -718,7 +769,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }, async () => {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });
@@ -731,7 +782,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }, async () => {
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });
@@ -743,6 +794,19 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       limitMounts
     }, async () => {
       this.props.onChangeLimitMounts && this.props.onChangeLimitMounts(limitMounts);
+    });
+  };
+
+  onChangeHddSize = (hddSize) => {
+    this.setState({
+      hddSize
+    }, async () => {
+      await this._estimatedPriceType.send({
+        instanceType: this.state.instanceType,
+        instanceDisk: this.state.hddSize,
+        spot: this.state.isSpot,
+        regionId: this.props.cloudRegionId
+      });
     });
   };
 
@@ -764,7 +828,13 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             instanceTypes={this.props.availableInstanceTypes}
             dataStorages={this.props.dataStorages}
             limitMounts={this.props.limitMounts}
-            onChangeLimitMounts={this.onChangeLimitMounts} />
+            onChangeLimitMounts={this.onChangeLimitMounts}
+            onChangeHddSize={this.onChangeHddSize}
+            nodeCount={this.props.nodeCount}
+            hddSize={this.props.hddSize}
+            parameters={this.props.parameters}
+            permissionErrors={this.props.permissionErrors}
+          />
         </Row>
         {
           this._estimatedPriceType &&
@@ -790,6 +860,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     this.setState({
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
+      hddSize: this.props.hddSize,
       limitMounts: this.props.limitMounts
     }, async () => {
       this._estimatedPriceType = new PipelineRunEstimatedPrice(
@@ -799,7 +870,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       );
       await this._estimatedPriceType.send({
         instanceType: this.state.instanceType,
-        instanceDisk: this.props.hddSize,
+        instanceDisk: this.state.hddSize,
         spot: this.state.isSpot,
         regionId: this.props.cloudRegionId
       });

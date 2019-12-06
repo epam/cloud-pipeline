@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import click
-import os
-from future.utils import iteritems
 import datetime
+import os
+import platform
 import sys
-import prettytable
 
-from src.model.data_storage_wrapper import DataStorageWrapper
-from src.model.data_storage_wrapper_type import WrapperType
+import click
+import prettytable
+from future.utils import iteritems
+
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
+from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
+from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.patterns import PatternMatcher
+from src.utilities.storage.mount import Mount
+from src.utilities.storage.umount import Umount
 
 ALL_ERRORS = Exception
 
@@ -61,6 +65,7 @@ class DataStorageOperations(object):
             if not force and not destination_wrapper.is_empty(relative=relative):
                 click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
                 sys.exit(1)
+
             # append slashes to path to correctly determine file/folder type
             if not source_wrapper.is_file():
                 if not source_wrapper.is_local() and not source_wrapper.path.endswith('/'):
@@ -69,16 +74,22 @@ class DataStorageOperations(object):
                     destination_wrapper.path = destination_wrapper.path + os.path.sep
                 if not destination_wrapper.is_local() and not destination_wrapper.path.endswith('/'):
                     destination_wrapper.path = destination_wrapper.path + '/'
+
             # copying a file to a remote destination, we need to set folder/file flag correctly
             if source_wrapper.is_file() and not destination_wrapper.is_local() and not destination.endswith('/'):
                 destination_wrapper.is_file_flag = True
+
             command = 'mv' if clean else 'cp'
+            permission_to_check = os.R_OK if command == 'cp' else os.W_OK
             manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
             items = files_to_copy if file_list else source_wrapper.get_items()
             for item in items:
                 full_path = item[1]
                 relative_path = item[2]
                 size = item[3]
+                # check that we have corresponding permission for the file before take action
+                if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+                    continue
                 if not include and not exclude:
                     if source_wrapper.is_file() and not source_wrapper.path == full_path:
                         continue
@@ -208,18 +219,23 @@ class DataStorageOperations(object):
             sys.exit(1)
 
     @classmethod
-    def restore(cls, path, version):
+    def restore(cls, path, version, recursive, exclude, include):
         try:
-            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path)
+            source_wrapper = DataStorageWrapper.get_cloud_wrapper(path, True)
             if source_wrapper is None:
                 click.echo('Storage path "{}" was not found'.format(path), err=True)
+                sys.exit(1)
+            if (recursive or exclude or include) and not isinstance(source_wrapper, S3BucketWrapper):
+                click.echo('Folder restore allowed for S3 provider only', err=True)
                 sys.exit(1)
             if not source_wrapper.bucket.policy.versioning_enabled:
                 click.echo('Versioning is not enabled for storage "{}"'.format(source_wrapper.bucket.name), err=True)
                 sys.exit(1)
-
+            if version and recursive:
+                click.echo('"version" argument should\'t be combined with "recursive" option', err=True)
+                sys.exit(1)
             manager = source_wrapper.get_restore_manager()
-            manager.restore_version(version)
+            manager.restore_version(version, exclude, include, recursive=recursive)
         except ALL_ERRORS as error:
             click.echo('Error: %s' % str(error), err=True)
             sys.exit(1)
@@ -432,3 +448,37 @@ class DataStorageOperations(object):
                 path = splitted[0]
                 size = long(float(splitted[1]))
                 yield ('File', os.path.join(source_path, path), path, size)
+
+    @classmethod
+    def mount_storage(cls, mountpoint, file=False, bucket=None, options=None, quiet=False):
+        try:
+            if not file and not bucket:
+                click.echo('Either file system mode should be enabled (-f/--file) '
+                           'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
+                sys.exit(1)
+            cls.check_platform("mount")
+            Mount().mount_storages(mountpoint, file, bucket, options, quiet=quiet)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)
+
+    @classmethod
+    def umount_storage(cls, mountpoint, quiet=False):
+        try:
+            cls.check_platform("umount")
+            if not os.path.isdir(mountpoint):
+                click.echo('Mountpoint "%s" is not a folder.' % mountpoint, err=True)
+                sys.exit(1)
+            if not os.path.ismount(mountpoint):
+                click.echo('Directory "%s" is not a mountpoint.' % mountpoint, err=True)
+                sys.exit(1)
+            Umount().umount_storages(mountpoint, quiet=quiet)
+        except ALL_ERRORS as error:
+            click.echo('Error: %s' % str(error), err=True)
+            sys.exit(1)
+
+    @classmethod
+    def check_platform(self, command):
+        if platform.system() == 'Windows':
+            click.echo('%s command is not supported for Windows OS.' % command, err=True)
+            sys.exit(1)

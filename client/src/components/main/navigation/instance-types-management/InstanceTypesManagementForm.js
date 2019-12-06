@@ -36,10 +36,11 @@ import LoadingView from '../../../special/LoadingView';
 const valueNames = {
   allowedInstanceTypes: 'allowedInstanceTypes',
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
-  allowedPriceTypes: 'allowedPriceTypes'
+  allowedPriceTypes: 'allowedPriceTypes',
+  jobsVisibility: 'jobsVisibility'
 };
 
-@inject((stores, props) => {
+@inject(({preferences}, props) => {
   const loadPreference = (field) => {
     if (props.resourceId && props.level) {
       return {
@@ -51,13 +52,15 @@ const valueNames = {
   return {
     ...loadPreference(valueNames.allowedInstanceTypes),
     ...loadPreference(valueNames.allowedToolInstanceTypes),
-    ...loadPreference(valueNames.allowedPriceTypes)
+    ...loadPreference(valueNames.allowedPriceTypes),
+    ...loadPreference(valueNames.jobsVisibility),
+    preferences
   };
 })
 @observer
 export default class InstanceTypesManagementForm extends React.Component {
-
   static propTypes = {
+    disabled: PropTypes.bool,
     level: PropTypes.oneOf(['USER', 'TOOL', 'ROLE']),
     resourceId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
   };
@@ -70,7 +73,14 @@ export default class InstanceTypesManagementForm extends React.Component {
   get pending () {
     return this.valuePending(valueNames.allowedPriceTypes) ||
       this.valuePending(valueNames.allowedInstanceTypes) ||
-      this.valuePending(valueNames.allowedToolInstanceTypes);
+      this.valuePending(valueNames.allowedToolInstanceTypes) ||
+      this.valuePending(valueNames.jobsVisibility);
+  }
+
+  @computed
+  get defaultJobsVisibilityValue () {
+    const {preferences} = this.props;
+    return preferences.getPreferenceValue(names.jobsVisibility);
   }
 
   valuePending = (field) => {
@@ -86,7 +96,8 @@ export default class InstanceTypesManagementForm extends React.Component {
   getModified () {
     return this.valueModified(valueNames.allowedInstanceTypes) ||
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
-      this.valueModified(valueNames.allowedPriceTypes);
+      this.valueModified(valueNames.allowedPriceTypes) ||
+      this.valueModified(valueNames.jobsVisibility);
   }
 
   valueModified = (field) => {
@@ -124,6 +135,10 @@ export default class InstanceTypesManagementForm extends React.Component {
     return (this.getValue(valueNames.allowedPriceTypes) || '').split(',').filter(v => !!v);
   };
 
+  getJobsVisibilityValue = () => {
+    return (this.getValue(valueNames.jobsVisibility) || this.defaultJobsVisibilityValue || '');
+  };
+
   onPriceTypeChanged = (e) => {
     const value = e.join(',');
     if (value !== this.state[valueNames.allowedPriceTypes]) {
@@ -133,8 +148,17 @@ export default class InstanceTypesManagementForm extends React.Component {
     }
   };
 
-  valueInputDecorator = (field) =>
+  onJobsVisibilityChanged = (jobsVisibility) => {
+    if (jobsVisibility !== this.state[valueNames.jobsVisibility]) {
+      this.setState({
+        [valueNames.jobsVisibility]: jobsVisibility
+      });
+    }
+  };
+
+  valueInputDecorator = (field, disabled) =>
     <Input
+      disabled={disabled}
       style={{flex: 1}}
       value={this.getValue(field)}
       onChange={this.onValueChanged(field)} />;
@@ -185,6 +209,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     results.push(await this.applyValue(valueNames.allowedInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedToolInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
+    results.push(await this.applyValue(valueNames.jobsVisibility));
     const errors = results.filter(r => !!r);
     if (errors.length) {
       hide();
@@ -193,10 +218,12 @@ export default class InstanceTypesManagementForm extends React.Component {
       await this.reloadValue(valueNames.allowedInstanceTypes);
       await this.reloadValue(valueNames.allowedToolInstanceTypes);
       await this.reloadValue(valueNames.allowedPriceTypes);
+      await this.reloadValue(valueNames.jobsVisibility);
       this.setState({
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
-        [valueNames.allowedPriceTypes]: undefined
+        [valueNames.allowedPriceTypes]: undefined,
+        [valueNames.jobsVisibility]: undefined
       }, hide);
     }
   };
@@ -208,6 +235,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     if (this.pending || this.state.operationInProgress) {
       return <LoadingView />;
     }
+    const {disabled} = this.props;
     return (
       <Row type="flex" style={{flex: 1, overflow: 'auto'}}>
         <div style={{padding: 2, width: '100%'}}>
@@ -220,14 +248,14 @@ export default class InstanceTypesManagementForm extends React.Component {
           {
             this.props.level !== 'TOOL' &&
             <Row type="flex">
-              {this.valueInputDecorator(valueNames.allowedInstanceTypes)}
+              {this.valueInputDecorator(valueNames.allowedInstanceTypes, disabled)}
             </Row>
           }
           <Row type="flex" style={{marginTop: 5}}>
             <b>Allowed tool instance types mask</b>
           </Row>
           <Row type="flex">
-            {this.valueInputDecorator(valueNames.allowedToolInstanceTypes)}
+            {this.valueInputDecorator(valueNames.allowedToolInstanceTypes, disabled)}
           </Row>
           <Row type="flex" style={{marginTop: 5}}>
             <b>Allowed price types</b>
@@ -237,7 +265,9 @@ export default class InstanceTypesManagementForm extends React.Component {
               mode="multiple"
               style={{flex: 1}}
               value={this.getPriceTypesValue()}
-              onChange={this.onPriceTypeChanged}>
+              onChange={this.onPriceTypeChanged}
+              disabled={disabled}
+            >
               <Select.Option
                 key="on_demand"
                 value="on_demand">
@@ -250,11 +280,29 @@ export default class InstanceTypesManagementForm extends React.Component {
               </Select.Option>
             </Select>
           </Row>
+          <Row type="flex" style={{marginTop: 5}}>
+            <b>Jobs visibility</b>
+          </Row>
+          <Row type="flex">
+            <Select
+              style={{flex: 1}}
+              value={this.getJobsVisibilityValue()}
+              onChange={this.onJobsVisibilityChanged}
+              disabled={disabled}
+            >
+              <Select.Option key="INHERIT" value="INHERIT">
+                Inherit
+              </Select.Option>
+              <Select.Option key="OWNER" value="OWNER">
+                Only owner
+              </Select.Option>
+            </Select>
+          </Row>
           <Row type="flex" justify="end" style={{marginTop: 10}}>
             <Button
               type="primary"
               onClick={this.operationWrapper(this.onApplyClicked)}
-              disabled={!this.getModified() || this.state.operationInProgress}>
+              disabled={!this.getModified() || this.state.operationInProgress || disabled}>
               APPLY
             </Button>
           </Row>

@@ -19,6 +19,8 @@ package com.epam.pipeline.manager.datastorage;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
@@ -27,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -74,6 +77,10 @@ public final class StorageProviderManager {
         return getStorageProvider(dataStorage).createStorage(dataStorage);
     }
 
+    public ActionStatus postCreationProcessing(final AbstractDataStorage dataStorage) {
+        return getStorageProvider(dataStorage).postCreationProcessing(dataStorage);
+    }
+
     public void deleteBucket(AbstractDataStorage dataStorage) throws DataStorageException {
         LOGGER.debug("Start the process of deleting of the {} bucket: {}",
                 dataStorage.getType(), dataStorage.getPath());
@@ -95,8 +102,9 @@ public final class StorageProviderManager {
     }
 
     public DataStorageDownloadFileUrl generateDownloadURL(AbstractDataStorage dataStorage,
-            String path, String version) {
-        return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version);
+                                                          String path, String version,
+                                                          ContentDisposition contentDisposition) {
+        return getStorageProvider(dataStorage).generateDownloadURL(dataStorage, path, version, contentDisposition);
     }
 
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,
@@ -168,5 +176,10 @@ public final class StorageProviderManager {
 
     public String buildFullStoragePath(AbstractDataStorage dataStorage, String name) {
         return getStorageProvider(dataStorage).buildFullStoragePath(dataStorage, name);
+    }
+
+    public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 }

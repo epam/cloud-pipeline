@@ -20,7 +20,8 @@ import RemotePost from '../basic/RemotePost';
 export const names = {
   allowedInstanceTypes: 'cluster.allowed.instance.types',
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
-  allowedPriceTypes: 'cluster.allowed.price.types'
+  allowedPriceTypes: 'cluster.allowed.price.types',
+  jobsVisibility: 'launch.run.visibility'
 };
 
 export class ContextualPreferenceLoad extends Remote {

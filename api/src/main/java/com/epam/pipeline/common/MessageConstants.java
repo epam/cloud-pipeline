@@ -138,17 +138,26 @@ public final class MessageConstants {
     public static final String ERROR_GET_NODE_STAT = "error.get.node.stat";
     public static final String ERROR_CMD_TEMPLATE_NOT_RESOLVED = "error.cmd.template.not.resolved";
     public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
+    public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
+    public static final String INFO_INSTANCE_STARTED = "info.instance.started";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";
     public static final String DEBUG_MONITOR_CHECK_FINISHED = "debug.monitor.check.finished";
     public static final String INFO_MONITOR_KILL_TASK = "info.monitor.kill.task";
-    public static final String ERROR_KILLER_THREAD_FAILED = "error.killer.thread.failed";
+    public static final String ERROR_POD_RELEASE_TASK = "error.pod.release.task";
     public static final String ERROR_RESTART_STATE_REASONS_NOT_FOUND = "error.instance.restart.state.reasons.not.found";
 
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
+    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
+    public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
+    public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
+    public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
+    public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
+    public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
+
 
     // Kubernetes messages
     public static final String ERROR_NODE_NOT_FOUND = "error.node.not.found";
@@ -186,6 +195,11 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_FILE_TAG_NOT_EXIST = "error.datastorage.file.tag.not.exist";
     public static final String ERROR_DATASTORAGE_PATH_NOT_FOUND = "error.datastorage.path.not.found";
     public static final String ERROR_DATASTORAGE_PATH_ALREADY_EXISTS = "error.datastorage.path.already.exists";
+    public static final String ERROR_DATASTORAGE_FOLDER_ALREADY_EXISTS = "error.datastorage.folder.already.exists";
+    public static final String ERROR_DATASTORAGE_PATH_INVALID_SCHEMA = "error.datastorage.path.invalid.schema";
+    public static final String ERROR_DATASTORAGE_PATH_PROCCESSING = "error.datastorage.path.processing.error";
+    public static final String ERROR_AZURE_STORAGE_CREDENTIAL_INVALID = "error.azure.storage.credentials.invalid";
+
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -248,12 +262,15 @@ public final class MessageConstants {
     public static final String ERROR_ROLE_NAME_EXISTS = "role.name.exists";
     public static final String USER_GROUP_IS_REQUIRED = "user.group.is.required";
     public static final String ERROR_MUTABLE_ACL_RETURN = "error.mutable.acl.return";
+    public static final String ERROR_NO_GROUP_WAS_FOUND = "error.no.group.was.found";
+    public static final String ERROR_GROUP_STATUS_EXISTS = "group.status.exists";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
     public static final String UNSUPPORTED_SECURITY_CLASS = "unsupported.security.class";
     public static final String ERROR_PERMISSION_IS_NOT_GRANTED = "error.permission.is.not.granted";
     public static final String ERROR_ENTITY_IS_LOCKED = "error.entity.is.locked";
+    public static final String ERROR_USER_NOT_AUTHORIZED = "error.user.not.authorized";
 
     // Metadata
     public static final String ERROR_METADATA_NOT_FOUND = "error.metadata.not.found";
@@ -289,6 +306,7 @@ public final class MessageConstants {
 
     //System notifications
     public static final String ERROR_NOTIFICATION_NOT_FOUND = "error.notification.not.found";
+    public static final String ERROR_NOTIFICATION_ID_REQUIRED = "error.notification.id.required";
     public static final String ERROR_NOTIFICATION_TITLE_REQUIRED = "error.notification.title.required";
     public static final String INFO_NOTIFICATION_SUBMITTED = "info.notification.submitted";
 
@@ -421,6 +439,11 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY =
             "error.datastorage.azure.invalid.account.key";
     public static final String ERROR_DATASTORAGE_AZURE_CREATE_FILE = "error.datastorage.azure.create.file";
+    public static final String ERROR_AZURE_RESOURCE_GROUP_NOT_FOUND = "error.azure.resource.group.not.found";
+    public static final String ERROR_AZURE_AUTH_FILE_IS_INVALID = "error.azure.auth.file.invalid";
+    public static final String ERROR_AZURE_IP_RANGE_IS_INVALID = "error.azure.policy.ip.range.invalid";
+    public static final String ERROR_AZURE_IP_IS_INVALID = "error.azure.ip.policy.invalid";
+
 
     //GCP
     public static final String ERROR_GCP_PROJECT_REQUIRED = "error.gcp.project.required";

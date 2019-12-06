@@ -5,7 +5,7 @@
         "doc_type": { "type": "keyword", "store": true },
         "id": {"type": "keyword", "store": true},
         "parentId": {"type": "keyword", "store": true, "index": false },
-        "name": {"type": "keyword", "store": true},
+        "name": {"type": "text", "store": true},
         "path": { "type": "text", "analyzer": "file_path_analyzer"},
         "createdDate": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
         "description": { "type": "text", "store": true },
@@ -28,6 +28,10 @@
     }
   },
   "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
+    },
     "analysis": {
       "analyzer": {
         "file_path_analyzer": { "tokenizer": "file_path_tokenizer" }

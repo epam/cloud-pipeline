@@ -39,6 +39,7 @@ check_last_exit_code $? "[ERROR] There are some troubles while clean up pipeline
 
 pipe_exec "docker commit --change=\'ENV $ENVS_TO_UNSET API_TOKEN= PARENT= RUN_DATE= RUN_TIME= AWS_ACCESS_KEY_ID= AWS_SECRET_ACCESS_KEY= AWS_DEFAULT_REGION= \
            CLUSTER_NAME= BUCKETS= MOUNT_OPTIONS= MOUNT_POINTS= OWNER= SSH_PASS= GIT_USER= GIT_TOKEN= cluster_role= \
+           RESUMED_RUN= SINGLE_RUN= \
            node_count= parent_id= \' ${tmp_container} ${FULL_NEW_IMAGE_NAME} > /dev/null" "$TASK_NAME"
 
 check_last_exit_code $? "[ERROR] Error occurred while committing container" \

@@ -16,32 +16,30 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
-import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
-import com.epam.pipeline.manager.cluster.performancemonitoring.CAdvisorMonitoringManager;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ClusterApiService {
 
-    @Autowired
-    private NodesManager nodesManager;
-
-    @Autowired
-    private CAdvisorMonitoringManager cAdvisorMonitorManager;
-
-    @Autowired
-    private InstanceOfferManager instanceOfferManager;
+    private final NodesManager nodesManager;
+    private final UsageMonitoringManager usageMonitoringManager;
+    private final InstanceOfferManager instanceOfferManager;
 
     @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(filterObject, 'READ')")
     public List<NodeInstance> getNodes() {
@@ -72,8 +70,8 @@ public class ClusterApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
-    public List<MonitoringStats> getStatsForNode(String nodeName) {
-        return cAdvisorMonitorManager.getStatsForNode(nodeName);
+    public List<MonitoringStats> getStatsForNode(String nodeName, final LocalDateTime from, final LocalDateTime to) {
+        return usageMonitoringManager.getStatsForNode(nodeName, from, to);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
@@ -87,5 +85,9 @@ public class ClusterApiService {
     public AllowedInstanceAndPriceTypes getAllowedInstanceAndPriceTypes(final Long toolId, final Long regionId,
                                                                         final Boolean spot) {
         return instanceOfferManager.getAllowedInstanceAndPriceTypes(toolId, regionId, spot);
+    }
+
+    public List<MasterNode> getMasterNodes() {
+        return nodesManager.getMasterNodes();
     }
 }

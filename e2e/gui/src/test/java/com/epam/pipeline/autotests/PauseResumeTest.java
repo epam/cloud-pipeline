@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.getParameterValueLink;
 import static com.epam.pipeline.autotests.ao.LogAO.InstanceParameters.parameterWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
@@ -50,6 +51,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
 import static com.epam.pipeline.autotests.utils.Conditions.textMatches;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -286,6 +288,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .setPriceType(priceType)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .show(getLastRunId())
+                .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
         Utils.restartBrowser(C.ROOT_ADDRESS);
@@ -314,6 +317,8 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
 
     private void checkNodePage(final Supplier<?> nodePage, final String ipHyperlink) {
         open(ipHyperlink);
+        sleep(5, SECONDS);
+        refresh();
         nodePage.get();
     }
 

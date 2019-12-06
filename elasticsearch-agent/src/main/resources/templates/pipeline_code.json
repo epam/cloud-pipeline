@@ -8,8 +8,8 @@
         "name": { "type": "text", "store": true },
         "description": { "type": "text", "store": true },
         "pipelineId": { "type": "keyword",  "copy_to": "parentId"},
-        "pipelineName": { "type": "keyword"},
-        "pipelineVersion": { "type": "keyword",  "copy_to": "description"},
+        "pipelineName": { "type": "text"},
+        "pipelineVersion": { "type": "text",  "copy_to": "description"},
         "path": { "type": "text", "analyzer": "file_path_analyzer", "copy_to": ["name", "id"]},
         "content": { "type": "text", "store": true },
         "allowed_users": { "type": "keyword" },
@@ -20,6 +20,10 @@
     }
   },
   "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
+    },
     "analysis": {
       "analyzer": {
         "file_path_analyzer": { "tokenizer": "file_path_tokenizer" }

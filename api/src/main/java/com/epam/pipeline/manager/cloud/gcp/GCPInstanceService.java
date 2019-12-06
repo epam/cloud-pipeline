@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -26,6 +27,7 @@ import com.epam.pipeline.manager.cloud.CloudInstanceService;
 import com.epam.pipeline.manager.cloud.CommonCloudInstanceService;
 import com.epam.pipeline.manager.cloud.commands.ClusterCommandService;
 import com.epam.pipeline.manager.execution.SystemParams;
+import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.google.api.services.compute.model.Instance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +42,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -55,11 +58,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
+    private final ParallelExecutorService executorService;
     private final CmdExecutor cmdExecutor = new CmdExecutor();
 
     public GCPInstanceService(final ClusterCommandService commandService,
                               final CommonCloudInstanceService instanceService,
                               final GCPVMService vmService,
+                              final ParallelExecutorService executorService,
                               @Value("${cluster.gcp.nodeup.script}") final String nodeUpScript,
                               @Value("${cluster.gcp.nodedown.script}") final String nodeDownScript,
                               @Value("${cluster.gcp.reassign.script}") final String nodeReassignScript,
@@ -68,6 +73,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         this.instanceService = instanceService;
         this.vmService = vmService;
         this.nodeUpScript = nodeUpScript;
+        this.executorService = executorService;
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
@@ -113,12 +119,13 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
         final String command = commandService.buildTerminateNodeCommand(nodeTerminateScript, internalIp,
                 nodeName, getProviderName());
         final Map<String, String> envVars = buildScriptGCPEnvVars(region);
-        instanceService.runTerminateNodeScript(command, cmdExecutor, envVars);
+        CompletableFuture.runAsync(() -> instanceService.runTerminateNodeScript(command, cmdExecutor, envVars),
+                executorService.getExecutorService());
     }
 
     @Override
-    public void startInstance(final GCPRegion region, final String instanceId) {
-        vmService.startInstance(region, instanceId);
+    public CloudInstanceOperationResult startInstance(final GCPRegion region, final String instanceId) {
+        return vmService.startInstance(region, instanceId);
     }
 
     @Override

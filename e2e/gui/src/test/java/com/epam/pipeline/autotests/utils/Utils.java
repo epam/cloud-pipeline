@@ -117,7 +117,7 @@ public class Utils {
         action.perform();
     }
 
-    public static void sendKeysWithSlashes(String text) {
+    public static void sendKeysWithSlashes(final String text) {
         //////////////////////////////////////////////////////////////////////////
         // ! WARNING: there is robot to fix forward slashed issue
         // https://sqa.stackexchange.com/questions/25038/selenium-send-keys-on-chromium-confused-by-forward-slashes
@@ -137,6 +137,23 @@ public class Utils {
             actions().sendKeys(s).perform();
         }
         //////////////////////////////////////////////////////////////////////////
+    }
+
+    public static void sendKeysByChars(final SelenideElement field, final String text) {
+        final char[] charArray = text.toCharArray();
+        int charNumber = 0;
+        for (final char character : charArray) {
+            while (true) {
+                field.sendKeys(String.valueOf(character));
+                sleep(1, SECONDS);
+                final String enteredText = field.getAttribute("value");
+                sleep(1, SECONDS);
+                if (enteredText.charAt(charNumber) == character) {
+                    break;
+                }
+            }
+            charNumber++;
+        }
     }
 
     public static String getPipelineRunId(final String pipelineName) {

@@ -1,3 +1,7 @@
+span.expandable {
+    cursor:pointer;
+}
+
 div.wy-nav-content {
     padding-top: 1.618em;
     padding-right: 3.236em;

@@ -32,7 +32,7 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -40,7 +40,6 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineWithPermissions;
 import com.epam.pipeline.entity.pipeline.RepositoryTool;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -60,11 +59,10 @@ import com.epam.pipeline.manager.event.EntityEventServiceManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
-import com.epam.pipeline.manager.pipeline.PipelineApiService;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
@@ -110,7 +108,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -120,6 +118,13 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * {@code GrantPermissionManager} provides methods for ACL permissions handling
+ */
+//TODO: 24-10-2019
+// This class shall be split into smaller parts,
+// - all operations regarding permission granting shall be moved to GrantPermissionHandler.class;
+// - entity specific permission checks shall be extracted into separate classes, like RunPermissionManager.class
 @Service
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class GrantPermissionManager {
@@ -133,15 +138,11 @@ public class GrantPermissionManager {
 
     @Autowired private JdbcMutableAclServiceImpl aclService;
 
-    @Autowired private PipelineApiService pipelineApiService;
-
     @Autowired private ToolManager toolManager;
 
     @Autowired private ToolGroupManager toolGroupManager;
 
     @Autowired private DockerRegistryManager registryManager;
-
-    @Autowired private PipelineRunManager runManager;
 
     @Autowired private MessageHelper messageHelper;
 
@@ -167,11 +168,13 @@ public class GrantPermissionManager {
 
     @Autowired private ConfigurationProviderManager configurationProviderManager;
 
-    @Autowired private PermissionsHelper permissionsHelper;
+    @Autowired private CheckPermissionHelper permissionsHelper;
 
     @Autowired private AbstractEntityPermissionMapper entityPermissionMapper;
 
     @Autowired private EntityEventServiceManager entityEventServiceManager;
+
+    @Autowired private RunPermissionManager runPermissionManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -332,16 +335,6 @@ public class GrantPermissionManager {
 
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteGrantedAuthority(String name) {
-        Long sidId = aclService.getSidId(name, false);
-        if (sidId == null) {
-            LOGGER.debug("Granted authority with name {} was not found in ACL", name);
-            return;
-        }
-        aclService.deleteSidById(sidId);
-    }
-
     public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
             boolean includeInherited) {
         return getPermissionsMask(entity, merge, includeInherited, getSids());
@@ -364,10 +357,6 @@ public class GrantPermissionManager {
         final AbstractSecuredEntity entity = entityManager.load(aclClass, id);
         final UserContext userContext = userManager.loadUserContext(userName);
         Assert.notNull(userContext, String.format("The user with name %s doesn't exist.", userName));
-        if (entity.getOwner().equalsIgnoreCase(userName)) {
-            LOGGER.info("The resource you're trying to change owner is already owned by this user.");
-            return new AclSecuredEntry(entity);
-        }
         aclService.changeOwner(entity, userName);
         return new AclSecuredEntry(entityManager.changeOwner(aclClass, id, userName));
     }
@@ -410,33 +399,6 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
-    public boolean isRunOwnerOrAdmin(Long runId) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        return isOwnerOrAdmin(pipelineRun.getOwner());
-    }
-
-    public boolean runPermission(Long runId, String permissionName) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        if (permissionsHelper.isOwner(pipelineRun)) {
-            return true;
-        }
-        AbstractSecuredEntity parent = pipelineRun.getParent();
-        if (parent == null) {
-            return false;
-        }
-        return permissionEvaluator
-                .hasPermission(SecurityContextHolder.getContext().getAuthentication(), parent,
-                        permissionName);
-    }
-
-    public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
-        PipelineRun pipelineRun = runManager.loadPipelineRun(runId);
-        if (taskStatus.isFinal()) {
-            return isOwnerOrAdmin(pipelineRun.getOwner());
-        }
-        return runPermission(pipelineRun, permissionName);
-    }
-
     public boolean storagePermission(Long storageId, String permissionName) {
         AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
         if (permissionName.equals(OWNER)) {
@@ -460,6 +422,12 @@ public class GrantPermissionManager {
             }
         }
         return true;
+    }
+
+    public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
+        return ListUtils.emptyIfNull(paths).stream()
+                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
+                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
     }
 
     public boolean checkStorageShared(Long storageId) {
@@ -520,32 +488,6 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, tool);
     }
 
-    /**
-     * Method will check permission for a {@link Tool} if it is registered, or for {@link ToolGroup}
-     * if this is a new {@link Tool}. If both {@link Tool} and {@link ToolGroup} do not exist,
-     * permission for {@link DockerRegistry} will be checked. Image is expected in format 'group/image'.
-     * @param registryId
-     * @param image
-     * @param permission
-     * @return
-     */
-    public boolean commitPermission(Long registryId, String image, String permission) {
-        DockerRegistry registry = (DockerRegistry)entityManager.load(AclClass.DOCKER_REGISTRY, registryId);
-        try {
-            String trimmedImage = image.startsWith(registry.getPath()) ?
-                    image.substring(registry.getPath().length() + 1) : image;
-            ToolGroup toolGroup = toolGroupManager.loadToolGroupByImage(registry.getPath(), trimmedImage);
-            Optional<Tool> tool = toolManager.loadToolInGroup(trimmedImage, toolGroup.getId());
-            return tool.map(t -> permissionsHelper.isAllowed(permission, t))
-                    .orElseGet(() -> permissionsHelper.isAllowed(permission, toolGroup));
-        } catch (IllegalArgumentException e) {
-            //case when tool group doesn't exist
-            LOGGER.trace(e.getMessage(), e);
-            return permissionsHelper.isAllowed(permission, registry);
-        }
-
-    }
-
     public boolean toolGroupPermission(String groupId, String permissionName) {
         ToolGroup group = toolGroupManager.loadByNameOrId(groupId);
         return permissionsHelper.isAllowed(permissionName, group);
@@ -556,25 +498,6 @@ public class GrantPermissionManager {
         return permissionsHelper.isAllowed(permissionName, group) &&
                 ListUtils.emptyIfNull(group.getTools()).stream()
                         .allMatch(tool -> permissionsHelper.isAllowed(permissionName, tool));
-    }
-
-    public boolean runPermission(PipelineRun run, String permissionName) {
-        if (permissionsHelper.isOwner(run)) {
-            run.setMask(AbstractSecuredEntity.ALL_PERMISSIONS_MASK);
-            return true;
-        }
-        AbstractSecuredEntity parent = runManager.loadRunParent(run);
-        if (parent == null) {
-            run.setMask(0);
-            return false;
-        }
-        boolean allowed = permissionEvaluator
-                .hasPermission(SecurityContextHolder.getContext().getAuthentication(), parent,
-                        permissionName);
-        if (allowed) {
-            run.setMask(getPermissionsMask(parent, true, true));
-        }
-        return allowed;
     }
 
     public boolean metadataEntityPermission(Long entityId, String permissionName) {
@@ -655,26 +578,12 @@ public class GrantPermissionManager {
         return metadataPermission(issue.getEntity().getEntityId(), issue.getEntity().getEntityClass(), permissionName);
     }
 
-    public void extendFilter(AclSecuredFilter filter) {
-        List<Sid> sids = getSids();
-        if (isAdmin(sids)) {
-            return;
-        }
-        filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
-        List<Long> allowedPipelinesList =
-                pipelineApiService.loadAllPipelinesWithoutVersion()
-                        .stream()
-                        .map(BaseEntity::getId)
-                        .collect(toList());
-        filter.setAllowedPipelines(allowedPipelinesList);
-    }
-
     public boolean nodePermission(NodeInstance node, String permissionName) {
         // not labeled nodes are available only for admins
         if (node.getPipelineRun() == null) {
             return false;
         }
-        boolean allowed = runPermission(node.getPipelineRun(), permissionName);
+        boolean allowed = runPermissionManager.runPermission(node.getPipelineRun(), permissionName);
         if (allowed) {
             node.setMask(node.getPipelineRun().getMask());
         }
@@ -687,7 +596,7 @@ public class GrantPermissionManager {
         if (nodeInstance.getPipelineRun() == null) {
             return false;
         }
-        return runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
+        return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
     }
 
     public boolean nodeStopPermission(String nodeName, String permissionName) {
@@ -696,7 +605,8 @@ public class GrantPermissionManager {
         if (nodeInstance.getPipelineRun() == null) {
             return false;
         }
-        return runStatusPermission(nodeInstance.getPipelineRun().getId(), TaskStatus.STOPPED, permissionName);
+        return runPermissionManager.runStatusPermission(nodeInstance.getPipelineRun().getId(),
+                TaskStatus.STOPPED, permissionName);
     }
 
     public EntityPermissionVO loadEntityPermission(final AclClass entityClass, final Long id) {
@@ -822,6 +732,23 @@ public class GrantPermissionManager {
      */
     public boolean hasPermissionToConfiguration(List<AbstractRunConfigurationEntry> entries, String permissionName) {
         return entries.stream().noneMatch(entry -> configurationProviderManager.hasNoPermission(entry, permissionName));
+    }
+
+    /**
+     * Checks if at least one group from input groups is registered and refer to some entity.
+     * @param groups the list of groups
+     * @return true if at least one such group found
+     */
+    public boolean isGroupRegistered(final List<String> groups) {
+        final Set<Long> sidIds = groups.stream()
+                .map(group ->  aclService.getSidId(group, false))
+                .filter(Objects::nonNull)
+                .collect(toSet());
+        if (CollectionUtils.isEmpty(sidIds)) {
+            return false;
+        }
+        final Integer entriesCount = aclService.loadEntriesBySidsCount(sidIds);
+        return entriesCount != null && entriesCount != 0;
     }
 
     private List<Sid> convertUserToSids(String user) {

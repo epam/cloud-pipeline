@@ -39,16 +39,19 @@ public final class AclExpressions {
             "hasRole('ADMIN') OR hasPermission(#pipeline.id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE')";
 
     public static final String RUN_ID_READ =
-            "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'READ')";
+            "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'READ')";
 
     public static final String RUN_ID_EXECUTE =
-            "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'EXECUTE')";
+            "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'EXECUTE')";
 
     public static final String RUN_ID_WRITE =
-            "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'WRITE')";
+            "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'WRITE')";
 
     public static final String RUN_ID_OWNER =
-            "hasRole('ADMIN') OR @grantPermissionManager.runPermission(#runId, 'OWNER')";
+            "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'OWNER')";
+
+    public static final String RUN_ID_SSH =
+            "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 
     public static final String STORAGE_ID_READ =
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
@@ -62,8 +65,11 @@ public final class AclExpressions {
             "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
             + "AND @grantPermissionManager.checkStorageShared(#id)";
 
+    public static final String STORAGE_PATHS_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.hasDataStoragePathsPermission(returnObject, 'READ')";
+
     public static final String RUN_COMMIT_EXECUTE =
-        "hasRole('ADMIN') OR (@grantPermissionManager.runPermission(#runId, 'EXECUTE')"
+        "hasRole('ADMIN') OR (@runPermissionManager.runPermission(#runId, 'EXECUTE')"
             + " AND hasPermission(#registryId, 'com.epam.pipeline.entity.pipeline.DockerRegistry', 'WRITE'))";
 
     public static final String METADATA_OWNER =

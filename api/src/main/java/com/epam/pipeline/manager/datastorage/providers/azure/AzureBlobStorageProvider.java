@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.datastorage.ActionStatus;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -24,6 +26,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -60,6 +63,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
+    public ActionStatus postCreationProcessing(final AzureBlobStorage storage) {
+        return ActionStatus.notSupported();
+    }
+
+    @Override
     public void deleteStorage(final AzureBlobStorage dataStorage) {
         getAzureStorageHelper(dataStorage).deleteStorage(dataStorage);
     }
@@ -83,7 +91,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final AzureBlobStorage dataStorage,
                                                           final String path,
-                                                          final String version) {
+                                                          final String version, ContentDisposition contentDisposition) {
         final BlobSASPermission permission = new BlobSASPermission()
             .withRead(true)
             .withAdd(false)
@@ -185,6 +193,12 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public String getDefaultMountOptions(AzureBlobStorage dataStorage) {
         return null;
+    }
+
+    @Override
+    public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
+                                       final PathDescription pathDescription) {
+        return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {

@@ -39,7 +39,7 @@ git config --global user.name "Travis"
 echo "Preparing gh-pages branch"
 git clone --quiet --branch=gh-pages https://${GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
 cd gh-pages
-find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
+find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' ! -name 'CNAME' -exec rm -rf {} +
 cp -Rf $HOME/cloud-pipeline-docs/* ./
 
 # Add files, commit and force push

@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pricing.azure.AzurePricingMeter;
 import com.epam.pipeline.entity.pricing.azure.AzurePricingResult;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
@@ -34,8 +35,8 @@ import com.microsoft.azure.management.resources.fluentcore.model.HasInner;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.util.Assert;
 import retrofit2.Retrofit;
@@ -48,12 +49,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.manager.cloud.CloudInstancePriceService.*;
+import static com.epam.pipeline.manager.cloud.CloudInstancePriceService.TermType;
 import static com.epam.pipeline.manager.cloud.azure.AzurePricingClient.executeRequest;
 
 @Slf4j
@@ -83,7 +85,10 @@ public class AzurePriceListLoader {
     private static final int CONNECT_TIMEOUT = 30;
     private static final String GENERAL_PURPOSE_FAMILY = "General purpose";
     private static final String GPU_FAMILY = "GPU instance";
-    public static final String EMPTY = "";
+    private static final double DEFAULT_PRICE = 0.0;
+    private static final String LOW_PRIORITY_CAPABLE = "LowPriorityCapable";
+    private static final String TRUE = "True";
+    private static final String DEFAULT_DISK_UNIT = "1/Month";
 
     private final AzurePricingClient azurePricingClient;
     private final String meterRegionName;
@@ -102,7 +107,7 @@ public class AzurePriceListLoader {
 
     public List<InstanceOffer> load(final AbstractCloudRegion region) throws IOException {
         final ApplicationTokenCredentials credentials = ApplicationTokenCredentials.fromFile(new File(authPath));
-        final Azure client = Azure.authenticate(credentials).withDefaultSubscription();
+        final Azure client = Azure.authenticate(new File(authPath)).withDefaultSubscription();
 
         final Map<String, ResourceSkuInner> vmSkusByName = client.computeSkus()
                 .listbyRegionAndResourceType(Region.fromName(region.getRegionCode()),
@@ -119,17 +124,44 @@ public class AzurePriceListLoader {
                 .filter(sku -> Objects.nonNull(sku.size()) && isAvailableForSubscription(sku))
                 .collect(Collectors.toMap(ResourceSkuInner::size, Function.identity(), (o1, o2) -> o1));
 
-        final String subscriptionsId = client.subscriptionId();
-        Assert.isTrue(StringUtils.isNotBlank(subscriptionsId), "Could not find subscription ID");
+        final Optional<AzurePricingResult> prices = getPricing(client.subscriptionId(), credentials);
+        return prices.filter(p -> CollectionUtils.isNotEmpty(p.getMeters()))
+                .map(p -> mergeSkusWithPrices(p.getMeters(), vmSkusByName, diskSkusByName,
+                        meterRegionName, region.getId()))
+                .orElseGet(() -> getOffersFromSku(vmSkusByName, diskSkusByName, region.getId()));
+    }
 
-        final String token = credentials.getToken(azureApiUrl);
-        Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
+    private List<InstanceOffer> getOffersFromSku(final Map<String, ResourceSkuInner> vmSkusByName,
+                                                 final Map<String, ResourceSkuInner> diskSkusByName,
+                                                 final Long regionId) {
+        log.debug("Azure prices are not available. Instance offers will be loaded without price.");
+        final Stream<InstanceOffer> onDemandVmOffers = MapUtils.emptyIfNull(vmSkusByName)
+                .values()
+                .stream()
+                .map(sku -> vmSkuToOffer(regionId, sku, DEFAULT_PRICE, sku.name(), TermType.ON_DEMAND, LINUX_OS));
 
-        final AzurePricingResult prices = getPricing(subscriptionsId, offerId, token);
-        Assert.isTrue(Objects.nonNull(prices) && CollectionUtils.isNotEmpty(prices.getMeters()),
-                "Azure prices prices is empty");
+        final Stream<InstanceOffer> lowPriorityVmOffers = MapUtils.emptyIfNull(vmSkusByName)
+                .values()
+                .stream()
+                .filter(this::isLowPriorityAvailable)
+                .map(sku -> vmSkuToOffer(regionId, sku, DEFAULT_PRICE,
+                        sku.name() + LOW_PRIORITY_VM_POSTFIX,
+                        TermType.LOW_PRIORITY, LINUX_OS));
 
-        return mergeSkusWithPrices(prices.getMeters(), vmSkusByName, diskSkusByName, meterRegionName, region.getId());
+        final Stream<InstanceOffer> diskOffers = MapUtils.emptyIfNull(diskSkusByName)
+                .values()
+                .stream()
+                .map(sku -> diskSkuToOffer(regionId, sku, DEFAULT_PRICE, DEFAULT_DISK_UNIT));
+
+        return Stream.concat(Stream.concat(onDemandVmOffers, lowPriorityVmOffers), diskOffers)
+                .collect(Collectors.toList());
+    }
+
+    private boolean isLowPriorityAvailable(final ResourceSkuInner sku) {
+        return ListUtils.emptyIfNull(sku.capabilities())
+                .stream()
+                .anyMatch(capability -> LOW_PRIORITY_CAPABLE.equals(capability.name()) &&
+                        TRUE.equals(capability.value()));
     }
 
     private boolean isAvailableForSubscription(final ResourceSkuInner sku) {
@@ -156,9 +188,18 @@ public class AzurePriceListLoader {
         return retrofit.create(AzurePricingClient.class);
     }
 
-    private AzurePricingResult getPricing(final String subscription, final String offerId, final String token) {
-        final String filter = String.format(AZURE_PRICING_FILTERS, offerId, CURRENCY, LOCALE, REGION_INFO);
-        return executeRequest(azurePricingClient.getPricing("Bearer " + token, subscription, filter, API_VERSION));
+    private Optional<AzurePricingResult> getPricing(final String subscription,
+                                                    final ApplicationTokenCredentials credentials) throws IOException {
+        if (StringUtils.isBlank(offerId)) {
+            return Optional.empty();
+        }
+        Assert.isTrue(StringUtils.isNotBlank(subscription), "Could not find subscription ID");
+        final String token = credentials.getToken(azureApiUrl);
+        Assert.isTrue(StringUtils.isNotBlank(token), "Could not find access token");
+        final String filter = String.format(AZURE_PRICING_FILTERS, offerId,
+                CloudInstancePriceService.CURRENCY, LOCALE, REGION_INFO);
+        return Optional.ofNullable(
+                executeRequest(azurePricingClient.getPricing("Bearer " + token, subscription, filter, API_VERSION)));
     }
 
     List<InstanceOffer> mergeSkusWithPrices(final List<AzurePricingMeter> prices,
@@ -198,23 +239,28 @@ public class AzurePriceListLoader {
         if (diskSku == null) {
             return null;
         }
+        return diskSkuToOffer(regionId, diskSku,
+                meter.getMeterRates().getOrDefault("0", 0f), meter.getUnit());
+    }
 
-        final List<ResourceSkuCapabilities> capabilities = diskSku.capabilities();
-        final Map<String, String> capabilitiesByName = capabilities.stream()
-                .collect(Collectors.toMap(ResourceSkuCapabilities::name,
-                        ResourceSkuCapabilities::value));
-
+    private InstanceOffer diskSkuToOffer(final Long regionId,
+                                         final ResourceSkuInner diskSku,
+                                         final double price,
+                                         final String unit) {
+        final Map<String, String> capabilitiesByName = ListUtils.emptyIfNull(diskSku.capabilities())
+                .stream()
+                .collect(Collectors.toMap(ResourceSkuCapabilities::name, ResourceSkuCapabilities::value));
         return InstanceOffer.builder()
                 .cloudProvider(CloudProvider.AZURE)
-                .tenancy(SHARED_TENANCY)
-                .productFamily(STORAGE_PRODUCT_FAMILY)
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY)
                 .sku(diskSku.size())
                 .priceListPublishDate(new Date())
-                .currency(CURRENCY)
-                .pricePerUnit(meter.getMeterRates().getOrDefault("0", 0f))
+                .currency(CloudInstancePriceService.CURRENCY)
+                .pricePerUnit(price)
                 .regionId(regionId)
-                .unit(meter.getUnit())
-                .volumeType(GENERAL_PURPOSE_VOLUME_TYPE)
+                .unit(unit)
+                .volumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE)
                 .memory(Float.parseFloat(capabilitiesByName.getOrDefault(DISK_SIZE_CAPABILITY, "0")))
                 .build();
     }
@@ -223,34 +269,44 @@ public class AzurePriceListLoader {
                                                final AzurePricingMeter meter, final String vmSize,
                                                final Long regionId) {
         final String subCategory = meter.getMeterSubCategory();
-
         final ResourceSkuInner resourceSku = getVirtualMachineSku(virtualMachineSkus, vmSize, subCategory);
         if (resourceSku == null) {
             return null;
         }
+        return vmSkuToOffer(regionId, resourceSku,
+                meter.getMeterRates().getOrDefault("0", 0f),
+                meter.getMeterId(),
+                meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
+                        ? TermType.LOW_PRIORITY
+                        : TermType.ON_DEMAND,
+                getOperatingSystem(meter.getMeterSubCategory()));
+    }
+
+    private InstanceOffer vmSkuToOffer(final Long regionId,
+                                       final ResourceSkuInner resourceSku,
+                                       final double price,
+                                       final String sku,
+                                       final TermType termType,
+                                       final String os) {
         final List<ResourceSkuCapabilities> capabilities = resourceSku.capabilities();
         final Map<String, String> capabilitiesByName = capabilities.stream()
                 .collect(Collectors.toMap(ResourceSkuCapabilities::name,
                         ResourceSkuCapabilities::value));
-
         final int gpu = Integer.parseInt(capabilitiesByName.getOrDefault(GPU_CAPABILITY, "0"));
         return InstanceOffer.builder()
                 .cloudProvider(CloudProvider.AZURE)
-                .termType(meter.getMeterName().contains(LOW_PRIORITY_VM_POSTFIX)
-                        ? TermType.LOW_PRIORITY.getName()
-                        : TermType.ON_DEMAND.getName()
-                )
-                .tenancy(SHARED_TENANCY)
-                .productFamily(INSTANCE_PRODUCT_FAMILY)
-                .sku(meter.getMeterId())
+                .termType(termType.getName())
+                .tenancy(CloudInstancePriceService.SHARED_TENANCY)
+                .productFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY)
+                .sku(sku)
                 .priceListPublishDate(new Date())
-                .currency(CURRENCY)
+                .currency(CloudInstancePriceService.CURRENCY)
                 .instanceType(resourceSku.name())
-                .pricePerUnit(meter.getMeterRates().getOrDefault("0", 0f))
+                .pricePerUnit(price)
                 .regionId(regionId)
-                .unit(HOURS_UNIT)
+                .unit(CloudInstancePriceService.HOURS_UNIT)
                 .volumeType(getDiskType(capabilitiesByName.getOrDefault(IS_PREMIUM_CAPABILITY, "false")))
-                .operatingSystem(getOperatingSystem(meter.getMeterSubCategory()))
+                .operatingSystem(os)
                 .instanceFamily(gpu == 0 ? GENERAL_PURPOSE_FAMILY : GPU_FAMILY)
                 .vCPU(Integer.parseInt(capabilitiesByName.getOrDefault(V_CPU_CAPABILITY, "0")))
                 .gpu(gpu)
@@ -297,7 +353,7 @@ public class AzurePriceListLoader {
     private List<String> getVmSizes(final String rawMeterName) {
         return Arrays.stream(rawMeterName.split(DELIMITER))
                 .map(vmSize -> vmSize.trim()
-                        .replaceAll(LOW_PRIORITY_VM_POSTFIX, EMPTY)
+                        .replaceAll(LOW_PRIORITY_VM_POSTFIX, StringUtils.EMPTY)
                         .replaceAll(" ", "_"))
                 .collect(Collectors.toList());
     }

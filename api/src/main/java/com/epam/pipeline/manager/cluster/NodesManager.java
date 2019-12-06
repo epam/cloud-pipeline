@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
+import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
@@ -31,14 +32,18 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
@@ -71,6 +76,9 @@ public class NodesManager {
     private MessageHelper messageHelper;
 
     @Autowired
+    private PreferenceManager preferenceManager;
+
+    @Autowired
     private PipelineRunManager pipelineRunManager;
 
     @Autowired
@@ -87,6 +95,7 @@ public class NodesManager {
 
     @Value("${kube.protected.node.labels:}")
     private String protectedNodesString;
+
     private Map<String, String> protectedNodeLabels;
 
     @PostConstruct
@@ -181,6 +190,8 @@ public class NodesManager {
                 );
                 return Optional.of(nodeInstance);
             }
+        } catch (KubernetesClientException e) {
+            log.warn("Node wasn't found in cluster.", e);
         }
         final List<String> podStatuses = Optional.ofNullable(request)
                 .map(FilterPodsRequest::getPodStatuses)
@@ -193,6 +204,25 @@ public class NodesManager {
         final NodeInstance nodeInstance = getNode(name);
         terminateNode(nodeInstance);
         return nodeInstance;
+    }
+
+    public List<MasterNode> getMasterNodes() {
+        final String defMasterPort =
+                String.valueOf(preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_MASTER_PORT));
+        try (KubernetesClient client = new DefaultKubernetesClient()) {
+            return client.nodes().withLabel(MASTER_LABEL).list().getItems()
+                    .stream()
+                    .filter(this::nodeIsReady)
+                    .map(node -> MasterNode.fromNode(node, defMasterPort))
+                    .collect(Collectors.toList());
+        }
+    }
+
+    private boolean nodeIsReady(final Node node) {
+        return CollectionUtils.emptyIfNull(node.getStatus().getConditions())
+                .stream().anyMatch(
+                    nc -> nc.getType().equalsIgnoreCase(KubernetesConstants.READY) &&
+                            nc.getStatus().equalsIgnoreCase(KubernetesConstants.TRUE));
     }
 
     /**

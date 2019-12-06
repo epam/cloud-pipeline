@@ -15,7 +15,7 @@
 # limitations under the License.
 
 _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_linux_$(date +%s).sh
-_BUILD_DOCKER_IMAGE="python:2.7-stretch"
+_BUILD_DOCKER_IMAGE="${_BUILD_DOCKER_IMAGE:-python:2.7-stretch}"
 
 cat >$_BUILD_SCRIPT_NAME <<EOL
 
@@ -25,7 +25,7 @@ cat >$_BUILD_SCRIPT_NAME <<EOL
 
 mkdir -p $PYINSTALLER_PATH
 cd $PYINSTALLER_PATH
-git clone --single-branch --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
+git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
 cd pyinstaller/bootloader/
 python2 ./waf all
 
@@ -33,6 +33,23 @@ python2 ./waf all
 # Setup common dependencies
 ###
 python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+
+###
+# Build pipe fuse
+###
+python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+cd $PIPE_MOUNT_SOURCES_DIR && \
+python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                --hidden-import=UserList \
+                                --hidden-import=UserString \
+                                -y \
+                                --clean \
+                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                --distpath /tmp/mount/dist \
+                                --add-data ${PIPE_MOUNT_SOURCES_DIR}/libfuse:libfuse \
+                                ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
+
+chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
 
 ###
 # Build ntlm proxy
@@ -55,33 +72,62 @@ chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 ###
 # Build pipe
 ###
-cd $PIPE_CLI_SOURCES_DIR && \
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
-                                --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
-                                --hidden-import=UserList \
-                                --hidden-import=UserString \
-                                --hidden-import=commands \
-                                --hidden-import=ConfigParser \
-                                --hidden-import=UserDict \
-                                --hidden-import=itertools \
-                                --hidden-import=collections \
-                                --hidden-import=future.backports.misc \
-                                --hidden-import=commands \
-                                --hidden-import=base64 \
-                                --hidden-import=__builtin__ \
-                                --hidden-import=math \
-                                --hidden-import=reprlib \
-                                --hidden-import=functools \
-                                --hidden-import=re \
-                                --hidden-import=subprocess \
-                                --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
-                                -y \
-                                --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
-                                --distpath $PIPE_CLI_LINUX_DIST_DIR/dist \
-                                --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
-                                ${PIPE_CLI_SOURCES_DIR}/pipe.py \
-                                --onefile
+function build_pipe {
+    local distpath="\$1"
+    local onefile="\$2"
+
+    local version_file="${PIPE_CLI_SOURCES_DIR}/src/version.py"
+    sed -i '/__bundle_info__/d' $version_file
+    
+    local bundle_type="one-folder"
+    [ "\$onefile" ] && bundle_type="one-file"
+
+    local build_os_id=''
+    local build_os_version_id=''
+    if [ -f "/etc/os-release" ]; then
+        source /etc/os-release
+        build_os_id="\${ID}"
+        build_os_version_id="\${VERSION_ID}"
+    elif [ -f "/etc/centos-release" ]; then
+        build_os_id="centos"
+        build_os_version_id=\$(cat /etc/centos-release | tr -dc '0-9.'|cut -d \. -f1)
+    fi
+
+    echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
+    cd $PIPE_CLI_SOURCES_DIR
+    python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                    --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
+                                    --hidden-import=UserList \
+                                    --hidden-import=UserString \
+                                    --hidden-import=commands \
+                                    --hidden-import=ConfigParser \
+                                    --hidden-import=UserDict \
+                                    --hidden-import=itertools \
+                                    --hidden-import=collections \
+                                    --hidden-import=future.backports.misc \
+                                    --hidden-import=commands \
+                                    --hidden-import=base64 \
+                                    --hidden-import=__builtin__ \
+                                    --hidden-import=math \
+                                    --hidden-import=reprlib \
+                                    --hidden-import=functools \
+                                    --hidden-import=re \
+                                    --hidden-import=subprocess \
+                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
+                                    -y \
+                                    --clean \
+                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
+                                    --distpath \$distpath \
+                                    --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
+                                    --add-data /tmp/mount/dist/pipe-fuse:mount \
+                                    ${PIPE_CLI_SOURCES_DIR}/pipe.py \$onefile
+}
+build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile
+build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder
+tar -zcf $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder/pipe.tar.gz \
+        -C $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder \
+        pipe
+
 EOL
 
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null
@@ -90,6 +136,7 @@ docker run -i --rm \
            -v $PIPE_CLI_LINUX_DIST_DIR:$PIPE_CLI_LINUX_DIST_DIR \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            --env PIPE_CLI_SOURCES_DIR=$PIPE_CLI_SOURCES_DIR \
+           --env PIPE_MOUNT_SOURCES_DIR=$PIPE_MOUNT_SOURCES_DIR \
            --env PIPE_CLI_LINUX_DIST_DIR=$PIPE_CLI_LINUX_DIST_DIR \
            --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
            --env PYINSTALLER_PATH=$PYINSTALLER_PATH \

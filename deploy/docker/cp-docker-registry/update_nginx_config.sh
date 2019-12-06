@@ -46,8 +46,22 @@ http {
     # disable any limits to avoid HTTP 413 for large image uploads
     client_max_body_size 0;
 
+    proxy_http_version      1.1;
+    proxy_buffering         off;
+    proxy_request_buffering off;
+
     # required to avoid HTTP 411: see Issue #1486 (https://github.com/moby/moby/issues/1486)
     chunked_transfer_encoding on;
+
+    # Helth check for both nginx (if it can proxy - it is ok) and a registry
+    # If registry responded HTTP 200 for "/" - it is fine (see https://github.com/docker/distribution/pull/874 for details)
+    location /health {
+      access_log off;
+      proxy_pass http://127.0.0.1:80/;
+      proxy_connect_timeout   5s;
+      proxy_send_timeout      5s;
+      proxy_read_timeout      5s;
+    }
 
     location /v2/ {
       # Do not allow connections from docker 1.5 and earlier
@@ -56,7 +70,7 @@ http {
         return 404;
       }
 
-      proxy_pass                          http://localhost;
+      proxy_pass                          http://127.0.0.1;
       proxy_set_header  Host              $http_host;   # required for docker client's sake
       proxy_set_header  X-Real-IP         $remote_addr; # pass on real client's IP
       proxy_set_header  X-Forwarded-For   $proxy_add_x_forwarded_for;
