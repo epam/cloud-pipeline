@@ -394,6 +394,8 @@ class GridEngine:
         return ComputeResource(demand_slots)
 
     def get_host_to_scale_down(self, hosts):
+        # choose the weakest one (map to number of CPU, sort in reverse order and get from top)
+        # TODO: in the future other resources like RAM and GPU can be count here
         return sorted([(host, self.get_host_resource(host)) for host in hosts],
                       cmp=lambda h1, h2: h1[1].cpu - h2[1].cpu, reverse=True).pop()[0]
 
@@ -983,6 +985,8 @@ class GridEngineAutoscaler:
         if inactive_additional_hosts:
             Logger.info('There are %s inactive additional child pipelines. '
                         'Scaling down will be performed.' % len(inactive_additional_hosts))
+            # TODO: here we always choose weakest host, even if all hosts are inactive and we can drop strongest one firstly
+            # TODO in order to safe some money
             inactive_additional_host = self.grid_engine.get_host_to_scale_down(inactive_additional_hosts)
             succeed = self.scale_down(inactive_additional_host)
             if succeed:
