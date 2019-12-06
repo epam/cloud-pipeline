@@ -101,6 +101,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 return profiles;
             }))
             .saveAndCommitWithMessage("test: Set spot property of default configuration profile false")
+            .sleep(2, SECONDS)
             .runPipeline()
             .expandTab(collapsiblePanel("Advanced"))
             .ensure(combobox("Price type"), have(selectedValue(onDemandPriceName)));
@@ -276,11 +277,12 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .sleep(2, SECONDS)
                                .click(SAVE)
                 )
                 .messageShouldAppear(String.format("Updating '%s' configuration", configurationName))
                 // Because the page refreshes
-                .sleep(1, SECONDS)
+                .sleep(5, SECONDS)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .shouldContainInCode("\"name\" : \"conf\"")

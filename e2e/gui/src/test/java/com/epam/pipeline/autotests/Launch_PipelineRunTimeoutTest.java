@@ -22,6 +22,8 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineRunningTest {
 
     private static final String CONFIG_JSON = "/timeout.json";
@@ -49,6 +51,7 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .firstVersion()
                 .codeTab()
                 .clearAndFillPipelineFile(pipelineFileName, Utils.readResourceFully(SLEEP_SHELL))
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .launch(this)
                 .showLogForce(getRunId())

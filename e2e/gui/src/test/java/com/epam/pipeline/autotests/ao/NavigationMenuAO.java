@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Selenide;
+import com.epam.pipeline.autotests.utils.C;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.exist;
@@ -84,18 +86,22 @@ public class NavigationMenuAO {
                 .clickOnPipeline(name);
     }
 
-    public AuthenticationPageAO logout() {
+    public void logout() {
         boolean successfullyLoggedOut = false;
         for (int i = 0; i < 15; i++){
-            $(byId("navigation-button-logout")).shouldBe(visible).click();
             sleep(1, SECONDS);
+            $(byId("navigation-button-logout")).shouldBe(visible).click();
+            if ("true".equals(C.AUTH_TOKEN)) {
+                Selenide.clearBrowserCookies();
+            }
+            sleep(2, SECONDS);
             if ($(byId("navigation-button-logout")).is(not(exist))){
                 successfullyLoggedOut = true;
                 break;
             }
         }
         if (successfullyLoggedOut) {
-            return new AuthenticationPageAO();
+            return;
         }
         throw new RuntimeException("Could not login");
     }

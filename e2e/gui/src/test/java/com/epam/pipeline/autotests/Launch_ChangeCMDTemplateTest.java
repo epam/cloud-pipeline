@@ -22,6 +22,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.text;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_ChangeCMDTemplateTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -39,6 +40,7 @@ public class Launch_ChangeCMDTemplateTest extends AbstractAutoRemovingPipelineRu
                         Utils.readResourceFully(CONFIG_JSON)
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .ensure(DEFAULT_COMMAND, text("cmd_template"));
     }

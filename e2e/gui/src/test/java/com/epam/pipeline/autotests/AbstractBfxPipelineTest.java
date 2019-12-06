@@ -16,10 +16,12 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Configuration;
+import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.openqa.selenium.Cookie;
 import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -29,7 +31,9 @@ import java.lang.reflect.Method;
 
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
-import static com.codeborne.selenide.Selenide.*;
+import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public abstract class AbstractBfxPipelineTest {
 
@@ -39,7 +43,14 @@ public abstract class AbstractBfxPipelineTest {
         Configuration.browser = WebDriverRunner.CHROME;
         Configuration.startMaximized = true;
         System.setProperty("webdriver.chrome.driver", "/usr/local/bin/chromedriver");
-        open(C.ROOT_ADDRESS);
+
+        if ("true".equals(C.AUTH_TOKEN)) {
+            Selenide.open(C.ROOT_ADDRESS);
+            Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
+            WebDriverRunner.getWebDriver().manage().addCookie(cookie);
+        }
+        Selenide.open(C.ROOT_ADDRESS);
+
         Robot robot;
         try {
             robot = new Robot();
@@ -49,14 +60,17 @@ public abstract class AbstractBfxPipelineTest {
         robot.keyPress(122);
         robot.keyRelease(122);
 
-        new AuthenticationPageAO()
-                .login(C.LOGIN)
-                .password(C.PASSWORD)
-                .signIn();
+        if ("false".equals(C.AUTH_TOKEN)) {
+            new AuthenticationPageAO()
+                    .login(C.LOGIN)
+                    .password(C.PASSWORD)
+                    .signIn();
+        }
+        sleep(3, SECONDS);
 
         //reset mouse
         $(byId("navigation-button-logo")).shouldBe(visible).click();
-        sleep(2000);
+        sleep(3, SECONDS);
     }
 
     @AfterMethod
