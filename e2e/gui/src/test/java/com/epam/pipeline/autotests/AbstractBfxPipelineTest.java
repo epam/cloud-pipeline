@@ -32,7 +32,6 @@ import java.lang.reflect.Method;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.ShellAO.open;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -49,10 +48,8 @@ public abstract class AbstractBfxPipelineTest {
             Selenide.open(C.ROOT_ADDRESS);
             Cookie cookie = new Cookie("HttpAuthorization", C.PASSWORD);
             WebDriverRunner.getWebDriver().manage().addCookie(cookie);
-            Selenide.open(C.ROOT_ADDRESS);
-        } else {
-            open(C.ROOT_ADDRESS);
         }
+        Selenide.open(C.ROOT_ADDRESS);
 
         Robot robot;
         try {
