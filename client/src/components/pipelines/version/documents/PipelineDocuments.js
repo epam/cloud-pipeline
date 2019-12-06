@@ -67,7 +67,6 @@ const MarkdownRenderer = new Remarkable('full', {
 }))
 @observer
 export default class PipelineDocuments extends Component {
-
   state = {
     renameFile: null,
     managingMdFile: null,
@@ -91,7 +90,10 @@ export default class PipelineDocuments extends Component {
   };
 
   navigateToNewVersion = () => {
-    this.props.routing.push(`${this.props.pipeline.value.id}/${this.props.pipeline.value.currentVersion.name}/documents`);
+    const {routing, pipeline} = this.props;
+    const {value} = pipeline;
+    routing
+      .push(`${value?.id}/${value?.currentVersion?.name}/documents`);
   };
 
   isMdFile = file => file && file.name.endsWith('.md');
@@ -183,8 +185,9 @@ export default class PipelineDocuments extends Component {
           )
         }
         <Button
-          onClick={() => this.downloadPipelineFile(file)}
-          size="small">
+          onClick={(e) => this.downloadPipelineFile(file, e)}
+          size="small"
+        >
           <Icon type="download" />Download
         </Button>
         {
@@ -200,11 +203,11 @@ export default class PipelineDocuments extends Component {
     );
   };
 
-  onFileClick = (file) => {
-    if (this.isMdFile(file)) {
-      this.setManagingMdFile(file);
-    } else {
-      this.downloadPipelineFile(file);
+  onFileClick = (file, _index, event) => {
+    if (event.target.type !== 'button') {
+      this.isMdFile(file)
+        ? this.setManagingMdFile(file)
+        : this.downloadPipelineFile(file);
     }
   };
 
@@ -247,9 +250,10 @@ export default class PipelineDocuments extends Component {
     return {dataSource, columns};
   };
 
-  downloadPipelineFile = async(file) => {
+  downloadPipelineFile = async (file, event) => {
     const {id, version} = this.props.params;
 
+    event && event.stopPropagation();
     try {
       const pipelineFile = new PipelineFile(id, version, file.path);
       await pipelineFile.fetch();
@@ -259,7 +263,7 @@ export default class PipelineDocuments extends Component {
     }
   };
 
-  generateDocument = async(file) => {
+  generateDocument = async (file) => {
     const {id, version} = this.props.params;
     let graph = this._graphComponent ? this._graphComponent.base64Image() : '';
     if (graph.indexOf('data:image/png;base64,') === 0) {
@@ -312,7 +316,7 @@ export default class PipelineDocuments extends Component {
     });
   };
 
-  deleteFile = async({name}) => {
+  deleteFile = async ({name}) => {
     const fileFullName = `docs/${name}`;
     const request = new PipelineFileDelete(this.props.pipelineId);
     const hide = message.loading(`Deleting file '${name}'...`, 0);
@@ -459,20 +463,20 @@ export default class PipelineDocuments extends Component {
           justify="end"
           className={styles.actionButtonsContainer}>
           <UploadButton
-            multiple={true}
-            synchronous={true}
+            multiple
+            synchronous
             onRefresh={this.updateAndNavigateToNewVersion}
             title={'Upload'}
             action={PipelineFileUpdate.uploadUrl(this.props.pipelineId, 'docs')} />
         </Row>
       )
-    : undefined;
+      : undefined;
 
     const docsContent = [
       <Table
         key="docs table"
         rowKey="name"
-        onRowClick={(file) => this.onFileClick(file)}
+        onRowClick={(file, index, evt) => this.onFileClick(file, index, evt)}
         rowClassName={() => styles.documentRow}
         className={styles.docsTable}
         dataSource={tableData.dataSource}
@@ -486,11 +490,11 @@ export default class PipelineDocuments extends Component {
       <WorkflowGraph
         key="docs hidden graph"
         canEdit={false}
-        hideError={true}
+        hideError
         pipelineId={this.props.pipelineId}
         version={this.props.version}
         className={styles.graph}
-        fitAllSpace={true}
+        fitAllSpace
         onGraphReady={this.initializeHiddenGraph} />,
       <PipelineCodeSourceNameDialog
         key="docs name dialog"
