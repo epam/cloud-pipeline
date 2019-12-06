@@ -269,7 +269,7 @@ class GridEngine:
     def is_job_valid(self, job):
         result = True
         allocation_rule = self.get_pe_allocation_rule(job.pe) if job.pe else AllocationRule.pe_slots()
-        Logger.info('Validation job # {job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
+        Logger.info('Validation of job # {job_id} allocation rule: {alloc_rule} job slots: {slots}'.format(
             job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots))
         if job.slots and allocation_rule:
             if allocation_rule == AllocationRule.pe_slots():
@@ -392,6 +392,10 @@ class GridEngine:
             else:
                 demand_slots += job.slots
         return ComputeResource(demand_slots)
+
+    def get_host_to_scale_down(self, hosts):
+        return sorted([(host, self.get_host_resource(host)) for host in hosts],
+                      cmp=lambda h1, h2: h1[1].cpu - h2[1].cpu, reverse=True).pop()[0]
 
     def _get_available_slots(self):
         available_slots = 0
@@ -899,6 +903,8 @@ class GridEngineAutoscaler:
         running_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.RUNNING]
         pending_jobs = self._filter_pending_job(updated_jobs)
 
+        self._resolve_deadlock(running_jobs, pending_jobs, additional_hosts)
+
         if running_jobs:
             self.latest_running_job = sorted(running_jobs, key=lambda job: job.datetime, reverse=True)[0]
         if pending_jobs:
@@ -911,10 +917,10 @@ class GridEngineAutoscaler:
                 if len(additional_hosts) < self.max_additional_hosts:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up will be performed.' %
                                 (len(additional_hosts), self.max_additional_hosts))
-                    resource = self.grid_engine.get_resource_demand(expired_jobs)
+                    resource = self.grid_engine.get_resource_demand(pending_jobs)
                     Logger.info('The next resource is requested by pending jobs to be run: '
-                                'cpu - {cpu} memory - {mem} disk - {disk}'.
-                                format(cpu=resource.cpu, mem=resource.memory, disk=resource.disk))
+                                'cpu - {cpu}, gpu - {gpu}, memory - {mem}, disk - {disk}'.
+                                format(cpu=resource.cpu, gpu=resource.gpu, mem=resource.memory, disk=resource.disk))
                     self.scale_up(resource)
                 else:
                     Logger.info('There are %s/%s additional child pipelines. Scaling up is aborted.' %
@@ -939,6 +945,11 @@ class GridEngineAutoscaler:
         Logger.info('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.info('There are %s additional pipelines.' % len(post_scale_additional_hosts))
+
+    def _resolve_deadlock(self, running_jobs, pending_jobs, additional_hosts):
+        if not running_jobs and pending_jobs and len(additional_hosts) >= self.max_additional_hosts:
+            Logger.info('Deadlock is observed, weakest host will be scaled down.', crucial=True)
+            self._scale_down(running_jobs, additional_hosts)
 
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
@@ -972,7 +983,7 @@ class GridEngineAutoscaler:
         if inactive_additional_hosts:
             Logger.info('There are %s inactive additional child pipelines. '
                         'Scaling down will be performed.' % len(inactive_additional_hosts))
-            inactive_additional_host = inactive_additional_hosts[0]
+            inactive_additional_host = self.grid_engine.get_host_to_scale_down(inactive_additional_hosts)
             succeed = self.scale_down(inactive_additional_host)
             if succeed:
                 self.host_storage.remove_host(inactive_additional_host)
@@ -1340,7 +1351,8 @@ if __name__ == '__main__':
                                                   max_core_per_instance=autoscale_max_core_per_instance)
 
     max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale).cpu
-    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores
+    # (1 + int(os.getenv('node_count', 0))) - master plus default workers
+    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores * (1 + int(os.getenv('node_count', 0)))
 
     Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 
                 task='GridEngineAutoscaling', verbose=log_verbose)
