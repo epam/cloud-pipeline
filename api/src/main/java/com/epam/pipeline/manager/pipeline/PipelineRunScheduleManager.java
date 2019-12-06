@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
 import lombok.extern.slf4j.Slf4j;
@@ -61,7 +62,7 @@ public class PipelineRunScheduleManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public RunSchedule createRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
         checkScheduleRequirements(runId, runScheduleVO);
-        RunSchedule runSchedule = new RunSchedule();
+        final RunSchedule runSchedule = new RunSchedule();
         runSchedule.setRunId(runId);
         runSchedule.setAction(runScheduleVO.getAction());
         runSchedule.setCronExpression(runScheduleVO.getCronExpression());
@@ -133,6 +134,14 @@ public class PipelineRunScheduleManager {
             MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
         Assert.isTrue(StringUtils.hasText(runScheduleVO.getTimeZone()),
                       messageHelper.getMessage(MessageConstants.ERROR_TIME_ZONE_IS_NOT_PROVIDED, runId));
+        Assert.isTrue(runScheduleVO.getAction().equals(RunScheduledAction.PAUSE)
+                      && !isNonPauseOrClusterRun(pipelineRun),
+                      messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK));
+    }
+
+    private boolean isNonPauseOrClusterRun(final PipelineRun pipelineRun) {
+        return PipelineRunManager.isClusterRun(pipelineRun)
+               || pipelineRun.isNonPause();
     }
 
     private void verifyCronExpression(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
