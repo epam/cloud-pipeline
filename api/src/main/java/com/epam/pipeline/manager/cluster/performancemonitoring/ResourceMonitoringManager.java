@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.isClusterRun;
+
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -363,9 +365,5 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_PAUSED);
-    }
-
-    private boolean isClusterRun(final PipelineRun run) {
-        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
     }
 }
