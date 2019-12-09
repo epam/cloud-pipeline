@@ -26,6 +26,7 @@ import CardsPanel from './components/CardsPanel';
 import getServiceActions from './components/getServiceActions';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
+import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -60,6 +61,9 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
 
   renderService = (service) => {
     let name = service.name || service.url;
+    if (!name && service.sshAccess) {
+      name = 'SSH Access';
+    }
     const [imageRegistry, , tool] = this.getTool(service.run.dockerImage);
     const [reg, group, dockerImage] = service.run.dockerImage.split('/');
     const renderMainInfo = () => {
@@ -116,21 +120,41 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
       content = <LoadingView />;
     } else if (this.props.services.error) {
       content = <Alert type="warning" message={this.props.services.error} />;
+    } else if (
+      !this.props.authenticatedUserInfo.loaded &&
+      this.props.authenticatedUserInfo.pending
+    ) {
+      content = <LoadingView />;
+    } else if (this.props.authenticatedUserInfo.error) {
+      content = <Alert type="warning" message={this.props.authenticatedUserInfo.error} />;
     } else {
+      const userName = this.props.authenticatedUserInfo.value;
       const services = (this.props.services.value || [])
         .filter(r => r.status === 'RUNNING')
-        .filter(r => r.serviceUrl)
-        .map(r => ({
-          run: r,
-          urls: parseRunServiceUrl(r.serviceUrl) || []
-        }))
+        .map(r => {
+          const {runSids} = r;
+          const [accessType] = (runSids || [])
+            .filter(s => s.name === userName && s.isPrincipal)
+            .map(s => s.accessType);
+          return {
+            run: r,
+            sshAccess: accessType === AccessTypes.ssh || roleModel.isOwner(r),
+            urls: r.serviceUrl ? (parseRunServiceUrl(r.serviceUrl) || []) : []
+          };
+        })
         .reduce((array, obj) => {
           const urls = obj.urls.map(u => ({...u, run: obj.run}));
+          if (urls.length === 0) {
+            // only ssh
+            urls.push({run: obj.run, sshAccess: obj.sshAccess});
+          }
           array.push(...urls);
           return array;
         }, []);
       const navigate = ({url}) => {
-        window.open(url, '_blank').focus();
+        if (url) {
+          window.open(url, '_blank').focus();
+        }
       };
       content = (
         <CardsPanel
@@ -141,8 +165,8 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           actions={
             getServiceActions(
               this.props.authenticatedUserInfo,{
-              ssh: (url) => window.open(url, '_blank').focus()
-            })
+                ssh: (url) => window.open(url, '_blank').focus()
+              })
           }
           childRenderer={this.renderService}>
           {services}
