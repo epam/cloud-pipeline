@@ -268,7 +268,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<PipelineRun> loadActiveServices(final PagingRunFilterVO filter, final PipelineUser user) {
+    public List<PipelineRun> loadActiveSharedRuns(final PagingRunFilterVO filter, final PipelineUser user) {
         final MapSqlParameterSource params = getPagingParameters(filter);
         final String query = wherePattern.matcher(loadActiveServicesQuery)
                 .replaceFirst(makeRunSidsCondition(user, params));
@@ -294,7 +294,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public int countActiveServices(PipelineUser user) {
+    public int countActiveSharedRuns(PipelineUser user) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         String query = wherePattern.matcher(countActiveServicesQuery).replaceFirst(makeRunSidsCondition(user, params));
         return getNamedParameterJdbcTemplate().queryForObject(query, params, Integer.class);

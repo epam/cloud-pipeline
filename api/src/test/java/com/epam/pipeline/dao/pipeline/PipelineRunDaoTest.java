@@ -163,7 +163,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         logicalExpression.setField("pod.id");
         logicalExpression.setOperand(FilterOperandType.EQUALS.getOperand());
         logicalExpression.setValue(run1.getPodId());
-        List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(FilterExpression.prepare(logicalExpression), 1, 2, 0);
+        List<PipelineRun> pipelineRuns = filterDao.filterPipelineRuns(
+                FilterExpression.prepare(logicalExpression), 1, 2, 0);
         assertEquals(1, pipelineRuns.size());
         assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
     }
@@ -593,7 +594,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     }
 
     @Test
-    public void testLoadActiveServicesByOwner() {
+    public void testLoadActiveSharedRunsByOwner() {
         PipelineRun run = createTestPipelineRun();
 
         PagingRunFilterVO filterVO = new PagingRunFilterVO();
@@ -602,14 +603,27 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         PipelineUser user = new PipelineUser();
         user.setUserName(USER);
-        List<PipelineRun> runs = pipelineRunDao.loadActiveServices(filterVO, user);
+        List<PipelineRun> runs = pipelineRunDao.loadActiveSharedRuns(filterVO, user);
         assertEquals(1, runs.size());
         assertEquals(run.getId(), runs.get(0).getId());
         assertEquals(1, runs.size());
     }
 
     @Test
-    public void testLoadActiveServicesByUserIsPrincipal() {
+    public void loadSharedRunsShouldNotReturnRunsWithoutServiceUrlForOwner() {
+        createTestPipelineRun(testPipeline.getId(), null);
+        PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+
+        PipelineUser user = new PipelineUser();
+        user.setUserName(USER);
+        List<PipelineRun> runs = pipelineRunDao.loadActiveSharedRuns(filterVO, user);
+        assertEquals(0, runs.size());
+    }
+
+    @Test
+    public void testLoadActiveSharedRunsByUserIsPrincipal() {
         List<RunSid> runSids = new ArrayList<>();
 
         RunSid runSid1 = new RunSid();
@@ -626,17 +640,17 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
         PipelineUser user = new PipelineUser();
         user.setUserName(TEST_USER);
-        List<PipelineRun> runs = pipelineRunDao.loadActiveServices(filterVO, user);
+        List<PipelineRun> runs = pipelineRunDao.loadActiveSharedRuns(filterVO, user);
         assertEquals(1, runs.size());
         assertEquals(run.getId(), runs.get(0).getId());
         assertEquals(1, runs.size());
 
-        int servicesCount = pipelineRunDao.countActiveServices(user);
+        int servicesCount = pipelineRunDao.countActiveSharedRuns(user);
         assertEquals(runs.size(), servicesCount);
     }
 
     @Test
-    public void testLoadActiveServicesByUserInGroup() {
+    public void testLoadActiveSharedRunsByUserInGroup() {
         List<RunSid> runSids = new ArrayList<>();
 
         RunSid runSid = new RunSid();
@@ -654,7 +668,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         PipelineUser user = new PipelineUser();
         user.setUserName(TEST_USER);
         user.setGroups(Collections.singletonList(GROUP_NAME));
-        List<PipelineRun> runs = pipelineRunDao.loadActiveServices(filterVO, user);
+        List<PipelineRun> runs = pipelineRunDao.loadActiveSharedRuns(filterVO, user);
         assertEquals(1, runs.size());
         assertEquals(run.getId(), runs.get(0).getId());
         assertEquals(1, runs.size());
@@ -737,6 +751,10 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     }
 
     private PipelineRun createTestPipelineRun(Long pipelineId) {
+        return createTestPipelineRun(pipelineId, TEST_SERVICE_URL);
+    }
+
+    private PipelineRun createTestPipelineRun(Long pipelineId, String serviceUrl) {
         PipelineRun run = new PipelineRun();
         run.setPipelineId(pipelineId);
         run.setVersion("abcdefg");
@@ -748,7 +766,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         run.setPodId(TEST_POD_ID);
         run.setParams(TEST_PARAMS);
         run.setOwner(USER);
-        run.setServiceUrl(TEST_SERVICE_URL);
+        run.setServiceUrl(serviceUrl);
 
         Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
         PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
