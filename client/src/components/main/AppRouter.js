@@ -42,6 +42,7 @@ import Tools from '../tools/Tools';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
+import Billing, {BillingQuotas, BillingReports} from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import Log from '../runs/logs/Log';
 import App from './App';
@@ -84,6 +85,15 @@ export default class AppRouter extends React.Component {
         <Route path="/launch/:runId" component={LaunchPipeline} />
         <Route path="/launch/:id/:version(/:configuration)" component={LaunchPipeline} />
         <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
+        <Redirect from="/billing" to="/billing/reports" />
+        <Route path="/billing" component={Billing}>
+          <Route path="quotas" component={BillingQuotas} />
+          <Route path="reports" component={BillingReports.default}>
+            <IndexRoute component={BillingReports.GeneralReport} />
+            <Route path="instance(/:type)" component={BillingReports.InstanceReport} />
+            <Route path="storage(/:type)" component={BillingReports.StorageReport} />
+          </Route>
+        </Route>
         <Route path="/miew" component={MiewPage} />
         <Route path="/library" component={PipelinesLibrary}>
           <IndexRoute component={FolderBrowser} />

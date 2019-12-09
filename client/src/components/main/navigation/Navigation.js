@@ -103,6 +103,14 @@ export default class Navigation extends React.Component {
       isDefault: false
     },
     {
+      title: 'Billing',
+      icon: 'area-chart',
+      path: '/billing',
+      key: 'billing',
+      isDefault: false,
+      isLink: true
+    },
+    {
       key: 'divider',
       isDivider: true
     },

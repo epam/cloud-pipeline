@@ -184,7 +184,6 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: styles.treeItemName,
       render: (text, item) => {
-        console.log(item);
         return this.renderTreeItemText(
           <span>
             Last updated: {

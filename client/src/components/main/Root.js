@@ -50,6 +50,7 @@ import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
 import {Search} from '../../models/search';
+import * as billing from '../../models/billing';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
@@ -113,7 +114,9 @@ const Root = () =>
       users,
       allowedInstanceTypes,
       searchEngine,
-      configurationSchedules
+      configurationSchedules,
+      quotaTemplates: billing.quotas.templates.list,
+      billingCenters: new billing.FetchBillingCenters()
     }}>
     <AppRouter />
   </Provider>;
