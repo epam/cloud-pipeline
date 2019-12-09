@@ -668,7 +668,7 @@
                     FROM
                         pipeline.pipeline_run r
                     WHERE
-                        r.status = 2 AND r.service_url IS NOT NULL
+                        r.status = 2
                     )
                     SELECT
                       active_run.run_id,
@@ -721,7 +721,7 @@
                     ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME
+                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL
                     ORDER BY run_id DESC
                     LIMIT :LIMIT OFFSET :OFFSET
                 ]]>
@@ -777,7 +777,7 @@
                     FROM
                         pipeline.pipeline_run r
                     WHERE
-                        r.status = 2 AND r.service_url IS NOT NULL)
+                        r.status = 2)
                     SELECT count(*) FROM (SELECT
                       active_run.run_id,
                       active_run.pipeline_id,
@@ -829,7 +829,7 @@
                         ) AS u ON (active_run.run_id = u.run_id)
                     UNION
                         SELECT * FROM active_run
-                        WHERE active_run.owner = :NAME) AS run_count
+                        WHERE active_run.owner = :NAME AND active_run.service_url IS NOT NULL) AS run_count
                 ]]>
             </value>
         </property>

@@ -225,8 +225,8 @@ public class RunApiService {
     }
 
     @AclMaskPage
-    public PagedResult<List<PipelineRun>> loadActiveServices(PagingRunFilterVO filterVO) {
-        return runManager.loadActiveServices(filterVO);
+    public PagedResult<List<PipelineRun>> loadActiveSharedRuns(PagingRunFilterVO filterVO) {
+        return runManager.loadActiveSharedRuns(filterVO);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)

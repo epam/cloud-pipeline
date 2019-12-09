@@ -568,14 +568,14 @@ public class PipelineRunManager {
      * @return list of active runs which available for current user
      */
     @Transactional(propagation = Propagation.SUPPORTS)
-    public PagedResult<List<PipelineRun>> loadActiveServices(PagingRunFilterVO filter) {
+    public PagedResult<List<PipelineRun>> loadActiveSharedRuns(PagingRunFilterVO filter) {
         Assert.isTrue(filter.getPage() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
         PipelineUser user = authManager.getCurrentUser();
-        List<PipelineRun> runs = pipelineRunDao.loadActiveServices(filter, user);
-        int count = pipelineRunDao.countActiveServices(user);
+        List<PipelineRun> runs = pipelineRunDao.loadActiveSharedRuns(filter, user);
+        int count = pipelineRunDao.countActiveSharedRuns(user);
         return new PagedResult<>(runs, count);
     }
 
