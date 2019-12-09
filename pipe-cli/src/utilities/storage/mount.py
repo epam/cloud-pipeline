@@ -149,9 +149,4 @@ class Mount(object):
             if mount_aps_proc.poll() is not None:
                 click.echo('Failed to mount storages. Mount command exited with return code: %d'
                            % mount_aps_proc.returncode, err=True)
-                click.echo('Mount logs: ', err=True)
-                for line in mount_aps_proc.stderr.readlines():
-                    line = line.strip('\n')
-                    if line:
-                        click.echo(line, err=True)
                 sys.exit(1)
