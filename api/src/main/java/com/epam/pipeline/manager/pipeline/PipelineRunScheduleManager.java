@@ -25,8 +25,8 @@ import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,9 +37,11 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import javax.annotation.PostConstruct;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class PipelineRunScheduleManager {
 
     private final PipelineRunScheduleDao runScheduleDao;
@@ -47,15 +49,8 @@ public class PipelineRunScheduleManager {
     private final PipelineRunScheduler scheduler;
     private final MessageHelper messageHelper;
 
-    @Autowired
-    PipelineRunScheduleManager(final PipelineRunScheduleDao runScheduleDao,
-                               final PipelineRunManager pipelineRunManager,
-                               final PipelineRunScheduler scheduler,
-                               final MessageHelper messageHelper) {
-        this.runScheduleDao = runScheduleDao;
-        this.pipelineRunManager = pipelineRunManager;
-        this.scheduler = scheduler;
-        this.messageHelper = messageHelper;
+    @PostConstruct
+    public void init() {
         loadAllRunSchedules().forEach(scheduler::scheduleRunSchedule);
     }
 
@@ -140,7 +135,7 @@ public class PipelineRunScheduleManager {
     }
 
     private boolean isNonPauseOrClusterRun(final PipelineRun pipelineRun) {
-        return PipelineRunManager.isClusterRun(pipelineRun)
+        return pipelineRun.isClusterRun()
                || pipelineRun.isNonPause();
     }
 

@@ -498,7 +498,7 @@ public class PipelineRunController extends AbstractRestController {
         notes = "Creates pipeline run schedule.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunSchedule> createRunSchedule(@PathVariable(value = RUN_ID) Long runId,
+    public Result<RunSchedule> createRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
                                                  @RequestBody final PipelineRunScheduleVO schedule) {
         return Result.success(runApiService.createRunSchedule(runId, schedule));
     }
@@ -510,7 +510,7 @@ public class PipelineRunController extends AbstractRestController {
         notes = "Updates pipeline run schedule.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunSchedule> updateRunSchedule(@PathVariable(value = RUN_ID) Long runId,
+    public Result<RunSchedule> updateRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
                                                  @RequestBody final PipelineRunScheduleVO schedule) {
         return Result.success(runApiService.updateRunSchedule(runId, schedule));
     }

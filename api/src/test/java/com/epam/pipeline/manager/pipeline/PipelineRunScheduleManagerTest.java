@@ -143,4 +143,3 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
     }
 
 }
-

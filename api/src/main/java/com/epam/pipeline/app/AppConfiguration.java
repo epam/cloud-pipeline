@@ -35,7 +35,6 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
-
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 

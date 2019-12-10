@@ -122,4 +122,3 @@ public class PipelineRunSchedulerTest extends AbstractSpringTest {
         return run;
     }
 }
-

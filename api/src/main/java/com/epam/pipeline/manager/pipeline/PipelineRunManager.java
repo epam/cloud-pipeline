@@ -957,10 +957,6 @@ public class PipelineRunManager {
         return pipelineRun;
     }
 
-    public static boolean isClusterRun(final PipelineRun run) {
-        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
-    }
-
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
         long imageSizeBytes = toolManager.getCurrentImageSize(configuration.getDockerImage());
         long requiredDiskForImageBytes = imageSizeBytes

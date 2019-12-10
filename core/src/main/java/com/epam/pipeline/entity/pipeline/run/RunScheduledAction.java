@@ -38,7 +38,7 @@ public enum RunScheduledAction {
         return this.id;
     }
 
-    public static RunScheduledAction getById(Long id) {
+    public static RunScheduledAction getById(final Long id) {
         if (id == null) {
             return null;
         }
