@@ -345,7 +345,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void performStop(PipelineRun run, double cpuUsageRate) {
-        if (run.isNonPause() || isClusterRun(run)) {
+        if (run.isNonPause() || run.isClusterRun()) {
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
             return;
         }
@@ -355,7 +355,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void performPause(PipelineRun run, double cpuUsageRate) {
-        if (run.isNonPause() || isClusterRun(run)) {
+        if (run.isNonPause() || run.isClusterRun()) {
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
             return;
         }
@@ -363,9 +363,5 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         pipelineRunManager.pauseRun(run.getId(), true);
         notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
             NotificationType.IDLE_RUN_PAUSED);
-    }
-
-    private boolean isClusterRun(final PipelineRun run) {
-        return run.getNodeCount() != null && run.getNodeCount() != 0 || run.getParentRunId() != null;
     }
 }

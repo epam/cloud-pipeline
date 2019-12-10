@@ -52,6 +52,7 @@ public class PipelineRun extends AbstractSecuredEntity {
     public static final String PARAM_DELIMITER = "|";
     public static final String DEFAULT_PIPELINE_NAME = "pipeline";
     private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
+    public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
 
     private Long pipelineId;
     private Date startDate;
@@ -125,6 +126,21 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     public Boolean isTerminating() {
         return terminating;
+    }
+
+    public boolean isClusterRun() {
+                //master node of autoscale cluster
+        return this.hasBooleanParameter(GE_AUTOSCALING)
+                // master node
+                || this.getNodeCount() != null && this.getNodeCount() != 0
+                // worker node
+                || this.getParentRunId() != null;
+    }
+
+    private boolean hasBooleanParameter(String parameterName) {
+        return this.pipelineRunParameters.stream().anyMatch(p ->
+                p.getName().equals(parameterName) && p.getValue() != null
+                        && p.getValue().equalsIgnoreCase("true"));
     }
 
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
