@@ -266,12 +266,24 @@ export default class PipelineDocuments extends Component {
   generateDocument = async (file) => {
     const {id, version} = this.props.params;
     let graph = this._graphComponent ? this._graphComponent.base64Image() : '';
+
+    const checkBlobErrors = (blob) => {
+      return new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = function () {
+          const status = JSON.parse(this.result)?.status?.toLowerCase();
+          resolve(status === 'error');
+        };
+        fr.readAsText(blob);
+      });
+    };
     if (graph.indexOf('data:image/png;base64,') === 0) {
       graph = graph.substring('data:image/png;base64,'.length);
     }
     try {
       const hide = message.loading('Processing...', 0);
       const pipelineGenerateFile = new PipelineGenerateFile(id, version, file.path);
+      let res;
       await pipelineGenerateFile.send({
         luigiWorkflowGraphVO: {
           width: this._graphComponent ? this._graphComponent.imageSize.width : 1,
@@ -279,8 +291,15 @@ export default class PipelineDocuments extends Component {
           imageData: graph
         }
       });
-      if (pipelineGenerateFile.response) {
-        FileSaver.saveAs(pipelineGenerateFile.response, file.name);
+      res = pipelineGenerateFile.response;
+      if (res.type === 'application/json' && res instanceof Blob) {
+        checkBlobErrors(res)
+          .then(error => error
+            ? message.error('Error generating document', 5)
+            : FileSaver.saveAs(res, file.name)
+          );
+      } else if (res) {
+        FileSaver.saveAs(res, file.name);
       } else {
         message.error('Error generating document', 2);
       }
