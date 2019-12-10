@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -75,6 +76,7 @@ public class ResourceMonitoringManagerTest {
     private static final long TEST_IDLE_ON_DEMAND_RUN_ID = 3;
     private static final long TEST_IDLE_RUN_TO_PROLONG_ID = 4;
     private static final long TEST_HIGH_CONSUMING_RUN_ID = 5;
+    private static final long TEST_AUTOSCALE_RUN_ID = 6;
     private static final int TEST_HIGH_CONSUMING_RUN_LOAD = 80;
     private static final double TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD = 200.0;
     private static final Integer TEST_RESOURCE_MONITORING_DELAY = 111;
@@ -127,6 +129,7 @@ public class ResourceMonitoringManagerTest {
     private PipelineRun idleOnDemandRun;
     private PipelineRun idleRunToProlong;
     private PipelineRun highConsumingRun;
+    private PipelineRun autoscaleMasterRun;
 
 
     private Map<String, Double> mockStats;
@@ -197,6 +200,18 @@ public class ResourceMonitoringManagerTest {
                 ChronoUnit.MINUTES));
         idleSpotRun.setTags(stubTagMap);
 
+        autoscaleMasterRun = new PipelineRun();
+        autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
+                null, null, "autoscaleMasterRun", false, null, null));
+        autoscaleMasterRun.setPodId("autoscaleMasterRun");
+        autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
+        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
+                .toEpochMilli()));
+        autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
+                ChronoUnit.MINUTES));
+        autoscaleMasterRun.setTags(stubTagMap);
+        autoscaleMasterRun.setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
+
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, "idleNode", false, null, null));
@@ -234,6 +249,7 @@ public class ResourceMonitoringManagerTest {
                                                                     // should be = 40% load
         mockStats.put(idleSpotRun.getPodId(), TEST_IDLE_SPOT_RUN_CPU_LOAD);
         mockStats.put(idleOnDemandRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
+        mockStats.put(autoscaleMasterRun.getPodId(), TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD);
 
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class))).thenReturn(mockStats);
@@ -422,6 +438,25 @@ public class ResourceMonitoringManagerTest {
 
         List<Pair<PipelineRun, Double>> runsToNotify = runsToNotifyIdleCaptor.getValue();
         Assert.assertEquals(1, runsToNotify.size());
+    }
+
+    @Test
+    public void testSkipAutoscaleClusterNode() throws InterruptedException {
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
+                .thenReturn(IdleRunAction.PAUSE.name());
+        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+                Collections.singletonList(autoscaleMasterRun));
+
+        Thread.sleep(10);
+
+        resourceMonitoringManager.monitorResourceUsage();
+        // check that notification was sent
+        Assert.assertNotNull(autoscaleMasterRun.getLastIdleNotificationTime());
+
+        resourceMonitoringManager.monitorResourceUsage();
+        // but pause run wasn't called
+        verify(pipelineRunManager, never()).pauseRun(TEST_AUTOSCALE_RUN_ID, true);
+
     }
 
     @Test

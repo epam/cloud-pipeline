@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.util.StringUtils;
 
@@ -138,9 +139,9 @@ public class PipelineRun extends AbstractSecuredEntity {
     }
 
     private boolean hasBooleanParameter(String parameterName) {
-        return this.pipelineRunParameters.stream().anyMatch(p ->
-                p.getName().equals(parameterName) && p.getValue() != null
-                        && p.getValue().equalsIgnoreCase("true"));
+        return CollectionUtils.emptyIfNull(this.pipelineRunParameters).stream()
+                .anyMatch(p -> p.getName().equals(parameterName) && p.getValue() != null
+                               && p.getValue().equalsIgnoreCase("true"));
     }
 
     public void convertParamsToString(Map<String, PipeConfValueVO> parameters) {
