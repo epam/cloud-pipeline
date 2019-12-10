@@ -311,7 +311,7 @@ fi
 #   2. All other nodes: add support for joining node to kube cluster after starting the "paused" job
 cat >> /etc/rc.local << EOF
 systemctl start docker
-kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks
 systemctl start kubelet
 EOF
 
