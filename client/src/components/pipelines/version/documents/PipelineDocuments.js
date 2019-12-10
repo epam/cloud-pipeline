@@ -256,27 +256,37 @@ export default class PipelineDocuments extends Component {
     event && event.stopPropagation();
     try {
       const pipelineFile = new PipelineFile(id, version, file.path);
+      let res;
       await pipelineFile.fetch();
-      FileSaver.saveAs(pipelineFile.response, file.name);
+      res = pipelineFile.response;
+      if (res.type === 'application/json' && res instanceof Blob) {
+        this.checkForBlobErrors(res)
+          .then(error => error
+            ? message.error('Error downloading file', 5)
+            : FileSaver.saveAs(res, file.name)
+          );
+      } else if (res) {
+        FileSaver.saveAs(res, file.name);
+      }
     } catch (e) {
       message.error('Failed to download file', 5);
     }
   };
 
+  checkForBlobErrors = (blob) => {
+    return new Promise(resolve => {
+      const fr = new FileReader();
+      fr.onload = function () {
+        const status = JSON.parse(this.result)?.status?.toLowerCase();
+        resolve(status === 'error');
+      };
+      fr.readAsText(blob);
+    });
+  }
+
   generateDocument = async (file) => {
     const {id, version} = this.props.params;
     let graph = this._graphComponent ? this._graphComponent.base64Image() : '';
-
-    const checkBlobErrors = (blob) => {
-      return new Promise(resolve => {
-        const fr = new FileReader();
-        fr.onload = function () {
-          const status = JSON.parse(this.result)?.status?.toLowerCase();
-          resolve(status === 'error');
-        };
-        fr.readAsText(blob);
-      });
-    };
     if (graph.indexOf('data:image/png;base64,') === 0) {
       graph = graph.substring('data:image/png;base64,'.length);
     }
@@ -293,7 +303,7 @@ export default class PipelineDocuments extends Component {
       });
       res = pipelineGenerateFile.response;
       if (res.type === 'application/json' && res instanceof Blob) {
-        checkBlobErrors(res)
+        this.checkForBlobErrors(res)
           .then(error => error
             ? message.error('Error generating document', 5)
             : FileSaver.saveAs(res, file.name)
