@@ -1354,9 +1354,9 @@ if __name__ == '__main__':
                                                   pipe=pipe, pipeline_version=pipeline_version,
                                                   max_core_per_instance=autoscale_max_core_per_instance)
 
+    default_worker_nodes_number = int(os.getenv('node_count', 0))
     max_instance_cores = instance_helper.get_max_allowed(price_type, hybrid_autoscale).cpu
-    # (1 + int(os.getenv('node_count', 0))) - master plus default workers
-    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores * (1 + int(os.getenv('node_count', 0)))
+    max_cluster_cores = max_instance_cores * max_additional_hosts + instance_cores * (1 + default_worker_nodes_number)
 
     Logger.init(cmd=args.debug, log_file=os.path.join(shared_work_dir, '.autoscaler.log'), 
                 task='GridEngineAutoscaling', verbose=log_verbose)
