@@ -1140,6 +1140,3 @@ def update_cli_version(path):
 # Used to run a PyInstaller "freezed" version
 if getattr(sys, 'frozen', False):
     cli(sys.argv[1:])
-
-if __name__ == '__main__':
-    mount_storage()
