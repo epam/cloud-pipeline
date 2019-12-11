@@ -104,7 +104,7 @@ In this example we will see how an autoscaled cluster behaves on different condi
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_6.PNG)
 10. As long as the most of the jobs are finishing and the workers become excessive they will be removed from the cluster.
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_7.PNG)
-11. At first one of the workers become stopped.
+11. At first one of the workers becomes stopped.
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_8.PNG)
 12. And then the last one becomes stopped too.
     ![CP_AppendixC](attachments/WorkWithAutoscaledCluster_9.PNG)
