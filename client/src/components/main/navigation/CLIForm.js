@@ -47,6 +47,19 @@ const DRIVE_KEY = 'drive';
 const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
 
+function processBashScript (script) {
+  let command = hljs.highlight('bash', script).value;
+  const r = /\[URL\](.+)\[\/URL\]/ig;
+  let e = r.exec(command);
+  while (e) {
+    command = command.substring(0, e.index) +
+      `<a href="${e[1]}" target="_blank">${e[1]}</a>` +
+      command.substring(e.index + e[0].length);
+    e = r.exec(command);
+  }
+  return command;
+}
+
 @inject('authenticatedUserInfo', 'dataStorages', 'preferences')
 @inject(({authenticatedUserInfo, dataStorages, preferences}) => ({
   authenticatedUserInfo,
@@ -202,7 +215,7 @@ export default class CLIForm extends React.Component {
         <code
           id="pip-install-url-input"
           dangerouslySetInnerHTML={{
-            __html: hljs.highlight('bash', pipInstallCommandTemplate).value
+            __html: processBashScript(pipInstallCommandTemplate)
           }} />
       );
 
@@ -227,7 +240,7 @@ export default class CLIForm extends React.Component {
         <code
           id="cli-configure-command-text-area"
           dangerouslySetInnerHTML={{
-            __html: hljs.highlight('bash', cliConfigureCommandTemplate).value
+            __html: processBashScript(cliConfigureCommandTemplate)
           }} />
       );
     }
@@ -284,7 +297,7 @@ export default class CLIForm extends React.Component {
               <pre style={{width: '100%', fontSize: 'smaller'}}>
                 <code
                   id="access-key-text-area"
-                  dangerouslySetInnerHTML={{__html: hljs.highlight('bash', this.state.cli.accessKey).value}} />
+                  dangerouslySetInnerHTML={{__html: processBashScript(this.state.cli.accessKey)}} />
               </pre>
             </Row>
           </Row>
@@ -346,7 +359,7 @@ export default class CLIForm extends React.Component {
         <pre style={{width: '100%', fontSize: 'smaller'}}>
           <code
             id="git-cli-configure-command"
-            dangerouslySetInnerHTML={{__html: hljs.highlight('bash', code).value}} />
+            dangerouslySetInnerHTML={{__html: processBashScript(code)}} />
         </pre>
       </Row>
     );
@@ -375,7 +388,8 @@ export default class CLIForm extends React.Component {
     try {
       driveMapping = JSON.parse(this.pipeDriveMapping);
     } catch (___) {}
-    const operationSystems = ['Windows', ...Object.keys(driveMapping)];
+    const filterUnique = (o, i, a) => a.indexOf(o) === i;
+    const operationSystems = ['Windows', ...Object.keys(driveMapping)].filter(filterUnique);
     let defaultOS = 'Windows';
     if (operationSystems.map(o => o.toLowerCase()).indexOf(getOS().toLowerCase()) >= 0) {
       defaultOS = getOS();
@@ -408,10 +422,7 @@ export default class CLIForm extends React.Component {
               <code
                 id="cli-configure-command-text-area"
                 dangerouslySetInnerHTML={{
-                  __html: hljs.highlight(
-                    'bash',
-                    this.props.preferences.replacePlaceholders(code)
-                  ).value
+                  __html: processBashScript(this.props.preferences.replacePlaceholders(code))
                 }} />
             </pre>
           </Row>
