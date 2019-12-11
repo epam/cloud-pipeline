@@ -325,7 +325,7 @@ public class KubernetesManager {
             Thread.sleep(NODE_READY_TIMEOUT);
             if (attempts <= 0) {
                 throw new IllegalStateException(String.format(
-                        "Node %s doesn't match the ready status over than %d times.", nodeName, attempts));
+                        "Node %s doesn't match the ready status over than %d times.", nodeName, ATTEMPTS_STATUS_NODE));
             }
         }
         LOGGER.debug("Labeling node with run id {}", runId);
