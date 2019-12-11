@@ -137,7 +137,7 @@ In pop-up window select "Auto-scaled cluster" and specify total count of "auto-s
 If you want to set a count of "persistent" child nodes, click "Setup default child nodes count" and specify the value:  
 ![CP_v.0.14_ReleaseNotes](attachments/RN014_AutoScaledCluster_3.png)
 
-For more details see [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration).
+For more details see [here](../../manual/06_Manage_Pipeline/6._Manage_Pipeline.md#configuration) and [here](../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md).
 
 ## A mandatory prefix for the new creating S3-buckets
 

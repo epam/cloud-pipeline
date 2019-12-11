@@ -76,6 +76,7 @@
 - [18. Home page](18_Home_page/18._Home_page.md)
 - [Appendix A. EC2 Instance and Docker container lifecycles](Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles.md)
 - [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)
+- [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
 
 [1. Quick start](01_Quick_start/1._Quick_start.md)  
 This chapter will give you a basic knowledge of pipeline running procedure.
@@ -136,3 +137,6 @@ Learn basics about EC2 Instance and Docker container lifecycle.
 
 [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)  
 Learn basics about working with a Project.
+
+[Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)  
+Learn basics about working with autoscaled cluster runs.
