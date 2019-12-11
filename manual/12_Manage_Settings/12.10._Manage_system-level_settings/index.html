@@ -465,6 +465,10 @@
                     
     <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                </li>
     </ul>
 	    </li>
           
@@ -1014,6 +1018,9 @@
 </tbody>
 </table>
 <h3 id="grid-engine-autoscaling">Grid engine autoscaling</h3>
+<blockquote>
+<p>See <a href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a> for details. </p>
+</blockquote>
 <p>These settings define auto-scaled cluster parameters:</p>
 <table>
 <thead>
@@ -1025,11 +1032,11 @@
 <tbody>
 <tr>
 <td><strong><code>ge.autoscaling.scale.down.timeout</code></strong></td>
-<td>If jobs queue is empty or all jobs are running and there are some idle nodes longer than that timeout - auto-scaled cluster will start to drop idle auto-scaled nodes ("scale-down")</td>
+<td>If jobs queue is empty or all jobs are running and there are some idle nodes longer than that timeout in seconds - auto-scaled cluster will start to drop idle auto-scaled nodes ("scale-down")</td>
 </tr>
 <tr>
 <td><strong><code>ge.autoscaling.scale.up.timeout</code></strong></td>
-<td>If some jobs are in waiting state longer than that timeout - auto-scaled cluster will start to attach new computation nodes to the cluster ("scale-up")</td>
+<td>If some jobs are in waiting state longer than that timeout in seconds - auto-scaled cluster will start to attach new computation nodes to the cluster ("scale-up")</td>
 </tr>
 <tr>
 <td><strong><code>ge.autoscaling.scale.up.polling.timeout</code></strong></td>
