@@ -33,21 +33,26 @@ class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, threading=False):
         pass
 
     @abstractmethod
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, threading=False):
         pass
 
 
 class FrozenMount(AbstractMount):
 
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
-        return self._get_mount_cmd(config, mountpoint, options, '--webdav ' + web_dav_url)
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, threading=False):
+        additional_args = self._append_threading('--webdav ' + web_dav_url, threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args)
 
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
-        return self._get_mount_cmd(config, mountpoint, options, '--bucket ' + bucket)
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, threading=False):
+        additional_args = self._append_threading('--bucket ' + bucket, threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args)
+
+    def _append_threading(self, args, threading):
+        return args + ' --threading' if threading else args
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
         mount_bin = self.get_mount_executable(config)
@@ -93,11 +98,18 @@ class FrozenMount(AbstractMount):
 
 class SourceMount(AbstractMount):
 
-    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url):
-        return self._get_mount_cmd(config, mountpoint, options, ['--webdav', web_dav_url])
+    def get_mount_webdav_cmd(self, config, mountpoint, options, web_dav_url, threading=False):
+        additional_args = self._append_threading(['--webdav', web_dav_url], threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args)
 
-    def get_mount_storage_cmd(self, config, mountpoint, options, bucket):
-        return self._get_mount_cmd(config, mountpoint, options, ['--bucket', bucket])
+    def get_mount_storage_cmd(self, config, mountpoint, options, bucket, threading=False):
+        additional_args = self._append_threading(['--bucket', bucket], threading)
+        return self._get_mount_cmd(config, mountpoint, options, additional_args)
+
+    def _append_threading(self, args, threading):
+        if threading:
+            args.append('--threading')
+        return args
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
         python_exec = sys.executable
@@ -112,23 +124,24 @@ class SourceMount(AbstractMount):
 
 class Mount(object):
 
-    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None):
+    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None,
+                       threading=False):
         config = Config.instance()
         username = config.get_current_user()
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
-            self.mount_dav(mount, config, mountpoint, options, web_dav_url, log_file=log_file)
+            self.mount_dav(mount, config, mountpoint, options, web_dav_url, log_file=log_file, threading=threading)
         else:
-            self.mount_storage(mount, config, mountpoint, options, bucket, log_file=log_file)
+            self.mount_storage(mount, config, mountpoint, options, bucket, log_file=log_file, threading=threading)
 
-    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, log_file=None):
-        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url)
+    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, log_file=None, threading=False):
+        mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url, threading=threading)
         self.run(config, mount_cmd, log_file=log_file)
 
-    def mount_storage(self, mount, config, mountpoint, options, bucket, log_file=None):
-        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket)
+    def mount_storage(self, mount, config, mountpoint, options, bucket, log_file=None, threading=False):
+        mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket, threading=threading)
         self.run(config, mount_cmd, log_file=log_file)
 
     def run(self, config, mount_cmd, mount_timeout=5, log_file=None):
