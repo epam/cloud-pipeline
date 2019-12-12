@@ -26,7 +26,6 @@ import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
@@ -42,7 +41,6 @@ import javax.annotation.PostConstruct;
 
 @Slf4j
 @Component
-@ConditionalOnExpression("${run.scheduling}")
 public class PipelineRunScheduler {
 
     private static final String JOB_EXECUTION_THREADS = "5";

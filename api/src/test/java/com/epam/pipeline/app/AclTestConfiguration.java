@@ -18,6 +18,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunScheduleManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.ToolApiService;
@@ -140,6 +141,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected ContextualPreferenceManager contextualPreferenceManager;
+
+    @MockBean
+    protected PipelineRunScheduleManager pipelineRunScheduleManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
