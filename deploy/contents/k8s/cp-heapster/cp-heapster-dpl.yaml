@@ -28,5 +28,14 @@ spec:
           envFrom:
           - configMapRef:
               name: cp-config-global
+          env:
+          - name: http_proxy
+            value:
+          - name: https_proxy
+            value:
+          - name: HTTP_PROXY
+            value:
+          - name: HTTPS_PROXY
+            value:
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
