@@ -105,7 +105,7 @@ class BufferedFileSystemClient(FileSystemClient):
 
     _READ_AHEAD_SIZE = 20 * MB
 
-    def __init__(self, inner, capacity):
+    def __init__(self, inner, capacity, lock):
         """
         Buffering file system client decorator.
 
@@ -116,6 +116,7 @@ class BufferedFileSystemClient(FileSystemClient):
         """
         self._inner = inner
         self._capacity = capacity
+        self._lock = lock
         self._write_file_buffs = {}
         self._read_file_buffs = {}
 
@@ -139,37 +140,67 @@ class BufferedFileSystemClient(FileSystemClient):
         return self._inner.ls(path, depth)
 
     def upload(self, buf, path):
-        self._inner.upload(buf, path)
+        logging.error("upload")
+        try:
+            self._lock.lock(path)
+            self._inner.upload(buf, path)
+        finally:
+            self._lock.unlock(path)
 
     def delete(self, path):
-        self._inner.delete(path)
+        logging.error("delete")
+        try:
+            self._lock.lock(path)
+            self._inner.delete(path)
+        finally:
+            self._lock.unlock(path)
 
     def mv(self, old_path, path):
-        self._inner.mv(old_path, path)
+        logging.error("mv")
+        try:
+            self._lock.lock(path)
+            self._inner.mv(old_path, path)
+        finally:
+            self._lock.unlock(path)
 
     def mkdir(self, path):
-        self._inner.mkdir(path)
+        logging.error("mkdir")
+        try:
+            self._lock.lock(path)
+            self._inner.mkdir(path)
+        finally:
+            self._lock.unlock(path)
 
     def rmdir(self, path):
-        self._inner.rmdir(path)
+        logging.error("rmdir")
+        try:
+            self._lock.lock(path)
+            self._inner.rmdir(path)
+        finally:
+            self._lock.unlock(path)
 
     def download_range(self, fh, buf, path, offset=0, length=0):
-        buf_key = fh, path
-        file_buf = self._read_file_buffs.get(buf_key)
-        if not file_buf:
-            file_size = self.attrs(path).size
-            if not file_size:
-                return
-            file_buf = self._new_read_buf(fh, path, file_size, offset)
-            self._read_file_buffs[buf_key] = file_buf
-        if not file_buf.suits(offset, length):
-            if file_buf.offset < file_buf.capacity:
-                file_buf.append(self._read_ahead(fh, path, file_buf.offset))
-                file_buf.shrink()
-            if not file_buf.suits(offset, length):
-                file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
+        logging.error("download_range")
+        try:
+            self._lock.lock(path)
+            buf_key = fh, path
+            file_buf = self._read_file_buffs.get(buf_key)
+            if not file_buf:
+                file_size = self.attrs(path).size
+                if not file_size:
+                    return
+                file_buf = self._new_read_buf(fh, path, file_size, offset)
                 self._read_file_buffs[buf_key] = file_buf
-        buf.write(file_buf.view(offset, length))
+            if not file_buf.suits(offset, length):
+                if file_buf.offset < file_buf.capacity:
+                    file_buf.append(self._read_ahead(fh, path, file_buf.offset))
+                    file_buf.shrink()
+                if not file_buf.suits(offset, length):
+                    file_buf = self._new_read_buf(fh, path, file_buf.capacity, offset)
+                    self._read_file_buffs[buf_key] = file_buf
+            buf.write(file_buf.view(offset, length))
+        finally:
+            self._lock.unlock(path)
 
     def _new_read_buf(self, fh, path, file_size, offset):
         file_buf = _ReadBuffer(offset, file_size)
@@ -182,23 +213,28 @@ class BufferedFileSystemClient(FileSystemClient):
             return read_ahead_buf.getvalue()
 
     def upload_range(self, fh, buf, path, offset=0):
-        logging.debug('Uploading range %d-%d for %d:%s' % (offset, offset + len(buf), fh, path))
-        file_buf = self._write_file_buffs.get(path)
-        if not file_buf:
-            file_buf = self._new_write_buf(self._capacity, offset)
-            self._write_file_buffs[path] = file_buf
-        if file_buf.suits(offset):
-            file_buf.append(buf)
-        else:
-            logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
-            old_file_buf = self._flush_write_buf(fh, path)
-            file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
-            self._write_file_buffs[path] = file_buf
-        if file_buf.is_full():
-            logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
-            self._flush_write_buf(fh, path)
-            file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
-            self._write_file_buffs[path] = file_buf
+        logging.error("upload_range")
+        try:
+            self._lock.lock(path)
+            logging.debug('Uploading range %d-%d for %d:%s' % (offset, offset + len(buf), fh, path))
+            file_buf = self._write_file_buffs.get(path)
+            if not file_buf:
+                file_buf = self._new_write_buf(self._capacity, offset)
+                self._write_file_buffs[path] = file_buf
+            if file_buf.suits(offset):
+                file_buf.append(buf)
+            else:
+                logging.info('Uploading buffer is not sequential for %s. Buffer will be cleared.' % path)
+                old_file_buf = self._flush_write_buf(fh, path)
+                file_buf = self._new_write_buf(self._capacity, offset, buf, old_file_buf)
+                self._write_file_buffs[path] = file_buf
+            if file_buf.is_full():
+                logging.info('Uploading buffer is full for %s. Buffer will be cleared.' % path)
+                self._flush_write_buf(fh, path)
+                file_buf = self._new_write_buf(self._capacity, file_buf.offset, buf=None, old_write_buf=file_buf)
+                self._write_file_buffs[path] = file_buf
+        finally:
+            self._lock.unlock(path)
 
     def _new_write_buf(self, capacity, offset, buf=None, old_write_buf=None):
         write_buf = _WriteBuffer(offset, capacity, inherited_size=old_write_buf.inherited_size if old_write_buf else 0)
@@ -215,10 +251,15 @@ class BufferedFileSystemClient(FileSystemClient):
         return write_buf
 
     def flush(self, fh, path):
-        logging.info('Flushing buffers for %d:%s' % (fh, path))
-        self._flush_read_buf(fh, path)
-        self._flush_write_buf(fh, path)
-        self._inner.flush(fh, path)
+        logging.error("flush")
+        try:
+            self._lock.lock(path)
+            logging.info('Flushing buffers for %d:%s' % (fh, path))
+            self._flush_read_buf(fh, path)
+            self._flush_write_buf(fh, path)
+            self._inner.flush(fh, path)
+        finally:
+            self._lock.unlock(path)
 
     def _flush_read_buf(self, fh, path):
         return self._read_file_buffs.pop((fh, path), None)
