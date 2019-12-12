@@ -114,6 +114,7 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_RUN_NOT_STOPPED = "error.pipeline.run.not.stopped";
     public static final String ERROR_INSTANCE_DISK_NOT_ENOUGH = "error.run.instance.disk.not.enough";
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
+    public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -140,6 +141,15 @@ public final class MessageConstants {
     public static final String ERROR_RUN_TERMINATION_WRONG_STATUS = "error.run.termination.wrong.status";
     public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
+
+    //Run schedule
+    public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
+    public static final String CRON_EXPRESSION_IS_NOT_VALID = "cron.expression.is.not.valid";
+    public static final String CRON_EXPRESSION_ALREADY_EXISTS = "cron.expression.already.exists";
+    public static final String SCHEDULE_ACTION_IS_NOT_PROVIDED = "schedule.action.is.not.provided";
+    public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
+    public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";
+    public static final String ERROR_RUN_ID_NOT_CORRESPONDING = "error.run.id.not.corresponding";
 
     // PodMonitor messages
     public static final String DEBUG_MONITOR_CHECK_RUNNING = "debug.monitor.check.running";

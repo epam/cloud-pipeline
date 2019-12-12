@@ -17,7 +17,9 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -29,6 +31,7 @@ import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.concurrent.DelegatingSecurityContextExecutor;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
@@ -72,6 +75,15 @@ public class AppConfiguration implements SchedulingConfigurer {
         scheduler.setRemoveOnCancelPolicy(true);
         scheduler.setPoolSize(scheduledPoolSize); // For AbstractSchedulingManager's subclasses' tasks
         return scheduler;
+    }
+
+    @Bean
+    public SchedulerFactoryBean schedulerFactoryBean(final ApplicationContext applicationContext) {
+        final SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
+        final AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
+        jobFactory.setApplicationContext(applicationContext);
+        schedulerFactory.setJobFactory(jobFactory);
+        return schedulerFactory;
     }
 
     @Bean
