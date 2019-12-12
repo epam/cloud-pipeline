@@ -258,7 +258,7 @@ export default class PipelineDocuments extends Component {
       let res;
       await pipelineFile.fetch();
       res = pipelineFile.response;
-      if (res.type.includes('application/json') && res instanceof Blob) {
+      if (res.type?.includes('application/json') && res instanceof Blob) {
         this.checkForBlobErrors(res)
           .then(error => error
             ? message.error('Error downloading file', 5)
@@ -301,7 +301,7 @@ export default class PipelineDocuments extends Component {
         }
       });
       res = pipelineGenerateFile.response;
-      if (res.type.includes('application/json') && res instanceof Blob) {
+      if (res.type?.includes('application/json') && res instanceof Blob) {
         this.checkForBlobErrors(res)
           .then(error => error
             ? message.error('Error generating document', 5)
