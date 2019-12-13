@@ -49,6 +49,7 @@
   margin-left: 1px;
   padding: 1px 3px;
   font-size: xx-small;
+  white-space: nowrap;
 }
 
 .node-label[data-run="true"] {
@@ -82,4 +83,3 @@
 .filter-actions-buttons-container {
   margin: 5px 10px;
 }
-
