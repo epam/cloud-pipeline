@@ -27,7 +27,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.quartz.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,7 +142,7 @@ public class PipelineRunScheduleManager {
     private void verifyCronExpression(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
         Assert.notNull(runScheduleVO.getCronExpression(),
                        messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_PROVIDED, runId));
-        Assert.isTrue(CronSequenceGenerator.isValidExpression(runScheduleVO.getCronExpression()),
+        Assert.isTrue(CronExpression.isValidExpression(runScheduleVO.getCronExpression()),
                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_VALID, runId));
     }
 
