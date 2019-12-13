@@ -9,6 +9,7 @@
 }
 
 .node-main-info {
+  word-break: break-all;
   font-size: 20px;
   font-weight: 600;
   margin-right: 10px;
