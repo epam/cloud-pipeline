@@ -170,18 +170,19 @@ For more details see [here](../../manual/15_Interactive_services/15.4._Expose_no
 ## Resource usage form improvement
 
 As a [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) feature was implemented, the number of filters were added:   
-- **Common range for all charts**.   
-    User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.   
-    If this filter is unmarked, user can zoom any plot without any change for others.   
-- **Live update**.   
-    The plots data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.    
-- **Set range**.   
+
+- *Common range for all charts*  
+    User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.  
+    If this filter is unmarked, user can zoom any plot without any change for others.
+- *Live update*  
+    The plots data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.
+- *Set range*  
     User can select the predefined time range for all plots from the list:
     - Whole range
     - Last week
     - Last day
-    - Last hour.   
-- **Date filter**.   
+    - Last hour
+- *Date filter*  
     User can specify the Start and the End dates for plots. The system will substitute the node creating date as the Start date and current date for the End date, if user doesn't select anything.
 
 ![CP_v.0.16_ReleaseNotes](attachments/RN016_ManageClusterNodes_1.png)
