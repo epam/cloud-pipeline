@@ -49,7 +49,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
 
     private static final String RUN_ID = "runId";
 
-    @PostMapping(value = "/{runId}/create")
+    @PostMapping(value = "/{runId}")
     @ResponseBody
     @ApiOperation(
         value = "Creates pipeline run schedule.",
@@ -61,7 +61,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.createRunSchedule(runId, schedule));
     }
 
-    @PutMapping(value = "/{runId}/update")
+    @PutMapping(value = "/{runId}")
     @ResponseBody
     @ApiOperation(
         value = "Updates pipeline run schedule.",
@@ -73,7 +73,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.updateRunSchedule(runId, schedule));
     }
 
-    @GetMapping(value = "/{runId}/loadAll")
+    @GetMapping(value = "/{runId}")
     @ResponseBody
     @ApiOperation(
         value = "Loads all schedules for a given pipeline run.",
@@ -84,7 +84,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.loadAllRunSchedulesByRunId(runId));
     }
 
-    @DeleteMapping(value = "/{runId}/delete")
+    @DeleteMapping(value = "/{runId}")
     @ResponseBody
     @ApiOperation(
         value = "Deletes given pipeline run schedule.",
@@ -96,7 +96,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.deleteRunSchedule(runId, schedule.getScheduleId()));
     }
 
-    @DeleteMapping(value = "/{runId}/deleteAll")
+    @DeleteMapping(value = "/{runId}/all")
     @ResponseBody
     @ApiOperation(
         value = "Deletes all pipeline run's schedules.",
