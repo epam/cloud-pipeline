@@ -31,6 +31,7 @@ import com.epam.pipeline.controller.vo.RunStatusVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -485,5 +486,18 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRun>  updateRunTags(@PathVariable(value = RUN_ID) final Long runId,
                                               @RequestBody final TagsVO tagsVO) {
         return Result.success(runApiService.updateTags(runId, tagsVO));
+    }
+
+    @PostMapping(value = "/run/{runId}/disk/attach")
+    @ResponseBody
+    @ApiOperation(
+            value = "Creates and attaches new disk to pipeline run.",
+            notes = "Creates and attaches new disk to pipeline run cloud instance by the given request. " +
+                    "Disk size should be specified in GB and disk device name is required.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun> attachDisk(@PathVariable(value = RUN_ID) final Long runId,
+                                          @RequestBody final DiskAttachRequest request) {
+        return Result.success(runApiService.attachDisk(runId, request));
     }
 }

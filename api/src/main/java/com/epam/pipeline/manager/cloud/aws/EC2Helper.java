@@ -20,19 +20,27 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.AmazonEC2Exception;
+import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
+import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.VolumeType;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
@@ -243,6 +251,44 @@ public class EC2Helper {
                 .map(List::stream)
                 .orElseGet(Stream::empty)
                 .findFirst();
+    }
+
+    public void createAndAttachVolume(final String runId, final String device, final Long size, final String awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+        final String zone = instance.getPlacement().getAvailabilityZone();
+        final Volume volume = createVolume(client, size, zone);
+        attachVolume(client, instance.getInstanceId(), volume.getVolumeId(), device);
+        enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+    }
+
+    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {
+        final Volume volume = client.createVolume(new CreateVolumeRequest()
+                .withVolumeType(VolumeType.Gp2)
+                .withSize(size.intValue())
+                .withAvailabilityZone(zone))
+                .getVolume();
+        final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeAvailable();
+        waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volume.getVolumeId())));
+        return volume;
+    }
+
+    private void attachVolume(final AmazonEC2 client, final String instanceId, final String volumeId, final String device) {
+        client.attachVolume(new AttachVolumeRequest()
+                .withInstanceId(instanceId)
+                .withVolumeId(volumeId)
+                .withDevice(device));
+        final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeInUse();
+        waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volumeId)));
+    }
+
+    private void enableVolumeDeletionOnInstanceTermination(final AmazonEC2 client, final String instanceId, final String device) {
+        client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
+                .withInstanceId(instanceId)
+                .withBlockDeviceMappings(new InstanceBlockDeviceMappingSpecification()
+                        .withDeviceName(device)
+                        .withEbs(new EbsInstanceBlockDeviceSpecification()
+                                .withDeleteOnTermination(true))));
     }
 
     private double getMeanValue(List<SpotPrice> value) {
