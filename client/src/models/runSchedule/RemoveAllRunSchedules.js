@@ -16,7 +16,7 @@
 
 import RemotePost from '../basic/RemotePost';
 
-export default class RemoveRunScheduleRule extends RemotePost {
+export default class RemoveAllRunSchedules extends RemotePost {
   constructor (runId) {
     super();
     this.constructor.fetchOptions = {
@@ -27,6 +27,6 @@ export default class RemoveRunScheduleRule extends RemotePost {
       credentials: 'include',
       method: 'DELETE'
     };
-    this.url = `/schedule/run/${runId}`;
+    this.url = `/schedule/run/${runId}/all`;
   }
 }

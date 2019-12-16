@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import RemotePost from '../basic/RemotePost';
+import Remote from '../basic/Remote';
 
-export default class CreateRunScheduleRule extends RemotePost {
+export default class RunSchedules extends Remote {
   constructor (runId) {
     super();
     this.url = `/schedule/run/${runId}`;

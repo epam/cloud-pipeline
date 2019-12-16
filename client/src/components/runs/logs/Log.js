@@ -67,6 +67,11 @@ import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
 import RunTags from '../run-tags';
+import RunSchedules from '../../../models/runSchedule/RunSchedules';
+import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
+import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
+import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
+import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -99,6 +104,7 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     runSSH: new PipelineRunSSH(params.runId),
     runFSBrowser: new PipelineRunFSBrowser(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
+    runSchedule: new RunSchedules(params.runId),
     task,
     pipelines,
     roles: new Roles(),
@@ -117,11 +123,14 @@ class Logs extends localization.LocalizedReactComponent {
     resolvedValues: true,
     operationInProgress: false,
     openedPanels: [],
-    shareDialogOpened: false
+    shareDialogOpened: false,
+    scheduleSaveInProgress: false
   };
 
-  componentDidMount() {
-    this.props.runTasks.fetch();
+  componentDidMount () {
+    const {runTasks, runSchedule} = this.props;
+    runTasks.fetch();
+    runSchedule.fetch();
   }
 
   componentWillUnmount () {
@@ -132,8 +141,18 @@ class Logs extends localization.LocalizedReactComponent {
 
   parentRunPipelineInfo = null;
 
-  exportLog = async() => {
-    const {runId}=this.props.params;
+  @computed
+  get runSchedule () {
+    const {runSchedule} = this.props;
+    if (!runSchedule.loaded) {
+      return [];
+    }
+
+    return (runSchedule.value || []).map(i => i);
+  }
+
+  exportLog = async () => {
+    const {runId} = this.props.params;
 
     try {
       const hide = message.loading('Exporting log...');
@@ -479,6 +498,73 @@ class Logs extends localization.LocalizedReactComponent {
       );
     }
     return 'Instance';
+  };
+
+  saveRunSchedule = async (rules) => {
+    const {runId} = this.props;
+    const toRemove = [];
+    const toUpdate = [];
+    const toCreate = [];
+    rules.forEach(({scheduleId, action, cronExpression, timeZone, removed}) => {
+      const payload = {scheduleId, action, cronExpression, timeZone};
+      if (scheduleId) {
+        if (removed) {
+          toRemove.push(payload);
+        }
+        toUpdate.push(payload);
+      }
+      if (!removed) {
+        toCreate.push(payload);
+      }
+    });
+    if (toRemove.length > 0) {
+      const request = new RemoveRunSchedules(runId);
+      await request.send(toRemove);
+    }
+    if (toUpdate.length > 0) {
+      const request = new UpdateRunSchedules(runId);
+      await request.send(toUpdate);
+    }
+    if (toCreate.length > 0) {
+      const request = new CreateRunSchedules(runId);
+      await request.send(toCreate);
+    }
+  };
+
+  onRunScheduleSubmit = (rules) => {
+    const {runSchedule} = this.props;
+    this.setState({scheduleSaveInProgress: true}, async () => {
+      await this.saveRunSchedule(rules);
+      await runSchedule.fetch();
+      this.setState({scheduleSaveInProgress: false});
+    });
+  };
+
+  renderRunSchedule = (run) => {
+    const {runSchedule} = this.props;
+    const {scheduleSaveInProgress} = this.state;
+    if (!canPauseRun(run)) {
+      return null;
+    }
+    const allowEditing = roleModel.isOwner(run);
+    if (!allowEditing && this.runSchedule.length === 0) {
+      return null;
+    }
+    return (
+      <li key="Run schedule">
+        <Row type="flex">
+          <span className={styles.nodeParameterName}>Run schedule: </span>
+          <div className={styles.nodeParameterValue} style={{flex: 1}}>
+            <RunSchedulingList
+              pending={runSchedule.pending || scheduleSaveInProgress}
+              onSubmit={this.onRunScheduleSubmit}
+              allowEdit={allowEditing}
+              rules={this.runSchedule}
+            />
+          </div>
+        </Row>
+      </li>
+    );
   };
 
   renderInstanceDetails = (instance, run) => {
@@ -1337,6 +1423,7 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 this.renderInstanceDetails(instance, this.props.run.value)
               }
+              {this.renderRunSchedule(this.props.run.value)}
             </ul>
           </Collapse.Panel>
         </Collapse>;

@@ -83,7 +83,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
-import RunScheduleDialog from './utilities/launch-schedule';
+import RunScheduleDialog from '../../../runs/run-scheduling/run-scheduling-dialog';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
@@ -714,6 +714,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
+        scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -759,6 +760,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
+        scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -3014,7 +3016,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     const onScheduleSubmit = (rules) => {
       const scheduleRules = rules;
-      this.setState({scheduleRules});
+      this.setState({scheduleRules}, this.closeRunSchedulingDialog);
     };
     const trigger = (
       <Row type="flex" style={{marginBottom: 10}}>

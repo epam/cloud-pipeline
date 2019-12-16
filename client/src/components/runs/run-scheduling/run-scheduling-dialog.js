@@ -19,17 +19,15 @@ import PropTypes from 'prop-types';
 import {Button, Icon, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
 import {observer} from 'mobx-react';
 import moment from 'moment';
+import classNames from 'classnames';
 
-import styles from './launch-schedule.css';
+import {CronConvert, ruleModes} from './cron-convert';
+
+import styles from './run-scheduling.css';
 
 const actions = {
   pause: 'PAUSE',
   resume: 'RESUME'
-};
-
-const ruleModes = {
-  daily: 'daily',
-  weekly: 'weekly'
 };
 
 //  every X days + time
@@ -48,20 +46,25 @@ export default class RunScheduleDialog extends React.Component {
     rules: []
   };
 
+  componentDidMount () {
+    this.prepareState();
+  }
+
   componentDidUpdate (prevProps, prevState) {
-    if (this.props !== prevProps) {
+    if (this.props.rules !== prevProps.rules) {
       this.prepareState();
     }
   }
 
   prepareState = (props = this.props) => {
-    const convertRule = ({action, cronExpression, id, timeZone}) => {
-      const schedule = CronConverter.convertToRuleScheduleObject(cronExpression);
+    const convertRule = ({action, cronExpression, scheduleId, timeZone, removed = false}) => {
+      const schedule = CronConvert.convertToRuleScheduleObject(cronExpression);
 
       return {
-        id,
+        scheduleId,
         timeZone,
         action,
+        removed,
         schedule
       };
     };
@@ -69,21 +72,6 @@ export default class RunScheduleDialog extends React.Component {
     const rules = (props.rules || []).map(convertRule);
 
     this.setState({rules});
-  };
-
-  getValidationRow = (field) => {
-    if (this.state.validation[field]) {
-      return (
-        <Row
-          key={`${field} validation`}
-          type="flex"
-          align="middle"
-          style={{paddingLeft: 115, fontSize: 'smaller', color: 'red'}}>
-          {this.state.validation[field]}
-        </Row>
-      );
-    }
-    return null;
   };
 
   validate = () => {
@@ -98,13 +86,14 @@ export default class RunScheduleDialog extends React.Component {
     }
     if (this.validate()) {
       const {rules} = this.state;
-      const convertRule = ({action, schedule, id, timeZone}) => {
-        const cronExpression = CronConverter.convertToCronString(schedule);
+      const convertRule = ({action, schedule, scheduleId, timeZone, removed = false}) => {
+        const cronExpression = CronConvert.convertToCronString(schedule);
 
         return {
-          id,
+          scheduleId,
           action,
           timeZone,
+          removed,
           cronExpression
         };
       };
@@ -136,12 +125,21 @@ export default class RunScheduleDialog extends React.Component {
     const {rules} = this.state;
 
     if (rules[index]) {
-      rules.splice(index, 1);
+      rules[index].removed = true;
       this.setState({rules});
     }
   };
 
-  renderActionSelector = ({action}, i) => {
+  onRuleRestore = (index) => {
+    const {rules} = this.state;
+
+    if (rules[index]) {
+      rules[index].removed = false;
+      this.setState({rules});
+    }
+  };
+
+  renderActionSelector = ({action, removed}, i) => {
     const onActionChange = (value) => {
       const {rules} = this.state;
 
@@ -151,6 +149,7 @@ export default class RunScheduleDialog extends React.Component {
     return (
       <div>
         <Select
+          disabled={removed}
           onSelect={onActionChange}
           value={action}
           size="small"
@@ -163,7 +162,7 @@ export default class RunScheduleDialog extends React.Component {
     );
   };
 
-  renderScheduleModeSelector = ({schedule}, i) => {
+  renderScheduleModeSelector = ({removed, schedule}, i) => {
     const onModeChange = (value) => {
       const {rules} = this.state;
 
@@ -180,6 +179,7 @@ export default class RunScheduleDialog extends React.Component {
     return (
       <div>
         <Select
+          disabled={removed}
           onSelect={onModeChange}
           value={schedule.mode}
           size="small"
@@ -192,7 +192,7 @@ export default class RunScheduleDialog extends React.Component {
     );
   };
 
-  renderScheduleEverySelector = ({schedule}, i) => {
+  renderScheduleEverySelector = ({removed, schedule}, i) => {
     if (schedule.mode !== ruleModes.daily) {
       return null;
     }
@@ -206,6 +206,7 @@ export default class RunScheduleDialog extends React.Component {
       <div style={{flex: 1, marginLeft: 15}}>
         Every
         <InputNumber
+          disabled={removed}
           min={1}
           max={31}
           onChange={onEveryChange}
@@ -218,7 +219,7 @@ export default class RunScheduleDialog extends React.Component {
     );
   };
 
-  renderDayOfWeekSelector = ({schedule}, i) => {
+  renderDayOfWeekSelector = ({removed, schedule}, i) => {
     if (schedule.mode !== ruleModes.weekly) {
       return null;
     }
@@ -242,6 +243,7 @@ export default class RunScheduleDialog extends React.Component {
     return (
       <div style={{flex: 1, marginLeft: 15}}>
         <Select
+          disabled={removed}
           mode="multiple"
           onDeselect={onDayOfWeekDeselect}
           onSelect={onDayOfWeekSelect}
@@ -249,19 +251,17 @@ export default class RunScheduleDialog extends React.Component {
           size="small"
           style={{width: 170}}
         >
-          <Select.Option key={'1'}>Monday</Select.Option>
-          <Select.Option key={'2'}>Tuesday</Select.Option>
-          <Select.Option key={'3'}>Wednesday</Select.Option>
-          <Select.Option key={'4'}>Thursday</Select.Option>
-          <Select.Option key={'5'}>Friday</Select.Option>
-          <Select.Option key={'6'}>Saturday</Select.Option>
-          <Select.Option key={'0'}>Sunday</Select.Option>
+          {
+            moment
+              .weekdays()
+              .map((day, id) => (<Select.Option key={`${id}`}>{day}</Select.Option>))
+          }
         </Select>
       </div>
     );
   };
 
-  renderTimePicker = ({schedule}, i) => {
+  renderTimePicker = ({removed, schedule}, i) => {
     const onTimeChange = (moment, timeString) => {
       const {rules} = this.state;
       const [hours, minutes] = timeString.split(':');
@@ -274,7 +274,18 @@ export default class RunScheduleDialog extends React.Component {
       <div style={{marginLeft: 15}}>
         at
         <TimePicker
+          disabled={removed}
+          hideDisabledOptions
           format={format}
+          disabledMinutes={() => {
+            const disabledMinutes = [];
+            for (let i = 1; i < 60; i++) {
+              if (i % 5) {
+                disabledMinutes.push(i);
+              }
+            }
+            return disabledMinutes;
+          }}
           onChange={onTimeChange}
           value={moment(`${schedule.time.hours}:${schedule.time.minutes}`, format)}
           size="small"
@@ -290,7 +301,11 @@ export default class RunScheduleDialog extends React.Component {
         key={i}
         type="flex"
         justify="space-between"
-        className={styles.ruleRow}
+        className={classNames(
+          styles.ruleRow, {
+            [styles.ruleRowRemoved]: rule.removed
+          }
+        )}
         style={{padding: 5, width: '100%'}}
       >
         {this.renderActionSelector(rule, i)}
@@ -298,14 +313,27 @@ export default class RunScheduleDialog extends React.Component {
         {this.renderScheduleEverySelector(rule, i)}
         {this.renderDayOfWeekSelector(rule, i)}
         {this.renderTimePicker(rule, i)}
-        <Button
-          onClick={() => { this.onRuleRemove(i); }}
-          shape="circle"
-          icon="delete"
-          size="small"
-          style={{marginLeft: 15}}
-          type="danger"
-        />
+        {
+          !rule.removed
+            ? (
+              <Button
+                onClick={() => { this.onRuleRemove(i); }}
+                shape="circle"
+                icon="delete"
+                size="small"
+                style={{marginLeft: 15}}
+                type="danger"
+              />
+            ) : (
+              <Button
+                onClick={() => { this.onRuleRestore(i); }}
+                shape="circle"
+                icon="reload"
+                size="small"
+                style={{marginLeft: 15}}
+              />
+            )
+        }
       </Row>
     );
   };
@@ -320,7 +348,7 @@ export default class RunScheduleDialog extends React.Component {
         onCancel={onClose}
         onOk={this.onOkClicked}
         visible={visible}
-        width={570}>
+        width={600}>
         <Row type="flex" style={{maxHeight: 400, overflowY: 'auto', overflowX: 'hidden'}}>
           {rules.map(this.renderRule)}
         </Row>
@@ -329,112 +357,5 @@ export default class RunScheduleDialog extends React.Component {
         </Row>
       </Modal>
     );
-  }
-}
-
-class CronConverter {
-  static _getCronParts (expression) {
-    if (!expression || expression.length === 0) {
-      return null;
-    }
-    const parts = expression.split(' ').filter(Boolean);
-    if (parts.length > 5) {
-      const [, minutes, hours, dayOfMonth, , dayOfWeek] = parts;
-      return {
-        minutes,
-        hours,
-        dayOfMonth,
-        dayOfWeek
-      };
-    } else if (parts.length === 5) {
-      const [minutes, hours, dayOfMonth, , dayOfWeek] = parts;
-
-      return {
-        minutes,
-        hours,
-        dayOfMonth,
-        dayOfWeek
-      };
-    }
-    return null;
-  }
-
-  static convertToRuleScheduleObject (cronExpression) {
-    const cronParts = CronConverter._getCronParts(cronExpression);
-
-    let time = {};
-    if (!isNaN(+cronParts.minutes)) {
-      time.minutes = +cronParts.minutes;
-    }
-    if (!isNaN(+cronParts.hours)) {
-      time.hours = +cronParts.hours;
-    }
-    let mode;
-    let every;
-    let dayOfWeek;
-    if ((cronParts.dayOfWeek === '*' || cronParts.dayOfWeek === '?') &&
-      cronParts.dayOfMonth.includes('/')) {
-      mode = ruleModes.daily;
-      every = cronParts.dayOfMonth.split('/')[1];
-    } else {
-      mode = ruleModes.weekly;
-      dayOfWeek = cronParts.dayOfWeek.replace('7', '0').includes(',')
-        ? cronParts.dayOfWeek.split(',')
-        : [cronParts.dayOfWeek];
-    }
-    // {
-    //   mode: ruleModes.daily | ruleModes.weekly,
-    //   dayOfWeek: [], | every: 1,
-    //   time: {
-    //     hours: 0,
-    //     minutes: 0
-    //   }
-    // }
-    return {
-      mode,
-      every,
-      dayOfWeek,
-      time
-    };
-  }
-
-  /**
-   * Returns cron expression according to given params
-   * @param scheduleObject {Object}
-   * @param scheduleObject.mode {ruleModes.weekly|ruleModes.daily} - rule recurrence mode (daily or weekly)
-   * @param scheduleObject.dayOfWeek {null|Array} - An array of day(s) of week for weekly recurrence mode
-   * @param scheduleObject.every {null|Number|String} - day of month for daily recurrence mode
-   * @param scheduleObject.time {Object} - time object
-   * @param scheduleObject.time.hours {Number|String} - hours
-   * @param scheduleObject.time.minutes {Number|String} - minutes
-   * @param cronLength {Number} - Resulting cron expression string format (5, 6 or 7 parts)
-   * @return {String|null} - Cron expression string
-   * */
-  static convertToCronString ({
-    mode,
-    dayOfWeek,
-    every,
-    time: {
-      hours,
-      minutes
-    }
-  },
-  cronLength = 5
-  ) {
-    let cron5;
-    if (mode === ruleModes.daily) {
-      cron5 = `${minutes} ${hours} */${every} * ?`;
-    }
-    if (mode === ruleModes.weekly) {
-      cron5 = `${minutes} ${hours} ? * ${dayOfWeek.sort().join(',')}`;
-    }
-    if (cronLength === 6) {
-      return `0 ${cron5}`;
-    }
-    if (cronLength === 7) {
-      return `0 ${cron5} *`;
-    }
-
-    return cron5 || null;
   }
 }

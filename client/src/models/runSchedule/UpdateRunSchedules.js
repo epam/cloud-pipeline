@@ -16,7 +16,7 @@
 
 import RemotePost from '../basic/RemotePost';
 
-export default class UpdateRunScheduleRule extends RemotePost {
+export default class UpdateRunSchedules extends RemotePost {
   constructor (runId) {
     super();
     this.constructor.fetchOptions = {
