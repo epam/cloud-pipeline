@@ -24,7 +24,7 @@ import RunTable from '../../../runs/RunTable';
 import connect from '../../../../utils/connect';
 import pipelineRun from '../../../../models/pipelines/PipelineRun';
 import parseQueryParameters from '../../../../utils/queryParameters';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const pageSize = 20;
 

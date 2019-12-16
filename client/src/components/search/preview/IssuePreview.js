@@ -24,7 +24,7 @@ import renderSeparator from './renderSeparator';
 import {PreviewIcons} from './previewIcons';
 import styles from './preview.css';
 import IssueLoad from '../../../models/issues/IssueLoad';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
 import roleModel from '../../../utils/roleModel';
 

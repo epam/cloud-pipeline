@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
-const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
-    return '';
+import RemotePost from '../basic/RemotePost';
+
+export default class CreateRunSchedules extends RemotePost {
+  constructor (runId) {
+    super();
+    this.url = `/schedule/run/${runId}`;
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
-};
-export default displayDate;
+}

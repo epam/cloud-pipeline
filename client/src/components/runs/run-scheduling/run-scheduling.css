@@ -1,0 +1,43 @@
+.rules-container {
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-direction: column;
+}
+
+.rule-row {
+  flex-direction: column;
+}
+
+.rule-row:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.rule-row.rule-row-removed {
+  background-color: rgba(255, 0, 0, 0.05);
+}
+
+.error-row {
+  color: red;
+  padding-bottom: 5px;
+  text-align: center;
+}
+
+.select-has-error div {
+  border-color: red;
+}
+
+.scheduling {
+  padding: 5px;
+}
+
+.scheduling-with-timezone {
+  padding: 5px 5px 0 5px;
+}
+
+.timezone {
+  padding: 0 5px 5px 5px;
+  color: rgba(0,0,0,0.5);
+  text-align: right;
+  font-size: 11px;
+}

@@ -25,7 +25,7 @@ import localization from '../../../../utils/localization';
 import {Alert, Card, Icon, Row} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import styles from './Panel.css';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const NEW_ISSUE_EVENT = 'new issue';
 const UPDATE_ISSUE_EVENT = 'update issue';

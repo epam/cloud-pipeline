@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 export default function evaluateRunDuration (run) {
   if (run.runStatuses) {

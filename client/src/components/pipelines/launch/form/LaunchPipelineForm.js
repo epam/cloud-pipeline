@@ -83,6 +83,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
+import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
@@ -203,6 +204,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
+    scheduleRules: null,
     bucketBrowserVisible: false,
     bucketPath: null,
     bucketPathParameterKey: null,
@@ -710,6 +712,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
+        scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -755,6 +758,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
+        scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
         maxNodesCount: this.props.parameters.parameters &&
         this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -1023,6 +1027,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'boolean',
         value: true
       };
+    }
+    if (!payload.isSpot &&
+      !this.state.launchCluster &&
+      this.state.scheduleRules &&
+      this.state.scheduleRules.length > 0) {
+      payload.scheduleRules = this.state.scheduleRules;
     }
     return payload;
   };
@@ -2987,6 +2997,35 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
+  renderScheduleControl = () => {
+    const {editConfigurationMode, isDetachedConfiguration} = this.props;
+    const {launchCluster, scheduleRules} = this.state;
+    const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
+      this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
+
+    if (editConfigurationMode || isDetachedConfiguration || isSpot || launchCluster) {
+      return null;
+    }
+    const onScheduleSubmit = (rules) => {
+      const scheduleRules = rules.filter(r => !r.removed);
+      this.setState({scheduleRules});
+    };
+
+    return (
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'runScheduling')}
+        {...this.leftFormItemLayout}
+        label="Maintenance"
+        hasFeedback>
+        <RunSchedulingList
+          allowEdit
+          onSubmit={onScheduleSubmit}
+          rules={scheduleRules}
+        />
+      </FormItem>
+    );
+  };
+
   renderPriceTypeSelection = () => {
     if (this.state.isDts && this.props.detached) {
       return undefined;
@@ -3938,6 +3977,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key={ADVANCED}
               className={styles.section}
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}

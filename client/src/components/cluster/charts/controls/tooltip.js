@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {PlotColors} from './utilities';
 
 const MARGIN = 5;

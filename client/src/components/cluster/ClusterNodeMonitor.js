@@ -27,7 +27,7 @@ import {
   Menu,
   Row
 } from 'antd';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import LoadingView from '../special/LoadingView';
 import styles from './ClusterNode.css';
 import {

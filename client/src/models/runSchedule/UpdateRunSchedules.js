@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
-const displayDate = (date, format = dateDisplayFormat) => {
-  if (!date) {
-    return '';
+import RemotePost from '../basic/RemotePost';
+
+export default class UpdateRunSchedules extends RemotePost {
+  constructor (runId) {
+    super();
+    this.constructor.fetchOptions = {
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8'
+      },
+      mode: 'cors',
+      credentials: 'include',
+      method: 'PUT'
+    };
+    this.url = `/schedule/run/${runId}`;
   }
-  const localTime = moment.utc(date).toDate();
-  return moment(localTime).format(format);
-};
-export default displayDate;
+}

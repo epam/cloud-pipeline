@@ -45,6 +45,7 @@ import {
   PermissionErrors,
   PermissionErrorsTitle
 } from './execution-allowed-check';
+import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -93,6 +94,20 @@ export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTy
     return payload;
   }
   return payload;
+}
+
+async function saveRunSchedule (runId, scheduleRules) {
+  const payload = scheduleRules.filter(r => !r.removed)
+    .map(({scheduleId, action, cronExpression, timeZone}) => (
+      {scheduleId, action, cronExpression, timeZone}
+    ));
+
+  const request = new CreateRunSchedules(runId);
+  await request.send(payload);
+
+  if (request.error) {
+    message.error(request.error);
+  }
 }
 
 function runFn (payload, confirm, title, warning, stores, callbackFn, allowedInstanceTypesRequest) {
@@ -146,6 +161,11 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         launchName = imageName;
       }
     }
+    let scheduleRules = null;
+    if (payload.scheduleRules && payload.scheduleRules.length > 0) {
+      scheduleRules = payload.scheduleRules;
+      delete payload.scheduleRules;
+    }
     const launchFn = async () => {
       const hide = message.loading(`Launching ${launchName}...`, -1);
       await PipelineRunner.send({...payload, force: true});
@@ -155,6 +175,9 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
         resolve(false);
         callbackFn && callbackFn(false);
       } else {
+        if (scheduleRules && scheduleRules.length > 0) {
+          await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
+        }
         resolve(true);
         callbackFn && callbackFn(true);
       }
@@ -249,6 +272,9 @@ function runFn (payload, confirm, title, warning, stores, callbackFn, allowedIns
               resolve(false);
               callbackFn && callbackFn(false);
             } else {
+              if (scheduleRules && scheduleRules.length > 0) {
+                await saveRunSchedule(PipelineRunner.value.id, scheduleRules);
+              }
               resolve(true);
               callbackFn && callbackFn(true);
             }
