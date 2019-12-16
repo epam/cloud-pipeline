@@ -45,11 +45,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PipelineRunScheduleController extends AbstractRestController {
 
-    private final RunScheduleApiService runScheduleApiService;
-
+    private static final String RUN_ID_PATH = "/{runId}";
     private static final String RUN_ID = "runId";
 
-    @PostMapping(value = "/{runId}")
+    private final RunScheduleApiService runScheduleApiService;
+
+    @PostMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
         value = "Creates pipeline run schedules.",
@@ -61,7 +62,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.createRunSchedules(runId, schedules));
     }
 
-    @PutMapping(value = "/{runId}")
+    @PutMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
         value = "Updates pipeline run schedules.",
@@ -73,7 +74,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.updateRunSchedules(runId, schedules));
     }
 
-    @GetMapping(value = "/{runId}")
+    @GetMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
         value = "Loads all schedules for a given pipeline run.",
@@ -84,7 +85,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.loadAllRunSchedulesByRunId(runId));
     }
 
-    @DeleteMapping(value = "/{runId}")
+    @DeleteMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
         value = "Deletes given pipeline run schedules.",
@@ -96,7 +97,7 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.deleteRunSchedule(runId, schedules));
     }
 
-    @DeleteMapping(value = "/{runId}/all")
+    @DeleteMapping(value = RUN_ID_PATH + "/all")
     @ResponseBody
     @ApiOperation(
         value = "Deletes all pipeline run's schedules.",
