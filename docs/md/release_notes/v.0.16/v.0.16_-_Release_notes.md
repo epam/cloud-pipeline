@@ -191,6 +191,11 @@ All filters are working for all plots simultaneously: data for all plots will be
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
+## Blocking/unblocking users and groups
+
+The blocking and unblocking users and groups feature is now available for a manual and an automated manners.
+
+
 ***
 
 ## Notable Bug fixes
