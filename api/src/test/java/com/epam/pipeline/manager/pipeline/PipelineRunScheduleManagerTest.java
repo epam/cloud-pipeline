@@ -34,8 +34,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -63,6 +66,7 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
     private CloudRegionDao regionDao;
 
     private PipelineRunScheduleVO testRunScheduleVO;
+    private PipelineRunScheduleVO testRunScheduleVO2;
 
     @Before
     public void setUp() {
@@ -76,52 +80,85 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
         createPipelineRun(RUN_ID, testPipeline.getId());
 
         testRunScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
+        testRunScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2);
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testCreateRunSchedule() {
-        final RunSchedule runSchedule = runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
-        final RunSchedule loadRunSchedule = runScheduleManager.loadRunSchedule(runSchedule.getId());
-        assertEquals(runSchedule.getRunId(), loadRunSchedule.getRunId());
-        assertEquals(runSchedule.getCronExpression(), loadRunSchedule.getCronExpression());
-        assertEquals(runSchedule.getAction(), loadRunSchedule.getAction());
+    public void testCreateRunSchedules() {
+        final List<RunSchedule> runSchedules =
+            runScheduleManager.createRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        runSchedules.forEach(this::loadAndAssertSchedule);
     }
 
     @Test(expected = IllegalArgumentException.class)
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testCreateRunScheduleWithIdenticalCronExpression() {
-        runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
+    public void testCreateRunScheduleWithExistentCronExpression() {
+        runScheduleManager.createRunSchedules(RUN_ID, Collections.singletonList(testRunScheduleVO));
         testRunScheduleVO.setAction(RunScheduledAction.RESUME);
-        runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
+        runScheduleManager.createRunSchedules(RUN_ID, Collections.singletonList(testRunScheduleVO));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void  createSchedulesWithIdenticalExpressions() {
+        final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
+        final PipelineRunScheduleVO runScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
+        runScheduleManager.createRunSchedules(RUN_ID, Arrays.asList(runScheduleVO, runScheduleVO2));
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testUpdateRunSchedule() {
-        final RunSchedule runSchedule = runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
-        testRunScheduleVO.setScheduleId(runSchedule.getId());
+    public void testUpdateRunSchedules() {
+        final List<RunSchedule> schedules =
+            runScheduleManager.createRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+
+        testRunScheduleVO.setScheduleId(schedules.get(0).getId());
         testRunScheduleVO.setCronExpression(CRON_EXPRESSION2);
-        final RunSchedule updatedRunSchedule = runScheduleManager.updateRunSchedule(RUN_ID, testRunScheduleVO);
-        final List<RunSchedule> loadRunSchedule = runScheduleManager.loadAllRunSchedulesByRunId(runSchedule.getRunId());
-        assertEquals(1, loadRunSchedule.size());
-        assertEquals(updatedRunSchedule.getRunId(), loadRunSchedule.get(0).getRunId());
-        assertEquals(updatedRunSchedule.getCronExpression(), loadRunSchedule.get(0).getCronExpression());
-        assertEquals(updatedRunSchedule.getAction(), loadRunSchedule.get(0).getAction());
+        testRunScheduleVO2.setScheduleId(schedules.get(1).getId());
+        testRunScheduleVO2.setCronExpression(CRON_EXPRESSION1);
+
+        final List<RunSchedule> updatedSchedules =
+            runScheduleManager.updateRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        updatedSchedules.forEach(this::loadAndAssertSchedule);
+
+        final List<RunSchedule> loadRunSchedule = runScheduleManager.loadAllRunSchedulesByRunId(RUN_ID);
+        assertEquals(2, loadRunSchedule.size());
     }
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void testDeleteRunSchedule() {
-        final RunSchedule runSchedule = runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
-        runScheduleManager.deleteRunSchedule(RUN_ID, runSchedule.getId());
-        final List<RunSchedule> loadRunSchedule = runScheduleManager.loadAllRunSchedulesByRunId(runSchedule.getRunId());
+    public void testUpdateRunSchedulesWithIdenticalCron() {
+        final List<RunSchedule> schedules =
+            runScheduleManager.createRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+
+        testRunScheduleVO.setScheduleId(schedules.get(0).getId());
+        testRunScheduleVO.setCronExpression(CRON_EXPRESSION2);
+        testRunScheduleVO2.setScheduleId(schedules.get(1).getId());
+        testRunScheduleVO2.setCronExpression(CRON_EXPRESSION1);
+
+        final List<RunSchedule> updatedSchedules =
+            runScheduleManager.updateRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        updatedSchedules.forEach(this::loadAndAssertSchedule);
+
+        final List<RunSchedule> loadRunSchedule = runScheduleManager.loadAllRunSchedulesByRunId(RUN_ID);
+        assertEquals(2, loadRunSchedule.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testDeleteRunSchedules() {
+        final List<RunSchedule> schedules =
+            runScheduleManager.createRunSchedules(RUN_ID, Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        final List<Long> ids = schedules.stream().map(RunSchedule::getId).collect(Collectors.toList());
+        runScheduleManager.deleteRunSchedules(RUN_ID, ids);
+        final List<RunSchedule> loadRunSchedule = runScheduleManager.loadAllRunSchedulesByRunId(RUN_ID);
         assertEquals(0, loadRunSchedule.size());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void loadRunSchedule() {
-        final RunSchedule runSchedule = runScheduleManager.createRunSchedule(RUN_ID, testRunScheduleVO);
+        final RunSchedule runSchedule =
+            runScheduleManager.createRunSchedules(RUN_ID, Collections.singletonList(testRunScheduleVO)).get(0);
         runScheduleManager.loadRunSchedule(runSchedule.getRunId());
     }
 
@@ -142,4 +179,10 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
         pipelineRunDao.createPipelineRun(run);
     }
 
+    private void loadAndAssertSchedule(final RunSchedule schedule) {
+        final RunSchedule loadRunSchedule = runScheduleManager.loadRunSchedule(schedule.getId());
+        assertEquals(schedule.getRunId(), loadRunSchedule.getRunId());
+        assertEquals(schedule.getCronExpression(), loadRunSchedule.getCronExpression());
+        assertEquals(schedule.getAction(), loadRunSchedule.getAction());
+    }
 }

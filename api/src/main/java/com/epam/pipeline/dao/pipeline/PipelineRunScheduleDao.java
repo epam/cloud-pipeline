@@ -31,6 +31,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
 
@@ -52,16 +53,22 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void createRunSchedule(final RunSchedule schedule) {
-        schedule.setId(this.createScheduleId());
-        getNamedParameterJdbcTemplate().update(createRunScheduleQuery,
-                                               RunScheduleParameters.getParameters(schedule));
+    public void createRunSchedules(final List<RunSchedule> schedules) {
+        final MapSqlParameterSource[] params = schedules.stream()
+            .peek(s -> s.setId(this.createScheduleId()))
+            .map(RunScheduleParameters::getParameters)
+            .collect(Collectors.toList())
+            .toArray(new MapSqlParameterSource[schedules.size()]);
+        getNamedParameterJdbcTemplate().batchUpdate(createRunScheduleQuery, params);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void updateRunSchedule(final RunSchedule schedule) {
-        getNamedParameterJdbcTemplate().update(updateRunScheduleQuery, PipelineRunScheduleDao.RunScheduleParameters
-            .getParameters(schedule));
+    public void updateRunSchedules(final List<RunSchedule> schedules) {
+        final MapSqlParameterSource[] params = schedules.stream()
+            .map(RunScheduleParameters::getParameters)
+            .collect(Collectors.toList())
+            .toArray(new MapSqlParameterSource[schedules.size()]);
+        getNamedParameterJdbcTemplate().batchUpdate(updateRunScheduleQuery, params);
     }
 
     public List<RunSchedule> loadAllRunSchedulesByRunId(final Long runId) {
@@ -81,8 +88,12 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunSchedule(final Long id) {
-        getJdbcTemplate().update(deleteRunScheduleQuery, id);
+    public void deleteRunSchedules(final List<Long> ids) {
+        final MapSqlParameterSource[] params = ids.stream()
+            .map(RunScheduleParameters::getId)
+            .collect(Collectors.toList())
+            .toArray(new MapSqlParameterSource[ids.size()]);
+        getNamedParameterJdbcTemplate().batchUpdate(deleteRunScheduleQuery, params);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -106,6 +117,12 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
             params.addValue(CRON_EXPRESSION.name(), schedule.getCronExpression());
             params.addValue(CREATED_DATE.name(), schedule.getCreatedDate());
             params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getDisplayName());
+            return params;
+        }
+
+        static MapSqlParameterSource getId(final Long id) {
+            final MapSqlParameterSource params = new MapSqlParameterSource();
+            params.addValue(RunScheduleParameters.ID.name(), id);
             return params;
         }
 

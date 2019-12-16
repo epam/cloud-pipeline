@@ -28,6 +28,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -37,20 +38,22 @@ public class RunScheduleApiService {
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public RunSchedule createRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
-        return runScheduleManager.createRunSchedule(runId, runScheduleVO);
+    public List<RunSchedule> createRunSchedules(final Long runId, final List<PipelineRunScheduleVO> runScheduleVOs) {
+        return runScheduleManager.createRunSchedules(runId, runScheduleVOs);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public RunSchedule updateRunSchedule(final Long runId, final PipelineRunScheduleVO schedule) {
-        return runScheduleManager.updateRunSchedule(runId, schedule);
+    public List<RunSchedule> updateRunSchedules(final Long runId, final List<PipelineRunScheduleVO> schedules) {
+        return runScheduleManager.updateRunSchedules(runId, schedules);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public RunSchedule deleteRunSchedule(final Long runId, final Long scheduleId) {
-        return runScheduleManager.deleteRunSchedule(runId, scheduleId);
+    public List<RunSchedule> deleteRunSchedule(final Long runId, final List<PipelineRunScheduleVO> schedules) {
+        final List<Long> scheduleIds =
+            schedules.stream().map(PipelineRunScheduleVO::getScheduleId).collect(Collectors.toList());
+        return runScheduleManager.deleteRunSchedules(runId, scheduleIds);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)

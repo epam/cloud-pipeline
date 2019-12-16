@@ -45,35 +45,36 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PipelineRunScheduleController extends AbstractRestController {
 
-    private final RunScheduleApiService runScheduleApiService;
-
+    private static final String RUN_ID_PATH = "/{runId}";
     private static final String RUN_ID = "runId";
 
-    @PostMapping(value = "/{runId}")
+    private final RunScheduleApiService runScheduleApiService;
+
+    @PostMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
-        value = "Creates pipeline run schedule.",
-        notes = "Creates pipeline run schedule.",
+        value = "Creates pipeline run schedules.",
+        notes = "Creates pipeline run schedules.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunSchedule> createRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
-                                                 @RequestBody final PipelineRunScheduleVO schedule) {
-        return Result.success(runScheduleApiService.createRunSchedule(runId, schedule));
+    public Result<List<RunSchedule>> createRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
+                                                       @RequestBody final List<PipelineRunScheduleVO> schedules) {
+        return Result.success(runScheduleApiService.createRunSchedules(runId, schedules));
     }
 
-    @PutMapping(value = "/{runId}")
+    @PutMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
-        value = "Updates pipeline run schedule.",
-        notes = "Updates pipeline run schedule.",
+        value = "Updates pipeline run schedules.",
+        notes = "Updates pipeline run schedules.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunSchedule> updateRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
-                                                 @RequestBody final PipelineRunScheduleVO schedule) {
-        return Result.success(runScheduleApiService.updateRunSchedule(runId, schedule));
+    public Result<List<RunSchedule>> updateRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
+                                                       @RequestBody final List<PipelineRunScheduleVO> schedules) {
+        return Result.success(runScheduleApiService.updateRunSchedules(runId, schedules));
     }
 
-    @GetMapping(value = "/{runId}")
+    @GetMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
         value = "Loads all schedules for a given pipeline run.",
@@ -84,19 +85,19 @@ public class PipelineRunScheduleController extends AbstractRestController {
         return Result.success(runScheduleApiService.loadAllRunSchedulesByRunId(runId));
     }
 
-    @DeleteMapping(value = "/{runId}")
+    @DeleteMapping(value = RUN_ID_PATH)
     @ResponseBody
     @ApiOperation(
-        value = "Deletes given pipeline run schedule.",
-        notes = "Deletes given pipeline run schedule.",
+        value = "Deletes given pipeline run schedules.",
+        notes = "Deletes given pipeline run schedules.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<RunSchedule> deleteRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
-                                                 @RequestBody final PipelineRunScheduleVO schedule) {
-        return Result.success(runScheduleApiService.deleteRunSchedule(runId, schedule.getScheduleId()));
+    public Result<List<RunSchedule>> deleteRunSchedule(@PathVariable(value = RUN_ID) final Long runId,
+                                                       @RequestBody final List<PipelineRunScheduleVO> schedules) {
+        return Result.success(runScheduleApiService.deleteRunSchedule(runId, schedules));
     }
 
-    @DeleteMapping(value = "/{runId}/all")
+    @DeleteMapping(value = RUN_ID_PATH + "/all")
     @ResponseBody
     @ApiOperation(
         value = "Deletes all pipeline run's schedules.",
