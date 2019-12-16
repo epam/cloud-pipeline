@@ -169,7 +169,7 @@ For more details see [here](../../manual/15_Interactive_services/15.4._Expose_no
 
 ## Resource usage form improvement
 
-As a [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) feature was implemented, the number of filters were added:   
+In **`v0.16`**, the number of filters were added to the [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) feature:
 
 - *Common range for all charts*  
     User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.  
@@ -190,11 +190,6 @@ As a [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Clus
 All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
-
-## Blocking/unblocking users and groups
-
-The blocking and unblocking users and groups feature is now available for a manual and an automated manners.
-
 
 ***
 
