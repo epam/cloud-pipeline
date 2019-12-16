@@ -102,3 +102,8 @@ nav:
   - 18. Home page: 'manual/18_Home_page/18._Home_page.md'
   - Appendix A. EC2 instance and Docker container lifecycles: 'manual/Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles.md'
   - Appendix B. Working with a Project: 'manual/Appendix_B/Appendix_B._Working_with_a_Project.md'
+- Cloud Pipeline API:
+  - API tutorials: 'api/API_tutorials/API_tutorials.md'
+  - Automation via CLI: 'api/API_tutorials/Automation_via_CLI.md'
+  - Direct HTTP API implementation: 'api/API_tutorials/Direct_HTTP_API.md'
+  - JavaScript example: 'api/API_tutorials/JavaScript_example.md'

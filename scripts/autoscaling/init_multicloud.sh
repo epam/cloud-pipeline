@@ -300,7 +300,21 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
-# Add support for joining node to kube cluster after starting
-echo -e "systemctl start docker\nkubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME\nsystemctl start kubelet" >> /etc/rc.local
+# Setup the scripts to restore the state of the "paused" job
+#   1. NVIDIA-specific scripts for GPU nodes
+#     - Enable nvidia persistence mode
+#     - Call nvidia-smi to cache the devices listings
+if check_installed "nvidia-smi"; then
+  cat >> /etc/rc.local << EOF
+nvidia-persistenced --persistence-mode
+nvidia-smi
+EOF
+fi
+#   2. All other nodes: add support for joining node to kube cluster after starting the "paused" job
+cat >> /etc/rc.local << EOF
+systemctl start docker
+kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
+systemctl start kubelet
+EOF
 
 nc -l -k 8888 &

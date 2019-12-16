@@ -32,6 +32,7 @@ import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
 import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.collapsiblePanel;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunningTest {
 
@@ -55,6 +56,7 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
                     return profiles;
                 }))
                 .saveAndCommitWithMessage("test: Add output parameter in configuration file")
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .ensure(INSTANCE_TYPE, text(instanceType))
                 .ensure(byText(getPipelineName()), visible)

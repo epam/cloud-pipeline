@@ -479,6 +479,7 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1544)
             .configurationWithin(configuration1544, configuration ->
                 configuration.selectPipeline(pipeline1)
+                    .sleep(2, SECONDS)
                     .expandTabs(advancedTab)
                     .setValue(DISK, diskSize)
                     .selectValue(INSTANCE_TYPE, instanceType)

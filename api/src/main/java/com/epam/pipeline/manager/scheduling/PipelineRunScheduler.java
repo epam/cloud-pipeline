@@ -45,13 +45,15 @@ import javax.annotation.PostConstruct;
 @ConditionalOnExpression("${run.scheduling}")
 public class PipelineRunScheduler {
 
+    private static final String JOB_EXECUTION_THREADS = "5";
+    private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
     private final Scheduler quartzScheduler;
 
     @Autowired
     PipelineRunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
         final Properties quartsProperties = new Properties();
-        quartsProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, "10");
-        quartsProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, "2");
+        quartsProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
+        quartsProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
         schedulerFactoryBean.setQuartzProperties(quartsProperties);
         this.quartzScheduler = schedulerFactoryBean.getScheduler();
     }

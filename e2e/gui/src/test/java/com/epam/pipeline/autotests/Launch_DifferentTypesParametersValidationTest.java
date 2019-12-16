@@ -23,6 +23,8 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoRemovingPipelineRunningTest {
 
     private static final String CONFIG_JSON = "/differentTypes.json";
@@ -43,6 +45,7 @@ public class Launch_DifferentTypesParametersValidationTest extends AbstractAutoR
     @TestCase("EPMCMBIBPC-367")
     public void validateParameters() {
         new PipelineCodeTabAO(getPipelineName())
+            .sleep(2, SECONDS)
             .runPipeline()
             .validateThereIsParameterOfType("output", String.format("%s://unexist-bucket/out", C.STORAGE_PREFIX),
                     ParameterType.OUTPUT, false)

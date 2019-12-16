@@ -22,6 +22,8 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 public class Launch_ParameterWithNoValueTest extends AbstractAutoRemovingPipelineRunningTest {
 
     private static final String CONFIG_JSON = "/noValue.json";
@@ -38,6 +40,7 @@ public class Launch_ParameterWithNoValueTest extends AbstractAutoRemovingPipelin
                         Utils.readResourceFully(CONFIG_JSON)
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .validateThereIsParameterOfType("param", "", ParameterType.STRING, false);
     }

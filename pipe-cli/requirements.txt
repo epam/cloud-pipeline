@@ -13,6 +13,7 @@ boto3==1.6.9
 botocore==1.9.9
 future
 PyJWT==1.6.1
+tld==0.10
 pypac==0.8.1
 beautifulsoup4==4.6.1
 azure-storage-blob==1.5.0

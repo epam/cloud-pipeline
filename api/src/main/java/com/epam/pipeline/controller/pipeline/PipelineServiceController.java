@@ -46,13 +46,13 @@ public class PipelineServiceController extends AbstractRestController {
     @RequestMapping(value = "/services", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(
-            value = "Loads all active available pipeline services.",
-            notes = "Loads all active available pipeline services for user.",
+            value = "Loads all active shared pipeline runs.",
+            notes = "Loads all active shared pipeline runs for user.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<PagedResult<List<PipelineRun>>> activeServices(@RequestBody PagingRunFilterVO filterVO) {
-        return Result.success(runApiService.loadActiveServices(filterVO));
+    public Result<PagedResult<List<PipelineRun>>> activeSharedRuns(@RequestBody PagingRunFilterVO filterVO) {
+        return Result.success(runApiService.loadActiveSharedRuns(filterVO));
     }
 }

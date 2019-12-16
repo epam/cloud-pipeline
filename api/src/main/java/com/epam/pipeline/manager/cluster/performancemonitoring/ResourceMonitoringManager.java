@@ -347,7 +347,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void performStop(PipelineRun run, double cpuUsageRate) {
-        if (run.isNonPause() || isClusterRun(run)) {
+        if (run.isNonPause() || run.isClusterRun()) {
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
             return;
         }
@@ -357,7 +357,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     private void performPause(PipelineRun run, double cpuUsageRate) {
-        if (run.isNonPause() || isClusterRun(run)) {
+        if (run.isNonPause() || run.isClusterRun()) {
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
             return;
         }

@@ -24,6 +24,7 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.epam.pipeline.autotests.ao.ParameterFieldAO.parameterByName;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipelineRunningTest
         implements StorageHandling {
@@ -41,6 +42,7 @@ public class LaunchParameterRemoveParameterTest extends AbstractAutoRemovingPipe
                         getPipelineName().toLowerCase() + ".sh",
                         Utils.readResourceFully(shellTemplate)
                 )
+                .sleep(2, SECONDS)
                 .runPipeline()
                 .clickAddOutputParameter()
                 .setName("new_parameter")

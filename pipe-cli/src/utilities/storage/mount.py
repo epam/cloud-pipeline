@@ -112,27 +112,28 @@ class SourceMount(AbstractMount):
 
 class Mount(object):
 
-    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False):
+    def mount_storages(self, mountpoint, file=False, bucket=None, options=None, quiet=False, log_file=None):
         config = Config.instance()
         username = config.get_current_user()
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
-            self.mount_dav(mount, config, mountpoint, options, web_dav_url)
+            self.mount_dav(mount, config, mountpoint, options, web_dav_url, log_file=log_file)
         else:
-            self.mount_storage(mount, config, mountpoint, options, bucket)
+            self.mount_storage(mount, config, mountpoint, options, bucket, log_file=log_file)
 
-    def mount_dav(self, mount, config, mountpoint, options, web_dav_url):
+    def mount_dav(self, mount, config, mountpoint, options, web_dav_url, log_file=None):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, web_dav_url)
-        self.run(config, mount_cmd)
+        self.run(config, mount_cmd, log_file=log_file)
 
-    def mount_storage(self, mount, config, mountpoint, options, bucket):
+    def mount_storage(self, mount, config, mountpoint, options, bucket, log_file=None):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, bucket)
-        self.run(config, mount_cmd)
+        self.run(config, mount_cmd, log_file=log_file)
 
-    def run(self, config, mount_cmd, mount_timeout=5):
-        with open(os.devnull, 'w') as dev_null:
+    def run(self, config, mount_cmd, mount_timeout=5, log_file=None):
+        output_file = log_file if log_file else os.devnull
+        with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.access_key
@@ -141,16 +142,11 @@ class Mount(object):
                 mount_environment['https_proxy'] = config.proxy
                 mount_environment['ftp_proxy'] = config.proxy
             mount_aps_proc = subprocess.Popen(mount_cmd,
-                                              stdout=dev_null,
-                                              stderr=subprocess.PIPE,
+                                              stdout=output,
+                                              stderr=subprocess.STDOUT,
                                               env=mount_environment)
             time.sleep(mount_timeout)
             if mount_aps_proc.poll() is not None:
                 click.echo('Failed to mount storages. Mount command exited with return code: %d'
                            % mount_aps_proc.returncode, err=True)
-                click.echo('Mount logs: ', err=True)
-                for line in mount_aps_proc.stderr.readlines():
-                    line = line.strip('\n')
-                    if line:
-                        click.echo(line, err=True)
                 sys.exit(1)

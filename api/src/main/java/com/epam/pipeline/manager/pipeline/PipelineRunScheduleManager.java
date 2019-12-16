@@ -24,11 +24,10 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.scheduling.PipelineRunSchedulerPureJava;
+import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.support.CronSequenceGenerator;
+import org.quartz.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,25 +37,20 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import javax.annotation.PostConstruct;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class PipelineRunScheduleManager {
 
     private final PipelineRunScheduleDao runScheduleDao;
     private final PipelineRunManager pipelineRunManager;
-    private final PipelineRunSchedulerPureJava scheduler;
+    private final PipelineRunScheduler scheduler;
     private final MessageHelper messageHelper;
 
-    @Autowired
-    PipelineRunScheduleManager(final PipelineRunScheduleDao runScheduleDao,
-                               final PipelineRunManager pipelineRunManager,
-                               @Lazy final PipelineRunSchedulerPureJava scheduler,
-                               final MessageHelper messageHelper) {
-        this.runScheduleDao = runScheduleDao;
-        this.pipelineRunManager = pipelineRunManager;
-        this.scheduler = scheduler;
-        this.messageHelper = messageHelper;
+    @PostConstruct
+    public void init() {
         loadAllRunSchedules().forEach(scheduler::scheduleRunSchedule);
     }
 
@@ -141,14 +135,14 @@ public class PipelineRunScheduleManager {
     }
 
     private boolean isNonPauseOrClusterRun(final PipelineRun pipelineRun) {
-        return PipelineRunManager.isClusterRun(pipelineRun)
+        return pipelineRun.isClusterRun()
                || pipelineRun.isNonPause();
     }
 
     private void verifyCronExpression(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
         Assert.notNull(runScheduleVO.getCronExpression(),
                        messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_PROVIDED, runId));
-        Assert.isTrue(CronSequenceGenerator.isValidExpression(runScheduleVO.getCronExpression()),
+        Assert.isTrue(CronExpression.isValidExpression(runScheduleVO.getCronExpression()),
                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_VALID, runId));
     }
 

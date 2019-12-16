@@ -24,7 +24,6 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManag
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.actuate.autoconfigure.ManagementWebSecurityAutoConfiguration;
@@ -49,7 +48,6 @@ import org.springframework.security.acls.model.SidRetrievalStrategy;
 import org.springframework.security.saml.key.KeyManager;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
-import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 
 import java.io.FileNotFoundException;
 import java.util.concurrent.Executor;
@@ -79,9 +77,6 @@ public class TestApplication {
     public static void main(String[] args) {
         SpringApplication.run(TestApplication.class, args);
     }
-
-    @Autowired
-    private ApplicationContext applicationContext;
 
     @MockBean // TODO: remove and fix what's wrong
     public MonitoringESDao monitoringESDao;
@@ -151,16 +146,11 @@ public class TestApplication {
     }
 
     @Bean
-    public SpringBeanJobFactory springBeanJobFactory() {
-        AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
+    public SchedulerFactoryBean schedulerFactoryBean(final ApplicationContext applicationContext) {
+        final SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
+        final AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
         jobFactory.setApplicationContext(applicationContext);
-        return jobFactory;
-    }
-
-    @Bean
-    public SchedulerFactoryBean schedulerFactoryBean() {
-        SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
-        schedulerFactory.setJobFactory(springBeanJobFactory());
+        schedulerFactory.setJobFactory(jobFactory);
         return schedulerFactory;
     }
 
