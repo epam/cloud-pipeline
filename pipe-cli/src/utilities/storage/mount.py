@@ -52,7 +52,7 @@ class FrozenMount(AbstractMount):
         return self._get_mount_cmd(config, mountpoint, options, additional_args)
 
     def _append_threading(self, args, threading):
-        return args + ' --threading' if threading else args
+        return args + ' --threads' if threading else args
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):
         mount_bin = self.get_mount_executable(config)
@@ -108,7 +108,7 @@ class SourceMount(AbstractMount):
 
     def _append_threading(self, args, threading):
         if threading:
-            args.append('--threading')
+            args.append('--threads')
         return args
 
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments):

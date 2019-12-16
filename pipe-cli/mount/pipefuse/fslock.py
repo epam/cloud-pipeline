@@ -15,10 +15,12 @@
 import logging
 from abc import ABCMeta, abstractmethod
 from threading import RLock
+import threading
+from fuse import fuse_get_context
 
 
-def get_lock(threading):
-    return PathLock() if threading else DummyLock()
+def get_lock(threads):
+    return PathLock() if threads else DummyLock()
 
 
 class FileSystemLock:
@@ -49,33 +51,38 @@ class PathLock(FileSystemLock):
         self.__locks = {}
 
     def lock(self, path):
-        logging.error('Locking path %s' % path)
+        logging.debug('Locking path %s for %s' % (path, str(fuse_get_context())))
         try:
             self.mutex.acquire()
             if path not in self.__locks:
                 self.__locks[path] = RLock()
-                logging.error('Created new lock for %s' % path)
+                logging.debug('Created new lock for %s' % path)
         finally:
             self.mutex.release()
 
         try:
+            path_lock = self.__locks[path]
+            logging.debug('Current owner %s %d' % (path_lock._RLock__owner, path_lock._RLock__count))
+            logging.debug(str(threading.current_thread().ident))
             self.__locks[path].acquire()
-            logging.error('Acquired lock for %s' % path)
+            logging.debug('Acquired lock for %s' % path)
+            logging.debug('Current owner %s %d' % (path_lock._RLock__owner, path_lock._RLock__count))
         except:
             self.__locks[path].release()
             raise
-        logging.error('Finished locking for %s' % path)
+        logging.debug('Finished locking for %s' % path)
 
     def unlock(self, path):
-        logging.error('Unlocking path %s' % path)
+        logging.debug('Unlocking path %s' % path)
+        logging.debug(str(fuse_get_context()))
         try:
             self.mutex.acquire()
             if path not in self.__locks:
-                logging.error('Cannot release non-existing lock.')
+                logging.debug('Cannot release non-existing lock.')
             else:
                 self.__locks[path].release()
-                logging.error('Released lock for %s' % path)
+                logging.debug('Released lock for %s' % path)
         finally:
             self.mutex.release()
-            logging.error('Finished unlocking for %s' % path)
+            logging.debug('Finished unlocking for %s' % path)
 
