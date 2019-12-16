@@ -146,6 +146,7 @@ public final class MessageConstants {
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
     public static final String CRON_EXPRESSION_IS_NOT_VALID = "cron.expression.is.not.valid";
     public static final String CRON_EXPRESSION_ALREADY_EXISTS = "cron.expression.already.exists";
+    public static final String CRON_EXPRESSION_IDENTICAL = "cron.expression.identical";
     public static final String SCHEDULE_ACTION_IS_NOT_PROVIDED = "schedule.action.is.not.provided";
     public static final String ERROR_RUN_SCHEDULE_NOT_FOUND = "error.run.schedule.not.found";
     public static final String ERROR_TIME_ZONE_IS_NOT_PROVIDED = "error.time.zone.is.not.provided";

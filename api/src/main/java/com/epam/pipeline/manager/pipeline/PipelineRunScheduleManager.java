@@ -34,9 +34,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 
 @Service
@@ -55,19 +62,27 @@ public class PipelineRunScheduleManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public RunSchedule createRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
-        checkScheduleRequirements(runId, runScheduleVO);
-        final RunSchedule runSchedule = new RunSchedule();
-        runSchedule.setRunId(runId);
-        runSchedule.setAction(runScheduleVO.getAction());
-        runSchedule.setCronExpression(runScheduleVO.getCronExpression());
-        runSchedule.setCreatedDate(DateUtils.now());
-        runSchedule.setTimeZone(TimeZone.getTimeZone(runScheduleVO.getTimeZone()));
-        runScheduleDao.createRunSchedule(runSchedule);
+    public List<RunSchedule> createRunSchedules(final Long runId, final List<PipelineRunScheduleVO> runScheduleVOs) {
+        Assert.isTrue(checkCronsAreUnique(runScheduleVOs),
+                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IDENTICAL));
+        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        final List<RunSchedule> schedules = runScheduleVOs.stream()
+            .peek(vo -> checkNewScheduleRequirements(runId, pipelineRun, vo))
+            .map(vo -> {
+                final RunSchedule runSchedule = new RunSchedule();
+                runSchedule.setRunId(runId);
+                runSchedule.setAction(vo.getAction());
+                runSchedule.setCronExpression(vo.getCronExpression());
+                runSchedule.setCreatedDate(DateUtils.now());
+                runSchedule.setTimeZone(TimeZone.getTimeZone(vo.getTimeZone()));
+                return runSchedule;
+            })
+            .collect(Collectors.toList());
+        runScheduleDao.createRunSchedules(schedules);
 
-        scheduler.scheduleRunSchedule(runSchedule);
+        schedules.forEach(scheduler::scheduleRunSchedule);
 
-        return runSchedule;
+        return schedules;
     }
 
     public List<RunSchedule> loadAllRunSchedulesByRunId(final Long runId) {
@@ -79,30 +94,56 @@ public class PipelineRunScheduleManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public RunSchedule updateRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
-        final RunSchedule runSchedule = loadRunSchedule(runScheduleVO.getScheduleId());
-        Assert.isTrue(runId.equals(runSchedule.getRunId()),
-                      messageHelper.getMessage(MessageConstants.ERROR_RUN_ID_NOT_CORRESPONDING));
-        checkScheduleRequirements(runSchedule.getRunId(), runScheduleVO);
-        runSchedule.setId(runScheduleVO.getScheduleId());
-        runSchedule.setAction(runScheduleVO.getAction());
-        runSchedule.setCronExpression(runScheduleVO.getCronExpression());
-        runSchedule.setCreatedDate(DateUtils.now());
-        runScheduleDao.updateRunSchedule(runSchedule);
-        scheduler.unscheduleRunSchedule(runSchedule);
-        scheduler.scheduleRunSchedule(runSchedule);
+    public List<RunSchedule> updateRunSchedules(final Long runId, final List<PipelineRunScheduleVO> runScheduleVOs) {
+        checkCronsAreUnique(runScheduleVOs);
+        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        final Map<Long, RunSchedule> loadedSchedules =
+            loadAllRunSchedulesByRunId(runId).stream()
+                .collect(Collectors.toMap(RunSchedule::getId, Function.identity()));
 
-        return runSchedule;
+        final List<RunSchedule> updatedSchedules = runScheduleVOs.stream()
+            .map(vo -> {
+                final RunSchedule runSchedule = loadedSchedules.get(vo.getScheduleId());
+                verifyRunSchedule(runId, pipelineRun, vo);
+                final String prevCron = runSchedule.getCronExpression();
+                final String newCron = vo.getCronExpression();
+                if (prevCron.equals(newCron)) {
+                    return null;
+                } else {
+                    runSchedule.setId(vo.getScheduleId());
+                    runSchedule.setAction(vo.getAction());
+                    runSchedule.setCronExpression(newCron);
+                    runSchedule.setCreatedDate(DateUtils.now());
+                    loadedSchedules.put(vo.getScheduleId(), runSchedule);
+                    return runSchedule;
+                }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        Assert.isTrue(checkCronsAreUnique(loadedSchedules.values()),
+                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IDENTICAL));
+
+        runScheduleDao.updateRunSchedules(updatedSchedules);
+
+        updatedSchedules.forEach(runSchedule -> {
+            scheduler.unscheduleRunSchedule(runSchedule);
+            scheduler.scheduleRunSchedule(runSchedule);
+        });
+
+        return updatedSchedules;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public RunSchedule deleteRunSchedule(final Long runId, final Long scheduleId) {
-        final RunSchedule runSchedule = loadRunSchedule(scheduleId);
-        Assert.isTrue(runId.equals(runSchedule.getRunId()),
-                      messageHelper.getMessage(MessageConstants.ERROR_RUN_ID_NOT_CORRESPONDING));
-        scheduler.unscheduleRunSchedule(runSchedule);
-        runScheduleDao.deleteRunSchedule(scheduleId);
-        return runSchedule;
+    public List<RunSchedule> deleteRunSchedules(final Long runId, final List<Long> scheduleIds) {
+        final List<RunSchedule> schedules = scheduleIds.stream()
+            .map(this::loadRunSchedule)
+            .peek(schedule -> Assert.isTrue(runId.equals(schedule.getRunId()),
+                                        messageHelper.getMessage(MessageConstants.ERROR_RUN_ID_NOT_CORRESPONDING)))
+            .peek(scheduler::unscheduleRunSchedule)
+            .collect(Collectors.toList());
+        runScheduleDao.deleteRunSchedules(scheduleIds);
+        return schedules;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -115,12 +156,17 @@ public class PipelineRunScheduleManager {
             messageHelper.getMessage(MessageConstants.ERROR_RUN_SCHEDULE_NOT_FOUND, id)));
     }
 
-    private void checkScheduleRequirements(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
-        verifyCronExpression(runId, runScheduleVO);
+    private void checkNewScheduleRequirements(final Long runId, final PipelineRun pipelineRun,
+                                              final PipelineRunScheduleVO runScheduleVO) {
         checkIdenticalCronExpressionForRun(runId, runScheduleVO);
+        verifyRunSchedule(runId, pipelineRun, runScheduleVO);
+    }
+
+    private void verifyRunSchedule(final Long runId, final PipelineRun pipelineRun,
+                                   final PipelineRunScheduleVO runScheduleVO) {
+        verifyCronExpression(runId, runScheduleVO);
         Assert.notNull(runScheduleVO.getAction(),
                        messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_PROVIDED, runId));
-        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
         Assert.notNull(pipelineRun,
                        messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
         Assert.isTrue(!pipelineRun.getInstance().getSpot(), messageHelper.getMessage(
@@ -129,8 +175,8 @@ public class PipelineRunScheduleManager {
             MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
         Assert.isTrue(StringUtils.hasText(runScheduleVO.getTimeZone()),
                       messageHelper.getMessage(MessageConstants.ERROR_TIME_ZONE_IS_NOT_PROVIDED, runId));
-        Assert.isTrue(runScheduleVO.getAction().equals(RunScheduledAction.PAUSE)
-                      && !isNonPauseOrClusterRun(pipelineRun),
+        Assert.isTrue(!(runScheduleVO.getAction().equals(RunScheduledAction.PAUSE)
+                        && isNonPauseOrClusterRun(pipelineRun)),
                       messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK));
     }
 
@@ -153,6 +199,27 @@ public class PipelineRunScheduleManager {
                                    && runSchedule.getCronExpression().equals(runScheduleVO.getCronExpression()))
             .findFirst();
         Assert.isTrue(!identicalCronExpressionForRun.isPresent(),
-                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_ALREADY_EXISTS, runId));
+                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_ALREADY_EXISTS,
+                                               runScheduleVO.getCronExpression(),
+                                               runId));
+    }
+
+    private boolean checkCronsAreUnique(final List<PipelineRunScheduleVO> runScheduleVOs) {
+        final long uniqueCrons = runScheduleVOs.stream()
+            .filter(distinctByKey(PipelineRunScheduleVO::getCronExpression))
+            .count();
+        return uniqueCrons == runScheduleVOs.size();
+    }
+
+    private boolean checkCronsAreUnique(final Collection<RunSchedule> schedules) {
+        final long uniqueCrons = schedules.stream()
+            .filter(distinctByKey(RunSchedule::getCronExpression))
+            .count();
+        return uniqueCrons == schedules.size();
+    }
+
+    private static <T> Predicate<T> distinctByKey(final Function<? super T, Object> keyExtractor) {
+        final Map<Object, Boolean> map = new ConcurrentHashMap<>();
+        return t -> map.putIfAbsent(keyExtractor.apply(t), Boolean.TRUE) == null;
     }
 }

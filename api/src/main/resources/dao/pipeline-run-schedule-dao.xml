@@ -38,7 +38,8 @@
         <property name="deleteRunScheduleQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.run_schedule WHERE id = ?
+                    DELETE FROM pipeline.run_schedule
+                    WHERE id = :ID
                 ]]>
             </value>
         </property>

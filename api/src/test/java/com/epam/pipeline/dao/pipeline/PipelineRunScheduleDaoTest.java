@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -65,6 +66,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     private RunSchedule testRunSchedule;
     private RunSchedule testUpdatedRunSchedule;
     private RunSchedule testRunSchedule2;
+    private RunSchedule testUpdatedRunSchedule2;
 
     @Before
     public void setUp() {
@@ -81,54 +83,49 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
         testRunSchedule = getRunSchedule(RUN_ID_1, RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         testUpdatedRunSchedule = getRunSchedule(RUN_ID_1, RunScheduledAction.RESUME, CRON_EXPRESSION2);
         testRunSchedule2 = getRunSchedule(RUN_ID_2, RunScheduledAction.RESUME, CRON_EXPRESSION2);
+        testUpdatedRunSchedule2 = getRunSchedule(RUN_ID_2, RunScheduledAction.RESUME, CRON_EXPRESSION1);
     }
 
     @Test
-    public void testCreateRunSchedule() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
-
-        Optional<RunSchedule> loadRunSchedule = runScheduleDao.loadRunSchedule(testRunSchedule.getId());
-        assertTrue(loadRunSchedule.isPresent());
-        assertEquals(testRunSchedule.getRunId(), loadRunSchedule.get().getRunId());
-        assertEquals(testRunSchedule.getAction(), loadRunSchedule.get().getAction());
-        assertEquals(testRunSchedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
+    public void testCreateRunSchedules() {
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
+        loadAndAssertSchedule(testRunSchedule);
+        loadAndAssertSchedule(testRunSchedule2);
     }
 
     @Test
-    public void testUpdateRunSchedule() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
+    public void testUpdateRunSchedules() {
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
 
         testUpdatedRunSchedule.setId(testRunSchedule.getId());
-        runScheduleDao.updateRunSchedule(testUpdatedRunSchedule);
+        testUpdatedRunSchedule2.setId(testRunSchedule2.getId());
 
-        final Optional<RunSchedule> loadRunSchedule = runScheduleDao.loadRunSchedule(testRunSchedule.getId());
-        assertTrue(loadRunSchedule.isPresent());
-        assertEquals(testUpdatedRunSchedule.getRunId(), loadRunSchedule.get().getRunId());
-        assertEquals(testUpdatedRunSchedule.getAction(), loadRunSchedule.get().getAction());
-        assertEquals(testUpdatedRunSchedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
+        runScheduleDao.updateRunSchedules(Arrays.asList(testUpdatedRunSchedule, testUpdatedRunSchedule2));
+
+        loadAndAssertSchedule(testUpdatedRunSchedule);
+        loadAndAssertSchedule(testUpdatedRunSchedule2);
     }
 
     @Test
     public void testLoadAllRunSchedules() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
-        runScheduleDao.createRunSchedule(testRunSchedule2);
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesByRunId(testRunSchedule.getRunId());
         assertEquals(1, runSchedules.size());
     }
 
     @Test
-    public void testDeleteRunSchedule() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
-        runScheduleDao.deleteRunSchedule(testRunSchedule.getId());
+    public void testDeleteRunSchedules() {
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
+        runScheduleDao.deleteRunSchedules(Arrays.asList(testRunSchedule.getId(), testRunSchedule2.getId()));
         final Optional<RunSchedule> runSchedule = runScheduleDao.loadRunSchedule(testRunSchedule.getId());
         assertFalse(runSchedule.isPresent());
+        final Optional<RunSchedule> runSchedule2 = runScheduleDao.loadRunSchedule(testRunSchedule2.getId());
+        assertFalse(runSchedule2.isPresent());
     }
 
     @Test
     public void testDeleteRunSchedulesForRun() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
-        runScheduleDao.createRunSchedule(testUpdatedRunSchedule);
-        runScheduleDao.createRunSchedule(testRunSchedule2);
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
         runScheduleDao.deleteRunSchedulesForRun(testRunSchedule.getRunId());
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
@@ -137,9 +134,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
 
     @Test
     public void testScheduleRemovalAfterRunIsRemoved() {
-        runScheduleDao.createRunSchedule(testRunSchedule);
-        runScheduleDao.createRunSchedule(testUpdatedRunSchedule);
-        runScheduleDao.createRunSchedule(testRunSchedule2);
+        runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
         pipelineRunDao.deleteRunsByPipeline(testPipeline.getId());
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(0, runSchedules.size());
@@ -161,6 +156,14 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
         final PipelineRun run = ObjectCreatorUtils.createPipelineRun(runId, pipelineId, null, cloudRegion.getId());
         pipelineRunDao.createPipelineRun(run);
         return run;
+    }
+
+    private void loadAndAssertSchedule(final RunSchedule schedule) {
+        final Optional<RunSchedule> loadRunSchedule = runScheduleDao.loadRunSchedule(schedule.getId());
+        assertTrue(loadRunSchedule.isPresent());
+        assertEquals(schedule.getRunId(), loadRunSchedule.get().getRunId());
+        assertEquals(schedule.getAction(), loadRunSchedule.get().getAction());
+        assertEquals(schedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
     }
 
 }
