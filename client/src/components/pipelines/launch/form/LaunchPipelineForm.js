@@ -83,6 +83,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
+import RunScheduleDialog from './utilities/launch-schedule';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
@@ -203,6 +204,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
+    runSchedulingDialogVisible: false,
+    scheduleRules: null,
     bucketBrowserVisible: false,
     bucketPath: null,
     bucketPathParameterKey: null,
@@ -570,6 +573,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
+          // todo scheduleRules
           const result = await this.props.onLaunch(payload);
           if (result) {
             this.reset();
@@ -2786,6 +2790,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
+  openRunSchedulingDialog = () => {
+    this.setState({
+      runSchedulingDialogVisible: true
+    });
+  };
+
+  closeRunSchedulingDialog = () => {
+    this.setState({
+      runSchedulingDialogVisible: false
+    });
+  };
+
   openConfigureClusterDialog = () => {
     this.setState({
       configureClusterDialogVisible: true
@@ -2985,6 +3001,48 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       [instanceTypeField]: this.correctInstanceTypeValue(instanceType),
       [priceTypeField]: this.correctPriceTypeValue(priceType)
     });
+  };
+
+  renderScheduleControl = () => {
+    const {editConfigurationMode, isDetachedConfiguration} = this.props;
+    const {launchCluster, runSchedulingDialogVisible, scheduleRules} = this.state;
+    const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
+      this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
+
+    if (editConfigurationMode || isDetachedConfiguration || isSpot || launchCluster) {
+      return null;
+    }
+    const onScheduleSubmit = (rules) => {
+      const scheduleRules = rules;
+      this.setState({scheduleRules});
+    };
+    const trigger = (
+      <Row type="flex" style={{marginBottom: 10}}>
+        <Col offset={3}>
+          <a
+            onClick={this.openRunSchedulingDialog}
+            style={{color: '#777', textDecoration: 'underline'}}>
+            <Icon type="setting" />
+            Configure scheduling
+          </a>
+        </Col>
+      </Row>
+    );
+    const modal = (
+      <RunScheduleDialog
+        onSubmit={onScheduleSubmit}
+        rules={scheduleRules}
+        visible={runSchedulingDialogVisible}
+        onClose={this.closeRunSchedulingDialog}
+      />
+    );
+
+    return (
+      <div>
+        {trigger}
+        {modal}
+      </div>
+    );
   };
 
   renderPriceTypeSelection = () => {
@@ -3938,6 +3996,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               key={ADVANCED}
               className={styles.section}
               header={this.getPanelHeader(ADVANCED)}>
+              {this.renderScheduleControl()}
               {this.renderPriceTypeSelection()}
               {this.renderDisableAutoPauseFormItem()}
               {this.renderPrettyUrlFormItem()}
