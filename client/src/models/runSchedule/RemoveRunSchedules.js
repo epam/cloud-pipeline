@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
 
-export default class RunSchedule extends Remote {
+export default class RemoveRunSchedules extends RemotePost {
   constructor (runId) {
     super();
+    this.constructor.fetchOptions = {
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8'
+      },
+      mode: 'cors',
+      credentials: 'include',
+      method: 'DELETE'
+    };
     this.url = `/schedule/run/${runId}`;
   }
 }

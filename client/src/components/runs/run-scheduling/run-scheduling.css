@@ -1,0 +1,7 @@
+.rule-row:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.rule-row-removed {
+  background-color: rgba(255, 0, 0, 0.05) !important;
+}
