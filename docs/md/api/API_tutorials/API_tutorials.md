@@ -5,6 +5,7 @@ This sections provides a number of implementations of the data transfer/processi
 We'll use a quite common usage scenario to implement the automation via different approaches: process a local [10xGenomics](https://www.10xgenomics.com/) dataset (e.g. produced by the on-prem machinery) in the Cloud Pipeline compute environment.
 
 The scenario for the automation consists of the following steps:
+
 * Upload a dataset (directory with the FASTQ files to the S3 bucket)
 * Run the dataset processing using the cellranger count command
 * Download the data processing results back to a local filesystem
