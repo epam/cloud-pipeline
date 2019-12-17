@@ -302,9 +302,6 @@ class S3Mounter(StorageMounter):
 
     @staticmethod
     def _check_or_install(task_name):
-        # always install pre-requested packages for pipe mount because it could be use instead of goofys of s3fs,
-        # even if other requested, f.e. when EC2 instance role credentials is used
-        pipe_fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_pipe', task_name=task_name)
         fuse_type = os.getenv('CP_S3_FUSE_TYPE', FUSE_GOOFYS_ID)
         if fuse_type == FUSE_GOOFYS_ID:
             fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
@@ -321,7 +318,7 @@ class S3Mounter(StorageMounter):
                 fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
                 return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_PIPE_ID:
-            return FUSE_PIPE_ID if pipe_fuse_installed else FUSE_NA_ID
+            return FUSE_PIPE_ID
         else:
             Logger.warn("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type),
                         task_name=task_name)
@@ -363,7 +360,7 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
-            return 'pipe storage mount {mount} -b {path}'.format(**params)
+            return 'pipe storage mount {mount} -b {path} -t'.format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             return 'AWS_ACCESS_KEY_ID={aws_key_id} AWS_SECRET_ACCESS_KEY={aws_secret} nohup goofys ' \
                    '--dir-mode {mask} --file-mode {mask} -o {permissions} -o allow_other ' \
