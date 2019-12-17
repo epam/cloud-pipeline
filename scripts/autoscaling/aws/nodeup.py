@@ -993,7 +993,7 @@ def main():
     parser.add_argument("--ins_type", type=str, default='m4.large')
     parser.add_argument("--ins_hdd", type=int, default=30)
     parser.add_argument("--ins_img", type=str, default='ami-f68f3899')
-    parser.add_argument("--num_rep", type=int, default=100)
+    parser.add_argument("--num_rep", type=int, default=250) # 250 x 3s = 12.5m
     parser.add_argument("--time_rep", type=int, default=3)
     parser.add_argument("--is_spot", type=bool, default=False)
     parser.add_argument("--bid_price", type=float, default=1.0)
