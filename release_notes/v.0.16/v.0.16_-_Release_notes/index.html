@@ -91,6 +91,14 @@
         
             <li><a class="toctree-l4" href="#displaying-of-the-latest-commit-datetime">Displaying of the latest commit date/time</a></li>
         
+            <li><a class="toctree-l4" href="#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming">Renaming of the GitLab repository in case of Pipeline renaming</a></li>
+        
+            <li><a class="toctree-l4" href="#allowing-to-expose-compute-node-fs-to-upload-and-download-files">Allowing to expose compute node FS to upload and download files</a></li>
+        
+            <li><a class="toctree-l4" href="#resource-usage-form-improvement">Resource usage form improvement</a></li>
+        
+            <li><a class="toctree-l4" href="#update-pipe-cli-version">Update pipe CLI version</a></li>
+        
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
         </ul>
@@ -200,6 +208,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
                 </li>
     </ul>
                 </li>
@@ -441,15 +453,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -467,7 +483,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../../manual/Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -547,10 +563,15 @@
 <li><a href="#storage-mounts-data-transfer-restrictor">Storage mounts data transfer restrictor</a></li>
 <li><a href="#extended-recursive-symlinks-handling">Extended recursive symlinks handling</a></li>
 <li><a href="#displaying-of-the-latest-commit-datetime">Displaying of the latest commit date/time</a></li>
+<li><a href="#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming">Renaming of the GitLab repository in case of Pipeline renaming</a></li>
+<li><a href="#allowing-to-expose-compute-node-fs-to-upload-and-download-files">Allowing to expose compute node FS to upload and download files</a></li>
+<li><a href="#resource-usage-form-improvement">Resource usage form improvement</a></li>
+<li><a href="#update-pipe-cli-version">Update pipe CLI version</a></li>
 </ul>
 <hr />
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#pipe-not-handled-error-while-trying-to-execute-commands-with-invalid-config"><code>pipe</code>: not-handled error while trying to execute commands with invalid config</a></li>
 <li><a href="#setting-of-the-tool-icon-size">Setting of the tool icon size</a></li>
 <li><a href="#npe-while-building-cloud-specific-environment-variables-for-run"><code>NPE</code> while building cloud-specific environment variables for run</a></li>
 <li><a href="#worker-nodes-fail-due-to-mismatch-of-the-regions-with-the-parent-run">Worker nodes fail due to mismatch of the regions with the parent run</a></li>
@@ -562,6 +583,7 @@
 <li><a href="#incorrect-displaying-of-the-start-idle-checkbox">Incorrect displaying of the "Start idle" checkbox</a></li>
 <li><a href="#limit-check-of-the-maximum-cluster-size-is-incorrect">Limit check of the maximum cluster size is incorrect</a></li>
 <li><a href="#fixed-cluster-with-sge-and-dind-capabilities-fails-to-start">Fixed cluster with SGE and DIND capabilities fails to start</a></li>
+<li><a href="#azure-server-shall-check-azure-blob-existence-when-a-new-storage-is-created">Azure: Server shall check Azure Blob existence when a new storage is created</a></li>
 <li><a href="#azure-pipe-cli-cannot-transfer-empty-files-between-storages">Azure: <code>pipe</code> CLI cannot transfer empty files between storages</a></li>
 <li><a href="#azure-runs-with-enabled-ge-autoscaling-doesnt-stop">Azure: runs with enabled GE autoscaling doesn't stop</a></li>
 <li><a href="#incorrect-behavior-while-download-files-from-external-resources-into-several-folders">Incorrect behavior while download files from external resources into several folders</a></li>
@@ -645,8 +667,73 @@ It can be done by <strong>COMMIT</strong> button on the run's details page:<br /
 In the current version, displaying of the date/time for the tool latest commit is added:<br />
 <img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_CommitDatetime_2.png" /></p>
 <p>For more details about tool commit see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">here</a>.</p>
+<h2 id="renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming">Renaming of the GitLab repository in case of Pipeline renaming</h2>
+<p>Pipeline in the Cloud Pipeline environment is a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.</p>
+<p>Previously, if the Pipeline object was renamed - the underlying GitLab repository was keeping the previous name.<br />
+In the current version, if user renames a Pipeline the corresponding GitLab repository will be also automatically renamed:  </p>
+<ul>
+<li><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RenamingGitLabRepo_1.png" /></li>
+<li><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RenamingGitLabRepo_2.png" /></li>
+<li><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_RenamingGitLabRepo_3.png" /></li>
+</ul>
+<p>Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the Pipeline somewhere else.</p>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#edit-a-pipeline-info">here</a>.</p>
+<h2 id="allowing-to-expose-compute-node-fs-to-upload-and-download-files">Allowing to expose compute node FS to upload and download files</h2>
+<p>For the <code>interactive runs</code> users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+Cloud Pipeline supports a number of options for the user to perform that data transfers for the interactive runs:</p>
+<ul>
+<li>via the Object Storage (using Web GUI or CLI)</li>
+<li>via the File Storage (using Web GUI, CLI, WebDav-mounted-drive)</li>
+</ul>
+<p>Previously, view, download, upload and delete operations required an intermediate location (bucket or fs) to be used. It might confuse user when a small dataset shall be loaded to the specific location within a run's filesystem.</p>
+<p>In the current version, direct exposure of the run's filesystem is supported. The <strong>BROWSE</strong> hyperlink is displayed on the <strong>Run logs</strong> page after a job had been initialized:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_BrowseFilesystem_1.png" /></p>
+<p>User can click the link and a Storage browser Web GUI will be loaded:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_BrowseFilesystem_2.png" /></p>
+<p>User is able to:</p>
+<ul>
+<li>view files and directories</li>
+<li>download and delete files and directories<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_BrowseFilesystem_3.png" /></li>
+<li>upload files and directories<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_BrowseFilesystem_4.png" /></li>
+<li>search files and directories<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_BrowseFilesystem_5.png" /></li>
+</ul>
+<p>For more details see <a href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">here</a>.</p>
+<h2 id="resource-usage-form-improvement">Resource usage form improvement</h2>
+<p>In <strong><code>v0.16</code></strong>, the number of filters were added to the <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">Monitor cluster nodes</a> feature:</p>
+<ul>
+<li><em>Common range for all charts</em><br />
+    User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.<br />
+    If this filter is unmarked, user can zoom any plot without any change for others.</li>
+<li><em>Live update</em><br />
+    The plots data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.</li>
+<li><em>Set range</em><br />
+    User can select the predefined time range for all plots from the list:<ul>
+<li>Whole range</li>
+<li>Last week</li>
+<li>Last day</li>
+<li>Last hour</li>
+</ul>
+</li>
+<li><em>Date filter</em><br />
+    User can specify the Start and the End dates for plots. The system will substitute the node creating date as the Start date and current date for the End date, if user doesn't select anything.</li>
+</ul>
+<p><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_ManageClusterNodes_1.png" /></p>
+<p>All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.</p>
+<p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">here</a>.</p>
+<h2 id="update-pipe-cli-version">Update pipe CLI version</h2>
+<p>Previously, if the user installed <code>pipe</code> CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of <code>pipe</code> CLI every time to have an actual version.</p>
+<p>Currently, the <strong><code>pipe update</code></strong> command to update the Cloud Pipeline CLI version was implemented.</p>
+<p>This command compare the CLI and API versions. If the CLI version is less than the API one, it will update the CLI - the latest Cloud Pipeline CLI version will be installed. Otherwise no actions will be performed:</p>
+<p><img alt="CP_v.0.16_ReleaseNotes" src="../attachments/RN016_PipeUpdate_1.png" /></p>
+<p>For more details see <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#update-the-cli">here</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="pipe-not-handled-error-while-trying-to-execute-commands-with-invalid-config"><code>pipe</code>: not-handled error while trying to execute commands with invalid config</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/750">#750</a></p>
+<p>Previously, if <code>pipe</code> config contained some invalid data (e.g. outdated or invalid access token), then trying to execute any <code>pipe</code> command had been causing an not-handled error.</p>
 <h3 id="setting-of-the-tool-icon-size">Setting of the tool icon size</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/493">#493</a></p>
 <p>Previously, setting of any value for the maximum tool's icon size via the sytem-level preference <strong><code>misc.max.tool.icon.size.kb</code></strong> didn't lead to anything - restriction for the size while trying to change an icon was remaining the same - 50 Kb.</p>
@@ -685,6 +772,9 @@ Now, the "less or equal" check is used.</p>
 <h3 id="fixed-cluster-with-sge-and-dind-capabilities-fails-to-start">Fixed cluster with SGE and DIND capabilities fails to start</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/392">#392</a></p>
 <p>Previously, fixed cluster with both <strong><code>CP_CAP_SGE</code></strong> and <strong><code>CP_CAP_DIND_CONTAINER</code></strong> options enabled with more than one worker failed to start. Some of the workers failed on either <code>SGEWorkerSetup</code> or <code>SetupDind</code> task with different errors. Scripts were executed in the same one shared analysis directory. So, some workers could delete files downloaded by other workers.</p>
+<h3 id="azure-server-shall-check-azure-blob-existence-when-a-new-storage-is-created">Azure: Server shall check Azure Blob existence when a new storage is created</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/768">#768</a></p>
+<p>During the creation of <code>AZ</code> Storage, the validation whether <code>Azure Blob</code> exists or not didn't perform. In that case, if <code>Azure Blob</code> had already existed, the user was getting failed request with <code>Azure</code> exception.</p>
 <h3 id="azure-pipe-cli-cannot-transfer-empty-files-between-storages">Azure: <code>pipe</code> CLI cannot transfer empty files between storages</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/386">#386</a></p>
 <p>Previously, empty files couldn't be transferred within a single <code>Azure</code> storage or between two <code>Azure</code> storages using <code>pipe</code> CLI, it throwed an error. So for example, a folder that contained empty files couldn't be copied correctly.</p>

@@ -177,6 +177,10 @@
                     
     <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -390,6 +394,8 @@
         
             <li><a class="toctree-l5" href="#configure-command-options">configure command options</a></li>
         
+            <li><a class="toctree-l5" href="#update-the-cli">Update the CLI</a></li>
+        
         </ul>
     
 
@@ -431,15 +437,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -457,7 +467,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -540,6 +550,7 @@
 <li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
 </ul>
 </li>
+<li><a href="#update-the-cli">Update the CLI</a></li>
 </ul>
 <h2 id="how-to-install-and-setup-pipe-cli">How to install and setup <code>pipe</code> CLI</h2>
 <ol>
@@ -547,14 +558,17 @@
 <li>Select <strong>Pipe CLI</strong> item at the left panel.</li>
 <li>Select your Operation System from the list.</li>
 <li>Follow the installation instructions for your OS (e.g. Linux). Commands below shall be executed in the Terminal.<br />
-    When installation is finished, type <strong><code>pipe</code></strong> in the Terminal to test pipe installation. This command shall produce short description of pipe CLI and pipe CLI commands.</li>
-<li>Press the <strong>Generate access key</strong> button.</li>
+    When installation is finished, type <code>pipe</code> in the Terminal to test pipe installation. This command shall produce short description of pipe CLI and pipe CLI commands (it is the same as the <code>pipe --help</code> command execution).<br />
+    Then type the <code>pipe --version</code> command - this command will output only the Cloud Pipeline CLI version:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_7.png" /></li>
+<li>Return to the Web GUI and press the <strong>Generate access key</strong> button.</li>
 <li>Copy <strong>CLI configure command</strong><br />
 <img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_1.png" /></li>
-<li>Paste copied command into the Terminal and run it:<br />
+<li>Paste copied command into the Terminal and run it to configure:<br />
 <img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_2.png" /></li>
-<li>Now Cloud Pipeline <strong>CLI</strong> is ready to use. To check it, run any command, e.g. <code>pipe --help</code>:<br />
-<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_3.png" /></li>
+<li>Now Cloud Pipeline <strong>CLI</strong> is ready to use. To check it, run the command <code>pipe --version</code> again:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_3.png" /><br />
+    This time the command will output the Cloud Pipeline CLI version, API version, short info about received access token (the user-owner name, usage dates)</li>
 </ol>
 <blockquote>
 <p><strong><em>Note</em></strong>: when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date. The warning about the expiration date of the provided token is printed, if it is less than 7 days left:</p>
@@ -631,6 +645,15 @@ Example:</p>
 </code></pre>
 
 <p><img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_6.png" /></p>
+<h2 id="update-the-cli">Update the CLI</h2>
+<p>The command to update the Cloud Pipeline CLI version:</p>
+<pre><code class="bash">pipe update [PATH]
+</code></pre>
+
+<p><strong>PATH</strong> - defines the API URL path to download Cloud Pipeline CLI source (optional argument).</p>
+<p>This command compare the CLI and API versions. If the CLI version is less than the API one, it will update the CLI - the latest Cloud Pipeline CLI version will be installed. Otherwise no actions will be performed.<br />
+Example:<br />
+<img alt="CP_InstallAndSetupCLI" src="../attachments/InstallAndSetupCLI_8.png" /></p>
               
             </div>
           </div>

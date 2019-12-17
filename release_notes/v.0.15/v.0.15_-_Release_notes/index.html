@@ -261,6 +261,10 @@
                     
     <a class="" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -501,15 +505,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../../manual/15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -527,7 +535,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../../manual/Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -757,7 +765,7 @@ Now, <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-ov
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_6.png" /><br />
     Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.</li>
 </ol>
-<p>For more information about using <code>Apache Spark</code> via the <code>Cloud Pipeline</code> see <a href="../../../manual/15_Interactive_services/15.3_Interactive_service_examples/#running-apache-spark-cluster-with-rstudio-web-gui">here</a>.</p>
+<p>For more information about using <code>Apache Spark</code> via the <code>Cloud Pipeline</code> see <a href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/#running-apache-spark-cluster-with-rstudio-web-gui">here</a>.</p>
 <h2 id="consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</h2>
 <p><code>Cloud Pipeline</code> supports queueing of the jobs, that cannot be scheduled to the existing or new compute nodes immediately.</p>
 <p>Queueing occurs if:</p>
@@ -954,7 +962,7 @@ I.e. the following behavior was observed couple of times over the last year:</p>
 <li><strong><code>CP_CAP_MODULES</code></strong> <em>(boolean)</em> - enables installation and using the <code>Modules</code> for the current run (for all supported Linux distributions)</li>
 </ul>
 <p>If <code>CP_CAP_MODULES</code> system parameter is set - the <code>Modules</code> will be installed and made available. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default <code>modulefiles</code> location will be used.</p>
-<p>See an example <a href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/#example-using-of-environment-modules-for-the-cloud-pipeline-runs">here</a>.</p>
+<p>See an example <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#example-using-of-environment-modules-for-the-cloud-pipeline-runs">here</a>.</p>
 <h2 id="sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</h2>
 <p>As was introduced in <a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users">Release Notes v.0.13</a>, for certain use cases it is beneficial to be able to share applications with other users/groups.  </p>
 <p><strong><code>v0.15</code></strong> introduces a feature that allows to share SSH-sessions for such shared runs:</p>
@@ -1120,7 +1128,7 @@ Password of the user1 user:
 <p>For such cases, in <strong><code>v0.15</code></strong> the <code>pipe ssh</code> command was implemented. It allows you, if you are the <strong>ADMIN</strong> or the run <strong>OWNER</strong>, to perform a single command or launch an interactive session for the specified job run.<br />
 Launching of an interactive session:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_1.png" /><br />
-This session is similar to the <a href="../../../manual/15_Interactive_services/15.2_Using_Terminal_access/#using-terminal-access">terminal access</a> that user can get via the GUI.</p>
+This session is similar to the <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#using-terminal-access">terminal access</a> that user can get via the GUI.</p>
 <p>Performing the same single command without launching an interactive session:<br />
 <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_2.png" />  </p>
 <h2 id="perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></h2>

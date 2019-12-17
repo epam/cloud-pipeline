@@ -177,6 +177,10 @@
                     
     <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -433,15 +437,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -459,7 +467,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -611,15 +619,15 @@
 <tbody>
 <tr>
 <td><strong>CPU usage</strong></td>
-<td>A diagram represents <strong>CPU usage (cores) - time</strong> graph. The graph is updated once in 15 seconds.</td>
+<td>A diagram represents <strong>CPU usage (cores) - time</strong> graph. The usage is displayed in fractions according to left vertical axis.</td>
 </tr>
 <tr>
 <td><strong>Memory usage</strong></td>
-<td>A diagram represents <strong>memory usage - time</strong> graph. The graph is updated once in 15 seconds. <strong>Blue</strong> graph represents usage in MB according to left vertical axis. <strong>Red</strong> graph represents usage in % of available amounts of memory according to right vertical axis.</td>
+<td>A diagram represents <strong>memory usage - time</strong> graph. <strong>Blue</strong> graph represents usage in MB according to left vertical axis. <strong>Red</strong> graph represents usage in % of available amounts of memory according to right vertical axis.</td>
 </tr>
 <tr>
 <td><strong>Network connection speed</strong></td>
-<td>A diagram represents <strong>connection speed (bytes) - time</strong> graph. The graph is updated once in 15 seconds. <strong>Blue</strong> graph (<strong>TX</strong>) represents "transceiving" speed. <strong>Red</strong> graph (<strong>RX</strong>) represents "receive" speed. Drop-down at the top of the section allows changing connection protocol.</td>
+<td>A diagram represents <strong>connection speed (bytes) - time</strong> graph. <strong>Blue</strong> graph (<strong>TX</strong>) represents "transceiving" speed. <strong>Red</strong> graph (<strong>RX</strong>) represents "receive" speed. Drop-down at the top of the section allows changing connection protocol.</td>
 </tr>
 <tr>
 <td><strong>File system load</strong></td>
@@ -628,6 +636,60 @@
 </tbody>
 </table>
 <p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_4.png" /></p>
+<h4 id="filters">Filters</h4>
+<p>User can manage plots date configurations. For this purpose the system has number of filters:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_5.png" /></p>
+<p><strong>Common range for all charts (1)</strong><br />
+User can synchronize the time period for all charts. To do so user should mark this filter.<br />
+If this filter is unmarked, user can zoom or scroll any plot without any change for others.</p>
+<p><strong>Live update (2)</strong><br />
+If this checkbox is marked the charts data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.<br />
+This filter can be marked only in pair with the <strong>Common range for all charts</strong> filter.<br />
+If both checkboxes were unmarked and user set the <strong>Live update</strong> filter active, the system would mark both checkboxes.</p>
+<p><strong>Set range (3)</strong><br />
+User can select the predefined time range for all plots from the list:</p>
+<ul>
+<li>Whole range</li>
+<li>Last week</li>
+<li>Last day</li>
+<li>Last hour</li>
+</ul>
+<p>This filter works in pair with the <strong>Common range for all charts</strong> filter. If user sets the date range, the system will mark the <strong>Common range for all charts</strong> checkbox, if it wasn't. So the data in all charts will be filtered by the selected range.</p>
+<p><strong>Date filter (4)</strong><br />
+User can specify the <em>Start</em> and the <em>End</em> dates for plots using this filter.<br />
+By default, the <em>Start</em> date (the left field of the filter) is the node creating datetime, the <em>End</em> date (the right field of the filter) is the current datetime.<br />
+To change the <em>Start</em>\/<em>End</em> date the user should:</p>
+<ul>
+<li>click the corresponding date field, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_11.png" /></li>
+<li>the calendar will be displayed:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_6.png" /><br />
+    The dates before the node creation and after today will be unavailable to select:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_12.png" /></li>
+<li>click the specific available date in the calendar. Selected date will appear in the date field. Charts will be automatically redrawn according to the new set period.</li>
+</ul>
+<p>If the user focuses on the calendar icon or the whole field at any of date fields the "Cross" button will be displayed:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_8.png" /><br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_9.png" /><br />
+If click this button in the <em>Start</em> date field - the node creation date will be substituted into that filter.<br />
+If click this button in the <em>End</em> date field - the date in that field will be erased and the system will interpret it as the current datetime.</p>
+<h4 id="zooming-and-scrolling-features">Zooming and scrolling features</h4>
+<p>In addition, user can <em>scroll</em> plots.<br />
+To do so:</p>
+<ul>
+<li>focus on the plot, hold the left mouse button and move the mouse in the desired direction (left or right)</li>
+<li><strong><em>Note</em></strong>: if <strong>Common range for all charts</strong> filter is on, all charts will be moving simultaneously</li>
+</ul>
+<p>Another feature is chart <em>zooming</em>.<br />
+To zoom a chart:</p>
+<ul>
+<li>hold the Shift key and scroll the plot via mouse. The area will be highlighted:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_7.png" /><br />
+    Then release the Shift key and the highlighted area will be automatically zoomed.</li>
+<li>another way of zooming plot - using the right panel. There are <strong>Plus</strong> and <strong>Minus</strong> buttons for such purpose on it:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_10.png" /><br />
+    Click the desired button and the chart will be zoomed.</li>
+</ul>
               
             </div>
           </div>

@@ -178,6 +178,8 @@
         
             <li><a class="toctree-l5" href="#customize-a-pipeline-version">Customize a pipeline version</a></li>
         
+            <li><a class="toctree-l5" href="#edit-a-pipeline-info">Edit a pipeline info</a></li>
+        
             <li><a class="toctree-l5" href="#example-create-pipeline">Example: Create Pipeline</a></li>
         
             <li><a class="toctree-l5" href="#example-add-pipeline-configuration">Example: Add pipeline configuration</a></li>
@@ -198,6 +200,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
                 </li>
     </ul>
                 </li>
@@ -439,15 +445,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -465,7 +475,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -551,6 +561,7 @@
 <li><a href="#adddelete-storage-rules-optional">Add/delete storage rules (optional)</a></li>
 </ul>
 </li>
+<li><a href="#edit-a-pipeline-info">Edit a pipeline info</a></li>
 <li><a href="#example-create-pipeline">Example: Create Pipeline</a><ul>
 <li><a href="#pipeline-input-data">Pipeline input data</a></li>
 <li><a href="#pipeline-output-folder">Pipeline output folder</a></li>
@@ -564,7 +575,7 @@
 <li><a href="#example-limit-mounted-storages">Example: Limit mounted storages</a></li>
 </ul>
 <blockquote>
-<p>To create a <strong>Pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and a role <strong>PIPELINE_MANAGER</strong>. To edit pipeline you need just <strong>WRITE</strong> permissions for a pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+<p>To create a <strong>Pipeline</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and the <strong>ROLE_PIPELINE_MANAGER</strong> role. To edit pipeline you need just <strong>WRITE</strong> permissions for a pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
 </blockquote>
 <p>To create a working pipeline version you need:</p>
 <ol>
@@ -580,7 +591,7 @@
 <h2 id="create-a-pipeline-in-a-library-space">Create a pipeline in a Library space</h2>
 <ol>
 <li>Go to the <strong>"Library"</strong> tab and select a folder.</li>
-<li>Click <strong>+ Create → Pipeline</strong> and choose one of the built-in pipeline templates (Pure Python, Shell, Luigi, SAMPLE_SHEET_BATCH, FOLDER_BATCH, WDL). By default, Luigi template will be chosen. Default pipeline templates define the programming language for a pipeline. As templates are empty user shall write pipeline logic on his own. "SAMPLE_SHEET_BATCH" and "FOLDER_BATCH" templates include batch scripts and are devoted to batch processing of NGS files.</li>
+<li>Click <strong>+ Create → Pipeline</strong> and choose one of the built-in pipeline templates (<code>Python</code>, <code>Shell</code>, <code>Snakemake</code>, <code>Luigi</code>, <code>WDL</code>, <code>Nextflow</code>) or choose <code>DEFAULT</code> item to create a pipeline without a template. Pipeline template defines the programming language for a pipeline. As templates are empty user shall write pipeline logic on his own.</li>
 <li>Enter pipeline's name (pipeline description is optional) in the popped-up form.</li>
 <li>Click the <strong>Create</strong> button.</li>
 <li>A new pipeline will appear in the folder.<br />
@@ -647,6 +658,44 @@ To add a new rule:</p>
 <img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_16.png" /><br />
 <strong><em>Note</em></strong>: If many rules with different Masks are present all of them are checked one by one. If a file corresponds to any of rules - it will be uploaded to the bucket.</li>
 <li>To delete storage rule click the <strong>Delete</strong> button in the right part of the storage rule's row.</li>
+</ol>
+<h2 id="edit-a-pipeline-info">Edit a pipeline info</h2>
+<p>To edit a pipeline info:</p>
+<ol>
+<li>Click the <strong>Gear</strong> icon in the right upper corner of the pipeline page</li>
+<li>The popup with the pipeline info will be opened:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_46.png" /><br />
+    Here you can edit pipeline name (<strong>a</strong>) and description (<strong>b</strong>)</li>
+<li>To edit repository settings click the corresponding button (<strong>c</strong>):<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_47.png" /><br />
+    Here you can edit access token to a repository (<strong>d</strong>)<br />
+<strong><em>Note</em></strong>: the "Repository" field is disabled for the existing pipelines</li>
+<li>Click the <strong>SAVE</strong> button to save changes</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: if you rename a pipeline the corresponding GitLab repo will be automatically renamed too. So, the clone/pull/push URL will change. Make sure to change the remote address, if this pipeline is used somewhere. How it works:</p>
+<ol>
+<li>Open the pipeline:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_48.png" /></li>
+<li>Click the <strong>GIT REPOSITORY</strong> button in the right upper corner of the page:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_49.png" /><br />
+   Pipeline name and repository name are identical</li>
+<li>Click the <strong>Gear</strong> icon in the right upper corner.<br />
+   In the popup change pipeline name and click the <strong>SAVE</strong> button:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_50.png" /></li>
+<li>Click the <strong>GIT REPOSITORY</strong> button again:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_51.png" /><br />
+   Pipeline name and repository name are identical</li>
+</ol>
+</blockquote>
+<p>Also, if you want just rename a pipeline without changing its other info fields:</p>
+<ol>
+<li>Hover over the pipeline name at the "breadcrumbs" control in the top of the pipeline page - the "edit" symbol will appear:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_52.png" /></li>
+<li>Click the pipeline name - the field will become available to edit. Rename the pipeline:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_53.png" /></li>
+<li>Press the <em>Enter</em> key or click any empty space - a new pipeline name will be saved:<br />
+<img alt="CP_CreateAndConfigurePipeline" src="../attachments/CreateAndConfigurePipeline_54.png" /></li>
 </ol>
 <h2 id="example-create-pipeline">Example: Create Pipeline</h2>
 <p>We will create a simple Shell pipeline (Shell template used). For that purpose, we will click <strong>+ Create → Pipeline → SHELL</strong>.<br />

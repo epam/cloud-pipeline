@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../../img/favicon.ico">
-  <title>15.2. Using terminal access - Cloud Pipeline</title>
+  <title>Appendix A. Instance and Docker container lifecycles - Cloud Pipeline</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "15.2. Using terminal access";
-    var mkdocs_page_input_path = "manual/15_Interactive_services/15.2_Using_Terminal_access.md";
+    var mkdocs_page_name = "Appendix A. Instance and Docker container lifecycles";
+    var mkdocs_page_input_path = "manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -176,6 +176,10 @@
                 <li class="toctree-l3">
                     
     <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
                 </li>
     </ul>
                 </li>
@@ -407,39 +411,29 @@
                 </li>
     </ul>
                 </li>
-                <li class=" current">
+                <li class="">
                     
     <span class="caption-text">15. Interactive services</span>
     <ul class="subnav">
                 <li class="toctree-l3">
                     
-    <a class="" href="../15._Interactive_services/">15.0. Overview</a>
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
-                </li>
-                <li class="toctree-l3 current">
-                    
-    <a class="current" href="./">15.2. Using terminal access</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l4"><a href="#152-using-terminal-access">15.2. Using Terminal access</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l5" href="#using-terminal-access">Using Terminal access</a></li>
-        
-            <li><a class="toctree-l5" href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a></li>
-        
-        </ul>
-    
-
-    </ul>
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -455,9 +449,21 @@
                     
     <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
                 </li>
-                <li class="">
+                <li class=" current">
                     
-    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="current" href="./">Appendix A. Instance and Docker container lifecycles</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#appendix-a-instance-and-docker-container-lifecycles">Appendix A. Instance and Docker container lifecycles</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#overview">Overview</a></li>
+        
+        </ul>
+    
+
+    </ul>
                 </li>
                 <li class="">
                     
@@ -515,15 +521,11 @@
     
       
         
-          <li>15. Interactive services &raquo;</li>
-        
-      
-        
           <li>User guide &raquo;</li>
         
       
     
-    <li>15.2. Using terminal access</li>
+    <li>Appendix A. Instance and Docker container lifecycles</li>
     <li class="wy-breadcrumbs-aside">
       
     </li>
@@ -533,116 +535,44 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="152-using-terminal-access">15.2. Using Terminal access</h1>
-<blockquote>
-<p><strong>Terminal access</strong> is available to the <strong>OWNER</strong> of the running job and users with <strong>ADMIN</strong> role. With sufficient permissions, <strong>Terminal access</strong> can be achieved to any running job.<br />
-For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
-<p>Also you can get a terminal access to the running job using the <code>pipe</code> CLI. For more details see <a href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">here</a>.</p>
-</blockquote>
-<p>All software in the Cloud Pipeline is located in <strong>Docker containers</strong>, and we can use <strong>Terminal access</strong> to the Docker container via the <strong>Interactive services</strong>.<br />
-This can be useful when:</p>
+                <h1 id="appendix-a-instance-and-docker-container-lifecycles">Appendix A. Instance and Docker container lifecycles</h1>
 <ul>
-<li>usage of a new bioinformatics tool shall be tested;</li>
-<li>batch job scripts shall be tested within a real execution environment;</li>
-<li>docker image shall be extended and saved (install more packages/bioinformatics tools) - see <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">10.4. Edit a Tool</a>.</li>
-</ul>
-<h2 id="using-terminal-access">Using Terminal access</h2>
-<p>Both <strong>Pipelines</strong> and <strong>Tools</strong> can be run as <strong>interactive services</strong>. The example below shows launching tool scenario:</p>
-<ol>
-<li>Navigate to the list of registered <strong>Tools</strong> and search for the Tool required (e.g. <strong>"base-generic-centos7"</strong>).<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_1.png" /></li>
-<li>Go to the <strong>Tool</strong> page and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_2.png" /></li>
-<li><strong>Launch Tool page</strong> form will load (it's the same form that is used to configure a batch run). The following fields shall be filled:<ul>
-<li><strong>Node type</strong></li>
-<li><strong>Disk size</strong></li>
-<li><strong>Cloud Region</strong></li>
-<li>"<strong>Start idle</strong>" box should be chosen. Click the <strong>Launch</strong> button when all above parameters are set.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_3.png" /></li>
+<li><a href="#overview">Overview</a><ul>
+<li><a href="#instance-lifecycle-stages">Instance lifecycle stages</a></li>
+<li><a href="#docker-container-lifecycle-stages">Docker container lifecycle stages</a></li>
 </ul>
 </li>
-<li>Once a run is scheduled and configured <strong>SSH</strong> hyperlink will appear in the <strong>"Run Log"</strong> form in the right upper corner of the form.<br />
-<strong><em>Note</em></strong>: This link is only visible to the owner of the run and users with <strong>ROLE_ADMIN</strong> role assigned.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_4.png" /></li>
-<li>Clicking the <strong>SSH</strong> link will load a new browser tab with an authenticated <strong>Terminal</strong>.<br />
-<strong><em>Note</em></strong>: If an <strong>unauthorized user</strong> will load a direct link, <strong>"Permission denied"</strong> error will be returned.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_5.png" /></li>
-</ol>
-<h2 id="example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</h2>
+</ul>
+<h2 id="overview">Overview</h2>
+<p>In the context of <strong>Cloud Pipeline</strong>, both life cycles are tied together. A user is charged for instance usage.<br />
+<strong><em>Note</em></strong>: to run a container you need a launched instance.<br />
+In the <strong>Cloud Pipeline</strong>, <strong>instances</strong> are bought for hourly rates with a minimum of one hour.<br />
+This is due to the following reasons:</p>
+<ul>
+<li>It helps to decrease the time for node relaunch.</li>
+<li>It helps to decrease the time for Docker image and data ("type": "common") download.</li>
+<li>Most pipelines will take much longer than 1 hour to complete.<br />
+<strong><em>Note</em></strong>: same instance configuration must be used in order to reuse currently active nodes.</li>
+</ul>
+<p>If the node has no running jobs 10 minutes before the new hour of payment begins, it will be terminated.</p>
+<h3 id="instance-lifecycle-stages">Instance lifecycle stages</h3>
 <blockquote>
-<p>Configure of <strong>Environment Modules</strong> using is available only for users with <strong>ADMIN</strong> role.</p>
+<p><strong><em>Note</em></strong>: instance lifecycle stages are presented on the example of one of the supported instances - <code>EC2</code> of <code>AWS</code> Cloud Provider.</p>
 </blockquote>
-<p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
-<p>In the example below, we will use <code>Modules</code> to switch between two versions of <strong>Java Development Kit</strong>.</p>
-<ol>
-<li>At the beginning we will create a storage for all <code>JDK</code> versions files and <code>modulefiles</code>. For that: open the <strong>Library</strong>, click <strong>Create +</strong> → <strong>Storages</strong> → <strong>Create new object storage</strong></li>
-<li>While creating - specify a storage name and mount point, e.g. <code>/opt/software</code>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_6.png" /><br />
-    Click the <strong>Create</strong> button.</li>
-<li>Open the created storage and create two folders in it:<ul>
-<li><strong>app</strong> - here we will upload <code>JDK</code> files</li>
-<li><strong>modulefiles</strong> - here we will create <code>modulefiles</code> for each <code>JDK</code> version<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_7.png" /></li>
+<p>The general overview of the <strong>EC2 instance lifecycle</strong> - <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html">https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html</a>.<br />
+In the Cloud Pipeline there are 3 stages:</p>
+<ul>
+<li><strong>Pending</strong> state - no billing.</li>
+<li><strong>Running</strong> state - you're billed for each second, with a one-minute minimum, that you keep the instance running.</li>
+<li><strong>Terminated</strong> state - no billing.</li>
 </ul>
-</li>
-<li>Open the <strong>modulefiles</strong> folder, create the <strong>jdk</strong> folder in it.</li>
-<li>Open the <strong>jdk</strong> folder, create <code>modulefile</code> for the <code>JDK ver. 9.0.4</code> - name it <strong>9.0.4</strong>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_8.png" /></li>
-<li>Click the file name, click the <strong>Fullscreen</strong> button at the file content panel:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_9.png" /></li>
-<li>At the popup click the <strong>EDIT</strong> button and input the <code>modulefile</code> content, e.g. for the <code>JDK ver. 9.0.4</code>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_10.png" /><br />
-    Save it.</li>
-<li>Repeat steps 5-7 for the <code>JDK ver. 11.0.2</code>. At the end you will have two <code>modulefiles</code> in the <strong>jdk</strong> folder:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_11.png" /></li>
-<li>Open <strong>System Settings</strong> popup, click the <strong>Preferences</strong> tab, select <strong>Launch</strong> section.<br />
-    Into the <strong><code>launch.env.properties</code></strong> field add a new variable - <code>CP_CAP_MODULES_FILES_DIR</code>. That variable specify path to the source <code>modulefiles</code>.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_12.png" /><br />
-    As you can see - during the run, when the storage created at step 2 will be mounted to the node in the specified mount-point (<code>/opt/software</code>), created above <code>JDK</code> <code>modulefiles</code> will be available in the <strong>modulefiles</strong> folder created at step 3 - by the path <code>/opt/software/modulefiles</code>.<br />
-    Save and close the <strong>Settings</strong> popup.</li>
-<li>Go to the <strong>Tool</strong> page, open the tool page you want to use the <code>Environment Modules</code> with and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_2.png" /></li>
-<li>At the <strong>Launch</strong> page expand <strong>Advanced</strong> section.</li>
-<li>In the <strong>Limit mounts</strong> field select the storage created at step 2 (see more details <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>).</li>
-<li>Click the <strong>Add system parameter</strong> button</li>
-<li>In the popup select the <strong><code>CP_CAP_MODULES</code></strong> item and click the <strong>OK</strong> button:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_13.png" /><br />
-<code>CP_CAP_MODULES</code> parameter enables installation and using the <code>Modules</code> for the current run. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (that was set at step 9). If <code>CP_CAP_MODULES_FILES_DIR</code> is not set - default <code>modulefiles</code> location will be used.<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_14.png" /></li>
-<li>Launch the tool.</li>
-<li>Open <strong>Run logs</strong> page, wait until <strong>InstallEnvironmentModules</strong> task will appear and check that the <code>Modules</code> was installed successfully:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_15.png" /></li>
-<li>Wait until <strong>SSH</strong> hyperlink will appear in the right upper corner. Click it.</li>
-<li>In the terminal run the command <code>module use</code> to check the ource path to the <code>modulefiles</code>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_16.png" /></li>
-<li>Now, we will install <code>JDK</code>. For the <code>ver. 9.0.4</code> run the following commands:  </li>
-</ol>
-<pre><code class="bash"># Download &quot;jdk 9.0.4&quot; archive
-wget https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz
-# Extract archive content
-tar -zxf openjdk-9.0.4_linux-x64_bin.tar.gz
-# Copy &quot;jdk 9.0.4&quot; files into the mounted data storage
-cp -r jdk-9.0.4 /opt/software/app/jdk-9.0.4
-</code></pre>
-
-<p>For the <code>ver. 11.0.2</code> run the following commands:  </p>
-<pre><code class="bash"># Download &quot;jdk 11.0.2&quot; archive
-wget https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
-# Extract archive content
-tar -zxf openjdk-11.0.2_linux-x64_bin.tar.gz
-# Copy &quot;jdk 11.0.2&quot; files into the mounted data storage
-cp -r jdk-11.0.2 /opt/software/app/jdk-11.0.2
-</code></pre>
-
-<p>Now, you can check the facilities of the <code>Environment Modules</code> package.<br />
-Load the available <code>modulefiles</code> list:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_17.png" /><br />
-Load the <code>JDK ver. 11.0.2</code>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_18.png" /><br />
-Switch to the <code>JDK ver. 9.0.4</code>:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_20.png" /><br />
-Unload all <code>JDK</code> versions:<br />
-<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_19.png" />  </p>
+<h3 id="docker-container-lifecycle-stages">Docker container lifecycle stages</h3>
+<p>A general overview of the <strong>Docker container lifecycle</strong> - <a href="https://medium.com/@nagarwal/lifecycle-of-docker-container-d2da9f85959">https://medium.com/@nagarwal/lifecycle-of-docker-container-d2da9f85959</a>.<br />
+In the Cloud Pipeline there are 2 stages:</p>
+<ul>
+<li><strong>Running</strong> state - possible to execute some commands inside the container.</li>
+<li><strong>Terminated</strong> state - the container is not accessible.</li>
+</ul>
               
             </div>
           </div>
@@ -650,10 +580,10 @@ Unload all <code>JDK</code> versions:<br />
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../15.3_Interactive_service_examples/" class="btn btn-neutral float-right" title="15.3. Interactive service examples">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../Appendix_B/Appendix_B._Working_with_a_Project/" class="btn btn-neutral float-right" title="Appendix B. Working with a Project">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../15.1_Starting_an_Interactive_application/" class="btn btn-neutral" title="15.1. Starting an interactive application"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../18_Home_page/18._Home_page/" class="btn btn-neutral" title="18. Home page"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -679,10 +609,10 @@ Unload all <code>JDK</code> versions:<br />
     <span class="rst-current-version" data-toggle="rst-current-version">
       
       
-        <span><a href="../15.1_Starting_an_Interactive_application/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../18_Home_page/18._Home_page/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../15.3_Interactive_service_examples/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../Appendix_B/Appendix_B._Working_with_a_Project/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

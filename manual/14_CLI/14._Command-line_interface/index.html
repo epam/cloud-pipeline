@@ -177,6 +177,10 @@
                     
     <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
                 </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
     </ul>
                 </li>
                 <li class="">
@@ -435,15 +439,19 @@
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.1_Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.2_Using_Terminal_access/">15.2. Using terminal access</a>
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
                 </li>
                 <li class="toctree-l3">
                     
-    <a class="" href="../../15_Interactive_services/15.3_Interactive_service_examples/">15.3. Interactive service examples</a>
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
                 </li>
     </ul>
                 </li>
@@ -461,7 +469,7 @@
                 </li>
                 <li class="">
                     
-    <a class="" href="../../Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles/">Appendix A. EC2 instance and Docker container lifecycles</a>
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
                 </li>
                 <li class="">
                     
@@ -571,12 +579,12 @@ To get a list of available options and commands type <code>pipe</code> or <co
 </thead>
 <tbody>
 <tr>
-<td><strong><code>--version</code></strong></td>
-<td>Show CLI version and exit</td>
-</tr>
-<tr>
 <td><strong><code>--help</code></strong></td>
 <td>Show help message and exit</td>
+</tr>
+<tr>
+<td><strong><code>--version</code></strong></td>
+<td>Show CLI version and exit. Details of the command using see <a href="../14.1._Install_and_setup_CLI/#how-to-install-and-setup-pipe-cli">here</a></td>
 </tr>
 </tbody>
 </table>
@@ -623,6 +631,10 @@ To get a list of available options and commands type <code>pipe</code> or <co
 <tr>
 <td><strong><code>terminate-node</code></strong></td>
 <td>Terminates calculation node. Details of the command using see <a href="../14.5._Manage_pipeline_executions_via_CLI/#terminate-a-node">here</a>.</td>
+</tr>
+<tr>
+<td><strong><code>update</code></strong></td>
+<td>Checks the Cloud Pipeline CLI version and updates it to the latest one if required. Details of the command using see <a href="../14.1._Install_and_setup_CLI/#update-the-cli">here</a>.</td>
 </tr>
 <tr>
 <td><strong><code>view-acl</code></strong></td>
