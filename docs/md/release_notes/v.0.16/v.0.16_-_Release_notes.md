@@ -9,6 +9,7 @@
 - [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
 - [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 - [Resource usage form improvement](#resource-usage-form-improvement)
+- [Update pipe CLI version](#update-pipe-cli-version)
 
 ***
 
@@ -190,6 +191,18 @@ In **`v0.16`**, the number of filters were added to the [Monitor cluster nodes](
 All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+## Update pipe CLI version
+
+Previously, if the user installed `pipe` CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of `pipe` CLI every time to have an actual version.
+
+Currently, the **`pipe update`** command to update the Cloud Pipeline CLI version was implemented.
+
+This command compare the CLI and API versions. If the CLI version is less than the API one, it will update the CLI - the latest Cloud Pipeline CLI version will be installed. Otherwise no actions will be performed:
+
+![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeUpdate_1.png)
+
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#update-the-cli).
 
 ***
 
