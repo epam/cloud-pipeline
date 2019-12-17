@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment';
+import moment from 'moment-timezone';
 const dateDisplayFormat = 'YYYY-MM-DD HH:mm:ss';
 const displayDate = (date, format = dateDisplayFormat) => {
   if (!date) {

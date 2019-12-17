@@ -18,10 +18,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
 import {observer} from 'mobx-react';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import classNames from 'classnames';
 
-import {CronConvert, ruleModes} from './cron-convert';
+import {CronConvert, isTimeZoneEqualCurrent, ruleModes} from './cron-convert';
 
 import styles from './run-scheduling.css';
 
@@ -86,7 +86,13 @@ export default class RunScheduleDialog extends React.Component {
     }
     if (this.validate()) {
       const {rules} = this.state;
-      const convertRule = ({action, schedule, scheduleId, timeZone, removed = false}) => {
+      const convertRule = ({
+        action,
+        schedule,
+        scheduleId,
+        timeZone = moment.tz.guess(),
+        removed = false
+      }) => {
         const cronExpression = CronConvert.convertToCronString(schedule);
 
         return {
@@ -106,7 +112,6 @@ export default class RunScheduleDialog extends React.Component {
 
   onAddRow = () => {
     const {rules} = this.state;
-    // todo timeZone?
     rules.push({
       schedule: {
         mode: ruleModes.daily,
@@ -116,7 +121,8 @@ export default class RunScheduleDialog extends React.Component {
           minutes: 0
         }
       },
-      action: actions.pause
+      action: actions.pause,
+      timeZone: moment.tz.guess()
     });
     this.setState({rules});
   };
@@ -253,7 +259,7 @@ export default class RunScheduleDialog extends React.Component {
         >
           {
             moment
-              .weekdays()
+              .weekdays(false)
               .map((day, id) => (<Select.Option key={`${id}`}>{day}</Select.Option>))
           }
         </Select>
@@ -295,7 +301,15 @@ export default class RunScheduleDialog extends React.Component {
     );
   };
 
+  renderTimezone = (timezone) => (
+    <Row className={styles.timezone}>
+      timezone: {timezone}
+    </Row>
+  );
+
   renderRule = (rule, i) => {
+    const sameTimezone = isTimeZoneEqualCurrent(rule.timeZone);
+
     return (
       <Row
         key={i}
@@ -306,34 +320,40 @@ export default class RunScheduleDialog extends React.Component {
             [styles.ruleRowRemoved]: rule.removed
           }
         )}
-        style={{padding: 5, width: '100%'}}
+        style={{width: '100%'}}
       >
-        {this.renderActionSelector(rule, i)}
-        {this.renderScheduleModeSelector(rule, i)}
-        {this.renderScheduleEverySelector(rule, i)}
-        {this.renderDayOfWeekSelector(rule, i)}
-        {this.renderTimePicker(rule, i)}
-        {
-          !rule.removed
-            ? (
-              <Button
-                onClick={() => { this.onRuleRemove(i); }}
-                shape="circle"
-                icon="delete"
-                size="small"
-                style={{marginLeft: 15}}
-                type="danger"
-              />
-            ) : (
-              <Button
-                onClick={() => { this.onRuleRestore(i); }}
-                shape="circle"
-                icon="reload"
-                size="small"
-                style={{marginLeft: 15}}
-              />
-            )
-        }
+        <Row type="flex" className={classNames({
+          [styles.scheduling]: sameTimezone,
+          [styles.schedulingWithTimezone]: !sameTimezone
+        })}>
+          {this.renderActionSelector(rule, i)}
+          {this.renderScheduleModeSelector(rule, i)}
+          {this.renderScheduleEverySelector(rule, i)}
+          {this.renderDayOfWeekSelector(rule, i)}
+          {this.renderTimePicker(rule, i)}
+          {
+            !rule.removed
+              ? (
+                <Button
+                  onClick={() => { this.onRuleRemove(i); }}
+                  shape="circle"
+                  icon="delete"
+                  size="small"
+                  style={{marginLeft: 15}}
+                  type="danger"
+                />
+              ) : (
+                <Button
+                  onClick={() => { this.onRuleRestore(i); }}
+                  shape="circle"
+                  icon="reload"
+                  size="small"
+                  style={{marginLeft: 15}}
+                />
+              )
+          }
+        </Row>
+        {!sameTimezone && this.renderTimezone(rule.timeZone)}
       </Row>
     );
   };

@@ -27,7 +27,7 @@ import pipelines from '../../models/pipelines/Pipelines';
 import connect from '../../utils/connect';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const getStatusForServer = status => (status === 'active'
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']

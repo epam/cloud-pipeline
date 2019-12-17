@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {Alert, Button, Card, Col, Input, message, Modal, Row, Table} from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
 import nodesFilter from '../../models/cluster/FilterClusterNodes';

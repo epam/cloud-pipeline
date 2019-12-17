@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
-import {CronConvert, ruleModes} from './cron-convert';
+import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 
 import RunScheduleDialog from './run-scheduling-dialog';
 
@@ -94,20 +94,21 @@ export default class RunSchedulingList extends React.Component {
     ];
   };
 
-  getScheduleString = ({mode, every, dayOfWeek, time: {hours, minutes}}) => {
+  getScheduleString = ({mode, every, dayOfWeek, time: {hours, minutes}}, timeZone) => {
+    const zone = !isTimeZoneEqualCurrent(timeZone) ? timeZone : null;
     const recurrence = mode === ruleModes.daily
-      ? `every ${every} day${+every > 1 && 's'}`
-      : `on ${dayOfWeek.map((day) => moment.weekdays(day))}`;
+      ? `every ${every} day${+every > 1 ? 's' : ''}`
+      : `on ${dayOfWeek.sort().map((day) => moment.weekdays(false, +day)).join(', ')}`;
 
-    return `At ${hours}:${minutes}, ${recurrence}`;
+    return `At ${hours}:${minutes}, ${recurrence}${zone ? ` (${zone})` : ''}`;
   };
 
   renderList = () => {
     const {rules} = this.state;
-    const renderRule = ({action, schedule}, i) => {
+    const renderRule = ({action, schedule, timeZone}, i) => {
       return (
         <Row style={{width: '100%'}} key={`rule_${action}_${i}`}>
-          <b>{action}</b>: {this.getScheduleString(schedule)}
+          <b>{action}</b>: {this.getScheduleString(schedule, timeZone)}
         </Row>
       );
     };

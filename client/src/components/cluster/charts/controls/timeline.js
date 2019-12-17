@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {computed} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import DateTimeTicksRules from './ticks/date-time-rules';

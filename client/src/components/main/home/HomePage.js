@@ -34,7 +34,7 @@ import 'react-resizable/css/styles.css';
 import 'react-grid-layout/css/styles.css';
 import '../../../staticStyles/HomePage.css';
 import getStyle from '../../../utils/browserDependentStyle';
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const PAGE_SIZE = 50;
 const UPDATE_TIMEOUT = 15000;

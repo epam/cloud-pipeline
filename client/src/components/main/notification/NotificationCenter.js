@@ -20,7 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {message, Modal, Button, Row, Icon} from 'antd';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import NotificationView from '../../special/notifications/controls/NotificationView';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import styles from './SystemNotification.css';

@@ -1,7 +1,19 @@
+import moment from 'moment-timezone';
+
 export const ruleModes = {
   daily: 'daily',
   weekly: 'weekly'
 };
+
+export function isTimeZoneEqualCurrent (timeZone) {
+  const current = moment.tz.guess();
+
+  if (!timeZone) {
+    return true;
+  }
+
+  return current === timeZone;
+}
 
 export class CronConvert {
   static _getCronParts (expression) {
@@ -90,7 +102,7 @@ export class CronConvert {
       minutes
     }
   },
-  cronLength = 5
+  cronLength = 6
   ) {
     let cron5;
     if (mode === ruleModes.daily) {

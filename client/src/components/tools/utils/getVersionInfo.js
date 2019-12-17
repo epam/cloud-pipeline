@@ -15,7 +15,7 @@
  */
 
 import {LaunchMessages, ScanStatuses, ScanStatusDescriptionsFn} from './constants';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
 
 export default function getVersionRunningInfo (
