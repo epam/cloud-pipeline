@@ -23,6 +23,7 @@ import com.amazonaws.services.ec2.model.AmazonEC2Exception;
 import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
@@ -30,6 +31,7 @@ import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
@@ -253,13 +255,24 @@ public class EC2Helper {
                 .findFirst();
     }
 
-    public void createAndAttachVolume(final String runId, final String device, final Long size, final String awsRegion) {
+    public void createAndAttachVolume(final String runId, final String device, final Long size,
+                                      final String awsRegion) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
+        if (hasDevice(instance, device)) {
+            throw new AwsEc2Exception(String.format("Instance with run id '%s' already has '%s' device",
+                    runId, device));
+        }
         final String zone = instance.getPlacement().getAvailabilityZone();
         final Volume volume = createVolume(client, size, zone);
-        attachVolume(client, instance.getInstanceId(), volume.getVolumeId(), device);
+        tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+    }
+
+    private boolean hasDevice(final Instance instance, final String device) {
+        return CollectionUtils.emptyIfNull(instance.getBlockDeviceMappings()).stream()
+                .map(InstanceBlockDeviceMapping::getDeviceName)
+                .anyMatch(device::equals);
     }
 
     private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {
@@ -271,6 +284,17 @@ public class EC2Helper {
         final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeAvailable();
         waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volume.getVolumeId())));
         return volume;
+    }
+
+    private void tryAttachVolume(final AmazonEC2 client, final Instance instance,
+                                 final Volume volume, final String device) {
+        try {
+            attachVolume(client, instance.getInstanceId(), volume.getVolumeId(), device);
+        } catch (Exception e) {
+            deleteVolume(client, volume.getVolumeId());
+            throw new AwsEc2Exception(String.format("Volume with id '%s' wasn't attached to instance with id '%s'" +
+                    " due to error and it was deleted.", volume.getVolumeId(), instance.getInstanceId()), e);
+        }
     }
 
     private void attachVolume(final AmazonEC2 client, final String instanceId, final String volumeId, final String device) {
@@ -289,6 +313,11 @@ public class EC2Helper {
                         .withDeviceName(device)
                         .withEbs(new EbsInstanceBlockDeviceSpecification()
                                 .withDeleteOnTermination(true))));
+    }
+
+    private void deleteVolume(final AmazonEC2 client, final String volumeId) {
+        client.deleteVolume(new DeleteVolumeRequest()
+                .withVolumeId(volumeId));
     }
 
     private double getMeanValue(List<SpotPrice> value) {

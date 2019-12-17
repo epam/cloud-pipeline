@@ -21,4 +21,8 @@ public class AwsEc2Exception extends RuntimeException {
     public AwsEc2Exception(final String message) {
         super(message);
     }
+
+    public AwsEc2Exception(final String message, final Throwable throwable) {
+        super(message, throwable);
+    }
 }
