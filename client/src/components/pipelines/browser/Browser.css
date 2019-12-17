@@ -22,7 +22,11 @@ th.metadata-column-value {
 .tree-item-name {
   cursor: pointer;
   min-width: 150px;
-  word-break: break-word !important;
+  max-width: 200px;
+}
+
+tbody[class*="ant-table-tbody"] .tree-item-name {
+  word-break: break-word;
 }
 
 .tree-item-version {
