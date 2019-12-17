@@ -35,6 +35,7 @@ import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
@@ -87,6 +88,8 @@ public class EC2Helper {
     private static final String STOPPING_STATE = "stopping";
     private static final String STOPPED_STATE = "stopped";
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
+    private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
+    private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
 
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
@@ -255,24 +258,51 @@ public class EC2Helper {
                 .findFirst();
     }
 
-    public void createAndAttachVolume(final String runId, final String device, final Long size,
-                                      final String awsRegion) {
+    public void createAndAttachVolume(final String runId, final Long size, final String awsRegion) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
-        if (hasDevice(instance, device)) {
-            throw new AwsEc2Exception(String.format("Instance with run id '%s' already has '%s' device",
-                    runId, device));
-        }
-        final String zone = instance.getPlacement().getAvailabilityZone();
+        final String device = getVacantDeviceName(instance);
+        final String zone = getAvailabilityZone(instance);
         final Volume volume = createVolume(client, size, zone);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
 
-    private boolean hasDevice(final Instance instance, final String device) {
+    private String getVacantDeviceName(final Instance instance) {
+        final List<String> attachedDevices = getAttachedDevices(instance);
+        return allowedDeviceNames()
+                .filter(it -> !attachedDevices.contains(it))
+                .findFirst()
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Instance with id '%s' " +
+                        "has no vacant devices to use for disk attaching", instance.getInstanceId())));
+    }
+
+    private List<String> getAttachedDevices(final Instance instance) {
         return CollectionUtils.emptyIfNull(instance.getBlockDeviceMappings()).stream()
                 .map(InstanceBlockDeviceMapping::getDeviceName)
-                .anyMatch(device::equals);
+                .collect(Collectors.toList());
+    }
+
+    private Stream<String> allowedDeviceNames() {
+        final String prefix = resolveDevicePrefix();
+        return resolveDeviceSuffixes().chars().mapToObj(suffix -> prefix + (char) suffix);
+    }
+
+    private String resolveDevicePrefix() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_DEVICE_PREFIX))
+                .orElse(ALLOWED_DEVICE_PREFIX);
+    }
+
+    private String resolveDeviceSuffixes() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_DEVICE_SUFFIXES))
+                .orElse(ALLOWED_DEVICE_SUFFIXES);
+    }
+
+    private String getAvailabilityZone(final Instance instance) {
+        return Optional.ofNullable(instance.getPlacement())
+                .map(Placement::getAvailabilityZone)
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Instance with id '%s' " +
+                        "has no associated availability zone", instance.getInstanceId())));
     }
 
     private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {

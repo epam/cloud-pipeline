@@ -977,8 +977,6 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        Assert.isTrue(!StringUtils.isEmpty(request.getDevice()),
-                messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_DEVICE_NOT_FOUND));
         nodesManager.attachDisk(pipelineRun, request);
         return pipelineRun;
     }

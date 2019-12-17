@@ -34,7 +34,6 @@ import org.mockito.MockitoAnnotations;
 import java.util.function.Predicate;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
@@ -46,7 +45,6 @@ public class PipelineRunManagerUnitTest {
     private static final long NOT_EXISTING_RUN_ID = -1L;
     private static final String NODE_NAME = "node_name";
     private static final Long SIZE = 10L;
-    private static final String DEVICE = "/dev/sdc";
 
     @Mock
     private NodesManager nodesManager;
@@ -110,13 +108,8 @@ public class PipelineRunManagerUnitTest {
 
     @Test
     public void testAttachDiskWithInvalidSize() {
-        assertAttachFails(diskAttachRequestWithSize(null));
-        assertAttachFails(diskAttachRequestWithSize(-10L));
-    }
-
-    @Test
-    public void testAttachDiskWithInvalidDevice() {
-        assertAttachFails(diskAttachRequestWithDevice(null));
+        assertAttachFails(diskAttachRequest(null));
+        assertAttachFails(diskAttachRequest(-10L));
     }
 
     @Test
@@ -163,19 +156,11 @@ public class PipelineRunManagerUnitTest {
     }
 
     private DiskAttachRequest diskAttachRequest() {
-        return diskAttachRequest(SIZE, DEVICE);
+        return diskAttachRequest(SIZE);
     }
 
-    private DiskAttachRequest diskAttachRequestWithSize(final Long size) {
-        return diskAttachRequest(size, DEVICE);
-    }
-
-    private DiskAttachRequest diskAttachRequestWithDevice(final String device) {
-        return diskAttachRequest(SIZE, device);
-    }
-
-    private DiskAttachRequest diskAttachRequest(final Long size, final String device) {
-        return new DiskAttachRequest(size, device);
+    private DiskAttachRequest diskAttachRequest(final Long size) {
+        return new DiskAttachRequest(size);
     }
 
     private <T> BaseMatcher<T> matches(final Predicate<T> test) {

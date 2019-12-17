@@ -222,8 +222,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
-        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getDevice(), request.getSize(),
-                region.getRegionCode());
+        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region.getRegionCode());
     }
 
     private String buildNodeUpCommand(final AwsRegion region,
