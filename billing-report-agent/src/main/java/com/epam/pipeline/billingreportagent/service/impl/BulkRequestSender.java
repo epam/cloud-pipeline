@@ -38,35 +38,30 @@ public class BulkRequestSender {
 
     private int currentBulkSize = DEFAULT_BULK_SIZE;
 
-    public void indexDocuments(final String indexName,
-                               final String objectType,
-                               final List<DocWriteRequest> documentRequests) {
-        indexDocuments(indexName, objectType, documentRequests, currentBulkSize);
+    public void indexDocuments(final List<DocWriteRequest> documentRequests) {
+        indexDocuments(documentRequests, currentBulkSize);
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public void indexDocuments(final String indexName,
-                               final String objectType,
-                               final List<DocWriteRequest> documentRequests,
+    public void indexDocuments(final List<DocWriteRequest> documentRequests,
                                final int bulkSize) {
+        if (documentRequests.isEmpty()) {
+            return;
+        }
         final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
                                               Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
         ListUtils.partition(documentRequests, partitionSize).forEach(chunk -> {
             try {
-                indexChunk(indexName, chunk, objectType);
+                indexChunk(chunk);
             } catch (Exception e) {
-                log.error("Partial error during {} index sync: {}.", indexName, e.getMessage());
+                log.error("Partial error during index sync: {}.", e.getMessage());
             }
         });
     }
 
-    private void indexChunk(final String indexName,
-                            final List<DocWriteRequest> documentRequests,
-                            final String objectType) {
-        log.debug("Inserting {} documents for {}", documentRequests.size(), objectType);
-        final BulkResponse response = elasticsearchClient.sendRequests(indexName, documentRequests);
+    private void indexChunk(final List<DocWriteRequest> documentRequests) {
+        final BulkResponse response = elasticsearchClient.sendRequests(documentRequests);
         if (ObjectUtils.isEmpty(response)) {
-            log.error("Elasticsearch documents for {} were not created.", objectType);
             return;
         }
     }

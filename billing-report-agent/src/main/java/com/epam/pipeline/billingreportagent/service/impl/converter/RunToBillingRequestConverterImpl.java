@@ -17,7 +17,6 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.exception.EntityNotFoundException;
-import com.epam.pipeline.billingreportagent.exception.RunHasNoRunningStatusesException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
@@ -62,17 +61,6 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
         this.loader = loader;
         this.mapper = mapper;
     }
-
-    private DocWriteRequest getDocWriteRequest(final String indexName,
-                                               final EntityContainer<PipelineRun> run,
-                                               final PipelineRunBillingInfo billing) {
-        final EntityContainer<PipelineRunBillingInfo> entity = new EntityContainer<>(billing,
-                                                                                     run.getOwner(),
-                                                                                     run.getMetadata(),
-                                                                                     run.getPermissions());
-        return new IndexRequest(indexName, INDEX_TYPE).source(mapper.map(entity));
-    }
-
     /**
      * Creates billing requests for given run
      * @param run Pipeline run to build request
@@ -88,17 +76,17 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
             final Optional<EntityContainer<PipelineRun>> loadedRun = loader.loadEntity(run.getId());
             return loadedRun.map(pipelineRunEntityContainer -> convertRunToBillings(run, syncStart).stream()
                 .map(billingInfo -> getDocWriteRequest(indexName, pipelineRunEntityContainer, billingInfo))
-                .collect(Collectors.toList()))
-                .orElseGet(() -> Collections.singletonList(createDeleteRequest(indexName)));
+                .collect(Collectors.toList())).orElse(Collections.emptyList());
         } catch (EntityNotFoundException e) {
-            return Collections.singletonList(createDeleteRequest(indexName));
+            log.warn("Can't load run info: {}", run.getId());
+            return Collections.emptyList();
         }
     }
 
     protected List<PipelineRunBillingInfo> convertRunToBillings(final PipelineRun run, final LocalDateTime syncStart) {
         final BigDecimal pricePerHour = run.getPricePerHour();
         final List<RunStatus> statuses = run.getRunStatuses();
-        adjustStatuses(statuses, syncStart);
+        adjustStatuses(statuses, syncStart, run.getId());
         final List<List<RunStatus>> activePeriods = calculateActivityPeriods(statuses);
 
         final Map<LocalDate, PipelineRunBillingInfo> reports = new HashMap<>();
@@ -113,7 +101,7 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
         return new ArrayList<>(reports.values());
     }
 
-    private void adjustStatuses(final List<RunStatus> statuses, final LocalDateTime syncStart) {
+    private void adjustStatuses(final List<RunStatus> statuses, final LocalDateTime syncStart, final Long runId) {
         statuses.sort(Comparator.comparing(RunStatus::getTimestamp));
         final RunStatus lastStatus = statuses.get(statuses.size() - 1);
         if (lastStatus.getStatus() == TaskStatus.RUNNING) {
@@ -125,7 +113,7 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
             }
         }
         if (statuses.size() % 2 != 0) { // no RUNNING states for given run
-            log.warn("Can't adjusting run statuses, it has no RUNNING states in history!");
+            log.warn("Can't adjusting run {} statuses, it has no RUNNING states in history!", runId);
             statuses.clear();
         }
     }
@@ -179,5 +167,16 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
             .divide(BigDecimal.valueOf(3600), RoundingMode.CEILING)
             .unscaledValue()
             .longValue();
+    }
+
+    private DocWriteRequest getDocWriteRequest(final String periodIndex,
+                                               final EntityContainer<PipelineRun> run,
+                                               final PipelineRunBillingInfo billing) {
+        final EntityContainer<PipelineRunBillingInfo> entity = new EntityContainer<>(billing,
+                                                                                     run.getOwner(),
+                                                                                     run.getMetadata(),
+                                                                                     run.getPermissions());
+        final String fullIndex = String.format("%s-%s", periodIndex, parseDateToString(billing.getDate()));
+        return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
     }
 }

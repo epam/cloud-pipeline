@@ -49,46 +49,37 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     private RestHighLevelClient client;
 
     @Autowired
-    public ElasticsearchServiceClientImpl(RestHighLevelClient client) {
+    public ElasticsearchServiceClientImpl(final RestHighLevelClient client) {
         this.client = client;
     }
 
     @Override
-    public void createIndex(String indexName, String source) {
-        log.debug("Start to create Elasticsearch index ...");
+    public void createIndex(final String indexName, final String source) {
         final CreateIndexRequest request = new CreateIndexRequest(indexName);
         request.source(source, XContentType.JSON);
         try {
-            if (isIndexExists(indexName)) {
-                deleteIndex(indexName);
-            }
             final CreateIndexResponse createIndexResponse = client.indices().create(request, RequestOptions.DEFAULT);
             Assert.isTrue(createIndexResponse.isAcknowledged(),
                           "Create Elasticsearch index: " + createIndexResponse.toString());
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to create index request: " + e.getMessage(), e);
         }
-
         log.debug("Elasticsearch index with name {} was created.", indexName);
     }
 
     @Override
-    public BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests) {
+    public BulkResponse sendRequests(final List<? extends DocWriteRequest> docWriteRequests) {
         if (CollectionUtils.isEmpty(docWriteRequests)) {
             log.warn("Index requests are empty. ");
             return null;
         }
-        BulkRequest bulkRequest = new BulkRequest();
+        final BulkRequest bulkRequest = new BulkRequest();
         docWriteRequests.forEach(bulkRequest::add);
 
-        log.debug("Start to insert documents for index {}", indexName);
-
         try {
-            BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            final BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
             Assert.isTrue(bulkResponse.status() == RestStatus.OK,
                     "Failed to create Elasticsearch documents: " + bulkResponse.toString());
-
-            log.debug("Stop to insert documents for index {}", indexName);
 
             return bulkResponse;
         } catch(IOException e) {
@@ -104,8 +95,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
                 log.debug("Index with name does not exist. ");
                 return;
             }
-
-            DeleteIndexRequest request = new DeleteIndexRequest(indexName);
+            final DeleteIndexRequest request = new DeleteIndexRequest(indexName);
             client.indices().delete(request, RequestOptions.DEFAULT);
 
         } catch (ElasticsearchException exception) {
@@ -122,7 +112,7 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     }
 
     @Override
-    public boolean isIndexExists(String indexName) {
+    public boolean isIndexExists(final String indexName) {
         final GetIndexRequest request = new GetIndexRequest();
         request.indices(indexName);
         try {
@@ -134,8 +124,8 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
 
     @Override
     public void createIndexAlias(final String indexName, final String indexAlias) {
-        IndicesAliasesRequest request = new IndicesAliasesRequest();
-        AliasActions aliasAction =
+        final IndicesAliasesRequest request = new IndicesAliasesRequest();
+        final AliasActions aliasAction =
                 new AliasActions(AliasActions.Type.ADD)
                         .index(indexName)
                         .alias(indexAlias);
@@ -153,10 +143,10 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return null;
         }
         try {
-            GetIndexRequest request = new GetIndexRequest();
+            final GetIndexRequest request = new GetIndexRequest();
             request.indices(alias);
 
-            GetIndexResponse getIndexResponse = client.indices().get(request, RequestOptions.DEFAULT);
+            final GetIndexResponse getIndexResponse = client.indices().get(request, RequestOptions.DEFAULT);
             if (getIndexResponse.aliases().isEmpty()) {
                 throw new ElasticsearchException("No alias is available.");
             }

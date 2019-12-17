@@ -27,7 +27,7 @@ public interface ElasticsearchServiceClient {
 
     void createIndex(String indexName, String source);
 
-    BulkResponse sendRequests(String indexName, List<? extends DocWriteRequest> docWriteRequests);
+    BulkResponse sendRequests(List<? extends DocWriteRequest> docWriteRequests);
 
     void deleteIndex(String indexName);
 

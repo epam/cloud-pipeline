@@ -29,7 +29,6 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 @Component
@@ -48,8 +47,6 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
                 .field("id", run.getId())
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
                 .field("cost", billingInfo.getCost())
-                .field("date", billingInfo.getDate())
-                .field("endDate", parseDataToString(run.getEndDate()))
                 .field("pipelineName", run.getPipelineName())
                 .field("pipelineVersion", run.getVersion())
                 .field("status", run.getStatus())
@@ -88,12 +85,5 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
                 .field("priceType", instance.getSpot())
                 .field("cloudRegionId", instance.getCloudRegionId())
                 .endObject();
-    }
-
-    private String parseLocalDataToString(final LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-        return dateFormatter.format(date);
     }
 }

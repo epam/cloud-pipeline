@@ -53,79 +53,28 @@ public class ElasticIndexService {
 
     private final ElasticsearchServiceClient elasticsearchServiceClient;
 
-    public void renewIndex(final String indexName, final String settingsFilePath)
-            throws ElasticClientException {
+    public void createIndexIfNotExists(final String indexName, final String settingsFilePath) throws ElasticClientException {
         try {
-            final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
-                    Charset.defaultCharset());
-            elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+            if (!elasticsearchServiceClient.isIndexExists(indexName)) {
+                final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
+                                                             Charset.defaultCharset());
+                if (elasticsearchServiceClient.isIndexExists(indexName)) {
+                    log.debug("Index {} exists already!", indexName);
+                } else {
+                    elasticsearchServiceClient.createIndex(indexName, mappingsJson);
+                }
+            }
         } catch (IOException e) {
             throw new ElasticClientException("Failed to create elasticsearch index with name " + indexName, e);
         }
     }
 
-    public List<DocWriteRequest> getDeleteRequestsByTerm(final String field,
-                                                         final String value,
-                                                         final String indexName) {
-
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.termQuery(field, value));
-        final SearchRequest request = new SearchRequest(indexName).source(searchSource);
-        log.debug("Search request: {}", request);
-        try {
-            return buildDeleteRequests(indexName, request);
-        } catch (ElasticsearchException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    public List<DocWriteRequest> getDeleteRequests(final String id,
-                                                   final String indexName) {
-        SearchRequest request = buildSearchRequestForConfigEntries(id, indexName);
-        log.debug("Search request: {}", request);
-        try {
-            final List<DocWriteRequest> requests = buildDeleteRequests(indexName, request);
-            // return dummy doc, since we need it to clear events DB
-            if (CollectionUtils.isEmpty(requests)) {
-                return Collections.singletonList(new DeleteRequest(indexName, INDEX_TYPE,
-                        getWildcardId(id)));
-            }
-            return requests;
-        } catch (ElasticsearchException e) {
-            return Collections.emptyList();
-        }
-    }
-
-    private List<DocWriteRequest> buildDeleteRequests(final String indexName,
-                                                      final SearchRequest request) {
-        SearchResponse search = elasticsearchServiceClient.search(request);
-        if (search.getHits().getTotalHits() == 0) {
-            log.debug("No documents found for {} {}", indexName, request);
-            return Collections.emptyList();
-        }
-        return Arrays.stream(search.getHits().getHits())
-                .map(hit -> {
-                    log.debug("Found {} entry doc: {}", indexName, hit.getId());
-                    return new DeleteRequest(indexName, INDEX_TYPE, hit.getId());
-                })
-                .collect(Collectors.toList());
-    }
-
-    private SearchRequest buildSearchRequestForConfigEntries(final String id,
-                                                             final String indexName) {
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(QueryBuilders.wildcardQuery("id", getWildcardId(id)));
-        return new SearchRequest(indexName).source(searchSource);
-    }
-
-    private String getWildcardId(final String id) {
-        return id + ID_DELIMITER + WILDCARD;
-    }
-
     private InputStream openJsonMapping(final String path) throws FileNotFoundException {
         if (path.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX)) {
             final InputStream classPathResource = getClass().getResourceAsStream(path
-                    .substring(ResourceUtils.CLASSPATH_URL_PREFIX.length()));
+                                                                                     .substring(
+                                                                                         ResourceUtils.CLASSPATH_URL_PREFIX
+                                                                                             .length()));
             Assert.notNull(classPathResource, String.format("Failed to resolve path: %s", path));
             return classPathResource;
         }

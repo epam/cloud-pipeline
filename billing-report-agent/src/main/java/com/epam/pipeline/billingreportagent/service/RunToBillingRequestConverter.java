@@ -18,14 +18,13 @@ package com.epam.pipeline.billingreportagent.service;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.elasticsearch.action.DocWriteRequest;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -33,18 +32,14 @@ public interface RunToBillingRequestConverter {
 
     String INDEX_TYPE = "_doc";
     String DATE_PATTERN = "yyyy-MM-dd";
-    SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(DATE_PATTERN);
+    DateTimeFormatter SIMPLE_DATE_FORMAT = DateTimeFormatter.ofPattern(DATE_PATTERN);
     String ATTRIBUTE_NAME = "Name";
 
     List<DocWriteRequest> convertRunToRequests(PipelineRun run,
                                                String indexName,
                                                LocalDateTime syncStart);
 
-    default DeleteRequest createDeleteRequest(String indexName) {
-        return new DeleteRequest(indexName);
-    }
-
-    default String parseDataToString(Date date) {
+    default String parseDateToString(final LocalDate date) {
         if (date == null) {
             return null;
         }

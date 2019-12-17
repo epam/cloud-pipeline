@@ -17,6 +17,7 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.dao.PipelineRunDao;
 import com.epam.pipeline.billingreportagent.dao.RunStatusDao;
+import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.RunToBillingRequestConverter;
@@ -36,7 +37,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -81,16 +85,30 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started pipeline run billing synchronization");
-
         final List<PipelineRun> pipelineRuns = loadAllRunsWithStatuses();
-
         if (CollectionUtils.isEmpty(pipelineRuns)) {
             log.debug("PipelineRun entities for synchronization were not found.");
             return;
         }
+        final List<DocWriteRequest> pipelineRunBillingRequests = pipelineRuns.stream()
+            .map(pipelineRun -> createPipelineRunBillings(pipelineRun, syncStart))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
 
-        pipelineRuns.forEach(pipelineRun -> synchronizePipelineRunBillings(pipelineRun, syncStart));
+        log.info("{} document requests created", pipelineRunBillingRequests.size());
 
+        pipelineRunBillingRequests.stream()
+            .map(DocWriteRequest::index)
+            .distinct()
+            .forEach(index -> {
+                try {
+                    indexService.createIndexIfNotExists(index, pipelineRunIndexMappingFile);
+                } catch (ElasticClientException e) {
+                    log.warn("Can't create index {}!", index);
+                }
+            });
+
+        requestSender.indexDocuments(pipelineRunBillingRequests);
         log.debug("Successfully finished runs billing synchronization.");
     }
 
@@ -105,34 +123,26 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void synchronizePipelineRunBillings(final PipelineRun pipelineRun,
-                                                final LocalDateTime syncStart) {
+    private List<DocWriteRequest> createPipelineRunBillings(final PipelineRun pipelineRun,
+                                                                 final LocalDateTime syncStart) {
         try {
-            final String commonIndexName = indexPrefix + pipelineRunIndexName;
-            final String indexNameForPipelineRun = String.format("%s-%d", commonIndexName, pipelineRun.getId());
-
-            final PipelineRunBillingDocRequests pipelineRequests =
-                buildDocRequests(pipelineRun, indexNameForPipelineRun, syncStart);
-
-            indexService.renewIndex(indexNameForPipelineRun, pipelineRunIndexMappingFile);
-            requestSender.indexDocuments(indexNameForPipelineRun, PipelineRun.class.getSimpleName(),
-                                         pipelineRequests.getPipelineBillingRequests());
+            final String commonRunBillingIndexName = indexPrefix + pipelineRunIndexName;
+            final String periodName = "daily";
+            final String indexNameForPipelineRunPeriod = String.format("%s-%s", commonRunBillingIndexName, periodName);
+            return buildDocRequests(pipelineRun, indexNameForPipelineRunPeriod, syncStart);
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
                       pipelineRun.getId(), e.getMessage());
             log.error(e.getMessage(), e);
+            return Collections.emptyList();
         }
     }
 
-    private PipelineRunBillingDocRequests buildDocRequests(final PipelineRun pipelineRun,
-                                                           final String indexNameForPipelineRun,
-                                                           final LocalDateTime syncStart) {
-        final PipelineRunBillingDocRequests.PipelineRunBillingDocRequestsBuilder requestsBuilder =
-            PipelineRunBillingDocRequests.builder().pipelineId(pipelineRun.getId());
+    private List<DocWriteRequest> buildDocRequests(final PipelineRun pipelineRun,
+                                                   final String indexNameForPipelineRun,
+                                                   final LocalDateTime syncStart) {
         log.debug("Processing pipeline run {} billings", pipelineRun.getId());
-        final List<DocWriteRequest> billingRequests =
-            runToBillingRequestConverter.convertRunToRequests(pipelineRun, indexNameForPipelineRun, syncStart);
-        return requestsBuilder.pipelineBillingRequests(billingRequests).build();
+        return runToBillingRequestConverter.convertRunToRequests(pipelineRun, indexNameForPipelineRun, syncStart);
     }
 
     @Data
@@ -141,7 +151,8 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     private static class PipelineRunBillingDocRequests {
 
         private List<DocWriteRequest> pipelineBillingRequests;
-        private Long pipelineId;
+        private String period;
+        private LocalDate date;
     }
 
 }

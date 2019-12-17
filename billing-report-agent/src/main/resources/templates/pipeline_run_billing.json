@@ -3,16 +3,16 @@
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
-        "date": { "type": "date",  "format": "yyyy-MM-dd" },
         "id": { "type": "keyword", "store": true },
-        "pipelineName": { "type": "text" },
+        "instanceCost": {"type": "long"},
+        "pipelineName": { "type": "keyword" },
         "ownerUserId": { "type": "keyword" },
         "ownerUserName": {"type": "keyword" },
-        "instanceCost": {"type": "long"},
         "nodeCount": { "type": "integer" },
+        "dockerImage": {"type": "keyword"},
         "instance": {
           "properties": {
-            "nodeType": { "type": "text" },
+            "nodeType": { "type": "keyword" },
             "nodeDisk": { "type": "integer" },
             "nodeIP": { "type": "ip" },
             "nodeId": { "type": "text" },
@@ -22,7 +22,6 @@
             "cloudRegionId": { "type": "keyword" }
           }
         },
-
         "allowed_users": { "type": "keyword" },
         "denied_users": { "type": "keyword" },
         "allowed_groups": { "type": "keyword" },
