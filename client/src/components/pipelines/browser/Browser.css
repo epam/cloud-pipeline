@@ -21,8 +21,13 @@ th.metadata-column-value {
 
 .tree-item-name {
   cursor: pointer;
-  width: 100px;
+  min-width: 150px;
+  word-break: break-word !important;
+}
+
+.tree-item-version {
   white-space: nowrap;
+  min-width: max-content;
 }
 
 .metadata-folder-item-name {
@@ -62,7 +67,7 @@ th.metadata-column-value {
 
 .tree-item-actions {
   cursor: pointer;
-  width: 200px;
+  min-width: min-content;
 }
 
 .folder-tree-item-actions {
@@ -564,4 +569,10 @@ tr.table-row-selected {
   background-color: #fff;
   border-color: #108ee9;
   text-decoration: none;
+}
+
+@media screen and (max-width: 1280px) {
+  .tree-item-name {
+    min-width: 100px;
+  }
 }
