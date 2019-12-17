@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment';
+import moment from 'moment-timezone';
 
 const buildRule = (fnName) => ({
   fn: duration => typeof duration[fnName] === 'function'

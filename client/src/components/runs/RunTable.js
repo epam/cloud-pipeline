@@ -45,7 +45,7 @@ import UserName from '../special/UserName';
 import styles from './RunTable.css';
 import DayPicker from 'react-day-picker';
 import 'react-day-picker/lib/style.css';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import displayDate from '../../utils/displayDate';
 import evaluateRunDuration from '../../utils/evaluateRunDuration';
 import roleModel from '../../utils/roleModel';

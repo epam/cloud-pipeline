@@ -24,7 +24,7 @@ import IssueComment from './controls/IssueComment';
 import styles from './Issues.css';
 import EditableField from '../../special/EditableField';
 import displayDate from '../../../utils/displayDate';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import IssueLoad from '../../../models/issues/IssueLoad';
 import IssueUpdate from '../../../models/issues/IssueUpdate';
 import IssueDelete from '../../../models/issues/IssueDelete';

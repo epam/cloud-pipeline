@@ -28,7 +28,7 @@ import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import styles from './preview.css';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
 import displayDate from '../../../utils/displayDate';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import parseRunServiceUrl from '../../../utils/parseRunServiceUrl';
 import UserName from '../../special/UserName';
 import AWSRegionTag from '../../special/AWSRegionTag';

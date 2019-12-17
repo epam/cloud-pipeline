@@ -15,7 +15,7 @@
  */
 
 import {action, observable} from 'mobx';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import {
   ChartData,
   CPUUsageData,

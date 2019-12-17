@@ -15,7 +15,7 @@
  */
 
 import {action, computed, observable} from 'mobx';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import NodeUsage from '../../../../models/cluster/ClusterNodeUsage';
 
 function makePromise (node, from, to) {

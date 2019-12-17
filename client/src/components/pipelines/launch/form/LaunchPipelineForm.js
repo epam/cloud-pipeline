@@ -83,7 +83,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
-import RunScheduleDialog from '../../../runs/run-scheduling/run-scheduling-dialog';
+import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
@@ -204,7 +204,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     nodesCount: 0,
     maxNodesCount: 0,
     configureClusterDialogVisible: false,
-    runSchedulingDialogVisible: false,
     scheduleRules: null,
     bucketBrowserVisible: false,
     bucketPath: null,
@@ -573,7 +572,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload = this.generateLaunchPayload(values);
         }
         if (this.props.onLaunch) {
-          // todo scheduleRules
           const result = await this.props.onLaunch(payload);
           if (result) {
             this.reset();
@@ -1029,6 +1027,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         type: 'boolean',
         value: true
       };
+    }
+    if (!payload.isSpot &&
+      !this.state.launchCluster &&
+      this.state.scheduleRules &&
+      this.state.scheduleRules.length > 0) {
+      payload.scheduleRules = this.state.scheduleRules;
     }
     return payload;
   };
@@ -2792,18 +2796,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  openRunSchedulingDialog = () => {
-    this.setState({
-      runSchedulingDialogVisible: true
-    });
-  };
-
-  closeRunSchedulingDialog = () => {
-    this.setState({
-      runSchedulingDialogVisible: false
-    });
-  };
-
   openConfigureClusterDialog = () => {
     this.setState({
       configureClusterDialogVisible: true
@@ -3007,7 +2999,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderScheduleControl = () => {
     const {editConfigurationMode, isDetachedConfiguration} = this.props;
-    const {launchCluster, runSchedulingDialogVisible, scheduleRules} = this.state;
+    const {launchCluster, scheduleRules} = this.state;
     const isSpot = `${this.getSectionFieldValue(ADVANCED)('is_spot') ||
       this.correctPriceTypeValue(this.getDefaultValue('is_spot'))}` === 'true';
 
@@ -3015,35 +3007,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return null;
     }
     const onScheduleSubmit = (rules) => {
-      const scheduleRules = rules;
-      this.setState({scheduleRules}, this.closeRunSchedulingDialog);
+      const scheduleRules = rules.filter(r => !r.removed);
+      this.setState({scheduleRules});
     };
-    const trigger = (
-      <Row type="flex" style={{marginBottom: 10}}>
-        <Col offset={3}>
-          <a
-            onClick={this.openRunSchedulingDialog}
-            style={{color: '#777', textDecoration: 'underline'}}>
-            <Icon type="setting" />
-            Configure scheduling
-          </a>
-        </Col>
-      </Row>
-    );
-    const modal = (
-      <RunScheduleDialog
-        onSubmit={onScheduleSubmit}
-        rules={scheduleRules}
-        visible={runSchedulingDialogVisible}
-        onClose={this.closeRunSchedulingDialog}
-      />
-    );
 
     return (
-      <div>
-        {trigger}
-        {modal}
-      </div>
+      <Row type="flex" style={{marginBottom: 10}}>
+        <Col span={3} style={{textAlign: 'right', paddingRight: 8, color: 'rgba(0, 0, 0, 0.85)'}}>
+          Run scheduling:
+        </Col>
+        <Col>
+          <RunSchedulingList
+            allowEdit
+            onSubmit={onScheduleSubmit}
+            rules={scheduleRules}
+          />
+        </Col>
+      </Row>
     );
   };
 
