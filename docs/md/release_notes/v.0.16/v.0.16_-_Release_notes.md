@@ -6,10 +6,15 @@
 - [Storage mounts data transfer restrictor](#storage-mounts-data-transfer-restrictor)
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
+- [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
+- [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
+- [Resource usage form improvement](#resource-usage-form-improvement)
+- [Update pipe CLI version](#update-pipe-cli-version)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [`pipe`: not-handled error while trying to execute commands with invalid config](#pipe-not-handled-error-while-trying-to-execute-commands-with-invalid-config)
     - [Setting of the tool icon size](#setting-of-the-tool-icon-size)
     - [`NPE` while building cloud-specific environment variables for run](#npe-while-building-cloud-specific-environment-variables-for-run)
     - [Worker nodes fail due to mismatch of the regions with the parent run](#worker-nodes-fail-due-to-mismatch-of-the-regions-with-the-parent-run)
@@ -21,6 +26,7 @@
     - [Incorrect displaying of the "Start idle" checkbox](#incorrect-displaying-of-the-start-idle-checkbox)
     - [Limit check of the maximum cluster size is incorrect](#limit-check-of-the-maximum-cluster-size-is-incorrect)
     - [Fixed cluster with SGE and DIND capabilities fails to start](#fixed-cluster-with-sge-and-dind-capabilities-fails-to-start)
+    - [Azure: Server shall check Azure Blob existence when a new storage is created](#azure-server-shall-check-azure-blob-existence-when-a-new-storage-is-created)
     - [Azure: `pipe` CLI cannot transfer empty files between storages](#azure-pipe-cli-cannot-transfer-empty-files-between-storages)
     - [Azure: runs with enabled GE autoscaling doesn't stop](#azure-runs-with-enabled-ge-autoscaling-doesnt-stop)
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
@@ -119,9 +125,94 @@ In the current version, displaying of the date/time for the tool latest commit i
 
 For more details about tool commit see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#commit-a-tool).
 
+## Renaming of the GitLab repository in case of Pipeline renaming
+
+Pipeline in the Cloud Pipeline environment is a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.
+
+Previously, if the Pipeline object was renamed - the underlying GitLab repository was keeping the previous name.  
+In the current version, if user renames a Pipeline the corresponding GitLab repository will be also automatically renamed:  
+
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_1.png)
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_2.png)
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_3.png)
+
+Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the Pipeline somewhere else.
+
+For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
+
+## Allowing to expose compute node FS to upload and download files
+
+For the `interactive runs` users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+Cloud Pipeline supports a number of options for the user to perform that data transfers for the interactive runs:
+
+- via the Object Storage (using Web GUI or CLI)
+- via the File Storage (using Web GUI, CLI, WebDav-mounted-drive)
+
+Previously, view, download, upload and delete operations required an intermediate location (bucket or fs) to be used. It might confuse user when a small dataset shall be loaded to the specific location within a run's filesystem.
+
+In the current version, direct exposure of the run's filesystem is supported. The **BROWSE** hyperlink is displayed on the **Run logs** page after a job had been initialized:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_1.png)
+
+User can click the link and a Storage browser Web GUI will be loaded:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_2.png)
+
+User is able to:
+
+- view files and directories
+- download and delete files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_3.png)
+- upload files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_4.png)
+- search files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_5.png)
+
+For more details see [here](../../manual/15_Interactive_services/15.3._Expose_node_filesystem.md).
+
+## Resource usage form improvement
+
+In **`v0.16`**, the number of filters were added to the [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) feature:
+
+- *Common range for all charts*  
+    User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.  
+    If this filter is unmarked, user can zoom any plot without any change for others.
+- *Live update*  
+    The plots data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.
+- *Set range*  
+    User can select the predefined time range for all plots from the list:
+    - Whole range
+    - Last week
+    - Last day
+    - Last hour
+- *Date filter*  
+    User can specify the Start and the End dates for plots. The system will substitute the node creating date as the Start date and current date for the End date, if user doesn't select anything.
+
+![CP_v.0.16_ReleaseNotes](attachments/RN016_ManageClusterNodes_1.png)
+
+All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+## Update pipe CLI version
+
+Previously, if the user installed `pipe` CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of `pipe` CLI every time to have an actual version.
+
+Currently, the **`pipe update`** command to update the Cloud Pipeline CLI version was implemented.
+
+This command compare the CLI and API versions. If the CLI version is less than the API one, it will update the CLI - the latest Cloud Pipeline CLI version will be installed. Otherwise no actions will be performed:
+
+![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeUpdate_1.png)
+
+For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#update-the-cli).
+
 ***
 
 ## Notable Bug fixes
+
+### `pipe`: not-handled error while trying to execute commands with invalid config
+
+[#750](https://github.com/epam/cloud-pipeline/issues/750)
+
+Previously, if `pipe` config contained some invalid data (e.g. outdated or invalid access token), then trying to execute any `pipe` command had been causing an not-handled error.
 
 ### Setting of the tool icon size
 
@@ -193,6 +284,12 @@ Now, the "less or equal" check is used.
 [#392](https://github.com/epam/cloud-pipeline/issues/392)
 
 Previously, fixed cluster with both **`CP_CAP_SGE`** and **`CP_CAP_DIND_CONTAINER`** options enabled with more than one worker failed to start. Some of the workers failed on either `SGEWorkerSetup` or `SetupDind` task with different errors. Scripts were executed in the same one shared analysis directory. So, some workers could delete files downloaded by other workers.
+
+### Azure: Server shall check Azure Blob existence when a new storage is created
+
+[#768](https://github.com/epam/cloud-pipeline/issues/768)
+
+During the creation of `AZ` Storage, the validation whether `Azure Blob` exists or not didn't perform. In that case, if `Azure Blob` had already existed, the user was getting failed request with `Azure` exception.
 
 ### Azure: `pipe` CLI cannot transfer empty files between storages
 
