@@ -19,6 +19,7 @@
     - [6.1. Create and configure pipeline](06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md)
     - [6.1.1 Building WDL pipeline with graphical PipelineBuilder](06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder.md)
     - [6.2. Launch a pipeline](06_Manage_Pipeline/6.2._Launch_a_pipeline.md)
+    - [6.3. Delete and unregister pipeline](06_Manage_Pipeline/6.3._Delete_a_pipeline.md)
 - [7. Manage Detached configuration](07_Manage_Detached_configuration/7._Manage_Detached_configuration.md)
     - [7.1. Create and customize Detached configuration](07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md)
     - [7.2. Launch Detached Configuration](07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md)
@@ -68,13 +69,14 @@
     - [14.6. View cluster nodes via CLI](14_CLI/14.6._View_cluster_nodes_via_CLI.md)
     - [14.7. View and manage Permissions via CLI](14_CLI/14.7._View_and_manage_Permissions_via_CLI.md)
 - [15. Interactive services](15_Interactive_services/15._Interactive_services.md)
-    - [15.1 Starting an Interactive application](15_Interactive_services/15.1_Starting_an_Interactive_application.md)
-    - [15.2 Using Terminal access](15_Interactive_services/15.2_Using_Terminal_access.md)
-    - [15.3 Interactive service examples](15_Interactive_services/15.3_Interactive_service_examples.md)
+    - [15.1. Starting an Interactive application](15_Interactive_services/15.1._Starting_an_Interactive_application.md)
+    - [15.2. Using Terminal access](15_Interactive_services/15.2._Using_Terminal_access.md)
+    - [15.3. Expose node filesystem](15_Interactive_services/15.3._Expose_node_filesystem.md)
+    - [15.4. Interactive service examples](15_Interactive_services/15.4._Interactive_service_examples.md)
 - [16. Issues](16_Issues/16._Issues.md)
 - [17. CP objects tagging by additional attributes](17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes.md)
 - [18. Home page](18_Home_page/18._Home_page.md)
-- [Appendix A. EC2 Instance and Docker container lifecycles](Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles.md)
+- [Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)
 - [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)
 - [Appendix C. Working with autoscaled cluster runs](Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs.md)
 
@@ -132,8 +134,8 @@ Learn how to manage custom sets of "key-values" attributes for data storage 
 [18. Home page](18_Home_page/18._Home_page.md)  
 Get details about homepage widgets, how to configure homepage view.
 
-[Appendix A. EC2 Instance and Docker container lifecycles](Appendix_A/Appendix_A._EC2_Instance_and_Docker_container_lifecycles.md)  
-Learn basics about EC2 Instance and Docker container lifecycle.
+[Appendix A. Instance and Docker container lifecycles](Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles.md)  
+Learn basics about instance and Docker container lifecycle.
 
 [Appendix B. Working with a Project](Appendix_B/Appendix_B._Working_with_a_Project.md)  
 Learn basics about working with a Project.

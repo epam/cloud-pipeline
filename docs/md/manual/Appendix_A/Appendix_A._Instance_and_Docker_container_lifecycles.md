@@ -1,7 +1,7 @@
-# Appendix A. EC2 Instance and Docker container lifecycles
+# Appendix A. Instance and Docker container lifecycles
 
 - [Overview](#overview)
-    - [EC2 Instance lifecycle stages](#ec2-instance-lifecycle-stages)
+    - [Instance lifecycle stages](#instance-lifecycle-stages)
     - [Docker container lifecycle stages](#docker-container-lifecycle-stages)
 
 ## Overview
@@ -18,7 +18,9 @@ This is due to the following reasons:
 
 If the node has no running jobs 10 minutes before the new hour of payment begins, it will be terminated.
 
-### EC2 Instance lifecycle stages
+### Instance lifecycle stages
+
+> **_Note_**: instance lifecycle stages are presented on the example of one of the supported instances - `EC2` of `AWS` Cloud Provider.
 
 The general overview of the **EC2 instance lifecycle** - <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-lifecycle.html>.  
 In the Cloud Pipeline there are 3 stages:

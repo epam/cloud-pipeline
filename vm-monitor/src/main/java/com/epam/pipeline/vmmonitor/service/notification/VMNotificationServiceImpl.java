@@ -21,6 +21,7 @@ import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -46,14 +47,17 @@ public class VMNotificationServiceImpl implements VMNotificationService {
     private final String toUser;
     private final List<String> copyUsers;
     private final String platformName;
+    private final String deploymentName;
 
     public VMNotificationServiceImpl(
             final NotificationSender notificationSender,
             @Value("${cloud.pipeline.platform.name}") final String platformName,
+            @Value("${cloud.pipeline.deployment.name}") final String deploymentName,
             @Value("${notification.to-user}") final String toUser,
             @Value("${notification.copy-users}") final String copyUsers) {
         this.notificationSender = notificationSender;
         this.platformName = platformName;
+        this.deploymentName = deploymentName;
         this.toUser = toUser;
         this.copyUsers = Arrays.asList(copyUsers.split(","));
     }
@@ -70,7 +74,12 @@ public class VMNotificationServiceImpl implements VMNotificationService {
     }
 
     private Map<String, Object> withCommonParams(final Map<String, Object> parameters) {
-        final Map<String, Object> commonParams = Collections.singletonMap("platformName", this.platformName);
+        final Map<String, Object> commonParams = new HashMap<>();
+        commonParams.put("platformName", platformName);
+        commonParams.put("deploymentName", deploymentName);
+        commonParams.put("fullPlatformName", StringUtils.isBlank(deploymentName) ?
+                platformName : platformName +  " " + deploymentName);
+
         if (MapUtils.isEmpty(parameters)) {
             return commonParams;
         }
