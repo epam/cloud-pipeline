@@ -493,7 +493,7 @@ public class PipelineRunController extends AbstractRestController {
     @ApiOperation(
             value = "Creates and attaches new disk to pipeline run.",
             notes = "Creates and attaches new disk to pipeline run cloud instance by the given request. " +
-                    "Disk size should be specified in GB and disk device name is required.",
+                    "Disk size should be specified in GB and disk device name (f.e. /dev/sdc) is required.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<PipelineRun> attachDisk(@PathVariable(value = RUN_ID) final Long runId,
