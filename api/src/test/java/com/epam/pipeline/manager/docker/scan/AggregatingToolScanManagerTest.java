@@ -247,6 +247,22 @@ public class AggregatingToolScanManagerTest {
     }
 
     @Test
+    public void testThatScanToolFilterDependencies() throws ToolScanExternalServiceException {
+        DockerComponentLayerScanResult layerScanResult = new DockerComponentLayerScanResult();
+        layerScanResult.setDependencies(Collections.singletonList(testDependency));
+        // mock that Component Scan Service will return 2 identical dependencies
+        when(compScanService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(
+                new DockerComponentScanResult("test", Arrays.asList(layerScanResult, layerScanResult))));
+        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(new ClairScanResult()));
+
+        ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
+
+        List<ToolDependency> dependencies = result.getDependencies();
+        //check that dependencies are filtered and only one pass the filter
+        Assert.assertEquals(1, dependencies.size());
+    }
+
+    @Test
     public void testScanTool() throws ToolScanExternalServiceException {
         ToolVersionScanResult result = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, false);
 
@@ -277,8 +293,6 @@ public class AggregatingToolScanManagerTest {
         ToolVersionScanResult rescan = aggregatingToolScanManager.scanTool(testTool, LATEST_VERSION, true);
 
         Assert.assertNotEquals(rescan.getScanDate(), result.getScanDate());
-
-
     }
 
     @Test
