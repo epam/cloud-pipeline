@@ -179,7 +179,7 @@ This feature, for example, allows you to run `Apache Spark` cluster with RStudio
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_Spark_6.png)  
     Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.
 
-For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.3._Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
+For more information about using `Apache Spark` via the `Cloud Pipeline` see [here](../../manual/15_Interactive_services/15.4._Interactive_service_examples.md#running-apache-spark-cluster-with-rstudio-web-gui).
 
 ## Consider Cloud Providers' resource limitations when scheduling a job
 

@@ -7,6 +7,8 @@
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
 - [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
+- [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
+- [Resource usage form improvement](#resource-usage-form-improvement)
 
 ***
 
@@ -136,6 +138,58 @@ In the current version, if user renames a Pipeline the corresponding GitLab repo
 Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the Pipeline somewhere else.
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
+
+## Allowing to expose compute node FS to upload and download files
+
+For the `interactive runs` users are processing data in ad-hoc manner, which requires upload data from the local storage to the cloud and download results from the cloud to the local storage.
+Cloud Pipeline supports a number of options for the user to perform that data transfers for the interactive runs:
+
+- via the Object Storage (using Web GUI or CLI)
+- via the File Storage (using Web GUI, CLI, WebDav-mounted-drive)
+
+Previously, view, download, upload and delete operations required an intermediate location (bucket or fs) to be used. It might confuse user when a small dataset shall be loaded to the specific location within a run's filesystem.
+
+In the current version, direct exposure of the run's filesystem is supported. The **BROWSE** hyperlink is displayed on the **Run logs** page after a job had been initialized:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_1.png)
+
+User can click the link and a Storage browser Web GUI will be loaded:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_2.png)
+
+User is able to:
+
+- view files and directories
+- download and delete files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_3.png)
+- upload files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_4.png)
+- search files and directories  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BrowseFilesystem_5.png)
+
+For more details see [here](../../manual/15_Interactive_services/15.3._Expose_node_filesystem.md).
+
+## Resource usage form improvement
+
+In **`v0.16`**, the number of filters were added to the [Monitor cluster nodes](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md) feature:
+
+- *Common range for all charts*  
+    User can synchronize the time period for all plots. To do so user should mark the "Common range for all charts" filter.  
+    If this filter is unmarked, user can zoom any plot without any change for others.
+- *Live update*  
+    The plots data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.
+- *Set range*  
+    User can select the predefined time range for all plots from the list:
+    - Whole range
+    - Last week
+    - Last day
+    - Last hour
+- *Date filter*  
+    User can specify the Start and the End dates for plots. The system will substitute the node creating date as the Start date and current date for the End date, if user doesn't select anything.
+
+![CP_v.0.16_ReleaseNotes](attachments/RN016_ManageClusterNodes_1.png)
+
+All filters are working for all plots simultaneously: data for all plots will be dynamically updated as soon as the user changes filter value.
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
 ***
 
