@@ -3012,18 +3012,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     };
 
     return (
-      <Row type="flex" style={{marginBottom: 10}}>
-        <Col span={3} style={{textAlign: 'right', paddingRight: 8, color: 'rgba(0, 0, 0, 0.85)'}}>
-          Run scheduling:
-        </Col>
-        <Col>
-          <RunSchedulingList
-            allowEdit
-            onSubmit={onScheduleSubmit}
-            rules={scheduleRules}
-          />
-        </Col>
-      </Row>
+      <FormItem
+        className={getFormItemClassName(styles.formItemRow, 'runScheduling')}
+        {...this.leftFormItemLayout}
+        label="Run scheduling"
+        hasFeedback>
+        <RunSchedulingList
+          allowEdit
+          onSubmit={onScheduleSubmit}
+          rules={scheduleRules}
+        />
+      </FormItem>
     );
   };
 
