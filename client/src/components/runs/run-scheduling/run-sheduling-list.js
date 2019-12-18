@@ -76,7 +76,7 @@ export default class RunSchedulingList extends React.Component {
         onClick={this.openRunSchedulingDialog}
         style={{color: '#777', textDecoration: 'underline'}}>
         <Icon type="setting" />
-        Configure scheduling
+        Configure
       </a>
     );
     const modal = (
@@ -88,10 +88,12 @@ export default class RunSchedulingList extends React.Component {
         onClose={this.closeRunSchedulingDialog}
       />
     );
-    return [
-      trigger,
-      modal
-    ];
+    return (
+      <Row type="flex">
+        {trigger}
+        {modal}
+      </Row>
+    );
   };
 
   getScheduleString = ({mode, every, dayOfWeek, time: {hours, minutes}}, timeZone) => {
@@ -100,14 +102,16 @@ export default class RunSchedulingList extends React.Component {
       ? `every ${every} day${+every > 1 ? 's' : ''}`
       : `on ${dayOfWeek.sort().map((day) => moment.weekdays(false, +day)).join(', ')}`;
 
-    return `At ${hours}:${minutes}, ${recurrence}${zone ? ` (${zone})` : ''}`;
+    const time = `${`0${hours}`.slice(-2)}:${`0${minutes}`.slice(-2)}`;
+
+    return `At ${time}, ${recurrence}${zone ? ` (${zone})` : ''}`;
   };
 
   renderList = () => {
     const {rules} = this.state;
     const renderRule = ({action, schedule, timeZone}, i) => {
       return (
-        <Row style={{width: '100%'}} key={`rule_${action}_${i}`}>
+        <Row type="flex" key={`rule_${action}_${i}`}>
           <b>{action}</b>: {this.getScheduleString(schedule, timeZone)}
         </Row>
       );
@@ -123,13 +127,9 @@ export default class RunSchedulingList extends React.Component {
     }
 
     return (
-      <Row>
-        <Row>
-          {this.renderList()}
-        </Row>
-        <Row>
-          {this.renderEditScheduleControl()}
-        </Row>
+      <Row type="flex" style={{flexDirection: 'column'}}>
+        {this.renderList()}
+        {this.renderEditScheduleControl()}
       </Row>
     );
   }

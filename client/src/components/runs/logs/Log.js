@@ -56,7 +56,7 @@ import AdaptedLink from '../../special/AdaptedLink';
 import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
 import LogList from './LogList';
-import StatusIcon from '../../special/run-status-icon';
+import StatusIcon, {Statuses} from '../../special/run-status-icon';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
@@ -540,30 +540,30 @@ class Logs extends localization.LocalizedReactComponent {
     });
   };
 
-  renderRunSchedule = (run) => {
+  renderRunSchedule = (instance, run) => {
     const {runSchedule} = this.props;
     const {scheduleSaveInProgress} = this.state;
-    if (!canPauseRun(run)) {
-      return null;
-    }
-    const allowEditing = roleModel.isOwner(run);
+    const allowEditing = roleModel.isOwner(run) &&
+      !(run.nodeCount > 0) &&
+      !(run.parentRunId && run.parentRunId > 0) &&
+      instance && instance.spot !== undefined && !instance.spot &&
+      ![Statuses.failure, Statuses.stopped, Statuses.success].includes(run.status);
+
     if (!allowEditing && this.runSchedule.length === 0) {
       return null;
     }
     return (
-      <li key="Run schedule">
-        <Row type="flex">
-          <span className={styles.nodeParameterName}>Run schedule: </span>
-          <div className={styles.nodeParameterValue} style={{flex: 1}}>
-            <RunSchedulingList
-              pending={runSchedule.pending || scheduleSaveInProgress}
-              onSubmit={this.onRunScheduleSubmit}
-              allowEdit={allowEditing}
-              rules={this.runSchedule}
-            />
-          </div>
-        </Row>
-      </li>
+      <tr>
+        <th className={styles.runScheduleHeader}>Maintenance: </th>
+        <td className={styles.runSchedule}>
+          <RunSchedulingList
+            pending={runSchedule.pending || scheduleSaveInProgress}
+            onSubmit={this.onRunScheduleSubmit}
+            allowEdit={allowEditing}
+            rules={this.runSchedule}
+          />
+        </td>
+      </tr>
     );
   };
 
@@ -1347,6 +1347,7 @@ class Logs extends localization.LocalizedReactComponent {
               {finishTime}
               {price}
               {this.renderNestedRuns()}
+              {this.renderRunSchedule(instance, this.props.run.value)}
             </tbody>
           </table>
         </div>;
@@ -1423,7 +1424,6 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 this.renderInstanceDetails(instance, this.props.run.value)
               }
-              {this.renderRunSchedule(this.props.run.value)}
             </ul>
           </Collapse.Panel>
         </Collapse>;

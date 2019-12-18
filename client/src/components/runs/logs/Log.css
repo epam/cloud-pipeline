@@ -201,6 +201,11 @@
   vertical-align: top;
 }
 
+.run-schedule,
+.run-schedule-header {
+  vertical-align: top;
+}
+
 .nested-run {
   margin-right: 5px;
   display: inline-block;

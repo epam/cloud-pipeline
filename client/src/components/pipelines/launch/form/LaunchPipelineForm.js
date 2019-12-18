@@ -3015,7 +3015,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'runScheduling')}
         {...this.leftFormItemLayout}
-        label="Run scheduling"
+        label="Maintenance"
         hasFeedback>
         <RunSchedulingList
           allowEdit
