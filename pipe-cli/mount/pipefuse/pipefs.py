@@ -22,6 +22,7 @@ import stat
 import time
 
 from fuse import FuseOSError, Operations
+from threading import RLock
 
 import fuseutils
 
@@ -37,21 +38,43 @@ class FileHandleContainer(object):
     def __init__(self):
         self._container = set()
         self._range = fuseutils.lazy_range(self.FH_START, self.FH_END)
+        self._fh_lock = RLock()
 
     def get(self):
-        for fh in self._range:
-            if fh not in self._container:
-                self._container.add(fh)
-                return fh
+        try:
+            self._fh_lock.acquire()
+            for fh in self._range:
+                if fh not in self._container:
+                    self._container.add(fh)
+                    return fh
+        finally:
+            self._fh_lock.release()
 
     def release(self, fh):
-        if fh in self._container:
-            self._container.remove(fh)
+        try:
+            self._fh_lock.acquire()
+            if fh in self._container:
+                self._container.remove(fh)
+        finally:
+            self._fh_lock.release()
+
+
+def syncronized(func):
+    def wrapper(*args, **kwargs):
+        lock = args[0]._lock
+        path = args[1]
+        try:
+            lock.lock(path)
+            return_value = func(*args, **kwargs)
+            return return_value
+        finally:
+            lock.unlock(path)
+    return wrapper
 
 
 class PipeFS(Operations):
 
-    def __init__(self, client, mode=0o755):
+    def __init__(self, client, lock, mode=0o755):
         self.client = client
         if not self.client.is_available():
             raise RuntimeError("File system server is not available.")
@@ -61,6 +84,7 @@ class PipeFS(Operations):
         self.root = '/'
         self.is_mac = platform.system() == 'Darwin'
         self._system_files = ['/.Trash', '/.Trash-1000', '/.xdg-volume-info', '/autorun.inf']
+        self._lock = lock
 
     def is_skipped_mac_files(self, path):
         if not self.is_mac:
@@ -130,9 +154,11 @@ class PipeFS(Operations):
     def mknod(self, path, mode, dev):
         raise UnsupportedOperationException("mknod")
 
+    @syncronized
     def rmdir(self, path):
         self.client.rmdir(path)
 
+    @syncronized
     def mkdir(self, path, mode):
         try:
             self.client.mkdir(path)
@@ -150,12 +176,14 @@ class PipeFS(Operations):
             'f_namemax': 255
         }
 
+    @syncronized
     def unlink(self, path):
         self.client.delete(path)
 
     def symlink(self, name, target):
         raise UnsupportedOperationException("symlink")
 
+    @syncronized
     def rename(self, old, new):
         self.client.mv(old, new)
 
@@ -168,24 +196,29 @@ class PipeFS(Operations):
     # File methods
     # ============
 
+    @syncronized
     def open(self, path, flags):
         if self.client.exists(path):
             return self.container.get()
         raise FuseOSError(errno.ENOENT)
 
+    @syncronized
     def create(self, path, mode, fi=None):
         self.client.upload([], path)
         return self.container.get()
 
+    @syncronized
     def read(self, path, length, offset, fh):
         with io.BytesIO() as file_buff:
             self.client.download_range(fh, file_buff, path, offset=offset, length=length)
             return file_buff.getvalue()
 
+    @syncronized
     def write(self, path, buf, offset, fh):
         self.client.upload_range(fh, buf, path, offset=offset)
         return len(buf)
 
+    @syncronized
     def truncate(self, path, length, fh=None):
         file_size = self.getattr(path)['st_size']
         if file_size > 0 and length == 0:
@@ -195,9 +228,11 @@ class PipeFS(Operations):
         elif length != file_size:
             raise FuseOSError(errno.ERANGE)
 
+    @syncronized
     def flush(self, path, fh):
         self.client.flush(fh, path)
 
+    @syncronized
     def release(self, path, fh):
         self.container.release(fh)
 

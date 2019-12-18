@@ -31,6 +31,7 @@ from pipefuse.api import CloudPipelineClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
+from pipefuse.fslock import get_lock
 from fuse import FUSE
 
 _allowed_logging_level_names = logging._levelNames
@@ -70,8 +71,8 @@ def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_
         client = BufferedFileSystemClient(client, capacity=buffer_size)
     else:
         logging.info('Buffering is disabled.')
-    fs = PipeFS(client=client, mode=int(default_mode, 8))
-    FUSE(fs, mountpoint, nothreads=True, foreground=True, ro=client.is_read_only(), **mount_options)
+    fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
+    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 
 
 def parse_mount_options(options_string):
