@@ -50,6 +50,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -116,6 +117,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updateRunQuery;
     private String loadRunByPrettyUrlQuery;
     private String updateTagsQuery;
+    private String loadAllRunsPossiblyActiveInPeriodQuery;
+
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
 
@@ -137,6 +140,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         createRunSids(run.getId(), run.getRunSids());
     }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun loadPipelineRun(Long id) {
         MapSqlParameterSource params = new MapSqlParameterSource();
@@ -157,6 +161,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         } else {
             return null;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public List<PipelineRun> loadPipelineRunsActiveInPeriod(final LocalDateTime start, final LocalDateTime end) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue("PERIOD_START", start);
+        params.addValue("PERIOD_END", end);
+        return getNamedParameterJdbcTemplate().query(loadAllRunsPossiblyActiveInPeriodQuery,
+                                                     params,
+                                                     PipelineRunParameters.getRowMapper());
     }
 
     public String loadSshPassword(Long id) {
@@ -1112,5 +1126,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setUpdateTagsQuery(final String updateTagsQuery) {
         this.updateTagsQuery = updateTagsQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
+        this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
     }
 }

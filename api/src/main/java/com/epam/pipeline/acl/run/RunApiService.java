@@ -55,8 +55,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_EXECUTE;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_OWNER;
 import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
@@ -171,6 +173,12 @@ public class RunApiService {
     @AclMask
     public PipelineRun updateTags(final Long runId, final TagsVO tagsVO) {
         return runManager.updateTags(runId, tagsVO);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    @AclMask
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
+        return runManager.loadRunsActivityStats(start, end);
     }
 
     @AclFilter

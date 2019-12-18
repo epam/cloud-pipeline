@@ -118,7 +118,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     @Autowired
     private FilterDao filterDao;
 
-
     @Autowired
     private RunLogDao logDao;
 
@@ -136,6 +135,8 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
 
     private Pipeline testPipeline;
     private AbstractCloudRegion cloudRegion;
+    private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
+    private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
 
     @Before
     public void setup() {
@@ -167,6 +168,22 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
                 FilterExpression.prepare(logicalExpression), 1, 2, 0);
         assertEquals(1, pipelineRuns.size());
         assertEquals(pipelineRuns.get(0).getPodId(), run1.getPodId());
+    }
+
+    @Test
+    public void testLoadPipelineRunsActiveInPeriod() {
+        final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(12);
+        final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(12);
+
+        createRunWithStartEndDates(beforeSyncStart, beforeSyncStart);
+        createRunWithStartEndDates(beforeSyncStart, afterSyncStart);
+        createRunWithStartEndDates(afterSyncStart, afterSyncStart);
+        createRunWithStartEndDates(beforeSyncStart, null);
+        createRunWithStartEndDates(afterSyncStart, null);
+
+        final List<PipelineRun> pipelineRuns = pipelineRunDao.loadPipelineRunsActiveInPeriod(SYNC_PERIOD_START,
+                                                                                             SYNC_PERIOD_END);
+        assertEquals(4, pipelineRuns.size());
     }
 
     @Test
@@ -755,11 +772,23 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     }
 
     private PipelineRun createTestPipelineRun(Long pipelineId, String serviceUrl) {
+        PipelineRun run = buildPipelineRun(pipelineId, serviceUrl);
+        pipelineRunDao.createPipelineRun(run);
+        return run;
+    }
+
+    private PipelineRun buildPipelineRun(final Long pipelineId, final String serviceUrl) {
+        final Date now = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
+        return buildPipelineRun(pipelineId, serviceUrl, now, now);
+    }
+
+    private PipelineRun buildPipelineRun(final Long pipelineId, final String serviceUrl,
+                                         final Date start, final Date end) {
         PipelineRun run = new PipelineRun();
         run.setPipelineId(pipelineId);
         run.setVersion("abcdefg");
-        run.setStartDate(new Date());
-        run.setEndDate(run.getStartDate());
+        run.setStartDate(start);
+        run.setEndDate(end);
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
         run.setLastChangeCommitTime(new Date());
@@ -773,7 +802,6 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         EnvVarsBuilder.buildEnvVars(run, configuration, systemParams, null);
         run.setEnvVars(run.getEnvVars());
         setRunInstance(run);
-        pipelineRunDao.createPipelineRun(run);
         return run;
     }
 
@@ -916,4 +944,15 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
                 fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
     }
 
+    private void createRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(), TEST_SERVICE_URL,
+                                                 TestUtils.convertLocalDateTimeToDate(startDate),
+                                                 TestUtils.convertLocalDateTimeToDate(endDate));
+        if (endDate != null) {
+            run.setStatus(TaskStatus.PAUSED);
+        } else {
+            run.setStatus(TaskStatus.RUNNING);
+        }
+        pipelineRunDao.createPipelineRun(run);
+    }
 }

@@ -65,6 +65,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -499,5 +500,18 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRun> attachDisk(@PathVariable(value = RUN_ID) final Long runId,
                                           @RequestBody final DiskAttachRequest request) {
         return Result.success(runApiService.attachDisk(runId, request));
+    }
+
+    @GetMapping(value = "/run/activity")
+    @ResponseBody
+    @ApiOperation(
+        value = "Load runs with its activity statuses.",
+        notes = "Load runs with its activity statuses. " +
+                "Only runs that possibly could cause spending for described period will be returned.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRun>> loadRunsActivityStats(@RequestBody final LocalDateTime start,
+                                                           @RequestBody final LocalDateTime end) {
+        return Result.success(runApiService.loadRunsActivityStats(start, end));
     }
 }

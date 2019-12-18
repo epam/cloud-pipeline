@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
@@ -35,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -52,6 +54,7 @@ import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.CoreMatchers;
@@ -66,12 +69,15 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.hamcrest.core.Is.is;
@@ -108,9 +114,17 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private static final long PARENT_RUN_ID = 5L;
     private static final String INSTANCE_DISK = "1";
     private static final String PARENT_RUN_ID_PARAMETER = "parent-id";
+    private static final LocalDateTime SYNC_PERIOD_START = LocalDateTime.of(2019, 4, 2, 0, 0);
+    private static final LocalDateTime SYNC_PERIOD_END = LocalDateTime.of(2019, 4, 3, 0, 0);
+    private static final int HOURS_12 = 12;
+    private static final int HOURS_18 = 18;
+    private static final int HOURS_24 = 24;
 
     @Autowired
     private PipelineRunManager pipelineRunManager;
+
+    @Autowired
+    private RunStatusManager runStatusManager;
 
     @MockBean
     private ToolManager toolManager;
@@ -503,6 +517,76 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         updateTagsForRunAndAssertWithExpected(pipelineRun, tags, Collections.emptyMap());
         pipelineRun.setTags(null);
         updateTagsForRunAndAssertWithExpected(pipelineRun, null, Collections.emptyMap());
+    }
+
+    @Test
+    public void testLoadRunsActivityStats() {
+        final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(HOURS_12);
+        final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(HOURS_12);
+
+        final PipelineRun run1 = launchPipelineRun(beforeSyncStart, beforeSyncStart);
+        final PipelineRun run2 = launchPipelineRun(beforeSyncStart, afterSyncStart);
+        final PipelineRun run3 = launchPipelineRun(afterSyncStart, afterSyncStart);
+        final PipelineRun run4 = launchPipelineRun(afterSyncStart, null);
+        final PipelineRun run5 = launchPipelineRun(beforeSyncStart, null);
+        saveStatusForRun(run5.getId(), TaskStatus.PAUSED, beforeSyncStart);
+        saveStatusForRun(run5.getId(), TaskStatus.RUNNING, beforeSyncStart);
+
+        final Map<Long, PipelineRun> stats =
+            pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END).stream()
+                .collect(Collectors.toMap(BaseEntity::getId,
+                                          Function.identity()));
+
+        Assert.assertEquals(4, stats.size());
+        Assert.assertNull(stats.get(run1.getId()));
+        Assert.assertEquals(2, stats.get(run2.getId()).getRunStatuses().size());
+        Assert.assertEquals(2, stats.get(run3.getId()).getRunStatuses().size());
+        Assert.assertEquals(1, stats.get(run4.getId()).getRunStatuses().size());
+        Assert.assertEquals(1, stats.get(run5.getId()).getRunStatuses().size());
+    }
+
+    @Test
+    public void testAdjustStatuses() {
+        final List<RunStatus> statuses = new ArrayList<>();
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_24)));
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.minusHours(HOURS_18)));
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.minusHours(HOURS_12)));
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_START.plusHours(HOURS_12)));
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.RUNNING, null, SYNC_PERIOD_START.plusHours(HOURS_18)));
+        statuses.add(new RunStatus(PARENT_RUN_ID, TaskStatus.PAUSED, null, SYNC_PERIOD_END.plusHours(HOURS_12)));
+
+        final List<RunStatus> adjustedStatuses =
+            pipelineRunManager.adjustStatuses(statuses, SYNC_PERIOD_START, SYNC_PERIOD_END);
+
+        Assert.assertEquals(3, adjustedStatuses.size());
+
+        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(0).getStatus());
+        Assert.assertEquals(SYNC_PERIOD_START, adjustedStatuses.get(0).getTimestamp());
+
+        Assert.assertEquals(TaskStatus.PAUSED, adjustedStatuses.get(1).getStatus());
+        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_12), adjustedStatuses.get(1).getTimestamp());
+
+        Assert.assertEquals(TaskStatus.RUNNING, adjustedStatuses.get(2).getStatus());
+        Assert.assertEquals(SYNC_PERIOD_START.plusHours(HOURS_18), adjustedStatuses.get(2).getTimestamp());
+    }
+
+    private PipelineRun launchPipelineRun(final LocalDateTime startDate, final LocalDateTime stopDate) {
+        final PipelineRun pipelineRun = launchPipeline(configuration, INSTANCE_TYPE, null);
+        pipelineRun.setStartDate(TestUtils.convertLocalDateTimeToDate(startDate));
+        saveStatusForRun(pipelineRun.getId(), TaskStatus.RUNNING, startDate);
+        if (stopDate != null) {
+            pipelineRun.setStatus(TaskStatus.PAUSED);
+            pipelineRun.setEndDate(TestUtils.convertLocalDateTimeToDate(stopDate));
+            saveStatusForRun(pipelineRun.getId(), TaskStatus.PAUSED, stopDate);
+        } else {
+            pipelineRun.setEndDate(null);
+        }
+        pipelineRunManager.updateRunInfo(pipelineRun);
+        return pipelineRun;
+    }
+
+    private void saveStatusForRun(final Long runId, final TaskStatus status, final LocalDateTime timePoint) {
+        runStatusManager.saveStatus(new RunStatus(runId, status, null, timePoint));
     }
 
     private void updateTagsForRunAndAssertWithExpected(final PipelineRun run,
