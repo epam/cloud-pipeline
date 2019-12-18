@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.GCPRegion;
@@ -201,6 +202,11 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     public Optional<InstanceTerminationState> getInstanceTerminationState(final GCPRegion region,
                                                                           final String instanceId) {
         return vmService.getTerminationState(region, instanceId);
+    }
+
+    @Override
+    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
+        throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
     }
 
     @Override

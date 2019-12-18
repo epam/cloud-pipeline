@@ -20,19 +20,30 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.AmazonEC2Exception;
+import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
+import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
+import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
+import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
+import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.VolumeType;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
@@ -77,6 +88,8 @@ public class EC2Helper {
     private static final String STOPPING_STATE = "stopping";
     private static final String STOPPED_STATE = "stopped";
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
+    private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
+    private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
 
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
@@ -243,6 +256,100 @@ public class EC2Helper {
                 .map(List::stream)
                 .orElseGet(Stream::empty)
                 .findFirst();
+    }
+
+    public void createAndAttachVolume(final String runId, final Long size, final String awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+        final String device = getVacantDeviceName(instance);
+        final String zone = getAvailabilityZone(instance);
+        final Volume volume = createVolume(client, size, zone);
+        tryAttachVolume(client, instance, volume, device);
+        enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+    }
+
+    private String getVacantDeviceName(final Instance instance) {
+        final List<String> attachedDevices = getAttachedDevices(instance);
+        return allowedDeviceNames()
+                .filter(it -> !attachedDevices.contains(it))
+                .findFirst()
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Instance with id '%s' " +
+                        "has no vacant devices to use for disk attaching", instance.getInstanceId())));
+    }
+
+    private List<String> getAttachedDevices(final Instance instance) {
+        return CollectionUtils.emptyIfNull(instance.getBlockDeviceMappings()).stream()
+                .map(InstanceBlockDeviceMapping::getDeviceName)
+                .collect(Collectors.toList());
+    }
+
+    private Stream<String> allowedDeviceNames() {
+        final String prefix = resolveDevicePrefix();
+        return resolveDeviceSuffixes().chars().mapToObj(suffix -> prefix + (char) suffix);
+    }
+
+    private String resolveDevicePrefix() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_DEVICE_PREFIX))
+                .orElse(ALLOWED_DEVICE_PREFIX);
+    }
+
+    private String resolveDeviceSuffixes() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_DEVICE_SUFFIXES))
+                .orElse(ALLOWED_DEVICE_SUFFIXES);
+    }
+
+    private String getAvailabilityZone(final Instance instance) {
+        return Optional.ofNullable(instance.getPlacement())
+                .map(Placement::getAvailabilityZone)
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Instance with id '%s' " +
+                        "has no associated availability zone", instance.getInstanceId())));
+    }
+
+    private Volume createVolume(final AmazonEC2 client, final Long size, final String zone) {
+        final Volume volume = client.createVolume(new CreateVolumeRequest()
+                .withVolumeType(VolumeType.Gp2)
+                .withSize(size.intValue())
+                .withAvailabilityZone(zone))
+                .getVolume();
+        final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeAvailable();
+        waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volume.getVolumeId())));
+        return volume;
+    }
+
+    private void tryAttachVolume(final AmazonEC2 client, final Instance instance,
+                                 final Volume volume, final String device) {
+        try {
+            attachVolume(client, instance.getInstanceId(), volume.getVolumeId(), device);
+        } catch (AmazonEC2Exception e) {
+            deleteVolume(client, volume.getVolumeId());
+            throw new AwsEc2Exception(String.format("Volume with id '%s' wasn't attached to instance with id '%s'" +
+                    " due to error and it was deleted.", volume.getVolumeId(), instance.getInstanceId()), e);
+        }
+    }
+
+    private void attachVolume(final AmazonEC2 client, final String instanceId, final String volumeId,
+                              final String device) {
+        client.attachVolume(new AttachVolumeRequest()
+                .withInstanceId(instanceId)
+                .withVolumeId(volumeId)
+                .withDevice(device));
+        final Waiter<DescribeVolumesRequest> waiter = client.waiters().volumeInUse();
+        waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volumeId)));
+    }
+
+    private void enableVolumeDeletionOnInstanceTermination(final AmazonEC2 client, final String instanceId,
+                                                           final String device) {
+        client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
+                .withInstanceId(instanceId)
+                .withBlockDeviceMappings(new InstanceBlockDeviceMappingSpecification()
+                        .withDeviceName(device)
+                        .withEbs(new EbsInstanceBlockDeviceSpecification()
+                                .withDeleteOnTermination(true))));
+    }
+
+    private void deleteVolume(final AmazonEC2 client, final String volumeId) {
+        client.deleteVolume(new DeleteVolumeRequest()
+                .withVolumeId(volumeId));
     }
 
     private double getMeanValue(List<SpotPrice> value) {

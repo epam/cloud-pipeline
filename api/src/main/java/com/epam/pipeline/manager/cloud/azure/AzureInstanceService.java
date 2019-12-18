@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.azure;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cloud.azure.AzureVirtualMachineStats;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -205,6 +206,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                 .stateCode(status.code())
                 .stateMessage(status.message())
                 .build());
+    }
+
+    @Override
+    public void attachDisk(final AzureRegion region, final Long runId, final DiskAttachRequest request) {
+        throw new UnsupportedOperationException("Disk attaching doesn't work with Azure provider yet.");
     }
 
     @Override

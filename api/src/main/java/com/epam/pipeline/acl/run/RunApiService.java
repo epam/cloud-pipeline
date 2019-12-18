@@ -29,6 +29,7 @@ import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitie
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -266,5 +267,11 @@ public class RunApiService {
     @AclMask
     public PipelineRun terminateRun(final Long runId) {
         return runManager.terminateRun(runId);
+    }
+
+    @PreAuthorize(RUN_ID_OWNER)
+    @AclMask
+    public PipelineRun attachDisk(final Long runId, final DiskAttachRequest request) {
+        return runManager.attachDisk(runId, request);
     }
 }

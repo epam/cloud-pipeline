@@ -21,6 +21,7 @@ import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -217,6 +218,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                         .stateCode(state.getCode())
                         .stateMessage(state.getMessage())
                         .build());
+    }
+
+    @Override
+    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
+        ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region.getRegionCode());
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

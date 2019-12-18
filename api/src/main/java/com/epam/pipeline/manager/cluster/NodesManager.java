@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.PodInstance;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -303,6 +304,17 @@ public class NodesManager {
                                final AbstractCloudRegion region) {
         cloudFacade.terminateNode(region, nodeInstanceAddress.getAddress(), nodeInstance.getName());
         kubernetesManager.waitNodeDown(nodeInstance.getName(), NODE_DOWN_ATTEMPTS);
+    }
+
+    /**
+     * Creates and attaches new disk to the run cloud instance.
+     */
+    public void attachDisk(final PipelineRun run, final DiskAttachRequest request) {
+        final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
+        final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
+                .map(regionManager::load)
+                .orElseGet(regionManager::loadDefaultRegion);
+        cloudFacade.attachDisk(region.getId(), run.getId(), request);
     }
 
     private boolean isNodeProtected(NodeInstance nodeInstance) {

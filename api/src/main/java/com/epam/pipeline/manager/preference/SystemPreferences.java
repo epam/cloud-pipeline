@@ -268,6 +268,11 @@ public class SystemPreferences {
                                                                                            false, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));
+    public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
+            "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
+            "cluster.instance.device.suffixes", "defghijklmnopqrstuvwxyz", CLUSTER_GROUP,
+            PreferenceValidators.isNotBlank);
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));

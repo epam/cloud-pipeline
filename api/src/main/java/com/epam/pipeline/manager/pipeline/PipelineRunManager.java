@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -954,6 +955,29 @@ public class PipelineRunManager {
         pipelineRun.setEndDate(DateUtils.now());
         updatePipelineStatus(pipelineRun);
         nodesManager.terminateRun(pipelineRun);
+        return pipelineRun;
+    }
+
+    /**
+     * Creates and attaches new disk by the given request to the run.
+     *
+     * @param runId {@link PipelineRun} id for pipeline run.
+     * @param request Attaching disk request.
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun attachDisk(final Long runId, final DiskAttachRequest request) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING || pipelineRun.getStatus().isPause(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_ATTACHING_WRONG_STATUS, runId,
+                        pipelineRun.getStatus()));
+        Assert.notNull(request.getSize(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
+        Assert.isTrue(request.getSize() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        nodesManager.attachDisk(pipelineRun, request);
         return pipelineRun;
     }
 
