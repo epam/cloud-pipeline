@@ -109,7 +109,7 @@ public class PipelineRunManagerUnitTest {
     @Test
     public void testAttachDiskWithInvalidSize() {
         assertAttachFails(diskAttachRequest(null));
-        assertAttachFails(diskAttachRequest(-10L));
+        assertAttachFails(diskAttachRequest(-SIZE));
     }
 
     @Test

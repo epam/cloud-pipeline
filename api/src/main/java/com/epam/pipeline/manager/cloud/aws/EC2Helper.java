@@ -320,14 +320,15 @@ public class EC2Helper {
                                  final Volume volume, final String device) {
         try {
             attachVolume(client, instance.getInstanceId(), volume.getVolumeId(), device);
-        } catch (Exception e) {
+        } catch (AmazonEC2Exception e) {
             deleteVolume(client, volume.getVolumeId());
             throw new AwsEc2Exception(String.format("Volume with id '%s' wasn't attached to instance with id '%s'" +
                     " due to error and it was deleted.", volume.getVolumeId(), instance.getInstanceId()), e);
         }
     }
 
-    private void attachVolume(final AmazonEC2 client, final String instanceId, final String volumeId, final String device) {
+    private void attachVolume(final AmazonEC2 client, final String instanceId, final String volumeId,
+                              final String device) {
         client.attachVolume(new AttachVolumeRequest()
                 .withInstanceId(instanceId)
                 .withVolumeId(volumeId)
@@ -336,7 +337,8 @@ public class EC2Helper {
         waiter.run(new WaiterParameters<>(new DescribeVolumesRequest().withVolumeIds(volumeId)));
     }
 
-    private void enableVolumeDeletionOnInstanceTermination(final AmazonEC2 client, final String instanceId, final String device) {
+    private void enableVolumeDeletionOnInstanceTermination(final AmazonEC2 client, final String instanceId,
+                                                           final String device) {
         client.modifyInstanceAttribute(new ModifyInstanceAttributeRequest()
                 .withInstanceId(instanceId)
                 .withBlockDeviceMappings(new InstanceBlockDeviceMappingSpecification()
