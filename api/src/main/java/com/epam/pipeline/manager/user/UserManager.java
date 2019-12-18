@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -44,6 +45,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -94,6 +96,7 @@ public class UserManager {
         user.setGroups(groups);
         user.setAttributes(attributes);
         user.setDefaultStorageId(defaultStorageId);
+        user.setRegistrationDate(DateUtils.nowUTC());
         storageValidator.validate(user);
         return userDao.createUser(user, userRoles);
     }
@@ -153,6 +156,13 @@ public class UserManager {
         loadUserById(id);
         updateUserRoles(id, roles);
         return loadUserById(id);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineUser updateUserFirstLoginDate(Long id, LocalDateTime firstLoginDate) {
+        PipelineUser user = loadUserById(id);
+        user.setFirstLoginDate(firstLoginDate);
+        return userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

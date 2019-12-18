@@ -36,6 +36,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -73,6 +74,12 @@ public class PipelineUser implements StorageContainer {
 
     @Transient
     private boolean blocked;
+
+    @Transient
+    private LocalDateTime registrationDate;
+
+    @Transient
+    private LocalDateTime firstLoginDate;
 
     private Long defaultStorageId;
 

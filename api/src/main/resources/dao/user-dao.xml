@@ -28,13 +28,17 @@
                         name,
                         groups,
                         attributes,
-                        default_storage_id)
+                        default_storage_id,
+                        registration_date,
+                        first_login_date)
                     VALUES (
                         :USER_ID,
                         :USER_NAME,
                         :USER_GROUPS,
                         to_jsonb(:ATTRIBUTES::jsonb),
-                        :USER_DEFAULT_STORAGE_ID)
+                        :USER_DEFAULT_STORAGE_ID,
+                        :REGISTRATION_DATE,
+                        :FIRST_LOGIN_DATE)
                 ]]>
             </value>
         </property>
@@ -46,7 +50,8 @@
                         groups = :USER_GROUPS,
                         default_storage_id = :USER_DEFAULT_STORAGE_ID,
                         attributes = to_jsonb(:ATTRIBUTES::jsonb),
-                        blocked = :USER_BLOCKED
+                        blocked = :USER_BLOCKED,
+                        first_login_date = :FIRST_LOGIN_DATE
                     WHERE
                         id = :USER_ID
                 ]]>
@@ -62,6 +67,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -83,6 +90,8 @@
                         u.attributes as attributes,
                         u.default_storage_id as user_default_storage_id,
                         u.blocked as user_blocked,
+                        u.registration_date,
+                        u.first_login_date,
                         r.id as role_id,
                         r.name as role_name,
                         r.predefined as role_predefined,
@@ -111,6 +120,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -133,6 +144,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -155,6 +168,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -177,6 +192,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -202,6 +219,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -224,6 +243,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
@@ -276,6 +297,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       r.id as role_id,
                       r.name as role_name,
                       r.predefined as role_predefined,
