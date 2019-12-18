@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -193,6 +194,11 @@ public class CloudFacadeImpl implements CloudFacade {
         return getInstancePriceService(region).getSpotPrice(instanceType, region);
     }
 
+    @Override
+    public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).attachDisk(region, runId, request);
+    }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
         try {

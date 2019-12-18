@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
+import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
@@ -169,4 +170,12 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      *  mainly for terminated states
      */
     Optional<InstanceTerminationState> getInstanceTerminationState(T region, String instanceId);
+
+    /**
+     * Creates and attaches new disk by the given request to cloud instance.
+     * @param region
+     * @param runId
+     * @param request
+     */
+    void attachDisk(T region, Long runId, DiskAttachRequest request);
 }
