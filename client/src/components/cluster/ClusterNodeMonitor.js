@@ -174,6 +174,7 @@ class ClusterNodeMonitor extends React.Component {
     if (chartsData.pending) {
       return;
     }
+    chartsData.updateRange();
     start = start || chartsData.instanceFrom || moment().add(-1, 'day').unix();
     end = end || chartsData.instanceTo || moment().unix();
     const range = end - start;
