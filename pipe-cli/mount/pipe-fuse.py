@@ -31,6 +31,7 @@ from pipefuse.api import CloudPipelineClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3Client
 from pipefuse.pipefs import PipeFS
+from pipefuse.fslock import get_lock
 from fuse import FUSE
 
 _allowed_logging_level_names = logging._levelNames
@@ -39,7 +40,8 @@ _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = logging.ERROR
 
 
-def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_size, default_mode, mount_options=None):
+def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_size, default_mode, mount_options=None,
+          threads=False, monitoring_delay=600):
     if mount_options is None:
         mount_options = {}
     try:
@@ -69,8 +71,8 @@ def start(mountpoint, webdav, bucket, buffer_size, chunk_size, cache_ttl, cache_
         client = BufferedFileSystemClient(client, capacity=buffer_size)
     else:
         logging.info('Buffering is disabled.')
-    fs = PipeFS(client=client, mode=int(default_mode, 8))
-    FUSE(fs, mountpoint, nothreads=True, foreground=True, ro=client.is_read_only(), **mount_options)
+    fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
+    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 
 
 def parse_mount_options(options_string):
@@ -106,6 +108,9 @@ if __name__ == '__main__':
                         help="String with mount options supported by FUSE")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")
+    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
+    parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
+                        help="Delay between path lock monitoring cycles.")
     args = parser.parse_args()
 
     if not args.webdav and not args.bucket:
@@ -120,7 +125,8 @@ if __name__ == '__main__':
     try:
         start(args.mountpoint, webdav=args.webdav, bucket=args.bucket, buffer_size=args.buffer_size,
               chunk_size=args.chunk_size, cache_ttl=args.cache_ttl, cache_size=args.cache_size, default_mode=args.mode,
-              mount_options=parse_mount_options(args.options))
+              mount_options=parse_mount_options(args.options), threads=args.threads,
+              monitoring_delay=args.monitoring_delay)
     except BaseException as e:
         logging.error('Unhandled error: %s' % e.message)
         sys.exit(1)
