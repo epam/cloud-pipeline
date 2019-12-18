@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,8 @@ public class UserManagerTest extends AbstractSpringTest {
                                                        .map(Role::getId)
                                                        .collect(Collectors.toList()));
         Assert.assertEquals(DEFAULT_STORAGE_ID, newUser.getDefaultStorageId());
+        Assert.assertNotNull(newUser.getRegistrationDate());
+        Assert.assertNull(newUser.getFirstLoginDate());
     }
 
     @Test
@@ -91,6 +94,18 @@ public class UserManagerTest extends AbstractSpringTest {
         userManager.updateUserBlockingStatus(user.getId(), false);
         final PipelineUser unblockedPipelineUser = userManager.loadUserById(user.getId());
         Assert.assertFalse(unblockedPipelineUser.isBlocked());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void updateUserLoginDate() {
+        final PipelineUser user = createDefaultPipelineUser();
+        Assert.assertNull(user.getFirstLoginDate());
+
+        userManager.updateUserFirstLoginDate(user.getId(), DateUtils.nowUTC());
+        final PipelineUser loaded = userManager.loadUserById(user.getId());
+
+        Assert.assertNotNull(loaded.getFirstLoginDate());
     }
 
     @Test
