@@ -116,7 +116,7 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
             params.addValue(RUN_ID.name(), schedule.getRunId());
             params.addValue(CRON_EXPRESSION.name(), schedule.getCronExpression());
             params.addValue(CREATED_DATE.name(), schedule.getCreatedDate());
-            params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getDisplayName());
+            params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getID());
             return params;
         }
 
