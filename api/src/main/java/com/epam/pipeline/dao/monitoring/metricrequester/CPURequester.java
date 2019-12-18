@@ -108,12 +108,14 @@ public class CPURequester extends AbstractMetricRequester {
         final MonitoringStats monitoringStats = new MonitoringStats();
         Optional.ofNullable(bucket.getKeyAsString()).ifPresent(monitoringStats::setStartTime);
         final List<Aggregation> aggregations = aggregations(bucket);
-        final Optional<Double> utilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION);
         final Optional<Integer> capacity = longValue(aggregations, AVG_AGGREGATION + CPU_CAPACITY)
                 .map(Object::toString)
-                // CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
+                // Elastic CPU capacity is a number of cores times 1000. Therefore last three digits can be omitted.
                 .map(it -> it.substring(0, it.length() - 3))
                 .map(Integer::valueOf);
+        final Optional<Double> utilization = doubleValue(aggregations, AVG_AGGREGATION + CPU_UTILIZATION)
+                // Elastic CPU utilization is a share. Therefore it should be multiplied by number of cores.
+                .flatMap(u -> capacity.map(c -> Math.min(u * c, c)));
         final MonitoringStats.CPUUsage cpuUsage = new MonitoringStats.CPUUsage();
         utilization.ifPresent(cpuUsage::setLoad);
         monitoringStats.setCpuUsage(cpuUsage);
