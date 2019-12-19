@@ -41,6 +41,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -147,6 +148,13 @@ public class UserManager {
         loadUserById(id);
         updateUserRoles(id, roles);
         return loadUserById(id);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineUser updateUserFirstLoginDate(Long id, LocalDateTime firstLoginDate) {
+        PipelineUser user = loadUserById(id);
+        user.setFirstLoginDate(firstLoginDate);
+        return userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
