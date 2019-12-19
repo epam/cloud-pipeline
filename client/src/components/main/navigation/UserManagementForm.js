@@ -65,7 +65,6 @@ const EXPORT_USERS_TEMPLATE = {
 }))
 @observer
 export default class UserManagementForm extends React.Component {
-
   static propTypes = {
     onInitialized: PropTypes.func
   };
@@ -150,12 +149,11 @@ export default class UserManagementForm extends React.Component {
 
   handleExportUsers = (isDefaultExport) => {
     const {userDataToExport} = this.state;
-    const req = isDefaultExport === true
+    const reqBody = isDefaultExport === true
       ? this.exportUsersDefault
       : userDataToExport;
 
-    console.log(isDefaultExport)
-    console.log(req);
+    // TODO: finish when the API is ready
   };
 
   handleExportUsersMenu = ({key}) => {
@@ -240,9 +238,13 @@ export default class UserManagementForm extends React.Component {
       this.state.userSearchText.trim().length &&
       this._findUsers &&
       this._findUsers.loaded) {
-      return (this._findUsers.value || []).map(this.mapUserRolesAndGroups).sort(this.alphabeticNameSorter);
+      return (this._findUsers.value || [])
+        .map(this.mapUserRolesAndGroups)
+        .sort(this.alphabeticNameSorter);
     } else if (this.props.users.loaded) {
-      return (this.props.users.value || []).map(this.mapUserRolesAndGroups).sort(this.alphabeticNameSorter);
+      return (this.props.users.value || [])
+        .map(this.mapUserRolesAndGroups)
+        .sort(this.alphabeticNameSorter);
     }
     return [];
   }
@@ -411,7 +413,12 @@ export default class UserManagementForm extends React.Component {
                     }
                   </Card>
                 }>
-                <a id="more-info-link" className={styles.moreInfoLabel}>+{tags.length - maxTagItems + 1} more</a>
+                <a
+                  id="more-info-link"
+                  className={styles.moreInfoLabel}
+                >
+                  +{tags.length - maxTagItems + 1} more
+                </a>
               </Dropdown>
             ]}
           </Row>
@@ -481,7 +488,11 @@ export default class UserManagementForm extends React.Component {
         render: (user) => {
           return (
             <Row type="flex" justify="end">
-              <Button id="edit-user-button" size="small" onClick={() => this.openEditUserRolesDialog(user)}>
+              <Button
+                id="edit-user-button"
+                size="small"
+                onClick={() => this.openEditUserRolesDialog(user)}
+              >
                 <Icon type="edit" />
               </Button>
             </Row>
@@ -498,8 +509,13 @@ export default class UserManagementForm extends React.Component {
         dataSource={this.users}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        pagination={{total: this.users.length, PAGE_SIZE, current: this.state.usersTableCurrentPage}}
-        size="small" />
+        pagination={{
+          total: this.users.length,
+          PAGE_SIZE,
+          current: this.state.usersTableCurrentPage
+        }}
+        size="small"
+      />
     );
   };
 
@@ -559,7 +575,7 @@ export default class UserManagementForm extends React.Component {
               {name}
               {blockedSpan}
             </span>
-          )
+          );
         }
       },
       {
@@ -622,7 +638,7 @@ export default class UserManagementForm extends React.Component {
               {name}
               {blockedSpan}
             </span>
-          )
+          );
         }
       },
       {
@@ -700,7 +716,7 @@ export default class UserManagementForm extends React.Component {
   };
 
   handleExportUsersChange = (checkedValues) => {
-    this.setState({userDataToExport: checkedValues})
+    this.setState({userDataToExport: checkedValues});
   }
 
   createUser = async ({userName, defaultStorageId, roleIds}) => {
@@ -883,7 +899,12 @@ export default class UserManagementForm extends React.Component {
                   this.dataStorages.map(d => {
                     return (
                       <Select.Option
-                        key={d.id} value={`${d.id}`} name={d.name} title={d.name} pathMask={d.pathMask}>
+                        key={d.id}
+                        value={`${d.id}`}
+                        name={d.name}
+                        title={d.name}
+                        pathMask={d.pathMask}
+                      >
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );
