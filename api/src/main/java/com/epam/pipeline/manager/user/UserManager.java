@@ -96,7 +96,6 @@ public class UserManager {
         user.setGroups(groups);
         user.setAttributes(attributes);
         user.setDefaultStorageId(defaultStorageId);
-        user.setRegistrationDate(DateUtils.nowUTC());
         storageValidator.validate(user);
         return userDao.createUser(user, userRoles);
     }

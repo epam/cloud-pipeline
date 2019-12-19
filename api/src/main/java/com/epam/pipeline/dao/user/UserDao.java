@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public PipelineUser createUser(PipelineUser user, List<Long> roles) {
         user.setId(daoHelper.createId(userSequence));
+        user.setRegistrationDate(DateUtils.nowUTC());
         getNamedParameterJdbcTemplate().update(createUserQuery, UserParameters.getParameters(user, getConnection()));
         List<Long> appliedRoles = new ArrayList<>();
         if (CollectionUtils.isEmpty(roles)) {
