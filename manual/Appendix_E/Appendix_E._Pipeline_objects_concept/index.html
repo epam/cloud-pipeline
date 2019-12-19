@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../../img/favicon.ico">
+  <title>Appendix E. Pipeline objects concept - Cloud Pipeline</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../../css/extra.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Appendix E. Pipeline objects concept";
+    var mkdocs_page_input_path = "manual/Appendix_E/Appendix_E._Pipeline_objects_concept.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../../.." class="icon icon-home"> Cloud Pipeline</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Release notes</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">User guide</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../03_Overview/3._Overview/">3. Overview</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">4. Manage Folder</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">5. Manage Metadata</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">6. Manage Pipeline</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">7. Manage Detached configuration</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">8. Manage Data Storage</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9. Manage cluster nodes</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">10. Manage Tools</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">11. Manage Runs</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">12. Manage settings</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Change email notification</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">14. CLI interface</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <span class="caption-text">15. Interactive services</span>
+    <ul class="subnav">
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l3">
+                    
+    <a class="" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../16_Issues/16._Issues/">16. Issues</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Appendix E. Pipeline objects concept</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#pipeline-objects-concept">Pipeline objects concept</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#pipeline-components">Pipeline components</a></li>
+        
+            <li><a class="toctree-l4" href="#main-working-scenarios">Main working scenarios</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Cloud Pipeline API</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                </li>
+    </ul>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../..">Cloud Pipeline</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User guide &raquo;</li>
+        
+      
+    
+    <li>Appendix E. Pipeline objects concept</li>
+    <li class="wy-breadcrumbs-aside">
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="pipeline-objects-concept">Pipeline objects concept</h1>
+<p>In general, pipelines represent a sequence of tasks that are executed along with each other in order to process some data. They help to automate complex tasks that consist of many sub-tasks. Pipelines allow users to solve a wide range of analytical tasks.</p>
+<p>The <strong>Pipeline</strong> object in the Cloud Pipeline environment represents a workflow script with versioned files of source code, documentation, and configuration:</p>
+<ul>
+<li><strong>Source code</strong> represents the code that directly shall be performed to solve tasks according to the specific pipeline needs</li>
+<li><strong>Configuration</strong> represents the special config that contains all settings for the environment in which the pipeline shall be performed</li>
+<li><strong>Documentation</strong> represents the set of documents that describe purposes, main solving tasks, features of the specific pipeline, etc. This is an optional part of the <strong>Pipeline</strong> and could be omitted</li>
+</ul>
+<p>Under the hood, each <strong>Pipeline</strong> is a GitLab repository.</p>
+<p>So, each of the constituent <strong>Pipeline</strong> parts represents one or more versioned files in that repository.</p>
+<p>The data processing via pipeline runs, in a nutshell, can be described in these several steps:</p>
+<ol>
+<li>The user prepares a specific calculation script that shall be registered in the Cloud Pipeline environment as the source code file of the pipeline.</li>
+<li>The user defines the environment for the pipeline execution - first of all, it is a specific package of software that is defined by a docker image. Also, the user defines the characteristics of the Cloud compute instance on which the pipeline will be run. All described definitions shall be specified in the pipeline configuration file.</li>
+<li>To store pipeline's inputs and outputs datasets the Cloud data storages shall be used. The user defines paths to these datasets as different parameters of the pipeline. Pipeline parameters shall be specified in the pipeline's configuration file.</li>
+<li>The user launches the pipeline execution in the Cloud Pipeline environment. This includes the following steps:  <ul>
+<li>the Cloud compute node (according to the specified characteristics in the pipeline configuration file) is being initialized</li>
+<li>on the initialized node a docker container (from the docker image specified in the pipeline's configuration file) is being launched. The subsequent execution is being continued in the docker container</li>
+<li>when the environment is set, the Git repository (corresponding to the pipeline) is being cloned to the node disk</li>
+<li>pipeline calculation script (from the cloned source code files) launches</li>
+<li>pipeline's input datasets are used for calculations (from the data storages according to the specified paths in the pipeline configuration file)</li>
+<li>output datasets are uploaded after calculations (into the data storages according to specified paths in the pipeline configuration file)</li>
+</ul>
+</li>
+<li>After the completion of the calculation script execution, the pipeline run is being completed. The Cloud compute instance enters the pending state (no billing). The user can monitor outputs in the data storages according to specified paths in the pipeline configuration file before the pipeline run</li>
+</ol>
+<p><img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_01.png" /></p>
+<h2 id="pipeline-components">Pipeline components</h2>
+<blockquote>
+<p>For more details about <strong>Pipeline</strong> components representation see <a href="../../06_Manage_Pipeline/6._Manage_Pipeline/">here</a>.</p>
+</blockquote>
+<h3 id="source-code">Source code</h3>
+<p>By default, when a new <strong>Pipeline</strong> object is being created from any available template - the Cloud Pipeline creates a default code file on the template's programming language. The user can manually edit this code file, add new ones or upload any count of existing code files from the local workstation. By default, all source code files are written into the <code>/src</code> directory of the repository. During the <strong>Pipeline</strong> execution, its corresponding repository is cloned to the compute node - so, all source code scripts will be downloaded to the node disk (more details about pipeline execution see above). Also, the user shall specify the order of scripts execution. The execution of the main (first) running script shall be specified in the <strong>Pipeline</strong> config. The execution order of other scripts should be specified in the main script or in any other, which execution is specified in the main one, otherwise, unspecified code files will be ignored.</p>
+<h3 id="configuration">Configuration</h3>
+<p>By default, when a new <strong>Pipeline</strong> object is being created from any available template - the Cloud Pipeline creates a default configuration <code>json</code> file. It contains the list of all general execution settings that are necessary for the pipeline run:</p>
+<ul>
+<li>the characteristics of the Cloud compute instance that would be initialized:<ul>
+<li>type of instance (count of CPU, GPU, RAM) in terms of the Cloud Provider</li>
+<li>size of the instance disk size</li>
+</ul>
+</li>
+<li>based docker image from which the docker container would be launched at the initialized Cloud instance</li>
+<li>the command template which would be performed at the launched docker container - here the command of the main (first) script execution shall be necessarily specified</li>
+<li>the name of the main script from source code</li>
+<li>the list of the pipeline parameters - each parameter defines the parameter for the calculation pipeline script (it could be a simple string/boolean parameter or the path to the input/output dataset)</li>
+<li><em>and others</em></li>
+</ul>
+<p>The user can manually change these settings via the GUI elements or via the editing of the <code>config.json</code> file.</p>
+<h3 id="documentation">Documentation</h3>
+<p>By default, when a new <strong>Pipeline</strong> object is being created from any available template - the Cloud Pipeline creates a default <strong>README</strong> file. The user can edit/remove this file or upload any count of existing documents from the local workstation. By default, all documents are written into the <code>/docs</code> directory of the pipeline repository.</p>
+<p>Schematic composition of the <strong>Pipeline</strong> object:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_02.png" /></p>
+<p>If the user makes any changes in the <strong>Pipeline</strong> object and saves them - it causes the new commit into the corresponding Git repository of that pipeline. All commits perform automatically by the Cloud Pipeline, the user only should specify commit message.</p>
+<h2 id="main-working-scenarios">Main working scenarios</h2>
+<p>Below the main scenarios of working with the <strong>Pipeline</strong> object in the Cloud Pipeline environment are described.</p>
+<h3 id="creation-of-a-new-pipeline-object">Creation of a new Pipeline object</h3>
+<blockquote>
+<p>For more details how to create and configure a <strong>Pipeline</strong> object see <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">here</a>.</p>
+</blockquote>
+<h4 id="new-pipeline">New pipeline</h4>
+<p>When the user creates a new pipeline in the Cloud Pipeline environment - it automatically leads to the creation of the GitLab repository with the same name as the pipeline.</p>
+<p>On the <strong>Pipeline</strong> page, users can see general info about the repository that corresponds to the specific pipeline:</p>
+<ul>
+<li>the last commit checksum hash and commit message (on the picture below, it is pipeline initial commit and its automatically naming message)</li>
+<li>the info about the last repository update and the user name which did that update</li>
+</ul>
+<p><img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_03.png" /></p>
+<p>Just created pipeline contains:</p>
+<ul>
+<li>the template of the main <strong>README</strong> file<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_04.png" /></li>
+<li>the template of the main file with the calculation script</li>
+<li>the <code>config.json</code> file with execution environments for the pipeline run<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_05.png" /></li>
+</ul>
+<h4 id="edit-and-configure-a-pipeline">Edit and configure a pipeline</h4>
+<p>After the pipeline creation, the user should configure it for his needs.</p>
+<p>Users can change the following:</p>
+<ul>
+<li><strong>Source code</strong><br />
+    the user can manually edit the initial template code file, add new empty files and create scripts manually or upload any count of existing code files from his local workstation</li>
+<li><strong>Configuration</strong>  <ul>
+<li>the user can manually edit the full set of execution settings via the <code>config.json</code> file or via the GUI elements. Both variants are identical and supported by the Cloud Pipeline</li>
+<li>general settings that the user should pay attention to:<ul>
+<li>the characteristics of the Cloud <strong><em>compute instance</em></strong> that would be initialized for the pipeline run:<ul>
+<li>type of instance (count of CPU, GPU, RAM) in terms of the Cloud Provider</li>
+<li>size of the instance disk size</li>
+<li>the <strong><em>cluster configuration</em></strong> - if the user wants to launch pipeline tasks on several nodes he can configure the cluster</li>
+</ul>
+</li>
+<li><strong><em>based docker image</em></strong> from which the docker container would be launched at the initialized Cloud instance. Each docker image contains a specific software package. The user can leverage one of the existing and available docker images or also can create his own docker image with the specific software using the Cloud Pipeline features (see below), and then use it for launch pipeline</li>
+<li><strong><em>command template</em></strong> which would be performed at the launched docker container during the pipeline run - here the command of the main (first) script execution shall be necessarily specified. If in the command template no execution is specified - no scripts from the source code will be performed</li>
+</ul>
+</li>
+<li>if the user wants to input/output any data to/from the pipeline script during its execution - he shall configure <strong><em>parameters</em></strong>. Parameters allow varying of the set of initial data that is necessary for the pipeline run:<ul>
+<li>each parameter has a name (required), a type (required) and a value (it could be optionally predefined or specified before the pipeline run)</li>
+<li>each parameter can be one of the several types ("string", "boolean", "input path", "output path" and others)<ul>
+<li>the "<em>string</em>" parameter allows to transfer into the pipeline execution some string value</li>
+<li>the "<em>boolean</em>" parameter allows to transfer into the pipeline execution the boolean value</li>
+<li>the "<em>input path</em>" parameter allows to specify the path to the input dataset. The path specified as "input path" will be automatically mounted to the running docker container. The path where the file or directory will be mounted in the container is defined by the system Cloud Pipeline parameter - <code>$INPUT_DIR</code>. It has default value, but also could be redefined by the user</li>
+<li>the "<em>output path</em>" parameter allows to specify the path for data output. After the finish of the pipeline execution, all data from working directory of the docker container will be automatically uploaded to the output path. The path to the working directory in the container is defined by the system Cloud Pipeline parameter - <code>$ANALYSIS_DIR</code>. It has default value, but also could be redefined by the user</li>
+</ul>
+</li>
+<li>the user can add several parameters of each type</li>
+<li>so, the user can add some necessary parameters to the pipeline, use them in the pipeline code and define parameter values directly before a specific pipeline launch</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Documentation</strong><br />
+    the user can manually edit/delete the initial template <strong>README</strong> file or upload any count of existing documents from his local workstation</li>
+</ul>
+<p>Any saved changes in the <strong>Pipeline</strong> object automatically lead to the new commit into the corresponding Git repository. Short info about the last commit is always available to the user.</p>
+<p>In some cases, if users want - they can work directly with Git. Note that the repository name is the same as a pipeline name:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_06.png" /></p>
+<h4 id="create-a-specific-docker-image">Create a specific docker image</h4>
+<p>For some specific tasks, it might be convenient to create a new docker image that will be used for the Pipeline execution. Such docker image can contain special packages that are necessary for the specific Pipeline. A new image can be based on the existing one and simply created in the Cloud Pipeline environment.</p>
+<p>For doing that:</p>
+<ul>
+<li>user shall launch one of the existing Docker images in the Cloud Pipeline environment (named "<em>Tools</em>"), allow just to initialize cloud compute instance and launch a Docker container on it. After that, the user can connect into the launched container via the SSH session (<a href="../../15_Interactive_services/15.2._Using_Terminal_access/">SSH Web GUI terminal</a>), then install the necessary software and then commit the resulting container as a new Docker image or a new version of the existing one - by the Cloud Pipeline capabilities.<br />
+See more details <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">here</a>.</li>
+<li><strong><em>or</em></strong> user can create a Docker image without the Cloud Pipeline and then push the prepared image into the Cloud Pipeline registry.<br />
+See more details <a href="../../10_Manage_Tools/10.3._Add_a_Tool/">here</a>.</li>
+</ul>
+<p>After that, the user can leverage such image as the based docker image for his own <strong>Pipeline</strong> object.</p>
+<h4 id="create-a-multi-configuration">Create a multi-configuration</h4>
+<p>For some reasons, the user may need to launch the <strong>Pipeline</strong> on different compute instances or, for example, with different sets of parameters, etc. For such cases, the Cloud Pipeline allows to create several configurations for one <strong>Pipeline</strong> object that all are saved in one <code>config.json</code> file but with the ability to specify which one directly should be used before the pipeline run.</p>
+<h3 id="testing-an-existing-pipeline-object">Testing an existing Pipeline object</h3>
+<blockquote>
+<p>For more details how to launch a <strong>Pipeline</strong> object see <a href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">here</a>.</p>
+</blockquote>
+<h4 id="launch-the-pipeline">Launch the Pipeline</h4>
+<p>After the pipeline is created, configured and saved - it can be launched. The Cloud Pipeline allows to launch the pipeline with the saved execution settings and parameters (if they have default values) or manually configure execution settings and parameters before a specific run (such changes will not be saved in the pipeline configuration and will use only for one pipeline run).</p>
+<p><img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_07.png" /></p>
+<p>After the pipeline was launched all described procedures are performed - the cloud instance is initialized, the docker container is launched, input paths are mounted (if they were specified before the run via the parameters) - then the main script will start execution.</p>
+<blockquote>
+<p>As the main pipeline script is prepared manually by the user, it can be incorrect during the first runnings and contain errors. To easily debug the script the user should not launch the created pipeline and wait for the full execution, but connect to the compute node via the SSH and work with the script execution directly in the terminal.<br />
+For that, the user should set the <strong><em>command template</em></strong>, e.g. <code>sleep infinity</code>, to start the <strong>Pipeline</strong> in "idle" mode (not launching any script). It allows just to initialize cloud instance, launch a Docker container on it, clone the pipeline repository and perform other initialize tasks. After that, the user can connect into the launched container via the SSH session (<a href="../../15_Interactive_services/15.2._Using_Terminal_access/">SSH Web GUI terminal</a>), launch and debug the script manually (the script is available from the cloned repository):<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_08.png" /><br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_09.png" />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_10.png" /></p>
+</blockquote>
+<p>All tasks performed during the run and logs are available to the user, e.g.:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_11.png" /></p>
+<p>So, the user can observe for the pipeline execution in real-time.</p>
+<h4 id="review-the-results">Review the results</h4>
+<p>After completing all tasks the pipeline run ends. Output data is downloaded into the output path (if it was specified before the run via the parameters). Docker container stops. Run logs page is still available, the pipeline run gets the "Completed" state.</p>
+<p>The user can view output data on the output path after the pipeline execution. These files can be downloaded to the local workstation or, for example, used in further calculations.</p>
+<p>Also, each output file is marked by special tags that contain general info about the pipeline run, in which the file was received:</p>
+<ul>
+<li>user name who launched the run</li>
+<li>run ID in the Cloud Pipeline environment</li>
+<li>link to the <strong>Pipeline</strong> object</li>
+<li>link to the Docker image used in the run</li>
+<li>main characteristics of the compute cloud instance used in the run</li>
+<li><em>and others</em>
+E.g.:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_12.png" /></li>
+</ul>
+<p>For convenience, the user can view all run history for the <strong>Pipeline</strong> object with short information about the run. Each record is the hyperlink to the specific run logs page (see <a href="#launch-the-pipeline">above</a>), where user can review full information about that pipeline run's settings:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_13.png" /></p>
+<h3 id="deployment-of-an-existing-pipeline-object">Deployment of an existing Pipeline object</h3>
+<h4 id="release-the-pipeline">Release the Pipeline</h4>
+<p>After the pipeline was created, configured, saved and tested - the user can release it. In the Cloud Pipeline Web GUI this action looks like creating the named version of the <strong>Pipeline</strong> object. User can't change such named version, only create a new "<em>draft</em>" version over it and then work with it. Then, this "<em>draft</em>" version also can be released as another "<em>stable</em>" version, etc.</p>
+<p>Under the hood, version release is the tagging in the corresponding Git repository. When the user releases some version - he just creates the annotated Git tag.</p>
+<p><img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_14.png" /></p>
+<h4 id="share-to-other-users">Share to other users</h4>
+<p>The Cloud Pipeline has a useful <a href="https://en.wikipedia.org/wiki/Role-based_access_control">RBAC</a> model. The user can share his prepared pipeline with other users or user groups for further usage/common work.</p>
+<p>There are 3 permission settings over the <strong>Pipeline</strong> objects in the Cloud Pipeline:</p>
+<ul>
+<li><strong>Read</strong> - allows to view a pipeline, its code, configuration, settings, history of runs</li>
+<li><strong>Write</strong> - allows to edit/delete a pipeline, its code, configuration, settings</li>
+<li><strong>Execute</strong> - allows to run a pipeline</li>
+</ul>
+<p>So, the user-owner of the pipeline (or system admin) can set combinations of described permissions to other users/user groups to rule their access to the <strong>Pipeline</strong>, e.g.:<br />
+<img alt="CP_AppendixE" src="../attachments/PipelineObjectsConcept_15.png" /></p>
+<p>See a simple example of the complete <strong>Pipeline</strong> running procedure <a href="../../01_Quick_start/1._Quick_start/">here</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../../api/API_tutorials/API_tutorials/" class="btn btn-neutral float-right" title="API tutorials">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../../Appendix_D/Appendix_D._Costs_management/" class="btn btn-neutral" title="Appendix D. Costs management"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+      
+        <span><a href="../../Appendix_D/Appendix_D._Costs_management/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../../api/API_tutorials/API_tutorials/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+
+</body>
+</html>
