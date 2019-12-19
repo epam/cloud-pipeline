@@ -43,7 +43,8 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   state = {
-    rules: []
+    rules: [],
+    validationErrors: null
   };
 
   componentDidMount () {
@@ -51,7 +52,8 @@ export default class RunScheduleDialog extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState) {
-    if (this.props.rules !== prevProps.rules) {
+    if ((this.props.rules !== prevProps.rules) ||
+      (!prevProps.visible && this.state.rules && this.state.rules.length > 0)) {
       this.prepareState();
     }
   }
@@ -75,7 +77,18 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   validate = () => {
-    return true;
+    const {rules} = this.state;
+    const validationErrors = [];
+
+    rules.forEach(({removed, schedule: {mode, dayOfWeek}}, index) => {
+      if (!removed && mode === ruleModes.weekly &&
+        (dayOfWeek.length === 0 || (dayOfWeek.length === 1 && dayOfWeek[0] === '*'))) {
+        validationErrors.push({index, message: 'You must choose at least one weekday.'});
+      }
+    });
+
+    this.setState({validationErrors});
+    return !(validationErrors.length > 0);
   };
 
   onOkClicked = () => {
@@ -245,12 +258,15 @@ export default class RunScheduleDialog extends React.Component {
         this.setState({rules});
       }
     };
+    const {validationErrors} = this.state;
+    const [validationError] = (validationErrors || []).filter(({index}) => index === i);
 
     return (
       <div style={{flex: 1, marginLeft: 15}}>
         <Select
           disabled={removed}
           mode="multiple"
+          className={classNames({[styles.selectHasError]: !!validationError})}
           onDeselect={onDayOfWeekDeselect}
           onSelect={onDayOfWeekSelect}
           value={schedule.dayOfWeek || '1'}
@@ -307,6 +323,21 @@ export default class RunScheduleDialog extends React.Component {
     </Row>
   );
 
+  renderErrorMessage = (i) => {
+    const {validationErrors} = this.state;
+    const [validationError] = (validationErrors || []).filter(({index}) => index === i);
+
+    if (validationError && validationError.message) {
+      return (
+        <Row className={styles.errorRow} justify="center">
+          {validationError.message}
+        </Row>
+      );
+    }
+
+    return null;
+  };
+
   renderRule = (rule, i) => {
     const sameTimezone = isTimeZoneEqualCurrent(rule.timeZone);
 
@@ -320,7 +351,6 @@ export default class RunScheduleDialog extends React.Component {
             [styles.ruleRowRemoved]: rule.removed
           }
         )}
-        style={{width: '100%'}}
       >
         <Row type="flex" className={classNames({
           [styles.scheduling]: sameTimezone,
@@ -354,6 +384,7 @@ export default class RunScheduleDialog extends React.Component {
           }
         </Row>
         {!sameTimezone && this.renderTimezone(rule.timeZone)}
+        {this.renderErrorMessage(i)}
       </Row>
     );
   };
@@ -364,12 +395,12 @@ export default class RunScheduleDialog extends React.Component {
 
     return (
       <Modal
-        title="Run schedule"
+        title="Maintenance"
         onCancel={onClose}
         onOk={this.onOkClicked}
         visible={visible}
         width={600}>
-        <Row type="flex" style={{maxHeight: 400, overflowY: 'auto', overflowX: 'hidden'}}>
+        <Row type="flex" className={styles.rulesContainer}>
           {rules.map(this.renderRule)}
         </Row>
         <Row type="flex" style={{padding: 5}}>
