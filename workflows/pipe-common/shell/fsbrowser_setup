@@ -26,6 +26,7 @@ fi
 
 CP_FSBROWSER_PORT="${CP_FSBROWSER_PORT:-8091}"
 CP_FSBROWSER_WD="${CP_FSBROWSER_WD:-/}"
+CP_FSBROWSER_BLACK_LIST="${CP_FSBROWSER_BLACK_LIST:-/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc}"
 if [ -z "$CP_FSBROWSER_STORAGE" ]; then
     CP_FSBROWSER_STORAGE="$(curl -k \
                                     -s \
@@ -52,4 +53,5 @@ echo "- Storage: $CP_FSBROWSER_STORAGE"
 nohup fsbrowser --host 0.0.0.0 \
                 --port "${CP_FSBROWSER_PORT}" \
                 --working_directory "${CP_FSBROWSER_WD}" \
+                --exclude "${CP_FSBROWSER_BLACK_LIST}" \
                 --transfer_storage "${CP_FSBROWSER_STORAGE}" > /var/log/fsbrowser.log 2>&1 &

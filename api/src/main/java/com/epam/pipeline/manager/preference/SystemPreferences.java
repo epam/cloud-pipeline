@@ -96,6 +96,8 @@ public class SystemPreferences {
     private static final String SEARCH_GROUP = "Search";
     private static final String GRID_ENGINE_AUTOSCALING_GROUP = "Grid engine autoscaling";
     private static final String GCP_GROUP = "GCP";
+    private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
+            "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc";
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
@@ -149,6 +151,8 @@ public class SystemPreferences {
             new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
             new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_BLACK_LIST = new StringPreference(
+            "storage.fsbrowser.black.list", STORAGE_FSBROWSER_BLACK_LIST_DEFAULT, DATA_STORAGE_GROUP, pass);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
