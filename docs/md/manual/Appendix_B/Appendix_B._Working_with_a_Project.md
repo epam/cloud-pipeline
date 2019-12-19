@@ -1,4 +1,4 @@
-# Appendix B. Working with a Project
+# Working with a Project
 
 **Project** is a special type of **Folder**. **Projects** might be used to organize data and metadata and simplify analysis runs for a large data set. Also, you can set a project attributes as parameters of analysis method configuration.
 
