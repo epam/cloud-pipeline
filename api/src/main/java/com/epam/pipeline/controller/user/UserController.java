@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.user;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 
 @Controller
@@ -264,6 +266,19 @@ public class UserController extends AbstractRestController {
             })
     public Result<Boolean> checkUserByGroup(@RequestParam String userName, @RequestParam String group) {
         return Result.success(userApiService.checkUserByGroup(userName, group));
+    }
+
+    @RequestMapping(value = "/user/export", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Exports users.",
+            notes = "Exports users with specified information",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public void exportUsers(@RequestBody PipelineUserExportVO attr, HttpServletResponse response) throws IOException {
+        writeFileToResponse(response, userApiService.exportUsers(attr), "users.csv");
     }
 
     @RequestMapping(value = "/group", method = RequestMethod.GET)

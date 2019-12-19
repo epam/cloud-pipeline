@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -156,5 +157,9 @@ public class UserApiService {
      */
     public List<PipelineUser> findUsers(String prefix) {
         return userManager.findUsers(prefix);
+    }
+
+    public byte[] exportUsers(final PipelineUserExportVO attr) {
+        return userManager.exportUsers(attr);
     }
 }

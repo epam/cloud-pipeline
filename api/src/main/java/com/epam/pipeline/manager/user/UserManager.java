@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
@@ -33,6 +34,11 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
+import com.opencsv.CSVWriter;
+import com.opencsv.bean.ColumnPositionMappingStrategy;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -44,6 +50,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.io.StringWriter;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,6 +63,8 @@ import java.util.stream.Collectors;
 @Service
 public class UserManager {
 
+    public static final String CSV_DELIMITER = ",";
+    public static final String NEW_LINE = "\n";
     @Autowired
     private UserDao userDao;
 
@@ -334,6 +343,28 @@ public class UserManager {
                 || !CollectionUtils.isEqualCollection(loadedUserAttributes.entrySet(), attributes.entrySet());
     }
 
+    public byte[] exportUsers(final PipelineUserExportVO attr) {
+        final StringWriter writer = new StringWriter();
+        final String[] csvColumn = getColumnMapping(attr);
+
+        writer.append(String.join(CSV_DELIMITER, csvColumn));
+        writer.append(NEW_LINE);
+
+        try {
+            final ColumnPositionMappingStrategy<PipelineUser> strategy = new ColumnPositionMappingStrategy<>();
+            strategy.setType(PipelineUser.class);
+            strategy.setColumnMapping(csvColumn);
+
+            new StatefulBeanToCsvBuilder<PipelineUser>(writer)
+                    .withMappingStrategy(strategy)
+                    .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
+                    .build().write(new ArrayList<>(loadAllUsers()));
+            return writer.toString().getBytes();
+        } catch (CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private void checkAllRolesPresent(List<Long> roles) {
         if (CollectionUtils.isEmpty(roles)) {
             return;
@@ -360,4 +391,35 @@ public class UserManager {
         }
         return userRoles;
     }
+
+    private String[] getColumnMapping(final PipelineUserExportVO attr) {
+        final List<String> result = new ArrayList<>();
+        if (attr.isIncludeId()) {
+            result.add("id");
+        }
+        if (attr.isIncludeUserName()) {
+            result.add("userName");
+        }
+        if (attr.isIncludeRoles()) {
+            result.add("roles");
+        }
+        if (attr.isIncludeGroups()) {
+            result.add("groups");
+        }
+        if (attr.isIncludeMetadata()) {
+            result.add("admin");
+            result.add("attributes");
+            result.add("blocked");
+            result.add("defaultStorageId");
+
+        }
+        if (attr.isIncludeRegistrationDate()) {
+            result.add("registrationDate");
+        }
+        if (attr.isIncludeFirstLoginDate()) {
+            result.add("firstLoginDate");
+        }
+        return result.toArray(new String[0]);
+    }
+
 }
