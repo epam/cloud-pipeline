@@ -19,6 +19,7 @@ import subprocess
 
 from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.logger import BrowserLogger
+from fsbrowser.src.pattern_utils import PatternMatcher
 
 TAF_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
@@ -85,7 +86,7 @@ class TransferTask(object):
                     os.remove(tmp_path)
                     self.logger.log('File %s has been removed' % tmp_path)
 
-    def download(self, source_path, working_directory, follow_symlinks):
+    def download(self, source_path, working_directory, follow_symlinks, exclude_list):
         try:
             if self.status != TaskStatus.PENDING:
                 self.logger.log("Failed to start download task: expected task state 'pending' but actual %s"
@@ -94,6 +95,9 @@ class TransferTask(object):
             self.running()
             source_path = source_path.strip(DELIMITER)
             full_source_path = os.path.join(working_directory, source_path)
+            if PatternMatcher.match_any(full_source_path, exclude_list):
+                raise RuntimeError("Failed to download item by path '%s': this item included into black list"
+                                   % full_source_path)
             compressed = not os.path.isfile(full_source_path)
             if compressed:
                 self.logger.log("Starting to compress folder for download")
@@ -101,7 +105,7 @@ class TransferTask(object):
                     raise RuntimeError("Failed to download folder: a cyclic symlinks found in folder '%s'"
                                        % full_source_path)
                 compressed_name = full_source_path + TAF_GZ_EXTENSION
-                self.compress_directory(compressed_name, full_source_path, follow_symlinks)
+                self.compress_directory(compressed_name, full_source_path, follow_symlinks, exclude_list)
                 full_source_path = compressed_name
                 source_path = source_path + TAF_GZ_EXTENSION
             source_file_name = os.path.basename(source_path)
@@ -193,9 +197,10 @@ class TransferTask(object):
         return tarinfo
 
     @staticmethod
-    def compress_directory(output_filename, source_dir, follow_symlinks):
+    def compress_directory(output_filename, source_dir, follow_symlinks, exclude_list):
         with tarfile.open(output_filename, "w:gz", dereference=follow_symlinks) as tar:
-            tar.add(source_dir, filter=TransferTask.set_permissions)
+            tar.add(source_dir, exclude=lambda x: PatternMatcher.match_any(x, exclude_list),
+                    filter=TransferTask.set_permissions)
 
     @staticmethod
     def check_cyclic_symlinks(source_dir):

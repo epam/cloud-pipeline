@@ -162,12 +162,13 @@ def main():
     parser.add_argument("--process_count", default=2)
     parser.add_argument("--run_id", required=False)
     parser.add_argument("--log_dir", required=False)
+    parser.add_argument("--exclude", default="/bin,/var,/root,/sbin,/home,/sys,/usr,/boot,/dev,/lib,/proc")
     parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
 
     args = parser.parse_args()
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
                                                BrowserLogger(args.run_id, args.log_dir), args.transfer_storage,
-                                               args.follow_symlinks)
+                                               args.follow_symlinks, args.exclude)
 
     app.run(host=args.host, port=args.port)
 
