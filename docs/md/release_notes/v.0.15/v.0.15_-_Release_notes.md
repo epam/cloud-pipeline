@@ -315,7 +315,7 @@ From now on - all the system-level location will be granted `rwx` access for the
 - Workflow/Task editor is moved from the modal popup to the right floating menu `PROPERTIES`:  
     ![CP_v.0.15_ReleaseNotes](attachments/RN015_WDLRenewed_5.png)
 
-See more details [here](../../manual/06_Manage_Pipeline/6.1.1_Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
+See more details [here](../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md).
 
 ## "QUEUED" state of the run
 

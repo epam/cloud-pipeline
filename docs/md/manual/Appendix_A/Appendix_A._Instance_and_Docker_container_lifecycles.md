@@ -1,4 +1,4 @@
-# Appendix A. Instance and Docker container lifecycles
+# Instance and Docker container lifecycles
 
 - [Overview](#overview)
     - [Instance lifecycle stages](#instance-lifecycle-stages)

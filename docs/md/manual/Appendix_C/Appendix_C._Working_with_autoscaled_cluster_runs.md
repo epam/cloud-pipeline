@@ -1,4 +1,4 @@
-# Appendix C. Working with autoscaled cluster runs
+# Working with autoscaled cluster runs
 
 - [Overview](#overview)
 - [Limitations](#limitations)
