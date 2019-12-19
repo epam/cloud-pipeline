@@ -256,6 +256,9 @@ public class PipelineLauncher {
                 SystemParams.FSBROWSER_WD,
                 preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_WD).getValue());
         putIfStringValuePresent(systemParamsWithValue,
+                SystemParams.FSBROWSER_TMP,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_TMP).getValue());
+        putIfStringValuePresent(systemParamsWithValue,
                 SystemParams.FSBROWSER_STORAGE,
                 preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_TRANSFER).getValue());
         return systemParamsWithValue;
