@@ -21,4 +21,8 @@ export default class RunSchedules extends Remote {
     super();
     this.url = `/schedule/run/${runId}`;
   }
+
+  postprocess (value) {
+    return (value.payload || []).map(({id, ...rest}) => ({scheduleId: id, ...rest}));
+  }
 }

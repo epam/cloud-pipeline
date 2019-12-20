@@ -61,9 +61,9 @@ export class CronConvert {
       every = cronParts.dayOfMonth.split('/')[1];
     } else {
       mode = ruleModes.weekly;
-      dayOfWeek = cronParts.dayOfWeek.replace('7', '0').includes(',')
-        ? cronParts.dayOfWeek.split(',')
-        : [cronParts.dayOfWeek];
+      dayOfWeek = cronParts.dayOfWeek.includes(',')
+        ? cronParts.dayOfWeek.replace('7', '0').split(',')
+        : [cronParts.dayOfWeek.replace('7', '0')];
     }
     // {
     //   mode: ruleModes.daily | ruleModes.weekly,
@@ -84,8 +84,10 @@ export class CronConvert {
   /**
    * Returns cron expression according to given params
    * @param scheduleObject {Object}
-   * @param scheduleObject.mode {ruleModes.weekly|ruleModes.daily} - rule recurrence mode (daily or weekly)
-   * @param scheduleObject.dayOfWeek {null|Array} - An array of day(s) of week for weekly recurrence mode
+   * @param scheduleObject.mode {ruleModes.weekly|ruleModes.daily} -
+   *    rule recurrence mode (daily or weekly)
+   * @param scheduleObject.dayOfWeek {null|Array} -
+   *    An array of day(s) of week for weekly recurrence mode
    * @param scheduleObject.every {null|Number|String} - day of month for daily recurrence mode
    * @param scheduleObject.time {Object} - time object
    * @param scheduleObject.time.hours {Number|String} - hours
@@ -104,12 +106,18 @@ export class CronConvert {
   },
   cronLength = 6
   ) {
+    const convertSunday = (weekday) => {
+      if (+weekday === 0) {
+        return 7;
+      }
+      return weekday;
+    };
     let cron5;
     if (mode === ruleModes.daily) {
       cron5 = `${minutes} ${hours} */${every} * ?`;
     }
     if (mode === ruleModes.weekly) {
-      cron5 = `${minutes} ${hours} ? * ${dayOfWeek.sort().join(',')}`;
+      cron5 = `${minutes} ${hours} ? * ${dayOfWeek.map(convertSunday).sort().join(',')}`;
     }
     if (cronLength === 6) {
       return `0 ${cron5}`;

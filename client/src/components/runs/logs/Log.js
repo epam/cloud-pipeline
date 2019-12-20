@@ -520,14 +520,23 @@ class Logs extends localization.LocalizedReactComponent {
     if (toRemove.length > 0) {
       const request = new RemoveRunSchedules(runId);
       await request.send(toRemove);
+      if (request.error) {
+        message.error(request.error);
+      }
     }
     if (toUpdate.length > 0) {
       const request = new UpdateRunSchedules(runId);
       await request.send(toUpdate);
+      if (request.error) {
+        message.error(request.error);
+      }
     }
     if (toCreate.length > 0) {
       const request = new CreateRunSchedules(runId);
       await request.send(toCreate);
+      if (request.error) {
+        message.error(request.error);
+      }
     }
   };
 
