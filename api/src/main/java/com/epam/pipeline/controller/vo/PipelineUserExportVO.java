@@ -29,4 +29,5 @@ public class PipelineUserExportVO {
     private boolean includeMetadata;
     private boolean includeRegistrationDate;
     private boolean includeFirstLoginDate;
+    private boolean includeHeader;
 }

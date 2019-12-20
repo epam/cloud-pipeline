@@ -345,15 +345,17 @@ public class UserManager {
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final StringWriter writer = new StringWriter();
-        final String[] csvColumn = getColumnMapping(attr);
+        final String[] csvHeader = getColumnMapping(attr);
 
-        writer.append(String.join(CSV_DELIMITER, csvColumn));
-        writer.append(NEW_LINE);
+        if (attr.isIncludeHeader()) {
+            writer.append(String.join(CSV_DELIMITER, csvHeader));
+            writer.append(NEW_LINE);
+        }
 
         try {
             final ColumnPositionMappingStrategy<PipelineUser> strategy = new ColumnPositionMappingStrategy<>();
             strategy.setType(PipelineUser.class);
-            strategy.setColumnMapping(csvColumn);
+            strategy.setColumnMapping(csvHeader);
 
             new StatefulBeanToCsvBuilder<PipelineUser>(writer)
                     .withMappingStrategy(strategy)
@@ -413,7 +415,6 @@ public class UserManager {
             result.add(PipelineUser.PipelineUserFields.ATTRIBUTES.getValue());
             result.add(PipelineUser.PipelineUserFields.BLOCKED.getValue());
             result.add(PipelineUser.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
-
         }
         if (attr.isIncludeRegistrationDate()) {
             result.add(PipelineUser.PipelineUserFields.REGISTRATION_DATE.getValue());

@@ -19,6 +19,7 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
@@ -32,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,11 @@ public class UserManagerTest extends AbstractSpringTest {
     private static final String TEST_GROUP_NAME_1 = "test_group_1";
     private static final List<String> DEFAULT_USER_GROUPS = Collections.singletonList(TEST_GROUP_NAME_1);
     private static final Map<String, String> DEFAULT_USER_ATTRIBUTE = Collections.emptyMap();
+    private static final String ROLE_USER = "ROLE_USER";
+    private static final String ID = "id";
+    private static final String USER_NAME = "userName";
+    private static final String ROLES = "roles";
+    private static final String CSV_SEPARATOR = ",";
 
     @Autowired
     private UserManager userManager;
@@ -79,6 +86,34 @@ public class UserManagerTest extends AbstractSpringTest {
         final PipelineUser newUser = createDefaultPipelineUser();
         final PipelineUser loadedUser = userManager.loadUserById(newUser.getId());
         compareAllFieldOfUsers(newUser, loadedUser);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void exportUsers() {
+        final PipelineUser newUser = createDefaultPipelineUser();
+        PipelineUserExportVO attr = new PipelineUserExportVO();
+        attr.setIncludeId(true);
+        attr.setIncludeUserName(true);
+
+        String[] exported = new String(userManager.exportUsers(attr)).split("\n");
+        Assert.assertEquals(2, exported.length);
+        Assert.assertTrue(
+                Arrays.stream(exported).anyMatch(
+                        s -> ("\"" + newUser.getId() + "\"" + CSV_SEPARATOR + "\"" + newUser.getUserName() + "\"").equals(s)
+                )
+        );
+
+        attr.setIncludeHeader(true);
+        exported = new String(userManager.exportUsers(attr)).split("\n");
+        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(ID + CSV_SEPARATOR + USER_NAME, exported[0]);
+
+        attr.setIncludeRoles(true);
+        exported = new String(userManager.exportUsers(attr)).split("\n");
+        Assert.assertEquals(3, exported.length);
+        Assert.assertEquals(ID + CSV_SEPARATOR + USER_NAME + CSV_SEPARATOR + ROLES, exported[0]);
+        Assert.assertTrue(Arrays.stream(exported).anyMatch(s -> s.contains(ROLE_USER)));
     }
 
     @Test
