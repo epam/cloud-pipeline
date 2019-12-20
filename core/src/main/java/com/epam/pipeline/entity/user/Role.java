@@ -55,4 +55,9 @@ public class Role implements StorageContainer {
     public Long getDefaultStorageId() {
         return defaultStorageId;
     }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 }

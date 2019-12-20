@@ -357,7 +357,7 @@ public class UserManager {
 
             new StatefulBeanToCsvBuilder<PipelineUser>(writer)
                     .withMappingStrategy(strategy)
-                    .withQuotechar(CSVWriter.NO_QUOTE_CHARACTER)
+                    .withEscapechar(CSVWriter.NO_ESCAPE_CHARACTER)
                     .build().write(new ArrayList<>(loadAllUsers()));
             return writer.toString().getBytes();
         } catch (CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
@@ -399,6 +399,9 @@ public class UserManager {
         }
         if (attr.isIncludeUserName()) {
             result.add("userName");
+        }
+        if (attr.isIncludeEmail()) {
+            result.add("email");
         }
         if (attr.isIncludeRoles()) {
             result.add("roles");

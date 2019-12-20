@@ -23,6 +23,7 @@ import lombok.Data;
 public class PipelineUserExportVO {
     private boolean includeId;
     private boolean includeUserName;
+    private boolean includeEmail;
     private boolean includeRoles;
     private boolean includeGroups;
     private boolean includeMetadata;
