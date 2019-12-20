@@ -395,32 +395,31 @@ public class UserManager {
     private String[] getColumnMapping(final PipelineUserExportVO attr) {
         final List<String> result = new ArrayList<>();
         if (attr.isIncludeId()) {
-            result.add("id");
+            result.add(PipelineUser.PipelineUserFields.ID.getValue());
         }
         if (attr.isIncludeUserName()) {
-            result.add("userName");
+            result.add(PipelineUser.PipelineUserFields.USER_NAME.getValue());
         }
         if (attr.isIncludeEmail()) {
-            result.add("email");
+            result.add(PipelineUser.PipelineUserFields.EMAIL.getValue());
         }
         if (attr.isIncludeRoles()) {
-            result.add("roles");
+            result.add(PipelineUser.PipelineUserFields.ROLES.getValue());
         }
         if (attr.isIncludeGroups()) {
-            result.add("groups");
+            result.add(PipelineUser.PipelineUserFields.GROUPS.getValue());
         }
         if (attr.isIncludeMetadata()) {
-            result.add("admin");
-            result.add("attributes");
-            result.add("blocked");
-            result.add("defaultStorageId");
+            result.add(PipelineUser.PipelineUserFields.ATTRIBUTES.getValue());
+            result.add(PipelineUser.PipelineUserFields.BLOCKED.getValue());
+            result.add(PipelineUser.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
 
         }
         if (attr.isIncludeRegistrationDate()) {
-            result.add("registrationDate");
+            result.add(PipelineUser.PipelineUserFields.REGISTRATION_DATE.getValue());
         }
         if (attr.isIncludeFirstLoginDate()) {
-            result.add("firstLoginDate");
+            result.add(PipelineUser.PipelineUserFields.FIRST_LOGIN_DATE.getValue());
         }
         return result.toArray(new String[0]);
     }

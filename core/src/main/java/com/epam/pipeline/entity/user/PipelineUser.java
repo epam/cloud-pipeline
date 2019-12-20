@@ -148,4 +148,25 @@ public class PipelineUser implements StorageContainer {
         }
 
     }
+
+    @Getter
+    public enum PipelineUserFields {
+
+        ID("id"),
+        USER_NAME("userName"),
+        EMAIL("email"),
+        ROLES("roles"),
+        GROUPS("groups"),
+        BLOCKED("blocked"),
+        REGISTRATION_DATE("registrationDate"),
+        FIRST_LOGIN_DATE("firstLoginDate"),
+        ATTRIBUTES("attributes"),
+        DEFAULT_STORAGE_ID("defaultStorageId");
+
+        private final String value;
+
+        PipelineUserFields(final String value) {
+            this.value = value;
+        }
+    }
 }
