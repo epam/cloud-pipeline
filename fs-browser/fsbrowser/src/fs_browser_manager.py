@@ -39,14 +39,14 @@ class FsBrowserManager(object):
         items = []
         full_path = os.path.join(self.working_directory, path)
         if os.path.isfile(full_path):
-            items.append(File(path, full_path).to_json())
+            items.append(File(os.path.basename(path), path, full_path).to_json())
         else:
             for item_name in os.listdir(full_path):
                 full_item_path = os.path.join(full_path, item_name)
                 if os.path.isfile(full_item_path):
-                    items.append(File(item_name, full_item_path).to_json())
+                    items.append(File(item_name, os.path.join(path, item_name), full_item_path).to_json())
                 else:
-                    items.append(Folder(item_name, full_item_path).to_json())
+                    items.append(Folder(item_name, os.path.join(path, item_name)).to_json())
         return items
 
     def run_download(self, path):
