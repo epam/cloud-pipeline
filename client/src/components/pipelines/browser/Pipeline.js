@@ -116,7 +116,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
-      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
+      className: `${styles.treeItemName} ${styles.treeItemVersion}`,
       render: this.renderTreeItemText,
       onCellClick: (item) => this.navigate(item)
     },
@@ -130,7 +130,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     {
       dataIndex: 'createdDate',
       key: 'createdDate',
-      className: `${styles.treeItemName} ${styles.treeItemNoWrap}`,
+      className: `${styles.treeItemName}`,
       render: (text, item) => {
         return this.renderTreeItemText(
           <span>

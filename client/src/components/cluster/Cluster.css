@@ -31,6 +31,13 @@
 .cluster-node-row-addresses,
 .cluster-node-row-created {
   cursor: pointer;
+  min-width: 100px;
+}
+
+thead[class*="ant-table-thead"] .cluster-node-row-created,
+thead[class*="ant-table-thead"] .cluster-node-row-addresses,
+thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
+  word-break: break-word;
 }
 
 @keyframes logo-spin {
