@@ -53,7 +53,8 @@ export default class RunScheduleDialog extends React.Component {
 
   componentDidUpdate (prevProps, prevState) {
     if ((this.props.rules !== prevProps.rules) ||
-      (!prevProps.visible && this.state.rules && this.state.rules.length > 0)) {
+      (!prevProps.visible && this.props.visible &&
+        this.state.rules && this.state.rules.length > 0)) {
       this.prepareState();
     }
   }
@@ -73,7 +74,7 @@ export default class RunScheduleDialog extends React.Component {
 
     const rules = (props.rules || []).map(convertRule);
 
-    this.setState({rules});
+    this.setState({rules, validationErrors: null});
   };
 
   validate = () => {
