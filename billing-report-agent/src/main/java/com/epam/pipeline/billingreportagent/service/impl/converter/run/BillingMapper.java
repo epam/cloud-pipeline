@@ -29,13 +29,10 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 
 @Component
 @NoArgsConstructor
 public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
-
-    private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunBillingInfo> container) {
@@ -44,24 +41,19 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
             final PipelineRun run = billingInfo.getPipelineRun();
             jsonBuilder
                 .startObject()
-                .field("id", run.getId())
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
+                .field("id", run.getId())
+                .field("resource_type", billingInfo.getResourceType())
+                .field("pipeline", run.getPipelineName())
+                .field("tool", run.getDockerImage())
+                .field("instance_type", run.getInstance().getNodeType())
+                .field("compute_type", getComputeType(run.getInstance()))
                 .field("cost", billingInfo.getCost())
-                .field("pipelineName", run.getPipelineName())
-                .field("pipelineVersion", run.getVersion())
-                .field("status", run.getStatus())
-                .field("dockerImage", run.getDockerImage())
-                .field("actualCmd", run.getActualCmd())
-                .field("configurationName", run.getConfigName())
-                .field("configurationId", run.getConfigurationId())
-                .field("pricePerHour", run.getPricePerHour().doubleValue())
-                .field("parentRunId", run.getParentRunId())
-                .field("nodeCount", run.getNodeCount())
-                .field("podId", run.getPodId());
-
-            buildRunInstance(billingInfo.getPipelineRun().getInstance(), jsonBuilder);
-            buildPermissions(container.getPermissions(), jsonBuilder);
-
+                .field("usage", billingInfo.getUsageMinutes())
+                .field("run_price", run.getPricePerHour().unscaledValue().longValue())
+                .field("cloudRegionId", run.getInstance().getCloudRegionId())
+                .field("billingCenter", "TBD");
+            buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
         } catch (IOException e) {
@@ -69,21 +61,9 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
         }
     }
 
-    private void buildRunInstance(RunInstance instance, XContentBuilder jsonBuilder) throws IOException {
-        if (instance == null) {
-            return;
-        }
-        jsonBuilder
-                .field("instance")
-                .startObject()
-                .field("nodeType", instance.getNodeType())
-                .field("nodeDisk", instance.getNodeDisk())
-                .field("nodeIP", instance.getNodeIP())
-                .field("nodeId", instance.getNodeId())
-                .field("nodeImage", instance.getNodeImage())
-                .field("nodeName", instance.getNodeName())
-                .field("priceType", instance.getSpot())
-                .field("cloudRegionId", instance.getCloudRegionId())
-                .endObject();
+    private String getComputeType(final RunInstance instance) {
+        return "TBD";
     }
+
+
 }

@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.billingreportagent.app;
 
-import com.epam.pipeline.billingreportagent.dao.PipelineRunDao;
-import com.epam.pipeline.billingreportagent.dao.RunStatusDao;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
@@ -28,7 +26,9 @@ import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMa
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
+@Configuration
 public class CommonSyncConfiguration {
 
     private static final String FALSE = "false";
@@ -46,8 +46,6 @@ public class CommonSyncConfiguration {
     public ElasticsearchSynchronizer pipelineRunSynchronizer(
         final BillingMapper mapper,
         final PipelineRunLoader loader,
-        final PipelineRunDao pipelineRunDao,
-        final RunStatusDao runStatusDao,
         final ElasticIndexService indexService,
         final ElasticsearchServiceClient elasticsearchClient,
         final @Value("${sync.run.index.name}") String indexName,
@@ -57,8 +55,6 @@ public class CommonSyncConfiguration {
                                            commonIndexPrefix,
                                            indexName,
                                            bulkSize,
-                                           pipelineRunDao,
-                                           runStatusDao,
                                            elasticsearchClient,
                                            indexService,
                                            mapper,

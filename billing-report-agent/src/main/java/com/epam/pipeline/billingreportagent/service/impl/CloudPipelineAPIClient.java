@@ -17,17 +17,15 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
-import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.utils.QueryUtils;
-import com.epam.pipeline.vo.EntityPermissionVO;
-import com.epam.pipeline.vo.EntityVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -43,22 +41,14 @@ public class CloudPipelineAPIClient {
                         .buildClient();
     }
 
-
-    public List<MetadataEntry> loadMetadataEntry(List<EntityVO> entities) {
-        return QueryUtils.execute(cloudPipelineAPI.loadFolderMetadata(entities));
+    public List<PipelineUser> loadAllUsers() {
+        return QueryUtils.execute(cloudPipelineAPI.loadAllUsers());
     }
 
-    public EntityPermissionVO loadPermissionsForEntity(final Long id, final AclClass entityClass) {
-        return QueryUtils.execute(cloudPipelineAPI.loadEntityPermissions(id, entityClass));
+    public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final LocalDateTime from, final LocalDateTime to) {
+        return Collections.emptyList();
     }
 
-    public PipelineUser loadUserByName(final String userName) {
-        return QueryUtils.execute(cloudPipelineAPI.loadUserByName(userName));
-    }
-
-    public PipelineRun loadPipelineRun(final Long pipelineRunId) {
-        return QueryUtils.execute(cloudPipelineAPI.loadPipelineRun(pipelineRunId));
-    }
 
 
 }

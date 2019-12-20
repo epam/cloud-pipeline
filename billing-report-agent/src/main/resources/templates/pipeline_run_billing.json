@@ -4,28 +4,18 @@
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "id": { "type": "keyword", "store": true },
-        "instanceCost": {"type": "long"},
-        "pipelineName": { "type": "keyword" },
-        "ownerUserId": { "type": "keyword" },
-        "ownerUserName": {"type": "keyword" },
-        "nodeCount": { "type": "integer" },
-        "dockerImage": {"type": "keyword"},
-        "instance": {
-          "properties": {
-            "nodeType": { "type": "keyword" },
-            "nodeDisk": { "type": "integer" },
-            "nodeIP": { "type": "ip" },
-            "nodeId": { "type": "text" },
-            "nodeImage": { "type": "text" },
-            "nodeName": { "type": "text" },
-            "priceType": { "type": "keyword" },
-            "cloudRegionId": { "type": "keyword" }
-          }
-        },
-        "allowed_users": { "type": "keyword" },
-        "denied_users": { "type": "keyword" },
-        "allowed_groups": { "type": "keyword" },
-        "denied_groups": { "type": "keyword" }
+        "pipeline": { "type": "keyword" },
+        "resource_type": { "type": "keyword" },
+        "compute_type": { "type": "keyword" },
+        "cost": {"type": "long"},
+        "run_price": {"type": "long"},
+        "usage": {"type": "long"},
+        "owner": { "type": "keyword" },
+        "groups": { "type": "keyword" },
+        "tool": {"type": "keyword"},
+        "instance_type":  { "type": "keyword" },
+        "billing_center":  { "type": "keyword" },
+        "cloudRegionId": { "type": "keyword" }
       }
     }
   },

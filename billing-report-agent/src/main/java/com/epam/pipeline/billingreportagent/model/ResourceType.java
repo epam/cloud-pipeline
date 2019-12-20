@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.epam.pipeline.billingreportagent.exception;
 
-public class EntityNotFoundException extends Exception {
+package com.epam.pipeline.billingreportagent.model;
 
-    public EntityNotFoundException(final Throwable cause) {
-        super(cause);
-    }
-
+public enum ResourceType {
+    COMPUTE
 }

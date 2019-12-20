@@ -112,13 +112,13 @@ public class ElasticsearchAgentService {
     private LocalDateTime getLastSyncTime() {
         final String lastTime = getLastLineFromFile();
         if (StringUtils.isEmpty(lastTime)) {
-            return LocalDateTime.now(Clock.systemUTC());
+            return null;
         }
         try {
             return LocalDateTime.parse(lastTime, DATE_TIME_FORMATTER);
         } catch (DateTimeParseException e) {
             log.error(e.getMessage(), e);
-            return LocalDateTime.now(Clock.systemUTC());
+            return null;
         }
     }
 

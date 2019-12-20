@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -33,4 +34,6 @@ public class PipelineRunBillingInfo {
     private LocalDate date;
     private PipelineRun pipelineRun;
     private Long cost;
+    private Long usageMinutes;
+    private ResourceType resourceType;
 }

@@ -16,12 +16,11 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
-import com.epam.pipeline.billingreportagent.exception.EntityNotFoundException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.EntityLoader;
+import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
-import com.epam.pipeline.billingreportagent.service.RunToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -38,55 +37,45 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Data
 @Slf4j
-public class RunToBillingRequestConverterImpl implements RunToBillingRequestConverter {
+public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRun> {
 
     private final String indexPrefix;
-    private final EntityLoader<PipelineRun> loader;
     private final EntityMapper<PipelineRunBillingInfo> mapper;
 
-    public RunToBillingRequestConverterImpl(final String indexPrefix,
-                                            final EntityLoader<PipelineRun> loader,
-                                            final EntityMapper<PipelineRunBillingInfo> mapper) {
+    public RunToBillingRequestConverter(final String indexPrefix,
+                                        final EntityMapper<PipelineRunBillingInfo> mapper) {
         this.indexPrefix = indexPrefix;
-        this.loader = loader;
         this.mapper = mapper;
     }
     /**
      * Creates billing requests for given run
-     * @param run Pipeline run to build request
+     * @param container Pipeline run to build request
      * @param indexName index to insert requests into
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
-    public List<DocWriteRequest> convertRunToRequests(final PipelineRun run,
-                                                      final String indexName,
-                                                      final LocalDateTime syncStart) {
-        try {
-            final Optional<EntityContainer<PipelineRun>> loadedRun = loader.loadEntity(run.getId());
-            return loadedRun.map(pipelineRunEntityContainer -> convertRunToBillings(run, syncStart).stream()
-                .map(billingInfo -> getDocWriteRequest(indexName, pipelineRunEntityContainer, billingInfo))
-                .collect(Collectors.toList())).orElse(Collections.emptyList());
-        } catch (EntityNotFoundException e) {
-            log.warn("Can't load run info: {}", run.getId());
-            return Collections.emptyList();
-        }
+    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRun> container,
+                                                         final String indexName,
+                                                         final LocalDateTime syncStart) {
+            return convertRunToBillings(container, syncStart).stream()
+                .map(billingInfo -> getDocWriteRequest(indexName, container, billingInfo))
+                .collect(Collectors.toList());
     }
 
-    protected List<PipelineRunBillingInfo> convertRunToBillings(final PipelineRun run, final LocalDateTime syncStart) {
-        final BigDecimal pricePerHour = run.getPricePerHour();
-        final List<RunStatus> statuses = run.getRunStatuses();
-        adjustStatuses(statuses, syncStart, run.getId());
+    protected List<PipelineRunBillingInfo> convertRunToBillings(final EntityContainer<PipelineRun> run,
+                                                                final LocalDateTime syncStart) {
+        final BigDecimal pricePerHour = run.getEntity().getPricePerHour();
+        final List<RunStatus> statuses = run.getEntity().getRunStatuses();
+        adjustStatuses(statuses, syncStart, run.getEntity().getId());
         final List<List<RunStatus>> activePeriods = calculateActivityPeriods(statuses);
 
         final Map<LocalDate, PipelineRunBillingInfo> reports = new HashMap<>();
@@ -95,7 +84,7 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
                 final LocalDateTime start = period.get(i).getTimestamp();
                 final LocalDateTime end = period.get(i + 1).getTimestamp();
                 final Long dailyCost = calculateCostsForPeriod(start, end, pricePerHour);
-                addDailyCostReport(reports, start.toLocalDate(), dailyCost, run);
+                addDailyCostReport(reports, start.toLocalDate(), dailyCost, ChronoUnit.MINUTES.between(start, end), run);
             }
         });
         return new ArrayList<>(reports.values());
@@ -142,14 +131,15 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
     private void addDailyCostReport(final Map<LocalDate, PipelineRunBillingInfo> reports,
                                     final LocalDate date,
                                     final Long cost,
-                                    final PipelineRun run) {
+                                    final Long duration,
+                                    final EntityContainer<PipelineRun> run) {
         final PipelineRunBillingInfo billing = reports.get(date);
         if (billing != null) {
             final Long currentCost = billing.getCost();
             billing.setCost(currentCost + cost);
             reports.put(date, billing);
         } else {
-            reports.put(date, new PipelineRunBillingInfo(date, run, cost));
+            reports.put(date, new PipelineRunBillingInfo(date, run.getEntity(), cost, duration, ResourceType.COMPUTE));
         }
     }
 
@@ -172,10 +162,10 @@ public class RunToBillingRequestConverterImpl implements RunToBillingRequestConv
     private DocWriteRequest getDocWriteRequest(final String periodIndex,
                                                final EntityContainer<PipelineRun> run,
                                                final PipelineRunBillingInfo billing) {
-        final EntityContainer<PipelineRunBillingInfo> entity = new EntityContainer<>(billing,
-                                                                                     run.getOwner(),
-                                                                                     run.getMetadata(),
-                                                                                     run.getPermissions());
+        final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
+            .owner(run.getOwner())
+            .entity(billing)
+            .build();
         final String fullIndex = String.format("%s-%s", periodIndex, parseDateToString(billing.getDate()));
         return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
     }

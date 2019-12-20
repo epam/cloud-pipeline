@@ -13,22 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl;
 
-import com.epam.pipeline.billingreportagent.dao.PipelineRunDao;
-import com.epam.pipeline.billingreportagent.dao.RunStatusDao;
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
+import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
-import com.epam.pipeline.billingreportagent.service.RunToBillingRequestConverter;
-import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverterImpl;
+import com.epam.pipeline.billingreportagent.service.EntityLoader;
+import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.PipelineRunLoader;
-import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,12 +33,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -51,41 +45,42 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(value = "sync.run.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
 
-    private final PipelineRunDao pipelineRunDao;
-    private final RunStatusDao runStatusDao;
     private final ElasticsearchServiceClient elasticsearchClient;
     private final ElasticIndexService indexService;
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
     private final String pipelineRunIndexName;
     private final BulkRequestSender requestSender;
-    private final RunToBillingRequestConverter runToBillingRequestConverter;
+    private final EntityToBillingRequestConverter<PipelineRun> runToBillingRequestConverter;
+    private final EntityLoader<PipelineRun> loader;
 
     public PipelineRunSynchronizer(final @Value("${sync.run.index.mapping}") String pipelineRunIndexMappingFile,
                                    final @Value("${sync.index.common.prefix}") String indexPrefix,
                                    final @Value("${sync.run.index.name}") String pipelineRunIndexName,
                                    final @Value("${sync.run.bulk.insert.size}") Integer bulkInsertSize,
-                                   final PipelineRunDao pipelineRunDao,
-                                   final RunStatusDao runStatusDao,
                                    final ElasticsearchServiceClient elasticsearchServiceClient,
                                    final ElasticIndexService indexService,
                                    final BillingMapper mapper,
-                                   final PipelineRunLoader loader) {
-        this.pipelineRunDao = pipelineRunDao;
+                                   final EntityLoader<PipelineRun> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
         this.elasticsearchClient = elasticsearchServiceClient;
         this.indexService = indexService;
         this.indexPrefix = indexPrefix;
         this.pipelineRunIndexName = pipelineRunIndexName;
-        this.runStatusDao = runStatusDao;
-        this.runToBillingRequestConverter = new RunToBillingRequestConverterImpl(pipelineRunIndexName, loader, mapper);
+        this.loader = loader;
+        this.runToBillingRequestConverter = new RunToBillingRequestConverter(pipelineRunIndexName, mapper);
         this.requestSender = new BulkRequestSender(elasticsearchClient, bulkInsertSize);
     }
 
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started pipeline run billing synchronization");
-        final List<PipelineRun> pipelineRuns = loadAllRunsWithStatuses();
+        final List<EntityContainer<PipelineRun>> pipelineRuns;
+        if (lastSyncTime == null) {
+            pipelineRuns = loader.loadAllEntities();
+        } else {
+            pipelineRuns = loader.loadAllEntitiesActiveInPeriod(lastSyncTime, syncStart);
+        }
         if (CollectionUtils.isEmpty(pipelineRuns)) {
             log.debug("PipelineRun entities for synchronization were not found.");
             return;
@@ -112,19 +107,9 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
         log.debug("Successfully finished runs billing synchronization.");
     }
 
-    private List<PipelineRun> loadAllRunsWithStatuses() {
-        final List<PipelineRun> runs = pipelineRunDao.loadAllPipelineRuns();
-        final List<Long> runIds = runs.stream().map(BaseEntity::getId).collect(Collectors.toList());
-        final Map<Long, List<RunStatus>> runStatuses = runStatusDao.loadRunStatus(runIds).stream()
-            .collect(Collectors.groupingBy(RunStatus::getRunId));
-        return runs.stream()
-            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
-            .collect(Collectors.toList());
-    }
-
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private List<DocWriteRequest> createPipelineRunBillings(final PipelineRun pipelineRun,
-                                                                 final LocalDateTime syncStart) {
+    private List<DocWriteRequest> createPipelineRunBillings(final EntityContainer<PipelineRun> pipelineRun,
+                                                            final LocalDateTime syncStart) {
         try {
             final String commonRunBillingIndexName = indexPrefix + pipelineRunIndexName;
             final String periodName = "daily";
@@ -132,27 +117,16 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
             return buildDocRequests(pipelineRun, indexNameForPipelineRunPeriod, syncStart);
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
-                      pipelineRun.getId(), e.getMessage());
+                      pipelineRun.getEntity().getId(), e.getMessage());
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
     }
 
-    private List<DocWriteRequest> buildDocRequests(final PipelineRun pipelineRun,
+    private List<DocWriteRequest> buildDocRequests(final EntityContainer<PipelineRun> pipelineRun,
                                                    final String indexNameForPipelineRun,
                                                    final LocalDateTime syncStart) {
-        log.debug("Processing pipeline run {} billings", pipelineRun.getId());
-        return runToBillingRequestConverter.convertRunToRequests(pipelineRun, indexNameForPipelineRun, syncStart);
+        log.debug("Processing pipeline run {} billings", pipelineRun.getEntity().getId());
+        return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexNameForPipelineRun, syncStart);
     }
-
-    @Data
-    @AllArgsConstructor
-    @Builder
-    private static class PipelineRunBillingDocRequests {
-
-        private List<DocWriteRequest> pipelineBillingRequests;
-        private String period;
-        private LocalDate date;
-    }
-
 }

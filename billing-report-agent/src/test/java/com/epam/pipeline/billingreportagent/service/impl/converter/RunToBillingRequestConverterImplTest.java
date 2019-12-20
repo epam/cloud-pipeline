@@ -16,17 +16,15 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
+import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.PipelineRunLoader;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.math.BigDecimal;
@@ -44,11 +42,8 @@ public class RunToBillingRequestConverterImplTest {
     private static final String TEST_INDEX = "test-index-1";
     private static final Long RUN_ID = 1L;
 
-    @Mock
-    CloudPipelineAPIClient apiClient;
-
-    private final RunToBillingRequestConverterImpl converter =
-        new RunToBillingRequestConverterImpl(TEST_INDEX, new PipelineRunLoader(apiClient), new BillingMapper());
+    private final RunToBillingRequestConverter converter =
+        new RunToBillingRequestConverter(TEST_INDEX, new BillingMapper());
 
     @Test
     @SuppressWarnings("checkstyle:magicnumber")
@@ -62,8 +57,9 @@ public class RunToBillingRequestConverterImplTest {
         statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 3, 15, 0)));
 
         run.setRunStatuses(statuses);
+        final EntityContainer<PipelineRun> runEntityContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
         final List<PipelineRunBillingInfo> billings =
-            converter.convertRunToBillings(run, LocalDateTime.of(2019, 12, 5, 0, 0));
+            converter.convertRunToBillings(runEntityContainer, LocalDateTime.of(2019, 12, 5, 0, 0));
         Assert.assertEquals(2, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));

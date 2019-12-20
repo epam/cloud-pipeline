@@ -13,48 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl.converter.run;
 
-import com.epam.pipeline.billingreportagent.model.PermissionsContainer;
+import com.epam.pipeline.billingreportagent.dao.PipelineRunDao;
+import com.epam.pipeline.billingreportagent.dao.RunStatusDao;
+import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
-import com.epam.pipeline.billingreportagent.service.impl.converter.AbstractCloudPipelineEntityLoader;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
-public class PipelineRunLoader extends AbstractCloudPipelineEntityLoader<PipelineRun> {
+public class PipelineRunLoader implements EntityLoader<PipelineRun> {
 
-    public PipelineRunLoader(final CloudPipelineAPIClient apiClient) {
-        super(apiClient);
+    @Autowired
+    private CloudPipelineAPIClient apiClient;
+
+    @Autowired
+    private PipelineRunDao pipelineRunDao;
+
+    @Autowired
+    private RunStatusDao runStatusDao;
+
+    @Override
+    public List<EntityContainer<PipelineRun>> loadAllEntities() {
+        return loadAllEntitiesActiveInPeriod(LocalDateTime.MIN, LocalDateTime.MAX);
     }
 
     @Override
-    protected PipelineRun fetchEntity(final Long id) {
-        return getApiClient().loadPipelineRun(id);
+    public List<EntityContainer<PipelineRun>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
+                                                                            final LocalDateTime to) {
+        final Map<String, PipelineUser> users =
+            apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+        return loadAllRunsWithStatuses()
+            //apiClient.loadAllPipelineRunsActiveInPeriod(from, to)
+            .stream()
+            .map(run -> EntityContainer.<PipelineRun>builder().entity(run).owner(users.get(run.getOwner())).build())
+            .collect(Collectors.toList());
     }
 
-    @Override
-    protected String getOwner(final PipelineRun entity) {
-        return entity.getOwner();
-    }
-
-    @Override
-    protected AclClass getAclClass(final PipelineRun entity) {
-        return entity.getAclClass();
-    }
-
-    @Override
-    protected PermissionsContainer loadPermissions(final Long id, final AclClass entityClass) {
-        PipelineRun run = getApiClient().loadPipelineRun(id);
-        Long pipelineId = run.getPipelineId();
-        if (pipelineId == null) {
-            PermissionsContainer permissionsContainer = new PermissionsContainer();
-            permissionsContainer.add(Collections.emptyList(), run.getOwner());
-            return permissionsContainer;
-        }
-        return super.loadPermissions(pipelineId, AclClass.PIPELINE);
+    private List<PipelineRun> loadAllRunsWithStatuses() {
+        final List<PipelineRun> runs = pipelineRunDao.loadAllPipelineRuns();
+        final List<Long> runIds = runs.stream().map(BaseEntity::getId).collect(Collectors.toList());
+        final Map<Long, List<RunStatus>> runStatuses = runStatusDao.loadRunStatus(runIds).stream()
+            .collect(Collectors.groupingBy(RunStatus::getRunId));
+        return runs.stream()
+            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
+            .collect(Collectors.toList());
     }
 }

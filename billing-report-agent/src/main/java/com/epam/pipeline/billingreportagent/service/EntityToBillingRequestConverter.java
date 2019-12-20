@@ -16,13 +16,28 @@
 package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import org.elasticsearch.action.DocWriteRequest;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public interface EntityLoader<T> {
+public interface EntityToBillingRequestConverter<T> {
 
-    List<EntityContainer<T>> loadAllEntities();
+    String INDEX_TYPE = "_doc";
+    String DATE_PATTERN = "yyyy-MM-dd";
+    DateTimeFormatter SIMPLE_DATE_FORMAT = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
-    List<EntityContainer<T>> loadAllEntitiesActiveInPeriod(LocalDateTime from, LocalDateTime to);
+    List<DocWriteRequest> convertEntityToRequests(EntityContainer<T> entityContainer,
+                                                  String indexName,
+                                                  LocalDateTime syncStart);
+
+    default String parseDateToString(final LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        return SIMPLE_DATE_FORMAT.format(date);
+    }
+
 }
