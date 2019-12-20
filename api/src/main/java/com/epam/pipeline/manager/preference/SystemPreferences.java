@@ -147,6 +147,8 @@ public class SystemPreferences {
             new IntPreference("storage.fsbrowser.port", 8091, DATA_STORAGE_GROUP, isGreaterThan(1000));
     public static final StringPreference STORAGE_FSBROWSER_WD =
             new StringPreference("storage.fsbrowser.wd", "/", DATA_STORAGE_GROUP, pass);
+    public static final StringPreference STORAGE_FSBROWSER_TMP =
+            new StringPreference("storage.fsbrowser.tmp", "/tmp", DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_FSBROWSER_TRANSFER =
             new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
 

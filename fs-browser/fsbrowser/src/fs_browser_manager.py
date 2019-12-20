@@ -25,13 +25,15 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks):
+    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
         self.logger = logger
         self.storage_name, self.storage_path = self._parse_transfer_storage_path(storage)
         self.follow_symlinks = follow_symlinks
+        self._create_tmp_dir_if_needed(tmp)
+        self.tmp = tmp
 
     def list(self, path):
         items = []
@@ -51,13 +53,13 @@ class FsBrowserManager(object):
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.download, [path, self.working_directory, self.follow_symlinks])
+        self.pool.apply_async(task.download, [path, self.working_directory, self.tmp, self.follow_symlinks])
         return task_id
 
     def init_upload(self, path):
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
-        task.path = path
+        task.upload_path = path
         self.tasks.update({task_id: task})
         pipeline_client = CloudPipelineApiProvider(self.logger.log_dir)
         storage_id = pipeline_client.load_storage_id_by_name(self.storage_name)
@@ -106,3 +108,9 @@ class FsBrowserManager(object):
         if task_id in self.tasks:
             return self.tasks[task_id]
         raise RuntimeError('Requested task %s does not exists' % task_id)
+
+    @staticmethod
+    def _create_tmp_dir_if_needed(tmp_dir):
+        if os.path.exists(tmp_dir) and os.path.isdir(tmp_dir):
+            return
+        os.makedirs(tmp_dir)

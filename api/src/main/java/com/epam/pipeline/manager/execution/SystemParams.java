@@ -63,6 +63,7 @@ public enum SystemParams {
     FSBROWSER_ENABLED("cp-fsbrowser-enabled", "CP_FSBROWSER_ENABLED", false, true),
     FSBROWSER_PORT("cp-fsbrowser-port", "CP_FSBROWSER_PORT", false, true),
     FSBROWSER_WD("cp-fsbrowser-wd", "CP_FSBROWSER_WD", false, true),
+    FSBROWSER_TMP("cp-fsbrowser-tmp", "CP_FSBROWSER_TMP", false, true),
     FSBROWSER_STORAGE("cp-fsbrowser-storage", "CP_FSBROWSER_STORAGE", false, true),
     CONTAINER_CPU_RESOURCE("container-cpu-resource", "CP_CONTAINER_CPU_RESOURCE", false, true);
 
