@@ -524,13 +524,13 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(HOURS_12);
         final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(HOURS_12);
 
-        final PipelineRun run1 = launchPipelineRun(beforeSyncStart, beforeSyncStart);
+        final PipelineRun run1 = launchPipelineRun(beforeSyncStart.minusHours(12), beforeSyncStart);
         final PipelineRun run2 = launchPipelineRun(beforeSyncStart, afterSyncStart);
-        final PipelineRun run3 = launchPipelineRun(afterSyncStart, afterSyncStart);
+        final PipelineRun run3 = launchPipelineRun(afterSyncStart, afterSyncStart.plusHours(HOURS_12));
         final PipelineRun run4 = launchPipelineRun(afterSyncStart, null);
-        final PipelineRun run5 = launchPipelineRun(beforeSyncStart, null);
-        saveStatusForRun(run5.getId(), TaskStatus.PAUSED, beforeSyncStart);
-        saveStatusForRun(run5.getId(), TaskStatus.RUNNING, beforeSyncStart);
+        final PipelineRun run5 = launchPipelineRun(beforeSyncStart.minusHours(HOURS_24), null);
+        saveStatusForRun(run5.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_18));
+        saveStatusForRun(run5.getId(), TaskStatus.RUNNING, beforeSyncStart.minusHours(HOURS_12));
 
         final Map<Long, PipelineRun> stats =
             pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END).stream()
@@ -575,9 +575,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         pipelineRun.setStartDate(TestUtils.convertLocalDateTimeToDate(startDate));
         saveStatusForRun(pipelineRun.getId(), TaskStatus.RUNNING, startDate);
         if (stopDate != null) {
-            pipelineRun.setStatus(TaskStatus.PAUSED);
+            pipelineRun.setStatus(TaskStatus.STOPPED);
             pipelineRun.setEndDate(TestUtils.convertLocalDateTimeToDate(stopDate));
-            saveStatusForRun(pipelineRun.getId(), TaskStatus.PAUSED, stopDate);
+            saveStatusForRun(pipelineRun.getId(), TaskStatus.STOPPED, stopDate);
         } else {
             pipelineRun.setEndDate(null);
         }

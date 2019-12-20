@@ -1362,13 +1362,13 @@
             <value>
                 <![CDATA[
                     SELECT
-                        run_id,
+                        r.run_id as run_id,
                         pipeline_id,
                         version,
                         start_date,
                         end_date,
                         parameters,
-                        status,
+                        r.status as status,
                         terminating,
                         pod_id,
                         node_type,
@@ -1407,10 +1407,19 @@
                         tags
                     FROM
                         pipeline.pipeline_run r
-                    WHERE
-                        r.status = 2
-                        OR
-                        r.end_date BETWEEN :PERIOD_START AND :PERIOD_END
+                    INNER JOIN (SELECT run_status_change.run_id as run_id, run_status_change.status as status
+                                        FROM pipeline.run_status_change
+                                     INNER JOIN (SELECT run_id, MAX(date) as date
+                                                        FROM pipeline.run_status_change
+                                                            WHERE date < :PERIOD_END
+                                                                GROUP BY run_id
+                                                 ) as last_status_date
+                                            ON run_status_change.run_id = last_status_date.run_id
+                                                 AND run_status_change.date = last_status_date.date
+                                 ) as last_statuses
+                    ON r.run_id = last_statuses.run_id
+                    WHERE last_statuses.status IN (:TARGET_LAST_STATUSES)
+                            OR r.end_date BETWEEN :PERIOD_START AND :PERIOD_END
                 ]]>
             </value>
         </property>

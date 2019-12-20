@@ -168,6 +168,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("PERIOD_START", start);
         params.addValue("PERIOD_END", end);
+        final List<Long> targetLastStatuses = Arrays.asList(TaskStatus.RUNNING.getId(),
+                                                            TaskStatus.PAUSING.getId(),
+                                                            TaskStatus.PAUSED.getId(),
+                                                            TaskStatus.RESUMING.getId());
+        params.addValue("TARGET_LAST_STATUSES", targetLastStatuses);
         return getNamedParameterJdbcTemplate().query(loadAllRunsPossiblyActiveInPeriodQuery,
                                                      params,
                                                      PipelineRunParameters.getRowMapper());

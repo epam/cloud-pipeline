@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -111,9 +112,13 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private static final String TAG_KEY_2 = "key2";
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
+    private static final ZoneId ZONE_ID = ZoneId.systemDefault();
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
+
+    @Autowired
+    RunStatusDao runStatusDao;
 
     @Autowired
     private FilterDao filterDao;
@@ -175,12 +180,23 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         final LocalDateTime beforeSyncStart = SYNC_PERIOD_START.minusHours(12);
         final LocalDateTime afterSyncStart = SYNC_PERIOD_START.plusHours(12);
 
-        createRunWithStartEndDates(beforeSyncStart, beforeSyncStart);
+        createRunWithStartEndDates(beforeSyncStart, beforeSyncStart.plusHours(6));
         createRunWithStartEndDates(beforeSyncStart, afterSyncStart);
-        createRunWithStartEndDates(afterSyncStart, afterSyncStart);
+        createRunWithStartEndDates(afterSyncStart, afterSyncStart.plusHours(6));
         createRunWithStartEndDates(beforeSyncStart, null);
         createRunWithStartEndDates(afterSyncStart, null);
 
+        pipelineRunDao.loadAllRunsForPipeline(testPipeline.getId())
+            .forEach(run -> {
+                runStatusDao.saveStatus(new RunStatus(run.getId(), TaskStatus.RUNNING, null,
+                                                      LocalDateTime.ofInstant(run.getStartDate().toInstant(),
+                                                                              ZoneId.systemDefault())));
+                if (run.getEndDate() != null) {
+                    runStatusDao.saveStatus(new RunStatus(run.getId(), TaskStatus.STOPPED, null,
+                                                          LocalDateTime.ofInstant(run.getEndDate().toInstant(),
+                                                                                  ZoneId.systemDefault())));
+                }
+            });
         final List<PipelineRun> pipelineRuns = pipelineRunDao.loadPipelineRunsActiveInPeriod(SYNC_PERIOD_START,
                                                                                              SYNC_PERIOD_END);
         assertEquals(4, pipelineRuns.size());
@@ -359,7 +375,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         PipelineRun stopped = new PipelineRun();
         stopped.setPipelineId(testPipeline.getId());
         stopped.setVersion(TEST_REVISION_1);
-        stopped.setStartDate(Date.from(date.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        stopped.setStartDate(Date.from(date.atStartOfDay(ZONE_ID).toInstant()));
         stopped.setEndDate(stopped.getStartDate());
         stopped.setStatus(TaskStatus.STOPPED);
         stopped.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -951,7 +967,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
         if (endDate != null) {
             run.setStatus(TaskStatus.PAUSED);
         } else {
-            run.setStatus(TaskStatus.RUNNING);
+            run.setStatus(TaskStatus.STOPPED);
         }
         pipelineRunDao.createPipelineRun(run);
     }
