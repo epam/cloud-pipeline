@@ -16,15 +16,14 @@
 
 package com.epam.pipeline.billingreportagent;
 
-import static org.springframework.boot.SpringApplication.*;
-
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication(exclude = {WebMvcAutoConfiguration.class})
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class})
 @SuppressWarnings("checkstyle:HideUtilityClassConstructor")
 public class BillingReportAgentApplication {
     public static void main(String[] args) {
-        run(BillingReportAgentApplication.class, args);
+        SpringApplication.run(BillingReportAgentApplication.class, args);
     }
 }

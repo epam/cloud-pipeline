@@ -50,7 +50,7 @@ public class CommonSyncConfiguration {
         final ElasticsearchServiceClient elasticsearchClient,
         final @Value("${sync.run.index.name}") String indexName,
         final @Value("${sync.run.index.mapping}") String runMapping,
-        final @Value("${sync.run.bulk.insert.size:100}") int bulkSize) {
+        final @Value("${sync.run.bulk.insert.size:1000}") int bulkSize) {
         return new PipelineRunSynchronizer(runMapping,
                                            commonIndexPrefix,
                                            indexName,

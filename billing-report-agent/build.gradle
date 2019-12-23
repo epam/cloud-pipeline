@@ -38,19 +38,12 @@ dependencies {
 
     //SpringBoot
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
-    implementation group: "org.springframework.boot", name: "spring-boot-starter-jdbc", version: springBootVersion
     implementation group: "org.springframework.boot", name: "spring-boot-starter-web", version: springBootVersion
 
     // Elasticsearch
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
     implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-
-    // DB
-    // Pool
-    implementation group: "com.mchange", name: "c3p0", version: c3p0Version
-    //Postgres
-    implementation group: "org.postgresql", name: "postgresql", version: postgresqlVersion
 
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl.converter.run;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
@@ -62,8 +63,7 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
     }
 
     private String getComputeType(final RunInstance instance) {
-        return "TBD";
+        // TODO parse real compute type (CPU, GPU)
+        return instance.getNodeType();
     }
-
-
 }

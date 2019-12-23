@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
@@ -32,8 +33,6 @@ import java.util.List;
 public class BulkRequestSender {
 
     private static final int DEFAULT_BULK_SIZE = 1000;
-    private static final int MAX_PARTITION_SIZE = 200;
-    private static final int MIN_PARTITION_SIZE = 10;
     private final ElasticsearchServiceClient elasticsearchClient;
 
     private int currentBulkSize = DEFAULT_BULK_SIZE;
@@ -48,9 +47,7 @@ public class BulkRequestSender {
         if (documentRequests.isEmpty()) {
             return;
         }
-        final int partitionSize = Integer.min(MAX_PARTITION_SIZE,
-                                              Integer.max(MIN_PARTITION_SIZE, bulkSize / 10));
-        ListUtils.partition(documentRequests, partitionSize).forEach(chunk -> {
+        ListUtils.partition(documentRequests, bulkSize).forEach(chunk -> {
             try {
                 indexChunk(chunk);
             } catch (Exception e) {

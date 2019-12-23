@@ -31,12 +31,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RunWith(MockitoJUnitRunner.class)
+@SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
     private static final String TEST_INDEX = "test-index-1";
@@ -46,24 +48,49 @@ public class RunToBillingRequestConverterImplTest {
         new RunToBillingRequestConverter(TEST_INDEX, new BillingMapper());
 
     @Test
-    @SuppressWarnings("checkstyle:magicnumber")
     public void convertRunBillings() {
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
         final List<RunStatus> statuses = new ArrayList<>();
         statuses.add(new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2019, 12, 1, 12, 0)));
-        statuses.add(new RunStatus(RUN_ID, TaskStatus.PAUSED, LocalDateTime.of(2019, 12, 2, 15, 0)));
-        statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 3, 15, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.PAUSED, LocalDateTime.of(2019, 12, 1, 13, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2019, 12, 1, 18, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.PAUSED, LocalDateTime.of(2019, 12, 1, 20, 0)));
 
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.RUNNING, LocalDateTime.of(2019, 12, 2, 12, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.PAUSED, LocalDateTime.of(2019, 12, 3, 15, 0)));
+        statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
         run.setRunStatuses(statuses);
-        final EntityContainer<PipelineRun> runEntityContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
-        final List<PipelineRunBillingInfo> billings =
-            converter.convertRunToBillings(runEntityContainer, LocalDateTime.of(2019, 12, 5, 0, 0));
-        Assert.assertEquals(2, billings.size());
+
+        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+        final Collection<PipelineRunBillingInfo> billings =
+            converter.convertRunToBillings(runContainer,
+                                           LocalDateTime.of(2019, 12, 1, 0, 0),
+                                           LocalDateTime.of(2019, 12, 5, 0, 0));
+        Assert.assertEquals(3, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(48, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
-        Assert.assertEquals(60, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
+        Assert.assertEquals(12, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
+        Assert.assertEquals(48, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
+        Assert.assertEquals(60, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
+    }
+
+    @Test
+    public void convertRunBillingWithNoStatuses() {
+        final PipelineRun run = new PipelineRun();
+        run.setId(RUN_ID);
+        run.setPricePerHour(BigDecimal.valueOf(4, 2));
+        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+
+        final Collection<PipelineRunBillingInfo> billings =
+            converter.convertRunToBillings(runContainer,
+                                           LocalDateTime.of(2019, 12, 4, 0, 0),
+                                           LocalDateTime.of(2019, 12, 5, 0, 0));
+        Assert.assertEquals(1, billings.size());
+
+        final Map<LocalDate, PipelineRunBillingInfo> reports =
+            billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
+        Assert.assertEquals(96, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
     }
 }

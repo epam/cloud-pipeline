@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service;
 
 import lombok.extern.slf4j.Slf4j;
@@ -65,10 +66,10 @@ public class ElasticsearchAgentService {
     }
 
     /**
-     * Scheduled task to retrieve entities' execution stat and send it to Elasticsearch service to index
-     * the data as documents inside Elasticsearch
+     * Scheduled task to retrieve entities' execution stat and send it to Elasticsearch service to index the data as
+     * documents inside Elasticsearch
      */
-    @Scheduled(fixedDelayString = "${sync.scheduler.delay}")
+    @Scheduled(cron = "${sync.billing.schedule}")
     @Transactional(propagation = Propagation.REQUIRED)
     public void startElasticsearchAgent() {
         log.debug("Start synchronising billing data...");

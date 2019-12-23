@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
@@ -31,6 +32,7 @@ public interface EntityToBillingRequestConverter<T> {
 
     List<DocWriteRequest> convertEntityToRequests(EntityContainer<T> entityContainer,
                                                   String indexName,
+                                                  LocalDateTime previousSync,
                                                   LocalDateTime syncStart);
 
     default String parseDateToString(final LocalDate date) {
@@ -39,5 +41,4 @@ public interface EntityToBillingRequestConverter<T> {
         }
         return SIMPLE_DATE_FORMAT.format(date);
     }
-
 }

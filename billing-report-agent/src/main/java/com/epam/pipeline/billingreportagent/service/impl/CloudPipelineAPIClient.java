@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
@@ -25,9 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
-
 
 @Service
 public class CloudPipelineAPIClient {
@@ -46,9 +45,6 @@ public class CloudPipelineAPIClient {
     }
 
     public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final LocalDateTime from, final LocalDateTime to) {
-        return Collections.emptyList();
+        return QueryUtils.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
     }
-
-
-
 }

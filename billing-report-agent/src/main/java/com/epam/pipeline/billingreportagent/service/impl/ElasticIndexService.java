@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
@@ -35,13 +36,10 @@ import java.nio.charset.Charset;
 @RequiredArgsConstructor
 public class ElasticIndexService {
 
-    private static final String WILDCARD = "*";
-    private static final String INDEX_TYPE = "_doc";
-    private static final String ID_DELIMITER = "-";
-
     private final ElasticsearchServiceClient elasticsearchServiceClient;
 
-    public void createIndexIfNotExists(final String indexName, final String settingsFilePath) throws ElasticClientException {
+    public void createIndexIfNotExists(final String indexName, final String settingsFilePath)
+        throws ElasticClientException {
         try {
             if (!elasticsearchServiceClient.isIndexExists(indexName)) {
                 final String mappingsJson = IOUtils.toString(openJsonMapping(settingsFilePath),
@@ -59,10 +57,8 @@ public class ElasticIndexService {
 
     private InputStream openJsonMapping(final String path) throws FileNotFoundException {
         if (path.startsWith(ResourceUtils.CLASSPATH_URL_PREFIX)) {
-            final InputStream classPathResource = getClass().getResourceAsStream(path
-                                                                                     .substring(
-                                                                                         ResourceUtils.CLASSPATH_URL_PREFIX
-                                                                                             .length()));
+            final InputStream classPathResource = getClass()
+                .getResourceAsStream(path.substring(ResourceUtils.CLASSPATH_URL_PREFIX.length()));
             Assert.notNull(classPathResource, String.format("Failed to resolve path: %s", path));
             return classPathResource;
         }
@@ -71,6 +67,4 @@ public class ElasticIndexService {
         }
         throw new IllegalArgumentException("Unsupported mapping file: " + path);
     }
-
-
 }

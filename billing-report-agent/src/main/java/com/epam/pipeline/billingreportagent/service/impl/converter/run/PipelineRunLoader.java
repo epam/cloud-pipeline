@@ -16,14 +16,10 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter.run;
 
-import com.epam.pipeline.billingreportagent.dao.PipelineRunDao;
-import com.epam.pipeline.billingreportagent.dao.RunStatusDao;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
-import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -40,12 +36,6 @@ public class PipelineRunLoader implements EntityLoader<PipelineRun> {
     @Autowired
     private CloudPipelineAPIClient apiClient;
 
-    @Autowired
-    private PipelineRunDao pipelineRunDao;
-
-    @Autowired
-    private RunStatusDao runStatusDao;
-
     @Override
     public List<EntityContainer<PipelineRun>> loadAllEntities() {
         return loadAllEntitiesActiveInPeriod(LocalDateTime.MIN, LocalDateTime.MAX);
@@ -56,20 +46,9 @@ public class PipelineRunLoader implements EntityLoader<PipelineRun> {
                                                                             final LocalDateTime to) {
         final Map<String, PipelineUser> users =
             apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
-        return loadAllRunsWithStatuses()
-            //apiClient.loadAllPipelineRunsActiveInPeriod(from, to)
+        return apiClient.loadAllPipelineRunsActiveInPeriod(from, to)
             .stream()
             .map(run -> EntityContainer.<PipelineRun>builder().entity(run).owner(users.get(run.getOwner())).build())
-            .collect(Collectors.toList());
-    }
-
-    private List<PipelineRun> loadAllRunsWithStatuses() {
-        final List<PipelineRun> runs = pipelineRunDao.loadAllPipelineRuns();
-        final List<Long> runIds = runs.stream().map(BaseEntity::getId).collect(Collectors.toList());
-        final Map<Long, List<RunStatus>> runStatuses = runStatusDao.loadRunStatus(runIds).stream()
-            .collect(Collectors.groupingBy(RunStatus::getRunId));
-        return runs.stream()
-            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
             .collect(Collectors.toList());
     }
 }
