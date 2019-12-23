@@ -40,8 +40,9 @@ class FsBrowserManager(object):
     def list(self, path):
         items = []
         full_path = os.path.join(self.working_directory, path)
-        if PatternMatcher.match_any(full_path, self.exclude_list):
-            return items
+        if not os.path.exists(full_path) or PatternMatcher.match_any(full_path, self.exclude_list):
+            self.logger.log("Item by path '%s' not found" % full_path)
+            raise RuntimeError("No such file or directory")
         if os.path.isfile(full_path):
             items.append(File(os.path.basename(path), path, full_path).to_json())
         else:
