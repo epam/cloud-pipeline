@@ -261,6 +261,9 @@ public class PipelineLauncher {
         putIfStringValuePresent(systemParamsWithValue,
                 SystemParams.FSBROWSER_STORAGE,
                 preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_TRANSFER).getValue());
+        putIfStringValuePresent(systemParamsWithValue,
+                SystemParams.FSBROWSER_BLACK_LIST,
+                preferenceManager.getSystemPreference(SystemPreferences.STORAGE_FSBROWSER_BLACK_LIST).getValue());
         return systemParamsWithValue;
     }
 

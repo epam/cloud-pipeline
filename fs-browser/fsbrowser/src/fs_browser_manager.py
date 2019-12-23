@@ -20,12 +20,13 @@ from multiprocessing.pool import ThreadPool
 from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.model.file import File
 from fsbrowser.src.model.folder import Folder
+from fsbrowser.src.pattern_utils import PatternMatcher
 from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp):
+    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
@@ -34,15 +35,21 @@ class FsBrowserManager(object):
         self.follow_symlinks = follow_symlinks
         self._create_tmp_dir_if_needed(tmp)
         self.tmp = tmp
+        self.exclude_list = self._parse_exclude_list(exclude)
 
     def list(self, path):
         items = []
         full_path = os.path.join(self.working_directory, path)
+        if not os.path.exists(full_path) or PatternMatcher.match_any(full_path, self.exclude_list):
+            self.logger.log("Item by path '%s' not found" % full_path)
+            raise RuntimeError("No such file or directory")
         if os.path.isfile(full_path):
             items.append(File(os.path.basename(path), path, full_path).to_json())
         else:
             for item_name in os.listdir(full_path):
                 full_item_path = os.path.join(full_path, item_name)
+                if PatternMatcher.match_any(full_item_path, self.exclude_list):
+                    continue
                 if os.path.isfile(full_item_path):
                     items.append(File(item_name, os.path.join(path, item_name), full_item_path).to_json())
                 else:
@@ -53,10 +60,15 @@ class FsBrowserManager(object):
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.download, [path, self.working_directory, self.tmp, self.follow_symlinks])
+        self.pool.apply_async(task.download, [path, self.working_directory, self.tmp, self.follow_symlinks,
+                                              self.exclude_list])
         return task_id
 
     def init_upload(self, path):
+        full_destination_path = os.path.join(self.working_directory, path)
+        if PatternMatcher.match_any(full_destination_path, self.exclude_list):
+            raise RuntimeError("Failed to upload item by path '%s': this item included into black list"
+                               % full_destination_path)
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         task.upload_path = path
@@ -114,3 +126,14 @@ class FsBrowserManager(object):
         if os.path.exists(tmp_dir) and os.path.isdir(tmp_dir):
             return
         os.makedirs(tmp_dir)
+
+    @staticmethod
+    def _parse_exclude_list(exclude_string):
+        result = []
+        if not exclude_string:
+            return result
+        for part in exclude_string.split(","):
+            if os.path.isdir(part):
+                part = os.path.join(part, "*")
+            result.append(part)
+        return result
