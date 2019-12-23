@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,6 +75,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public PipelineUser createUser(PipelineUser user, List<Long> roles) {
         user.setId(daoHelper.createId(userSequence));
+        user.setRegistrationDate(DateUtils.nowUTC());
         getNamedParameterJdbcTemplate().update(createUserQuery, UserParameters.getParameters(user, getConnection()));
         List<Long> appliedRoles = new ArrayList<>();
         if (CollectionUtils.isEmpty(roles)) {
@@ -231,7 +234,9 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         ATTRIBUTES,
         PREFIX,
         USER_DEFAULT_STORAGE_ID,
-        USER_BLOCKED;
+        USER_BLOCKED,
+        REGISTRATION_DATE,
+        FIRST_LOGIN_DATE;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -249,6 +254,8 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             params.addValue(ATTRIBUTES.name(), convertDataToJsonStringForQuery(user.getAttributes()));
             params.addValue(USER_DEFAULT_STORAGE_ID.name(), user.getDefaultStorageId());
             params.addValue(USER_BLOCKED.name(), user.isBlocked());
+            params.addValue(REGISTRATION_DATE.name(), user.getRegistrationDate());
+            params.addValue(FIRST_LOGIN_DATE.name(), user.getFirstLoginDate());
             return params;
         }
 
@@ -282,6 +289,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             user.setId(userId);
             user.setUserName(rs.getString(USER_NAME.name()));
             user.setBlocked(rs.getBoolean(USER_BLOCKED.name()));
+            user.setRegistrationDate(rs.getTimestamp(REGISTRATION_DATE.name()).toLocalDateTime());
             Array groupsSqlArray = rs.getArray(USER_GROUPS.name());
             if (groupsSqlArray != null) {
                 List<String> groups = Arrays.asList((String[]) groupsSqlArray.getArray());
@@ -290,6 +298,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             Map<String, String> data = parseData(rs.getString(ATTRIBUTES.name()));
             if (!rs.wasNull()) {
                 user.setAttributes(data);
+            }
+            Timestamp firstLoginDate = rs.getTimestamp(FIRST_LOGIN_DATE.name());
+            if (!rs.wasNull()) {
+                user.setFirstLoginDate(firstLoginDate.toLocalDateTime());
             }
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {

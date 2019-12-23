@@ -20,9 +20,10 @@ FILE_TYPE = "File"
 
 class File(FsItem):
 
-    def __init__(self, name, path):
+    def __init__(self, name, path, full_path):
         self.name = name
         self.path = path
+        self.full_path = full_path
         self.size = self._get_size()
 
     def is_file(self):
@@ -37,4 +38,4 @@ class File(FsItem):
         }
 
     def _get_size(self):
-        return os.path.getsize(self.path)
+        return os.path.getsize(self.full_path)

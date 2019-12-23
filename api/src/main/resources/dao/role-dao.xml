@@ -170,6 +170,8 @@
                       u.groups as user_groups,
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
+                      u.registration_date,
+                      u.first_login_date,
                       u.blocked as user_blocked,
                       g.blocked as group_blocked
                     FROM pipeline.role r
@@ -194,6 +196,8 @@
                       u.attributes as attributes,
                       u.default_storage_id as user_default_storage_id,
                       u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
                       g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id

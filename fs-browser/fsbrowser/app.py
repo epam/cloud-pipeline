@@ -164,11 +164,12 @@ def main():
     parser.add_argument("--log_dir", required=False)
     parser.add_argument("--exclude", default="/bin,/var,/root,/sbin,/home,/sys,/usr,/boot,/dev,/lib,/proc")
     parser.add_argument("--follow_symlinks", default="True", type=str_to_bool)
+    parser.add_argument("--tmp_directory", default="/tmp")
 
     args = parser.parse_args()
     app.config['fsbrowser'] = FsBrowserManager(args.working_directory, args.process_count,
                                                BrowserLogger(args.run_id, args.log_dir), args.transfer_storage,
-                                               args.follow_symlinks, args.exclude)
+                                               args.follow_symlinks, args.tmp_directory, args.exclude)
 
     app.run(host=args.host, port=args.port)
 

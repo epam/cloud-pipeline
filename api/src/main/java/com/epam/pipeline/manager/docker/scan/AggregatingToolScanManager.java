@@ -433,7 +433,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
                         .orElse(Stream.empty())
                         .map(f -> new ToolDependency(tool.getId(), tag, f.getName(),
                                 f.getVersion(), ToolDependency.Ecosystem.SYSTEM, null))
-        ).collect(Collectors.toList());
+        ).distinct().collect(Collectors.toList());
 
         LOGGER.debug("Found: " + dependencies.size() + " dependencies for " + tool.getImage() + ":" + tag);
 

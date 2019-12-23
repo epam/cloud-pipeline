@@ -26,13 +26,15 @@ from fsbrowser.src.transfer_task import TransferTask, TaskStatus
 
 class FsBrowserManager(object):
 
-    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, exclude):
+    def __init__(self, working_directory, process_count, logger, storage, follow_symlinks, tmp, exclude):
         self.tasks = {}
         self.pool = ThreadPool(processes=process_count)
         self.working_directory = working_directory
         self.logger = logger
         self.storage_name, self.storage_path = self._parse_transfer_storage_path(storage)
         self.follow_symlinks = follow_symlinks
+        self._create_tmp_dir_if_needed(tmp)
+        self.tmp = tmp
         self.exclude_list = self._parse_exclude_list(exclude)
 
     def list(self, path):
@@ -41,23 +43,24 @@ class FsBrowserManager(object):
         if PatternMatcher.match_any(full_path, self.exclude_list):
             return items
         if os.path.isfile(full_path):
-            items.append(File(path, full_path).to_json())
+            items.append(File(os.path.basename(path), path, full_path).to_json())
         else:
             for item_name in os.listdir(full_path):
                 full_item_path = os.path.join(full_path, item_name)
                 if PatternMatcher.match_any(full_item_path, self.exclude_list):
                     continue
                 if os.path.isfile(full_item_path):
-                    items.append(File(item_name, full_item_path).to_json())
+                    items.append(File(item_name, os.path.join(path, item_name), full_item_path).to_json())
                 else:
-                    items.append(Folder(item_name, full_item_path).to_json())
+                    items.append(Folder(item_name, os.path.join(path, item_name)).to_json())
         return items
 
     def run_download(self, path):
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.download, [path, self.working_directory, self.follow_symlinks, self.exclude_list])
+        self.pool.apply_async(task.download, [path, self.working_directory, self.tmp, self.follow_symlinks,
+                                              self.exclude_list])
         return task_id
 
     def init_upload(self, path):
@@ -67,7 +70,7 @@ class FsBrowserManager(object):
                                % full_destination_path)
         task_id = str(uuid.uuid4().hex)
         task = TransferTask(task_id, self.storage_name, self.storage_path, self.logger)
-        task.path = path
+        task.upload_path = path
         self.tasks.update({task_id: task})
         pipeline_client = CloudPipelineApiProvider(self.logger.log_dir)
         storage_id = pipeline_client.load_storage_id_by_name(self.storage_name)
@@ -116,6 +119,12 @@ class FsBrowserManager(object):
         if task_id in self.tasks:
             return self.tasks[task_id]
         raise RuntimeError('Requested task %s does not exists' % task_id)
+
+    @staticmethod
+    def _create_tmp_dir_if_needed(tmp_dir):
+        if os.path.exists(tmp_dir) and os.path.isdir(tmp_dir):
+            return
+        os.makedirs(tmp_dir)
 
     @staticmethod
     def _parse_exclude_list(exclude_string):

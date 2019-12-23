@@ -21,7 +21,7 @@ from fsbrowser.src.cloud_pipeline_api_provider import CloudPipelineApiProvider
 from fsbrowser.src.logger import BrowserLogger
 from fsbrowser.src.pattern_utils import PatternMatcher
 
-TAF_GZ_EXTENSION = '.tar.gz'
+TAR_GZ_EXTENSION = '.tar.gz'
 DELIMITER = '/'
 TAR_GZ_PERMISSIONS = 0774  # -rwxrwxr--
 
@@ -47,9 +47,10 @@ class TransferTask(object):
         self.process = None
         self.message = None
         self.result = None
-        self.path = None
+        self.upload_path = None
         self.logger = logger
         self.storage_path = storage_path
+        self.tmp_tar_ball = None
 
     def success(self, result=None):
         self.status = TaskStatus.SUCCESS
@@ -77,16 +78,19 @@ class TransferTask(object):
             self.logger.log("Stopping process with PID %s" % str(self.process.pid))
             self.process.kill()
             self.logger.log("Process %s has been stopped" % str(self.process.pid))
-        if self.path:
-            full_path = os.path.join(working_directory, self.path)
+        if self.upload_path:
+            full_path = os.path.join(working_directory, self.upload_path)
             full_directory_path = os.path.dirname(full_path)
             for file_name in os.listdir(full_directory_path):
                 tmp_path = os.path.join(full_directory_path, file_name)
                 if os.path.isfile(tmp_path) and str(self.task_id) in file_name:
                     os.remove(tmp_path)
                     self.logger.log('File %s has been removed' % tmp_path)
+        if self.tmp_tar_ball:
+            os.remove(self.tmp_tar_ball)
+            self.logger.log('File %s has been removed' % self.tmp_tar_ball)
 
-    def download(self, source_path, working_directory, follow_symlinks, exclude_list):
+    def download(self, source_path, working_directory, tmp, follow_symlinks, exclude_list):
         try:
             if self.status != TaskStatus.PENDING:
                 self.logger.log("Failed to start download task: expected task state 'pending' but actual %s"
@@ -100,14 +104,15 @@ class TransferTask(object):
                                    % full_source_path)
             compressed = not os.path.isfile(full_source_path)
             if compressed:
-                self.logger.log("Starting to compress folder for download")
+                self.logger.log("Starting to compress folder for download to temporary folder %s" % tmp)
                 if follow_symlinks and self.check_cyclic_symlinks(full_source_path):
                     raise RuntimeError("Failed to download folder: a cyclic symlinks found in folder '%s'"
                                        % full_source_path)
-                compressed_name = full_source_path + TAF_GZ_EXTENSION
+                compressed_name = os.path.join(tmp, self.task_id) + TAR_GZ_EXTENSION
+                self.tmp_tar_ball = compressed_name
                 self.compress_directory(compressed_name, full_source_path, follow_symlinks, exclude_list)
                 full_source_path = compressed_name
-                source_path = source_path + TAF_GZ_EXTENSION
+                source_path = source_path + TAR_GZ_EXTENSION
             source_file_name = os.path.basename(source_path)
             full_destination_path = os.path.join(self.storage_name, self.storage_path, self.task_id, source_file_name)
             if self.status == TaskStatus.CANCELED:
@@ -134,8 +139,9 @@ class TransferTask(object):
                                 % self.status)
                 return
             self.running()
-            full_source_path = 'cp://%s' % os.path.join(self.storage_name, self.storage_path, self.task_id, self.path)
-            full_destination_path = os.path.join(working_directory, self.path)
+            full_source_path = 'cp://%s' % os.path.join(self.storage_name, self.storage_path, self.task_id,
+                                                        self.upload_path)
+            full_destination_path = os.path.join(working_directory, self.upload_path)
             tmp_destination_path = os.path.join(os.path.dirname(full_destination_path), self.task_id)
             self.pipe_storage_cp(full_source_path, tmp_destination_path)
             os.rename(tmp_destination_path, full_destination_path)

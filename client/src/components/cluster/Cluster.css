@@ -9,6 +9,7 @@
 }
 
 .node-main-info {
+  word-break: break-all;
   font-size: 20px;
   font-weight: 600;
   margin-right: 10px;
@@ -30,6 +31,13 @@
 .cluster-node-row-addresses,
 .cluster-node-row-created {
   cursor: pointer;
+  min-width: 100px;
+}
+
+thead[class*="ant-table-thead"] .cluster-node-row-created,
+thead[class*="ant-table-thead"] .cluster-node-row-addresses,
+thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
+  word-break: break-word;
 }
 
 @keyframes logo-spin {
@@ -49,6 +57,7 @@
   margin-left: 1px;
   padding: 1px 3px;
   font-size: xx-small;
+  white-space: nowrap;
 }
 
 .node-label[data-run="true"] {
@@ -82,4 +91,3 @@
 .filter-actions-buttons-container {
   margin: 5px 10px;
 }
-

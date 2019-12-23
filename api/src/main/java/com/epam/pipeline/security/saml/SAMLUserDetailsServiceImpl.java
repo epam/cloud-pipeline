@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -105,6 +106,7 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         final List<Long> roles = roleManager.getDefaultRolesIds();
         final PipelineUser createdUser = userManager.createUser(userName,
                                                                 roles, groups, attributes, null);
+        userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
         LOGGER.debug("Created user {} with groups {}", userName, groups);
         final UserContext userContext = new UserContext(createdUser.getId(), userName);
         userContext.setGroups(createdUser.getGroups());
@@ -120,6 +122,9 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         }
         loadedUser.setUserName(userName);
         final List<Long> roles = loadedUser.getRoles().stream().map(Role::getId).collect(Collectors.toList());
+        if (loadedUser.getFirstLoginDate() == null) {
+            userManager.updateUserFirstLoginDate(loadedUser.getId(), DateUtils.nowUTC());
+        }
         if (userManager.needToUpdateUser(groups, attributes, loadedUser)) {
             final PipelineUser updatedUser =
                 userManager.updateUserSAMLInfo(loadedUser.getId(), userName, roles, groups, attributes);
