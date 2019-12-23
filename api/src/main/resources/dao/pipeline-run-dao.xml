@@ -1407,15 +1407,10 @@
                         tags
                     FROM
                         pipeline.pipeline_run r
-                    INNER JOIN (SELECT run_status_change.run_id as run_id, run_status_change.status as status
-                                        FROM pipeline.run_status_change
-                                     INNER JOIN (SELECT run_id, MAX(date) as date
-                                                        FROM pipeline.run_status_change
-                                                            WHERE date < :PERIOD_END
-                                                                GROUP BY run_id
-                                                 ) as last_status_date
-                                            ON run_status_change.run_id = last_status_date.run_id
-                                                 AND run_status_change.date = last_status_date.date
+                    INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
+									FROM pipeline.run_status_change
+										WHERE date < :PERIOD_END
+											ORDER BY run_id, date DESC
                                  ) as last_statuses
                     ON r.run_id = last_statuses.run_id
                     WHERE last_statuses.status IN (:TARGET_LAST_STATUSES)
