@@ -505,15 +505,36 @@ class Logs extends localization.LocalizedReactComponent {
     const toRemove = [];
     const toUpdate = [];
     const toCreate = [];
+
+    /**
+     * Returns true if the rule has changes
+     * */
+    const ruleChanged = ({scheduleId, action, cronExpression, timeZone, removed}) => {
+      if (!scheduleId || removed) {
+        return true;
+      }
+      const [existed] = this.runSchedule.filter(r => r.scheduleId === scheduleId);
+      if (!existed) {
+        return true;
+      }
+
+      return existed.action !== action ||
+        existed.cronExpression !== cronExpression ||
+        existed.timeZone !== timeZone;
+    };
+
     rules.forEach(({scheduleId, action, cronExpression, timeZone, removed}) => {
+      if (!ruleChanged({scheduleId, action, cronExpression, timeZone, removed})) {
+        return;
+      }
       const payload = {scheduleId, action, cronExpression, timeZone};
       if (scheduleId) {
         if (removed) {
           toRemove.push(payload);
+        } else {
+          toUpdate.push(payload);
         }
-        toUpdate.push(payload);
-      }
-      if (!removed) {
+      } else if (!removed) {
         toCreate.push(payload);
       }
     });
