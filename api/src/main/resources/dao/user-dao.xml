@@ -80,6 +80,31 @@
                 ]]>
             </value>
         </property>
+        <property name="loadAllUsersWithDefaultDataStoragePathQuery">
+            <value>
+                <![CDATA[
+                     SELECT
+                      u.id as user_id,
+                      u.name as user_name,
+                      u.groups as user_groups,
+                      u.attributes as attributes,
+                      u.default_storage_id as user_default_storage_id,
+                      u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
+                      r.id as role_id,
+                      r.name as role_name,
+                      r.predefined as role_predefined,
+                      r.user_default as role_user_default,
+                      r.default_storage_id as role_default_storage_id,
+                      ds.path as user_default_storage_path
+                    FROM pipeline.user u
+                      LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
+                      LEFT JOIN pipeline.role r ON ur.role_id = r.id
+                      LEFT JOIN pipeline.datastorage ds ON ds.datastorage_id = u.default_storage_id
+                ]]>
+            </value>
+        </property>
         <property name="findUsersByPrefixQuery">
             <value>
                 <![CDATA[

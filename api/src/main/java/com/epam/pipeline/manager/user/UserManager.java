@@ -25,9 +25,10 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.GroupStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -148,6 +149,10 @@ public class UserManager {
 
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
+    }
+
+    public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {
+        return userDao.loadAllUsersWithDataStoragePath();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -353,14 +358,14 @@ public class UserManager {
         }
 
         try {
-            final ColumnPositionMappingStrategy<PipelineUser> strategy = new ColumnPositionMappingStrategy<>();
-            strategy.setType(PipelineUser.class);
+            final ColumnPositionMappingStrategy<PipelineUserWithStoragePath> strategy = new ColumnPositionMappingStrategy<>();
+            strategy.setType(PipelineUserWithStoragePath.class);
             strategy.setColumnMapping(csvHeader);
 
-            new StatefulBeanToCsvBuilder<PipelineUser>(writer)
+            new StatefulBeanToCsvBuilder<PipelineUserWithStoragePath>(writer)
                     .withMappingStrategy(strategy)
                     .withEscapechar(CSVWriter.NO_ESCAPE_CHARACTER)
-                    .build().write(new ArrayList<>(loadAllUsers()));
+                    .build().write(new ArrayList<>(loadAllUsersWithDataStoragePath()));
             return writer.toString().getBytes();
         } catch (CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
             throw new IllegalStateException(e);
@@ -397,30 +402,31 @@ public class UserManager {
     private String[] getColumnMapping(final PipelineUserExportVO attr) {
         final List<String> result = new ArrayList<>();
         if (attr.isIncludeId()) {
-            result.add(PipelineUser.PipelineUserFields.ID.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.ID.getValue());
         }
         if (attr.isIncludeUserName()) {
-            result.add(PipelineUser.PipelineUserFields.USER_NAME.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.USER_NAME.getValue());
         }
         if (attr.isIncludeEmail()) {
-            result.add(PipelineUser.PipelineUserFields.EMAIL.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.EMAIL.getValue());
         }
         if (attr.isIncludeRoles()) {
-            result.add(PipelineUser.PipelineUserFields.ROLES.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.ROLES.getValue());
         }
         if (attr.isIncludeGroups()) {
-            result.add(PipelineUser.PipelineUserFields.GROUPS.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.GROUPS.getValue());
         }
         if (attr.isIncludeMetadata()) {
-            result.add(PipelineUser.PipelineUserFields.ATTRIBUTES.getValue());
-            result.add(PipelineUser.PipelineUserFields.BLOCKED.getValue());
-            result.add(PipelineUser.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.ATTRIBUTES.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.BLOCKED.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_PATH.getValue());
         }
         if (attr.isIncludeRegistrationDate()) {
-            result.add(PipelineUser.PipelineUserFields.REGISTRATION_DATE.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue());
         }
         if (attr.isIncludeFirstLoginDate()) {
-            result.add(PipelineUser.PipelineUserFields.FIRST_LOGIN_DATE.getValue());
+            result.add(PipelineUserWithStoragePath.PipelineUserFields.FIRST_LOGIN_DATE.getValue());
         }
         return result.toArray(new String[0]);
     }
