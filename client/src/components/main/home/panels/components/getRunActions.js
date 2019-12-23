@@ -84,6 +84,13 @@ export default function (callbacks) {
             action: callbacks ? callbacks.stop : undefined
           });
         }
+        if (run.initialized && run.podIP) {
+          actions.push({
+            title: 'SSH',
+            icon: 'code-o',
+            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+          });
+        }
         break;
       case 'PAUSED':
         if (run.initialized && run.instance && run.instance.spot !== undefined && !run.instance.spot) {

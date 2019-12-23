@@ -33,6 +33,7 @@ import {Alert, message, Modal, Row} from 'antd';
 import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
+import PipelineRunSSH from '../../../../models/pipelines/PipelineRunSSH';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
@@ -162,6 +163,17 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
               run: this.reRun,
               openUrl: url => {
                 window.open(url, '_blank').focus();
+              },
+              ssh: async run => {
+                const runSSH = new PipelineRunSSH(run.id);
+                await runSSH.fetchIfNeededOrWait();
+
+                if (runSSH.loaded) {
+                  window.open(runSSH.value, '_blank').focus();
+                }
+                if (runSSH.error) {
+                  message.error(runSSH.error);
+                }
               }
             })
           }
