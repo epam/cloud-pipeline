@@ -148,11 +148,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         monitoringDao.loadMetrics(metric, running.keySet(),
                                 now.minusMinutes(timeRange + ONE), now)));
 
-        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_MEMORY_METRICS, metrics.entrySet().stream()
-                .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
-                        .map(metric -> metric.getKey() + ":" + metric.getValue())
-                        .collect(Collectors.joining(", ")) + " }"
-                )
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITORING_METRICS_RECEIVED, "MEMORY, DISK",
+                metrics.entrySet().stream()
+                        .map(e -> e.getKey().getName() + ": { " + e.getValue().entrySet().stream()
+                                .map(metric -> metric.getKey() + ":" + metric.getValue())
+                                .collect(Collectors.joining(", ")) + " }"
+                        )
                 .collect(Collectors.joining("; "))));
 
         final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> runsToNotify = running.entrySet()
@@ -237,7 +238,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         final LocalDateTime now = DateUtils.nowUTC();
         final Map<String, Double> cpuMetrics = monitoringDao.loadMetrics(ELKUsageMetric.CPU,
                 notProlongedRuns.keySet(), now.minusMinutes(idleTimeout + ONE), now);
-        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_CPU_RUN_METRICS_RECEIVED,
+        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITORING_METRICS_RECEIVED, "CPU",
                 cpuMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
                         .collect(Collectors.joining(", ")))
         );
@@ -265,11 +266,13 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         InstanceType.builder().vCPU(1).build());
                 double cpuUsageRate = metric / MILLIS / type.getVCPU();
                 if (Precision.compareTo(cpuUsageRate, idleCpuLevel, ONE_THOUSANDTH) < 0) {
+                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_STATUS,
+                            run.getPodId(), cpuUsageRate), "IDLED");
                     processIdleRun(run, actionTimeout, action, runsToNotify,
                                    runsToUpdateNotificationTime, cpuUsageRate, runsToUpdateTags);
                 } else if (run.getLastIdleNotificationTime() != null) { // No action is longer needed, clear timeout
-                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_IDLED,
-                            run.getPodId(), cpuUsageRate));
+                    log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_STATUS,
+                            run.getPodId(), cpuUsageRate), "NOT IDLED");
                     processFormerIdleRun(run, runsToUpdateNotificationTime, runsToUpdateTags);
                 }
             }
