@@ -83,6 +83,7 @@ import {
   PARAMETERS,
   SYSTEM_PARAMETERS
 } from './utilities/launch-form-sections';
+import * as prettyUrlGenerator from './utilities/pretty-url';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
 import {names} from '../../../../models/utils/ContextualPreference';
@@ -945,7 +946,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
         : undefined,
-      prettyUrl: this.prettyUrlEnabled ? values[ADVANCED].prettyUrl : undefined
+      prettyUrl: this.prettyUrlEnabled ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl) : undefined
     };
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
@@ -2622,10 +2623,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   }
 
+  checkFriendlyURL = (rule, value, callback) => {
+    const error = prettyUrlGenerator.validate(value);
+    if (error) {
+      callback(error);
+    }
+    callback();
+  };
+
   renderPrettyUrlFormItem = () => {
     if (this.prettyUrlEnabled) {
-      const errorMessage =
-        'Please enter a valid url name (only characters, numbers and \'_\' symbols allowed)';
       return (
         <FormItem
           className={getFormItemClassName(styles.formItemRow, 'prettyUrl')}
@@ -2635,16 +2642,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <Col span={10}>
             <FormItem
               className={styles.formItemRow}
-              hasFeedback>
+              hasFeedback
+            >
               {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
                 {
                   rules: [
                     {
-                      pattern: /^[a-zA-Z\d_]+$/,
-                      message: errorMessage
+                      validator: this.checkFriendlyURL
                     }
                   ],
-                  initialValue: this.getDefaultValue('prettyUrl')
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
                 }
               )(
                 <Input

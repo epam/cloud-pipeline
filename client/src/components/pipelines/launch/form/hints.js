@@ -113,7 +113,15 @@ const limitMountsHint = (localizedStringFn) => (
 
 const prettyUrlHint = (localizedStringFn) => (
   <Row style={{maxWidth: 300}}>
-    This value will be used in the Endpoint URL instead of the general "/pipeline-run_id-port_number" string. This value shall be unique across all runs
+    This value will be used in the <b>Endpoint URL</b> instead of the general
+    "/pipeline-run_id-port_number" string.
+    This value shall be unique across all runs. <br />
+    Or you can choose specific <b>domain name</b> with or without <b>endpoint</b>.<br />
+
+    For example: <br />
+    - <i>endpoint-url</i><br />
+    - <i>my.host.com</i><br />
+    - <i>my.host.com/endpoint-url</i>
   </Row>
 );
 
