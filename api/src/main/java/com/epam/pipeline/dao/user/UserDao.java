@@ -20,6 +20,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -53,6 +54,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String createUserQuery;
     private String updateUserQuery;
     private String loadAllUsersQuery;
+    private String loadAllUsersWithDefaultDataStoragePathQuery;
     private String loadUserByNameQuery;
     private String loadUsersByNamesQuery;
     private String loadUserByIdQuery;
@@ -98,6 +100,11 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
 
     public Collection<PipelineUser> loadAllUsers() {
         return getJdbcTemplate().query(loadAllUsersQuery, UserParameters.getUserExtractor());
+    }
+
+    public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {
+        return getJdbcTemplate().query(loadAllUsersWithDefaultDataStoragePathQuery,
+                UserParameters.getUserWithDataStorageExtractor());
     }
 
     public PipelineUser loadUserByName(String name) {
@@ -235,6 +242,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         ATTRIBUTES,
         PREFIX,
         USER_DEFAULT_STORAGE_ID,
+        USER_DEFAULT_STORAGE_PATH,
         REGISTRATION_DATE,
         FIRST_LOGIN_DATE;
 
@@ -277,6 +285,30 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
                         Role role = new Role();
                         RoleParameters.parseRole(rs, role);
                         user.getRoles().add(role);
+                    }
+                }
+                return users.values();
+            };
+        }
+
+        static ResultSetExtractor<Collection<PipelineUserWithStoragePath>> getUserWithDataStorageExtractor() {
+            return (ResultSet rs) -> {
+                Map<Long, PipelineUserWithStoragePath> users = new HashMap<>();
+                while (rs.next()) {
+                    Long userId = rs.getLong(USER_ID.name());
+                    PipelineUserWithStoragePath user = users.get(userId);
+                    if (user == null) {
+                        user = PipelineUserWithStoragePath.builder()
+                                .pipelineUser(parseUser(rs, userId))
+                                .defaultStoragePath(rs.getString(USER_DEFAULT_STORAGE_PATH.name()))
+                                .build();
+                        users.put(userId, user);
+                    }
+                    rs.getLong(RoleParameters.ROLE_ID.name());
+                    if (!rs.wasNull()) {
+                        Role role = new Role();
+                        RoleParameters.parseRole(rs, role);
+                        user.getPipelineUser().getRoles().add(role);
                     }
                 }
                 return users.values();
@@ -421,5 +453,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadUsersByStorageIdQuery(final String loadUsersByStorageIdQuery) {
         this.loadUsersByStorageIdQuery = loadUsersByStorageIdQuery;
+    }
+
+    @Required
+    public void setLoadAllUsersWithDefaultDataStoragePathQuery(final String loadAllUsersWithDefaultDataStoragePathQuery) {
+        this.loadAllUsersWithDefaultDataStoragePathQuery = loadAllUsersWithDefaultDataStoragePathQuery;
     }
 }
