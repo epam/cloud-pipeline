@@ -362,8 +362,9 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   reset = () => {
+    const mapParameter = p => ({name: p.name, value: p.value, type: p.type});
     this.setState({
-      parameters: (this.props.value || []).map(p => p)
+      parameters: (this.props.value || []).map(mapParameter)
     });
   };
 
