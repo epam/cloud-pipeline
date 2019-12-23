@@ -9,7 +9,7 @@
 }
 
 .node-main-info {
-  word-break: break-all;
+  word-break: break-word;
   font-size: 20px;
   font-weight: 600;
   margin-right: 10px;
@@ -32,6 +32,7 @@
 .cluster-node-row-created {
   cursor: pointer;
   min-width: 100px;
+  white-space: pre-line;
 }
 
 thead[class*="ant-table-thead"] .cluster-node-row-created,

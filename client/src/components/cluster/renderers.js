@@ -66,5 +66,5 @@ export function renderNodeLabels (labels, config) {
       }
     }
   }
-  return renderItems;
+  return renderItems.reduce((array, item) => ([...array, ' ', item]), []);
 }

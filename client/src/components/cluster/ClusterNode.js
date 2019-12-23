@@ -116,7 +116,6 @@ class ClusterNode extends Component {
         onlyKnown: true,
         additionalStyle: {
           fontSize: 'smaller',
-          marginLeft: 10,
           marginBottom: 2
         },
         location: this.props.router.location,
