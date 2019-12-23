@@ -29,12 +29,11 @@ const ACTION = PropTypes.shape({
   action: PropTypes.func
 });
 
-const ACTION_MIN_HEIGHT = 24;
+const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
 @observer
 export default class CardsPanel extends React.Component {
-
   static propTypes = {
     search: PropTypes.shape({
       placeholder: PropTypes.string,
@@ -64,6 +63,7 @@ export default class CardsPanel extends React.Component {
 
   state = {
     actionInProgress: false,
+    inProgressActionsTitle: null,
     popovers: [],
     search: null
   };
@@ -74,11 +74,13 @@ export default class CardsPanel extends React.Component {
       return;
     }
     this.setState({
-      actionInProgress: true
+      actionInProgress: true,
+      inProgressActionsTitle: action.title
     }, async () => {
-      await action.action && action.action(source);
+      action.action && await action.action(source);
       this.setState({
-        actionInProgress: false
+        actionInProgress: false,
+        inProgressActionsTitle: null
       });
     });
   };
@@ -150,6 +152,13 @@ export default class CardsPanel extends React.Component {
           this.closePopover(index);
         }
       };
+      const getIconType = (action) => {
+        const {actionInProgress, inProgressActionsTitle} = this.state;
+        if (actionInProgress && inProgressActionsTitle === action.title) {
+          return 'loading';
+        }
+        return action.icon;
+      };
       return (
         <div
           className={
@@ -163,7 +172,7 @@ export default class CardsPanel extends React.Component {
               return (
                 <Row
                   type="flex"
-                  justify="center"
+                  justify="start"
                   align="middle"
                   key={index}
                   className={styles.actionButton}
@@ -173,16 +182,20 @@ export default class CardsPanel extends React.Component {
                     minHeight: ACTION_MIN_HEIGHT
                   }}>
                   <Row type="flex" align="middle">
-                    {action.icon ? <Icon style={action.style} type={action.icon} /> : undefined}
+                    {
+                      action.icon
+                        ? <Icon style={action.style} type={getIconType(action)} />
+                        : undefined
+                    }
                     {
                       action.overlay
                         ? (
-                        <Popover
-                          onVisibleChange={onVisibleChange}
-                          content={action.overlay}>
-                          <span style={action.style}>{action.title}</span>
-                        </Popover>
-                      )
+                          <Popover
+                            onVisibleChange={onVisibleChange}
+                            content={action.overlay}>
+                            <span style={action.style}>{action.title}</span>
+                          </Popover>
+                        )
                         : <span style={action.style}>{action.title}</span>
                     }
                   </Row>
