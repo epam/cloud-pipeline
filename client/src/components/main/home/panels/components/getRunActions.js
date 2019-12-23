@@ -69,6 +69,13 @@ export default function (callbacks) {
             });
           }
         }
+        if (run.initialized && run.podIP) {
+          actions.push({
+            title: 'SSH',
+            icon: 'code-o',
+            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
+          });
+        }
         if (canPauseRun(run)) {
           actions.push({
             title: 'PAUSE',
@@ -82,13 +89,6 @@ export default function (callbacks) {
             icon: 'close-circle-o',
             style: {color: 'red'},
             action: callbacks ? callbacks.stop : undefined
-          });
-        }
-        if (run.initialized && run.podIP) {
-          actions.push({
-            title: 'SSH',
-            icon: 'code-o',
-            action: callbacks && callbacks.ssh ? callbacks.ssh : undefined
           });
         }
         break;

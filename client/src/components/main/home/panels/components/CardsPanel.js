@@ -29,7 +29,7 @@ const ACTION = PropTypes.shape({
   action: PropTypes.func
 });
 
-const ACTION_MIN_HEIGHT = 24;
+const ACTION_MIN_HEIGHT = 18;
 
 @favouriteStorage
 @observer
@@ -172,7 +172,7 @@ export default class CardsPanel extends React.Component {
               return (
                 <Row
                   type="flex"
-                  justify="center"
+                  justify="start"
                   align="middle"
                   key={index}
                   className={styles.actionButton}
