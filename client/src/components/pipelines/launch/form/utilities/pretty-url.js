@@ -21,6 +21,12 @@ function parse (value) {
   if (!value) {
     return null;
   }
+  try {
+    const {domain, path} = JSON.parse(value);
+    if (domain || path) {
+      return [domain, path].filter(Boolean).join('/');
+    }
+  } catch (_) {}
   if (typeof value === 'object') {
     const {domain, path} = value;
     return [domain, path].filter(Boolean).join('/');
@@ -32,7 +38,7 @@ function validate (url) {
   if (!url) {
     return undefined;
   }
-  const {domain, path} = build(url);
+  const {domain, path} = build(url, false);
   if (
     domain &&
     (
@@ -49,27 +55,27 @@ function validate (url) {
   return undefined;
 }
 
-function build (value) {
+function stringifyResult (stringify, value) {
+  if (!stringify || !value) {
+    return value;
+  }
+  return JSON.stringify(value);
+}
+
+function build (value, stringified = true) {
   if (!value) {
-    return undefined;
+    return stringifyResult(stringified, undefined);
   }
   const [domain, ...path] = value.split('/');
   if (!path || path.length === 0) {
     // pretty url: "some-string-here"
     if (endpointURIMask.test(domain)) {
       // this is friendly-url part
-      return {
-        path: domain
-      };
+      return stringifyResult(stringified, {path: domain});
     }
-    return {
-      domain
-    };
+    return stringifyResult(stringified, {domain});
   }
-  return {
-    domain,
-    path: path.join('/')
-  };
+  return stringifyResult(stringified, {domain, path: path.join('/')});
 }
 
 export {build, parse, validate};
