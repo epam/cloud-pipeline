@@ -323,6 +323,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
+    public static final String INFO_NOTIFICATION_NO_NODE_IS_HIGH_LOADED = "info.notification.no.node.is.high.loaded";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
