@@ -384,7 +384,10 @@ export default class SettingsForm extends React.Component {
       );
       tabs.push(
         <Tabs.TabPane tab="User management" key="user management">
-          <UserManagementForm onInitialized={this.initializeManagementForm} />
+          <UserManagementForm
+            onInitialized={this.initializeManagementForm}
+            isAdmin={this.isAdmin}
+          />
         </Tabs.TabPane>
       );
       tabs.push(

@@ -121,6 +121,11 @@ class RemotePost {
         authorization.setAuthorized(true);
         console.log("Changing authorization to: " + authorization.isAuthorized());
       }
+    } else if (!this.constructor.isJson && value instanceof Blob) {
+      this._loaded = true;
+      this.error = undefined;
+      this.failed = false;
+      this._value = value;
     } else {
       this.error = value.message;
       this.failed = true;

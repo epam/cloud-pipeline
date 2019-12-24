@@ -30,7 +30,8 @@ import {
   Button,
   Modal,
   message,
-  Select
+  Select,
+  Menu
 } from 'antd';
 import Roles from '../../../models/user/Roles';
 import UserFind from '../../../models/user/UserFind';
@@ -39,6 +40,7 @@ import RoleRemove from '../../../models/user/RoleRemove';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
 import EditUserRolesDialog from './forms/EditUserRolesDialog';
+import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
 import LoadingView from '../../special/LoadingView';
@@ -54,7 +56,6 @@ const PAGE_SIZE = 20;
 }))
 @observer
 export default class UserManagementForm extends React.Component {
-
   static propTypes = {
     onInitialized: PropTypes.func
   };
@@ -70,6 +71,7 @@ export default class UserManagementForm extends React.Component {
     rolesTableFilter: null,
     rolesTableSorter: null,
     editableRole: null,
+    exportUserDialogVisible: false,
     createUserDialogVisible: false,
     groupsSearchText: null,
     groupsTableCurrentPage: 1,
@@ -80,7 +82,8 @@ export default class UserManagementForm extends React.Component {
     createGroupName: null,
     createGroupDefault: false,
     createGroupDefaultDataStorage: null,
-    operationInProgress: false
+    operationInProgress: false,
+    userDataToExport: []
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -119,6 +122,11 @@ export default class UserManagementForm extends React.Component {
       groupsTableFilter: filter,
       groupsTableSorter: sorter
     });
+  };
+
+  handleExportUsersMenu = ({key}) => {
+    key === 'custom' && this.openExportUserDialog();
+    key === 'default' && doExport();
   };
 
   @observable _findUsers;
@@ -198,9 +206,13 @@ export default class UserManagementForm extends React.Component {
       this.state.userSearchText.trim().length &&
       this._findUsers &&
       this._findUsers.loaded) {
-      return (this._findUsers.value || []).map(this.mapUserRolesAndGroups).sort(this.alphabeticNameSorter);
+      return (this._findUsers.value || [])
+        .map(this.mapUserRolesAndGroups)
+        .sort(this.alphabeticNameSorter);
     } else if (this.props.users.loaded) {
-      return (this.props.users.value || []).map(this.mapUserRolesAndGroups).sort(this.alphabeticNameSorter);
+      return (this.props.users.value || [])
+        .map(this.mapUserRolesAndGroups)
+        .sort(this.alphabeticNameSorter);
     }
     return [];
   }
@@ -291,6 +303,53 @@ export default class UserManagementForm extends React.Component {
     this.setState({editableGroup: null}, this.reload);
   };
 
+  renderUsersTableControls = () => {
+    const {isAdmin} = this.props;
+    const exportUserMenu = (
+      <Menu
+        onClick={this.handleExportUsersMenu}
+      >
+        <Menu.Item key="default">
+          <Icon type="download" style={{marginRight: 10}} />
+          Default configuration
+        </Menu.Item>
+        <Menu.Item key="custom">
+          <Icon type="bars" style={{marginRight: 10}} />
+          Custom configuration
+        </Menu.Item>
+      </Menu>
+    );
+    return (
+      <Row type="flex" style={{marginBottom: 10}}>
+        <Input.Search
+          id="search-users-input"
+          size="small"
+          style={{flex: 1}}
+          value={this.state.userSearchText}
+          onPressEnter={this.fetchUsers}
+          onChange={this.onUserSearchChanged} />
+        <Button
+          size="small"
+          style={{marginLeft: 5}}
+          onClick={this.openCreateUserDialog}
+        >
+          <Icon type="plus" />Create user
+        </Button>
+        { isAdmin &&
+          <Dropdown.Button
+            size="small"
+            style={{marginLeft: 5}}
+            onClick={() => doExport()}
+            overlay={exportUserMenu}
+            icon={<Icon type="download" />}
+          >
+            Export users
+          </Dropdown.Button>
+        }
+      </Row>
+    );
+  }
+
   renderUsersTable = () => {
     const renderTagsList = (tags, tagClassName, maxTagItems) => {
       const tagRenderer = (tag, index) =>
@@ -322,7 +381,12 @@ export default class UserManagementForm extends React.Component {
                     }
                   </Card>
                 }>
-                <a id="more-info-link" className={styles.moreInfoLabel}>+{tags.length - maxTagItems + 1} more</a>
+                <a
+                  id="more-info-link"
+                  className={styles.moreInfoLabel}
+                >
+                  +{tags.length - maxTagItems + 1} more
+                </a>
               </Dropdown>
             ]}
           </Row>
@@ -392,7 +456,11 @@ export default class UserManagementForm extends React.Component {
         render: (user) => {
           return (
             <Row type="flex" justify="end">
-              <Button id="edit-user-button" size="small" onClick={() => this.openEditUserRolesDialog(user)}>
+              <Button
+                id="edit-user-button"
+                size="small"
+                onClick={() => this.openEditUserRolesDialog(user)}
+              >
                 <Icon type="edit" />
               </Button>
             </Row>
@@ -409,8 +477,13 @@ export default class UserManagementForm extends React.Component {
         dataSource={this.users}
         onChange={this.handleUserTableChange}
         rowClassName={user => `user-${user.id}`}
-        pagination={{total: this.users.length, PAGE_SIZE, current: this.state.usersTableCurrentPage}}
-        size="small" />
+        pagination={{
+          total: this.users.length,
+          PAGE_SIZE,
+          current: this.state.usersTableCurrentPage
+        }}
+        size="small"
+      />
     );
   };
 
@@ -470,7 +543,7 @@ export default class UserManagementForm extends React.Component {
               {name}
               {blockedSpan}
             </span>
-          )
+          );
         }
       },
       {
@@ -533,7 +606,7 @@ export default class UserManagementForm extends React.Component {
               {name}
               {blockedSpan}
             </span>
-          )
+          );
         }
       },
       {
@@ -595,6 +668,24 @@ export default class UserManagementForm extends React.Component {
     this.setState({
       createUserDialogVisible: false
     });
+  };
+
+  openExportUserDialog = () => {
+    this.setState({
+      exportUserDialogVisible: true,
+      userDataToExport: DefaultValues
+    });
+  };
+
+  closeExportUserDialog = () => {
+    this.setState({
+      exportUserDialogVisible: false,
+      userDataToExport: []
+    });
+  };
+
+  handleExportUsersChange = (checkedValues) => {
+    this.setState({userDataToExport: checkedValues});
   };
 
   createUser = async ({userName, defaultStorageId, roleIds}) => {
@@ -677,27 +768,24 @@ export default class UserManagementForm extends React.Component {
   };
 
   render () {
+    const {exportUserDialogVisible, userDataToExport} = this.state;
     return (
       <Tabs className="user-management-tabs" style={{width: '100%'}} type="card">
         <Tabs.TabPane tab="Users" key="users">
-          <Row type="flex" style={{marginBottom: 10}}>
-            <Input.Search
-              id="search-users-input"
-              size="small"
-              style={{flex: 1}}
-              value={this.state.userSearchText}
-              onPressEnter={this.fetchUsers}
-              onChange={this.onUserSearchChanged} />
-            <Button size="small" style={{marginLeft: 5}} onClick={this.openCreateUserDialog}>
-              <Icon type="plus" />Create user
-            </Button>
-          </Row>
+          {this.renderUsersTableControls()}
           {this.renderUsersTable()}
           <EditUserRolesDialog
             visible={!!this.state.editableUser}
             onUserDelete={this.deleteUser}
             onClose={this.closeEditUserRolesDialog}
             user={this.state.editableUser} />
+          <ExportUserForm
+            visible={exportUserDialogVisible}
+            values={userDataToExport}
+            onChange={this.handleExportUsersChange}
+            onCancel={this.closeExportUserDialog}
+            onSubmit={doExport}
+          />
           <CreateUserForm
             roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
             pending={this.state.operationInProgress}
@@ -777,7 +865,12 @@ export default class UserManagementForm extends React.Component {
                   this.dataStorages.map(d => {
                     return (
                       <Select.Option
-                        key={d.id} value={`${d.id}`} name={d.name} title={d.name} pathMask={d.pathMask}>
+                        key={d.id}
+                        value={`${d.id}`}
+                        name={d.name}
+                        title={d.name}
+                        pathMask={d.pathMask}
+                      >
                         <b>{d.name}</b> ({d.pathMask})
                       </Select.Option>
                     );
