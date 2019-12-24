@@ -1,6 +1,8 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import {Route} from 'react-router-dom';
 import classNames from 'classnames';
+import Header from '../header';
 import Icon from '../shared/icon';
 import displaySize from '../../utilities/display-size';
 import {parse} from '../../utilities/query-parameters';
@@ -208,21 +210,32 @@ class Browser extends React.Component {
   };
 
   render() {
-    const {path, taskManager} = this.props;
+    const {directory, path, taskManager} = this.props;
     return (
-      <Upload
-        className={styles.uploadContainer}
-        path={path || ''}
-      >
-        <div
-          className={styles.container}
+      <>
+        <Route
+          path="/"
+          render={props => (
+            <Header
+              {...props}
+              hasError={!!(directory.error || (!directory.pending && !directory.loaded))}
+            />
+          )}
+        />
+        <Upload
+          className={styles.uploadContainer}
+          path={path || ''}
         >
-          {this.renderDirectory()}
-          <TaskQueue
-            activeTasksCount={(taskManager.items || []).length}
-          />
-        </div>
-      </Upload>
+          <div
+            className={styles.container}
+          >
+            {this.renderDirectory()}
+            <TaskQueue
+              activeTasksCount={(taskManager.items || []).length}
+            />
+          </div>
+        </Upload>
+      </>
     );
   }
 }

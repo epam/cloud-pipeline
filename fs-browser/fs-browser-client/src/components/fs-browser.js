@@ -7,7 +7,6 @@ import {
 } from 'react-router-dom';
 import {taskManager} from '../models';
 import Browser from './browser';
-import Header from './header';
 import AlertsContainer, {messages} from './shared/alerts';
 
 const history = createHashHistory({});
@@ -32,7 +31,6 @@ export default function () {
           }}
         >
           <AlertsContainer />
-          <Route path="/" component={Header} />
           <Route path="/" component={Browser} />
         </div>
       </Router>

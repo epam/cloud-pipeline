@@ -4,7 +4,7 @@ import PathInput from './path-input';
 import Upload from '../upload';
 import styles from './header.css';
 
-function header({disabled, history}) {
+function header({disabled, history, hasError = false}) {
   const {location} = history;
   const {path} = parse(location.search);
   const onNavigate = (p) => {
@@ -21,7 +21,7 @@ function header({disabled, history}) {
       <Upload
         path={path || ''}
         showUploadArea={false}
-        showButton
+        showButton={!hasError}
         uploadAreaClassName={styles.uploadArea}
       >
         <PathInput
