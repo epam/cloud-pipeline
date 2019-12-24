@@ -14,6 +14,7 @@
 
 import os
 import json
+import glob
 import re
 import requests
 from subprocess import check_output
@@ -49,12 +50,21 @@ EDGE_SVC_ROLE_LABEL_VALUE = 'EDGE'
 EDGE_SVC_HOST_LABEL = 'cloud-pipeline/external-host'
 EDGE_SVC_PORT_LABEL = 'cloud-pipeline/external-port'
 
-
+nginx_custom_domain_config_ext = '.srv.conf'
+nginx_custom_domain_loc_suffix = 'CP_EDGE_CUSTOM_DOMAIN'
+nginx_custom_domain_loc_tmpl = 'include {}; # ' + nginx_custom_domain_loc_suffix
 nginx_root_config_path = '/etc/nginx/nginx.conf'
 nginx_sites_path = '/etc/nginx/sites-enabled'
-nginx_module_template = '/etc/sync-routes/route-template.conf'
+nginx_domains_path = '/etc/nginx/sites-enabled/custom-domains'
+nginx_loc_module_template = '/etc/nginx/endpoints-config/route.template.loc.conf'
+nginx_srv_module_template = '/etc/nginx/endpoints-config/route.template' + nginx_custom_domain_config_ext
 edge_service_port = 31000
 edge_service_external_ip = ''
+pki_search_path = '/opt/edge/pki/'
+pki_search_suffix_cert = '-public-cert.pem'
+pki_search_suffix_key = '-private-key.pem'
+pki_default_cert = '/opt/edge/pki/ssl-public-cert.pem'
+pki_default_cert_key = '/opt/edge/pki/ssl-private-key.pem'
 
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
@@ -111,6 +121,131 @@ def run_sids_to_str(run_sids, is_principal):
                 return ""
         return ",".join([shared_sid["name"] for shared_sid in run_sids if shared_sid["isPrincipal"] == is_principal])
 
+def parse_pretty_url(pretty):
+        try:
+                pretty_obj = json.loads(pretty)
+                if not pretty_obj:
+                        return None
+        except:
+                pretty_obj = { 'path': pretty }
+        
+        pretty_domain = None
+        pretty_path = None
+        if 'domain' in pretty_obj:
+                pretty_domain = pretty_obj['domain']
+        if 'path' in pretty_obj:
+                pretty_path = pretty_obj['path']
+                if pretty_path.startswith('/'):
+                        pretty_path = pretty_path[len('/'):]
+                
+        if not pretty_domain and not pretty_path:
+                return None
+        else:
+                return { 'domain': pretty_domain, 'path': pretty_path }
+
+def substr_indices(lines, substr):
+        return [i for i, line in enumerate(lines) if substr in line]
+
+def store_file_from_lines(lines, path):
+        with open(path, 'w') as path_file:
+                path_file.write('\n'.join(lines)) 
+
+def get_domain_config_path(domain):
+        return os.path.join(nginx_domains_path, domain + nginx_custom_domain_config_ext)
+
+def add_custom_domain(domain, location_block):
+        if not os.path.isdir(nginx_domains_path):
+                os.mkdir(nginx_domains_path)
+        domain_path = get_domain_config_path(domain)
+        domain_cert = search_custom_domain_cert(domain)
+        domain_path_contents = None
+        if os.path.exists(domain_path):
+                with open(domain_path, 'r') as domain_path_file:
+                        domain_path_contents = domain_path_file.read()
+        else:
+                with open(nginx_srv_module_template, 'r') as nginx_srv_module_template_file:
+                        domain_path_contents = nginx_srv_module_template_file.read()
+                domain_path_contents = domain_path_contents \
+                                        .replace('{edge_route_server_name}', domain) \
+                                        .replace('{edge_route_server_ssl_certificate}', domain_cert[0]) \
+                                        .replace('{edge_route_server_ssl_certificate_key}', domain_cert[1])
+        
+        location_block_include = nginx_custom_domain_loc_tmpl.format(location_block)
+        domain_path_lines = domain_path_contents.splitlines()
+
+        # Check if the location_block already added to the domain config
+        existing_loc = substr_indices(domain_path_lines, location_block_include)
+        if len(existing_loc) != 0:
+                print('Location block {} already exists for domain {}'.format(location_block, domain))
+                return
+
+        # If it's a new location entry - add it to the domain config after the {edge_route_location_block} line
+        insert_loc = substr_indices(domain_path_lines, '# {edge_route_location_block}')
+        if len(insert_loc) == 0:
+                print('Cannot find an insert location in the domain config {}'.format(domain_path))
+                return
+        domain_path_lines.insert(insert_loc[-1] + 1, location_block_include)
+
+        # Save the domain config back to file
+        store_file_from_lines(domain_path_lines, domain_path)
+
+
+def remove_custom_domain(domain, location_block):
+        location_block_include = nginx_custom_domain_loc_tmpl.format(location_block)
+        domain_path = get_domain_config_path(domain)
+        if not os.path.exists(domain_path):
+                return False
+        domain_path_lines = []
+        with open(domain_path, 'r') as domain_path_file:
+                domain_path_contents = domain_path_file.read()
+                domain_path_lines = domain_path_contents.splitlines()
+
+        existing_loc = substr_indices(domain_path_lines, location_block_include)
+        if len(existing_loc) == 0:
+                return False
+        del domain_path_lines[existing_loc[-1]]
+
+        if (sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
+                # If no more location block exist in the domain - delete the config file
+                print('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
+                os.remove(domain_path)
+        else:
+                # Save the domain config back to file
+                store_file_from_lines(domain_path_lines, domain_path)
+        return True
+
+def remove_custom_domain_all(location_block):
+        domain_path_list = [f for f in glob.glob(nginx_domains_path + '/*' + nginx_custom_domain_config_ext)]
+        for domain_path in domain_path_list:
+                custom_domain = os.path.basename(domain_path).replace(nginx_custom_domain_config_ext, '')
+                if remove_custom_domain(custom_domain, location_block):
+                        print('Removed {} location block from {} domain config'.format(location_block, custom_domain))
+
+def search_custom_domain_cert(domain):
+        domain_cert_list = [f for f in glob.glob(pki_search_path + '/*' + pki_search_suffix_cert)]
+        domain_cert_candidates = []
+        for cert_path in domain_cert_list:
+                cert_name = os.path.basename(cert_path).replace(pki_search_suffix_cert, '')
+                if domain.endswith(cert_name):
+                        domain_cert_candidates.append(cert_name)
+
+        cert_path = None
+        key_path = None
+        if len(domain_cert_candidates) > 0:
+                domain_cert_candidates.sort(key=len, reverse=True)
+                cert_name = domain_cert_candidates[0]
+                cert_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_cert)
+                key_path = os.path.join(pki_search_path, cert_name + pki_search_suffix_key)
+                if not os.path.isfile(key_path):
+                        print('Certificate for {} is found at {}, but a key does not exist at {}'.format(domain, cert_path, key_path))
+                        key_path = None
+        if not cert_path or not key_path:
+                cert_path = pki_default_cert
+                key_path = pki_default_cert_key
+        
+        print('Certificate:Key for {} will be used: {}:{}'.format(domain, cert_path, key_path))
+        return (cert_path, key_path)
+
 # FIXME: once we'll get more than one "system endpoint" - a list of such endpoints shall be moved to the configuration
 SYSTEM_ENDPOINTS={ "CP_CAP_SPARK": { 
                         "value": "true", 
@@ -164,9 +299,8 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                         runs_sids = run_info["runSids"]
                 pretty_url = None
                 if "prettyUrl" in run_info:
-                        pretty_url = run_info["prettyUrl"]
-                        if pretty_url.startswith('/'):
-                                pretty_url = pretty_url[len('/'):]
+                        pretty_url = parse_pretty_url(run_info["prettyUrl"])
+
                 
                 print('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
 
@@ -201,11 +335,21 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 if not pretty_url or has_explicit_endpoint_num:
                                                         edge_location = EDGE_ROUTE_LOCATION_TMPL.format(pod_id=pod_id, endpoint_port=port, endpoint_num=custom_endpoint_num)
                                                 else:
+                                                        pretty_url_path = pretty_url["path"]
                                                         if endpoints_count == 1:
-                                                                edge_location = pretty_url
+                                                                edge_location = pretty_url_path
                                                         else:
                                                                 pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
-                                                                edge_location = '{}-{}'.format(pretty_url, pretty_url_suffix)
+                                                                if pretty_url_path:
+                                                                        edge_location = '{}-{}'.format(pretty_url_path, pretty_url_suffix)
+                                                                else:
+                                                                        edge_location = pretty_url_suffix
+
+                                                if pretty_url and pretty_url['domain']:
+                                                        edge_location_id = '{}-{}.inc'.format(pretty_url['domain'], edge_location)
+                                                else:
+                                                        edge_location_id = '{}.loc'.format(edge_location)
+
                                                 edge_target = \
                                                         EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
                                                                 if path \
@@ -218,7 +362,7 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                 else:
                                                         edge_target = edge_target + "/"
 
-                                                service_list[edge_location] = {"pod_id": pod_id,
+                                                service_list[edge_location_id] = {"pod_id": pod_id,
                                                                                 "pod_ip": pod_ip,
                                                                                 "pod_owner": pod_owner,
                                                                                 "shared_users_sids": shared_users_sids,
@@ -227,8 +371,9 @@ def get_service_list(pod_id, pod_run_id, pod_ip):
                                                                                 "is_default_endpoint": is_default_endpoint,
                                                                                 "edge_num": i,
                                                                                 "edge_location": edge_location,
+                                                                                "custom_domain": pretty_url['domain'] if pretty_url else None,
                                                                                 "edge_target": edge_target,
-                                                                                "run_id": pod_run_id ,
+                                                                                "run_id": pod_run_id,
                                                                                 "additional" : additional}
                         else:
                                 print('Unable to get details of the tool {} from API due to errors. Empty endpoints will be returned'.format(docker_image))
@@ -342,6 +487,8 @@ for obsolete_route in routes_to_delete:
         path_to_route = os.path.join(nginx_sites_path, nginx_modules_list[obsolete_route])
         print('Deleting obsolete route: ' + path_to_route)
         os.remove(path_to_route)
+        remove_custom_domain_all(path_to_route)
+
         
 
 # For each of the entries in the template of the new Pods we shall build nginx route in /etc/nginx/sites-enabled
@@ -350,27 +497,41 @@ for obsolete_route in routes_to_delete:
 # --    proxy_pass http://{PodIP}:{svc-port-N}/;
 # -- }
 
-nginx_module_template_contents = ''
-with open(nginx_module_template, 'r') as nginx_module_template_file:
-    nginx_module_template_contents = nginx_module_template_file.read()
+nginx_loc_module_template_contents = ''
+with open(nginx_loc_module_template, 'r') as nginx_loc_module_template_file:
+    nginx_loc_module_template_contents = nginx_loc_module_template_file.read()
+
+nginx_srv_module_template_contents = ''
+with open(nginx_srv_module_template, 'r') as nginx_srv_module_template_file:
+    nginx_srv_module_template_contents = nginx_srv_module_template_file.read()
 
 service_url_dict = {}
 for added_route in routes_to_add:
         service_spec = services_list[added_route]
-        nginx_route_definition = nginx_module_template_contents\
-                .replace('{edge_route_location}', service_spec["edge_location"])\
+
+        has_custom_domain = service_spec["custom_domain"] is not None
+        service_hostname = service_spec["custom_domain"] if has_custom_domain else edge_service_external_ip
+        service_location = '/{}/'.format(service_spec["edge_location"]) if service_spec["edge_location"] else "/"
+
+        nginx_route_definition = nginx_loc_module_template_contents\
+                .replace('{edge_route_location}', service_location)\
                 .replace('{edge_route_target}', service_spec["edge_target"])\
                 .replace('{edge_route_owner}', service_spec["pod_owner"]) \
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{additional}', service_spec["additional"])
+
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
         print('Adding new route: ' + path_to_route)
         with open(path_to_route, "w") as added_route_file:
                 added_route_file.write(nginx_route_definition)
 
-        service_url = SVC_URL_TMPL.format(external_ip=edge_service_external_ip,
-                                          edge_location=service_spec["edge_location"],
+        if has_custom_domain:
+                print('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
+                add_custom_domain(service_hostname, path_to_route)
+
+        service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
+                                          edge_location=service_spec["edge_location"] if service_spec["edge_location"] else "",
                                           edge_port=str(edge_service_port),
                                           service_name=service_spec["service_name"],
                                           is_default_endpoint=service_spec["is_default_endpoint"],

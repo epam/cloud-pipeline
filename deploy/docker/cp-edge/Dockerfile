@@ -64,7 +64,6 @@ RUN opm get pintsized/lua-resty-http=0.12
 ADD	crontab /etc/cron.d/sync-routes
 ADD sync-routes.sh /etc/sync-routes/sync-routes.sh
 ADD	sync-routes.py /etc/sync-routes/sync-routes.py
-ADD	route-template.conf /etc/sync-routes/route-template.conf
 RUN	chmod 0644 /etc/cron.d/sync-routes
 RUN touch /var/log/sync-routes.log && \
     touch /var/log/wetty.log
@@ -72,6 +71,7 @@ RUN touch /var/log/sync-routes.log && \
 # Configure nginx
 ## Main config file
 ADD	nginx.conf /etc/nginx/nginx.conf
+ADD endpoints-config /etc/nginx/endpoints-config
 
 ## Logs dir
 RUN mkdir -p /etc/nginx/logs/
