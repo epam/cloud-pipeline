@@ -891,7 +891,6 @@ public class PipelineRunManager {
 
         return runs.stream()
             .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
-            .filter(run -> CollectionUtils.isNotEmpty(run.getRunStatuses()))
             .collect(Collectors.toList());
     }
 

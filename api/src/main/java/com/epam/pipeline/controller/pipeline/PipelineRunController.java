@@ -510,8 +510,8 @@ public class PipelineRunController extends AbstractRestController {
                 "Only runs that possibly could cause spending for described period will be returned.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRun>> loadRunsActivityStats(@RequestBody final LocalDateTime start,
-                                                           @RequestBody final LocalDateTime end) {
+    public Result<List<PipelineRun>> loadRunsActivityStats(@RequestParam(value = "from") final LocalDateTime start,
+                                                           @RequestParam(value = "to") final LocalDateTime end) {
         return Result.success(runApiService.loadRunsActivityStats(start, end));
     }
 }

@@ -118,7 +118,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
     private PipelineRunDao pipelineRunDao;
 
     @Autowired
-    RunStatusDao runStatusDao;
+    private RunStatusDao runStatusDao;
 
     @Autowired
     private FilterDao filterDao;
