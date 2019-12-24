@@ -35,7 +35,7 @@ class FsBrowserManager(object):
         self.follow_symlinks = follow_symlinks
         self._create_tmp_dir_if_needed(tmp)
         self.tmp = tmp
-        self.exclude_list = self._parse_exclude_list(exclude)
+        self.exclude_list = self._parse_exclude_list(exclude, working_directory)
 
     def list(self, path):
         items = []
@@ -128,11 +128,14 @@ class FsBrowserManager(object):
         os.makedirs(tmp_dir)
 
     @staticmethod
-    def _parse_exclude_list(exclude_string):
+    def _parse_exclude_list(exclude_string, working_directory):
         result = []
         if not exclude_string:
             return result
         for part in exclude_string.split(","):
+            part = part.strip()
+            if not part.startswith("/"):
+                part = os.path.join(working_directory, part)
             if os.path.isdir(part):
                 part = os.path.join(part, "*")
             result.append(part)
