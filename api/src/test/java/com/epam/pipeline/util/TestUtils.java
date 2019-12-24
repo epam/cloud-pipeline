@@ -34,6 +34,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.mockito.Mockito;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -151,5 +153,13 @@ public final class TestUtils {
         run.setEntitiesIds(Collections.singletonList(entitiesId));
         run.setConfigurationId(configurationId);
         return run;
+    }
+
+    public static Date convertLocalDateTimeToDate(final LocalDateTime dt) {
+        if (dt == null) {
+            return null;
+        } else {
+            return Date.from(dt.atZone(ZoneId.systemDefault()).toInstant());
+        }
     }
 }

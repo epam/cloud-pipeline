@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.configuration.ExecutionEnvironment;
@@ -82,10 +83,12 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -869,6 +872,57 @@ public class PipelineRunManager {
         return run;
     }
 
+    /**
+     * Returns list of runs, that possibly produced spending during the given period
+     *
+     * @param start beginning of evaluating period
+     * @param end ending of evaluating period
+     * @return run with statuses adjusted
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
+        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end);
+        final List<Long> runIds = runs.stream()
+            .map(BaseEntity::getId)
+            .collect(Collectors.toList());
+
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds).entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> adjustStatuses(e.getValue(), start, end)));
+
+        return runs.stream()
+            .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Adjust statuses to the given period: all the statuses after the end of the period are removed,
+     * activity periods completed before start of the period are removed as well.
+     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#timestamp}
+     * will be adjusted to {@code start} time point.
+     *
+     * @param runStatuses statuses to be adjusted
+     * @param start beginning of period
+     * @param end ending of period
+     * @return list of adjusted statuses in natural date order
+     */
+    List<RunStatus> adjustStatuses(final List<RunStatus> runStatuses,
+                                   final LocalDateTime start,
+                                   final LocalDateTime end) {
+        runStatuses.removeIf(runStatus -> runStatus.getTimestamp().isAfter(end));
+        runStatuses.sort(Comparator.comparing(RunStatus::getTimestamp));
+        for (int i = runStatuses.size() - 1; i >= 0; i--) {
+            final RunStatus runStatus = runStatuses.get(i);
+            if (runStatus.getTimestamp().isBefore(start)) {
+                if (runStatus.getStatus() == TaskStatus.RUNNING) {
+                    runStatus.setTimestamp(start);
+                    runStatuses.set(i, runStatus);
+                }
+                return runStatuses.subList(i, runStatuses.size());
+            }
+        }
+        return runStatuses;
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public void updateRunsTags(final Collection<PipelineRun> runs) {
         pipelineRunDao.updateRunsTags(runs);
@@ -1171,7 +1225,7 @@ public class PipelineRunManager {
             return parameter;
         }
     }
-    
+
     PipelineRunFilterVO.ProjectFilter resolveProjectFiltering(PipelineRunFilterVO filter) {
         if (CollectionUtils.isEmpty(filter.getProjectIds())) {
             return null;

@@ -1358,6 +1358,66 @@
                 ]]>
             </value>
         </property>
+        <property name="loadAllRunsPossiblyActiveInPeriodQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.run_id as run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        r.status as status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_name,
+                        node_id,
+                        node_image,
+                        node_cloud_region,
+                        docker_image,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        service_url,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags
+                    FROM
+                        pipeline.pipeline_run r
+                    INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
+									FROM pipeline.run_status_change
+										WHERE date < :PERIOD_END
+											ORDER BY run_id, date DESC
+                                 ) as last_statuses
+                    ON r.run_id = last_statuses.run_id
+                    WHERE last_statuses.status IN (:TARGET_LAST_STATUSES)
+                            OR r.end_date BETWEEN :PERIOD_START AND :PERIOD_END
+                ]]>
+            </value>
+        </property>
         <property name="updateTagsQuery">
             <value>
                 <![CDATA[
