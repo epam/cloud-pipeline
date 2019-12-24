@@ -211,6 +211,7 @@ class Browser extends React.Component {
 
   render() {
     const {directory, path, taskManager} = this.props;
+    const hasError = !!(directory.error || (!directory.pending && !directory.loaded));
     return (
       <>
         <Route
@@ -218,11 +219,12 @@ class Browser extends React.Component {
           render={props => (
             <Header
               {...props}
-              hasError={!!(directory.error || (!directory.pending && !directory.loaded))}
+              hasError={hasError}
             />
           )}
         />
         <Upload
+          showUploadArea={!hasError}
           className={styles.uploadContainer}
           path={path || ''}
         >
