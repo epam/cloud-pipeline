@@ -104,11 +104,11 @@ end
 
 -- Construct full current URL to use for redirection
 local req_host_port = os.getenv("EDGE_EXTERNAL")
-local req_schema = os.getenv("EDGE_EXTERNAL_SCHEMA")
-if not req_host_port then
-    req_host_port = ngx.var.host .. ":" .. ngx.var.server_port
+if ngx.var.http_host then
+    req_host_port = ngx.var.http_host
 end
-if not req_schema then
+local req_schema = os.getenv("EDGE_EXTERNAL_SCHEMA")
+if ngx.var.scheme then
     req_schema = ngx.var.scheme
 end
 local req_uri = req_schema .."://" .. req_host_port .. ngx.var.request_uri
