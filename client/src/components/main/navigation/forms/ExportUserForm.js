@@ -19,16 +19,54 @@ import PropTypes from 'prop-types';
 import {
   Checkbox,
   Modal,
-  Button
+  Button,
+  message
 } from 'antd';
+import FileSaver from 'file-saver';
+import ExportUsers from '../../../../models/user/Export';
 import styles from './ExportUserForm.css';
+
+const Keys = [
+  {label: 'Header', value: 'includeHeader'},
+  {label: 'User identifier', value: 'includeId'},
+  {label: 'User name', value: 'includeUserName'},
+  {label: 'User email', value: 'includeEmail'},
+  {label: 'User first login date', value: 'includeFirstLoginDate'},
+  {label: 'User registration time', value: 'includeRegistrationDate'},
+  {label: 'User metadata', value: 'includeMetadata'},
+  {label: 'User groups', value: 'includeGroups'},
+  {label: 'User roles', value: 'includeRoles'}
+];
+
+const DefaultValues = Keys.map(k => k.value);
+
+async function doExport (fields = DefaultValues) {
+  try {
+    const request = new ExportUsers();
+    const payload = Keys
+      .map(({value}) => ({[value]: fields.indexOf(value) >= 0}))
+      .reduce((r, c) => ({...r, ...c}), {});
+    await request.send(payload);
+    if (request.value instanceof Blob) {
+      FileSaver.saveAs(request.value, 'export.csv');
+    } else if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      message.error('Error exporting users', 5);
+    }
+  } catch (e) {
+    message.error(`Error exporting users: ${e.toString()}`, 5);
+  }
+}
+
+export {doExport, DefaultValues, Keys};
 
 export default function ExportUserForm ({
   onCancel,
   onChange,
   onSubmit,
-  exportUsersOptions,
-  exportUsersDefault
+  values,
+  visible
 }) {
   const modalControls = [
     <Button
@@ -38,9 +76,10 @@ export default function ExportUserForm ({
       Cancel
     </Button>,
     <Button
+      disabled={values.length === 0}
       key="submit"
       type="primary"
-      onClick={(e) => onSubmit(e)}
+      onClick={() => onSubmit(values)}
     >
       Download CSV
     </Button>
@@ -48,14 +87,15 @@ export default function ExportUserForm ({
 
   return (
     <Modal
-      title="Please choose what data should be exported as CSV:"
-      visible
+      title="CSV fields"
+      visible={visible}
       footer={modalControls}
+      onCancel={onCancel}
     >
       <Checkbox.Group
         className={styles.inputContainer}
-        options={exportUsersOptions}
-        defaultValue={exportUsersDefault}
+        options={Keys}
+        value={values}
         onChange={(checkedValues) => onChange(checkedValues)}
       />
     </Modal>
@@ -66,6 +106,5 @@ ExportUserForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  exportUsersDefault: PropTypes.array,
-  exportUsersOptions: PropTypes.array
+  values: PropTypes.array
 };

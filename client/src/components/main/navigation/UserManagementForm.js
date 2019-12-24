@@ -40,7 +40,7 @@ import RoleRemove from '../../../models/user/RoleRemove';
 import UserCreate from '../../../models/user/UserCreate';
 import UserDelete from '../../../models/user/UserDelete';
 import EditUserRolesDialog from './forms/EditUserRolesDialog';
-import ExportUserForm from './forms/ExportUserForm';
+import ExportUserForm, {doExport, DefaultValues} from './forms/ExportUserForm';
 import CreateUserForm from './forms/CreateUserForm';
 import EditRoleDialog from './forms/EditRoleDialog';
 import LoadingView from '../../special/LoadingView';
@@ -48,15 +48,6 @@ import styles from './UserManagementForm.css';
 import roleModel from '../../../utils/roleModel';
 
 const PAGE_SIZE = 20;
-const EXPORT_USERS_TEMPLATE = {
-  id: 'User identifiers',
-  name: 'User names',
-  email: 'User emails',
-  creationDT: 'Users creation date and time',
-  metadata: 'Users metadata',
-  roles: 'Users groups and roles',
-  loginDT: 'Users login date and time'
-};
 
 @inject('dataStorages', 'users')
 @inject(({users}) => ({
@@ -94,20 +85,6 @@ export default class UserManagementForm extends React.Component {
     operationInProgress: false,
     userDataToExport: []
   };
-
-  get exportUsersOptions () {
-    return Object.entries(EXPORT_USERS_TEMPLATE)
-      .map(([value, label]) => {
-        return {
-          label,
-          value
-        };
-      });
-  }
-
-  get exportUsersDefault () {
-    return Object.keys(EXPORT_USERS_TEMPLATE);
-  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -147,19 +124,10 @@ export default class UserManagementForm extends React.Component {
     });
   };
 
-  handleExportUsers = (isDefaultExport) => {
-    const {userDataToExport} = this.state;
-    const reqBody = isDefaultExport === true
-      ? this.exportUsersDefault
-      : userDataToExport;
-
-    // TODO: finish when the API is ready
-  };
-
   handleExportUsersMenu = ({key}) => {
     key === 'custom' && this.openExportUserDialog();
-    key === 'default' && this.handleExportUsers(true);
-  }
+    key === 'default' && doExport();
+  };
 
   @observable _findUsers;
 
@@ -343,11 +311,11 @@ export default class UserManagementForm extends React.Component {
       >
         <Menu.Item key="default">
           <Icon type="download" style={{marginRight: 10}} />
-          Export default
+          Default configuration
         </Menu.Item>
         <Menu.Item key="custom">
           <Icon type="bars" style={{marginRight: 10}} />
-          Modify data
+          Custom configuration
         </Menu.Item>
       </Menu>
     );
@@ -371,11 +339,11 @@ export default class UserManagementForm extends React.Component {
           <Dropdown.Button
             size="small"
             style={{marginLeft: 5}}
-            onClick={() => this.handleExportUsers(true)}
+            onClick={() => doExport()}
             overlay={exportUserMenu}
             icon={<Icon type="download" />}
           >
-            Export user
+            Export users
           </Dropdown.Button>
         }
       </Row>
@@ -705,19 +673,20 @@ export default class UserManagementForm extends React.Component {
   openExportUserDialog = () => {
     this.setState({
       exportUserDialogVisible: true,
-      userDataToExport: this.exportUsersDefault
+      userDataToExport: DefaultValues
     });
   };
 
   closeExportUserDialog = () => {
     this.setState({
-      exportUserDialogVisible: false
+      exportUserDialogVisible: false,
+      userDataToExport: []
     });
   };
 
   handleExportUsersChange = (checkedValues) => {
     this.setState({userDataToExport: checkedValues});
-  }
+  };
 
   createUser = async ({userName, defaultStorageId, roleIds}) => {
     const hide = message.loading('Creating user...', 0);
@@ -799,7 +768,7 @@ export default class UserManagementForm extends React.Component {
   };
 
   render () {
-    const {exportUserDialogVisible} = this.state;
+    const {exportUserDialogVisible, userDataToExport} = this.state;
     return (
       <Tabs className="user-management-tabs" style={{width: '100%'}} type="card">
         <Tabs.TabPane tab="Users" key="users">
@@ -810,16 +779,13 @@ export default class UserManagementForm extends React.Component {
             onUserDelete={this.deleteUser}
             onClose={this.closeEditUserRolesDialog}
             user={this.state.editableUser} />
-          {
-            exportUserDialogVisible &&
-            <ExportUserForm
-              onChange={this.handleExportUsersChange}
-              onCancel={this.closeExportUserDialog}
-              onSubmit={this.handleExportUsers}
-              exportUsersOptions={this.exportUsersOptions}
-              exportUsersDefault={this.exportUsersDefault}
-            />
-          }
+          <ExportUserForm
+            visible={exportUserDialogVisible}
+            values={userDataToExport}
+            onChange={this.handleExportUsersChange}
+            onCancel={this.closeExportUserDialog}
+            onSubmit={doExport}
+          />
           <CreateUserForm
             roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
             pending={this.state.operationInProgress}
