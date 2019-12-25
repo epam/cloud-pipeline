@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 import {message} from 'antd';
-import PipelineRunSSH from '../../../../../models/pipelines/PipelineRunSSH';
 import {AccessTypes} from '../../../../../models/pipelines/PipelineRunUpdateSids';
 import roleModel from '../../../../../utils/roleModel';
 
-export default function (authenticatedUserInfo, callbacks) {
+export default function (authenticatedUserInfo, runSSH, callbacks) {
   return function (service) {
     if (!authenticatedUserInfo.loaded) {
       authenticatedUserInfo.fetchIfNeededOrWait();
@@ -39,8 +38,8 @@ export default function (authenticatedUserInfo, callbacks) {
       ) {
         const callback = async () => {
           const hide = message.loading('Fetching SSH endpoint...', 0);
-          const request = new PipelineRunSSH(id);
-          await request.fetch();
+          const request = runSSH.getRunSSH(id);
+          await request.fetchIfNeededOrWait();
           hide();
           if (request.error) {
             message.error(request.error, 5);

@@ -16,9 +16,39 @@
 
 import Remote from '../basic/Remote';
 
-export default class PipelineRunSSH extends Remote {
+class PipelineRunSSH extends Remote {
   constructor (id) {
     super();
     this.url = `/run/${id}/ssh`;
   }
 }
+
+class PipelineRunSSHCache {
+  /* eslint-disable */
+  static getCache (cache, id) {
+    const key = `${id}`;
+    if (!cache.has(key)) {
+      cache.set(key, new PipelineRunSSH(id));
+    }
+    return cache.get(key);
+  }
+
+  /* eslint-enable */
+  static invalidateCache (cache, id) {
+    const key = `${id}`;
+    if (cache.has(key)) {
+      if (cache.get(key).invalidateCache) {
+        cache.get(key).invalidateCache();
+      } else {
+        cache.delete(key);
+      }
+    }
+  }
+
+  _cache = new Map();
+  getRunSSH (id) {
+    return this.constructor.getCache(this._cache, id);
+  }
+}
+
+export default new PipelineRunSSHCache();

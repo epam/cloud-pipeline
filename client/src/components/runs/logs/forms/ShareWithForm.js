@@ -20,8 +20,9 @@ import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox} from 'antd
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
+import Roles from '../../../../models/user/Roles';
 import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
 
@@ -34,7 +35,6 @@ export default class ShareWithForm extends React.Component {
     onSave: PropTypes.func,
     onClose: PropTypes.func,
     visible: PropTypes.bool,
-    roles: PropTypes.array,
     pending: PropTypes.bool
   };
 
@@ -68,6 +68,15 @@ export default class ShareWithForm extends React.Component {
   userFind;
   @observable
   groupFind;
+  @observable rolesRequest = new Roles();
+
+  @computed
+  get roles () {
+    if (this.rolesRequest && this.rolesRequest.loaded) {
+      return (this.rolesRequest.value || []).map(r => r);
+    }
+    return [];
+  }
 
   lastFetchId = 0;
 
@@ -155,7 +164,7 @@ export default class ShareWithForm extends React.Component {
 
   findGroupDataSource = () => {
     const roles = this.state.groupSearchString
-      ? (this.props.roles
+      ? (this.roles
           .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
           .map(r => r.predefined ? r.name : this.splitRoleName(r.name)))
       : [];
@@ -192,7 +201,7 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectGroup = async () => {
-    const [role] = this.props.roles
+    const [role] = this.roles
       .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
     const roleName = role ? role.name : this.selectedGroup;
     await this.grantPermission(roleName, false);
@@ -257,7 +266,7 @@ export default class ShareWithForm extends React.Component {
       if (isPrincipal) {
         return <UserName userName={name} />;
       } else {
-        const [role] = this.props.roles.filter(r => !r.predefined && r.name === name);
+        const [role] = this.roles.filter(r => !r.predefined && r.name === name);
         if (role) {
           return this.splitRoleName(name);
         } else {

@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import RunTasks from './RunTasks';
 import PipelineRunFilter from './PipelineRunFilter';
 import NestedRunsFilter from './NestedRunsFilter';
+import PipelineRunSchedule from '../runSchedule/RunSchedules';
 import displayDate from '../../utils/displayDate';
 const repeatInterval = 5000;
 const parseLog = (text, date) => (text.split('\n')
@@ -141,6 +142,7 @@ class PipelineRun extends Remote {
 
   _runRunIdTasksCache = new Map();
   _nestedRunsCache = new Map();
+  _scheduleCache = new Map();
 
   runTasks (runId) {
     return this.constructor.getCache(this._runRunIdTasksCache, runId, RunTasks, runId);
@@ -157,6 +159,15 @@ class PipelineRun extends Remote {
         userModified: true
       },
       false
+    );
+  }
+
+  schedule (runId) {
+    return this.constructor.getCache(
+      this._scheduleCache,
+      `${runId}`,
+      PipelineRunSchedule,
+      runId
     );
   }
 }

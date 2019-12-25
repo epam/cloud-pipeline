@@ -30,9 +30,6 @@ export class TaskLink extends Component {
       name: PropTypes.string,
       status: PropTypes.string
     }),
-    location: PropTypes.shape({
-      pathinfo: PropTypes.string
-    }),
     timings: PropTypes.bool
   };
 
@@ -60,7 +57,7 @@ export class TaskLink extends Component {
   }
 
   render () {
-    const {to, task: {name, status}, location: {pathinfo}} = this.props;
+    const {to, task: {name, status}} = this.props;
     const taskNameClass = 'default';
     const infos = [];
     if (this.props.timings) {
@@ -106,19 +103,6 @@ export class TaskLink extends Component {
           </div>
         );
       }
-    }
-
-    if (to === pathinfo) {
-      return (
-        <div>
-          <StatusIcon status={status} small displayTooltip={false} />
-          <span>
-            <b>{name}</b>
-          </span>
-          <br />
-          {infos}
-        </div>
-      );
     }
 
     return (

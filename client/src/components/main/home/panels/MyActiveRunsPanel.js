@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
   PipelineRunCommitCheck,
@@ -33,12 +33,12 @@ import {Alert, message, Modal, Row} from 'antd';
 import {runPipelineActions, stopRun, terminateRun} from '../../../runs/actions';
 import mapResumeFailureReason from '../../../runs/utilities/map-resume-failure-reason';
 import roleModel from '../../../../utils/roleModel';
-import PipelineRunSSH from '../../../../models/pipelines/PipelineRunSSH';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
+@inject('runSSH')
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
 
@@ -165,7 +165,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                 window.open(url, '_blank').focus();
               },
               ssh: async run => {
-                const runSSH = new PipelineRunSSH(run.id);
+                const runSSH = this.props.runSSH.getRunSSH(run.id);
                 await runSSH.fetchIfNeededOrWait();
 
                 if (runSSH.loaded) {

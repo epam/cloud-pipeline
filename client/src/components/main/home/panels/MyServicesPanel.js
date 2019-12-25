@@ -30,7 +30,7 @@ import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('dockerRegistries')
+@inject('dockerRegistries', 'runSSH')
 @observer
 export default class MyServicesPanel extends localization.LocalizedReactComponent {
 
@@ -164,7 +164,7 @@ export default class MyServicesPanel extends localization.LocalizedReactComponen
           cardStyle={{width: '100%'}}
           actions={
             getServiceActions(
-              this.props.authenticatedUserInfo,{
+              this.props.authenticatedUserInfo, this.props.runSSH, {
                 ssh: (url) => window.open(url, '_blank').focus()
               })
           }

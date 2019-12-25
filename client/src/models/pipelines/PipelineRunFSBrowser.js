@@ -16,9 +16,39 @@
 
 import Remote from '../basic/Remote';
 
-export default class PipelineRunFSBrowser extends Remote {
+class PipelineRunFSBrowser extends Remote {
   constructor (id) {
     super();
     this.url = `/run/${id}/fsbrowser`;
   }
 }
+
+class PipelineRunFSBrowserCache {
+  /* eslint-disable */
+  static getCache (cache, id) {
+    const key = `${id}`;
+    if (!cache.has(key)) {
+      cache.set(key, new PipelineRunFSBrowser(id));
+    }
+    return cache.get(key);
+  }
+
+  /* eslint-enable */
+  static invalidateCache (cache, id) {
+    const key = `${id}`;
+    if (cache.has(key)) {
+      if (cache.get(key).invalidateCache) {
+        cache.get(key).invalidateCache();
+      } else {
+        cache.delete(key);
+      }
+    }
+  }
+
+  _cache = new Map();
+  getRunFSBrowserLink (id) {
+    return this.constructor.getCache(this._cache, id);
+  }
+}
+
+export default new PipelineRunFSBrowserCache();

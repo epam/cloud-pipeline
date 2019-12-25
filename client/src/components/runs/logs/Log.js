@@ -30,11 +30,9 @@ import PausePipeline from '../../../models/pipelines/PausePipeline';
 import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
-import PipelineRunSSH from '../../../models/pipelines/PipelineRunSSH';
-import PipelineRunFSBrowser from '../../../models/pipelines/PipelineRunFSBrowser';
+import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowser';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
-import Roles from '../../../models/user/Roles';
 import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
@@ -67,7 +65,6 @@ import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
 import RunTags from '../run-tags';
-import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
@@ -84,8 +81,8 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList')
-@inject(({pipelineRun, routing, pipelines}, {params}) => {
+@inject('preferences', 'dtsList', 'runSSH')
+@inject(({pipelineRun, routing, pipelines, runSSH}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
   let task = null;
   if (params.taskName) {
@@ -101,13 +98,12 @@ const MAX_NESTED_RUNS_TO_DISPLAY = 10;
     taskName: params.taskName,
     run: pipelineRun.run(params.runId, {refresh: true}),
     nestedRuns: pipelineRun.nestedRuns(params.runId, MAX_NESTED_RUNS_TO_DISPLAY),
-    runSSH: new PipelineRunSSH(params.runId),
-    runFSBrowser: new PipelineRunFSBrowser(params.runId),
+    runSSH: runSSH.getRunSSH(params.runId),
+    runFSBrowser: pipelineRunFSBrowserCache.getRunFSBrowserLink(params.runId),
     runTasks: pipelineRun.runTasks(params.runId),
-    runSchedule: new RunSchedules(params.runId),
+    runSchedule: pipelineRun.schedule(params.runId),
     task,
     pipelines,
-    roles: new Roles(),
     routing
   };
 })
@@ -129,14 +125,15 @@ class Logs extends localization.LocalizedReactComponent {
 
   componentDidMount () {
     const {runTasks, runSchedule} = this.props;
-    runTasks.fetch();
-    runSchedule.fetch();
+    runTasks.fetchIfNeededOrWait();
+    runSchedule.fetchIfNeededOrWait();
   }
 
   componentWillUnmount () {
     this.props.run.clearInterval();
     this.props.runTasks.clearInterval();
     this.props.nestedRuns.clearRefreshInterval();
+    this.props.runSchedule.invalidateCache();
   }
 
   parentRunPipelineInfo = null;
@@ -860,7 +857,6 @@ class Logs extends localization.LocalizedReactComponent {
           <Menu.Item key={this.getTaskUrl(task, index)}>
             <TaskLink
               to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
-              location={location}
               task={task}
               timings={this.state.timings} />
           </Menu.Item>);
@@ -1623,7 +1619,6 @@ class Logs extends localization.LocalizedReactComponent {
         <ShareWithForm
           endpointsAvailable={!!this.endpointAvailable}
           visible={this.state.shareDialogOpened}
-          roles={this.props.roles.loaded ? (this.props.roles.value || []).map(r => r) : []}
           sids={this.props.run.loaded ? (this.props.run.value.runSids || []).map(s => s) : []}
           pending={this.state.operationInProgress}
           onSave={this.operationWrapper(this.saveShareSids)}
