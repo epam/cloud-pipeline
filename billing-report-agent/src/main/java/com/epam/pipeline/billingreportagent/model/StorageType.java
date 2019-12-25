@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.model;
 
-public enum ResourceType {
-    COMPUTE,
-    STORAGE
+public enum StorageType {
+    OBJECT_STORAGE,
+    FILE_STORAGE
 }

@@ -21,8 +21,6 @@ import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
@@ -70,7 +68,6 @@ public class ElasticsearchAgentService {
      * documents inside Elasticsearch
      */
     @Scheduled(cron = "${sync.billing.schedule}")
-    @Transactional(propagation = Propagation.REQUIRED)
     public void startElasticsearchAgent() {
         log.debug("Start synchronising billing data...");
 

@@ -17,8 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.model.ResourceType;
+import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -26,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
@@ -47,16 +47,10 @@ import java.util.stream.Collectors;
 
 @Data
 @Slf4j
+@RequiredArgsConstructor
 public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRun> {
 
-    private final String indexPrefix;
     private final EntityMapper<PipelineRunBillingInfo> mapper;
-
-    public RunToBillingRequestConverter(final String indexPrefix,
-                                        final EntityMapper<PipelineRunBillingInfo> mapper) {
-        this.indexPrefix = indexPrefix;
-        this.mapper = mapper;
-    }
 
     /**
      * Creates billing requests for given run
@@ -154,11 +148,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         for (int i = 0; i < timePoints.size() - 1; i++) {
             final Duration durationSeconds = Duration.between(timePoints.get(i), timePoints.get(i + 1));
             final Long cost = calculateCostsForPeriod(durationSeconds.getSeconds(), pricePerHour);
-            billings.add(new PipelineRunBillingInfo(timePoints.get(i).toLocalDate(),
-                                                    run,
-                                                    cost,
-                                                    durationSeconds.plusMinutes(1).toMinutes(),
-                                                    ResourceType.COMPUTE));
+            billings.add(PipelineRunBillingInfo.builder()
+                             .date(timePoints.get(i).toLocalDate())
+                             .run(run)
+                             .cost(cost)
+                             .usageMinutes(durationSeconds.plusMinutes(1).toMinutes())
+                             .build());
         }
         return billings;
     }

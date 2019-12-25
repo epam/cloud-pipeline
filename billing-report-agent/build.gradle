@@ -56,6 +56,9 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-lang3", version: apacheCommonsLangVersion
     implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
 
+    // AWS
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-pricing', version: awsSdkVersion
+
     //Lombok
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 

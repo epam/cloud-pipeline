@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.service.impl;
+package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
@@ -22,16 +22,16 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
+import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverter;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -40,12 +40,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Data
-@Service
 @Slf4j
-@ConditionalOnProperty(value = "sync.run.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
 
-    private final ElasticsearchServiceClient elasticsearchClient;
     private final ElasticIndexService indexService;
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
@@ -57,19 +54,18 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     public PipelineRunSynchronizer(final @Value("${sync.run.index.mapping}") String pipelineRunIndexMappingFile,
                                    final @Value("${sync.index.common.prefix}") String indexPrefix,
                                    final @Value("${sync.run.index.name}") String pipelineRunIndexName,
-                                   final @Value("${sync.run.bulk.insert.size:1000}") Integer bulkInsertSize,
+                                   final @Value("${sync.bulk.insert.size:1000}") Integer bulkInsertSize,
                                    final ElasticsearchServiceClient elasticsearchServiceClient,
                                    final ElasticIndexService indexService,
-                                   final BillingMapper mapper,
+                                   final RunBillingMapper mapper,
                                    final EntityLoader<PipelineRun> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
-        this.elasticsearchClient = elasticsearchServiceClient;
         this.indexService = indexService;
         this.indexPrefix = indexPrefix;
         this.pipelineRunIndexName = pipelineRunIndexName;
         this.loader = loader;
-        this.runToBillingRequestConverter = new RunToBillingRequestConverter(pipelineRunIndexName, mapper);
-        this.requestSender = new BulkRequestSender(elasticsearchClient, bulkInsertSize);
+        this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
+        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize);
     }
 
     @Override

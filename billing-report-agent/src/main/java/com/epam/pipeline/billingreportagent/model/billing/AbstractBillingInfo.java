@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model;
+package com.epam.pipeline.billingreportagent.model.billing;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.billingreportagent.model.ResourceType;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PipelineRunBillingInfo {
+public abstract class AbstractBillingInfo<T> {
 
     private LocalDate date;
-    private PipelineRun pipelineRun;
+    private T entity;
     private Long cost;
-    private Long usageMinutes;
     private ResourceType resourceType;
 }

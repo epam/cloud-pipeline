@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.service.impl.converter.run;
+package com.epam.pipeline.billingreportagent.service.impl.loader;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;

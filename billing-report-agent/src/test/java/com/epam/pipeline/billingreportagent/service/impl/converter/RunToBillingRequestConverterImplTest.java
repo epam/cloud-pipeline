@@ -17,8 +17,8 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
+import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -41,11 +41,10 @@ import java.util.stream.Collectors;
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
-    private static final String TEST_INDEX = "test-index-1";
     private static final Long RUN_ID = 1L;
 
     private final RunToBillingRequestConverter converter =
-        new RunToBillingRequestConverter(TEST_INDEX, new BillingMapper());
+        new RunToBillingRequestConverter(new RunBillingMapper());
 
     @Test
     public void convertRunBillings() {

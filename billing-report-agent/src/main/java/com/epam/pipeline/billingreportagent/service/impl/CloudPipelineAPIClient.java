@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -47,4 +48,9 @@ public class CloudPipelineAPIClient {
     public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final LocalDateTime from, final LocalDateTime to) {
         return QueryUtils.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
     }
+
+    public List<AbstractDataStorage> loadAllDataStorages() {
+        return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
 }

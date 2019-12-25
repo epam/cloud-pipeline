@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.service.impl.converter.run;
+package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
+import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -33,13 +33,13 @@ import java.io.IOException;
 
 @Component
 @NoArgsConstructor
-public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
+public class RunBillingMapper implements EntityMapper<PipelineRunBillingInfo> {
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunBillingInfo> container) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final PipelineRunBillingInfo billingInfo = container.getEntity();
-            final PipelineRun run = billingInfo.getPipelineRun();
+            final PipelineRun run = billingInfo.getEntity();
             jsonBuilder
                 .startObject()
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
@@ -53,7 +53,7 @@ public class BillingMapper implements EntityMapper<PipelineRunBillingInfo> {
                 .field("usage", billingInfo.getUsageMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
-                .field("billingCenter", "TBD");
+                .field("billing_center", "TBD");
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;
