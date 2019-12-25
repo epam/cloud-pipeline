@@ -27,15 +27,16 @@ import ExportUsers from '../../../../models/user/Export';
 import styles from './ExportUserForm.css';
 
 const Keys = [
-  {label: 'Header', value: 'includeHeader'},
-  {label: 'User identifier', value: 'includeId'},
+  {label: 'Identifier', value: 'includeId'},
   {label: 'User name', value: 'includeUserName'},
-  {label: 'User email', value: 'includeEmail'},
-  {label: 'User first login date', value: 'includeFirstLoginDate'},
-  {label: 'User registration time', value: 'includeRegistrationDate'},
-  {label: 'User metadata', value: 'includeMetadata'},
-  {label: 'User groups', value: 'includeGroups'},
-  {label: 'User roles', value: 'includeRoles'}
+  {label: 'Attributes', value: 'includeAttributes'},
+  {label: 'Registration date', value: 'includeRegistrationDate'},
+  {label: 'First login date', value: 'includeFirstLoginDate'},
+  {label: 'Roles', value: 'includeRoles'},
+  {label: 'Groups', value: 'includeGroups'},
+  {label: 'Blocked', value: 'includeStatus'},
+  {label: 'Default data storage', value: 'includeDataStorage'},
+  {label: 'Header', value: 'includeHeader'}
 ];
 
 const DefaultValues = Keys.map(k => k.value);
@@ -48,7 +49,12 @@ async function doExport (fields = DefaultValues) {
       .reduce((r, c) => ({...r, ...c}), {});
     await request.send(payload);
     if (request.value instanceof Blob) {
-      FileSaver.saveAs(request.value, 'export.csv');
+      const error = await checkBlob(request.value);
+      if (error) {
+        message.error(error, 5);
+      } else {
+        FileSaver.saveAs(request.value, 'export.csv');
+      }
     } else if (request.error) {
       message.error(request.error, 5);
     } else {
@@ -57,6 +63,24 @@ async function doExport (fields = DefaultValues) {
   } catch (e) {
     message.error(`Error exporting users: ${e.toString()}`, 5);
   }
+}
+
+function checkBlob (blob) {
+  return new Promise(resolve => {
+    const fr = new FileReader();
+    fr.onload = function () {
+      try {
+        const {status, message} = JSON.parse(this.result);
+        if (/^error$/i.test(status)) {
+          resolve(message || 'Error exporting users');
+        } else {
+          resolve(null);
+        }
+      } catch (_) {}
+      resolve(null);
+    };
+    fr.readAsText(blob);
+  });
 }
 
 export {doExport, DefaultValues, Keys};
