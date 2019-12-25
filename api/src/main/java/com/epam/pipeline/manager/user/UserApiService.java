@@ -131,6 +131,7 @@ public class UserApiService {
         return userManager.findUsers(prefix);
     }
 
+    @PreAuthorize(ADMIN_ONLY)
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         return userManager.exportUsers(attr);
     }

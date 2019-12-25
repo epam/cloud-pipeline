@@ -106,7 +106,7 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertEquals(2, exported.length);
         Assert.assertTrue(
                 Arrays.stream(exported).anyMatch(
-                        s -> ("\"" + newUser.getId() + "\"" + CSV_SEPARATOR + "\"" + newUser.getUserName() + "\"").equals(s)
+                    s -> ("" + newUser.getId() + CSV_SEPARATOR + newUser.getUserName()).equals(s)
                 )
         );
 
@@ -130,17 +130,18 @@ public class UserManagerTest extends AbstractSpringTest {
     public void exportUsersWithDataStorage() {
         final PipelineUser userWithDS = createPipelineUserWithDataStorage();
         PipelineUserExportVO attr = new PipelineUserExportVO();
-        attr.setIncludeMetadata(true);
+        attr.setIncludeDataStorage(true);
         attr.setIncludeHeader(true);
         attr.setIncludeId(true);
         final String[] exported = new String(userManager.exportUsers(attr)).split("\n");
         Assert.assertEquals(3, exported.length);
         Assert.assertEquals(
-                ID.getValue() + CSV_SEPARATOR + ATTRIBUTES.getValue() + CSV_SEPARATOR + BLOCKED.getValue() +
-                        CSV_SEPARATOR + DEFAULT_STORAGE_ID.getValue() + CSV_SEPARATOR + DEFAULT_STORAGE_PATH.getValue(),
+                ID.getValue() + CSV_SEPARATOR +
+                        DEFAULT_STORAGE_ID.getValue() + CSV_SEPARATOR +
+                        DEFAULT_STORAGE_PATH.getValue(),
                 exported[0]);
         Assert.assertTrue(Arrays.stream(exported).anyMatch(
-                s -> s.contains("\"" + userWithDS.getDefaultStorageId() + "\"" + "," + "\"" + USER_DEFAULT_DS + "\""))
+            s -> s.contains("" + userWithDS.getDefaultStorageId() + CSV_SEPARATOR + USER_DEFAULT_DS))
         );
     }
 

@@ -33,11 +33,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
-import com.opencsv.CSVWriter;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
-import com.opencsv.bean.StatefulBeanToCsvBuilder;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
-import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -48,7 +43,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,8 +56,6 @@ import java.util.stream.Collectors;
 @Service
 public class UserManager {
 
-    public static final String CSV_DELIMITER = ",";
-    public static final String NEW_LINE = "\n";
     @Autowired
     private UserDao userDao;
 
@@ -309,27 +302,8 @@ public class UserManager {
     }
 
     public byte[] exportUsers(final PipelineUserExportVO attr) {
-        final StringWriter writer = new StringWriter();
-        final String[] csvHeader = getColumnMapping(attr);
-
-        if (attr.isIncludeHeader()) {
-            writer.append(String.join(CSV_DELIMITER, csvHeader));
-            writer.append(NEW_LINE);
-        }
-
-        try {
-            final ColumnPositionMappingStrategy<PipelineUserWithStoragePath> strategy = new ColumnPositionMappingStrategy<>();
-            strategy.setType(PipelineUserWithStoragePath.class);
-            strategy.setColumnMapping(csvHeader);
-
-            new StatefulBeanToCsvBuilder<PipelineUserWithStoragePath>(writer)
-                    .withMappingStrategy(strategy)
-                    .withEscapechar(CSVWriter.NO_ESCAPE_CHARACTER)
-                    .build().write(new ArrayList<>(loadAllUsersWithDataStoragePath()));
-            return writer.toString().getBytes();
-        } catch (CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
-            throw new IllegalStateException(e);
-        }
+        final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
+        return new UserExporter().exportUsers(attr, users).getBytes(Charset.defaultCharset());
     }
 
     private void checkAllRolesPresent(List<Long> roles) {
@@ -358,37 +332,4 @@ public class UserManager {
         }
         return userRoles;
     }
-
-    private String[] getColumnMapping(final PipelineUserExportVO attr) {
-        final List<String> result = new ArrayList<>();
-        if (attr.isIncludeId()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.ID.getValue());
-        }
-        if (attr.isIncludeUserName()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.USER_NAME.getValue());
-        }
-        if (attr.isIncludeEmail()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.EMAIL.getValue());
-        }
-        if (attr.isIncludeRoles()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.ROLES.getValue());
-        }
-        if (attr.isIncludeGroups()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.GROUPS.getValue());
-        }
-        if (attr.isIncludeMetadata()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.ATTRIBUTES.getValue());
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.BLOCKED.getValue());
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_ID.getValue());
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.DEFAULT_STORAGE_PATH.getValue());
-        }
-        if (attr.isIncludeRegistrationDate()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue());
-        }
-        if (attr.isIncludeFirstLoginDate()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.FIRST_LOGIN_DATE.getValue());
-        }
-        return result.toArray(new String[0]);
-    }
-
 }
