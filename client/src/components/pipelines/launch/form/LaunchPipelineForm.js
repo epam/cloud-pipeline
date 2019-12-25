@@ -81,6 +81,7 @@ import {
   getInputPaths,
   getOutputPaths
 } from '../../../runs/actions';
+import * as prettyUrlGenerator from './utilities/pretty-url';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -881,7 +882,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       params: {},
       isSpot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`)=== 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId ? +values[EXEC_ENVIRONMENT].cloudRegionId : undefined,
-      prettyUrl: this.prettyUrlEnabled ? values[ADVANCED].prettyUrl : undefined
+      prettyUrl: this.prettyUrlEnabled ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl) : undefined
     };
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
@@ -2496,6 +2497,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return false;
   }
 
+  checkFriendlyURL = (rule, value, callback) => {
+    const error = prettyUrlGenerator.validate(value);
+    if (error) {
+      callback(error);
+    }
+    callback();
+  };
+
   renderPrettyUrlFormItem = () => {
     if (this.prettyUrlEnabled) {
       return (
@@ -2507,17 +2516,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <Col span={10}>
             <FormItem
               className={styles.formItemRow}
-              hasFeedback>
+              hasFeedback
+            >
               {this.getSectionFieldDecorator(ADVANCED)('prettyUrl',
                 {
                   rules: [
                     {
-                      pattern: /^[a-zA-Z\d_]+$/,
-                      message: 'Please enter a valid url name (only characters, numbers and \'_\' symbols allowed)'
+                      validator: this.checkFriendlyURL
                     }
                   ],
-                  initialValue: this.getDefaultValue('prettyUrl')
-                })(
+                  initialValue: prettyUrlGenerator.parse(this.getDefaultValue('prettyUrl'))
+                }
+              )(
                 <Input
                   disabled={(this.props.readOnly && !this.props.canExecute)} />
               )}
