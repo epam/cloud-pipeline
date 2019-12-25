@@ -26,8 +26,10 @@ public class PipelineUserExportVO {
     private boolean includeEmail;
     private boolean includeRoles;
     private boolean includeGroups;
-    private boolean includeMetadata;
+    private boolean includeDataStorage;
+    private boolean includeStatus;
     private boolean includeRegistrationDate;
     private boolean includeFirstLoginDate;
     private boolean includeHeader;
+    private boolean includeAttributes;
 }
