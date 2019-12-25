@@ -136,10 +136,16 @@ public class UserExporter {
             result.add(String.valueOf(user.isBlocked()));
         }
         if (exportSettings.isIncludeDataStorage()) {
-            result.add(String.valueOf(user.getDefaultStorageId()));
-            result.add(String.valueOf(user.getDefaultStoragePath()));
+            result.add(formatNullable(user.getDefaultStorageId()));
+            result.add(formatNullable(user.getDefaultStoragePath()));
         }
         return result.toArray(new String[0]);
+    }
+
+    private String formatNullable(final Object object) {
+        return Optional.ofNullable(object)
+                .map(String::valueOf)
+                .orElse(StringUtils.EMPTY);
     }
 
     private String formatDate(final LocalDateTime date) {
