@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 public class UserExporter {
 
-    private static final String LIST_DELIMITER = ";";
+    private static final String LIST_DELIMITER = "|";
     private static final DateTimeFormatter USER_DATE_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
