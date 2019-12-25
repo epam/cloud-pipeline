@@ -133,7 +133,8 @@ public class UserExporter {
             result.add(String.join(LIST_DELIMITER, ListUtils.emptyIfNull(user.getGroups())));
         }
         if (exportSettings.isIncludeStatus()) {
-            result.add(String.valueOf(user.isBlocked()));
+            // for version 0.15 we don't have blocked status yet
+            result.add(StringUtils.EMPTY);
         }
         if (exportSettings.isIncludeDataStorage()) {
             result.add(formatNullable(user.getDefaultStorageId()));
