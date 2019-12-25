@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<Configuration monitorInterval="60">
+    <Properties>
+        <Property name="log-path">logs</Property>
+    </Properties>
+    <Appenders>
+        <Console name="Console-Appender" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>>
+            </PatternLayout>
+        </Console>
+        <RollingFile  name="App-Appender" fileName="${log-path}/tes-adapter.log"
+                      filePattern="${log-path}/pipeline-%d{yyyyMMdd}.log">
+            <DefaultRolloverStrategy>
+                <Delete basePath="${log-path}" maxDepth="1">
+                    <IfFileName glob="pipeline-*.log">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="20"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+        </RollingFile >
+        <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
+                      filePattern="${log-path}/spring-%d{yyyyMMdd}.log">
+            <DefaultRolloverStrategy>
+                <Delete basePath="${log-path}" maxDepth="1">
+                    <IfFileName glob="spring-*.log">
+                        <IfAny>
+                            <IfAccumulatedFileCount exceeds="2"/>
+                        </IfAny>
+                    </IfFileName>
+                </Delete>
+            </DefaultRolloverStrategy>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+            </Policies>
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>
+            </PatternLayout>
+        </RollingFile >
+    </Appenders>
+    <Loggers>
+        <Logger name="com.epam.pipeline.tesadapter" level="debug" additivity="true">
+            <AppenderRef ref="App-Appender"/>
+        </Logger>
+        <Logger name="org.springframework" level="error" additivity="false">
+            <AppenderRef ref="Spring-Appender"/>
+            <AppenderRef ref="Console-Appender"/>
+        </Logger>
+        <Root>
+            <AppenderRef ref="Console-Appender"/>
+        </Root>
+    </Loggers>
+</Configuration>

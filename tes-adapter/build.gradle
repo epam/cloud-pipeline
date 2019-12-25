@@ -1,0 +1,70 @@
+group 'com.epam.pipeline'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.6.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'jacoco'
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform()
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.epam.pipeline.tesadapter.TesAdapterApplication'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+sourceCompatibility = 1.8
+
+dependencies {
+    //Binding with Pipeline API
+    implementation project(":cloud-pipeline-common:model")
+
+    //Spring
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile group: 'org.springframework.security', name: 'spring-security-web', version: '5.1.6.RELEASE'
+
+    //Swagger
+    compile('io.springfox:springfox-swagger2:2.9.2')
+    compile('io.springfox:springfox-swagger-ui:2.9.2')
+
+    //Lombok
+    compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
+
+    //Jackson
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.10.0.pr1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0.pr1'
+
+    //Logger
+    compile('org.springframework.boot:spring-boot-starter-log4j2')
+    configurations {
+        all*.exclude module : "spring-boot-starter-logging"
+    }
+
+    //Tests
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.2.0')
+    testCompile('org.junit.jupiter:junit-jupiter-params:5.2.0')
+    testRuntime('org.junit.jupiter:junit-jupiter-engine:5.2.0')
+    testImplementation 'org.mockito:mockito-inline:2.13.0'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'junit', module: 'junit' //direct exclusion junit4
+    }
+}

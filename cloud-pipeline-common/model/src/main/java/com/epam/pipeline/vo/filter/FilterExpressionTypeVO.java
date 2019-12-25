@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster;
+package com.epam.pipeline.vo.filter;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
-import lombok.Value;
+public enum FilterExpressionTypeVO {
+    LOGICAL(0),
+    AND(1),
+    OR(2);
 
-@Value
-public class AllowedInstanceAndPriceTypes {
+    private long id;
 
-    @JsonProperty("cluster.allowed.instance.types")
-    private final List<InstanceType> allowedInstanceTypes;
+    FilterExpressionTypeVO(long id) {
+        this.id = id;
+    }
 
-    @JsonProperty("cluster.allowed.instance.docker.types")
-    private final List<InstanceType> allowedInstanceDockerTypes;
-
-    @JsonProperty("cluster.allowed.price.types")
-    private final List<String> allowedPriceTypes;
+    public Long getId() {
+        return this.id;
+    }
 }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -30,19 +31,24 @@ import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
+import com.epam.pipeline.vo.PagingRunFilterVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import okhttp3.MultipartBody;
@@ -71,6 +77,21 @@ public interface CloudPipelineAPI {
     String TOOL_IDENTIFIER = "image";
     String VERSION = "version";
     String PATH = "path";
+    String TOOL_ID = "toolId";
+    String REGION_ID = "regionId";
+    String SPOT = "spot";
+    String LOAD_LINKS = "loadLinks";
+
+
+    @POST("run")
+    Call<Result<PipelineRun>> runPipeline(@Body PipelineStart runVo);
+
+    @POST("run/search")
+    Call<Result<PagedResult<List<PipelineRun>>>> searchRuns(@Body PagingRunFilterExpressionVO filterVO);
+
+    @POST("run/filter")
+    Call<Result<PagedResult<List<PipelineRun>>>> filterRuns(@Body PagingRunFilterVO filterVO,
+                                                            @Query(LOAD_LINKS) Boolean loadStorageLinks);
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -193,7 +214,15 @@ public interface CloudPipelineAPI {
     @POST("cluster/node/filter")
     Call<Result<List<NodeInstance>>> findNodes(@Body FilterNodesVO filterNodesVO);
 
+    @GET("cluster/instance/allowed")
+    Call<Result<AllowedInstanceAndPriceTypes>> loadAllowedInstanceAndPriceTypes(@Query(TOOL_ID) Long toolId,
+                                                                                @Query(REGION_ID) Long regionId,
+                                                                                @Query(SPOT) Boolean spot);
+
     //Notification methods
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
+
+    @GET("run/{runId}/tasks")
+    Call<Result<List<PipelineTask>>> loadPipelineTasks(@Path(RUN_ID) Long runId);
 }

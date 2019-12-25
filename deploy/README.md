@@ -127,6 +127,9 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_KUBE_MASTER_ETCD_HOST_PATH= \               # Allows to override a location of the folder where etcd stores wal/data dirs. This is useful when etcd runs into I/O latency issues and shall be pointed to another device mounted to a more custom location, which leads to the kube control plane failures. If not defined - /var/lib/etcd path will be used
                 -env CP_KUBE_MIN_DNS_REPLICAS= \                    # Allows to configure a minimal number of DNS replicas for the cluster (default: 1). DNS will be autoscaled based on the size of a cluster (1 new replica for each 128 cores or 5 nodes)
                 -env CP_KUBE_SERVICES_TYPE= \                       # Allows to select a preferred services mode type: "node-port" or "external-ip" (default: "node-port")
+                
+                # TES Adapter
+                -env CP_TES_WHITE_IPV4_CIDR                         # Whitelist ip addresses for access to Cloud Pipeline through TES adapter, if client doesn't have HttpAuthorization in headers or cookies. It supports as IPv4 as Ipv6  
 ```
 
 # Examples

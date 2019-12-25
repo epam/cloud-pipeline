@@ -14,28 +14,30 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster;
+package com.epam.pipeline.vo;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
+import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.vo.filter.FilterExpressionVO;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode
-public class InstanceType {
-    private String sku;
-    private String name;
-    private String operatingSystem;
-    private int vCPU;
-    private float memory;
-    private String memoryUnit;
-    private String instanceFamily;
-    private int gpu;
+public class PagingRunFilterExpressionVO implements AclSecuredFilter {
+
+    private int page;
+    private int pageSize;
+    private int timezoneOffsetInMinutes;
+    private FilterExpressionVO filterExpression;
+
+    //these filter is used for ACL filtering
+    @JsonIgnore
+    private List<Long> allowedPipelines;
+    @JsonIgnore
+    private String ownershipFilter;
 }

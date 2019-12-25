@@ -208,6 +208,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SHARE_SRV_DIST_NAME"
 
+# TES Service
+CP_TES_SRV_DIST_NAME=${CP_TES_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:tes-srv-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-tes-srv \
+                -t "$CP_TES_SRV_DIST_NAME"
+docker push "$CP_TES_SRV_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
