@@ -34,7 +34,6 @@ const Keys = [
   {label: 'First login date', value: 'includeFirstLoginDate'},
   {label: 'Roles', value: 'includeRoles'},
   {label: 'Groups', value: 'includeGroups'},
-  {label: 'Blocked', value: 'includeStatus'},
   {label: 'Default data storage', value: 'includeDataStorage'},
   {label: 'Header', value: 'includeHeader'}
 ];
