@@ -148,7 +148,7 @@ def substr_indices(lines, substr):
 
 def store_file_from_lines(lines, path):
         with open(path, 'w') as path_file:
-                path_file.write('\n'.join(lines)) 
+                path_file.write('\n'.join(lines))
 
 def get_domain_config_path(domain):
         return os.path.join(nginx_domains_path, domain + nginx_custom_domain_config_ext)
@@ -500,10 +500,6 @@ for obsolete_route in routes_to_delete:
 nginx_loc_module_template_contents = ''
 with open(nginx_loc_module_template, 'r') as nginx_loc_module_template_file:
     nginx_loc_module_template_contents = nginx_loc_module_template_file.read()
-
-nginx_srv_module_template_contents = ''
-with open(nginx_srv_module_template, 'r') as nginx_srv_module_template_file:
-    nginx_srv_module_template_contents = nginx_srv_module_template_file.read()
 
 service_url_dict = {}
 for added_route in routes_to_add:
