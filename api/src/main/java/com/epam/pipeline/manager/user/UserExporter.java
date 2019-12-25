@@ -27,15 +27,20 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.StringWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class UserExporter {
 
     private static final String LIST_DELIMITER = ";";
+    private static final DateTimeFormatter USER_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     public String exportUsers(final PipelineUserExportVO exportSettings,
                               final Collection<PipelineUserWithStoragePath> users) {
@@ -114,10 +119,10 @@ public class UserExporter {
                     .collect(Collectors.toList()));
         }
         if (exportSettings.isIncludeRegistrationDate()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.REGISTRATION_DATE.getValue());
+            result.add(formatDate(user.getRegistrationDate()));
         }
         if (exportSettings.isIncludeFirstLoginDate()) {
-            result.add(PipelineUserWithStoragePath.PipelineUserFields.FIRST_LOGIN_DATE.getValue());
+            result.add(formatDate(user.getFirstLoginDate()));
         }
         if (exportSettings.isIncludeRoles()) {
             result.add(ListUtils.emptyIfNull(user.getRoles()).stream()
@@ -135,5 +140,11 @@ public class UserExporter {
             result.add(String.valueOf(user.getDefaultStoragePath()));
         }
         return result.toArray(new String[0]);
+    }
+
+    private String formatDate(final LocalDateTime date) {
+        return Optional.ofNullable(date)
+                .map(USER_DATE_FORMATTER::format)
+                .orElse(StringUtils.EMPTY);
     }
 }
