@@ -948,7 +948,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         : undefined,
       prettyUrl: this.prettyUrlEnabled ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl) : undefined
     };
-    console.log(payload);
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
       !this.state.autoScaledCluster &&
