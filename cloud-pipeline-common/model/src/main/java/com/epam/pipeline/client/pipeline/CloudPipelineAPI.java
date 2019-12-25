@@ -55,6 +55,7 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -71,6 +72,8 @@ public interface CloudPipelineAPI {
     String TOOL_IDENTIFIER = "image";
     String VERSION = "version";
     String PATH = "path";
+    String FROM = "from";
+    String TO = "to";
 
     @POST("run/{runId}/status")
     Call<Result<PipelineRun>> updateRunStatus(@Path(RUN_ID) Long runId,
@@ -196,4 +199,7 @@ public interface CloudPipelineAPI {
     //Notification methods
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
+
+    @GET("run/activity")
+    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) LocalDateTime from, @Query(TO) LocalDateTime to);
 }

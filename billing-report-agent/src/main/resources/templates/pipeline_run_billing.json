@@ -1,0 +1,28 @@
+{
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "doc_type": { "type": "keyword", "store": true },
+        "id": { "type": "keyword", "store": true },
+        "pipeline": { "type": "keyword" },
+        "resource_type": { "type": "keyword" },
+        "compute_type": { "type": "keyword" },
+        "cost": {"type": "long"},
+        "run_price": {"type": "long"},
+        "usage": {"type": "long"},
+        "owner": { "type": "keyword" },
+        "groups": { "type": "keyword" },
+        "tool": {"type": "keyword"},
+        "instance_type":  { "type": "keyword" },
+        "billing_center":  { "type": "keyword" },
+        "cloudRegionId": { "type": "keyword" }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards" : 1,
+      "number_of_replicas": 0
+    }
+  }
+}
