@@ -24,7 +24,8 @@ import {
   CP_CAP_AUTOSCALE_WORKERS,
   getSkippedSystemParametersList,
   gridEngineEnabled,
-  sparkEnabled
+  sparkEnabled,
+  slurmEnabled
 } from './launch-cluster';
 import {LIMIT_MOUNTS_PARAMETER} from '../LimitMountsInput';
 
@@ -37,10 +38,12 @@ function clusterModified (parameters, state) {
   const autoScaledCluster = autoScaledClusterEnabled(parameters.parameters);
   const gridEngineEnabledValue = gridEngineEnabled(parameters.parameters);
   const sparkEnabledValue = sparkEnabled(parameters.parameters);
+  const slurmEnabledValue = slurmEnabled(parameters.parameters);
   const initial = {
     autoScaledCluster,
     gridEngineEnabled: gridEngineEnabledValue,
     sparkEnabled: sparkEnabledValue,
+    slurmEnabled: slurmEnabledValue,
     launchCluster: +(parameters.node_count) > 0 || autoScaledCluster,
     nodesCount: +(parameters.node_count),
     maxNodesCount: parameters.parameters && parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
@@ -50,6 +53,7 @@ function clusterModified (parameters, state) {
   return initial.autoScaledCluster !== state.autoScaledCluster ||
     initial.gridEngineEnabled !== state.gridEngineEnabled ||
     initial.sparkEnabled !== state.sparkEnabled ||
+    initial.slurmEnabled !== state.slurmEnabled ||
     initial.launchCluster !== state.launchCluster ||
     `${initial.nodesCount || 0}` !== `${state.nodesCount || 0}` ||
     `${initial.maxNodesCount || 0}` !== `${state.maxNodesCount || 0}`;

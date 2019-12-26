@@ -73,6 +73,17 @@ const ENABLE_SPARK_TOOLTIP = (
     </Row>
   </div>
 );
+// todo Add tooltip text
+const ENABLE_SLURM_TOOLTIP = (
+  <div>
+    <Row>
+      TODO: Add tooltip text
+    </Row>
+    <Row>
+      This checkbox is a convenience option for the <b>"CP_CAP_SLURM=true"</b> parameter.
+    </Row>
+  </div>
+);
 const AUTOSCALED_CLUSTER_UP_TO_TOOLTIP = (
   <div>
     <Row>
@@ -103,7 +114,8 @@ export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
   cluster: {
     enableGridEngine: 'enable grid engine',
-    enableSpark: 'enable spark'
+    enableSpark: 'enable spark',
+    enableSlurm: 'enable slurm'
   },
   autoScaledCluster: {
     autoScaledUpTo: 'up to',
@@ -118,6 +130,8 @@ const tooltips = {
     ENABLE_GRID_ENGINE_TOOLTIP,
   [LaunchClusterTooltip.cluster.enableSpark]:
     ENABLE_SPARK_TOOLTIP,
+  [LaunchClusterTooltip.cluster.enableSlurm]:
+    ENABLE_SLURM_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo]:
     AUTOSCALED_CLUSTER_UP_TO_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.defaultNodesCount]:
