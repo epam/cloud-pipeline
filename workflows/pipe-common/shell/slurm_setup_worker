@@ -24,9 +24,7 @@ add_worker() {
     chmod 0700 /etc/munge/munge.key
     su -c /usr/sbin/munged -s /bin/bash munge
 
-    eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMClusterSetup"
-    _MASTER_AWAIT_RESULT=$?
-
+    cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
     mkdir /var/spool/slurmd
     chown slurm: /var/spool/slurmd
     chmod 755 /var/spool/slurmd
@@ -75,12 +73,12 @@ MASTER_NAME=${MASTER_INFO[-2]}
 check_last_exit_code $_MASTER_AWAIT_RESULT "Master info received: $MASTER_NAME : $MASTER_IP" "Fail to install SLURM worker. Unable to get master information"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-    apt install munge slurm-wlm
+    apt install -y munge slurm-wlm
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
-    _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
+    export _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-    _SLURM_CONFIG_LOCATION=/etc/slurm/
+    export _SLURM_CONFIG_LOCATION=/etc/slurm/
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
@@ -92,9 +90,7 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
 fi
 
-echo "NodeName=$HOSTNAME State=UNKNOWN" >> /common/slurm.conf
-
-pipe_log_info "Adding worker node to SGE cluster" "$SLURM_WORKER_SETUP_TASK"
+pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
 add_worker
 check_last_exit_code $? "Host was added as a worker to the SLURM cluster" "Fail to add SLURM worker host"
 

@@ -15,7 +15,6 @@
 # limitations under the License.
 
 SLURM_MASTER_SETUP_TASK="SLURMMasterSetup"
-SLURM_CLUSTER_SETUP_TASK="SLURMClusterSetup"
 SLURM_MASTER_SETUP_TASK_WORKERS="SLURMMasterSetupWorkers"
 CURRENT_PID=$$
 
@@ -63,7 +62,6 @@ SlurmdLogFile=/var/log/slurmd.log
 #
 #
 # COMPUTE NODES
-NodeName=$HOSTNAME State=UNKNOWN
 EOL
 }
 
@@ -95,13 +93,12 @@ check_last_exit_code() {
     fi
 }
 
-LINUX_DISTRIBUTION=$( get_linux_dist )
-
-
 pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
 
+LINUX_DISTRIBUTION=$( get_linux_dist )
+
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-    apt install munge slurm-wlm
+    apt install -y munge slurm-wlm
     _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
@@ -130,10 +127,19 @@ chown munge: /etc/munge/munge.key
 chmod 400 /etc/munge/munge.key
 su -c /usr/sbin/munged -s /bin/bash munge
 
+IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
+for _NODE in ${_NODE_NAMES[*]} ; do
+    echo "NodeName=$_NODE State=UNKNOWN" >> /common/slurm.conf
+done
+echo "PartitionName=main.q Nodes=`echo ${_NODE_NAMES[*]} | xargs |  awk -v OFS="," '{$1=$1;print}'` Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
+cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
+
+slurmctld && slurmd
+
 pipe_log_success "Master ENV is ready" "$SLURM_MASTER_SETUP_TASK"
 
 
-# Verify whether it is a resumed run - if so, do not reinstall sge, instead - just rerun master and exec daemon
+# Verify whether it is a resumed run - if so, do not reinstall SLURM, instead - just rerun master and exec daemon
 if [ "$RESUMED_RUN" = true ]; then
     pipe_log_info "Run is resumed - SLURM master node won't be reconfigured. Starting master and worker daemons" "$SLURM_MASTER_SETUP_TASK"
     slurmd -f /etc/slurm/slurm.conf && slurmctld -f /etc/slurm/slurm.conf
@@ -153,11 +159,11 @@ if [ -z "$node_count" ] || (( "$node_count" == 0 )); then
 else
     _MASTER_EXEC_WAIT_ATTEMPTS=${_MASTER_EXEC_WAIT_ATTEMPTS:-60}
     _MASTER_EXEC_WAIT_SEC=${_MASTER_EXEC_WAIT_SEC:-10}
-    _CURRENT_EXEC_HOSTS_COUNT=$(( $(cat /common/slurm.conf | grep 'NodeName=' | wc -l) - 1))
+    _CURRENT_EXEC_HOSTS_COUNT=$(( $(sinfo -N | grep 'idle' | wc -l) - 1))
     while [ "$node_count" -gt "$_CURRENT_EXEC_HOSTS_COUNT" ]; do
         pipe_log_info "Waiting for execution hosts to connect. $_CURRENT_EXEC_HOSTS_COUNT out of $node_count are ready" "$SLURM_MASTER_SETUP_TASK_WORKERS"
         sleep $_MASTER_EXEC_WAIT_SEC
-        _CURRENT_EXEC_HOSTS_COUNT=$(( $(cat /common/slurm.conf | grep 'NodeName=' | wc -l) - 1))
+        _CURRENT_EXEC_HOSTS_COUNT=$(( $(sinfo -N | grep 'idle' | wc -l) - 1))
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
@@ -168,10 +174,3 @@ else
     pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
 fi
 
-_NODE_NAMES=`cat /common/slurm.conf | grep -Po 'NodeName=[\w\-_\[\]]+' | cut -d'=' -f2| xargs |  awk -v OFS="," '{$1=$1;print}'`
-echo "PartitionName=main.q Nodes=$_NODE_NAMES Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
-cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-
-slurmctld && slurmd
-
-pipe_log_success "SLURM cluster READY!" "$SLURM_CLUSTER_SETUP_TASK"
