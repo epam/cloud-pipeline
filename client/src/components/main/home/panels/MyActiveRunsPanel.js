@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,52 +140,54 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
       content = <Alert type="warning" message={this.props.activeRuns.error} />;
     } else {
       content = [
-        <CardsPanel
-          key="runs"
-          panelKey={this.props.panelKey}
-          onClick={this.navigateToRun}
-          emptyMessage="There are no active runs"
-          actions={
-            getRunActions({
-              pause: run => this.confirmPause(
-                run,
-                `Are you sure you want to pause run ${run.podId}?`,
-                'PAUSE',
-                () => this.pauseRun(run)
-              ),
-              resume: run => this.confirm(
-                `Are you sure you want to resume run ${run.podId}?`,
-                'RESUME',
-                () => this.resumeRun(run)
-              ),
-              stop: stopRun(this, this.props.refresh),
-              terminate: terminateRun(this, this.props.refresh),
-              run: this.reRun,
-              openUrl: url => {
-                window.open(url, '_blank').focus();
-              },
-              ssh: async run => {
-                const runSSH = new PipelineRunSSH(run.id);
-                await runSSH.fetchIfNeededOrWait();
+        <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
+          <CardsPanel
+            key="runs"
+            panelKey={this.props.panelKey}
+            onClick={this.navigateToRun}
+            emptyMessage="There are no active runs"
+            actions={
+              getRunActions({
+                pause: run => this.confirmPause(
+                  run,
+                  `Are you sure you want to pause run ${run.podId}?`,
+                  'PAUSE',
+                  () => this.pauseRun(run)
+                ),
+                resume: run => this.confirm(
+                  `Are you sure you want to resume run ${run.podId}?`,
+                  'RESUME',
+                  () => this.resumeRun(run)
+                ),
+                stop: stopRun(this, this.props.refresh),
+                terminate: terminateRun(this, this.props.refresh),
+                run: this.reRun,
+                openUrl: url => {
+                  window.open(url, '_blank').focus();
+                },
+                ssh: async run => {
+                  const runSSH = new PipelineRunSSH(run.id);
+                  await runSSH.fetchIfNeededOrWait();
 
-                if (runSSH.loaded) {
-                  window.open(runSSH.value, '_blank').focus();
+                  if (runSSH.loaded) {
+                    window.open(runSSH.value, '_blank').focus();
+                  }
+                  if (runSSH.error) {
+                    message.error(runSSH.error);
+                  }
                 }
-                if (runSSH.error) {
-                  message.error(runSSH.error);
-                }
-              }
-            })
-          }
-          cardClassName={run => {
-            if (run.initialized && run.serviceUrl) {
-              return styles.runServiceCard;
+              })
             }
-            return undefined;
-          }}
-          childRenderer={renderRunCard}>
-          {this.getActiveRuns()}
-        </CardsPanel>,
+            cardClassName={run => {
+              if (run.initialized && run.serviceUrl) {
+                return styles.runServiceCard;
+              }
+              return undefined;
+            }}
+            childRenderer={renderRunCard}>
+            {this.getActiveRuns()}
+          </CardsPanel>
+        </Row>,
         this.getActiveRuns().length > 0 &&
         <Row
           key="explore other"

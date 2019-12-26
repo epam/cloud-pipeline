@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,40 +116,43 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
       content = <Alert type="warning" message={this.props.completedRuns.error} />;
     } else {
       content = [
-        <CardsPanel
-          key="runs"
-          panelKey={this.props.panelKey}
-          cardClassName={styles.runCard}
-          onClick={this.navigateToRun}
-          emptyMessage="There are no completed runs yet."
-          actions={
-            getRunActions({
-              pause: run => this.confirm(
-                `Are you sure you want to pause run ${run.podId}?`,
-                'PAUSE',
-                () => this.pauseRun(run)
-              ),
-              resume: run => this.confirm(
-                `Are you sure you want to resume run ${run.podId}?`,
-                'RESUME',
-                () => this.resumeRun(run)
-              ),
-              stop: run => this.confirm(
-                `Are you sure you want to stop run ${run.podId}?`,
-                'STOP',
-                () => this.stopRun(run)
-              ),
-              run: this.reRun
-            })
-          }
-          style={{flex: 1}}
-          childRenderer={renderRunCard}>
-          {
-            this.props.completedRuns.loaded
-              ? (this.props.completedRuns.value || []).map(r => r).filter(r => ['SUCCESS', 'STOPPED', 'FAILURE'].indexOf(r.status) >= 0)
-              : []
-          }
-        </CardsPanel>,
+        <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
+          <CardsPanel
+            key="runs"
+            panelKey={this.props.panelKey}
+            cardClassName={styles.runCard}
+            onClick={this.navigateToRun}
+            emptyMessage="There are no completed runs yet."
+            actions={
+              getRunActions({
+                pause: run => this.confirm(
+                  `Are you sure you want to pause run ${run.podId}?`,
+                  'PAUSE',
+                  () => this.pauseRun(run)
+                ),
+                resume: run => this.confirm(
+                  `Are you sure you want to resume run ${run.podId}?`,
+                  'RESUME',
+                  () => this.resumeRun(run)
+                ),
+                stop: run => this.confirm(
+                  `Are you sure you want to stop run ${run.podId}?`,
+                  'STOP',
+                  () => this.stopRun(run)
+                ),
+                run: this.reRun
+              })
+            }
+            childRenderer={renderRunCard}>
+            {
+              this.props.completedRuns.loaded
+                ? (this.props.completedRuns.value || [])
+                  .map(r => r)
+                  .filter(r => ['SUCCESS', 'STOPPED', 'FAILURE'].indexOf(r.status) >= 0)
+                : []
+            }
+          </CardsPanel>
+        </Row>,
         <Row
           key="explore other"
           type="flex"
