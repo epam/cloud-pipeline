@@ -43,13 +43,15 @@ import {
   autoScaledClusterEnabled,
   CP_CAP_SGE,
   CP_CAP_SPARK,
+  CP_CAP_SLURM,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   ConfigureClusterDialog,
   getSkippedSystemParametersList,
   getSystemParameterDisabledState,
   gridEngineEnabled,
-  sparkEnabled
+  sparkEnabled,
+  slurmEnabled
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 
 const Panels = {
@@ -105,6 +107,7 @@ export default class EditToolForm extends React.Component {
     autoScaledCluster: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    slurmEnabled: false,
     launchCluster: false
   };
 
@@ -185,6 +188,13 @@ export default class EditToolForm extends React.Component {
           if (this.state.launchCluster && this.state.sparkEnabled) {
             params.push({
               name: CP_CAP_SPARK,
+              type: 'boolean',
+              value: true
+            });
+          }
+          if (this.state.launchCluster && this.state.slurmEnabled) {
+            params.push({
+              name: CP_CAP_SLURM,
               type: 'boolean',
               value: true
             });
@@ -298,6 +308,7 @@ export default class EditToolForm extends React.Component {
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
+        state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
@@ -532,6 +543,8 @@ export default class EditToolForm extends React.Component {
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
       sparkEnabled(this.props.configuration.parameters);
+    const slurmEnabledValue = this.props.configuration &&
+      slurmEnabled(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
@@ -545,6 +558,7 @@ export default class EditToolForm extends React.Component {
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
+      !!slurmEnabledValue !== !!this.state.slurmEnabled ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
       limitMountsFieldChanged();
@@ -586,18 +600,18 @@ export default class EditToolForm extends React.Component {
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
-      sparkEnabled
+      sparkEnabled,
+      slurmEnabled
     } = configuration;
     this.setState({
-        launchCluster,
-        nodesCount,
-        autoScaledCluster,
-        maxNodesCount,
-        gridEngineEnabled,
-        sparkEnabled
-      },
-      this.closeConfigureClusterDialog
-    );
+      launchCluster,
+      nodesCount,
+      autoScaledCluster,
+      maxNodesCount,
+      gridEngineEnabled,
+      sparkEnabled,
+      slurmEnabled
+    }, this.closeConfigureClusterDialog);
   };
 
   renderExecutionEnvironmentSummary = () => {
@@ -857,6 +871,7 @@ export default class EditToolForm extends React.Component {
                 autoScaledCluster={this.state.autoScaledCluster}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
+                slurmEnabled={this.state.slurmEnabled}
                 nodesCount={this.state.nodesCount}
                 maxNodesCount={+this.state.maxNodesCount || 1}
                 onClose={this.closeConfigureClusterDialog}
