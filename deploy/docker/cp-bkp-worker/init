@@ -36,4 +36,6 @@ export CP_BKP_SCHEDULE_CRON=${CP_BKP_SCHEDULE_CRON:-'0 8 * * *'} # Every day at 
 env > /backup.env
 echo "$CP_BKP_SCHEDULE_CRON root flock -w 1 /var/run/backup.lock bash /backup.sh" > /etc/cron.d/cp-backup
 chmod 0644 /etc/cron.d/cp-backup
-crond
+
+# Run cron in the foreground
+crond -n
