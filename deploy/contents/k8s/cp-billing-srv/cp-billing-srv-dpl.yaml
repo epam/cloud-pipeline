@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-billing-srv
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-billing-srv
+      namespace: default
+      labels:
+        cloud-pipeline/cp-billing-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-billing-srv: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-billing-srv
+          image: lifescience/cloud-pipeline:billing-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/billing/logs
+              name: billing-logs
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: billing-logs
+          hostPath:
+            path: /opt/billing/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

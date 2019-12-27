@@ -158,5 +158,9 @@ CP_DAV_SERVE_DIR=/dav-serve
 CP_DAV_MOUNT_POINT=/dav-mount
 CP_DAV_INSTRUCTIONS_URL=
 
+# cp-billing-srv
+CP_BILLING_INTERNAL_HOST=cp-billing-srv.default.svc.cluster.local
+CP_BILLING_INTERNAL_PORT=30096
+
 # Other params, specified on command line
 #

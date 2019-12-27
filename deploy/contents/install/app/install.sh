@@ -243,6 +243,11 @@ CP_SHARE_SRV_KUBE_NODE_NAME=${CP_SHARE_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAM
 print_info "-> Assigning cloud-pipeline/cp-share-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SHARE_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-share-srv="true" --overwrite
 
+# Allow to schedule Billing service to the master
+CP_BILLING_SRV_KUBE_NODE_NAME=${CP_BILLING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-billing-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_BILLING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-billing-srv="true" --overwrite
+
 echo
 
 ##########
@@ -1062,6 +1067,27 @@ if is_service_requested cp-share-srv; then
     echo
 fi
 
+
+#Billing Service
+if is_service_requested cp-billing-srv; then
+    print_ok "[Starting Billing service deployment]"
+
+    print_info "-> Deleting existing instance of Billing service"
+    delete_deployment_and_service   "cp-billing-srv" \
+                                    "/opt/billing"
+
+    if is_install_requested; then
+        print_info "-> Deploying Billing service"
+        create_kube_resource $K8S_SPECS_HOME/cp-billing-srv/cp-billing-srv-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-billing-srv/cp-billing-srv-svc.yaml
+
+        print_info "-> Waiting for Billing service to initialize"
+        wait_for_deployment "cp-billing-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-billing-srv: http://$CP_BILLING_INTERNAL_HOST:$CP_BILLING_INTERNAL_PORT"
+    fi
+    echo
+fi
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY

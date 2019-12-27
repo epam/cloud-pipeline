@@ -208,6 +208,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_SHARE_SRV_DIST_NAME"
 
+# Billing Service
+CP_BILLING_SRV_DIST_NAME=${CP_BILLING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:billing-srv-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-billing-srv \
+                -t "$CP_BILLING_SRV_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_BILLING_SRV_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
