@@ -136,13 +136,15 @@ cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
 
 slurmctld && slurmd
 
+check_last_exit_code $? "SLURM demons have started" "Fail to start SLURM demons."
+
 pipe_log_success "Master ENV is ready" "$SLURM_MASTER_SETUP_TASK"
 
 
-# Verify whether it is a resumed run - if so, do not reinstall SLURM, instead - just rerun master and exec daemon
+# Verify whether it is a resumed run - if so, do not reinstall SLURM, instead - just rerun master and worker daemon
 if [ "$RESUMED_RUN" = true ]; then
     pipe_log_info "Run is resumed - SLURM master node won't be reconfigured. Starting master and worker daemons" "$SLURM_MASTER_SETUP_TASK"
-    slurmd -f /etc/slurm/slurm.conf && slurmctld -f /etc/slurm/slurm.conf
+    slurmctld -f /etc/slurm/slurm.conf && slurmd -f /etc/slurm/slurm.conf
     _SLURM_RESUME_RESULT=$?
 
     if [ $_SLURM_RESUME_RESULT -eq 0 ]; then
