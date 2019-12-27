@@ -37,5 +37,20 @@ env > /backup.env
 echo "$CP_BKP_SCHEDULE_CRON root flock -w 1 /var/run/backup.lock bash /backup.sh" > /etc/cron.d/cp-backup
 chmod 0644 /etc/cron.d/cp-backup
 
-# Run cron in the foreground
-crond -n
+# Run cron
+crond -n -s &
+APP_PID="$!"
+
+sleep 5
+
+# Workaround the container hanging when being terminated
+function sig_handler {
+    echo "Got SIGTERM, stopping PID $APP_PID and exiting"
+    if [ $APP_PID -ne 0 ]; then
+        kill -SIGTERM "$APP_PID"
+        wait "$APP_PID"
+    fi
+    exit 143
+}
+trap 'sig_handler' SIGTERM
+wait "$APP_PID"
