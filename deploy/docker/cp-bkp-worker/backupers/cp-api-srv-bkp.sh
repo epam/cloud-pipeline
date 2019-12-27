@@ -22,12 +22,11 @@ fi
 settings_bkp_file="$bkp_dir/api-settings-dump-$(date +%Y%m%d).tgz"
 
 # Backup Settings
-tar -czf $settings_bkp_file /opt/api/acl-template \
-                            /opt/api/config \
+tar -czf $settings_bkp_file /opt/api/config \
+                            /opt/api/ext \
                             /opt/api/folder-templates \
-                            /opt/api/pipe-common \
+                            /opt/api/keystore \
                             /opt/api/pipe-templates \
-                            /opt/api/resources \
-                            /opt/api/scripts \
-                            /opt/api/sshkey \
-                            /opt/api/sso
+                            /opt/api/pki \
+                            /opt/api/sso \
+                            /opt/api/static

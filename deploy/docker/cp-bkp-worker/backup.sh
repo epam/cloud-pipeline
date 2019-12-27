@@ -14,12 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [ ! -f /backup.env ]; then
+    exit 2
+fi
+set -o allexport
+source /backup.env
+set +o allexport
+
 if [ -z "$CP_BKP_SERVICE_NAME" ]; then
     echo "[ERROR] Service name is not set via CP_BKP_SERVICE_NAME"
     exit 1
 fi
-export CP_BKP_SERVICE_WD="${CP_BKP_SERVICE_WD:-/opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME}"
-export CP_BKP_LOG="${CP_BKP_LOG:-/opt/cp-bkp-worker/logs/backup-${CP_BKP_SERVICE_NAME}.log}"
+export CP_BKP_SERVICE_WD="${CP_BKP_SERVICE_WD:-/opt/bkp-worker/$CP_BKP_SERVICE_NAME}"
+export CP_BKP_LOG="${CP_BKP_LOG:-/opt/bkp-worker/logs/backup-${CP_BKP_SERVICE_NAME}.log}"
 
 mkdir -p "$(dirname $CP_BKP_LOG)"
 exec >> "$CP_BKP_LOG"

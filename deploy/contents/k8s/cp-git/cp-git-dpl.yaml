@@ -36,8 +36,8 @@ spec:
               name: idp-pki
             - mountPath: /opt/common/pki
               name: common-pki
-            - mountPath: /opt/cp-bkp-worker/cp-git
-              name: cp-bkp-worker-cp-git
+            - mountPath: /opt/bkp-worker/cp-git
+              name: bkp-worker-cp-git
           # With SSO enabled - readiness probe gets redirect to IdP and fails, switched to manual ping in install.sh
           # readinessProbe:
           #   httpGet:
@@ -61,8 +61,8 @@ spec:
         - name: common-pki
           hostPath:
             path: /opt/common/pki
-        - name: cp-bkp-worker-cp-git
+        - name: bkp-worker-cp-git
           hostPath:
-            path: /opt/cp-bkp-worker/cp-git
+            path: /opt/bkp-worker/cp-git
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

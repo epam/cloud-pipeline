@@ -27,18 +27,18 @@ spec:
             - name: CP_BKP_SERVICE_NAME
               value: $CP_BKP_SERVICE_NAME
             - name: CP_BKP_SERVICE_WD
-              value: /opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME
+              value: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
           volumeMounts:
-            - mountPath: /opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME
+            - mountPath: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
               name: bkp-wd
-            - mountPath: /opt/cp-bkp-worker/logs
+            - mountPath: /opt/bkp-worker/logs
               name: bkp-logs
       volumes:
         - name: bkp-wd
           hostPath:
-            path: /opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME
+            path: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
         - name: bkp-logs
           hostPath:
-            path: /opt/cp-bkp-worker/logs
+            path: /opt/bkp-worker/logs
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
