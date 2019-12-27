@@ -14,9 +14,13 @@
 
 FROM library/centos:7
 
+RUN yum install cronie -y
+
 ADD backupers /backupers
 RUN chmod +x /backupers/*.sh
 ADD init /init
 RUN chmod +x /init
+ADD backup.sh /backup.sh
+RUN chmod +x /backup.sh
 
 ENTRYPOINT [ "/init" ]

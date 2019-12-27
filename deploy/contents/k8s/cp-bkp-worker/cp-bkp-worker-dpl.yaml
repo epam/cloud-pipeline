@@ -31,9 +31,14 @@ spec:
           volumeMounts:
             - mountPath: /opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME
               name: bkp-wd
+            - mountPath: /opt/cp-bkp-worker/logs
+              name: bkp-logs
       volumes:
         - name: bkp-wd
           hostPath:
             path: /opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME
+        - name: bkp-logs
+          hostPath:
+            path: /opt/cp-bkp-worker/logs
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
