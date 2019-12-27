@@ -65,7 +65,8 @@ if [ -z "$CP_BKP_SERVICE_NAME" ]; then
 fi
 export CP_BKP_SERVICE_WD="${CP_BKP_SERVICE_WD:-/opt/cp-bkp-worker/$CP_BKP_SERVICE_NAME}"
 
-if [ ! -f "/backupers/${CP_BKP_SERVICE_NAME}-bkp.sh" ]; then
+SOURCE_BKP_SCRIPT="/backupers/${CP_BKP_SERVICE_NAME}-bkp.sh"
+if [ ! -f "$SOURCE_BKP_SCRIPT" ]; then
     echo "[ERROR] Cannot find the backup script for ${CP_BKP_SERVICE_NAME}"
     exit 1
 fi
@@ -74,7 +75,7 @@ SOURCE_BKP_SCRIPT_NAME="$(basename $SOURCE_BKP_SCRIPT)"
 TARGET_BKP_SCRIPT_NAME="/tmp/$SOURCE_BKP_SCRIPT_NAME"
 
 TARGET_PODS_NAMES=($(/kubectl get po | grep $CP_BKP_SERVICE_NAME | cut -f1 -d' '))
-TARGET_PODS_COUNT=${#PODS_NAMES[@]}
+TARGET_PODS_COUNT=${#TARGET_PODS_NAMES[@]}
 if (( $TARGET_PODS_COUNT == 0 )); then
     echo "[ERROR] Cannot find the pod of the $CP_BKP_SERVICE_NAME deployment"
     exit 1
@@ -96,9 +97,15 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+TARGET_BACKUP_FILES=($(ls $CP_BKP_SERVICE_WD))
+if (( ${#TARGET_BACKUP_FILES[@]} == 0 )); then
+    echo "[ERROR] No backup files were found in $CP_BKP_SERVICE_WD"
+    exit 1
+fi
+
 # Copy the backup files to the system object storage
-TARGET_STORAGE_LOCATION="$CP_PREF_STORAGE_SCHEMA://$CP_SYSTEM_STORAGE_NAME/bakups/$CP_BKP_SERVICE_NAME/"
-TARGET_STORAGE_LOCATION_DATE="$TARGET_STORAGE_LOCATION/$(date +%Y-%m-%d)/"
+TARGET_STORAGE_LOCATION="$CP_PREF_STORAGE_SCHEMA://$CP_SYSTEM_STORAGE_NAME/backups/$CP_BKP_SERVICE_NAME/"
+TARGET_STORAGE_LOCATION_DATE="${TARGET_STORAGE_LOCATION}$(date +%Y-%m-%d)/"
 /pipe storage cp "$CP_BKP_SERVICE_WD/" \
                         "$TARGET_STORAGE_LOCATION_DATE" \
                         --recursive \
