@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.app;
 
+import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
@@ -86,7 +87,28 @@ public class CommonSyncConfiguration {
                                        elasticsearchClient,
                                        loader,
                                        indexService,
-                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient),
+                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonS3",
+                                                                               StorageType.OBJECT_STORAGE),
                                        DataStorageType.S3);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.nfs.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer efsSynchronizer(final @Value("${sync.run.index.mapping}") String runMapping,
+                                              final @Value("${sync.storage.index.name}") String indexName,
+                                              final StorageLoader loader,
+                                              final ElasticIndexService indexService,
+                                              final ElasticsearchServiceClient elasticsearchClient) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE);
+        return new StorageSynchronizer(runMapping,
+                                       commonIndexPrefix,
+                                       indexName,
+                                       bulkSize,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonEFS",
+                                                                               StorageType.FILE_STORAGE),
+                                       DataStorageType.NFS);
     }
 }

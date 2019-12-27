@@ -29,6 +29,10 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage> {
 
+    private Long usageBytes;
+    private StorageType storageType;
+    private String regionName;
+
     @Builder
     public StorageBillingInfo(final LocalDate date, final AbstractDataStorage storage, final Long cost,
                               final Long usageBytes, final StorageType storageType, final String regionName) {
@@ -37,8 +41,4 @@ public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage>
         this.storageType = storageType;
         this.regionName = regionName;
     }
-
-    private Long usageBytes;
-    private StorageType storageType;
-    private String regionName;
 }

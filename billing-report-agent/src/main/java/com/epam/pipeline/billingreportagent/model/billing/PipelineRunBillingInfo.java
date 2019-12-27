@@ -28,12 +28,12 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 public class PipelineRunBillingInfo extends AbstractBillingInfo<PipelineRun> {
 
+    private Long usageMinutes;
+
     @Builder
     public PipelineRunBillingInfo(final LocalDate date, final PipelineRun run,
                                   final Long cost, final Long usageMinutes) {
         super(date, run, cost, ResourceType.COMPUTE);
         this.usageMinutes = usageMinutes;
     }
-
-    private Long usageMinutes;
 }

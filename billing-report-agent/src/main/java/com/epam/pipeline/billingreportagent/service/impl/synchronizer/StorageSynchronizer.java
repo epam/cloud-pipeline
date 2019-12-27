@@ -76,7 +76,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         final List<EntityContainer<AbstractDataStorage>> entityContainers = loader.loadAllEntities();
         final List<DocWriteRequest> storageBillingRequests = entityContainers.stream()
             .filter(storage -> storage.getEntity().getType() == storageType)
-            .map(storage -> createStorageBillings(storage, lastSyncTime, syncStart))
+            .map(storage -> createStorageBillingRequest(storage, lastSyncTime, syncStart))
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
@@ -97,9 +97,9 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         log.debug("Successfully finished storage billing synchronization.");
     }
 
-    private List<DocWriteRequest> createStorageBillings(final EntityContainer<AbstractDataStorage> storage,
-                                                        final LocalDateTime previousSync,
-                                                        final LocalDateTime syncStart) {
+    private List<DocWriteRequest> createStorageBillingRequest(final EntityContainer<AbstractDataStorage> storage,
+                                                              final LocalDateTime previousSync,
+                                                              final LocalDateTime syncStart) {
         try {
             final String commonRunBillingIndexName = indexPrefix + storageIndexName;
             return buildDocRequests(storage, commonRunBillingIndexName, previousSync, syncStart);
@@ -119,6 +119,4 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         return storageToBillingRequestConverter.convertEntityToRequests(storage, indexNameForStorage,
                                                                         previousSync, syncStart);
     }
-
-
 }

@@ -29,10 +29,12 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -49,6 +51,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -66,17 +69,22 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final int BYTES_TO_GB = 1 << 30;
     private static final int CENTS_IN_DOLLAR = 100;
     private static final int PRECISION = 5;
+    private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
 
     private final EntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
-    private final Map<Regions, BigDecimal> s3PriceListGb = new HashMap<>();
-    private BigDecimal defaultS3PriceGb;
+    private final Map<Regions, BigDecimal> storagePriceListGb = new HashMap<>();
+    private BigDecimal defaultPriceGb;
+    private final StorageType storageType;
 
     public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
-                                               final ElasticsearchServiceClient elasticsearchService) {
+                                               final ElasticsearchServiceClient elasticsearchService,
+                                               final String awsStorageServiceName,
+                                               final StorageType storageType) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
-        initPrices();
+        this.storageType = storageType;
+        initPrices(awsStorageServiceName);
     }
 
     @Override
@@ -86,7 +94,8 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                                          final LocalDateTime syncStart) {
         final SearchRequest searchRequest = new SearchRequest();
         final Long storageId = storageContainer.getEntity().getId();
-        searchRequest.indices(String.format("*-cp-s3-file-%d", storageId));
+        final DataStorageType storageType = storageContainer.getEntity().getType();
+        searchRequest.indices(String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId));
 
         final SumAggregationBuilder sizeSumAgg = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
             .field(SIZE_FIELD);
@@ -138,15 +147,15 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                 .storage(storageContainer.getEntity())
                 .usageBytes(byteSize)
                 .date(billingDate)
-                .storageType(StorageType.FILE_STORAGE);
+                .storageType(storageType);
 
         try {
             final Regions region = Regions.fromName(regionLocation);
             billing
                 .regionName(region.getName())
-                .cost(calculateDailyCost(byteSize, s3PriceListGb.get(region), billingDate));
+                .cost(calculateDailyCost(byteSize, storagePriceListGb.get(region), billingDate));
         } catch (IllegalArgumentException e) {
-            billing.cost(calculateDailyCost(byteSize, defaultS3PriceGb, billingDate));
+            billing.cost(calculateDailyCost(byteSize, defaultPriceGb, billingDate));
         }
 
         return billing.build();
@@ -165,7 +174,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
 
         final int daysInMonth = YearMonth.of(date.getYear(), date.getMonthValue()).lengthOfMonth();
 
-        final Long hundredthsOfCentPrice = sizeGb.multiply(monthlyPriceGb)
+        final long hundredthsOfCentPrice = sizeGb.multiply(monthlyPriceGb)
             .divide(BigDecimal.valueOf(daysInMonth), RoundingMode.CEILING)
             .scaleByPowerOfTen(2)
             .longValue();
@@ -175,28 +184,8 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     }
 
 
-    private void initPrices() {
-        final Filter filter = new Filter();
-        filter.setType("TERM_MATCH");
-        filter.setField("productFamily");
-        filter.setValue("Storage");
-        filter.setField("storageClass");
-        filter.setValue("General Purpose");
-
-        final GetProductsRequest request = new GetProductsRequest()
-            .withServiceCode("AmazonS3")
-            .withFilters(filter)
-            .withFormatVersion("aws_v1");
-
-        final AWSPricing awsPricingService = AWSPricingClientBuilder
-            .standard()
-            .withRegion(Regions.US_EAST_1)
-            .build();
-
-        // TODO use pagination to guaranteed receive all regions
-        final GetProductsResult result = awsPricingService.getProducts(request);
-
-        result.getPriceList().forEach(price -> {
+    private void initPrices(final String awsStorageServiceName) {
+        loadFullPriceList(awsStorageServiceName).forEach(price -> {
             try {
                 final JsonNode priceJson = new ObjectMapper().readTree(price);
                 final String regionName = priceJson.path("product").path("attributes").path("location").asText();
@@ -207,15 +196,44 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                  new BigDecimal(unitPrice.path("USD").asDouble(), new MathContext(PRECISION)))
                         .max(Comparator.naturalOrder())
                         .map(priceInDollars -> priceInDollars.multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR)))
-                        .ifPresent(maxPrice -> s3PriceListGb.put(region, maxPrice)));
+                        .ifPresent(maxPrice -> storagePriceListGb.put(region, maxPrice)));
             } catch (IOException e) {
                 log.error("Can't instantiate AWS storage price list!");
             }
         });
-        defaultS3PriceGb = s3PriceListGb.values()
+        defaultPriceGb = storagePriceListGb.values()
             .stream()
             .max(Comparator.naturalOrder())
             .orElseThrow(() -> new RuntimeException("No AWS storage prices loaded!"));
+    }
+
+    private List<String> loadFullPriceList(final String awsStorageServiceName) {
+        final List<String> allPrices = new ArrayList<>();
+        final Filter filter = new Filter();
+        filter.setType("TERM_MATCH");
+        filter.setField("productFamily");
+        filter.setValue("Storage");
+        filter.setField("storageClass");
+        filter.setValue("General Purpose");
+
+        String nextToken = StringUtils.EMPTY;
+        do {
+            final GetProductsRequest request = new GetProductsRequest()
+                .withServiceCode(awsStorageServiceName)
+                .withFilters(filter)
+                .withNextToken(nextToken)
+                .withFormatVersion("aws_v1");
+
+            final AWSPricing awsPricingService = AWSPricingClientBuilder
+                .standard()
+                .withRegion(Regions.US_EAST_1)
+                .build();
+
+            final GetProductsResult result = awsPricingService.getProducts(request);
+            allPrices.addAll(result.getPriceList());
+            nextToken = result.getNextToken();
+        } while (nextToken != null);
+        return allPrices;
     }
 
     private Optional<Regions> getRegionFromFullLocation(final String location) {
