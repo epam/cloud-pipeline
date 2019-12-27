@@ -186,6 +186,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
                 -t "$CP_NODE_LOGGER_DIST_NAME"
 docker push "$CP_NODE_LOGGER_DIST_NAME"
 
+# Backups manager
+CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-bkp-worker \
+                -t "$CP_BKP_WORKER_DIST_NAME"
+docker push "$CP_BKP_WORKER_DIST_NAME"
+
 # VM Monitor
 CP_VM_MONITOR_DIST_NAME=${CP_VM_MONITOR_DIST_NAME:-"$CP_DIST_REPO_NAME:vm-monitor-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \

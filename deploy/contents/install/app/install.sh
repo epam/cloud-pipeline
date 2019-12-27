@@ -293,6 +293,7 @@ if is_service_requested cp-api-db; then
     print_info "-> Deleting existing instance of postgres DB"
     delete_deployment_and_service   "cp-api-db" \
                                     "/opt/postgresql"
+    delete_deployment_and_service   "cp-bkp-worker-cp-api-db"
 
 
     if is_install_requested; then
@@ -302,6 +303,12 @@ if is_service_requested cp-api-db; then
 
         print_info "-> Waiting for postgres DB to initialize"
         wait_for_deployment "cp-api-db"
+
+        # Install the PSQL backup service
+        export CP_BKP_SERVICE_NAME="cp-api-db"
+        create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
+        unset CP_BKP_SERVICE_NAME
+
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-db: $PSG_HOST:$PSG_PORT"
     fi
     echo
@@ -407,6 +414,7 @@ if is_service_requested cp-api-srv; then
     print_info "-> Deleting existing instance of API Service"
     delete_deployment_and_service   "cp-api-srv" \
                                     "/opt/api"
+    delete_deployment_and_service   "cp-bkp-worker-cp-api-srv"
 
     if is_install_requested; then
         print_info "-> Creating postgres DB user and schema for API Service"
@@ -527,6 +535,11 @@ if is_service_requested cp-api-srv; then
                 print_ok "Price list is synchronized to the API DB"
             fi
         fi
+
+        # Install the API assets backup service
+        export CP_BKP_SERVICE_NAME="cp-api-srv"
+        create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
+        unset CP_BKP_SERVICE_NAME
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"
     fi
@@ -680,6 +693,7 @@ if is_service_requested cp-git; then
     print_info "-> Deleting existing instance of GitLab"
     delete_deployment_and_service   "cp-git" \
                                     "/opt/gitlab"
+    delete_deployment_and_service   "cp-bkp-worker-cp-git"
 
     if is_install_requested; then
         print_info "-> Creating postgres DB user and schema for GitLab"
@@ -783,6 +797,11 @@ if is_service_requested cp-git; then
         else
             print_err "Error occured while getting GitLab root's private_token (https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/). GitLab won't be registered, but this can be done manually from the Cloud Pipeline GUI/API"
         fi
+
+        # Install the GitLab backup service
+        export CP_BKP_SERVICE_NAME="cp-git"
+        create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
+        unset CP_BKP_SERVICE_NAME
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-git:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSAML Auth:       https://$CP_GITLAB_EXTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT"
