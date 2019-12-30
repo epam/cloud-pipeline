@@ -19,7 +19,7 @@ spec:
       containers:
         - name: cp-bkp-worker-$CP_BKP_SERVICE_NAME
           image: lifescience/cloud-pipeline:cp-bkp-worker-$CP_VERSION
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           envFrom:
             - configMapRef:
                 name: cp-config-global
