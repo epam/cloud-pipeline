@@ -39,6 +39,7 @@ import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
@@ -70,6 +71,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final int CENTS_IN_DOLLAR = 100;
     private static final int PRECISION = 5;
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
+    private static final String INDEX_PATTERN = "%s-daily-%d-%s";
 
     private final EntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
@@ -85,6 +87,17 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
         initPrices(awsStorageServiceName);
+    }
+
+    public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
+                                               final ElasticsearchServiceClient elasticsearchService,
+                                               final StorageType storageType,
+                                               final Map<Regions, BigDecimal> priceList) {
+        this.mapper = mapper;
+        this.elasticsearchService = elasticsearchService;
+        this.storageType = storageType;
+        this.storagePriceListGb.putAll(priceList);
+        this.defaultPriceGb = calculateDefaultPriceGb();
     }
 
     @Override
@@ -104,21 +117,21 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         searchRequest.source(sizeSumSearch);
 
         final SearchResponse search = elasticsearchService.search(searchRequest);
-
         final ParsedSum sumAggResult = search.getAggregations().get(STORAGE_SIZE_AGG_NAME);
         final long storageSize = new Double(sumAggResult.getValue()).longValue();
 
+        final SearchHits hits = search.getHits();
         if (storageSize == 0
-            || search.getHits().getTotalHits() == 0) {
+            || hits.getTotalHits() == 0) {
             return Collections.emptyList();
         }
 
         final LocalDate localDate = syncStart.toLocalDate().minusDays(1);
-        final String fullIndex = String.format("%s-daily-%d-%s",
+        final String fullIndex = String.format(INDEX_PATTERN,
                                                indexName,
                                                storageId,
                                                parseDateToString(localDate));
-        final String regionLocation = (String) search.getHits().getAt(0).getSourceAsMap().get(REGION_FIELD);
+        final String regionLocation = (String) hits.getAt(0).getSourceAsMap().get(REGION_FIELD);
         final StorageBillingInfo storageBilling = createBilling(storageContainer,
                                                                 storageSize,
                                                                 regionLocation,
@@ -162,13 +175,14 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     }
 
     /**
-     * Calculate daily spending on files storing in hundredths of a cent
+     * Calculate daily spending on files storing in hundredths of a cent.
+     * The minimal result, possibly returned by this function is 1, due to hundredths of cents granularity.
      * @param sizeBytes storage size
      * @param monthlyPriceGb price Gb/month in cents
      * @param date billing date
      * @return daily cost
      */
-    private Long calculateDailyCost(final Long sizeBytes, final BigDecimal monthlyPriceGb, final LocalDate date) {
+    Long calculateDailyCost(final Long sizeBytes, final BigDecimal monthlyPriceGb, final LocalDate date) {
         final BigDecimal sizeGb = BigDecimal.valueOf(sizeBytes)
             .divide(BigDecimal.valueOf(BYTES_TO_GB), PRECISION, RoundingMode.CEILING);
 
@@ -182,7 +196,6 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                ? 1
                : hundredthsOfCentPrice;
     }
-
 
     private void initPrices(final String awsStorageServiceName) {
         loadFullPriceList(awsStorageServiceName).forEach(price -> {
@@ -201,7 +214,11 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                 log.error("Can't instantiate AWS storage price list!");
             }
         });
-        defaultPriceGb = storagePriceListGb.values()
+        defaultPriceGb = calculateDefaultPriceGb();
+    }
+
+    private BigDecimal calculateDefaultPriceGb() {
+        return storagePriceListGb.values()
             .stream()
             .max(Comparator.naturalOrder())
             .orElseThrow(() -> new RuntimeException("No AWS storage prices loaded!"));

@@ -55,10 +55,6 @@ public final class TestUtils {
     public static final String LATEST_TAG = "latest";
     public static final long DOCKER_SIZE = 123456L;
 
-    private TestUtils() {
-        // No-op
-    }
-
     /**
      * Helper method for mocking DockerClient functionality
      * @param dockerClientMock a {@link DockerClient} mock object
