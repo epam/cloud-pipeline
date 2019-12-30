@@ -116,7 +116,7 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
       content = <Alert type="warning" message={this.props.completedRuns.error} />;
     } else {
       content = [
-        <Row key="runs" type="flex" style={{flex: 1, overflowY: 'auto'}}>
+        <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
           <CardsPanel
             key="runs"
             panelKey={this.props.panelKey}

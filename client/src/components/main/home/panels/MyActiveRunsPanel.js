@@ -140,7 +140,7 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
       content = <Alert type="warning" message={this.props.activeRuns.error} />;
     } else {
       content = [
-        <Row key="runs" type="flex" style={{flex: 1, overflowY: 'auto'}}>
+        <Row key="runs" style={{flex: 1, overflowY: 'auto'}}>
           <CardsPanel
             key="runs"
             panelKey={this.props.panelKey}
