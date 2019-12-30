@@ -108,7 +108,7 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
 
-    yum install mariadb-server mariadb-devel epel-release  munge munge-libs munge-devel openssl openssl-devel \
+    yum install gcc gcc-c++ mariadb-server mariadb-devel epel-release  munge munge-libs munge-devel openssl openssl-devel \
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
@@ -127,9 +127,15 @@ chown munge: /etc/munge/munge.key
 chmod 400 /etc/munge/munge.key
 su -c /usr/sbin/munged -s /bin/bash munge
 
+_WORKER_CORES=$(nproc)
+_NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
+_NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
+CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
+_WORKER_CORES=$((_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
+
 IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
 for _NODE in ${_NODE_NAMES[*]} ; do
-    echo "NodeName=$_NODE State=UNKNOWN" >> /common/slurm.conf
+    echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> /common/slurm.conf
 done
 echo "PartitionName=main.q Nodes=`echo ${_NODE_NAMES[*]} | xargs |  awk -v OFS="," '{$1=$1;print}'` Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
 cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
