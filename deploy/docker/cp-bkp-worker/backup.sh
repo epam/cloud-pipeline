@@ -18,7 +18,7 @@ if [ ! -f /backup.env ]; then
     exit 2
 fi
 set -o allexport
-source /backup.env
+source /backup.env &> /dev/null
 set +o allexport
 
 if [ -z "$CP_BKP_SERVICE_NAME" ]; then
@@ -68,7 +68,7 @@ fi
 SOURCE_BKP_SCRIPT_NAME="$(basename $SOURCE_BKP_SCRIPT)"
 TARGET_BKP_SCRIPT_NAME="/tmp/$SOURCE_BKP_SCRIPT_NAME"
 
-TARGET_PODS_NAMES=($(/kubectl get po | grep $CP_BKP_SERVICE_NAME | cut -f1 -d' '))
+TARGET_PODS_NAMES=($(/kubectl get po | grep "^$CP_BKP_SERVICE_NAME" | cut -f1 -d' '))
 TARGET_PODS_COUNT=${#TARGET_PODS_NAMES[@]}
 if (( $TARGET_PODS_COUNT == 0 )); then
     echo "[ERROR] Cannot find the pod of the $CP_BKP_SERVICE_NAME deployment"
