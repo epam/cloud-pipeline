@@ -311,8 +311,10 @@ if is_service_requested cp-api-db; then
 
         # Install the PSQL backup service
         export CP_BKP_SERVICE_NAME="cp-api-db"
+        export CP_BKP_SERVICE_WD="/opt/postgresql/data/bkp"
         create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
         unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_WD
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-db: $PSG_HOST:$PSG_PORT"
     fi
@@ -543,8 +545,10 @@ if is_service_requested cp-api-srv; then
 
         # Install the API assets backup service
         export CP_BKP_SERVICE_NAME="cp-api-srv"
+        export CP_BKP_SERVICE_WD="/opt/api/logs/bkp"
         create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
         unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_WD
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"
     fi
@@ -824,8 +828,10 @@ if is_service_requested cp-git; then
 
         # Install the GitLab backup service
         export CP_BKP_SERVICE_NAME="cp-git"
+        export CP_BKP_SERVICE_WD="/opt/gitlab/data/bkp"
         create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
         unset CP_BKP_SERVICE_NAME
+        unset CP_BKP_SERVICE_WD
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-git:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nSAML Auth:       https://$CP_GITLAB_EXTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT"

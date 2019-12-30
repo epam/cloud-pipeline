@@ -62,8 +62,6 @@ spec:
             - name: cp-cluster-ssh-key
               mountPath: "/etc/cp_ssh"
               readOnly: true
-            - mountPath: /opt/bkp-worker/cp-api-srv
-              name: bkp-worker-cp-api-srv
           readinessProbe:
             httpGet:
               path: /pipeline/launch.sh
@@ -122,8 +120,5 @@ spec:
             secretName: cp-cluster-ssh-key
             # Kube accepts mode in decimal. So 384 gives 600, which is required for SSH keys
             defaultMode: 384
-        - name: bkp-worker-cp-api-srv
-          hostPath:
-            path: /opt/bkp-worker/cp-api-srv
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

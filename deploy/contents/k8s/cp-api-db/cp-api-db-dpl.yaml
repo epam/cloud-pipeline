@@ -36,8 +36,6 @@ spec:
           volumeMounts:
             - mountPath: /var/lib/postgresql/data
               name: pgdata
-            - mountPath: /opt/bkp-worker/cp-api-db
-              name: bkp-worker-cp-api-db
           readinessProbe:
             tcpSocket:
               port: ${PSG_PORT}
@@ -53,8 +51,5 @@ spec:
         - name: pgdata
           hostPath:
             path: /opt/postgresql/data
-        - name: bkp-worker-cp-api-db
-          hostPath:
-            path: /opt/bkp-worker/cp-api-db
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

@@ -14,11 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-bkp_dir="$1"
-if [ ! -d "$bkp_dir" ]; then
-    echo "[ERROR] Cannot find the backup directory at $bkp_dir"
-    exit 1
-fi
+bkp_dir="${1:-/var/lib/postgresql/data/bkp/bkp-worker-wd}"
+mkdir -p "$bkp_dir"
 sql_bkp_file="$bkp_dir/api-db-dump-$(date +%Y%m%d).sql.gz"
 
 # Backup DB

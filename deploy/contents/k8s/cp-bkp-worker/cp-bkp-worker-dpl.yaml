@@ -27,16 +27,16 @@ spec:
             - name: CP_BKP_SERVICE_NAME
               value: $CP_BKP_SERVICE_NAME
             - name: CP_BKP_SERVICE_WD
-              value: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
+              value: ${CP_BKP_SERVICE_WD}/bkp-worker-wd
           volumeMounts:
-            - mountPath: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
+            - mountPath: $CP_BKP_SERVICE_WD/bkp-worker-wd
               name: bkp-wd
             - mountPath: /opt/bkp-worker/logs
               name: bkp-logs
       volumes:
         - name: bkp-wd
           hostPath:
-            path: /opt/bkp-worker/$CP_BKP_SERVICE_NAME
+            path: ${CP_BKP_SERVICE_WD}/bkp-worker-wd
         - name: bkp-logs
           hostPath:
             path: /opt/bkp-worker/logs

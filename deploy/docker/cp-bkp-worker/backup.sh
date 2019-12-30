@@ -25,7 +25,10 @@ if [ -z "$CP_BKP_SERVICE_NAME" ]; then
     echo "[ERROR] Service name is not set via CP_BKP_SERVICE_NAME"
     exit 1
 fi
-export CP_BKP_SERVICE_WD="${CP_BKP_SERVICE_WD:-/opt/bkp-worker/$CP_BKP_SERVICE_NAME}"
+if [ -z "$CP_BKP_SERVICE_WD" ]; then
+    echo "[ERROR] Backup directory is not set via CP_BKP_SERVICE_WD"
+    exit 1
+fi
 export CP_BKP_LOG="${CP_BKP_LOG:-/opt/bkp-worker/logs/backup-${CP_BKP_SERVICE_NAME}.log}"
 
 mkdir -p "$(dirname $CP_BKP_LOG)"
@@ -82,7 +85,7 @@ fi
 
 # Do the backup
 rm -rf $CP_BKP_SERVICE_WD/*
-bash -c "/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME $CP_BKP_SERVICE_WD"
+bash -c "/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME"
 if [ $? -ne 0 ]; then
     echo "[ERROR] An error occured while executing the backup script at $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
     exit 1

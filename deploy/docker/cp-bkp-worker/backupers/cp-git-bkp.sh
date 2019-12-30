@@ -16,11 +16,8 @@
 
 #!/bin/bash
 
-bkp_dir="$1"
-if [ ! -d "$bkp_dir" ]; then
-    echo "[ERROR] Cannot find the backup directory at $bkp_dir"
-    exit 1
-fi
+bkp_dir="${1:-/var/opt/gitlab/bkp/bkp-worker-wd}"
+mkdir -p "$bkp_dir"
 gitlab_settings_bkp_file="$bkp_dir/git-settings-dump-$(date +%Y%m%d).tgz"
 
 # GitLab DB and repos backup
