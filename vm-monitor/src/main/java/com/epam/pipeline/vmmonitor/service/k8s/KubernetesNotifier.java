@@ -56,7 +56,7 @@ public class KubernetesNotifier {
                                      final int required,
                                      final int ready) {
         final Map<String, Object> parameters = new HashMap<>();
-        parameters.put("deploymentName", deploymentName);
+        parameters.put("deployment", deploymentName);
         parameters.put("requiredReplicas", required);
         parameters.put("readyReplicas", ready);
         notificationService.sendMessage(parameters, notReadyDeploymentSubject, notReadyDeploymentTemplate);
