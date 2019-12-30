@@ -1069,7 +1069,7 @@ function check_pod_exists {
 function wait_for_deletion {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
     for p in $pods; do
         print_info "Waiting for pod \"$p\" final deletion and cleanup..."
         while check_pod_exists "$p"; do
@@ -1086,7 +1086,7 @@ function wait_for_deployment {
     print_info "Waiting for deployment/pod $DEPLOYMENT_NAME creation..."
     set -o pipefail
     while "true"; do
-        pods=$(kubectl get po 2>/dev/null | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+        pods=$(kubectl get po 2>/dev/null | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
         [ $? -eq 0 ] && [ "$pods" ] && break
     done
     set +o pipefail
@@ -1121,7 +1121,7 @@ function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
     local CMD="$2"
 
-    pods=$(kubectl get po | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
     for p in $pods; do
         bash -c "kubectl exec -i $p -- $CMD"
     done
@@ -1130,7 +1130,7 @@ function execute_deployment_command {
 function delete_deployment_pods {
     local DEPLOYMENT_NAME=$1
 
-    pods=$(kubectl get po | grep $DEPLOYMENT_NAME | cut -f1 -d' ')
+    pods=$(kubectl get po | grep "^${DEPLOYMENT_NAME}" | cut -f1 -d' ')
     for p in $pods; do
         kubectl delete po $p --grace-period=0 --force
     done
