@@ -108,7 +108,8 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
 
-    yum install gcc gcc-c++ mariadb-server mariadb-devel epel-release  munge munge-libs munge-devel openssl openssl-devel \
+    yum install epel-release -y
+    yum install gcc gcc-c++ mariadb-server mariadb-devel  munge munge-libs munge-devel openssl openssl-devel \
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
@@ -133,9 +134,23 @@ _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
 CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
 _WORKER_CORES=$((_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
 
+if (( _NODE_GPUS_COUNT > 0 ))
+then
+    echo "GresTypes=gpu" >> /common/slurm.conf
+    echo "AutoDetect=nvml" >> /$_SLURM_CONFIG_LOCATION/gres.conf
+    for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
+        echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
+    done
+fi
+
 IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
 for _NODE in ${_NODE_NAMES[*]} ; do
-    echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> /common/slurm.conf
+    if (( _NODE_GPUS_COUNT > 0 ))
+    then
+        echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> /common/slurm.conf
+    elif
+        echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=UNKNOWN" >> /common/slurm.conf
+    fi
 done
 echo "PartitionName=main.q Nodes=`echo ${_NODE_NAMES[*]} | xargs |  awk -v OFS="," '{$1=$1;print}'` Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
 cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"

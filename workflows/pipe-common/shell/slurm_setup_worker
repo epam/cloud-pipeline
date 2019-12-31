@@ -30,6 +30,16 @@ add_worker() {
     chmod 755 /var/spool/slurmd
     touch /var/log/slurmd.log
     chown slurm: /var/log/slurmd.log
+
+    _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
+    if (( _NODE_GPUS_COUNT > 0 ))
+    then
+        echo "AutoDetect=nvml" >> /$_SLURM_CONFIG_LOCATION/gres.conf
+        for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
+            echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
+        done
+    fi
+
     slurmd
 }
 
@@ -83,7 +93,8 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
 
-    yum install epel-release  munge munge-libs munge-devel openssl openssl-devel \
+    yum install epel-release -y
+    yum install munge munge-libs munge-devel openssl openssl-devel \
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel  \
                 rrdtool-devel ncurses-devel man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
