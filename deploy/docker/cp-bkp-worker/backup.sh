@@ -84,7 +84,7 @@ if [ $? -ne 0 ]; then
 fi
 
 # Do the backup
-rm -rf $CP_BKP_SERVICE_WD/*
+rm -rf $CP_BKP_SERVICE_WD/cp-bkp-*
 bash -c "/kubectl exec -i $TARGET_POD -- bash $TARGET_BKP_SCRIPT_NAME"
 if [ $? -ne 0 ]; then
     echo "[ERROR] An error occured while executing the backup script at $TARGET_POD:$TARGET_BKP_SCRIPT_NAME"
@@ -109,7 +109,7 @@ if [ $? -ne 0 ]; then
     echo "[ERROR] An error occured while transferring backups from $CP_BKP_SERVICE_WD to $TARGET_STORAGE_LOCATION_DATE"
     exit 1
 fi
-rm -rf $CP_BKP_SERVICE_WD/*
+rm -rf $CP_BKP_SERVICE_WD/cp-bkp-*
 
 # Remove the outdated backup (keep last CP_BKP_FILES_COUNT)
 export CP_BKP_FILES_COUNT="${CP_BKP_FILES_COUNT:-10}"

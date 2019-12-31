@@ -16,7 +16,7 @@
 
 bkp_dir="${1:-/opt/api/logs/bkp/bkp-worker-wd}"
 mkdir -p "$bkp_dir"
-settings_bkp_file="$bkp_dir/api-settings-dump-$(date +%Y%m%d).tgz"
+settings_bkp_file="$bkp_dir/cp-bkp-api-settings-dump-$(date +%Y%m%d).tgz"
 
 # Backup Settings
 tar -czf $settings_bkp_file /opt/api/config \

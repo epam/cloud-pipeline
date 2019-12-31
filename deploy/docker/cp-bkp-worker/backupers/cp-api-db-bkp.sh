@@ -16,7 +16,7 @@
 
 bkp_dir="${1:-/var/lib/postgresql/data/bkp/bkp-worker-wd}"
 mkdir -p "$bkp_dir"
-sql_bkp_file="$bkp_dir/api-db-dump-$(date +%Y%m%d).sql.gz"
+sql_bkp_file="$bkp_dir/cp-bkp-api-db-dump-$(date +%Y%m%d).sql.gz"
 
 # Backup DB
 pg_dump -U pipeline pipeline | gzip > $sql_bkp_file
