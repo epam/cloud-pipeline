@@ -113,10 +113,17 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
-    wget https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2
-    rpmbuild -ta slurm*.tar.bz2
-    mkdir /common/slurm-pkgs
-    cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
+    mkdir -p /common/slurm-pkgs
+    wget https://epm-cloud-pipeline-distr-storage.s3.eu-central-1.amazonaws.com/yum-cache/slurm-19.05.5-1.el7.x86_64.tar
+    if [[ $? -ne 0 ]]; then
+        wget https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2
+        rpmbuild -ta slurm*.tar.bz2
+        cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
+    else
+        tar -xf slurm-19.05.5-1.el7.x86_64.tar
+        mv slurm-19.05.5-1.el7.x86_64/* /common/slurm-pkgs/
+    fi
+
     yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
 fi
 
@@ -148,7 +155,7 @@ for _NODE in ${_NODE_NAMES[*]} ; do
     if (( _NODE_GPUS_COUNT > 0 ))
     then
         echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> /common/slurm.conf
-    elif
+    else
         echo "NodeName=$_NODE CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=UNKNOWN" >> /common/slurm.conf
     fi
 done
