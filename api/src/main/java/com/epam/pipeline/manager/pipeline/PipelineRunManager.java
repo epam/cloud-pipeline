@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -1032,6 +1033,29 @@ public class PipelineRunManager {
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
         nodesManager.attachDisk(pipelineRun, request);
+        return pipelineRun;
+    }
+
+    /**
+     * Resizes run root disk by the given request.
+     *
+     * @param runId {@link PipelineRun} id for pipeline run.
+     * @param request Disk resize request.
+     * @return Updated pipeline run.
+     */
+    @Transactional(propagation = Propagation.REQUIRED)
+    public PipelineRun resizeDisk(final Long runId, final DiskResizeRequest request) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(pipelineRun,
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+        Assert.state(pipelineRun.getStatus() == TaskStatus.RUNNING || pipelineRun.getStatus().isPause(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_RESIZING_WRONG_STATUS, runId,
+                        pipelineRun.getStatus()));
+        Assert.notNull(request.getSize(),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
+        Assert.isTrue(request.getSize() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
+        nodesManager.resizeDisk(pipelineRun, request);
         return pipelineRun;
     }
 

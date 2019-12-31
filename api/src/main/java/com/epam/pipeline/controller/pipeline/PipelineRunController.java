@@ -32,6 +32,7 @@ import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -500,6 +501,19 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRun> attachDisk(@PathVariable(value = RUN_ID) final Long runId,
                                           @RequestBody final DiskAttachRequest request) {
         return Result.success(runApiService.attachDisk(runId, request));
+    }
+
+    @PostMapping(value = "/run/{runId}/disk/resize")
+    @ResponseBody
+    @ApiOperation(
+            value = "Resizes pipeline run root disk.",
+            notes = "Resizes pipeline run root disk by the given request. " +
+                    "Disk size should be specified in GB.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun> resizeDisk(@PathVariable(value = RUN_ID) final Long runId,
+                                          @RequestBody final DiskResizeRequest request) {
+        return Result.success(runApiService.resizeDisk(runId, request));
     }
 
     @GetMapping(value = "/run/activity")

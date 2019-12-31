@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -120,6 +121,32 @@ public class PipelineRunManagerUnitTest {
         assertAttachSucceed(run(TaskStatus.RESUMING));
     }
 
+    @Test
+    public void testResizeDiskToNotExistingRun() {
+        assertResizeFails(NOT_EXISTING_RUN_ID, diskResizeRequest());
+    }
+
+    @Test
+    public void testResizeDiskToInvalidRuns() {
+        assertResizeFails(run(TaskStatus.STOPPED));
+        assertResizeFails(run(TaskStatus.FAILURE));
+        assertResizeFails(run(TaskStatus.SUCCESS));
+    }
+
+    @Test
+    public void testResizeDiskWithInvalidSize() {
+        assertResizeFails(diskResizeRequest(null));
+        assertResizeFails(diskResizeRequest(-SIZE));
+    }
+
+    @Test
+    public void testResizeDiskForValidRuns() {
+        assertResizeSucceed(run(TaskStatus.RUNNING));
+        assertResizeSucceed(run(TaskStatus.PAUSING));
+        assertResizeSucceed(run(TaskStatus.PAUSED));
+        assertResizeSucceed(run(TaskStatus.RESUMING));
+    }
+
     private void assertAttachFails(final DiskAttachRequest request) {
         assertAttachFails(RUN_ID, request);
     }
@@ -138,6 +165,26 @@ public class PipelineRunManagerUnitTest {
         pipelineRunManager.attachDisk(RUN_ID, diskAttachRequest());
         verify(nodesManager).attachDisk(argThat(matches(r -> r.getStatus() == run.getStatus())),
                 eq(diskAttachRequest()));
+    }
+
+    private void assertResizeFails(final DiskResizeRequest request) {
+        assertResizeFails(RUN_ID, request);
+    }
+
+    private void assertResizeFails(final Long runId, final DiskResizeRequest request) {
+        assertThrows(() -> pipelineRunManager.resizeDisk(runId, request));
+    }
+
+    private void assertResizeFails(final PipelineRun run) {
+        when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
+        assertResizeFails(diskResizeRequest());
+    }
+
+    private void assertResizeSucceed(final PipelineRun run) {
+        when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
+        pipelineRunManager.resizeDisk(RUN_ID, diskResizeRequest());
+        verify(nodesManager).resizeDisk(argThat(matches(r -> r.getStatus() == run.getStatus())),
+                eq(diskResizeRequest()));
     }
 
     private PipelineRun run(final TaskStatus status) {
@@ -161,6 +208,14 @@ public class PipelineRunManagerUnitTest {
 
     private DiskAttachRequest diskAttachRequest(final Long size) {
         return new DiskAttachRequest(size);
+    }
+
+    private DiskResizeRequest diskResizeRequest() {
+        return diskResizeRequest(SIZE);
+    }
+
+    private DiskResizeRequest diskResizeRequest(final Long size) {
+        return new DiskResizeRequest(size);
     }
 
     private <T> BaseMatcher<T> matches(final Predicate<T> test) {

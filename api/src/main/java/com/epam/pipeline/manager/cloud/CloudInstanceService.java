@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cluster.AutoscalerServiceImpl;
@@ -178,4 +179,12 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param request
      */
     void attachDisk(T region, Long runId, DiskAttachRequest request);
+
+    /**
+     * Resizes cloud instance root disk by the given request.
+     * @param region
+     * @param runId
+     * @param request
+     */
+    void resizeDisk(T region, Long runId, DiskResizeRequest request);
 }
