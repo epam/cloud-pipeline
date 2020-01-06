@@ -65,6 +65,7 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -89,6 +90,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -301,6 +303,39 @@ public class S3Helper {
                     "file size exceeds the limit of %s bytes", path, version, COPYING_FILE_SIZE_LIMIT));
         }
         moveS3Object(client, bucket, new MoveObjectRequest(path, version, path));
+    }
+
+    public void restoreFolder(final String bucket, final String path, final RestoreFolderVO restoreFolderVO) {
+        final AmazonS3 client = getDefaultS3Client();
+        final String requestPath = Optional.ofNullable(path).orElse("");
+        if (!StringUtils.isNullOrEmpty(requestPath)) {
+            Assert.isTrue(checkItemType(client, bucket, requestPath, true) == DataStorageItemType.Folder,
+                    messageHelper.getMessage(MessageConstants.ERROR_FOLDER_INVALID_PATH, requestPath));
+        }
+        try (S3ObjectDeleter deleter = new S3ObjectDeleter(client, bucket)) {
+            cleanDeleteMarkers(client, bucket, requestPath, restoreFolderVO, deleter);
+        } catch (SdkClientException e) {
+            throw new DataStorageException(e.getMessage(), e.getCause());
+        }
+    }
+
+    private void cleanDeleteMarkers(final AmazonS3 client, final String bucket, final String path,
+                                    final RestoreFolderVO restoreFolderVO, final S3ObjectDeleter deleter) {
+        listVersions(client, bucket, ProviderUtils.withTrailingDelimiter(path), null, null).getResults()
+                .forEach(item -> {
+                    recursiveRestoreFolderCall(item, client, bucket, restoreFolderVO, deleter);
+                    if (ProviderUtils.isFileWithDeleteMarkerAndShouldBeRestore(item, restoreFolderVO)) {
+                        deleter.deleteKey(item.getPath(), ((DataStorageFile) item).getVersion());
+                    }
+                });
+    }
+
+    private void recursiveRestoreFolderCall(final AbstractDataStorageItem item, final AmazonS3 client,
+                                            final String bucket, final RestoreFolderVO restoreFolderVO,
+                                            final S3ObjectDeleter deleter) {
+        if (item.getType() == DataStorageItemType.Folder && restoreFolderVO.isRecursively()) {
+            cleanDeleteMarkers(client, bucket, item.getPath(), restoreFolderVO, deleter);
+        }
     }
 
     private void moveS3Object(final AmazonS3 client, final String bucket, final MoveObjectRequest moveRequest) {

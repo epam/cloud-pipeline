@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -84,6 +85,12 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public void restoreFileVersion(final GSBucketStorage dataStorage, final String path, final String version)
             throws DataStorageException {
         getHelper(dataStorage).restoreFileVersion(dataStorage, path, version);
+    }
+
+    @Override
+    public void restoreFolder(final GSBucketStorage dataStorage, final String path,
+                              final RestoreFolderVO restoreFolderVO) throws DataStorageException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.GenerateDownloadUrlVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -453,6 +454,23 @@ public class DataStorageController extends AbstractRestController {
             @RequestParam(value = PATH) final String path,
             @RequestParam(value = VERSION, required = false) final String version) {
         dataStorageApiService.restoreFileVersion(id, path, version);
+        return Result.success();
+    }
+
+    @PostMapping(value = "/datastorage/{id}/list/restore/folder")
+    @ResponseBody
+    @ApiOperation(
+            value = "Restores folder.",
+            notes = "Restores folder.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result restoreFolder(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestBody final RestoreFolderVO restoreFolderVO) {
+        dataStorageApiService.restoreFolder(id, path, restoreFolderVO);
         return Result.success();
     }
 

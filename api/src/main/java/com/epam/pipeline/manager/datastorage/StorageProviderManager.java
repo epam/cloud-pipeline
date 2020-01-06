@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -94,6 +95,11 @@ public final class StorageProviderManager {
     public void restoreFileVersion(AbstractDataStorage dataStorage, String path, String version)
             throws DataStorageException {
         getStorageProvider(dataStorage).restoreFileVersion(dataStorage, path, version);
+    }
+
+    public void restoreFolder(final AbstractDataStorage dataStorage, final String path,
+                              final RestoreFolderVO restoreFolderVO) throws DataStorageException {
+        getStorageProvider(dataStorage).restoreFolder(dataStorage, path, restoreFolderVO);
     }
 
     public DataStorageListing getItems(AbstractDataStorage dataStorage, String path,

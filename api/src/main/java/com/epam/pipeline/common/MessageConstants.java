@@ -67,6 +67,7 @@ public final class MessageConstants {
     public static final String ERROR_TEMPLATE_FOLDER_NAME_IS_EMPTY = "error.template.folder.name.empty";
     public static final String ERROR_FOLDER_INVALID_TEMPLATE = "error.folder.template.invalid";
     public static final String ERROR_FOLDER_INVALID_ID = "error.invalid.folder.id";
+    public static final String ERROR_FOLDER_INVALID_PATH = "error.invalid.folder.path";
 
     //Tools errors
     public static final String ERROR_TOOL_NOT_FOUND = "error.tool.not.found";

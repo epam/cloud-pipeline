@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Set;
 
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -47,6 +48,9 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void applyStoragePolicy(T dataStorage);
 
     void restoreFileVersion(T dataStorage, String path, String version)
+            throws DataStorageException;
+
+    void restoreFolder(T dataStorage, String path, RestoreFolderVO restoreFolderVO)
             throws DataStorageException;
 
     DataStorageListing getItems(T dataStorage, String path,

@@ -16,9 +16,15 @@
 
 package com.epam.pipeline.manager.datastorage.providers;
 
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.AntPathMatcher;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 public final class ProviderUtils {
@@ -74,5 +80,17 @@ public final class ProviderUtils {
 
     public static boolean isRootOrFolder(final String requestPath) {
         return StringUtils.isBlank(requestPath) || requestPath.endsWith(DELIMITER);
+    }
+
+    public static boolean isFileWithDeleteMarkerAndShouldBeRestore(final AbstractDataStorageItem item,
+                                                                   final RestoreFolderVO restoreFolderVO) {
+        final AntPathMatcher matcher = new AntPathMatcher();
+        return item.getType() == DataStorageItemType.File &&
+                ((DataStorageFile) item).getDeleteMarker() &&
+                ((DataStorageFile) item).getVersion() != null &&
+                Optional.ofNullable(restoreFolderVO.getIncludeList()).map(includeList -> includeList.stream()
+                        .anyMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true) &&
+                Optional.ofNullable(restoreFolderVO.getExcludeList()).map(excludeList -> excludeList.stream()
+                        .noneMatch(pattern -> matcher.match(pattern, item.getName()))).orElse(true);
     }
 }

@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
@@ -79,6 +80,12 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public void restoreFileVersion(final AzureBlobStorage dataStorage, final String path, final String version) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void restoreFolder(final AzureBlobStorage dataStorage, final String path,
+                              final RestoreFolderVO restoreFolderVO) {
         throw new UnsupportedOperationException();
     }
 

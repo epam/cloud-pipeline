@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 import com.amazonaws.services.s3.model.CORSRule;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -113,6 +114,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void restoreFileVersion(S3bucketDataStorage dataStorage, String path, String version) {
         getS3Helper(dataStorage).restoreFileVersion(dataStorage.getPath(), path, version);
+    }
+
+    @Override
+    public void restoreFolder(final S3bucketDataStorage dataStorage, final String path,
+                              final RestoreFolderVO restoreFolderVO) throws DataStorageException {
+        getS3Helper(dataStorage).restoreFolder(dataStorage.getPath(), path, restoreFolderVO);
     }
 
     @Override

@@ -20,39 +20,56 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.CopyObjectRequest;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ListVersionsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.S3VersionSummary;
+import com.amazonaws.services.s3.model.VersionListing;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.data.storage.RestoreFolderVO;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@SuppressWarnings({"PMD.TooManyStaticImports"})
 public class S3HelperTest {
 
     private static final String BUCKET = "bucket";
     private static final String OLD_PATH = "oldPath";
     private static final String NEW_PATH = "newPath";
     private static final String VERSION = "version";
+    private static final String OLD_VERSION = "oldVersion";
     private static final String NO_VERSION = null;
+    private static final String FIRST_FILE_PATH = OLD_PATH + "/firstFile.jpg";
+    private static final String SECOND_FILE_PATH = OLD_PATH + "/" + NEW_PATH + "/secondFile.png";
+    private static final String JPG_PATTERN = "*.jpg";
     private static final long EXCEEDED_OBJECT_SIZE = Long.MAX_VALUE;
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
 
@@ -172,6 +189,66 @@ public class S3HelperTest {
     }
 
     @Test
+    public void testRestoreFolderWithExcludeListShouldNotRestoreExcludeFiles() {
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true,
+                null, Collections.singletonList(JPG_PATTERN), null));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
+                Collections.singletonMap(SECOND_FILE_PATH, VERSION))));
+    }
+
+    @Test
+    public void testRestoreFolderWithIncludeListAndNoRecursionShouldRestoreOnlyIncludeFiles() {
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false,
+                Collections.singletonList(JPG_PATTERN), null, null));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
+                Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
+    }
+
+    @Test
+    public void testRestoreFolderWithIncludeListAndWithRecursionShouldRestoreOnlyIncludeFiles() {
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true,
+                Collections.singletonList(JPG_PATTERN), null, null));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
+                Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
+    }
+
+    @Test
+    public void testRestoreFolderShouldRestoreOnlyFilesWithDeleteMarker(){
+        final S3VersionSummary withoutDeleteMarkerFileSummary = new S3VersionSummary();
+        withoutDeleteMarkerFileSummary.setKey(SECOND_FILE_PATH);
+        withoutDeleteMarkerFileSummary.setIsDeleteMarker(false); // File should NOT be restore
+        withoutDeleteMarkerFileSummary.setVersionId(VERSION);
+        withoutDeleteMarkerFileSummary.setLastModified(new Date());
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false, null, null,
+                withoutDeleteMarkerFileSummary));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
+                Collections.singletonMap(OLD_PATH + "/firstFile.jpg", VERSION))));
+    }
+
+    @Test
+    public void testRestoreFolderShouldRestoreOnlyLastFileVersion(){
+        final S3VersionSummary anotherFirstFileSummary = new S3VersionSummary();
+        anotherFirstFileSummary.setKey(FIRST_FILE_PATH);
+        anotherFirstFileSummary.setIsDeleteMarker(true);
+        anotherFirstFileSummary.setVersionId(OLD_VERSION);
+        anotherFirstFileSummary.setLastModified(LocalDate.parse("1995-01-24").toDate()); // Old version of file
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(false, null, null,
+                anotherFirstFileSummary));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(
+                Collections.singletonMap(FIRST_FILE_PATH, VERSION))));
+    }
+
+    @Test
+    public void testRestoreFolderWithRecursionShouldLoopAllFolders() {
+        final Map<String, String> pathVersionMap = new HashMap<>();
+        pathVersionMap.put(FIRST_FILE_PATH, VERSION);
+        pathVersionMap.put(SECOND_FILE_PATH, VERSION);
+
+        helper.restoreFolder(BUCKET, OLD_PATH, presettingForRestoreFolderMethodTests(true, null, null, null));
+        verify(amazonS3).deleteObjects(argThat(hasPathsAndVersions(pathVersionMap)));
+    }
+
+    @Test
     public void testMoveFolderShouldThrowIfAtLeastOneOfItsFilesSizeExceedTheLimit() {
         final ObjectListing sourceListing = new ObjectListing();
         sourceListing.setCommonPrefixes(Collections.singletonList(OLD_PATH));
@@ -239,22 +316,54 @@ public class S3HelperTest {
             @Override
             public boolean matches(final Object item) {
                 final DeleteObjectsRequest deleteObjectRequest = (DeleteObjectsRequest) item;
-                return pathVersionMap.entrySet().stream()
-                        .allMatch(pathVersion -> {
-                            final String expectedPath = pathVersion.getKey();
-                            final String expectedVersion = pathVersion.getValue();
-                            return deleteObjectRequest.getKeys().stream()
-                                    .filter(keyVersion -> Objects.equals(keyVersion.getKey(), expectedPath))
+                return deleteObjectRequest.getKeys().stream()
+                        .allMatch(keyVersion -> {
+                            final String expectedPath = keyVersion.getKey();
+                            final String expectedVersion = keyVersion.getVersion();
+                            return pathVersionMap.entrySet().stream()
+                                    .filter(pathVersion -> Objects.equals(pathVersion.getKey(), expectedPath))
                                     .findFirst()
-                                    .filter(keyVersion -> Objects.equals(keyVersion.getVersion(), expectedVersion))
+                                    .filter(pathVersion -> Objects.equals(pathVersion.getValue(), expectedVersion))
                                     .isPresent();
                         });
             }
 
             @Override
             public void describeTo(final Description description) {
-                description.appendText("Delete object request doesn't have some of the required key-version pairs");
+                description.appendText("Delete object request doesn't match some of the passed key-version pairs");
             }
         };
+    }
+
+    private RestoreFolderVO presettingForRestoreFolderMethodTests(final boolean recursive,
+                                                                  final List<String> includeList,
+                                                                  final List<String> excludeList,
+                                                                  final S3VersionSummary optionalFileSummary) {
+        final VersionListing firstFolder = spy(new VersionListing());
+        firstFolder.setCommonPrefixes(Collections.singletonList(OLD_PATH + "/" + NEW_PATH));
+        final VersionListing secondFolder = spy(new VersionListing());
+        final S3VersionSummary firstFileSummary = new S3VersionSummary();
+        firstFileSummary.setKey(FIRST_FILE_PATH);
+        firstFileSummary.setIsDeleteMarker(true);
+        firstFileSummary.setVersionId(VERSION);
+        firstFileSummary.setLastModified(new Date());
+        final S3VersionSummary secondFileSummary = new S3VersionSummary();
+        secondFileSummary.setKey(SECOND_FILE_PATH);
+        secondFileSummary.setIsDeleteMarker(true);
+        secondFileSummary.setVersionId(VERSION);
+        secondFileSummary.setLastModified(new Date());
+        when(firstFolder.getCommonPrefixes()).thenReturn(Collections.singletonList(OLD_PATH + "/" + NEW_PATH));
+        when(firstFolder.getVersionSummaries()).thenReturn(
+                Optional.ofNullable(optionalFileSummary)
+                        .map(fileSummary -> Arrays.asList(firstFileSummary, fileSummary))
+                        .orElse(Collections.singletonList(firstFileSummary))
+        );
+        when(secondFolder.getVersionSummaries()).thenReturn(Collections.singletonList(secondFileSummary));
+        when(amazonS3.listVersions(any(ListVersionsRequest.class))).thenReturn(firstFolder, firstFolder, secondFolder);
+        final RestoreFolderVO restoreFolderVO = new RestoreFolderVO();
+        restoreFolderVO.setRecursively(recursive);
+        restoreFolderVO.setIncludeList(includeList);
+        restoreFolderVO.setExcludeList(excludeList);
+        return restoreFolderVO;
     }
 }
