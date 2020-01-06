@@ -1059,8 +1059,11 @@ def main():
 
         pipe_log('{} task finished'.format(NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
+        if is_spot:
+            delete_scale_set_nodes_from_kube(kube_api=api, scale_set_name=resource_name)
+        else:
+            delete_node_from_kube(kube_api=api, ins_id=resource_name)
         delete_all_by_run_id(run_id)
-        delete_scale_set_nodes_from_kube(kube_api=api, scale_set_name=resource_name)
         pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 

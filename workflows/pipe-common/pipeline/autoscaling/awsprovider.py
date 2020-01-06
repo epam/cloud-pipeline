@@ -67,7 +67,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+    def run_instance(self, instance_name, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
 
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)

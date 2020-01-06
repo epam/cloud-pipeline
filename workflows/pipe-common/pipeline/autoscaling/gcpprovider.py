@@ -46,7 +46,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         self.project_id = os.environ["GOOGLE_PROJECT_ID"]
         self.client = discovery.build('compute', 'v1')
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+    def generate_resource_name(self):
+        return "gcp-" + uuid.uuid4().hex[0:16]
+
+    def run_instance(self, instance_name, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
         ssh_pub_key = utils.read_ssh_key(ins_key)
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
@@ -65,7 +68,6 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
-        instance_name = "gcp-" + uuid.uuid4().hex[0:16]
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
 
         if is_spot:
@@ -212,6 +214,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             # according to https://cloud.google.com/compute/docs/internal-dns#about_internal_dns
             return '{}.{}.c.{}.internal'.format(instance['name'], self.cloud_region, self.project_id), instance['name']
         return None, None
+
+    def get_kube_node_names(self, name, spot):
+        return [name]
 
     def find_instance(self, run_id):
         instance = self.__find_instance(run_id)

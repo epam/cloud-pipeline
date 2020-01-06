@@ -79,7 +79,7 @@ def main():
                                               str(bid_price)))
 
     kube_provider = kubeprovider.KubeProvider()
-
+    nodename = cloud_provider.generate_resource_name()
     try:
         # Redefine default instance image if cloud metadata has specific rules for instance type
         allowed_instance = utils.get_allowed_instance_image(region_id, ins_type, ins_img)
@@ -93,7 +93,7 @@ def main():
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
+            ins_id, ins_ip = cloud_provider.run_instance(nodename, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
                                                          kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)
@@ -111,10 +111,13 @@ def main():
 
         utils.pipe_log('{} task finished'.format(utils.NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
-        nodes_to_delete = cloud_provider.find_nodes_with_run_id(run_id)
-        for node in nodes_to_delete:
+        for node in cloud_provider.find_nodes_with_run_id(run_id):
             kube_provider.delete_kubernetes_node_by_name(node)
             cloud_provider.terminate_instance(node)
+
+        for node in cloud_provider.get_kube_node_names(nodename, is_spot):
+            kube_provider.delete_kubernetes_node_by_name(node)
+
         utils.pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 
