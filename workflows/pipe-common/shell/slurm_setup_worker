@@ -34,7 +34,6 @@ add_worker() {
     _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
     if (( _NODE_GPUS_COUNT > 0 ))
     then
-        echo "AutoDetect=nvml" >> /$_SLURM_CONFIG_LOCATION/gres.conf
         for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
             echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
         done

@@ -144,7 +144,6 @@ _WORKER_CORES=$((_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _WORKER_CORES : CP_CA
 if (( _NODE_GPUS_COUNT > 0 ))
 then
     echo "GresTypes=gpu" >> /common/slurm.conf
-    echo "AutoDetect=nvml" >> /$_SLURM_CONFIG_LOCATION/gres.conf
     for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
         echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
     done
