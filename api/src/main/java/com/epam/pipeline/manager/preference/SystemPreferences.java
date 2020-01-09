@@ -279,8 +279,8 @@ public class SystemPreferences {
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
             "cluster.instance.device.suffixes", "defghijklmnopqrstuvwxyz", CLUSTER_GROUP,
             PreferenceValidators.isNotBlank);
-    public static final StringPreference CLUSTER_INSTANCE_ROOT_DEVICE = new StringPreference(
-            "cluster.instance.root.device", "/dev/xvda", CLUSTER_GROUP,
+    public static final StringPreference CLUSTER_INSTANCE_MAIN_DEVICE = new StringPreference(
+            "cluster.instance.main.device", "/dev/sdb", CLUSTER_GROUP,
             PreferenceValidators.isNotBlank);
     public static final IntPreference CLUSTER_INSTANCE_DISK_RESIZE_TIMEOUT = new IntPreference(
             "cluster.instance.disk.resize.timeout", 60, CLUSTER_GROUP,

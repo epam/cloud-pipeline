@@ -315,7 +315,7 @@ public class NodesManager {
     }
 
     /**
-     * Resizes root disk of the run cloud instance.
+     * Resizes existing disk of the run cloud instance.
      */
     public void resizeDisk(final PipelineRun run, final DiskResizeRequest request) {
         cloudFacade.resizeDisk(region(run).getId(), run.getId(), request);

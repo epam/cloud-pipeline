@@ -228,7 +228,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public void resizeDisk(final AwsRegion region, final Long runId, final DiskResizeRequest request) {
-        ec2Helper.resizeRootVolume(String.valueOf(runId), request.getSize(), region.getRegionCode());
+        ec2Helper.resizeMainVolume(String.valueOf(runId), request.getSize(), region.getRegionCode());
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

@@ -1037,7 +1037,7 @@ public class PipelineRunManager {
     }
 
     /**
-     * Resizes run root disk by the given request.
+     * Resizes run disk by the given request.
      *
      * @param runId {@link PipelineRun} id for pipeline run.
      * @param request Disk resize request.

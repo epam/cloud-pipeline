@@ -83,7 +83,7 @@ public interface CloudFacade {
     void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
 
     /**
-     * Resizes root disk by the given request for an instance associated with the run.
+     * Resizes existing disk by the given request for an instance associated with the run.
      */
     void resizeDisk(Long regionId, Long runId, DiskResizeRequest request);
 }

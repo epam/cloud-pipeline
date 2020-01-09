@@ -506,8 +506,8 @@ public class PipelineRunController extends AbstractRestController {
     @PostMapping(value = "/run/{runId}/disk/resize")
     @ResponseBody
     @ApiOperation(
-            value = "Resizes pipeline run root disk.",
-            notes = "Resizes pipeline run root disk by the given request. " +
+            value = "Resizes pipeline run main disk.",
+            notes = "Resizes pipeline run main disk by the given request. " +
                     "Disk size should be specified in GB.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})

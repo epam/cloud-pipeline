@@ -97,7 +97,7 @@ public class EC2Helper {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
     private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
-    private static final String FALLBACK_ROOT_DEVICE = "/dev/xvda";
+    private static final String FALLBACK_MAIN_DEVICE = "/dev/sdb";
     private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
     private static final int FALLBACK_VOLUME_RESIZE_TIMEOUT = 60;
     private static final int FALLBACK_POLLING_DELAY = 5;
@@ -279,10 +279,10 @@ public class EC2Helper {
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
 
-    public void resizeRootVolume(final String runId, final Long size, final String awsRegion) {
+    public void resizeMainVolume(final String runId, final Long size, final String awsRegion) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
-        final String volumeId = getRootVolume(instance);
+        final String volumeId = getMainVolume(instance);
         modifyVolume(client, volumeId, size);
     }
 
@@ -370,20 +370,18 @@ public class EC2Helper {
                 .withVolumeId(volumeId));
     }
 
-    private String getRootVolume(final Instance instance) {
+    private String getMainVolume(final Instance instance) {
         final Collection<InstanceBlockDeviceMapping> mappings = CollectionUtils.emptyIfNull(
                 instance.getBlockDeviceMappings());
-        final String configuredRootDevice = getConfiguredRootDeviceName();
-        final Optional<String> actualRootDevice = Optional.ofNullable(instance.getRootDeviceName());
-        return getDeviceVolume(mappings, configuredRootDevice).map(Optional::of)
-                .orElseGet(() -> actualRootDevice.flatMap(device -> getDeviceVolume(mappings, device)))
-                .orElseThrow(() -> new AwsEc2Exception(String.format("Root volume wasn't found for instance " +
-                        "with id '%s'", instance.getInstanceId())));
+        final String device = getMainDeviceName();
+        return getDeviceVolume(mappings, device)
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Main volume device %s wasn't found for " +
+                        "instance with id '%s'", device, instance.getInstanceId())));
     }
 
-    private String getConfiguredRootDeviceName() {
-        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_ROOT_DEVICE))
-                .orElse(FALLBACK_ROOT_DEVICE);
+    private String getMainDeviceName() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_MAIN_DEVICE))
+                .orElse(FALLBACK_MAIN_DEVICE);
     }
 
     private Optional<String> getDeviceVolume(final Collection<InstanceBlockDeviceMapping> mappings,
