@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import com.amazonaws.services.pricing.model.GetProductsResult;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
+import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.model.billing.StoragePricing.StoragePricingEntity;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
@@ -72,10 +74,11 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final int PRECISION = 5;
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String INDEX_PATTERN = "%s-daily-%d-%s";
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
     private final EntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
-    private final Map<Regions, BigDecimal> storagePriceListGb = new HashMap<>();
+    private final Map<Regions, StoragePricing> storagePriceListGb = new HashMap<>();
     private BigDecimal defaultPriceGb;
     private final StorageType storageType;
 
@@ -92,7 +95,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
                                                final ElasticsearchServiceClient elasticsearchService,
                                                final StorageType storageType,
-                                               final Map<Regions, BigDecimal> priceList) {
+                                               final Map<Regions, StoragePricing> priceList) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
@@ -166,7 +169,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
             final Regions region = Regions.fromName(regionLocation);
             billing
                 .regionName(region.getName())
-                .cost(calculateDailyCost(byteSize, storagePriceListGb.get(region), billingDate));
+                .cost(calculateDailyCost(byteSize, region, billingDate));
         } catch (IllegalArgumentException e) {
             billing.cost(calculateDailyCost(byteSize, defaultPriceGb, billingDate));
         }
@@ -184,12 +187,12 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
      */
     Long calculateDailyCost(final Long sizeBytes, final BigDecimal monthlyPriceGb, final LocalDate date) {
         final BigDecimal sizeGb = BigDecimal.valueOf(sizeBytes)
-            .divide(BigDecimal.valueOf(BYTES_TO_GB), PRECISION, RoundingMode.CEILING);
+            .divide(BigDecimal.valueOf(BYTES_TO_GB), PRECISION, ROUNDING_MODE);
 
         final int daysInMonth = YearMonth.of(date.getYear(), date.getMonthValue()).lengthOfMonth();
 
         final long hundredthsOfCentPrice = sizeGb.multiply(monthlyPriceGb)
-            .divide(BigDecimal.valueOf(daysInMonth), RoundingMode.CEILING)
+            .divide(BigDecimal.valueOf(daysInMonth), ROUNDING_MODE)
             .scaleByPowerOfTen(2)
             .longValue();
         return hundredthsOfCentPrice == 0
@@ -197,19 +200,24 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                : hundredthsOfCentPrice;
     }
 
+    Long calculateDailyCost(final Long sizeBytes, final Regions region, final LocalDate date) {
+        return storagePriceListGb.get(region).getPrices().stream()
+            .filter(entity -> entity.getBeginRangeBytes() <= sizeBytes)
+            .mapToLong(entity -> {
+                final Long beginRange = entity.getBeginRangeBytes();
+                final Long endRange = entity.getEndRangeBytes();
+                final long bytesForCurrentTierPrice = Math.min(sizeBytes - beginRange,
+                                                               endRange - beginRange);
+                return calculateDailyCost(bytesForCurrentTierPrice, entity.getPriceCentsPerGb(), date);
+            }).sum();
+    }
+
     private void initPrices(final String awsStorageServiceName) {
         loadFullPriceList(awsStorageServiceName).forEach(price -> {
             try {
-                final JsonNode priceJson = new ObjectMapper().readTree(price);
-                final String regionName = priceJson.path("product").path("attributes").path("location").asText();
-
-                getRegionFromFullLocation(regionName)
-                    .ifPresent(region -> priceJson.findValues("pricePerUnit").stream()
-                        .map(unitPrice ->
-                                 new BigDecimal(unitPrice.path("USD").asDouble(), new MathContext(PRECISION)))
-                        .max(Comparator.naturalOrder())
-                        .map(priceInDollars -> priceInDollars.multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR)))
-                        .ifPresent(maxPrice -> storagePriceListGb.put(region, maxPrice)));
+                final JsonNode regionInfo = new ObjectMapper().readTree(price);
+                final String regionName = regionInfo.path("product").path("attributes").path("location").asText();
+                getRegionFromFullLocation(regionName).ifPresent(region -> fillPricingInfoForRegion(region, regionInfo));
             } catch (IOException e) {
                 log.error("Can't instantiate AWS storage price list!");
             }
@@ -217,11 +225,22 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         defaultPriceGb = calculateDefaultPriceGb();
     }
 
+    private void fillPricingInfoForRegion(final Regions region, final JsonNode regionInfo) {
+        final StoragePricing pricing = new StoragePricing();
+        regionInfo.findParents("pricePerUnit").stream()
+            .map(this::extractPricingFromJson)
+            .forEach(pricing::addPrice);
+        storagePriceListGb.put(region, pricing);
+    }
+
     private BigDecimal calculateDefaultPriceGb() {
         return storagePriceListGb.values()
             .stream()
+            .flatMap(pricing -> pricing.getPrices().stream())
+            .map(StoragePricingEntity::getPriceCentsPerGb)
+            .filter(price -> !BigDecimal.ZERO.equals(price))
             .max(Comparator.naturalOrder())
-            .orElseThrow(() -> new RuntimeException("No AWS storage prices loaded!"));
+            .orElseThrow(() -> new IllegalStateException("No AWS storage prices loaded!"));
     }
 
     private List<String> loadFullPriceList(final String awsStorageServiceName) {
@@ -261,5 +280,18 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         }
         log.warn("Can't parse location: " + location);
         return Optional.empty();
+    }
+
+    private StoragePricingEntity extractPricingFromJson(final JsonNode priceDimension) {
+        final BigDecimal priceGb =
+            new BigDecimal(priceDimension.path("pricePerUnit").path("USD").asDouble(), new MathContext(PRECISION))
+                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
+        final long beginRange = priceDimension.path("beginRange").asLong() * BYTES_TO_GB;
+        final long endRange = priceDimension.path("endRange").asLong();
+        return new StoragePricingEntity(beginRange,
+                                        endRange == 0
+                                            ? Long.MAX_VALUE
+                                            : endRange* BYTES_TO_GB,
+                                        priceGb);
     }
 }

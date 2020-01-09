@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.amazonaws.regions.Regions;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
+import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
+import com.epam.pipeline.billingreportagent.model.billing.StoragePricing.StoragePricingEntity;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
@@ -85,33 +87,54 @@ public class AwsStorageToRequestConverterTest {
     private static final String GROUP_1 = "TestGroup1";
     private static final String GROUP_2 = "TestGroup2";
     private static final List<String> USER_GROUPS = java.util.Arrays.asList(GROUP_1, GROUP_2);
+    private static final long STORAGE_LIMIT_TIER_1 = 51200L;
+    private static final long STORAGE_LIMIT_TIER_2 = STORAGE_LIMIT_TIER_1 * 10;
+    private static final LocalDateTime SYNC_END = LocalDateTime.of(2019, 11, 2, 0, 0);
+    private static final LocalDateTime SYNC_START = SYNC_END.minusDays(1);
+    private static final BigDecimal DAYS_IN_SYNC_MONTH = BigDecimal.valueOf(30);
 
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
         .groups(USER_GROUPS)
         .build();
 
-    private final Map<Regions, BigDecimal> testPriceList = new HashMap<>();
+    private final Map<Regions, StoragePricing> testPriceList = new HashMap<>();
     private BigDecimal defaultPrice;
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
 
     @BeforeEach
     public void init() {
-        testPriceList.put(Regions.US_EAST_1, BigDecimal.ONE);
-        testPriceList.put(Regions.US_EAST_2, BigDecimal.TEN);
+        final StoragePricing pricingUsEast1 = new StoragePricing();
+        pricingUsEast1.addPrice(new StoragePricingEntity(0L,
+                                                         STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB,
+                                                         BigDecimal.ONE.multiply(DAYS_IN_SYNC_MONTH)));
+        testPriceList.put(Regions.US_EAST_1, pricingUsEast1);
+
+        final StoragePricing pricingUsEast2 = new StoragePricing();
+        final long endRangeBytesTier1 = STORAGE_LIMIT_TIER_1 * BYTES_IN_1_GB;
+        final long endRangeBytesTier2 = STORAGE_LIMIT_TIER_2 * BYTES_IN_1_GB;
+        pricingUsEast2.addPrice(new StoragePricingEntity(0L,
+                                                         endRangeBytesTier1,
+                                                         BigDecimal.TEN.multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier1,
+                                                         endRangeBytesTier2,
+                                                         BigDecimal.valueOf(5).multiply(DAYS_IN_SYNC_MONTH)));
+        pricingUsEast2.addPrice(new StoragePricingEntity(endRangeBytesTier2,
+                                                         Long.MAX_VALUE,
+                                                         BigDecimal.ONE.multiply(DAYS_IN_SYNC_MONTH)));
+        testPriceList.put(Regions.US_EAST_2, pricingUsEast2);
+
         defaultPrice = BigDecimal.TEN;
     }
 
     @Test
-    public void convertStorageToBilling() {
+    public void testCalculateDailyCostWithGivenPrice() {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
         final AwsStorageToBillingRequestConverter s3converter =
             new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, StorageType.OBJECT_STORAGE,
                                                     testPriceList);
-        final LocalDate syncDate = LocalDate.now();
-        final int daysInMonth = YearMonth.of(syncDate.getYear(), syncDate.getMonthValue()).lengthOfMonth();
-
-        final BigDecimal priceGbMonth = BigDecimal.TEN.multiply(BigDecimal.valueOf(daysInMonth));
+        final LocalDate syncDate = SYNC_END.toLocalDate();
+        final BigDecimal priceGbMonth = BigDecimal.TEN.multiply(BigDecimal.valueOf(DAYS_IN_SYNC_MONTH.longValue()));
         final long dailyCost1Gb = s3converter.calculateDailyCost(BYTES_IN_1_GB, priceGbMonth, syncDate);
         Assert.assertEquals(BigDecimal.TEN.scaleByPowerOfTen(2).longValue(), dailyCost1Gb);
 
@@ -120,13 +143,35 @@ public class AwsStorageToRequestConverterTest {
     }
 
     @Test
+    public void testCalculateDailyCostWithPricingList() {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
+        final AwsStorageToBillingRequestConverter s3converter =
+            new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, StorageType.OBJECT_STORAGE,
+                                                    testPriceList);
+        final LocalDate syncDate = LocalDate.of(2019, 11, 2);
+        final int daysInMonth = YearMonth.of(syncDate.getYear(), syncDate.getMonthValue()).lengthOfMonth();
+        Assert.assertEquals(30, daysInMonth);
+
+        final long totalSize = 3 * STORAGE_LIMIT_TIER_2;
+        final long storageUsedTier2 = STORAGE_LIMIT_TIER_2 - STORAGE_LIMIT_TIER_1;
+        final long storageUsedTier3 = totalSize - STORAGE_LIMIT_TIER_2;
+
+        final BigDecimal expectedPrice = BigDecimal.TEN.multiply(BigDecimal.valueOf(STORAGE_LIMIT_TIER_1))
+                                       .add(BigDecimal.valueOf(5).multiply(BigDecimal.valueOf(storageUsedTier2)))
+                                       .add(BigDecimal.ONE.multiply(BigDecimal.valueOf(storageUsedTier3)));
+
+        final long dailyCostForTotalSize =
+            s3converter.calculateDailyCost(totalSize * BYTES_IN_1_GB, Regions.US_EAST_2, syncDate);
+
+        Assert.assertEquals(expectedPrice.scaleByPowerOfTen(2).longValue(), dailyCostForTotalSize);
+    }
+
+    @Test
     public void testS3StorageConverting() throws IOException {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
         final AwsStorageToBillingRequestConverter converter =
             new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, StorageType.OBJECT_STORAGE,
                                                     testPriceList);
-        final LocalDateTime syncEnd = LocalDateTime.now();
-        final LocalDateTime syncStart = syncEnd.minusDays(1);
 
         final EntityContainer<AbstractDataStorage> s3StorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
@@ -135,19 +180,17 @@ public class AwsStorageToRequestConverterTest {
         createElasticsearchSearchContext(BYTES_IN_1_GB, Regions.US_EAST_1.getName().toLowerCase());
 
         final DocWriteRequest request = converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
-                                                                          syncStart, syncEnd).get(0);
+                                                                          SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_S3,
                                                    s3Storage.getId(),
-                                                   converter.parseDateToString(syncStart.toLocalDate()));
+                                                   converter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        final Long expectedCost =
-            converter.calculateDailyCost(BYTES_IN_1_GB, testPriceList.get(Regions.US_EAST_1), syncEnd.toLocalDate());
         assertFields(s3Storage, requestFieldsMap, Regions.US_EAST_1.getName().toLowerCase(), StorageType.OBJECT_STORAGE,
-                     BYTES_IN_1_GB, expectedCost);
+                     BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
     @Test
@@ -156,8 +199,7 @@ public class AwsStorageToRequestConverterTest {
         final AwsStorageToBillingRequestConverter converter =
             new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, StorageType.FILE_STORAGE,
                                                     testPriceList);
-        final LocalDateTime syncEnd = LocalDateTime.now();
-        final LocalDateTime syncStart = syncEnd.minusDays(1);
+
 
         final EntityContainer<AbstractDataStorage> nfsStorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.NFS);
@@ -166,19 +208,17 @@ public class AwsStorageToRequestConverterTest {
         createElasticsearchSearchContext(BYTES_IN_1_GB, Regions.US_EAST_1.getName().toLowerCase());
 
         final DocWriteRequest request = converter.convertEntityToRequests(nfsStorageContainer, INDEX_EFS,
-                                                                          syncStart, syncEnd).get(0);
+                                                                          SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_EFS,
                                                    nfsStorage.getId(),
-                                                   converter.parseDateToString(syncStart.toLocalDate()));
+                                                   converter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        final Long expectedCost =
-            converter.calculateDailyCost(BYTES_IN_1_GB, testPriceList.get(Regions.US_EAST_1), syncEnd.toLocalDate());
         assertFields(nfsStorage, requestFieldsMap, Regions.US_EAST_1.getName().toLowerCase(), StorageType.FILE_STORAGE,
-                     BYTES_IN_1_GB, expectedCost);
+                     BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
 
@@ -188,8 +228,6 @@ public class AwsStorageToRequestConverterTest {
         final AwsStorageToBillingRequestConverter converter =
             new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, StorageType.OBJECT_STORAGE,
                                                     testPriceList);
-        final LocalDateTime syncEnd = LocalDateTime.now();
-        final LocalDateTime syncStart = syncEnd.minusDays(1);
 
         final EntityContainer<AbstractDataStorage> s3StorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
@@ -198,19 +236,17 @@ public class AwsStorageToRequestConverterTest {
         createElasticsearchSearchContext(BYTES_IN_1_GB, UNKNOWN_REGION);
 
         final DocWriteRequest request = converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
-                                                                          syncStart, syncEnd).get(0);
+                                                                          SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_S3,
                                                    s3Storage.getId(),
-                                                   converter.parseDateToString(syncStart.toLocalDate()));
+                                                   converter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        final Long expectedCost =
-            converter.calculateDailyCost(BYTES_IN_1_GB, defaultPrice, syncEnd.toLocalDate());
         assertFields(s3Storage, requestFieldsMap, null, StorageType.OBJECT_STORAGE, BYTES_IN_1_GB,
-                     expectedCost);
+                     defaultPrice.scaleByPowerOfTen(2).longValue());
     }
 
     private void createElasticsearchSearchContext(final Long storageSize, final String region) throws IOException {
@@ -251,7 +287,7 @@ public class AwsStorageToRequestConverterTest {
         TestUtils.verifyStringArray(USER_GROUPS, fieldMap.get("groups"));
     }
 
-    public EntityContainer<AbstractDataStorage> getStorageContainer(final Long id,
+    private EntityContainer<AbstractDataStorage> getStorageContainer(final Long id,
                                                                     final String name,
                                                                     final String path,
                                                                     final DataStorageType storageType) {
