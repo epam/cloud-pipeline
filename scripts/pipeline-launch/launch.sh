@@ -190,6 +190,24 @@ function cp_cap_publish {
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
       fi
 
+      if check_cp_cap "CP_CAP_SLURM"
+      then
+            echo "set -e" >> $_MASTER_CAP_INIT_PATH
+            echo "set -e" >> $_WORKER_CAP_INIT_PATH
+
+            _SLURM_MASTER_INIT="slurm_setup_master"
+            _SLURM_WORKER_INIT="slurm_setup_worker"
+            echo "Requested SLURM capability, setting init scripts:"
+            echo "--> Master: $_SLURM_MASTER_INIT"
+            echo "--> Worker: $_SLURM_WORKER_INIT"
+
+            sed -i "/$_SLURM_MASTER_INIT/d" $_MASTER_CAP_INIT_PATH
+            echo "$_SLURM_MASTER_INIT" >> $_MASTER_CAP_INIT_PATH
+
+            sed -i "/$_SLURM_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
+            echo "$_SLURM_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+    fi
+
       if check_cp_cap "CP_CAP_DIND_CONTAINER"
       then
             echo "set -e" >> $_MASTER_CAP_INIT_PATH

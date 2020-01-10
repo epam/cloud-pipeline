@@ -103,6 +103,10 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     mkdir -p /var/run/munge
     chown munge: /var/run/munge
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
+
+    SLURM_PACKAGE_URL="https://epm-cloud-pipeline-distr-storage.s3.eu-central-1.amazonaws.com/yum-cache/slurm-19.05.5-1.el7.x86_64.tar"
+    SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2"
+
     _SLURM_CONFIG_LOCATION=/etc/slurm/
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
@@ -113,18 +117,18 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
-    mkdir -p /common/slurm-pkgs
-    wget https://epm-cloud-pipeline-distr-storage.s3.eu-central-1.amazonaws.com/yum-cache/slurm-19.05.5-1.el7.x86_64.tar
+    local_package_install -s $SLURM_PACKAGE_URL
+    _INSTALL_EXIT_CODE=$?
     if [[ $? -ne 0 ]]; then
-        wget https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2
+        mkdir -p /common/slurm-pkgs/
+        rm -rf /root/rpmbuild/RPMS/x86_64/*
+        wget $SLURM_SOURCE_URL
         rpmbuild -ta slurm*.tar.bz2
         cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
-    else
-        tar -xf slurm-19.05.5-1.el7.x86_64.tar
-        mv slurm-19.05.5-1.el7.x86_64/* /common/slurm-pkgs/
+        yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+        _INSTALL_EXIT_CODE=$?
     fi
-
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+    check_last_exit_code $_INSTALL_EXIT_CODE "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
 fi
 
 configure_slurm

@@ -87,6 +87,8 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     chown munge: /var/run/munge
     export _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
+    SLURM_PACKAGE_URL="https://epm-cloud-pipeline-distr-storage.s3.eu-central-1.amazonaws.com/yum-cache/slurm-19.05.5-1.el7.x86_64.tar"
+
     export _SLURM_CONFIG_LOCATION=/etc/slurm/
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
@@ -97,7 +99,13 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel  \
                 rrdtool-devel ncurses-devel man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+    local_package_install -s $SLURM_PACKAGE_URL
+    _INSTALL_EXIT_CODE=$?
+    if [[ $_INSTALL_EXIT_CODE -ne 0 ]]; then
+        yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+        _INSTALL_EXIT_CODE=$?
+    fi
+    check_last_exit_code $_INSTALL_EXIT_CODE "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
 fi
 
 pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
