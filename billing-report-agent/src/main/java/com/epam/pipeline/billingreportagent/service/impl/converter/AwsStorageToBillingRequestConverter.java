@@ -17,70 +17,51 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.amazonaws.regions.Regions;
-import com.amazonaws.services.pricing.AWSPricing;
-import com.amazonaws.services.pricing.AWSPricingClientBuilder;
-import com.amazonaws.services.pricing.model.Filter;
-import com.amazonaws.services.pricing.model.GetProductsRequest;
-import com.amazonaws.services.pricing.model.GetProductsResult;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
-import com.epam.pipeline.billingreportagent.model.billing.StoragePricing;
-import com.epam.pipeline.billingreportagent.model.billing.StoragePricing.StoragePricingEntity;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("checkstyle:MagicNumber")
 public class AwsStorageToBillingRequestConverter implements EntityToBillingRequestConverter<AbstractDataStorage> {
 
+    public static final int BYTES_TO_GB = 1 << 30;
+    public static final int PRECISION = 5;
     private static final String STORAGE_SIZE_AGG_NAME = "sizeSumSearch";
     private static final String SIZE_FIELD = "size";
     private static final String REGION_FIELD = "storage_region";
-    private static final int BYTES_TO_GB = 1 << 30;
-    private static final int CENTS_IN_DOLLAR = 100;
-    private static final int PRECISION = 5;
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
     private static final String INDEX_PATTERN = "%s-daily-%d-%s";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
     private final EntityMapper<StorageBillingInfo> mapper;
     private final ElasticsearchServiceClient elasticsearchService;
-    private final Map<Regions, StoragePricing> storagePriceListGb = new HashMap<>();
-    private BigDecimal defaultPriceGb;
     private final StorageType storageType;
+    private final AwsStorageServicePricing storagePricing;
 
     public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
                                                final ElasticsearchServiceClient elasticsearchService,
@@ -89,18 +70,17 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
-        initPrices(awsStorageServiceName);
+        this.storagePricing = new AwsStorageServicePricing(awsStorageServiceName);
     }
 
     public AwsStorageToBillingRequestConverter(final EntityMapper<StorageBillingInfo> mapper,
                                                final ElasticsearchServiceClient elasticsearchService,
                                                final StorageType storageType,
-                                               final Map<Regions, StoragePricing> priceList) {
+                                               final AwsStorageServicePricing storagePricing) {
         this.mapper = mapper;
         this.elasticsearchService = elasticsearchService;
         this.storageType = storageType;
-        this.storagePriceListGb.putAll(priceList);
-        this.defaultPriceGb = calculateDefaultPriceGb();
+        this.storagePricing = storagePricing;
     }
 
     @Override
@@ -108,40 +88,45 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                                          final String indexName,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
-        final SearchRequest searchRequest = new SearchRequest();
+        storagePricing.updatePrices();
         final Long storageId = storageContainer.getEntity().getId();
         final DataStorageType storageType = storageContainer.getEntity().getType();
+        final SearchResponse searchResponse = requestSumAggregationForStorage(storageId, storageType);
+        final LocalDate reportDate = syncStart.toLocalDate().minusDays(1);
+        final String fullIndex = String.format(INDEX_PATTERN, indexName, storageId, parseDateToString(reportDate));
+        return buildRequestFromAggregation(storageContainer, syncStart, searchResponse, fullIndex);
+    }
+
+    private SearchResponse requestSumAggregationForStorage(final Long storageId, final DataStorageType storageType) {
+        final SearchRequest searchRequest = new SearchRequest();
         searchRequest.indices(String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId));
-
-        final SumAggregationBuilder sizeSumAgg = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
-            .field(SIZE_FIELD);
-
+        final SumAggregationBuilder sizeSumAgg = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD);
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAgg);
         searchRequest.source(sizeSumSearch);
+        return elasticsearchService.search(searchRequest);
+    }
 
-        final SearchResponse search = elasticsearchService.search(searchRequest);
-        final ParsedSum sumAggResult = search.getAggregations().get(STORAGE_SIZE_AGG_NAME);
+    private List<DocWriteRequest> buildRequestFromAggregation(final EntityContainer<AbstractDataStorage> container,
+                                                              final LocalDateTime syncStart,
+                                                              final SearchResponse response,
+                                                              final String fullIndex) {
+        return extractStorageSize(response).map(storageSize -> {
+            final String regionLocation =
+                (String) response.getHits().getAt(0).getSourceAsMap().get(REGION_FIELD);
+            return createBilling(container, storageSize, regionLocation, syncStart.toLocalDate().minusDays(1));
+        })
+            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), billing))
+            .map(Collections::singletonList)
+            .orElse(Collections.emptyList());
+    }
+
+    private Optional<Long> extractStorageSize(final SearchResponse response) {
+        final ParsedSum sumAggResult = response.getAggregations().get(STORAGE_SIZE_AGG_NAME);
         final long storageSize = new Double(sumAggResult.getValue()).longValue();
-
-        final SearchHits hits = search.getHits();
-        if (storageSize == 0
-            || hits.getTotalHits() == 0) {
-            return Collections.emptyList();
-        }
-
-        final LocalDate localDate = syncStart.toLocalDate().minusDays(1);
-        final String fullIndex = String.format(INDEX_PATTERN,
-                                               indexName,
-                                               storageId,
-                                               parseDateToString(localDate));
-        final String regionLocation = (String) hits.getAt(0).getSourceAsMap().get(REGION_FIELD);
-        final StorageBillingInfo storageBilling = createBilling(storageContainer,
-                                                                storageSize,
-                                                                regionLocation,
-                                                                syncStart.toLocalDate().minusDays(1));
-        return Collections.singletonList(getDocWriteRequest(fullIndex,
-                                                            storageContainer.getOwner(),
-                                                            storageBilling));
+        final long totalMatches = response.getHits().getTotalHits();
+        return (storageSize == 0 || totalMatches == 0)
+               ? Optional.empty()
+               : Optional.of(storageSize);
     }
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
@@ -171,18 +156,19 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                 .regionName(region.getName())
                 .cost(calculateDailyCost(byteSize, region, billingDate));
         } catch (IllegalArgumentException e) {
-            billing.cost(calculateDailyCost(byteSize, defaultPriceGb, billingDate));
+            billing.cost(calculateDailyCost(byteSize, storagePricing.getDefaultPriceGb(), billingDate));
         }
 
         return billing.build();
     }
 
     /**
-     * Calculate daily spending on files storing in hundredths of a cent.
-     * The minimal result, possibly returned by this function is 1, due to hundredths of cents granularity.
-     * @param sizeBytes storage size
+     * Calculate daily spending on files storing in hundredths of a cent. The minimal result, possibly returned by this
+     * function is 1, due to hundredths of cents granularity.
+     *
+     * @param sizeBytes      storage size
      * @param monthlyPriceGb price Gb/month in cents
-     * @param date billing date
+     * @param date           billing date
      * @return daily cost
      */
     Long calculateDailyCost(final Long sizeBytes, final BigDecimal monthlyPriceGb, final LocalDate date) {
@@ -201,7 +187,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     }
 
     Long calculateDailyCost(final Long sizeBytes, final Regions region, final LocalDate date) {
-        return storagePriceListGb.get(region).getPrices().stream()
+        return storagePricing.getRegionPricing(region).getPrices().stream()
             .filter(entity -> entity.getBeginRangeBytes() <= sizeBytes)
             .mapToLong(entity -> {
                 final Long beginRange = entity.getBeginRangeBytes();
@@ -210,88 +196,5 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                                                endRange - beginRange);
                 return calculateDailyCost(bytesForCurrentTierPrice, entity.getPriceCentsPerGb(), date);
             }).sum();
-    }
-
-    private void initPrices(final String awsStorageServiceName) {
-        loadFullPriceList(awsStorageServiceName).forEach(price -> {
-            try {
-                final JsonNode regionInfo = new ObjectMapper().readTree(price);
-                final String regionName = regionInfo.path("product").path("attributes").path("location").asText();
-                getRegionFromFullLocation(regionName).ifPresent(region -> fillPricingInfoForRegion(region, regionInfo));
-            } catch (IOException e) {
-                log.error("Can't instantiate AWS storage price list!");
-            }
-        });
-        defaultPriceGb = calculateDefaultPriceGb();
-    }
-
-    private void fillPricingInfoForRegion(final Regions region, final JsonNode regionInfo) {
-        final StoragePricing pricing = new StoragePricing();
-        regionInfo.findParents("pricePerUnit").stream()
-            .map(this::extractPricingFromJson)
-            .forEach(pricing::addPrice);
-        storagePriceListGb.put(region, pricing);
-    }
-
-    private BigDecimal calculateDefaultPriceGb() {
-        return storagePriceListGb.values()
-            .stream()
-            .flatMap(pricing -> pricing.getPrices().stream())
-            .map(StoragePricingEntity::getPriceCentsPerGb)
-            .filter(price -> !BigDecimal.ZERO.equals(price))
-            .max(Comparator.naturalOrder())
-            .orElseThrow(() -> new IllegalStateException("No AWS storage prices loaded!"));
-    }
-
-    private List<String> loadFullPriceList(final String awsStorageServiceName) {
-        final List<String> allPrices = new ArrayList<>();
-        final Filter filter = new Filter();
-        filter.setType("TERM_MATCH");
-        filter.setField("productFamily");
-        filter.setValue("Storage");
-        filter.setField("storageClass");
-        filter.setValue("General Purpose");
-
-        String nextToken = StringUtils.EMPTY;
-        do {
-            final GetProductsRequest request = new GetProductsRequest()
-                .withServiceCode(awsStorageServiceName)
-                .withFilters(filter)
-                .withNextToken(nextToken)
-                .withFormatVersion("aws_v1");
-
-            final AWSPricing awsPricingService = AWSPricingClientBuilder
-                .standard()
-                .withRegion(Regions.US_EAST_1)
-                .build();
-
-            final GetProductsResult result = awsPricingService.getProducts(request);
-            allPrices.addAll(result.getPriceList());
-            nextToken = result.getNextToken();
-        } while (nextToken != null);
-        return allPrices;
-    }
-
-    private Optional<Regions> getRegionFromFullLocation(final String location) {
-        for (Regions region : Regions.values()) {
-            if (region.getDescription().equals(location)) {
-                return Optional.of(region);
-            }
-        }
-        log.warn("Can't parse location: " + location);
-        return Optional.empty();
-    }
-
-    private StoragePricingEntity extractPricingFromJson(final JsonNode priceDimension) {
-        final BigDecimal priceGb =
-            new BigDecimal(priceDimension.path("pricePerUnit").path("USD").asDouble(), new MathContext(PRECISION))
-                .multiply(BigDecimal.valueOf(CENTS_IN_DOLLAR));
-        final long beginRange = priceDimension.path("beginRange").asLong() * BYTES_TO_GB;
-        final long endRange = priceDimension.path("endRange").asLong();
-        return new StoragePricingEntity(beginRange,
-                                        endRange == 0
-                                            ? Long.MAX_VALUE
-                                            : endRange* BYTES_TO_GB,
-                                        priceGb);
     }
 }
