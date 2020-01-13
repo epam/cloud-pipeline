@@ -351,6 +351,8 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, String>> UI_PIPE_DRIVE_MAPPING = new ObjectPreference<>(
             "ui.pipe.drive.mapping", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
+    public static final StringPreference UI_SUPPORT_TEMPLATE = new StringPreference("ui.support.template",
+            "", UI_GROUP, pass);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
