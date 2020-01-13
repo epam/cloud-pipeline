@@ -55,7 +55,7 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final String SIZE_FIELD = "size";
     private static final String REGION_FIELD = "storage_region";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
-    private static final String INDEX_PATTERN = "%s-daily-%d-%s";
+    private static final String INDEX_PATTERN = "%s-daily-%s";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
     private final EntityMapper<StorageBillingInfo> mapper;
@@ -88,13 +88,22 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                                          final String indexName,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
-        storagePricing.updatePrices();
         final Long storageId = storageContainer.getEntity().getId();
         final DataStorageType storageType = storageContainer.getEntity().getType();
         final SearchResponse searchResponse = requestSumAggregationForStorage(storageId, storageType);
         final LocalDate reportDate = syncStart.toLocalDate().minusDays(1);
-        final String fullIndex = String.format(INDEX_PATTERN, indexName, storageId, parseDateToString(reportDate));
+        final String fullIndex = String.format(INDEX_PATTERN, indexName, parseDateToString(reportDate));
         return buildRequestFromAggregation(storageContainer, syncStart, searchResponse, fullIndex);
+    }
+
+    @Override
+    public List<DocWriteRequest> convertEntitiesToRequests(final List<EntityContainer<AbstractDataStorage>> containers,
+                                                           final String indexName,
+                                                           final LocalDateTime previousSync,
+                                                           final LocalDateTime syncStart) {
+        storagePricing.updatePrices();
+        return EntityToBillingRequestConverter.super
+            .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
 
     private SearchResponse requestSumAggregationForStorage(final Long storageId, final DataStorageType storageType) {

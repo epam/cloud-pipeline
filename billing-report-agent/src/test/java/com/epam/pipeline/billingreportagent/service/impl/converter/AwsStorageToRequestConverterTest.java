@@ -79,7 +79,7 @@ public class AwsStorageToRequestConverterTest {
     private static final long BYTES_IN_1_GB = 1L << 30;
     private static final String SIZE_SUM_SEARCH = "sizeSumSearch";
     private static final String REGION_FIELD = "storage_region";
-    private static final String INDEX_PATTERN = "%s-daily-%d-%s";
+    private static final String INDEX_PATTERN = "%s-daily-%s";
 
     private static final String VALUE_RESULT_PATTERN_JSON = "{\"value\" : \"%d\"}";
     private static final String UNKNOWN_REGION = "unknownRegion";
@@ -183,7 +183,6 @@ public class AwsStorageToRequestConverterTest {
                                                                             SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_S3,
-                                                   s3Storage.getId(),
                                                    s3Converter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
@@ -202,7 +201,6 @@ public class AwsStorageToRequestConverterTest {
                                                                              SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_EFS,
-                                                   nfsStorage.getId(),
                                                    nfsConverter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
@@ -220,7 +218,6 @@ public class AwsStorageToRequestConverterTest {
                                                                             SYNC_START, SYNC_END).get(0);
         final String expectedIndex = String.format(INDEX_PATTERN,
                                                    INDEX_S3,
-                                                   s3Storage.getId(),
                                                    s3Converter.parseDateToString(SYNC_START.toLocalDate()));
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());

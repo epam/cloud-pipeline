@@ -32,10 +32,8 @@ import org.elasticsearch.action.DocWriteRequest;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Data
 @Slf4j
@@ -74,11 +72,9 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
     public void synchronize(LocalDateTime lastSyncTime, LocalDateTime syncStart) {
         log.debug("Started {} storage billing synchronization", storageType);
         final List<EntityContainer<AbstractDataStorage>> entityContainers = loader.loadAllEntities();
-        final List<DocWriteRequest> storageBillingRequests = entityContainers.stream()
-            .filter(storage -> storage.getEntity().getType() == storageType)
-            .map(storage -> createStorageBillingRequest(storage, lastSyncTime, syncStart))
-            .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+        entityContainers.removeIf(storage -> storage.getEntity().getType() != storageType);
+        final List<DocWriteRequest> storageBillingRequests =
+            createStorageBillingRequest(entityContainers, lastSyncTime, syncStart);
 
         log.info("{} document requests created", storageBillingRequests.size());
 
@@ -97,26 +93,23 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         log.debug("Successfully finished {} storage billing synchronization.", storageType);
     }
 
-    private List<DocWriteRequest> createStorageBillingRequest(final EntityContainer<AbstractDataStorage> storage,
+    private List<DocWriteRequest> createStorageBillingRequest(final List<EntityContainer<AbstractDataStorage>> storages,
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart) {
         try {
             final String commonRunBillingIndexName = indexPrefix + storageIndexName;
-            return buildDocRequests(storage, commonRunBillingIndexName, previousSync, syncStart);
+            return buildDocRequests(storages, commonRunBillingIndexName, previousSync, syncStart);
         } catch (Exception e) {
-            log.error("An error during storage billing {} synchronization: {}",
-                      storage.getEntity().getId(), e.getMessage());
-            log.error(e.getMessage(), e);
+            log.error("An error during storage billing synchronization: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
-    private List<DocWriteRequest> buildDocRequests(final EntityContainer<AbstractDataStorage> storage,
+    private List<DocWriteRequest> buildDocRequests(final List<EntityContainer<AbstractDataStorage>> storages,
                                                    final String indexNameForStorage,
                                                    final LocalDateTime previousSync,
                                                    final LocalDateTime syncStart) {
-        log.debug("Processing storage {} billings", storage.getEntity().getId());
-        return storageToBillingRequestConverter.convertEntityToRequests(storage, indexNameForStorage,
-                                                                        previousSync, syncStart);
+        return storageToBillingRequestConverter.convertEntitiesToRequests(storages, indexNameForStorage,
+                                                                          previousSync, syncStart);
     }
 }
