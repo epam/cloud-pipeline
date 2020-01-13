@@ -23,6 +23,7 @@ import PropTypes from 'prop-types';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import RunsCounterMenuItem from './RunsCounterMenuItem';
 import SettingsForm from './SettingsForm';
+import SupportMenuItem from './forms/SupportMenuItem';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import searchStyles from '../../search/search.css';
 
@@ -40,7 +41,8 @@ export default class Navigation extends React.Component {
 
   state = {
     settingsControlVisible: false,
-    versionInfoVisible: false
+    versionInfoVisible: false,
+    supportModalVisible: false,
   };
 
   navigationItems = [
@@ -159,6 +161,10 @@ export default class Navigation extends React.Component {
 
   handleVersionInfoVisible = (visible) => {
     this.setState({versionInfoVisible: visible});
+  };
+
+  handleSupportModalVisible = (visible) => {
+    this.setState({supportModalVisible: visible});
   };
 
   async navigateToRun (runId) {
@@ -301,6 +307,17 @@ export default class Navigation extends React.Component {
             </Popover>
           }
           {menuItems}
+          <SupportMenuItem
+            className={styles.navigationMenuItem}
+            visible={this.state.supportModalVisible}
+            onVisibilityChanged={this.handleSupportModalVisible}
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: activeTabPath === 'pipelines' ? 44 : 10,
+              right: 0
+            }}
+          />
           {
             activeTabPath === 'pipelines' &&
             <Button
