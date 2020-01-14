@@ -90,10 +90,11 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
                                                          final LocalDateTime syncStart) {
         final Long storageId = storageContainer.getEntity().getId();
         final DataStorageType storageType = storageContainer.getEntity().getType();
-        final SearchResponse searchResponse = requestSumAggregationForStorage(storageId, storageType);
         final LocalDate reportDate = syncStart.toLocalDate().minusDays(1);
         final String fullIndex = String.format(INDEX_PATTERN, indexName, parseDateToString(reportDate));
-        return buildRequestFromAggregation(storageContainer, syncStart, searchResponse, fullIndex);
+        return requestSumAggregationForStorage(storageId, storageType)
+            .map(searchResponse -> buildRequestFromAggregation(storageContainer, syncStart, searchResponse, fullIndex))
+            .orElse(Collections.emptyList());
     }
 
     @Override
@@ -106,13 +107,20 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
             .convertEntitiesToRequests(containers, indexName, previousSync, syncStart);
     }
 
-    private SearchResponse requestSumAggregationForStorage(final Long storageId, final DataStorageType storageType) {
-        final SearchRequest searchRequest = new SearchRequest();
-        searchRequest.indices(String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId));
-        final SumAggregationBuilder sizeSumAgg = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD);
-        final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAgg);
-        searchRequest.source(sizeSumSearch);
-        return elasticsearchService.search(searchRequest);
+    private Optional<SearchResponse> requestSumAggregationForStorage(final Long storageId,
+                                                                     final DataStorageType storageType) {
+        final String searchIndex =
+            String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
+        if (elasticsearchService.isIndexExists(searchIndex)) {
+            final SearchRequest searchRequest = new SearchRequest();
+            searchRequest.indices(searchIndex);
+            final SumAggregationBuilder sizeSumAgg = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME).field(SIZE_FIELD);
+            final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAgg);
+            searchRequest.source(sizeSumSearch);
+            return Optional.of(elasticsearchService.search(searchRequest));
+        } else {
+            return Optional.empty();
+        }
     }
 
     private List<DocWriteRequest> buildRequestFromAggregation(final EntityContainer<AbstractDataStorage> container,

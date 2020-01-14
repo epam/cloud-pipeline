@@ -237,6 +237,17 @@ public class AwsStorageToRequestConverterTest {
         Assert.assertEquals(0, requests.size());
     }
 
+    @Test
+    public void testStorageWithNoInfoConverting() throws IOException {
+        final EntityContainer<AbstractDataStorage> s3StorageContainer =
+            getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
+        createElasticsearchSearchContext(0L, false, US_EAST_1);
+        Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(false);
+        final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
+                                                                                   SYNC_START, SYNC_END);
+        Assert.assertEquals(0, requests.size());
+    }
+
     private void createElasticsearchSearchContext(final Long storageSize,
                                                   final boolean isEmptyResponse,
                                                   final String region) throws IOException {
@@ -263,6 +274,7 @@ public class AwsStorageToRequestConverterTest {
         final SearchResponse response = Mockito.mock(SearchResponse.class);
         Mockito.when(response.getAggregations()).thenReturn(aggregations);
         Mockito.when(response.getHits()).thenReturn(hits);
+        Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(true);
         Mockito.when(elasticsearchClient.search(Mockito.any())).thenReturn(response);
     }
 
