@@ -28,6 +28,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * This class builds 'pipe run' CLI command according to specified input arguments {@link PipeRunCmdStartVO}
+ */
 public class PipeRunCmdBuilder {
 
     private static final String WHITESPACE = " ";

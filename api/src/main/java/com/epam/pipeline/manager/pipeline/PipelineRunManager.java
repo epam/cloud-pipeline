@@ -1037,6 +1037,12 @@ public class PipelineRunManager {
         return pipelineRun;
     }
 
+    /**
+     * Generates launch command for 'pipe run' CLI method.
+     *
+     * @param runVO {@link PipeRunCmdStartVO} contains input arguments for launch command
+     * @return launch command
+     */
     public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
         Assert.notNull(runVO.getPipelineStart(), "Pipeline start must be specified");
         return new PipeRunCmdBuilder(runVO)
