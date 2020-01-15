@@ -284,7 +284,7 @@ public class RunApiService {
         return runManager.attachDisk(runId, request);
     }
 
-    @PreAuthorize(RUN_ID_OWNER)
+    @PreAuthorize(RUN_ID_READ)
     public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
         return runManager.generateLaunchCommand(runVO);
     }
