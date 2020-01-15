@@ -42,7 +42,6 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
 
     private final  String storageIndexMappingFile;
     private final String indexPrefix;
-    private final String storageIndexName;
     private final EntityLoader<AbstractDataStorage> loader;
     private final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingRequestConverter;
     private final ElasticIndexService indexService;
@@ -59,8 +58,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
                                final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingReqConverter,
                                final DataStorageType storageType) {
         this.storageIndexMappingFile = storageIndexMappingFile;
-        this.indexPrefix = indexPrefix;
-        this.storageIndexName = storageIndexName;
+        this.indexPrefix = indexPrefix + storageIndexName;
         this.loader = loader;
         this.storageToBillingRequestConverter = storageToBillingReqConverter;
         this.indexService = indexService;
@@ -97,8 +95,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
                                                               final LocalDateTime previousSync,
                                                               final LocalDateTime syncStart) {
         try {
-            final String commonRunBillingIndexName = indexPrefix + storageIndexName;
-            return buildDocRequests(storages, commonRunBillingIndexName, previousSync, syncStart);
+            return buildDocRequests(storages, previousSync, syncStart);
         } catch (Exception e) {
             log.error("An error during storage billing synchronization: {}", e.getMessage());
             return Collections.emptyList();
@@ -106,10 +103,9 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
     }
 
     private List<DocWriteRequest> buildDocRequests(final List<EntityContainer<AbstractDataStorage>> storages,
-                                                   final String indexNameForStorage,
                                                    final LocalDateTime previousSync,
                                                    final LocalDateTime syncStart) {
-        return storageToBillingRequestConverter.convertEntitiesToRequests(storages, indexNameForStorage,
+        return storageToBillingRequestConverter.convertEntitiesToRequests(storages, indexPrefix,
                                                                           previousSync, syncStart);
     }
 }

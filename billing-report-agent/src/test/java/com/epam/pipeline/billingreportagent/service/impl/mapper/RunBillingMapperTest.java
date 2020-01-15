@@ -76,15 +76,15 @@ public class RunBillingMapperTest {
 
         final Map<String, Object> mappedFields = TestUtils.getPuttedObject(mappedBilling);
 
-        Assert.assertEquals(run.getId().intValue(), mappedFields.get("id"));
+        Assert.assertEquals((int) TEST_RUN_ID, mappedFields.get("id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals(run.getPipelineName(), mappedFields.get("pipeline"));
-        Assert.assertEquals(run.getDockerImage(), mappedFields.get("tool"));
-        Assert.assertEquals(run.getInstance().getNodeType(), mappedFields.get("instance_type"));
-        Assert.assertEquals(billing.getCost().intValue(), mappedFields.get("cost"));
-        Assert.assertEquals(billing.getUsageMinutes().intValue(), mappedFields.get("usage"));
+        Assert.assertEquals(TEST_PIPELINE, mappedFields.get("pipeline"));
+        Assert.assertEquals(TEST_TOOL_IMAGE, mappedFields.get("tool"));
+        Assert.assertEquals(TEST_NODE_TYPE, mappedFields.get("instance_type"));
+        Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
+        Assert.assertEquals((int) TEST_USAGE_MINUTES, mappedFields.get("usage"));
         Assert.assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
-        Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), mappedFields.get("cloudRegionId"));
+        Assert.assertEquals((int) TEST_REGION_ID, mappedFields.get("cloudRegionId"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }

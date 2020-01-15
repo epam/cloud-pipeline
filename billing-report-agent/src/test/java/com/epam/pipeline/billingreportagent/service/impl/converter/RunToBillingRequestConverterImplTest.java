@@ -86,9 +86,9 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(3, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(12, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
-        Assert.assertEquals(48, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
-        Assert.assertEquals(60, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
+        Assert.assertEquals(1200, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
+        Assert.assertEquals(4800, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
+        Assert.assertEquals(6000, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
     }
 
     @Test
@@ -106,7 +106,7 @@ public class RunToBillingRequestConverterImplTest {
 
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(96, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
+        Assert.assertEquals(9600, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
     }
 
     @Test
@@ -123,16 +123,19 @@ public class RunToBillingRequestConverterImplTest {
         final LocalDateTime prevSync = LocalDateTime.of(2019, 12, 4, 0, 0);
         final LocalDateTime syncStart = LocalDateTime.of(2019, 12, 5, 0, 0);
         final List<DocWriteRequest> billings =
-            converter.convertEntityToRequests(runContainer, "cp-run-test-index", prevSync, syncStart);
+            converter.convertEntityToRequests(runContainer, TestUtils.RUN_BILLING_PREFIX, prevSync, syncStart);
         Assert.assertEquals(1, billings.size());
 
-        final Map<String, Object> requestFieldsMap = ((IndexRequest) billings.get(0)).sourceAsMap();
+        final DocWriteRequest billing = billings.get(0);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
+        Assert.assertEquals(expectedIndex, billing.index());
         Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("id"));
         Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
         Assert.assertEquals(run.getPipelineName(), requestFieldsMap.get("pipeline"));
         Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
         Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
-        Assert.assertEquals(96, requestFieldsMap.get("cost"));
+        Assert.assertEquals(9600, requestFieldsMap.get("cost"));
         Assert.assertEquals(1441, requestFieldsMap.get("usage"));
         Assert.assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
         Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));

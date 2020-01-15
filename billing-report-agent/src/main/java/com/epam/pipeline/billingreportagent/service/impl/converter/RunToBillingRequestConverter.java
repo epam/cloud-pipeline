@@ -56,17 +56,17 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
      * Creates billing requests for given run
      *
      * @param runContainer Pipeline run to build request
-     * @param indexName index to insert requests into
+     * @param indexPrefix common billing prefix for index to insert requests into
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
     public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRun> runContainer,
-                                                         final String indexName,
+                                                         final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
         return convertRunToBillings(runContainer, previousSync, syncStart).stream()
-            .map(billingInfo -> getDocWriteRequest(indexName, runContainer.getOwner(), billingInfo))
+            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(), billingInfo))
             .collect(Collectors.toList());
     }
 
@@ -163,24 +163,24 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
      *
      * @param durationSecs duration in seconds
      * @param hourlyPrice  price for evaluating resource
-     * @return cost for the given period in cents
+     * @return cost for the given period in hundredths of cents
      */
     private Long calculateCostsForPeriod(final Long durationSecs, final BigDecimal hourlyPrice) {
         final BigDecimal duration = BigDecimal.valueOf(durationSecs);
         return duration.multiply(hourlyPrice)
             .divide(BigDecimal.valueOf(Duration.ofHours(1).getSeconds()), RoundingMode.CEILING)
-            .unscaledValue()
+            .scaleByPowerOfTen(4)
             .longValue();
     }
 
-    private DocWriteRequest getDocWriteRequest(final String periodIndex,
+    private DocWriteRequest getDocWriteRequest(final String indexPrefix,
                                                final PipelineUser owner,
                                                final PipelineRunBillingInfo billing) {
         final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
             .owner(owner)
             .entity(billing)
             .build();
-        final String fullIndex = String.format("%s-%s", periodIndex, parseDateToString(billing.getDate()));
+        final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
     }
 }

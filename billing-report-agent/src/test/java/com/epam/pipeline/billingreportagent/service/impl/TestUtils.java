@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.service.impl;
 
+import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -28,11 +29,17 @@ import org.junit.Assert;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
 public final class TestUtils {
+
+    public static final String COMMON_INDEX_PREFIX = "cp-billing-";
+    public static final String RUN_BILLING_PREFIX = COMMON_INDEX_PREFIX + "pipeline-run-";
+    public static final String STORAGE_BILLING_PREFIX = COMMON_INDEX_PREFIX + "storage-";
+
     private TestUtils() {
     }
 
@@ -57,12 +64,8 @@ public final class TestUtils {
         return parser.map();
     }
 
-    private static ArrayList<String> toStringArray(final Object object) {
-        return new ArrayList<>((Collection<? extends String>) object);
-    }
-
     public static PipelineRun createTestPipelineRun(final Long runId, final String pipeline, final String tool,
-                                              final BigDecimal price, final RunInstance instance) {
+                                                    final BigDecimal price, final RunInstance instance) {
         final PipelineRun run = new PipelineRun();
         run.setId(runId);
         run.setPipelineName(pipeline);
@@ -77,5 +80,14 @@ public final class TestUtils {
         instance.setCloudRegionId(regionId);
         instance.setNodeType(nodeType);
         return instance;
+    }
+
+    public static String buildBillingIndex(final String prefix, final LocalDateTime syncDate) {
+        return prefix
+               + EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(syncDate.toLocalDate());
+    }
+
+    private static ArrayList<String> toStringArray(final Object object) {
+        return new ArrayList<>((Collection<? extends String>) object);
     }
 }

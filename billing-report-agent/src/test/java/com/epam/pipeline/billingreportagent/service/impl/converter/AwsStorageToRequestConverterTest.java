@@ -70,8 +70,6 @@ import java.util.Map;
 @SuppressWarnings("checkstyle:MagicNumber")
 public class AwsStorageToRequestConverterTest {
 
-    private static final String INDEX_S3 = "cp-test-index-s3";
-    private static final String INDEX_EFS = "cp-test-index-efs";
     private static final Long STORAGE_ID = 1L;
     private static final String STORAGE_NAME = "TestStorage";
     private static final int DOC_ID = 2;
@@ -79,7 +77,6 @@ public class AwsStorageToRequestConverterTest {
     private static final long BYTES_IN_1_GB = 1L << 30;
     private static final String SIZE_SUM_SEARCH = "sizeSumSearch";
     private static final String REGION_FIELD = "storage_region";
-    private static final String INDEX_PATTERN = "%s-daily-%s";
 
     private static final String VALUE_RESULT_PATTERN_JSON = "{\"value\" : \"%d\"}";
     private static final String UNKNOWN_REGION = "unknownRegion";
@@ -179,11 +176,11 @@ public class AwsStorageToRequestConverterTest {
     public void testS3StorageConverting() throws IOException {
         final AbstractDataStorage s3Storage = s3StorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
-        final DocWriteRequest request = s3Converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
+        final DocWriteRequest request = s3Converter.convertEntityToRequests(s3StorageContainer,
+                                                                            TestUtils.STORAGE_BILLING_PREFIX,
                                                                             SYNC_START, SYNC_END).get(0);
-        final String expectedIndex = String.format(INDEX_PATTERN,
-                                                   INDEX_S3,
-                                                   s3Converter.parseDateToString(SYNC_START.toLocalDate()));
+
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
@@ -197,11 +194,10 @@ public class AwsStorageToRequestConverterTest {
         final AbstractDataStorage nfsStorage = nfsStorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
 
-        final DocWriteRequest request = nfsConverter.convertEntityToRequests(nfsStorageContainer, INDEX_EFS,
+        final DocWriteRequest request = nfsConverter.convertEntityToRequests(nfsStorageContainer,
+                                                                             TestUtils.STORAGE_BILLING_PREFIX,
                                                                              SYNC_START, SYNC_END).get(0);
-        final String expectedIndex = String.format(INDEX_PATTERN,
-                                                   INDEX_EFS,
-                                                   nfsConverter.parseDateToString(SYNC_START.toLocalDate()));
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
@@ -214,11 +210,10 @@ public class AwsStorageToRequestConverterTest {
     public void testStorageWithUnknownRegionConverting() throws IOException {
         final AbstractDataStorage s3Storage = s3StorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, UNKNOWN_REGION);
-        final DocWriteRequest request = s3Converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
+        final DocWriteRequest request = s3Converter.convertEntityToRequests(s3StorageContainer,
+                                                                            TestUtils.STORAGE_BILLING_PREFIX,
                                                                             SYNC_START, SYNC_END).get(0);
-        final String expectedIndex = String.format(INDEX_PATTERN,
-                                                   INDEX_S3,
-                                                   s3Converter.parseDateToString(SYNC_START.toLocalDate()));
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.STORAGE_BILLING_PREFIX, SYNC_START);
         final Map<String, Object> requestFieldsMap = ((IndexRequest) request).sourceAsMap();
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
@@ -232,7 +227,8 @@ public class AwsStorageToRequestConverterTest {
         final EntityContainer<AbstractDataStorage> s3StorageContainer =
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
         createElasticsearchSearchContext(0L, true, UNKNOWN_REGION);
-        final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
+        final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
+                                                                                   TestUtils.COMMON_INDEX_PREFIX,
                                                                                    SYNC_START, SYNC_END);
         Assert.assertEquals(0, requests.size());
     }
@@ -243,7 +239,8 @@ public class AwsStorageToRequestConverterTest {
             getStorageContainer(STORAGE_ID, STORAGE_NAME, STORAGE_NAME, DataStorageType.S3);
         createElasticsearchSearchContext(0L, false, US_EAST_1);
         Mockito.when(elasticsearchClient.isIndexExists(Mockito.anyString())).thenReturn(false);
-        final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer, INDEX_S3,
+        final List<DocWriteRequest> requests = s3Converter.convertEntityToRequests(s3StorageContainer,
+                                                                                   TestUtils.COMMON_INDEX_PREFIX,
                                                                                    SYNC_START, SYNC_END);
         Assert.assertEquals(0, requests.size());
     }

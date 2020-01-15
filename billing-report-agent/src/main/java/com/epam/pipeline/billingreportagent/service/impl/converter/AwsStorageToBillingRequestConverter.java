@@ -55,7 +55,6 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
     private static final String SIZE_FIELD = "size";
     private static final String REGION_FIELD = "storage_region";
     private static final String ES_FILE_INDEX_PATTERN = "cp-%s-file-%d";
-    private static final String INDEX_PATTERN = "%s-daily-%s";
     private static final RoundingMode ROUNDING_MODE = RoundingMode.CEILING;
 
     private final EntityMapper<StorageBillingInfo> mapper;
@@ -85,13 +84,13 @@ public class AwsStorageToBillingRequestConverter implements EntityToBillingReque
 
     @Override
     public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<AbstractDataStorage> storageContainer,
-                                                         final String indexName,
+                                                         final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
         final Long storageId = storageContainer.getEntity().getId();
         final DataStorageType storageType = storageContainer.getEntity().getType();
         final LocalDate reportDate = syncStart.toLocalDate().minusDays(1);
-        final String fullIndex = String.format(INDEX_PATTERN, indexName, parseDateToString(reportDate));
+        final String fullIndex = indexPrefix + parseDateToString(reportDate);
         return requestSumAggregationForStorage(storageId, storageType)
             .map(searchResponse -> buildRequestFromAggregation(storageContainer, syncStart, searchResponse, fullIndex))
             .orElse(Collections.emptyList());

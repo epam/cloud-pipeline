@@ -30,6 +30,10 @@ public abstract class AbstractBillingInfo<T> {
 
     private LocalDate date;
     private T entity;
+
+    /**
+     * Cost in hundredths of cents
+     */
     private Long cost;
     private ResourceType resourceType;
 }

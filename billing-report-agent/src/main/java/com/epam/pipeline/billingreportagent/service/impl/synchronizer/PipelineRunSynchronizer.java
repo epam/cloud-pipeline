@@ -46,7 +46,6 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     private final ElasticIndexService indexService;
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
-    private final String pipelineRunIndexName;
     private final BulkRequestSender requestSender;
     private final EntityToBillingRequestConverter<PipelineRun> runToBillingRequestConverter;
     private final EntityLoader<PipelineRun> loader;
@@ -61,8 +60,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
                                    final EntityLoader<PipelineRun> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
         this.indexService = indexService;
-        this.indexPrefix = indexPrefix;
-        this.pipelineRunIndexName = pipelineRunIndexName;
+        this.indexPrefix = indexPrefix + pipelineRunIndexName;
         this.loader = loader;
         this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
         this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize);
@@ -108,10 +106,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
                                                             final LocalDateTime previousSync,
                                                             final LocalDateTime syncStart) {
         try {
-            final String commonRunBillingIndexName = indexPrefix + pipelineRunIndexName;
-            final String periodName = "daily";
-            final String indexNameForPipelineRunPeriod = String.format("%s-%s", commonRunBillingIndexName, periodName);
-            return buildDocRequests(pipelineRun, indexNameForPipelineRunPeriod, previousSync, syncStart);
+            return buildDocRequests(pipelineRun, previousSync, syncStart);
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
                       pipelineRun.getEntity().getId(), e.getMessage());
@@ -121,11 +116,10 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     }
 
     private List<DocWriteRequest> buildDocRequests(final EntityContainer<PipelineRun> pipelineRun,
-                                                   final String indexNameForPipelineRun,
                                                    final LocalDateTime previousSync,
                                                    final LocalDateTime syncStart) {
         log.debug("Processing pipeline run {} billings", pipelineRun.getEntity().getId());
-        return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexNameForPipelineRun,
+        return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexPrefix,
                                                                     previousSync, syncStart);
     }
 }

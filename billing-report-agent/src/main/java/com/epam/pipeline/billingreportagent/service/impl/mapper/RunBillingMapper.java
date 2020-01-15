@@ -53,7 +53,8 @@ public class RunBillingMapper implements EntityMapper<PipelineRunBillingInfo> {
                 .field("usage", billingInfo.getUsageMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
-                .field("billing_center", "TBD");
+                .field("billing_center", "TBD")
+                .field("created_date", billingInfo.getDate());
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;

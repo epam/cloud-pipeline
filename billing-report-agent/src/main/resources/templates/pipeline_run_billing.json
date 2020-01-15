@@ -15,7 +15,8 @@
         "tool": {"type": "keyword"},
         "instance_type":  { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
-        "cloudRegionId": { "type": "keyword" }
+        "cloudRegionId": { "type": "keyword" },
+        "created_date": {"type": "date"}
       }
     }
   },

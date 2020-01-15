@@ -21,6 +21,7 @@ import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
+import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
@@ -31,6 +32,7 @@ import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ public class StorageBillingMapperTest {
     private static final long TEST_COST = 10;
     private static final long TEST_USAGE_BYTES = 600;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
+    private static final LocalDate TEST_DATE = LocalDate.now();
 
     private final StorageBillingMapper s3Mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
     private final StorageBillingMapper efsMapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE);
@@ -62,6 +65,7 @@ public class StorageBillingMapperTest {
             .regionName(TEST_REGION)
             .usageBytes(TEST_USAGE_BYTES)
             .cost(TEST_COST)
+            .date(TEST_DATE)
             .build();
 
         final EntityContainer<StorageBillingInfo> billingContainer = EntityContainer.<StorageBillingInfo>builder()
@@ -77,12 +81,14 @@ public class StorageBillingMapperTest {
                             mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         Assert.assertEquals(s3Storage.getId(), mappedFields.get("id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals(billing.getRegionName(), mappedFields.get("region"));
+        Assert.assertEquals(TEST_REGION, mappedFields.get("region"));
         Assert.assertEquals(s3Storage.getType().toString(), mappedFields.get("provider"));
         Assert.assertEquals(StorageType.OBJECT_STORAGE.toString(), mappedFields.get("storage_type"));
-        Assert.assertEquals(testUser.getUserName(), mappedFields.get("owner"));
-        Assert.assertEquals(billing.getUsageBytes().intValue(), mappedFields.get("usage"));
-        Assert.assertEquals(billing.getCost().intValue(), mappedFields.get("cost"));
+        Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
+        Assert.assertEquals((int) TEST_USAGE_BYTES, mappedFields.get("usage"));
+        Assert.assertEquals((int) TEST_COST, mappedFields.get("cost"));
+        Assert.assertEquals(EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(TEST_DATE),
+                            mappedFields.get("created_date"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }
 
