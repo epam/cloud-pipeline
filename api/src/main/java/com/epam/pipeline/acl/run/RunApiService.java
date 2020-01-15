@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -281,5 +282,10 @@ public class RunApiService {
     @AclMask
     public PipelineRun attachDisk(final Long runId, final DiskAttachRequest request) {
         return runManager.attachDisk(runId, request);
+    }
+
+    @PreAuthorize(RUN_ID_OWNER)
+    public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
+        return runManager.generateLaunchCommand(runVO);
     }
 }
