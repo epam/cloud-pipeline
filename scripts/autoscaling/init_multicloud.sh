@@ -278,6 +278,7 @@ fi
 _KUBELET_LOG_PATH=/var/log/kubelet
 mkdir -p $_KUBELET_LOG_PATH
 _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
+_KUBE_EVICTION_HARD_ARGS="--eviction-hard="
 
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
@@ -287,7 +288,7 @@ rm -f $_KUBELET_INITD_DROPIN_PATH
 ## Append node-labels string to the systemd config
 cat > $_KUBELET_INITD_DROPIN_PATH <<EOF
 [Service]
-Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS"
+Environment="KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_EVICTION_HARD_ARGS"
 EOF
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
