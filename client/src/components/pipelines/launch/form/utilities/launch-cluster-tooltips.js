@@ -73,12 +73,8 @@ const ENABLE_SPARK_TOOLTIP = (
     </Row>
   </div>
 );
-// todo Add tooltip text
 const ENABLE_SLURM_TOOLTIP = (
   <div>
-    <Row>
-      TODO: Add tooltip text
-    </Row>
     <Row>
       This checkbox is a convenience option for the <b>"CP_CAP_SLURM=true"</b> parameter.
     </Row>
