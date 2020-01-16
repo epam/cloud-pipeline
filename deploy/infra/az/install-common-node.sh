@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,12 @@
 yum install -y  nc \
                 python \
                 curl \
-                coreutils
+                coreutils \
+                btrfs-progs
+
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install Docker
 yum install -y yum-utils \

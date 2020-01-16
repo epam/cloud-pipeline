@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
 
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
@@ -163,7 +163,9 @@ def get_well_known_hosts(cloud_region):
 
 def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = {"instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script}
+    default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts }
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -172,13 +174,11 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
     for image_config in instance_images_config:
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         if fnmatch.fnmatch(instance_type, instance_mask):
-            return {"instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script}
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            "embedded_scripts": embedded_scripts }
 
     return default_object
 
@@ -203,11 +203,11 @@ compute_client = get_client_from_auth_file(ComputeManagementClient)
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user, kms_encyr_key_id,
+def run_instance(api_url, api_token, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user, kms_encyr_key_id,
                  ins_type, kube_ip, kubeadm_token):
     try:
         ins_key = read_ssh_key(ssh_pub_key)
-        user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
+        user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token)
         instance_name = VM_NAME_PREFIX + uuid.uuid4().hex[0:UUID_LENGHT]
         create_public_ip_address(instance_name, run_id)
         create_nic(instance_name, run_id)
@@ -709,7 +709,7 @@ def replace_common_params(cloud_region, init_script, config_section):
             item_path = ''
         init_script = init_script.replace('@' + item_name +  '@', item_path)
         pipe_log('-> {}={}'.format(item_name, item_path))
-    
+
     return init_script
 
 def replace_proxies(cloud_region, init_script):
@@ -719,7 +719,7 @@ def replace_swap(cloud_region, init_script):
     return replace_common_params(cloud_region, init_script, "swap")
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token):
+def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -729,11 +729,17 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         init_script.close()
         user_data_script = replace_proxies(cloud_region, user_data_script)
         user_data_script = replace_swap(cloud_region, user_data_script)
-        return user_data_script\
-            .replace('@DOCKER_CERTS@', certs_string) \
-            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-            .replace('@KUBE_IP@', kube_ip) \
-            .replace('@KUBE_TOKEN@', kubeadm_token)
+        user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                            .replace('@KUBE_IP@', kube_ip) \
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token)
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 
@@ -835,7 +841,9 @@ def main():
         ins_id, ins_ip = verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path, "pipeline",
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            ins_id, ins_ip = run_instance(api_url, api_token, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path, "pipeline",
                                           kms_encyr_key_id, ins_type, kube_ip, kubeadm_token)
 
 
