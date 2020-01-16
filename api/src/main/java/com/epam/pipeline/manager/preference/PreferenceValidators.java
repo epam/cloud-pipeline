@@ -169,6 +169,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Integer.parseInt(pref) < x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isLessThan(float x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) < x;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isValidEnum(final Class<? extends Enum> enumClass) {
         return (pref, dependencies) -> EnumUtils.isValidEnum(enumClass, pref);
     }

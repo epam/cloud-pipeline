@@ -274,6 +274,12 @@ public class SystemPreferences {
                                                                                            false, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.threshold.ratio", 0.75, CLUSTER_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.delta.ratio", 0.5, CLUSTER_GROUP,
+            isGreaterThan(0.0f));
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
             "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
