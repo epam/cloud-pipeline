@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -99,7 +100,7 @@ public class BillingManager {
         final Map<String, List<String>> filters = request.getFilters();
         setAuthorizationFilters(filters);
         if (interval != null) {
-            if (grouping != null) {
+            if (CollectionUtils.isNotEmpty(grouping)) {
                 throw new UnsupportedOperationException("Currently field and date grouping at"
                                                         + " the same time isn't supporting!");
             }
@@ -173,7 +174,7 @@ public class BillingManager {
     private List<BillingChartInfo> getBillingChartInfoForGrouping(final LocalDate from, final LocalDate to,
                                                                   final List<String> grouping,
                                                                   final SearchResponse searchResponse) {
-        if (grouping.size() > 0) {
+        if (CollectionUtils.isNotEmpty(grouping)) {
             return grouping.stream()
                 .map(field -> {
                     final ParsedStringTerms terms = searchResponse.getAggregations().get(field);
