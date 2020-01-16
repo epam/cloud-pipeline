@@ -20,7 +20,8 @@ function call_api() {
   _API_METHOD="$3"
   _HTTP_METHOD="$4"
   _HTTP_BODY="$5"
-  if [[ "$_HTTP_BODY" ]]; then
+  if [[ "$_HTTP_BODY" ]]
+  then
     curl -f -s -k -X "$_HTTP_METHOD" \
       --header 'Accept: application/json' \
       --header 'Authorization: Bearer '"$_API_TOKEN" \
@@ -103,18 +104,32 @@ function get_current_run_id() {
     grep -v "^null$"
 }
 
-function is_run_autoscale() {
+function get_run_info() {
   _API="$1"
   _API_TOKEN="$2"
   _RUN_ID="$3"
-  _AUTOSCALE_PARAMETER="$4"
-  AUTOSCALE_ENABLED=$(
-    call_api "$_API" "$_API_TOKEN" "run/$_RUN_ID" "GET" |
-      jq -r ".payload.envVars.$_AUTOSCALE_PARAMETER" |
-      grep -v "^null$" |
-      tr "[:upper:]" "[:lower:]"
-  )
-  [[ "$AUTOSCALE_ENABLED" == "true" ]]
+  call_api "$_API" "$_API_TOKEN" "run/$_RUN_ID" "GET"
+}
+
+function get_run_parameter() {
+  _INFO="$1"
+  _PARAMETER="$2"
+  _DEFAULT="$3"
+  VALUE=$(echo "$_INFO" |
+    jq -r ".payload.envVars.$_PARAMETER" |
+    grep -v "^null$")
+  if [[ "$VALUE" ]]
+  then
+    echo "$VALUE"
+  else
+    echo "$_DEFAULT"
+  fi
+}
+
+function is_true() {
+  _BOOLEAN="$1"
+  LOWER_BOOLEAN=$(echo "$_BOOLEAN" | tr "[:upper:]" "[:lower:]")
+  [[ "$LOWER_BOOLEAN" == "true" ]]
   return "$?"
 }
 
@@ -159,29 +174,37 @@ function get_matching_devices() {
 }
 
 function get_mounted_devices() {
-  btrfs filesystem show | awk '$1 == "devid" { print $8 }'
+  _MOUNT_POINT="$1"
+  btrfs filesystem show "$_MOUNT_POINT" | awk '$1 == "devid" { print $8 }'
 }
 
 function get_unused_device() {
-  _SIZE="$1"
+  _MOUNT_POINT="$1"
+  _SIZE="$2"
   MATCHING_DEVICES=$(get_matching_devices "$_SIZE")
-  IFS=' ' read -r -a MATCHING_DEVICES <<<"$MATCHING_DEVICES"
-  MOUNTED_DEVICES=$(get_mounted_devices)
-  IFS=' ' read -r -a MOUNTED_DEVICES <<<"$MOUNTED_DEVICES"
+  IFS=$'\n' read -rd '' -a MATCHING_DEVICES_ARRAY <<<"$MATCHING_DEVICES"
+  MOUNTED_DEVICES=$(get_mounted_devices "$_MOUNT_POINT")
+  IFS=$'\n' read -rd '' -a MOUNTED_DEVICES_ARRAY <<<"$MOUNTED_DEVICES"
   UNUSED_DEVICES=()
-  for MATCHING_DEVICE in "${MATCHING_DEVICES[@]}"; do
+  for MATCHING_DEVICE in "${MATCHING_DEVICES_ARRAY[@]}"
+  do
     UNUSED_MATCHING_DEVICE="$MATCHING_DEVICE"
-    for USED_DEVICE in "${MOUNTED_DEVICES[@]}"; do
-      if [[ "$MATCHING_DEVICE" == "$USED_DEVICE" ]]; then
+    for USED_DEVICE in "${MOUNTED_DEVICES_ARRAY[@]}"
+    do
+      if [[ "$MATCHING_DEVICE" == "$USED_DEVICE" ]]
+      then
         UNUSED_MATCHING_DEVICE=""
       fi
     done
-    if [[ "$UNUSED_MATCHING_DEVICE" ]]; then
+    if [[ "$UNUSED_MATCHING_DEVICE" ]]
+    then
       UNUSED_DEVICES+=("$UNUSED_MATCHING_DEVICE")
     fi
   done
-  if [[ "${#UNUSED_DEVICES[@]}" -gt "0" ]]; then
-    if [[ "${#UNUSED_DEVICES[@]}" -gt "1" ]]; then
+  if [[ "${#UNUSED_DEVICES[@]}" -gt "0" ]]
+  then
+    if [[ "${#UNUSED_DEVICES[@]}" -gt "1" ]]
+    then
       pipe_log_debug "More than one matching unused devices with the required size ${_SIZE}G were found ${UNUSED_DEVICES[*]}. Only the first one will be used."
     fi
     echo "${UNUSED_DEVICES[0]}"
@@ -189,11 +212,13 @@ function get_unused_device() {
 }
 
 function get_new_device() {
-  _SIZE="$1"
-  _TIMEOUT="$2"
+  _MOUNT_POINT="$1"
+  _SIZE="$2"
+  _TIMEOUT="$3"
   DISK_AVAILABILITY_CHECK_REPEAT=0
-  while [[ "$DISK_AVAILABILITY_CHECK_REPEAT" -lt "$_TIMEOUT" ]]; do
-    UNUSED_DISK_DEVICE=$(get_unused_device "$_SIZE")
+  while [[ "$DISK_AVAILABILITY_CHECK_REPEAT" -lt "$_TIMEOUT" ]]
+  do
+    UNUSED_DISK_DEVICE=$(get_unused_device "$_MOUNT_POINT" "$_SIZE")
     [[ "$UNUSED_DISK_DEVICE" ]] && break
     DISK_AVAILABILITY_CHECK_REPEAT=$((DISK_AVAILABILITY_CHECK_REPEAT + 1))
     sleep 1
@@ -217,7 +242,8 @@ function get_system_preference() {
       jq -r ".payload.value" |
       grep -v "^null$"
   )
-  if [[ "$PREFERENCE_VALUE" ]] && [[ "$PREFERENCE_VALUE" != "null" ]]; then
+  if [[ "$PREFERENCE_VALUE" ]] && [[ "$PREFERENCE_VALUE" != "null" ]]
+  then
     echo "$PREFERENCE_VALUE"
   else
     echo "$_DEFAULT_PREFERENCE_VALUE"
@@ -229,7 +255,8 @@ function get_fractional_part() {
   echo "$_FLOAT" | cut -d"." -f2
 }
 
-while [[ "$#" -gt "0" ]]; do
+while [[ "$#" -gt "0" ]]
+do
   case "$1" in
   -u | --api-url)
     API="$2"
@@ -267,7 +294,8 @@ while [[ "$#" -gt "0" ]]; do
   esac
 done
 
-if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$NODE" ]] || [[ -z "$MOUNT_POINT" ]]; then
+if [[ -z "$API" ]] || [[ -z "$API_TOKEN" ]] || [[ -z "$NODE" ]] || [[ -z "$MOUNT_POINT" ]]
+then
   pipe_log_error "Some of the required arguments are missing."
   exit 1
 fi
@@ -283,51 +311,88 @@ THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-cluster.instance.hdd.scale.thresho
 THRESHOLD_PREFERENCE_DEFAULT_VALUE="${THRESHOLD_PREFERENCE_DEFAULT_VALUE:-0.75}"
 DELTA_PREFERENCE="${DELTA_PREFERENCE:-cluster.instance.hdd.scale.delta.ratio}"
 DELTA_PREFERENCE_DEFAULT_VALUE="${DELTA_PREFERENCE_DEFAULT_VALUE:-0.5}"
-AUTOSCALE_PARAMETER="${AUTOSCALE_PARAMETER:-CP_CAP_FS_AUTOSCALE}"
-MIN_ADDITIONAL_DISK_SIZE="${MIN_ADDITIONAL_DISK_SIZE:-10}"
-MAX_ADDITIONAL_DISK_SIZE="${MAX_ADDITIONAL_DISK_SIZE:-16384}"
+AUTOSCALE_PARAMETER_NAME="${AUTOSCALE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE}"
+MAX_DEVICE_NUMBER_PARAMETER_NAME=${MAX_DEVICE_NUMBER_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_DISK_COUNT}
+MAX_FS_SIZE_PARAMETER_NAME=${MAX_FS_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_SIZE}
+MIN_DISK_SIZE_PARAMETER_NAME=${MIN_DISK_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MIN_DISK_SIZE}
+MAX_DISK_SIZE_PARAMETER_NAME=${MAX_DISK_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_DISK_SIZE}
+DEFAULT_MAX_DEVICE_NUMBER=${DEFAULT_MAX_DEVICE_NUMBER:-40}
+DEFAULT_MAX_FS_SIZE=${DEFAULT_MAX_FS_SIZE:-16384}
+DEFAULT_MIN_DISK_SIZE=${DEFAULT_MIN_DISK_SIZE:-10}
+DEFAULT_MAX_DISK_SIZE=${DEFAULT_MAX_DISK_SIZE:-16384}
 THRESHOLD_RATIO=$(get_system_preference "$API" "$API_TOKEN" "$THRESHOLD_PREFERENCE" "$THRESHOLD_PREFERENCE_DEFAULT_VALUE")
 THRESHOLD=$(get_fractional_part "$THRESHOLD_RATIO")
 DELTA=$(get_system_preference "$API" "$API_TOKEN" "$DELTA_PREFERENCE" "$DELTA_PREFERENCE_DEFAULT_VALUE")
 
-if ! is_filesystem_scalable "$MOUNT_POINT" "$SCALABLE_FILESYSTEM_TYPE"; then
+if ! is_filesystem_scalable "$MOUNT_POINT" "$SCALABLE_FILESYSTEM_TYPE"
+then
   pipe_log_error "Mount point filesystem $MOUNT_POINT cannot be autoscaled."
   exit 1
 fi
 
 pipe_log_debug "Starting filesystem $MOUNT_POINT autoscaling process for node $NODE..."
-while true; do
+while true
+do
+  sleep "$MONITORING_DELAY"
   RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-  if [[ -z "$RUN_ID" ]]; then
+  if [[ -z "$RUN_ID" ]]
+  then
     pipe_log_debug "No run is assigned to the node."
     continue
   fi
   pipe_log_debug "Run #$RUN_ID is assigned to the node."
-  if is_run_autoscale "$API" "$API_TOKEN" "$RUN_ID" "$AUTOSCALE_PARAMETER"; then
+  RUN_INFO=$(get_run_info "$API" "$API_TOKEN" "$RUN_ID")
+  AUTOSCALE_PARAMETER_VALUE=$(get_run_parameter "$RUN_INFO" "$AUTOSCALE_PARAMETER_NAME")
+  if is_true "$AUTOSCALE_PARAMETER_VALUE"
+  then
     pipe_log_debug "Run #$RUN_ID has filesystem autoscaling capability being enabled."
     CURRENT_USAGE=$(get_current_disk_usage "$MOUNT_POINT")
-    if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]; then
+    if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]
+    then
       pipe_log_debug "Filesystem $MOUNT_POINT usage overflows the configured threshold $CURRENT_USAGE% >= $THRESHOLD% and it's capacity will be expanded by the delta of $DELTA."
+      MOUNTED_DEVICE_NUMBER=$(get_mounted_devices "$MOUNT_POINT"| wc -l)
+      MAX_DEVICE_NUMBER=$(get_run_parameter "$RUN_INFO" "$MAX_DEVICE_NUMBER_PARAMETER_NAME" "$DEFAULT_MAX_DEVICE_NUMBER")
+      if [[ "$MOUNTED_DEVICE_NUMBER" -ge "$MAX_DEVICE_NUMBER" ]]
+      then
+        pipe_log_debug "Allowed number of $MAX_DEVICE_NUMBER devices has been already reached for the filesystem $MOUNT_POINT."
+        continue
+      fi
       TOTAL_SIZE=$(get_total_disk_size "$MOUNT_POINT")
+      MAX_FS_SIZE=$(get_run_parameter "$RUN_INFO" "$MAX_FS_SIZE_PARAMETER_NAME" "$DEFAULT_MAX_FS_SIZE")
       REQUIRED_SIZE=$(get_required_disk_size "$TOTAL_SIZE" "$DELTA")
-      ADDITIONAL_DISK_SIZE=$(get_additional_disk_size "$TOTAL_SIZE" "$REQUIRED_SIZE" "$MIN_ADDITIONAL_DISK_SIZE" "$MAX_ADDITIONAL_DISK_SIZE")
+      if [[ "$REQUIRED_SIZE" -ge "$MAX_FS_SIZE" ]]
+      then
+        pipe_log_debug "Filesystem $MOUNT_POINT requested size has reached its max allowed size of ${MAX_FS_SIZE}G."
+        REQUIRED_SIZE="$MAX_FS_SIZE"
+      fi
+      if [[ "$REQUIRED_SIZE" -le "$TOTAL_SIZE" ]]
+      then
+        pipe_log_debug "Filesystem $MOUNT_POINT cannot be autoscaled even further."
+        continue
+      fi
+      MIN_DISK_SIZE=$(get_run_parameter "$RUN_INFO" "$MIN_DISK_SIZE_PARAMETER_NAME" "$DEFAULT_MIN_DISK_SIZE")
+      MAX_DISK_SIZE=$(get_run_parameter "$RUN_INFO" "$MAX_DISK_SIZE_PARAMETER_NAME" "$DEFAULT_MAX_DISK_SIZE")
+      ADDITIONAL_DISK_SIZE=$(get_additional_disk_size "$TOTAL_SIZE" "$REQUIRED_SIZE" "$MIN_DISK_SIZE" "$MAX_DISK_SIZE")
       RESULTING_SIZE=$((TOTAL_SIZE + ADDITIONAL_DISK_SIZE))
       pipe_log_debug "Scaling filesystem $MOUNT_POINT ${TOTAL_SIZE}G + ${ADDITIONAL_DISK_SIZE}G = ${RESULTING_SIZE}G..."
-      if attach_new_disk "$API" "$API_TOKEN" "$RUN_ID" "$ADDITIONAL_DISK_SIZE"; then
+      if attach_new_disk "$API" "$API_TOKEN" "$RUN_ID" "$ADDITIONAL_DISK_SIZE"
+      then
         pipe_log_debug "New disk ${ADDITIONAL_DISK_SIZE}G was attached to the node."
       else
         pipe_log_error "New disk ${ADDITIONAL_DISK_SIZE}G wasn't attached to the node because of the underlying error."
         continue
       fi
       pipe_log_debug "Waiting for the new disk ${ADDITIONAL_DISK_SIZE}G to be available."
-      NEW_DEVICE=$(get_new_device "$ADDITIONAL_DISK_SIZE" "$DISK_AVAILABILITY_TIMEOUT")
-      if [[ "$NEW_DEVICE" ]]; then
+      NEW_DEVICE=$(get_new_device "$MOUNT_POINT" "$ADDITIONAL_DISK_SIZE" "$DISK_AVAILABILITY_TIMEOUT")
+      if [[ "$NEW_DEVICE" ]]
+      then
         pipe_log_debug "New device $NEW_DEVICE associated with the new disk ${ADDITIONAL_DISK_SIZE}G was found."
       else
         pipe_log_error "New device associated with the new disk ${ADDITIONAL_DISK_SIZE}G wasn't found. It may just not be available yet."
         continue
       fi
-      if append_disk_device "$MOUNT_POINT" "$NEW_DEVICE"; then
+      if append_disk_device "$MOUNT_POINT" "$NEW_DEVICE"
+      then
         pipe_log_debug "New device $NEW_DEVICE was added to the filesystem $MOUNT_POINT."
       else
         pipe_log_error "New device $NEW_DEVICE wasn't added to the filesystem $MOUNT_POINT because of the underlying error."
@@ -340,5 +405,4 @@ while true; do
   else
     pipe_log_debug "Run #$RUN_ID has disk autoscaling capability being disabled."
   fi
-  sleep "$MONITORING_DELAY"
 done
