@@ -32,7 +32,9 @@ fi
 # Install common
 yum install -y  nc \
                 python \
-                curl && \
+                curl \
+                jq \
+                btrfs-progs && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
 
