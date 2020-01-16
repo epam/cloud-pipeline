@@ -106,10 +106,10 @@ do
     MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
   fi
 
-  mkfs -t ext4 $DRIVE_NAME
+  mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
   mount $DRIVE_NAME $MOUNT_POINT
-  echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  echo "$DRIVE_NAME $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/   
@@ -315,6 +315,24 @@ cat >> /etc/rc.local << EOF
 systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
+EOF
+#   3. All nodes with scallable disks: add support for disk autoscaling daemon starting of the "paused" job
+_API_URL="@API_URL@"
+_API_TOKEN="@API_TOKEN@"
+_MOUNT_POINT="/ebs"
+wget "${_API_URL%restapi/}fs-autoscaling/autoscale-fs.sh" -O "$_MOUNT_POINT/autoscale-fs.sh"
+chmod +x "$_MOUNT_POINT/autoscale-fs.sh"
+cat >> /etc/rc.local << EOF
+(
+nohup 2>&1 \
+      "$_MOUNT_POINT/autoscale-fs.sh" \
+      --api-url "$_API_URL" \
+      --api-token "$_API_TOKEN" \
+      --node-name "$_KUBE_NODE_NAME" \
+      --mount-point "$_MOUNT_POINT" \
+      & \
+      > "$_MOUNT_POINT/fs-autoscaling.log" &
+)
 EOF
 
 nc -l -k 8888 &

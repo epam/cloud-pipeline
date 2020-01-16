@@ -269,9 +269,9 @@ def run_id_filter(run_id):
            }
 
 
-def run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
+def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size)
@@ -493,7 +493,7 @@ def get_swap_ratio(swap_params):
                     pipe_log("Unexpected swap_ratio value: {}".format(item_value))
     return None
 
-def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -506,7 +506,9 @@ def get_user_data_script(aws_region, ins_type, ins_img, kube_ip, kubeadm_token, 
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token)
 
         # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
         # to minimize the size of the user data
@@ -1076,7 +1078,9 @@ def main():
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
                                         num_rep, run_id, time_rep, kube_ip, kubeadm_token)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep)

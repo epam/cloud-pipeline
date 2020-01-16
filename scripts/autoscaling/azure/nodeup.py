@@ -215,11 +215,11 @@ else:
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
+def run_instance(api_url, api_token, instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ssh_pub_key, user,
                  ins_type, is_spot, kube_ip, kubeadm_token):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
-    user_data_script = get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
+    user_data_script = get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size)
     if not is_spot:
         create_public_ip_address(instance_name, run_id)
         create_nic(instance_name, run_id)
@@ -914,7 +914,7 @@ def get_swap_ratio(swap_params):
     return None
 
 
-def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
+def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, kube_ip, kubeadm_token, swap_size):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -927,7 +927,9 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
                                             .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                             .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token)
+                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                            .replace('@API_URL@', api_url) \
+                                            .replace('@API_TOKEN@', api_token)
 
         # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
         # to minimize the size of the user data
@@ -1046,7 +1048,9 @@ def main():
         ins_id, ins_ip = verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = run_instance(resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
+            api_url = os.environ["API"]
+            api_token = os.environ["API_TOKEN"]
+            ins_id, ins_ip = run_instance(api_url, api_token, resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_key_path,
                                           "pipeline", ins_type, is_spot, kube_ip, kubeadm_token)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region)
