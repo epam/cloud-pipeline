@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.RepositoryTool;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclPermissionEntry;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
@@ -732,6 +733,25 @@ public class GrantPermissionManager {
      */
     public boolean hasPermissionToConfiguration(List<AbstractRunConfigurationEntry> entries, String permissionName) {
         return entries.stream().noneMatch(entry -> configurationProviderManager.hasNoPermission(entry, permissionName));
+    }
+
+    /**
+     * Check permissions for {@link PipelineStart}. This method checks permission for
+     * {@link Pipeline} if it's specified or {@link Tool} if {@link Pipeline} is not specified.
+     * If neither is specified an error will be occurred.
+     * @param startVO the input arguments to launch pipeline
+     * @param permissionName the name of permission
+     * @return true if permission is granted
+     */
+    public boolean hasPermissionToRun(final PipelineStart startVO, final String permissionName) {
+        AbstractSecuredEntity securedEntity = null;
+        if (Objects.nonNull(startVO.getPipelineId())) {
+            securedEntity = entityManager.load(AclClass.PIPELINE, startVO.getPipelineId());
+        } else if (StringUtils.isNotBlank(startVO.getDockerImage())) {
+            securedEntity = toolManager.loadByNameOrId(startVO.getDockerImage());
+        }
+        Assert.notNull(securedEntity, "Pipeline ID or docker image must be provided");
+        return permissionsHelper.isAllowed(permissionName, securedEntity);
     }
 
     /**
