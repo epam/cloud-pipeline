@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
@@ -252,6 +253,23 @@ public class SystemPreferences {
                                                                                            false, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_INSTANCE_HDD_SCALE_ENABLED = new BooleanPreference(
+            "cluster.instance.hdd.scale.enabled", false, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MONITORING_DELAY = new IntPreference(
+            "cluster.instance.hdd.scale.monitoring.delay", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_THRESHOLD_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.threshold.ratio", 0.75, CLUSTER_GROUP,
+            isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final DoublePreference CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = new DoublePreference(
+            "cluster.instance.hdd.scale.delta.ratio", 0.5, CLUSTER_GROUP, isGreaterThan(0.0f));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MAX_DEVICES = new IntPreference(
+            "cluster.instance.hdd.scale.max.devices", 40, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_MAX_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MIN_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.disk.min.size", 10, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MAX_SIZE = new IntPreference(
+            "cluster.instance.hdd.scale.disk.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
             "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(

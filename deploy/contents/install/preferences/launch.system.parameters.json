@@ -148,5 +148,11 @@
         "type": "boolean",
         "description": "Enable docker engine for a current run using a containerized approach",
         "defaultValue": "true"
+    },
+    {
+        "name": "CP_CAP_FS_AUTOSCALE",
+        "type": "boolean",
+        "description": "Enables filesystem autoscaling",
+        "defaultValue": "false"
     }
 ]
