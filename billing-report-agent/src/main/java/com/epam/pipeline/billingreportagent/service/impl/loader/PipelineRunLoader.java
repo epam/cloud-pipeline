@@ -24,7 +24,9 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,7 +40,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRun> {
 
     @Override
     public List<EntityContainer<PipelineRun>> loadAllEntities() {
-        return loadAllEntitiesActiveInPeriod(LocalDateTime.MIN, LocalDateTime.MAX);
+        return loadAllEntitiesActiveInPeriod(LocalDate.ofEpochDay(0).atStartOfDay(), LocalDateTime.now());
     }
 
     @Override
@@ -46,7 +48,8 @@ public class PipelineRunLoader implements EntityLoader<PipelineRun> {
                                                                             final LocalDateTime to) {
         final Map<String, PipelineUser> users =
             apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
-        return apiClient.loadAllPipelineRunsActiveInPeriod(from, to)
+        return apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
+                                                           DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to))
             .stream()
             .map(run -> EntityContainer.<PipelineRun>builder().entity(run).owner(users.get(run.getOwner())).build())
             .collect(Collectors.toList());

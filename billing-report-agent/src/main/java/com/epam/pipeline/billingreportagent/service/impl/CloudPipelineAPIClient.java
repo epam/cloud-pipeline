@@ -45,7 +45,7 @@ public class CloudPipelineAPIClient {
         return QueryUtils.execute(cloudPipelineAPI.loadAllUsers());
     }
 
-    public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final LocalDateTime from, final LocalDateTime to) {
+    public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final String from, final String to) {
         return QueryUtils.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
     }
 

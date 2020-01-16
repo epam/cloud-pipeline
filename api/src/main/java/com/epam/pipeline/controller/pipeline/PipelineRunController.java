@@ -47,6 +47,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
@@ -510,8 +511,11 @@ public class PipelineRunController extends AbstractRestController {
                 "Only runs that possibly could cause spending for described period will be returned.",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<PipelineRun>> loadRunsActivityStats(@RequestParam(value = "from") final LocalDateTime start,
-                                                           @RequestParam(value = "to") final LocalDateTime end) {
+    public Result<List<PipelineRun>> loadRunsActivityStats(
+        @RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        final LocalDateTime start,
+        @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        final LocalDateTime end) {
         return Result.success(runApiService.loadRunsActivityStats(start, end));
     }
 }
