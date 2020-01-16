@@ -7,13 +7,21 @@
 - [Extended recursive symlinks handling](#extended-recursive-symlinks-handling)
 - [Displaying of the latest commit date/time](#displaying-of-the-latest-commit-datetime)
 - [Renaming of the GitLab repository in case of Pipeline renaming](#renaming-of-the-gitlab-repository-in-case-of-pipeline-renaming)
+- [Pushing pipeline changes to the GitLab on behalf of the user](#pushing-pipeline-changes-to-the-gitlab-on-behalf-of-the-user)
 - [Allowing to expose compute node FS to upload and download files](#allowing-to-expose-compute-node-fs-to-upload-and-download-files)
 - [Resource usage form improvement](#resource-usage-form-improvement)
 - [Update pipe CLI version](#update-pipe-cli-version)
+- [Blocking/unblocking users and groups](#blockingunblocking-users-and-groups)
+- [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
+- [Export user list](#export-user-list)
+- [Displaying SSH link for the active runs in the Dashboard view](#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view)
 
 ***
 
 - [Notable Bug fixes](#notable-bug-fixes)
+    - [Parameter values changes cannot be saved for a tool](#parameter-values-changes-cannot-be-saved-for-a-tool)
+    - [Packages are duplicated in the tool's version details](#packages-are-duplicated-in-the-tools-version-details)
+    - [Autoscaling cluster can be autopaused](#autoscaling-cluster-can-be-autopaused)
     - [`pipe`: not-handled error while trying to execute commands with invalid config](#pipe-not-handled-error-while-trying-to-execute-commands-with-invalid-config)
     - [Setting of the tool icon size](#setting-of-the-tool-icon-size)
     - [`NPE` while building cloud-specific environment variables for run](#npe-while-building-cloud-specific-environment-variables-for-run)
@@ -31,6 +39,7 @@
     - [Azure: runs with enabled GE autoscaling doesn't stop](#azure-runs-with-enabled-ge-autoscaling-doesnt-stop)
     - [Incorrect behavior while download files from external resources into several folders](#incorrect-behavior-while-download-files-from-external-resources-into-several-folders)
     - [Detach configuration doesn't setup SGE for a single master run](#detach-configuration-doesnt-setup-sge-for-a-single-master-run)
+    - [Broken layouts](#broken-layouts)
 
 ***
 
@@ -127,18 +136,26 @@ For more details about tool commit see [here](../../manual/10_Manage_Tools/10.4.
 
 ## Renaming of the GitLab repository in case of Pipeline renaming
 
-Pipeline in the Cloud Pipeline environment is a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.
+**Pipeline** in the Cloud Pipeline environment is a workflow script with versioned source code, documentation, and configuration. Under the hood, it is a git repository.
 
-Previously, if the Pipeline object was renamed - the underlying GitLab repository was keeping the previous name.  
-In the current version, if user renames a Pipeline the corresponding GitLab repository will be also automatically renamed:  
+Previously, if the **Pipeline** object was renamed - the underlying GitLab repository was keeping the previous name.  
+In the current version, if user renames a **Pipeline** the corresponding GitLab repository will be also automatically renamed:  
 
 - ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_1.png)
 - ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_2.png)
 - ![CP_v.0.16_ReleaseNotes](attachments/RN016_RenamingGitLabRepo_3.png)
 
-Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the Pipeline somewhere else.
+Need to consider in such case that the clone/pull/push URL changes too. Make sure to change the remote address, if you use the **Pipeline** somewhere else.
 
 For more details see [here](../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline.md#edit-a-pipeline-info).
+
+## Pushing pipeline changes to the GitLab on behalf of the user
+
+If the user saves the changed **Pipeline** object - it actually means that a new commit is created and pushed to the corresponding GitLab repo.  
+Previously, all the commits pushed to the GitLab via the Cloud Pipeline GUI were made on behalf of the `service account`. This could break traceability of the changes.
+
+In current version, the author of the commit is displayed in the Web GUI (for all **Pipeline** versions - the draft and released), the commits are performed on behalf of the real user:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PushToGitLabRepo_1.png)
 
 ## Allowing to expose compute node FS to upload and download files
 
@@ -192,7 +209,7 @@ All filters are working for all plots simultaneously: data for all plots will be
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
-## Update pipe CLI version
+## Update `pipe` CLI version
 
 Previously, if the user installed `pipe` CLI to his local workstation, used it some time - and the Cloud Pipeline API version could be updated during this period - so the user had to manually perform complete re-installing of `pipe` CLI every time to have an actual version.
 
@@ -204,9 +221,103 @@ This command compare the CLI and API versions. If the CLI version is less than t
 
 For more details see [here](../../manual/14_CLI/14.1._Install_and_setup_CLI.md#update-the-cli).
 
+## Blocking/unblocking users and groups
+
+In current version, the ability for administrators to set the "blocked" flag for the specific user or a whole group is implemented.  
+This flag prevents user(s) to access Cloud Pipeline platform by the GUI.
+
+Administrators can block or unblock users/groups via the **User management** tab of the System Settings dashboard.
+
+For example, for a user:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BlockingUsers_2.png)  
+For the blocked user the special label will be displayed aside to the user's name:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BlockingUsers_4.png)  
+The blocked user won't be able to access `Cloud Pipeline` via the GUI. The error message will be displayed when trying to login:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BlockingUsers_5.png)  
+
+> **_Note_**: any content generated by the blocked users is kept in the Cloud Pipeline, all the log trails on the users activities are kept as well. Only access to the platform is being restricted.
+
+To unblock click the **UNBLOCK** button that appeared instead of the **BLOCK** button:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_BlockingUsers_3.png)  
+
+All these actions could be performed also to a group. Users from a blocked group will not have access to the platform.
+
+For more details about users blocking/unblocking see [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#blockunblock-a-user).  
+For more details about groups blocking/unblocking see [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#blockunblock-a-group).
+
+## Displaying additional node metrics at the Runs page
+
+In **`v0.16`**, the displaying of high-level metrics information for the Active Runs is implemented:
+
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_IdlePressureRuns_1.png) - "Idle" - this auxiliary label is shown when node's CPU consumption is lower than a certain level, defined by the admin. This label should attract the users attention cause such run may produce extra costs.
+- ![CP_v.0.16_ReleaseNotes](attachments/RN016_IdlePressureRuns_2.png) - "Pressure" - this auxiliary label is shown when node's Memory/Disk consumption is higher than a certain level, defined by the admin. This label should attract the users attention cause such run may accidentally fail.
+
+These labels are displayed:  
+
+- at the **Runs** page  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_IdlePressureRuns_3.png)
+- at the **Run logs** page  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_IdlePressureRuns_4.png)
+- at the main dashboard (the **ACTIVE RUNS** panel)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_IdlePressureRuns_5.png)
+
+**_Note_**: if a user clicks this label from the **Runs** or the **Run logs** page the [Cluster node Monitor](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#monitor) will be opened to view the current node consumption.
+
+Admins can configure the emergence of these labels by the set of previous implemented system-level parameters.  
+For the **`IDLE`** label:
+
+- `system.max.idle.timeout.minutes` - specifies the duration in minutes how often the system should check node's activity
+- `system.idle.cpu.threshold` - specifies the percentage of the CPU utilization, below which label will be displayed
+
+For the **`PRESSURE`** label:
+
+- `system.disk.consume.threshold` - specifies the percentage of the node disk threshold above which the label will be displayed
+- `system.memory.consume.threshold` - specifies the percentage of the node memory threshold above which the label will be displayed
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#displaying-additional-node-metrics).
+
+## Export user list
+
+In the current version, the ability to export list of the platform users is implemented. This feature is available only for admins via **User management** tab of the system-level settings:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ExportUsers_1.png)  
+
+Admin can download list with all users and their properties (user name, email, roles, attributes, state, etc.) by default or custom configure which properties should be exported:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_ExportUsers_2.png)  
+
+The downloaded file will have the `.csv` format.
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
+
+## Displaying SSH link for the active runs in the Dashboard view
+
+Users can run SSH session over launched container. Previously, SSH link is only available from the **Run logs** page.  
+In **`v0.16`**, a new helpful capability was implemented that allows to open the SSH connection right from the **Active Runs** panel of the main Dashboard:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SSHActiveRuns_1.png)  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SSHActiveRuns_2.png)
+
+That SSH link is available for all the non-paused active jobs (interactive and non-interactive) after all run's checks and initializations have passed (same as at the **Run logs** page).
+
 ***
 
 ## Notable Bug fixes
+
+### Parameter values changes cannot be saved for a tool
+
+[#871](https://github.com/epam/cloud-pipeline/issues/871)
+
+Previously, if a user changed only the parameter value within a tool's settings form - the **SAVE** button stayed still unavailable. One had to modify some other option (e.g. disk size) to save the overall changes.
+
+### Packages are duplicated in the tool's version details
+
+[#843](https://github.com/epam/cloud-pipeline/issues/843)
+
+Previously, certain tools packages were duplicated in the **PACKAGES** details page of the tools version.
+
+### Autoscaling cluster can be autopaused
+
+[#819](https://github.com/epam/cloud-pipeline/issues/819)
+
+Previously, when users launched auto-scaled clusters without default child-nodes and the `PAUSE` action was specified as action for the "idle" run (via system-levels settings), such cluster runs could be paused. Any cluster runs shall not have the ability to be paused, only stopped.
 
 ### `pipe`: not-handled error while trying to execute commands with invalid config
 
@@ -314,3 +425,11 @@ If user was tried to download files from external resources and at the **Transfe
 [#342](https://github.com/epam/cloud-pipeline/issues/342)
 
 `Grid Engine` installation was mistakenly being skipped, if pipeline was launched with enabled system parameter **`CP_CAP_SGE`** via a detach configuration.
+
+### Broken layouts
+
+[#747](https://github.com/epam/cloud-pipeline/issues/747), [#834](https://github.com/epam/cloud-pipeline/issues/834)
+
+Previously, **pipeline versions page** had broken layout if there "Attributes" and "Issues" panels were simultaneously opened.  
+If there were a lot of node labels at the **Cluster nodes** page, some of them were "broken" and spaced to different lines.  
+Some of the other page layouts also were broken.

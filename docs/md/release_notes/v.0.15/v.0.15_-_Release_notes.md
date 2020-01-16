@@ -1,6 +1,7 @@
 # Cloud Pipeline v.0.15 - Release notes
 
 - [Microsoft Azure Support](#microsoft-azure-support)
+- [SAML claims based access](#saml-claims-based-access)
 - [Notifications on the RAM/Disk pressure](#notifications-on-the-ramdisk-pressure)
 - [Limit mounted storages](#limit-mounted-storages)
 - [Personal SSH keys configuration](#personal-ssh-keys-configuration)
@@ -36,6 +37,9 @@
 - [Files uploading via `pipe` in case of restrictions](#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions)
 - [Run a single command or an interactive session over the SSH protocol via `pipe`](#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe)
 - [Perform objects restore in a batch mode via `pipe`](#perform-objects-restore-in-a-batch-mode-via-pipe)
+- [Mounting data storages to Linux and Mac workstations](#mounting-data-storages-to-linux-and-mac-workstations)
+- [Ability to restrict the visibility of the jobs](#ability-to-restrict-the-visibility-of-the-jobs)
+- [Displaying of the additional support icon/info](#displaying-of-the-additional-support-iconinfo)
 
 ***
 
@@ -59,6 +63,9 @@
     - [System events HTML overflow](#system-events-html-overflow)
     - [AWS: Pipeline run `InitializeNode` task fails](#aws-pipeline-run-initializenode-task-fails)
     - [`git-sync` shall not fail the whole object synchronization if a single entry errors](#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors)
+    - [`endDate` isn't set when node of a paused run was terminated](#enddate-isnt-set-when-node-of-a-paused-run-was-terminated)
+    - [AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed](#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed)
+    - [Resume job timeout throws strange error message](#resume-job-timeout-throws-strange-error-message)
     - [Broken layouts](#broken-layouts)
 
 ***
@@ -70,6 +77,18 @@ One of the major **`v0.15`** features is a support for the **[Microsoft Azure Cl
 All the features, that were previously used for `AWS`, are now available in all the same manner, from all the same GUI/CLI, for `Azure`.
 
 Another cool thing, is that now it is possible to have a single installation of the `Cloud Pipeline`, which will manage both Cloud Providers (`AWS` and `Azure`). This provides a flexibility to launch jobs in the locations, closer to the data, with cheaper prices or better compute hardware for a specific task.
+
+## SAML claims based access
+
+Previously, there were two options for users to be generally authenticated in Cloud Pipeline Platform, i.e. to pass SAML validation:
+
+- **`Auto-register`** - any valid SAML authentication automatically registers user (if he isn't registered yet) and grant `ROLE_USER` access
+- **`Explicit-register`** - after a valid SAML authentication, it is checked whether this user is already registered in the Cloud Pipeline catalog, and if no - request denies, authentication fails
+
+To automate things a bit more, in **`v0.15`** additional way to grant first-time access to the users was implemented: **`Explicit-group`** register.  
+If such registration type is set - once a valid SAML authentication is received, it is checked, whether SAML response contains any of the domain groups, that are already granted any access to the Cloud Pipeline objects (registered in Cloud Pipeline catalog). If so - proceeds as with **`Auto-register`** - user with all his domain groups and granted `ROLE_USER` access is being registered. If user's SAML domain groups aren't intersected with pre-registered groups the authentication fails.
+
+This Platform's behavior is set via application property `saml.user.auto.create` that could accept one of the corresponding values: `AUTO`, `EXPLICIT`, `EXPLICIT_GROUP`.
 
 ## Notifications on the RAM/Disk pressure
 
@@ -348,13 +367,18 @@ For various reasons cloud VM instances may "hang" and become invisible to `Cloud
 
 In this case `Autoscaler` service will not be able to find such instance and it won't be shut down. This problem may lead to unmonitored useless resource consumption and billing.
 
-To address this issue - a separate `VM monitoring` service was implemented:
+To address this issue - a separate `VM-Monitor` service was implemented:
 
 - Tracks all VM instances in the registered Cloud Regions
 - Determines whether instances is in "hang" state
 - Notifies a configurable set of users about a possible problem
 
 Notification recipients (administrators) may check the actual state of VM in Cloud Provider console and shut down VM manually.
+
+Additionally, `VM-Monitor`:
+
+- Checks states of Cloud Pipeline's services (Kubernetes deployments). If any service changes it's state (i.e. goes down or up) - administrators will get the corresponding notification. List of such Kubernetes deployments to check includes all Cloud Pipeline's services by default, but also could be configed manually
+- Checks all the PKI assets, available for the Platform, for the expiration - traverses over the list of directories that should contains certificate files, searches that certificates and verifies their expiration date. If some certificate expires less than in a certain amount of days - administrators also will get the corresponding notification. List of certificate directories to scan, certificate's mask and amount of days before expiration after which the notification will be sent are configurable
 
 ## Web GUI caching
 
@@ -680,6 +704,70 @@ Also, to the `restore` command some options were added:
 
 For more details about file restoring via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#restore-files).
 
+## Mounting data storages to Linux and Mac workstations
+
+Previously, when users had to copy/move datasets to/from Cloud data storages via CLI, they could use only special `pipe storage` commands.  
+That was not always comfortable or could lead to some functionality restrictions.
+
+In **`v0.15`** the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires **`FUSE`** installed) was added.  
+For the mounted storages, regular listing/read/write commands are supported, users can manage files/folders as with any general hard drive.
+
+> **_Note_**: this feature is yet supported for `AWS` only.
+
+To mount a data storage into the local mountpoint the `pipe storage mount` command was implemented. It has two main options that are mutually exclusive:
+
+- `-f` or `--file` specifies that all available file systems should be mounted into a mountpoint
+- `-b` or `--bucket [STORAGE_NAME]` specifies a storage name to mount into a mountpoint
+
+Users can:
+
+- leverage mount options, supported by underlying **`FUSE`** implementation, via `-o` option
+- enable multithreading for simultaneously interaction of several processes with the mount point, via `-t` option
+- trace all information about mount operations into a log-file, via `-l` option
+
+To unmount a mountpoint the `pipe storage umount` command was implemented.
+
+For more details about mounting data storages via the `pipe` see [here](../../manual/14_CLI/14.3._Manage_Storage_via_CLI.md#mounting-of-storages).
+
+## Ability to restrict the visibility of the jobs
+
+Previously, `Cloud Pipeline` inherited the pipeline jobs' permissions from the parent pipeline object. So, if two users had permissions on the same pipeline, then when the first user had launched that pipeline - the second user also could view (not manage) launched run in the **Active Runs** tab.  
+Now admin can restrict the visibility of the jobs for non-owner users. The setting of such visibility can get one of the following values:
+
+- **`Inherit`** - the behavior is the same as described above (for the previous approach), when the runs visibility is controlled by the pipeline permissions. It is set as a default for the `Cloud Pipeline` environment
+- **`Only owner`** - when only the person who launch a run can see it
+
+Jobs visibility could be set by different ways on several forms:
+
+- within **User management** tab in the system-level settings admin can specify runs visibility for a user/group/role:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_JobsVisibility_1.png)
+- within **Launch** section of **Preferences** tab in the system-level settings admin can specify runs visibility for a whole platform as global defaults - by the setting **`launch.run.visibility`**:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_JobsVisibility_2.png)
+
+Next hierarchy is set for applying of specified jobs visibility:
+
+- User level - highest priority (specified for a user)
+- Group level (specified for a group/role)
+- Platform level **`launch.run.visibility`** (specified as global defaults via system-level settings)
+
+> **_Note_**: admins can see all runs despite of settings
+
+## Displaying of the additional support icon/info
+
+In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)
+
+In the current version, the ability to display additional "support" icon with the corresponding info in the bottom of the main menu was implemented:  
+    ![CP_v.0.15_ReleaseNotes](attachments/RN015_SupportIcon_1.png)
+
+The displaying of this icon and the info content can be configured by admins via the system-level preference **`ui.support.template`**:
+
+- this preference is empty by default - in this case the support icon is invisible
+- if this preference contains any text (`Markdown`-formatted):
+    - the support icon is visible
+    - specified text is displayed in the support icon tooltip (support info)
+
+For more details see [UI system settings](../../manual/12_Manage_Settings/12.10._Manage_system-level_settings.md#user-interface).
+
 ***
 
 ## Notable Bug fixes
@@ -811,10 +899,29 @@ Now, in these cases, if spot instance isn't created after specific attempts numb
 
 ### `git-sync` shall not fail the whole object synchronization if a single entry errors
 
-[#648](https://github.com/epam/cloud-pipeline/issues/648)
+[#648](https://github.com/epam/cloud-pipeline/issues/648), [#691](https://github.com/epam/cloud-pipeline/issues/691)
 
 When the `git-sync` script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.  
-Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issue with the synchronization of users with duplicate email addresses was resolved.
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issues with the synchronization of users with duplicate email addresses and users with empty email were resolved.
+
+### `endDate` isn't set when node of a paused run was terminated
+
+[#743](https://github.com/epam/cloud-pipeline/issues/743)
+
+Previously, when user terminated the node of a paused run - `endDate` for that run wasn't being set. This was leading to wrong record of running time for such run.
+
+### AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed
+
+[#744](https://github.com/epam/cloud-pipeline/issues/744)
+
+Previously, if first nodeup attempt failed due to unavailablity to connect on 8888 port (in expected amounts of attempts) after getting instance running state, the second nodeup attempt might stuck because it waited for the same instance (associated with existed `SpotRequest` for the first attempt) to be up. But it couldn't happen - this instance was already in terminating state after the first attempt.  
+Now, checks that instance associated with `SpotRequest` (created for the first attempt) is in appropriate status, if not - a new `SpotRequest` is being created and the nodeup process is being started from scratch.
+
+### Resume job timeout throws strange error message
+
+[#832](https://github.com/epam/cloud-pipeline/issues/832)
+
+Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.
 
 ### Broken layouts
 
