@@ -43,11 +43,15 @@ import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Arrays;
@@ -57,7 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -67,29 +71,40 @@ public class BillingManager {
     private static final String COST_FIELD = "cost";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
+    private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
+    private static final String ES_BILLABLE_RESOURCE_WILDCARD = "*";
 
     private final AuthManager authManager;
-    private final PreferenceManager preferenceManager;
-    private RestHighLevelClient elasticsearchClient;
+    private final RestHighLevelClient elasticsearchClient;
+    private final String billingIndicesMonthlyPattern;
+    private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
+    private final List<DateHistogramInterval> validIntervals;
+    private final SumAggregationBuilder costAggregation;
 
-    private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters =
-        new HashMap<DateHistogramInterval, TemporalAdjuster>() {{
-            put(DateHistogramInterval.MONTH, TemporalAdjusters.lastDayOfMonth());
-            put(DateHistogramInterval.YEAR, TemporalAdjusters.lastDayOfYear());
-        }};
-    private List<DateHistogramInterval> validIntervals = Arrays.asList(DateHistogramInterval.DAY,
-                                                                       DateHistogramInterval.MONTH,
-                                                                       DateHistogramInterval.YEAR);
-    private final SumAggregationBuilder costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
-
-    @PostConstruct
-    public void init() {
+    @Autowired
+    public BillingManager(final AuthManager authManager,
+                          final PreferenceManager preferenceManager,
+                          final @Value("${billing.index.common.prefix}") String commonPrefix) {
         final RestClient lowLevelClient =
             RestClient.builder(new HttpHost(preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST),
                                             preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT),
                                             preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME)))
                 .build();
-        elasticsearchClient = new RestHighLevelClient(lowLevelClient);
+        this.elasticsearchClient = new RestHighLevelClient(lowLevelClient);
+        this.authManager = authManager;
+        this.billingIndicesMonthlyPattern = String.join("-",
+                                                        commonPrefix,
+                                                        ES_BILLABLE_RESOURCE_WILDCARD,
+                                                        ES_MONTHLY_DATE_REGEXP);
+        this.periodAdjusters = new HashMap<DateHistogramInterval, TemporalAdjuster>() {{
+                put(DateHistogramInterval.MONTH, TemporalAdjusters.lastDayOfMonth());
+                put(DateHistogramInterval.YEAR, TemporalAdjusters.lastDayOfYear());
+            }
+        };
+        this.validIntervals = Arrays.asList(DateHistogramInterval.DAY,
+                                            DateHistogramInterval.MONTH,
+                                            DateHistogramInterval.YEAR);
+        this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
@@ -110,7 +125,7 @@ public class BillingManager {
         }
     }
 
-    private void setAuthorizationFilters(Map<String, List<String>> filters) {
+    private void setAuthorizationFilters(final Map<String, List<String>> filters) {
         final PipelineUser authorizedUser = authManager.getCurrentUser();
         if (authorizedUser.isAdmin()) {
             return;
@@ -174,10 +189,11 @@ public class BillingManager {
     private List<BillingChartInfo> getBillingChartInfoForGrouping(final LocalDate from, final LocalDate to,
                                                                   final List<String> grouping,
                                                                   final SearchResponse searchResponse) {
+        final Aggregations allAggregations = searchResponse.getAggregations();
         if (CollectionUtils.isNotEmpty(grouping)) {
             return grouping.stream()
                 .map(field -> {
-                    final ParsedStringTerms terms = searchResponse.getAggregations().get(field);
+                    final ParsedStringTerms terms = allAggregations.get(field);
                     return terms.getBuckets().stream().map(bucket -> {
                         final Aggregations aggregations = bucket.getAggregations();
                         return getCostAggregation(from, to, field, (String) bucket.getKey(), aggregations);
@@ -186,8 +202,9 @@ public class BillingManager {
                 .flatMap(Function.identity())
                 .collect(Collectors.toList());
         } else {
-            return Collections
-                .singletonList(getCostAggregation(from, to, null, null, searchResponse.getAggregations()));
+            return CollectionUtils.isEmpty(allAggregations.asList())
+                   ? Collections.emptyList()
+                   : Collections.singletonList(getCostAggregation(from, to, null, null, allAggregations));
         }
     }
 
@@ -212,6 +229,11 @@ public class BillingManager {
                                                      final SearchSourceBuilder searchSource,
                                                      final SearchRequest searchRequest) {
         filters.forEach((k, v) -> searchSource.query(QueryBuilders.termsQuery(k, v)));
+        final String[] indices = Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
+            .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1)
+            .map(date -> String.format(billingIndicesMonthlyPattern, date.getYear(), date.getMonthValue()))
+            .toArray(String[]::new);
+        searchRequest.indices(indices);
         searchSource.query(QueryBuilders.rangeQuery(BILLING_DATE_FIELD).from(from, true).to(to, true));
         searchRequest.source(searchSource);
     }
