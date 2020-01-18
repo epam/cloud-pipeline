@@ -346,6 +346,8 @@
         
             <li><a class="toctree-l5" href="#edit-a-user">Edit a user</a></li>
         
+            <li><a class="toctree-l5" href="#blockunblock-a-user">Block/unblock a user</a></li>
+        
             <li><a class="toctree-l5" href="#delete-a-user">Delete a user</a></li>
         
         </ul>
@@ -558,6 +560,7 @@
 <li><a href="#launch-options">Launch options</a></li>
 </ul>
 </li>
+<li><a href="#blockunblock-a-user">Block/unblock a user</a></li>
 <li><a href="#delete-a-user">Delete a user</a></li>
 </ul>
 <blockquote>
@@ -633,6 +636,11 @@ Here you can specify:</p>
 <td>In this field you may restrict, what price types will be allowed for a user.</td>
 <td>If you want user will be able to launch only "On-demand" runs, select it in the dropdown list:<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_11.png" /><br />In that case, before launching tool, dropdown list of price types will be look like this:<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_12.png" /></td>
 </tr>
+<tr>
+<td><strong>Jobs visibility</strong></td>
+<td>In this field you may restrict the visibility of running jobs on the <strong>Active Runs</strong> page for non-owner users.</td>
+<td>If you want user will be able to view all pipeline runs (for that pipelines on which user has corresponding permissions), select "Inherit" in this dropdown list:<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_21.png" /><br />If you want user can view only runs he launched, select "Only owner":<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_20.png" /></td>
+</tr>
 </tbody>
 </table>
 <p>To apply set restrictions for a user click <img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_13.png" /></p>
@@ -641,15 +649,42 @@ Such restrictions could be set not only for a user, but on another levels too.<b
 In CP platform next hierarchy is set for applying of inputted allowed instance types (sorted by priority):</p>
 <ul>
 <li>User level (specified for a user on "User management" tab) (see <a href="#launch-options">above</a>)</li>
-<li>User group level (specified for a group (role) on "User management" tab. If a user is a member of several groups - list of allowed instances will be summarized across all the groups) (see <a href="../12.6._Edit_a_group_role/#launch-options">v.0.14 - 12.6. Edit a group/role</a>)</li>
-<li>Tool level (specified for a tool on "Instance management" panel) (see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">v.0.14 - 10.5. Launch a Tool</a>)</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
+<li>User group level (specified for a group (role) on "User management" tab. If a user is a member of several groups - list of allowed instances will be summarized across all the groups) (see <a href="../12.6._Edit_a_group_role/#launch-options">12.6. Edit a group/role</a>)</li>
+<li>Tool level (specified for a tool on "Instance management" panel) (see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">10.5. Launch a Tool</a>)</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>)</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>)</li>
 </ul>
 <p>After specifying allowed instance types, all GUI forms that allow to select the list of instance types (configurations/launch forms) - will display only valid instance type, according to hierarchy above.<br />
 For price type specifying - if it is set for the user/group/tool - GUI will allow to select only that price type.</p>
+<p>In CP platform next hierarchy is set for applying of jobs visibility (sorted by priority):</p>
+<ul>
+<li>User level - highest priority (specified for a user) (see <a href="#launch-options">above</a>)</li>
+<li>Group level (specified for a group/role) (see <a href="../12.6._Edit_a_group_role/#launch-options">12.6. Edit a group/role</a>)</li>
+<li><em>(global)</em> <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings) (see <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a>)</li>
+</ul>
+<h2 id="blockunblock-a-user">Block/unblock a user</h2>
+<p>To block user:</p>
+<ol>
+<li>Open <strong>Users</strong> tab on <strong>User management</strong> section of system-level settings.</li>
+<li>Find a user.</li>
+<li>Click <strong>Edit</strong> button in the row opposite the user name.</li>
+<li>In the opened pop-up window click the <strong>BLOCK</strong> button in the left bottom corner.<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_3.png" /></li>
+<li>Confirm the blocking:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_1.png" /></li>
+</ol>
+<p>To unblock user:</p>
+<ol>
+<li>Open <strong>Users</strong> tab on <strong>User management</strong> section of system-level settings.</li>
+<li>Find a user.</li>
+<li>Click <strong>Edit</strong> button in the row opposite the user name.</li>
+<li>In the opened pop-up window click the <strong>UNBLOCK</strong> button in the left bottom corner.<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_4.png" /></li>
+<li>Confirm the unblocking:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_2.png" /></li>
+</ol>
 <h2 id="delete-a-user">Delete a user</h2>
-<p>For delete a user:</p>
+<p>To delete a user:</p>
 <ol>
 <li>Open <strong>Users</strong> tab on <strong>User management</strong> section of system-level settings.</li>
 <li>Find a user.</li>

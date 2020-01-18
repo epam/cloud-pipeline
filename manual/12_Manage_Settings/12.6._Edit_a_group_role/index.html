@@ -354,6 +354,8 @@
         
             <li><a class="toctree-l5" href="#edit-a-group-role">Edit a group (role)</a></li>
         
+            <li><a class="toctree-l5" href="#blockunblock-a-group">Block/unblock a group</a></li>
+        
         </ul>
     
 
@@ -556,6 +558,7 @@
 <li><a href="#launch-options">Launch options</a></li>
 </ul>
 </li>
+<li><a href="#blockunblock-a-group">Block/unblock a group</a></li>
 </ul>
 <blockquote>
 <p>User shall have <strong>ROLE_ADMIN</strong> to edit groups/roles.</p>
@@ -609,6 +612,11 @@ Here you can specify:</p>
 <td>In this field you may restrict, what price types will be allowed for a group/role.</td>
 <td>If you want members of a certain group/role will be able to launch "On-demand" runs only, select it in the dropdown list:<br /><img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_11.png" /><br />In that case, before launching tool, dropdown list of price types will be look like this:<br /><img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_12.png" /></td>
 </tr>
+<tr>
+<td><strong>Jobs visibility</strong></td>
+<td>In this field you may restrict the visibility of running jobs on the <strong>Active Runs</strong> page for non-owner users.</td>
+<td>If you want users from that group (role) will be able to view all pipeline runs (for that pipelines on which users have corresponding permissions), select "Inherit" in this dropdown list:<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditGroupRole_14.png" /><br />If you want users from that group (role) can view only runs they launched, select "Only owner":<br /><img alt="CP_EditDeleteUsers" src="../attachments/EditGroupRole_15.png" /></td>
+</tr>
 </tbody>
 </table>
 <p>To apply set restrictions for a group/role click <img alt="CP_EditGroupRole" src="../attachments/EditGroupRole_13.png" /> button.</p>
@@ -616,14 +624,44 @@ Here you can specify:</p>
 Such restrictions could be set not only for a group/role, but on another levels too.<br />
 In CP platform next hierarchy is set for applying of inputted allowed instance types (sorted by priority):</p>
 <ul>
-<li>User level (specified for a user on "User management" tab) (see <a href="../12.4._Edit_delete_a_user/#launch-options">v.0.14 - 12.4. Edit/delete a user</a>)</li>
+<li>User level (specified for a user on "User management" tab) (see <a href="../12.4._Edit_delete_a_user/#launch-options">12.4. Edit/delete a user</a>)</li>
 <li>User group level (specified for a group (role) on "User management" tab. If a user is a member of several groups - list of allowed instances will be summarized across all the groups) (see <a href="#launch-options">above</a>)</li>
-<li>Tool level (specified for a tool on "Instance management" panel) (see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">v.0.14 - 10.5. Launch a Tool</a>)</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
-<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
+<li>Tool level (specified for a tool on "Instance management" panel) (see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">10.5. Launch a Tool</a>)</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>)</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a>)</li>
 </ul>
 <p>After specifying allowed instance types, all GUI forms that allow to select the list of instance types (configurations/launch forms) - will display only valid instance type, according to hierarchy above.<br />
 For price type specifying - if it is set for the user/group/tool - GUI will allow to select only that price type.</p>
+<p>In CP platform next hierarchy is set for applying of jobs visibility (sorted by priority):</p>
+<ul>
+<li>User level - highest priority (specified for a user) (see <a href="../12.4._Edit_delete_a_user/#launch-options">12.4. Edit/delete a user</a>)</li>
+<li>Group level (specified for a group/role) (see <a href="#launch-options">above</a>)</li>
+<li><em>(global)</em> <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings) (see <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a>)</li>
+</ul>
+<h2 id="blockunblock-a-group">Block/unblock a group</h2>
+<p>To block a group:</p>
+<ol>
+<li>Open the <strong>Groups</strong> tab on the <strong>User management</strong> section of the system-level settings.</li>
+<li>Click the <strong>Edit</strong> button next to the group's name.<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_1.png" /><br />
+<strong><em>Note</em></strong>: system groups are created by the <strong>SSO authentication system</strong> automatically and can not be found here.</li>
+<li>Pop-up window will be displayed:<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_2.png" /></li>
+<li>Click the <strong>BLOCK</strong> button</li>
+<li>Confirm the blocking:<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_3.png" /></li>
+</ol>
+<p>To unblock a group:</p>
+<ol>
+<li>Open the <strong>Groups</strong> tab on the <strong>User management</strong> section of the system-level settings.</li>
+<li>Click the <strong>Edit</strong> button next to the group's name.<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_1.png" />  </li>
+<li>Pop-up window will be shown:<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_4.png" /></li>
+<li>Click the <strong>UNBLOCK</strong> button</li>
+<li>Confirm the unblocking:<br />
+<img alt="CP_DeleteGroup" src="../attachments/BlockUnblockGroups_5.png" /></li>
+</ol>
               
             </div>
           </div>

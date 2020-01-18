@@ -562,6 +562,7 @@
 <li><a href="#active-run-states">Active run states</a></li>
 <li><a href="#active-run-controls">Active run controls</a></li>
 <li><a href="#active-cluster-runs">Active cluster runs</a></li>
+<li><a href="#displaying-additional-node-metrics">Displaying additional node metrics</a></li>
 </ul>
 </li>
 <li><a href="#completed-runs">COMPLETED RUNS</a><ul>
@@ -680,6 +681,13 @@ If launched run uses a cluster or an auto-scaled cluster (see sections <a href="
 <strong><em>Note</em></strong>: stopping a parent run will stop execution of all nested runs too.</p>
 </blockquote>
 <p>For runs with the <strong>auto-scaled cluster</strong> not all of the child-runs appear in the list immediately after parent run was launched, "scale-up" runs will appear only of necessity.</p>
+<h3 id="displaying-additional-node-metrics">Displaying additional node metrics</h3>
+<p>According to the run states and system-level settings, additional metrics (labels) could be displayed for active runs:</p>
+<ul>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_38.png" /> - <strong>Idle</strong> label - displays only for runs in <strong>Running</strong> state, for which node's CPU consumption level is below than a certain threshold for a certain period of time or longer.</li>
+<li><img alt="CP_ManageRuns" src="../attachments/ManageRuns_39.png" /> - <strong>Pressure</strong> label - displays only for runs in <strong>Running</strong> state, for which node's Memory/Disk consumption level is higher than a certain threshold.</li>
+</ul>
+<p>Values of these thresholds and time period are specified by admins via system-level settings (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">here</a> for more details).</p>
 <h2 id="completed-runs">COMPLETED RUNS</h2>
 <p>This tab displays a list of all pipelines runs that are already finished.</p>
 <p><img alt="CP_ManageRuns" src="../attachments/ManageRuns_05.png" /></p>
@@ -799,6 +807,8 @@ Each child-run record contains:</p>
 <blockquote>
 <p><strong><em>Note</em></strong>: if a specific platform deployment has a number of Cloud Providers registered (e.g. <code>AWS</code>+<code>Azure</code>, <code>GCP</code>+<code>Azure</code>) - corresponding auxiliary Cloud Provider icon is additionally displayed, e.g.:<br />
 <img alt="CP_ManageRuns" src="../attachments/ManageRuns_37.png" /></p>
+<p><strong><em>Note</em></strong>: if specific run CPU/Memory/Disk consumption is lower or higher specified in the configurations values, the <strong>IDLE</strong> or <strong>PRESSURE</strong> labels will be displayed respectively:<br />
+<img alt="CP_ManageRuns" src="../attachments/ManageRuns_40.png" /></p>
 </blockquote>
 <h3 id="parameters">Parameters</h3>
 <p>The parameters that were assigned to the run when it was launched are contained in this section.<br />

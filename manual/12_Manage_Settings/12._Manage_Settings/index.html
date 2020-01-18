@@ -688,12 +688,43 @@ System roles is one of the principal tool for managing security access to the ob
 <td>This control (see the picture below, <strong>2</strong>) opens a <strong>"Create user"</strong> form, which can be used to create a new user.</td>
 </tr>
 <tr>
+<td><strong>Export users</strong></td>
+<td>Allows export all users with selected set of attributes (see the picture below, <strong>3</strong>).</td>
+</tr>
+<tr>
 <td><strong>Edit</strong></td>
-<td>Allows changing a list of roles or groups assigned to a user (see the picture below, <strong>3</strong>).</td>
+<td>Allows changing a list of roles or groups assigned to a user (see the picture below, <strong>4</strong>).</td>
 </tr>
 </tbody>
 </table>
 <p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_3.png" /></p>
+<h4 id="export-users">Export users</h4>
+<p>The <strong>Export users</strong> button allows administrator to export user list in <code>.csv</code> format.<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_12.png" /></p>
+<p>There are 2 export options:</p>
+<ol>
+<li><strong>Default configuration</strong><br />
+    In this case, the file with all users and full list of their properties (<strong><em>ID</em></strong>, <strong><em>username</em></strong>, <strong><em>attributes</em></strong> (first and last name, email), <strong><em>registration date</em></strong>, <strong><em>first login date</em></strong>, list of <strong><em>groups</em></strong>, list of <strong><em>roles</em></strong>, <strong><em>blocked</em></strong>/<strong><em>unblocked</em></strong> state, <strong><em>default data storage</em></strong>) will be downloaded to the local workstation.<br />
+    To export full user list with default configuration:  <ul>
+<li>click the <strong>Export users</strong> button in the right upper corner of the <strong>Users</strong> tab in the <strong>User management</strong> dashboard<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/ManageSettings_14.png" /><br />
+<strong><em>or</em></strong></li>
+<li>hover the <strong>v</strong> button next to the <strong>Export users</strong> button and click the <strong>Default configuration</strong> item in the appeared drop-down menu<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/ManageSettings_15.png" /></li>
+</ul>
+</li>
+<li><strong>Custom configuration</strong><br />
+    Custom configuration allows admins to select which user properties should be downloaded:  <ul>
+<li>hover the <strong>v</strong> button next to the <strong>Export users</strong> button and click the <strong>Custom configuration</strong> item in the appeared drop-down menu<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/ManageSettings_16.png" />  </li>
+<li>the modal window with the list of available user properties to export will appear, e.g.:<br />
+<img alt="CP_v.0.16_ReleaseNotes" src="../attachments/ManageSettings_13.png" /><br />
+    User can select any set of attributes by marking/unmarking corresponding checkboxes. At least 1 checkbox should be marked to export user list.<br />
+<strong><em>Note</em></strong>: enabled <strong>Header</strong> checkbox adds the headers row into the exporting file</li>
+<li>to download the result file with full user list and custom set of their properties click the <strong>Download CSV</strong> button.</li>
+</ul>
+</li>
+</ol>
 <h3 id="groups">Groups</h3>
 <p>The <strong>"Groups"</strong> tab shows a set of user groups created in CP. Here you can grant or refuse users in a group membership.<br />
 Note that this tab displays groups created in CP only, not given by <strong>SSO authentication system</strong>.</p>

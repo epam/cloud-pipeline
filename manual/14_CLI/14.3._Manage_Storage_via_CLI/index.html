@@ -414,6 +414,8 @@
         
             <li><a class="toctree-l5" href="#manage-datastorage-objects-attributes">Manage datastorage objects attributes</a></li>
         
+            <li><a class="toctree-l5" href="#mounting-of-storages">Mounting of storages</a></li>
+        
         </ul>
     
 
@@ -583,6 +585,11 @@
 <li><a href="#get-object-attributes">Get object attributes</a></li>
 <li><a href="#set-object-attributes">Set object attributes</a></li>
 <li><a href="#delete-object-attributes">Delete object attributes</a></li>
+</ul>
+</li>
+<li><a href="#mounting-of-storages">Mounting of storages</a><ul>
+<li><a href="#mount-a-storage">Mount a storage</a></li>
+<li><a href="#unmount-a-storage">Unmount a storage</a></li>
 </ul>
 </li>
 </ul>
@@ -1193,6 +1200,93 @@ To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._Vie
 </code></pre>
 
 <p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_27.png" /></p>
+<h2 id="mounting-of-storages">Mounting of storages</h2>
+<p><code>pipe</code> cli supports mounting data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed).</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported only by <strong>AWS</strong></p>
+</blockquote>
+<h3 id="mount-a-storage">Mount a storage</h3>
+<p>The command to mount a data storage into the mountpoint:</p>
+<pre><code class="bash">pipe storage mount [OPTIONS] &lt;Mountpoint&gt;
+</code></pre>
+
+<p><strong>Mountpoint</strong> - defines a full path to a directory on the workstation where the data storage shall be mounted.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--file</code></td>
+<td>File System mode. In this mode, all available File Storages will be mounted into the mountpoint. This option is mutually exclusive with <code>-b</code> option</td>
+</tr>
+<tr>
+<td><code>-b</code> / <code>--bucket</code></td>
+<td>Object Storage mode. In this mode, the specified Object Storage will be mounted into the mountpoint. This option is mutually exclusive with <code>-f</code> option</td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-o</code> / <code>--options</code></td>
+<td>Allows to specify any mount options supported by underlying <strong><code>FUSE</code></strong> implementation</td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--log-file</code></td>
+<td>If set, standard/error output of mount operations will be written into the specified file</td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--threads</code></td>
+<td>Enable multithreading - allows several processes simultaneously interact with the mount point</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will mount the Object Storage named <strong>objstor</strong> into the directory "<strong>mountdir</strong>" and specify the file "<strong>mount.log</strong>" as log-file for mount operations:</p>
+<pre><code class="bash">pipe storage mount -l ~/mount.log -b objstor ~/mountdir
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_29.png" /></p>
+<h3 id="unmount-a-storage">Unmount a storage</h3>
+<p>The command to unmount a mountpoint:</p>
+<pre><code class="bash">pipe storage umount [OPTIONS] &lt;Mountpoint&gt;
+</code></pre>
+
+<p><strong>Mountpoint</strong> - defines a full path to a directory on the workstation where the data storage was mounted.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will unmount a storage from the directory "<strong>mountdir</strong>":</p>
+<pre><code class="bash">pipe storage umount ~/mountdir
+</code></pre>
+
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_30.png" /></p>
               
             </div>
           </div>

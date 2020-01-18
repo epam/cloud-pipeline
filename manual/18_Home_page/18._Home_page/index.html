@@ -607,13 +607,16 @@ Use the <strong>Rerun</strong> control to rerun selected item.<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_17.png" /></p>
 <h3 id="active-runs">Active runs</h3>
 <p>List of the jobs/tools that are currently in <strong>RUNNING</strong> or <strong>PAUSED</strong> state with some information about instance, elapsed time and estimated price, that is calculated based on the run duration and instance type. If this list is empty - start a new run from the <strong>Tools</strong> or <strong>Pipelines</strong> widgets. Hover a run item to view a list of available action.<br />
-Use <strong>STOP</strong>/<strong>PAUSE</strong>/<strong>RESUME</strong>/<strong>TERMINATE</strong> actions to change the state of the run or use OPEN to navigate to the GUI of the interactive job. Select the <strong>LINKS</strong> button to view/navigate the run input/output parameters. Click a run item to navigate to the details and logs page.<br />
+Use <strong>STOP</strong>/<strong>PAUSE</strong>/<strong>RESUME</strong>/<strong>TERMINATE</strong> actions to change the state of the run, use <strong>OPEN</strong> to navigate to the GUI of the interactive job or use <strong>SSH</strong> to open SSH session over the running container. Select the <strong>LINKS</strong> button to view/navigate the run input/output parameters. Click a run item to navigate to the details and logs page.<br />
 <strong><em>Note</em></strong>: active runs are tagged with the Cloud Region flag to visually distinguish compute instance locations.</p>
 <p><img alt="CP_HomePage" src="../attachments/HomePage_07.png" /><br />
 Only top 50 active runs will be shown, if more than 50 jobs/tools are running - use <strong>Explore all active runs</strong> link.</p>
 <blockquote>
 <p><strong><em>Note</em></strong>: if a specific platform deployment has a number of Cloud Providers registered (e.g. <code>AWS</code>+<code>Azure</code>, <code>GCP</code>+<code>Azure</code>) - corresponding auxiliary Cloud Provider icons are additionally displayed, e.g.:<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_22.png" /></p>
+<p><strong><em>Note</em></strong>: if specific run CPU/Memory/Disk consumption is lower or higher specified in the configurations values, the <strong>IDLE</strong> or <strong>PRESSURE</strong> labels will be displayed respectively:<br />
+<img alt="CP_ManageRuns" src="../attachments/HomePage_23.png" />
+<img alt="CP_ManageRuns" src="../attachments/HomePage_24.png" /></p>
 </blockquote>
 <p>Help tooltips are provided when hovering a run state icon, e.g.:<br />
 <img alt="CP_HomePage" src="../attachments/HomePage_16.png" /></p>

@@ -832,6 +832,14 @@
 <td>Allows to set a port for FSBrowser</td>
 </tr>
 <tr>
+<td><strong><code>storage.fsbrowser.tmp</code></strong></td>
+<td>A path to the directory where the temporary archive shall be created (when the folder is downloading). Archive is being removed when download is finished</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.black.list</code></strong></td>
+<td>List of directories/files which shall not be visible via FSBrowser</td>
+</tr>
+<tr>
 <td><strong><code>storage.temp.credentials.duration</code></strong></td>
 <td>Temporary credentials lifetime for Cloud Provider's operations with data storages (in seconds)</td>
 </tr>
@@ -1111,12 +1119,24 @@
 <td>List of mounts that shall be added to k8s pod for Docker in Docker</td>
 </tr>
 <tr>
+<td><strong><code>launch.container.cpu.resource</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.run.visibility</code></strong></td>
+<td>Allow to view foreign runs based on pipeline permissions (value <code>INHERIT</code>) or restrict visibility of all non-owner runs (value <code>OWNER</code>)</td>
+</tr>
+<tr>
 <td><strong><code>launch.dind.enable</code></strong></td>
 <td>Enables Docker in Docker functionality</td>
 </tr>
 <tr>
 <td><strong><code>launch.task.status.update.rate</code></strong></td>
 <td>Sets task status update rate, on which application will query kubernetes cluster for running task status, ms. Pod Monitor</td>
+</tr>
+<tr>
+<td><strong><code>launch.pods.release.rate</code></strong></td>
+<td></td>
 </tr>
 <tr>
 <td><strong><code>launch.system.parameters</code></strong></td>
@@ -1211,7 +1231,7 @@
 <tbody>
 <tr>
 <td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
-<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user</td>
+<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user and the corresponding run will be marked by the "IDLE" label</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
@@ -1227,7 +1247,7 @@
 </tr>
 <tr>
 <td><strong><code>system.disk.consume.threshold</code></strong></td>
-<td>Specifies disk threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent</td>
+<td>Specifies disk threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent and the corresponding run will be marked by the "PRESSURE" label</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.cpu.threshold</code></strong></td>
@@ -1239,7 +1259,7 @@
 </tr>
 <tr>
 <td><strong><code>system.memory.consume.threshold</code></strong></td>
-<td>Specifies memory threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent</td>
+<td>Specifies memory threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent and the corresponding run will be marked by the "PRESSURE" label</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.action</code></strong></td>
@@ -1280,6 +1300,10 @@
 <tr>
 <td><strong><code>ui.pipe.cli.configure.template</code></strong></td>
 <td>CLI configure templates for different operating systems</td>
+</tr>
+<tr>
+<td><strong><code>ui.support.template</code></strong></td>
+<td>Markdown-formatted text that will be displayed in tooltip of the "support" info in the main menu. If nothing is specified (empty), support icon in the main menu will not be displayed</td>
 </tr>
 <tr>
 <td><strong><code>ui.controls.settings</code></strong></td>

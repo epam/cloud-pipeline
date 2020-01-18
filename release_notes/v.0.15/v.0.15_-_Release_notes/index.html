@@ -77,6 +77,8 @@
         
             <li><a class="toctree-l4" href="#microsoft-azure-support">Microsoft Azure Support</a></li>
         
+            <li><a class="toctree-l4" href="#saml-claims-based-access">SAML claims based access</a></li>
+        
             <li><a class="toctree-l4" href="#notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</a></li>
         
             <li><a class="toctree-l4" href="#limit-mounted-storages">Limit mounted storages</a></li>
@@ -146,6 +148,12 @@
             <li><a class="toctree-l4" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via pipe</a></li>
         
             <li><a class="toctree-l4" href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via pipe</a></li>
+        
+            <li><a class="toctree-l4" href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
+        
+            <li><a class="toctree-l4" href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
+        
+            <li><a class="toctree-l4" href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
         
             <li><a class="toctree-l4" href="#notable-bug-fixes">Notable Bug fixes</a></li>
         
@@ -618,6 +626,7 @@
                 <h1 id="cloud-pipeline-v015-release-notes">Cloud Pipeline v.0.15 - Release notes</h1>
 <ul>
 <li><a href="#microsoft-azure-support">Microsoft Azure Support</a></li>
+<li><a href="#saml-claims-based-access">SAML claims based access</a></li>
 <li><a href="#notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</a></li>
 <li><a href="#limit-mounted-storages">Limit mounted storages</a></li>
 <li><a href="#personal-ssh-keys-configuration">Personal SSH keys configuration</a></li>
@@ -653,6 +662,9 @@
 <li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
 <li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></a></li>
 <li><a href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></a></li>
+<li><a href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
+<li><a href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
+<li><a href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
 </ul>
 <hr />
 <ul>
@@ -676,6 +688,9 @@
 <li><a href="#system-events-html-overflow">System events HTML overflow</a></li>
 <li><a href="#aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run <code>InitializeNode</code> task fails</a></li>
 <li><a href="#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</a></li>
+<li><a href="#enddate-isnt-set-when-node-of-a-paused-run-was-terminated"><code>endDate</code> isn't set when node of a paused run was terminated</a></li>
+<li><a href="#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</a></li>
+<li><a href="#resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</a></li>
 <li><a href="#broken-layouts">Broken layouts</a></li>
 </ul>
 </li>
@@ -685,6 +700,15 @@
 <p>One of the major <strong><code>v0.15</code></strong> features is a support for the <strong><a href="https://azure.microsoft.com/en-us/">Microsoft Azure Cloud</a></strong>.</p>
 <p>All the features, that were previously used for <code>AWS</code>, are now available in all the same manner, from all the same GUI/CLI, for <code>Azure</code>.</p>
 <p>Another cool thing, is that now it is possible to have a single installation of the <code>Cloud Pipeline</code>, which will manage both Cloud Providers (<code>AWS</code> and <code>Azure</code>). This provides a flexibility to launch jobs in the locations, closer to the data, with cheaper prices or better compute hardware for a specific task.</p>
+<h2 id="saml-claims-based-access">SAML claims based access</h2>
+<p>Previously, there were two options for users to be generally authenticated in Cloud Pipeline Platform, i.e. to pass SAML validation:</p>
+<ul>
+<li><strong><code>Auto-register</code></strong> - any valid SAML authentication automatically registers user (if he isn't registered yet) and grant <code>ROLE_USER</code> access</li>
+<li><strong><code>Explicit-register</code></strong> - after a valid SAML authentication, it is checked whether this user is already registered in the Cloud Pipeline catalog, and if no - request denies, authentication fails</li>
+</ul>
+<p>To automate things a bit more, in <strong><code>v0.15</code></strong> additional way to grant first-time access to the users was implemented: <strong><code>Explicit-group</code></strong> register.<br />
+If such registration type is set - once a valid SAML authentication is received, it is checked, whether SAML response contains any of the domain groups, that are already granted any access to the Cloud Pipeline objects (registered in Cloud Pipeline catalog). If so - proceeds as with <strong><code>Auto-register</code></strong> - user with all his domain groups and granted <code>ROLE_USER</code> access is being registered. If user's SAML domain groups aren't intersected with pre-registered groups the authentication fails.</p>
+<p>This Platform's behavior is set via application property <code>saml.user.auto.create</code> that could accept one of the corresponding values: <code>AUTO</code>, <code>EXPLICIT</code>, <code>EXPLICIT_GROUP</code>.</p>
 <h2 id="notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</h2>
 <p>When a compute-intensive job is run - compute node may start starving for the resources.<br />
 CPU high load is typically a normal situation - it could result just to the SSH/metrics slowdown. But running low on memory and disk could crash the node, in such cases autoscaler will eventually terminate the cloud instance.</p>
@@ -899,13 +923,18 @@ Now, a more clear run's state is provided - "QUEUED" state is introduced:</p>
 <h2 id="vm-monitor-service">VM monitor service</h2>
 <p>For various reasons cloud VM instances may "hang" and become invisible to <code>Cloud Pipeline</code> services. E.g. VM was created but some error occurred during joining k8s cluster or a communication to the Cloud Providers API is interrupted.</p>
 <p>In this case <code>Autoscaler</code> service will not be able to find such instance and it won't be shut down. This problem may lead to unmonitored useless resource consumption and billing.</p>
-<p>To address this issue - a separate <code>VM monitoring</code> service was implemented:</p>
+<p>To address this issue - a separate <code>VM-Monitor</code> service was implemented:</p>
 <ul>
 <li>Tracks all VM instances in the registered Cloud Regions</li>
 <li>Determines whether instances is in "hang" state</li>
 <li>Notifies a configurable set of users about a possible problem</li>
 </ul>
 <p>Notification recipients (administrators) may check the actual state of VM in Cloud Provider console and shut down VM manually.</p>
+<p>Additionally, <code>VM-Monitor</code>:</p>
+<ul>
+<li>Checks states of Cloud Pipeline's services (Kubernetes deployments). If any service changes it's state (i.e. goes down or up) - administrators will get the corresponding notification. List of such Kubernetes deployments to check includes all Cloud Pipeline's services by default, but also could be configed manually</li>
+<li>Checks all the PKI assets, available for the Platform, for the expiration - traverses over the list of directories that should contains certificate files, searches that certificates and verifies their expiration date. If some certificate expires less than in a certain amount of days - administrators also will get the corresponding notification. List of certificate directories to scan, certificate's mask and amount of days before expiration after which the notification will be sent are configurable</li>
+</ul>
 <h2 id="web-gui-caching">Web GUI caching</h2>
 <p>Previously, <code>Cloud Pipeline</code> Web GUI was not using HTTP caching to optimize the page load time. Each time application was loaded - <code>~2Mb</code> of the app bundle was downloaded.</p>
 <p>This caused "non-optimal" experience for the end-users.</p>
@@ -1153,6 +1182,64 @@ Also, to the <code>restore</code> command some options were added:</p>
 <p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeRestoreRecursive.png" /></p>
 <p><strong><em>Note</em></strong>: this feature is yet supported for <code>AWS</code> only.</p>
 <p>For more details about file restoring via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#restore-files">here</a>.</p>
+<h2 id="mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</h2>
+<p>Previously, when users had to copy/move datasets to/from Cloud data storages via CLI, they could use only special <code>pipe storage</code> commands.<br />
+That was not always comfortable or could lead to some functionality restrictions.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed) was added.<br />
+For the mounted storages, regular listing/read/write commands are supported, users can manage files/folders as with any general hard drive.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: this feature is yet supported for <code>AWS</code> only.</p>
+</blockquote>
+<p>To mount a data storage into the local mountpoint the <code>pipe storage mount</code> command was implemented. It has two main options that are mutually exclusive:</p>
+<ul>
+<li><code>-f</code> or <code>--file</code> specifies that all available file systems should be mounted into a mountpoint</li>
+<li><code>-b</code> or <code>--bucket [STORAGE_NAME]</code> specifies a storage name to mount into a mountpoint</li>
+</ul>
+<p>Users can:</p>
+<ul>
+<li>leverage mount options, supported by underlying <strong><code>FUSE</code></strong> implementation, via <code>-o</code> option</li>
+<li>enable multithreading for simultaneously interaction of several processes with the mount point, via <code>-t</code> option</li>
+<li>trace all information about mount operations into a log-file, via <code>-l</code> option</li>
+</ul>
+<p>To unmount a mountpoint the <code>pipe storage umount</code> command was implemented.</p>
+<p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
+<h2 id="ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</h2>
+<p>Previously, <code>Cloud Pipeline</code> inherited the pipeline jobs' permissions from the parent pipeline object. So, if two users had permissions on the same pipeline, then when the first user had launched that pipeline - the second user also could view (not manage) launched run in the <strong>Active Runs</strong> tab.<br />
+Now admin can restrict the visibility of the jobs for non-owner users. The setting of such visibility can get one of the following values:</p>
+<ul>
+<li><strong><code>Inherit</code></strong> - the behavior is the same as described above (for the previous approach), when the runs visibility is controlled by the pipeline permissions. It is set as a default for the <code>Cloud Pipeline</code> environment</li>
+<li><strong><code>Only owner</code></strong> - when only the person who launch a run can see it</li>
+</ul>
+<p>Jobs visibility could be set by different ways on several forms:</p>
+<ul>
+<li>within <strong>User management</strong> tab in the system-level settings admin can specify runs visibility for a user/group/role:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JobsVisibility_1.png" /></li>
+<li>within <strong>Launch</strong> section of <strong>Preferences</strong> tab in the system-level settings admin can specify runs visibility for a whole platform as global defaults - by the setting <strong><code>launch.run.visibility</code></strong>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JobsVisibility_2.png" /></li>
+</ul>
+<p>Next hierarchy is set for applying of specified jobs visibility:</p>
+<ul>
+<li>User level - highest priority (specified for a user)</li>
+<li>Group level (specified for a group/role)</li>
+<li>Platform level <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings)</li>
+</ul>
+<blockquote>
+<p><strong><em>Note</em></strong>: admins can see all runs despite of settings</p>
+</blockquote>
+<h2 id="displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</h2>
+<p>In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)</p>
+<p>In the current version, the ability to display additional "support" icon with the corresponding info in the bottom of the main menu was implemented:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SupportIcon_1.png" /></p>
+<p>The displaying of this icon and the info content can be configured by admins via the system-level preference <strong><code>ui.support.template</code></strong>:</p>
+<ul>
+<li>this preference is empty by default - in this case the support icon is invisible</li>
+<li>if this preference contains any text (<code>Markdown</code>-formatted):<ul>
+<li>the support icon is visible</li>
+<li>specified text is displayed in the support icon tooltip (support info)</li>
+</ul>
+</li>
+</ul>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#user-interface">UI system settings</a>.</p>
 <hr />
 <h2 id="notable-bug-fixes">Notable Bug fixes</h2>
 <h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
@@ -1228,9 +1315,19 @@ Now, text wrapping is considered for such cases.</p>
 <p>Previously, if <code>AWS</code> spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: <code>Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available</code>.<br />
 Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to <code>on-demand</code> and run initialization continues.</p>
 <h3 id="git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</h3>
-<p><a href="https://github.com/epam/cloud-pipeline/issues/648">#648</a></p>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/648">#648</a>, <a href="https://github.com/epam/cloud-pipeline/issues/691">#691</a></p>
 <p>When the <code>git-sync</code> script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.<br />
-Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issue with the synchronization of users with duplicate email addresses was resolved.</p>
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issues with the synchronization of users with duplicate email addresses and users with empty email were resolved.</p>
+<h3 id="enddate-isnt-set-when-node-of-a-paused-run-was-terminated"><code>endDate</code> isn't set when node of a paused run was terminated</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/743">#743</a></p>
+<p>Previously, when user terminated the node of a paused run - <code>endDate</code> for that run wasn't being set. This was leading to wrong record of running time for such run.</p>
+<h3 id="aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/744">#744</a></p>
+<p>Previously, if first nodeup attempt failed due to unavailablity to connect on 8888 port (in expected amounts of attempts) after getting instance running state, the second nodeup attempt might stuck because it waited for the same instance (associated with existed <code>SpotRequest</code> for the first attempt) to be up. But it couldn't happen - this instance was already in terminating state after the first attempt.<br />
+Now, checks that instance associated with <code>SpotRequest</code> (created for the first attempt) is in appropriate status, if not - a new <code>SpotRequest</code> is being created and the nodeup process is being started from scratch.</p>
+<h3 id="resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/832">#832</a></p>
+<p>Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.</p>
 <h3 id="broken-layouts">Broken layouts</h3>
 <p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a></p>
 <p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.<br />
