@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import {
 
 export const CP_CAP_SGE = 'CP_CAP_SGE';
 export const CP_CAP_SPARK = 'CP_CAP_SPARK';
+export const CP_CAP_SLURM = 'CP_CAP_SLURM';
 export const CP_CAP_AUTOSCALE = 'CP_CAP_AUTOSCALE';
 export const CP_CAP_AUTOSCALE_WORKERS = 'CP_CAP_AUTOSCALE_WORKERS';
 
@@ -56,6 +57,10 @@ export function sparkEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SPARK);
 }
 
+export function slurmEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_SLURM);
+}
+
 export const CLUSTER_TYPE = {
   singleNode: 0,
   fixedCluster: 1,
@@ -67,9 +72,10 @@ export function getSkippedSystemParametersList (controller) {
     (
       controller.state.autoScaledCluster ||
       controller.state.gridEngineEnabled ||
-      controller.state.sparkEnabled
+      controller.state.sparkEnabled ||
+      controller.state.slurmEnabled
     )) {
-    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
+    return [CP_CAP_SGE, CP_CAP_SPARK, CP_CAP_SLURM, CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS];
 }
@@ -84,7 +90,8 @@ export function setClusterParameterValue (form, sectionName, configuration) {
   }
   const {
     gridEngineEnabled,
-    sparkEnabled
+    sparkEnabled,
+    slurmEnabled
   } = configuration;
   const formValue = form.getFieldValue(sectionName);
   if (!formValue || !formValue.hasOwnProperty('params')) {
@@ -107,6 +114,10 @@ export function setClusterParameterValue (form, sectionName, configuration) {
       value.value = `${sparkEnabled}`;
       modified = true;
     }
+    if (value.name === CP_CAP_SLURM) {
+      value.value = `${slurmEnabled}`;
+      modified = true;
+    }
   }
   if (modified) {
     form.setFieldsValue(
@@ -123,7 +134,8 @@ export function setSingleNodeMode (controller, callback) {
     autoScaledCluster: false,
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
-    sparkEnabled: false
+    sparkEnabled: false,
+    slurmEnabled: false
   }, callback);
 }
 
@@ -134,6 +146,7 @@ export function setFixedClusterMode (controller, callback) {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    slurmEnabled: false,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -150,6 +163,7 @@ export function setAutoScaledMode (controller, callback) {
     nodesCount: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    slurmEnabled: false,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -194,6 +208,9 @@ class ConfigureClusterDialog extends React.Component {
       if (ctrl.state.sparkEnabled) {
         clusterName = `Apache Spark ${lowerCasedString('Cluster', lowerCased)}`;
       }
+      if (ctrl.state.slurmEnabled) { // todo ask
+        clusterName = `Slurm ${lowerCasedString('Cluster', lowerCased)}`;
+      }
       if (!isNaN(ctrl.state.nodesCount)) {
         return `${clusterName} (${plural(ctrl.state.nodesCount, 'child node')})`;
       }
@@ -219,6 +236,7 @@ class ConfigureClusterDialog extends React.Component {
     autoScaledCluster: PropTypes.bool,
     gridEngineEnabled: PropTypes.bool,
     sparkEnabled: PropTypes.bool,
+    slurmEnabled: PropTypes.bool,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -232,6 +250,7 @@ class ConfigureClusterDialog extends React.Component {
     setDefaultNodesCount: false,
     gridEngineEnabled: false,
     sparkEnabled: false,
+    slurmEnabled: false,
     nodesCount: 0,
     maxNodesCount: 0,
     validation: {
@@ -243,7 +262,7 @@ class ConfigureClusterDialog extends React.Component {
   @computed
   get selectedClusterType () {
     if (this.state.launchCluster) {
-      return this.state.autoScaledCluster && !this.state.sparkEnabled
+      return this.state.autoScaledCluster && !this.state.sparkEnabled && !this.state.slurmEnabled
         ? CLUSTER_TYPE.autoScaledCluster
         : CLUSTER_TYPE.fixedCluster;
     } else {
@@ -309,14 +328,24 @@ class ConfigureClusterDialog extends React.Component {
   onChangeEnableGridEngine = (e) => {
     this.setState({
       gridEngineEnabled: e.target.checked,
-      sparkEnabled: false
+      sparkEnabled: false,
+      slurmEnabled: false
     });
   };
 
   onChangeEnableSpark = (e) => {
     this.setState({
       gridEngineEnabled: false,
-      sparkEnabled: e.target.checked
+      sparkEnabled: e.target.checked,
+      slurmEnabled: false
+    });
+  };
+
+  onChangeEnableSlurm = (e) => {
+    this.setState({
+      gridEngineEnabled: false,
+      sparkEnabled: false,
+      slurmEnabled: e.target.checked
     });
   };
 
@@ -350,6 +379,15 @@ class ConfigureClusterDialog extends React.Component {
           Enable Apache Spark
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableSpark)}
+      </Row>,
+      <Row key="enable slurm" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.slurmEnabled}
+          onChange={this.onChangeEnableSlurm}>
+          Enable Slurm
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.cluster.enableSlurm)}
       </Row>
     ].filter(r => !!r);
   };
@@ -450,13 +488,14 @@ class ConfigureClusterDialog extends React.Component {
         launchCluster: this.state.launchCluster,
         autoScaledCluster: this.state.autoScaledCluster,
         gridEngineEnabled: this.state.gridEngineEnabled,
-        sparkEnabled: this.state.sparkEnabled
+        sparkEnabled: this.state.sparkEnabled,
+        slurmEnabled: this.state.slurmEnabled
       });
     }
   };
 
   render () {
-    const {sparkEnabled} = this.state;
+    const {sparkEnabled, slurmEnabled} = this.state;
     return (
       <Modal
         title={
@@ -477,7 +516,7 @@ class ConfigureClusterDialog extends React.Component {
                 <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
                 <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
                 <Radio.Button
-                  disabled={sparkEnabled}
+                  disabled={sparkEnabled || slurmEnabled}
                   value={CLUSTER_TYPE.autoScaledCluster}
                 >
                   Auto-scaled cluster
@@ -583,6 +622,7 @@ class ConfigureClusterDialog extends React.Component {
         autoScaledCluster: nextProps.autoScaledCluster,
         gridEngineEnabled: nextProps.gridEngineEnabled,
         sparkEnabled: nextProps.sparkEnabled,
+        slurmEnabled: nextProps.slurmEnabled,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,
