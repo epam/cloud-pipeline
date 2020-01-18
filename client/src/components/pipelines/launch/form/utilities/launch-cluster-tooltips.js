@@ -56,7 +56,7 @@ const CLUSTER_MODES_TOOLTIP = (
 const ENABLE_GRID_ENGINE_TOOLTIP = (
   <div>
     <Row>
-      Setting this checkbox will enable the <b>GridEngine</b> for the cluster, providing all the compatible command-line utilities,e.g.: <b>qsub, qstat, qhost, qconf,</b> etc.
+      Setting this checkbox will enable the <b>GridEngine</b> for the cluster, providing all the compatible command-line utilities, e.g.: <b>qsub, qstat, qhost, qconf,</b> etc.
     </Row>
     <Row>
       This checkbox is a convenience option for the <b>"CP_CAP_SGE=true"</b> parameter.
@@ -75,6 +75,9 @@ const ENABLE_SPARK_TOOLTIP = (
 );
 const ENABLE_SLURM_TOOLTIP = (
   <div>
+    <Row>
+      Setting this checkbox will enable the <b>SLURM</b> scheduler for the cluster, providing all the compatible command-line utilities, e.g.: <b>sbatch, scancel, squeue, sinfo,</b> etc.
+    </Row>
     <Row>
       This checkbox is a convenience option for the <b>"CP_CAP_SLURM=true"</b> parameter.
     </Row>
