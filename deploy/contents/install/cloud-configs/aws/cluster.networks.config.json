@@ -11,12 +11,18 @@
                 {
                     "instance_mask": "p*",
                     "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU}",
-                    "init_script": "/opt/api/scripts/init_multicloud.sh"
+                    "init_script": "/opt/api/scripts/init_multicloud.sh",
+                    "embedded_scripts": {
+                        "autoscale_fs.sh": "/opt/api/scripts/autoscale_fs.sh"
+                    }
                 },
                 {
                     "instance_mask": "*",
                     "ami": "${CP_PREF_CLUSTER_INSTANCE_IMAGE}",
-                    "init_script": "/opt/api/scripts/init_multicloud.sh"
+                    "init_script": "/opt/api/scripts/init_multicloud.sh",
+                    "embedded_scripts": {
+                        "autoscale_fs.sh": "/opt/api/scripts/autoscale_fs.sh"
+                    }
                 }
             ],
             "swap": [

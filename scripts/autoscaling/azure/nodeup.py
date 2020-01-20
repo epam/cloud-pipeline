@@ -32,7 +32,7 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
-from pipeline import Logger, TaskStatus, PipelineAPI
+from pipeline import Logger, TaskStatus, PipelineAPI, pack_script_contents
 
 VM_NAME_PREFIX = "az-"
 UUID_LENGHT = 16
@@ -168,7 +168,9 @@ def get_well_known_hosts(cloud_region):
 
 def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_object = {"instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script}
+    default_embedded_scripts = { "autoscale_fs.sh": os.path.dirname(os.path.abspath(__file__)) + '/autoscale_fs.sh' }
+    default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
+        "embedded_scripts": default_embedded_scripts }
 
     instance_images_config = get_instance_images_config(cloud_region)
     if not instance_images_config:
@@ -177,13 +179,11 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
     for image_config in instance_images_config:
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
-        init_script = None
-        if "init_script" in image_config:
-            init_script = image_config["init_script"]
-        else:
-            init_script = default_object["init_script"]
+        init_script = image_config.get("init_script", default_object["init_script"])
+        embedded_scripts = image_config.get("embedded_scripts", default_object["embedded_scripts"])
         if fnmatch.fnmatch(instance_type, instance_mask):
-            return {"instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script}
+            return { "instance_mask_ami": instance_mask_ami, "instance_mask": instance_mask, "init_script": init_script,
+            "embedded_scripts": embedded_scripts }
 
     return default_object
 
@@ -930,15 +930,11 @@ def get_user_data_script(api_url, api_token, cloud_region, ins_type, ins_img, ku
                                             .replace('@KUBE_TOKEN@', kubeadm_token) \
                                             .replace('@API_URL@', api_url) \
                                             .replace('@API_TOKEN@', api_token)
-
-        # If there is a fresh "pipeline" module installed - we'll use a gzipped/self-extracting script
-        # to minimize the size of the user data
-        # Otherwise - raw script will be used
-        try:
-            from pipeline import pack_script_contents
-            return pack_script_contents(user_data_script)
-        except:
-            return user_data_script
+        embedded_scripts = {}
+        if allowed_instance["embedded_scripts"]:
+            for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
+                embedded_scripts[embedded_name] = open(embedded_path, 'r').read()
+        return pack_script_contents(user_data_script, embedded_scripts)
     else:
         raise RuntimeError('Unable to get init.sh path')
 

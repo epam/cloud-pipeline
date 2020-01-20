@@ -300,6 +300,20 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+_API_URL="@API_URL@"
+_API_TOKEN="@API_TOKEN@"
+_MOUNT_POINT="/ebs"
+_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cp "$_CURRENT_DIR/autoscale_fs.sh" "$_MOUNT_POINT/autoscale_fs.sh"
+nohup "$_MOUNT_POINT/autoscale_fs.sh" \
+      --api-url "$_API_URL" \
+      --api-token "$_API_TOKEN" \
+      --node-name "$_KUBE_NODE_NAME" \
+      --mount-point "$_MOUNT_POINT" \
+      >> "$_MOUNT_POINT/autoscale_fs.log" \
+      2>&1 \
+      &
+
 # Setup the scripts to restore the state of the "paused" job
 #   1. NVIDIA-specific scripts for GPU nodes
 #     - Enable nvidia persistence mode
@@ -316,22 +330,17 @@ systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
 EOF
-#   3. All nodes with scallable disks: add support for disk autoscaling daemon starting of the "paused" job
-_API_URL="@API_URL@"
-_API_TOKEN="@API_TOKEN@"
-_MOUNT_POINT="/ebs"
-wget "${_API_URL%restapi/}fs-autoscaling/autoscale-fs.sh" -O "$_MOUNT_POINT/autoscale-fs.sh"
-chmod +x "$_MOUNT_POINT/autoscale-fs.sh"
+#   3. All nodes: add support for disk autoscaling daemon initialization after starting the "paused" job
 cat >> /etc/rc.local << EOF
 (
-nohup 2>&1 \
-      "$_MOUNT_POINT/autoscale-fs.sh" \
+nohup "$_MOUNT_POINT/autoscale_fs.sh" \
       --api-url "$_API_URL" \
       --api-token "$_API_TOKEN" \
       --node-name "$_KUBE_NODE_NAME" \
       --mount-point "$_MOUNT_POINT" \
-      & \
-      > "$_MOUNT_POINT/fs-autoscaling.log" &
+      >> "$_MOUNT_POINT/autoscale_fs.log" \
+      2>&1 \
+      &
 )
 EOF
 
