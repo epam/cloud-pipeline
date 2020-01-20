@@ -304,15 +304,27 @@ _API_URL="@API_URL@"
 _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"
 _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cp "$_CURRENT_DIR/autoscale_fs.sh" "$_MOUNT_POINT/autoscale_fs.sh"
-nohup "$_MOUNT_POINT/autoscale_fs.sh" \
-      --api-url "$_API_URL" \
-      --api-token "$_API_TOKEN" \
-      --node-name "$_KUBE_NODE_NAME" \
-      --mount-point "$_MOUNT_POINT" \
-      >> "$_MOUNT_POINT/autoscale_fs.log" \
-      2>&1 \
-      &
+cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+mkdir -p /etc/systemd/system/fsautoscale.service.d
+cat >/etc/systemd/system/fsautoscale.service <<EOL
+[Unit]
+Description=Cloud Pipeline Filesystem Autoscaling Daemon
+Documentation=https://cloud-pipeline.com/
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+Environment="API_ARGS=--api-url $_API_URL --api-token $_API_TOKEN"
+Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME"
+Environment="MOUNT_POINT_ARGS=--mount-point $_MOUNT_POINT"
+ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
+
+[Install]
+WantedBy=multi-user.target
+EOL
+systemctl enable fsautoscale
+systemctl start fsautoscale
 
 # Setup the scripts to restore the state of the "paused" job
 #   1. NVIDIA-specific scripts for GPU nodes
@@ -329,19 +341,6 @@ cat >> /etc/rc.local << EOF
 systemctl start docker
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --skip-preflight-checks --node-name $_KUBE_NODE_NAME
 systemctl start kubelet
-EOF
-#   3. All nodes: add support for disk autoscaling daemon initialization after starting the "paused" job
-cat >> /etc/rc.local << EOF
-(
-nohup "$_MOUNT_POINT/autoscale_fs.sh" \
-      --api-url "$_API_URL" \
-      --api-token "$_API_TOKEN" \
-      --node-name "$_KUBE_NODE_NAME" \
-      --mount-point "$_MOUNT_POINT" \
-      >> "$_MOUNT_POINT/autoscale_fs.log" \
-      2>&1 \
-      &
-)
 EOF
 
 nc -l -k 8888 &

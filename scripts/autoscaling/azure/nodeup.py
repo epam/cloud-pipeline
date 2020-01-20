@@ -168,7 +168,7 @@ def get_well_known_hosts(cloud_region):
 
 def get_allowed_instance_image(cloud_region, instance_type, default_image):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
-    default_embedded_scripts = { "autoscale_fs.sh": os.path.dirname(os.path.abspath(__file__)) + '/autoscale_fs.sh' }
+    default_embedded_scripts = { "fsautoscale": os.path.dirname(os.path.abspath(__file__)) + '/fsautoscale.sh' }
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
         "embedded_scripts": default_embedded_scripts }
 
