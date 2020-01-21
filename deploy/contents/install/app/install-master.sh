@@ -181,8 +181,9 @@ sleep 10
 #14
 # Allow services to bind to 80+ ports, as the default range is 30000-32767
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
-# kubelet monitors /etc/kubernetes/manifests folder, so kube-api pod will be recreated automatically
+# kubelet monitors /etc/kubernetes/manifests folder, so kube-api and  kube-controller-manager pods will be recreated automatically
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
+sed -i '/- kube-controller-manager/a \    \- --pod-eviction-timeout=900s' /etc/kubernetes/manifests/kube-controller-manager.yaml
 
 sleep 30
 

@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -51,6 +52,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,6 +85,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
     private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
     private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
+    private final Map<String, LocalDateTime> nodeLostTimestamps = new ConcurrentHashMap<>();
+
 
     private static final String FREE_NODE_PREFIX = "f";
 
@@ -526,8 +530,13 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         String lastReason = conditions.get(0).getReason();
         for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
             if (lastReason.contains(reason)) {
-                LOGGER.debug("Node is out of order: {}", conditions);
-                return false;
+                final Integer tolerantSeconds = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODE_LOST_TOLERANT_SECONDS);
+                final LocalDateTime nowUTC = DateUtils.nowUTC();
+                final LocalDateTime nodeLostTimestamp = nodeLostTimestamps.computeIfAbsent(node.getMetadata().getName(), id -> nowUTC);
+                if (nodeLostTimestamp.plusSeconds(tolerantSeconds).isBefore(nowUTC)) {
+                    LOGGER.debug("Node is out of order: {}", conditions);
+                    return false;
+                }
             }
         }
         return true;
