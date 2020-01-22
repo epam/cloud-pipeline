@@ -75,7 +75,8 @@ function setup_swap_device {
             echo "Unable to swapon at $swap_drive_name"
             return 1
         fi
-        echo "$swap_drive_name none swap sw 0 0" >> /etc/fstab
+        swap_drive_uuid=$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$swap_drive_name"'" { print $2 }')
+        echo "UUID=$swap_drive_uuid none swap sw 0 0" >> /etc/fstab
     fi
 }
 
@@ -109,7 +110,8 @@ do
   mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
   mount $DRIVE_NAME $MOUNT_POINT
-  echo "$DRIVE_NAME $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/   
