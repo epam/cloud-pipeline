@@ -31,7 +31,7 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
 cat > /tmp/ntlmp-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/ntlmp-win-version-info.txt)"
 
-pip install --upgrade setuptools && \
+pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt
 
 cd /tmp
@@ -79,7 +79,7 @@ _BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_$(date +%s).sh
 cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
-pip install --upgrade setuptools && \
+pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt && \
 pip install pywin32 && \
 cd /pipe-cli && \
@@ -103,6 +103,7 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=functools \
             --hidden-import=re \
             --hidden-import=subprocess \
+            --hidden-import=pkg_resources.py2_warn \
             --additional-hooks-dir="/pipe-cli/hooks" \
             -y \
             --clean \
