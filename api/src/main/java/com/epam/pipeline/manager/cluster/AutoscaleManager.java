@@ -519,25 +519,34 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 .isPresent();
     }
 
-    private boolean isNodeAvailable(final Node node) {
+    boolean isNodeAvailable(final Node node) {
         if (node == null) {
             return false;
         }
-        List<NodeCondition> conditions = node.getStatus().getConditions();
+        final List<NodeCondition> conditions = node.getStatus().getConditions();
         if (CollectionUtils.isEmpty(conditions)) {
+            // no conditions here, so reset "node lost" timestamp just in case
+            nodeLostTimestamps.remove(node.getMetadata().getName());
             return true;
         }
-        String lastReason = conditions.get(0).getReason();
-        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
-            if (lastReason.contains(reason)) {
-                final Integer tolerantSeconds = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODE_LOST_TOLERANT_SECONDS);
-                final LocalDateTime nowUTC = DateUtils.nowUTC();
-                final LocalDateTime nodeLostTimestamp = nodeLostTimestamps.computeIfAbsent(node.getMetadata().getName(), id -> nowUTC);
-                if (nodeLostTimestamp.plusSeconds(tolerantSeconds).isBefore(nowUTC)) {
-                    LOGGER.debug("Node is out of order: {}", conditions);
-                    return false;
-                }
+
+        final String lastReason = conditions.get(0).getReason();
+        if (KubernetesConstants.NODE_OUT_OF_ORDER_REASONS.stream().anyMatch(lastReason::contains)) {
+            final Integer tolerantSeconds = preferenceManager.getPreference(
+                    SystemPreferences.CLUSTER_NODE_LOST_TOLERANT_SECONDS);
+            final LocalDateTime nowUTC = DateUtils.nowUTC();
+            // save new nodeLostTimestamp if was empty since we have one of NODE_OUT_OF_ORDER_REASONS
+            final LocalDateTime nodeLostTimestamp = nodeLostTimestamps
+                    .computeIfAbsent(node.getMetadata().getName(), id -> nowUTC);
+
+            if (nodeLostTimestamp.plusSeconds(tolerantSeconds).isBefore(nowUTC)) {
+                LOGGER.debug("Node is out of order: {}", conditions);
+                return false;
             }
+        } else {
+            // clean up since we check that here is no reasons from NODE_OUT_OF_ORDER_REASONS
+            // so we need to reset "node lost" timestamp
+            nodeLostTimestamps.remove(node.getMetadata().getName());
         }
         return true;
     }

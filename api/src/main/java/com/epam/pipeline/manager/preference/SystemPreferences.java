@@ -265,7 +265,7 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_SPOT_MAX_ATTEMPTS = new IntPreference("cluster.spot.max.attempts", 2,
                                                                                     CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_LOST_TOLERANT_SECONDS = new IntPreference(
-            "system.node.lost.tolerant.seconds", 600, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+            "cluster.node.lost.tolerant.seconds", 600, CLUSTER_GROUP, isGreaterThanOrEquals(0));
 
     public static final StringPreference CLOUD_DEFAULT_PROVIDER = new StringPreference(
             "cloud.provider.default", CloudProvider.AWS.name(), CLUSTER_GROUP, pass);
