@@ -183,6 +183,8 @@ sleep 10
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
 # kubelet monitors /etc/kubernetes/manifests folder, so kube-api and  kube-controller-manager pods will be recreated automatically
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
+
+# increase pod-eviction-timeout to 900s from 300s to be able to save unresponsive pods from deletion
 sed -i '/- kube-controller-manager/a \    \- --pod-eviction-timeout=900s' /etc/kubernetes/manifests/kube-controller-manager.yaml
 
 sleep 30

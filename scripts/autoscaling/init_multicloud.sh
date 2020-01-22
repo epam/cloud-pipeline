@@ -278,6 +278,9 @@ fi
 _KUBELET_LOG_PATH=/var/log/kubelet
 mkdir -p $_KUBELET_LOG_PATH
 _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
+
+# This parameter disable hard eviction rules for current node,
+# it allows to save pods from eviction when for example disk have pressure
 _KUBE_EVICTION_HARD_ARGS="--eviction-hard="
 
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
