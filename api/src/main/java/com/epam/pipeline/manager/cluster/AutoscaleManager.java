@@ -164,6 +164,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private void checkFreeNodes(Set<String> scheduledRuns, KubernetesClient client,
             Set<String> pods) {
         NodeList nodeList = getAvailableNodes(client);
+        cleanupNodeLostTimestamps(nodeList);
         RunInstance defaultInstance = autoscalerService.getDefaultInstance();
         List<RunInstance> requiredInstances = getRequiredInstances(scheduledRuns, client);
         nodeList.getItems().forEach(node -> {
@@ -224,6 +225,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         if (minClusterSize > 0 && currentClusterSize < minClusterSize) {
             createFreeNodes(nodeList);
         }
+    }
+
+    private void cleanupNodeLostTimestamps(final NodeList nodeList) {
+        Set<String> livingNodeNames = nodeList.getItems()
+                .stream()
+                .map(node -> node.getMetadata().getName())
+                .collect(Collectors.toSet());
+        nodeLostTimestamps.keySet().removeIf(key -> !livingNodeNames.contains(key));
     }
 
     private List<RunInstance> getRequiredInstances(Set<String> scheduledRuns, KubernetesClient client) {
