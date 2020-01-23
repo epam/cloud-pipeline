@@ -128,14 +128,13 @@ if check_installed "nvidia-smi"; then
   # Fix nvidia-smi performance
   nvidia-persistenced --persistence-mode
 
+# As long as we use btrfs as backing filesystem we should also use btrfs storage driver according to the docs
+# https://docs.docker.com/storage/storagedriver/btrfs-driver/
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
+  "storage-driver": "btrfs",
   "max-concurrent-uploads": 1,
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ],
   "default-runtime": "nvidia",
    "runtimes": {
         "nvidia": {
@@ -150,11 +149,8 @@ else
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "/ebs/docker",
-  "storage-driver": "overlay2",
-  "max-concurrent-uploads": 1,
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
+  "storage-driver": "btrfs",
+  "max-concurrent-uploads": 1
 }
 EOT
 fi
