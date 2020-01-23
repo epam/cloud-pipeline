@@ -18,7 +18,6 @@
 yum install -y  nc \
                 python \
                 curl \
-                jq \
                 btrfs-progs && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
 

@@ -18,7 +18,6 @@ yum install -y  nc \
                 python \
                 curl \
                 coreutils \
-                jq \
                 btrfs-progs
 
 

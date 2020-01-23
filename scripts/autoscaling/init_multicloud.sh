@@ -298,6 +298,12 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+if ! wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+then
+  echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+fi
+chmod +x /usr/bin/jq
+
 _API_URL="@API_URL@"
 _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"
