@@ -59,7 +59,7 @@ public enum SystemParams {
     GS_OAUTH_CLIENT_ID("google-client-id", "GS_CLIENT_ID", true),
     GS_OAUTH_CLIENT_SECRET("google-client-secret", "GS_CLIENT_SECRET", true),
     PARENT_ID("parent-id", "parent_id", false),
-    RESUMED_RUN("resumed-run", "RESUMED_RUN", false),
+    RESUMED_RUN("resumed-run", "RESUMED_RUN", false, true),
     FSBROWSER_ENABLED("cp-fsbrowser-enabled", "CP_FSBROWSER_ENABLED", false, true),
     FSBROWSER_PORT("cp-fsbrowser-port", "CP_FSBROWSER_PORT", false, true),
     FSBROWSER_WD("cp-fsbrowser-wd", "CP_FSBROWSER_WD", false, true),
