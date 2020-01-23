@@ -21,6 +21,7 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.Headers;
+import com.amazonaws.services.s3.model.AbortIncompleteMultipartUpload;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
@@ -125,6 +126,7 @@ public class S3Helper {
     private static final String BACKUP_RULE_ID = "Backup rule";
     private static final String STS_RULE_ID = "Short term storage rule";
     private static final String LTS_RULE_ID = "Long term storage rule";
+    private static final String INCOMPLETE_UPLOAD_CLEANUP_RULE_ID = "Clean Incomplete Multipart Uploads";
     private static final String PATH_SHOULD_NOT_BE_EMPTY_MESSAGE = "Path should not be empty";
     private static final Long URL_EXPIRATION = 24 * 60 * 60 * 1000L;
 
@@ -248,6 +250,10 @@ public class S3Helper {
                     rules.add(createLtsRule(LTS_RULE_ID, policy.getLongTermStorageDuration()));
                 } else {
                     disableRule(rules, currentRules, LTS_RULE_ID);
+                }
+                if (policy.getIncompleteUploadCleanupDays() != null) {
+                    rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
+                            policy.getIncompleteUploadCleanupDays()));
                 }
             }
             if (!rules.isEmpty()) {
@@ -657,6 +663,17 @@ public class S3Helper {
                         new BucketLifecycleConfiguration.Transition()
                                 .withDays(shortTermStorageDuration)
                                 .withStorageClass(StorageClass.Glacier))
+                .withStatus(BucketLifecycleConfiguration.ENABLED);
+    }
+
+    private BucketLifecycleConfiguration.Rule createIncompleteUploadCleanupRule(String ruleId,
+                                                                                Integer incompleteUploadCleanupDays) {
+        return new BucketLifecycleConfiguration.Rule()
+                .withId(ruleId)
+                .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate("")))
+                .withAbortIncompleteMultipartUpload(
+                        new AbortIncompleteMultipartUpload().withDaysAfterInitiation(incompleteUploadCleanupDays)
+                )
                 .withStatus(BucketLifecycleConfiguration.ENABLED);
     }
 

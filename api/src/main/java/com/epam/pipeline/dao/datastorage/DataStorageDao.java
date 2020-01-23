@@ -253,6 +253,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         BACKUP_DURATION,
         STS_DURATION,
         LTS_DURATION,
+        INCOMPLETE_UPLOAD_CLEANUP_DAYS,
         DATASTORAGE_LOCKED,
         MOUNT_POINT,
         SHARED,
@@ -314,6 +315,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(BACKUP_DURATION.name(), policy.getBackupDuration());
                 params.addValue(STS_DURATION.name(), policy.getShortTermStorageDuration());
                 params.addValue(LTS_DURATION.name(), policy.getLongTermStorageDuration());
+                params.addValue(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name(), policy.getIncompleteUploadCleanupDays());
             }
         }
 
@@ -401,6 +403,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             int ltsDuration = rs.getInt(LTS_DURATION.name());
             if (!rs.wasNull()) {
                 policy.setLongTermStorageDuration(ltsDuration);
+            }
+            int incompleteUploadCleanupDays = rs.getInt(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name());
+            if (!rs.wasNull()) {
+                policy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
             }
             return policy;
         }

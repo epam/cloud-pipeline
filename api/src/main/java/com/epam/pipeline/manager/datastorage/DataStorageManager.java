@@ -274,6 +274,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
         AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
+        dataStorage.setStoragePolicy(applySpecialRulesToStoragePolicy(dataStorage.getStoragePolicy()));
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
@@ -309,6 +310,16 @@ public class DataStorageManager implements SecuredEntityManager {
         }
 
         return createdStorage;
+    }
+
+    private StoragePolicy applySpecialRulesToStoragePolicy(final StoragePolicy policy) {
+        final Integer incompleteUploadCleanupDays = preferenceManager
+                .getSystemPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS)
+                .get(pref -> pref == null ? 0 : Integer.parseInt(pref));
+        if (incompleteUploadCleanupDays > 0) {
+            policy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
+        }
+        return policy;
     }
 
     private AbstractCloudRegion getDatastorageCloudRegionOrDefault(DataStorageVO dataStorageVO) {
@@ -757,7 +768,7 @@ public class DataStorageManager implements SecuredEntityManager {
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
         StoragePolicy policy = dataStorageVO.getStoragePolicy() == null ? new StoragePolicy() :
                 dataStorageVO.getStoragePolicy();
-        dataStorage.setStoragePolicy(policy);
+        dataStorage.setStoragePolicy(applySpecialRulesToStoragePolicy(policy));
         return dataStorage;
     }
 

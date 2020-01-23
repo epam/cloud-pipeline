@@ -258,6 +258,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                 loadedStoragePolicy.getShortTermStorageDuration());
         Assert.assertEquals(savedStoragePolicy.getLongTermStorageDuration(),
                 loadedStoragePolicy.getLongTermStorageDuration());
+        Assert.assertEquals(savedStoragePolicy.getIncompleteUploadCleanupDays(),
+                loadedStoragePolicy.getIncompleteUploadCleanupDays());
         Assert.assertEquals(saved.getType(), loaded.getType());
     }
 

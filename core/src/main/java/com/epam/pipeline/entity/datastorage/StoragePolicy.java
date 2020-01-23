@@ -27,6 +27,7 @@ public class StoragePolicy {
     private Integer backupDuration;
     private Integer shortTermStorageDuration;
     private Integer longTermStorageDuration;
+    private Integer incompleteUploadCleanupDays;
 
     public boolean isVersioningEnabled() {
         return versioningEnabled != null && versioningEnabled;
