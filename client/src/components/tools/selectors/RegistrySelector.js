@@ -63,6 +63,7 @@ export default class RegistrySelector extends React.Component {
     }
     return (
       <Dropdown
+        trigger={['click']}
         overlay={
           <div className={styles.navigationDropdownContainer}>
             {
