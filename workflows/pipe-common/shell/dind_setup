@@ -108,10 +108,7 @@ mkdir -p "/etc/docker"
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
-  "storage-driver": "overlay2",
-  "storage-opts": [
-    "overlay2.override_kernel_check=true"
-  ]
+  "storage-driver": "btrfs"
 }
 EOT
 
