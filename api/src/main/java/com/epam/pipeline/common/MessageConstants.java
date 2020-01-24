@@ -142,6 +142,7 @@ public final class MessageConstants {
     public static final String WARN_RESUME_RUN_FAILED = "warn.resume.run.failed";
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
     public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
+    public static final String ERROR_RUN_DISK_RESIZING_WRONG_STATUS = "error.run.resizing.wrong.status";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
 
     //Run schedule

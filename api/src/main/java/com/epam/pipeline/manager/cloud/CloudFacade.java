@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 
@@ -77,7 +78,12 @@ public interface CloudFacade {
     List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 
     /**
-     * Creates and attaches new disk by the given request to an instance associated with run.
+     * Creates and attaches new disk by the given request to an instance associated with the run.
      */
     void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
+
+    /**
+     * Resizes existing disk by the given request for an instance associated with the run.
+     */
+    void resizeDisk(Long regionId, Long runId, DiskResizeRequest request);
 }

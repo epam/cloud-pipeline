@@ -27,7 +27,9 @@ import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
 import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
+import com.amazonaws.services.ec2.model.DescribeVolumesModificationsRequest;
 import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
+import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
 import com.amazonaws.services.ec2.model.Instance;
@@ -35,6 +37,7 @@ import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
+import com.amazonaws.services.ec2.model.ModifyVolumeRequest;
 import com.amazonaws.services.ec2.model.Placement;
 import com.amazonaws.services.ec2.model.Reservation;
 import com.amazonaws.services.ec2.model.SpotPrice;
@@ -43,6 +46,8 @@ import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.VolumeModification;
+import com.amazonaws.services.ec2.model.VolumeModificationState;
 import com.amazonaws.services.ec2.model.VolumeType;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
@@ -68,9 +73,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -90,6 +97,10 @@ public class EC2Helper {
     private static final String INSUFFICIENT_INSTANCE_CAPACITY = "InsufficientInstanceCapacity";
     private static final String ALLOWED_DEVICE_PREFIX = "/dev/sd";
     private static final String ALLOWED_DEVICE_SUFFIXES = "defghijklmnopqrstuvwxyz";
+    private static final String FALLBACK_MAIN_DEVICE = "/dev/sdb";
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
+    private static final int FALLBACK_VOLUME_RESIZE_TIMEOUT = 60;
+    private static final int FALLBACK_POLLING_DELAY = 5;
 
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
@@ -268,6 +279,13 @@ public class EC2Helper {
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
 
+    public void resizeMainVolume(final String runId, final Long size, final String awsRegion) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+        final String volumeId = getMainVolume(instance);
+        modifyVolume(client, volumeId, size);
+    }
+
     private String getVacantDeviceName(final Instance instance) {
         final List<String> attachedDevices = getAttachedDevices(instance);
         return allowedDeviceNames()
@@ -350,6 +368,101 @@ public class EC2Helper {
     private void deleteVolume(final AmazonEC2 client, final String volumeId) {
         client.deleteVolume(new DeleteVolumeRequest()
                 .withVolumeId(volumeId));
+    }
+
+    private String getMainVolume(final Instance instance) {
+        final Collection<InstanceBlockDeviceMapping> mappings = CollectionUtils.emptyIfNull(
+                instance.getBlockDeviceMappings());
+        final String device = getMainDeviceName();
+        return getDeviceVolume(mappings, device)
+                .orElseThrow(() -> new AwsEc2Exception(String.format("Main volume device %s wasn't found for " +
+                        "instance with id '%s'", device, instance.getInstanceId())));
+    }
+
+    private String getMainDeviceName() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_MAIN_DEVICE))
+                .orElse(FALLBACK_MAIN_DEVICE);
+    }
+
+    private Optional<String> getDeviceVolume(final Collection<InstanceBlockDeviceMapping> mappings,
+                                             final String device) {
+        return mappings.stream()
+                .filter(mapping -> device.equals(mapping.getDeviceName()))
+                .map(mapping -> Optional.ofNullable(mapping.getEbs())
+                        .map(EbsInstanceBlockDevice::getVolumeId))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    private void modifyVolume(final AmazonEC2 client, final String volumeId, final Long size) {
+        modifyVolumeAsync(client, volumeId, size);
+        waitForVolumeModification(client, volumeId);
+    }
+
+    private void modifyVolumeAsync(final AmazonEC2 client, final String volumeId, final Long size) {
+        client.modifyVolume(new ModifyVolumeRequest()
+                .withVolumeId(volumeId)
+                .withSize(size.intValue()));
+    }
+
+    private void waitForVolumeModification(final AmazonEC2 client, final String volumeId) {
+        final int pollingTimeout = getPollingTimeout();
+        final int pollingDelay = getPollingDelay();
+        final int allowedAttempts = pollingTimeout / pollingDelay;
+        int attempt = 0;
+        while (attempt < allowedAttempts) {
+            try {
+                TIMEOUT_UNIT.sleep(pollingDelay);
+            } catch (InterruptedException e) {
+                throw new AwsEc2Exception(String.format("Volume with id '%s' modification has been interrupted.",
+                        volumeId), e);
+            }
+            if (volumeModificationHasFinished(client, volumeId)) {
+                return;
+            }
+            attempt += 1;
+        }
+        throw new AwsEc2Exception(String.format("Volume with id '%s' wasn't modified after %s %s.",
+                volumeId, pollingTimeout, TIMEOUT_UNIT));
+    }
+
+    private int getPollingTimeout() {
+        return Optional.ofNullable(preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_INSTANCE_DISK_RESIZE_TIMEOUT))
+                .orElse(FALLBACK_VOLUME_RESIZE_TIMEOUT);
+    }
+
+    private int getPollingDelay() {
+        return FALLBACK_POLLING_DELAY;
+    }
+
+    private boolean volumeModificationHasFinished(final AmazonEC2 client, final String volumeId) {
+        switch (getLatestVolumeModificationState(client, volumeId)) {
+            case Optimizing:
+            case Completed:
+                return true;
+            case Failed:
+                throw new AwsEc2Exception(String.format("Volume with id '%s' modification has failed.", volumeId));
+            default:
+                return false;
+        }
+    }
+
+    private VolumeModificationState getLatestVolumeModificationState(final AmazonEC2 client, final String volumeId) {
+        return getLatestVolumeModification(client, volumeId)
+                .map(VolumeModification::getModificationState)
+                .map(VolumeModificationState::fromValue)
+                .orElseThrow(() -> new AwsEc2Exception("Volume with id '%s' modification has invalid state."));
+    }
+
+    private Optional<VolumeModification> getLatestVolumeModification(final AmazonEC2 client, final String volumeId) {
+        final List<VolumeModification> modifications = client.describeVolumesModifications(
+                new DescribeVolumesModificationsRequest()
+                        .withVolumeIds(volumeId))
+                .getVolumesModifications();
+        return CollectionUtils.emptyIfNull(modifications).stream()
+                .max(Comparator.comparing(VolumeModification::getStartTime));
     }
 
     private double getMeanValue(List<SpotPrice> value) {

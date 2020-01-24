@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
+import com.epam.pipeline.entity.pipeline.DiskResizeRequest;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -216,6 +217,12 @@ public class CloudFacadeImpl implements CloudFacade {
     public void attachDisk(final Long regionId, final Long runId, final DiskAttachRequest request) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         getInstanceService(region).attachDisk(region, runId, request);
+    }
+
+    @Override
+    public void resizeDisk(final Long regionId, final Long runId, final DiskResizeRequest request) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).resizeDisk(region, runId, request);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
