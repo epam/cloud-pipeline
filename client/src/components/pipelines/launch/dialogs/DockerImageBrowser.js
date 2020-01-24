@@ -87,6 +87,7 @@ export default class DockerImageBrowser extends React.Component {
       });
     return (
       <Dropdown
+        trigger={['click']}
         overlay={
           <div className={styles.navigationDropdownContainer}>
             {
@@ -192,6 +193,7 @@ export default class DockerImageBrowser extends React.Component {
         visible={this.state.groupsDropDownVisible}
         onVisibleChange={onDropDownVisibleChanged}
         key="group"
+        trigger={['click']}
         overlay={
           <Row className={styles.navigationDropdownContainer}>
             <Row type="flex">
@@ -199,7 +201,13 @@ export default class DockerImageBrowser extends React.Component {
                 value={this.state.groupSearch}
                 onChange={onGroupSearch}
                 style={{width: '100%', margin: '13px 13px 4px 13px'}}
-                size="small" />
+                size="small"
+                onKeyDown={(e) => {
+                  if (e.key && e.key.toLowerCase() === 'escape') {
+                    onDropDownVisibleChanged(false);
+                  }
+                }}
+              />
             </Row>
             {
               groups.filter(g => !this.state.groupSearch || !this.state.groupSearch.length ||
