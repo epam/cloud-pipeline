@@ -103,7 +103,7 @@ export default class EditToolGroupForm extends React.Component {
                 message: 'Name is required'
               },
               {
-                pattern: /[\da-z]([\da-z.\-_]*[\da-z]+)*$/,
+                pattern: /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/,
                 message: 'Image name should contain only lowercase letters, digits, separators (-, ., _) and should not start or end with a separator'
               },
               {

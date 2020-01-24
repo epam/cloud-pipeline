@@ -225,7 +225,7 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
           callback('Docker image name is required');
           return;
         } else {
-          const nameRegExp = /^[\da-z]([\da-z.\-_]*[\da-z]+)*$/;
+          const nameRegExp = /^[\da-z]([\da-z\\.\-_]*[\da-z]+)*$/;
           const toolAndVersionParts = toolAndVersion.split(':');
           const tool = toolAndVersionParts.shift();
           const version = toolAndVersionParts.join(':');
