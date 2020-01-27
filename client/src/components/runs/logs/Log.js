@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -112,11 +113,13 @@ class Logs extends localization.LocalizedReactComponent {
     resolvedValues: true,
     operationInProgress: false,
     openedPanels: [],
-    shareDialogOpened: false
+    shareDialogOpened: false,
+    showLaunchCommands: false
   };
 
-  componentDidMount() {
-    this.props.runTasks.fetch();
+  componentDidMount () {
+    const {runTasks} = this.props;
+    runTasks.fetch();
   }
 
   componentWillUnmount () {
@@ -127,8 +130,55 @@ class Logs extends localization.LocalizedReactComponent {
 
   parentRunPipelineInfo = null;
 
-  exportLog = async() => {
-    const {runId}=this.props.params;
+  @computed
+  get runPayload () {
+    const {run, preferences} = this.props;
+    if (run.loaded && preferences.loaded) {
+      const payload = {
+        instanceType: undefined,
+        hddSize: undefined,
+        timeout: run.value.timeout,
+        cmdTemplate: run.value.cmdTemplate,
+        nodeCount: run.value.nodeCount,
+        dockerImage: run.value.dockerImage,
+        pipelineId: run.value.pipelineId,
+        version: run.value.version,
+        params: {},
+        isSpot: preferences.useSpot,
+        cloudRegionId: undefined,
+        prettyUrl: run.value.prettyUrl,
+        nonPause: run.value.nonPause,
+        configurationName: run.value.configName,
+        executionEnvironment: undefined
+      };
+      if (run.value.instance) {
+        payload.instanceType = run.value.instance.nodeType;
+        payload.hddSize = run.value.instance.nodeDisk;
+        payload.isSpot = run.value.instance.spot;
+        payload.cloudRegionId = run.value.instance.cloudRegionId;
+      }
+      if (run.value.executionPreferences) {
+        payload.executionEnvironment = run.value.executionPreferences.environment;
+      }
+      if (run.value.pipelineRunParameters) {
+        for (let i = 0; i < run.value.pipelineRunParameters.length; i++) {
+          const param = run.value.pipelineRunParameters[i];
+          if (param.name && param.value) {
+            payload.params[param.name] = {
+              value: param.value,
+              type: param.type,
+              enum: param.enum
+            };
+          }
+        }
+      }
+      return payload;
+    }
+    return null;
+  }
+
+  exportLog = async () => {
+    const {runId} = this.props.params;
 
     try {
       const hide = message.loading('Exporting log...');
@@ -741,7 +791,7 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%'}}>
+          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
             <Menu
               selectedKeys={selectedTask ? [selectedTask] : []}
               mode="inline"
@@ -795,6 +845,14 @@ class Logs extends localization.LocalizedReactComponent {
 
   switchTimings = () => {
     this.setState({timings: !this.state.timings});
+  };
+
+  showLaunchCommands = () => {
+    this.setState({showLaunchCommands: true});
+  };
+
+  hideLaunchCommands = () => {
+    this.setState({showLaunchCommands: false});
   };
 
   switchResolvedValues = () => {
@@ -1019,6 +1077,7 @@ class Logs extends localization.LocalizedReactComponent {
     let SSHButton;
     let ExportLogsButton;
     let SwitchTimingsButton;
+    let ShowLaunchCommandsButton;
     let SwitchModeButton;
     let CommitStatusButton;
     let dockerImage;
@@ -1392,6 +1451,14 @@ class Logs extends localization.LocalizedReactComponent {
       }
 
       SwitchTimingsButton = <a onClick={this.switchTimings}>{this.state.timings ? 'HIDE TIMINGS' : 'SHOW TIMINGS'}</a>;
+      if (this.runPayload) {
+        ShowLaunchCommandsButton = (
+          <a
+            onClick={this.showLaunchCommands}>
+            LAUNCH COMMAND
+          </a>
+        );
+      }
 
       SwitchModeButton = switchModeUrl &&
         <AdaptedLink to={switchModeUrl} location={location}>
@@ -1433,7 +1500,7 @@ class Logs extends localization.LocalizedReactComponent {
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
-              {SwitchTimingsButton}{SwitchModeButton}
+              {SwitchTimingsButton}{SwitchModeButton}{ShowLaunchCommandsButton}
             </Row>
             <br />
             <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
@@ -1469,6 +1536,11 @@ class Logs extends localization.LocalizedReactComponent {
           commitCheck={this.commitCheck}
           onCancel={this.closeCommitRunForm}
           onSubmit={this.operationWrapper(this.commitRun)} />
+        <LaunchCommand
+          payload={this.runPayload}
+          visible={this.state.showLaunchCommands}
+          onClose={this.hideLaunchCommands}
+        />
       </Card>);
   }
 

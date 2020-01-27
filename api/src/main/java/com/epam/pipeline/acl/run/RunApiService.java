@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -261,5 +262,10 @@ public class RunApiService {
     @AclMask
     public PipelineRun attachDisk(final Long runId, final DiskAttachRequest request) {
         return runManager.attachDisk(runId, request);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.hasPermissionToRun(#runVO.pipelineStart, 'EXECUTE')")
+    public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
+        return runManager.generateLaunchCommand(runVO);
     }
 }

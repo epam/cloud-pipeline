@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,16 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
+import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.preference.PreferenceType;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -49,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import static com.epam.pipeline.acl.run.PipelineAclFactory.TEST_PIPELINE_ID;
 import static com.epam.pipeline.acl.run.RunAclFactory.TEST_RUN_ID;
@@ -68,6 +74,7 @@ public class RunApiServiceTest {
     private static final String TEST_ADMIN_NAME = "ADMIN";
     private static final String TEST_ADMIN_ROLE = "ADMIN";
     private static final String VISIBILITY_PREFERENCE_KEY = SystemPreferences.RUN_VISIBILITY_POLICY.getKey();
+    private static final String TEST_PIPE_RUN_CMD = "pipe run";
 
     @Autowired
     private RunApiService runApiService;
@@ -84,8 +91,12 @@ public class RunApiServiceTest {
     @Autowired
     private ContextualPreferenceManager mockPreferenceManager;
 
+    @Autowired
+    private EntityManager mockEntityManager;
+
     private RunAclFactory runAclFactory;
     private PipelineAclFactory pipelineAclFactory;
+    private ToolAclFactory toolAclFactory;
 
     @Autowired
     public void setRunAclFactory(final AuthManager authManager,
@@ -103,6 +114,11 @@ public class RunApiServiceTest {
         this.pipelineAclFactory = new PipelineAclFactory(authManager,
                 grantPermissionManager, aclService, mockUserManager,
                 mockPipelineManager, mockEntityManager);
+    }
+
+    @Autowired
+    public void setToolAclFactory(final AuthManager authManager, final ToolManager mockToolManager) {
+        this.toolAclFactory = new ToolAclFactory(authManager, mockToolManager);
     }
 
     @After
@@ -202,6 +218,73 @@ public class RunApiServiceTest {
         assertThat(filter.getAllowedPipelines(), contains(TEST_PIPELINE_ID));
         assertThat(result.getTotalCount(), equalTo(1));
         assertThat(result.getElements(), contains(run));
+    }
+
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void generateRunCmdShouldGenerateCmdIfUserHasPermissionOnPipeline() {
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForCurrentUser();
+        final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(pipeline, null);
+
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, pipeline.getId());
+        doReturn(TEST_PIPE_RUN_CMD).when(mockRunManager).generateLaunchCommand(pipeRunCmdStartVO);
+
+        assertThat(runApiService.generateLaunchCommand(pipeRunCmdStartVO), equalTo(TEST_PIPE_RUN_CMD));
+    }
+
+    @Test
+    @WithMockUser(username = TEST_USER1)
+    public void generateRunCmdShouldGenerateCmdIfUserHasPermissionOnTool() {
+        final Tool tool = toolAclFactory.initToolForCurrentUser();
+        final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(null, tool);
+
+        doReturn(TEST_PIPE_RUN_CMD).when(mockRunManager).generateLaunchCommand(pipeRunCmdStartVO);
+
+        assertThat(runApiService.generateLaunchCommand(pipeRunCmdStartVO), equalTo(TEST_PIPE_RUN_CMD));
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = TEST_USER1)
+    public void generateRunCmdShouldFailIfUserHasNoPermissionOnPipeline() {
+        final Pipeline pipeline = pipelineAclFactory.initPipelineForOwner(TEST_OWNER);
+        final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(pipeline, null);
+
+        doReturn(pipeline).when(mockEntityManager).load(AclClass.PIPELINE, pipeline.getId());
+
+        runApiService.generateLaunchCommand(pipeRunCmdStartVO);
+    }
+
+    @Test(expected = AccessDeniedException.class)
+    @WithMockUser(username = TEST_USER1)
+    public void generateRunCmdShouldFailIfUserHasNoPermissionOnTool() {
+        final Tool tool = toolAclFactory.initToolForOwner(TEST_OWNER);
+        final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(null, tool);
+
+        runApiService.generateLaunchCommand(pipeRunCmdStartVO);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @WithMockUser(username = TEST_USER1)
+    public void generateRunCmdShouldFailIfNoPipelineOrToolSpecified() {
+        final PipeRunCmdStartVO pipeRunCmdStartVO = initPipeRunCmdStartVO(null, null);
+
+        runApiService.generateLaunchCommand(pipeRunCmdStartVO);
+    }
+
+    private PipeRunCmdStartVO initPipeRunCmdStartVO(final Pipeline pipeline, final Tool tool) {
+        final PipelineStart pipelineStart = new PipelineStart();
+        final PipeRunCmdStartVO pipeRunCmdStartVO = new PipeRunCmdStartVO();
+
+        if (Objects.nonNull(pipeline)) {
+            pipelineStart.setPipelineId(pipeline.getId());
+        }
+
+        if (Objects.nonNull(tool)) {
+            pipelineStart.setDockerImage(tool.getImage());
+        }
+
+        pipeRunCmdStartVO.setPipelineStart(pipelineStart);
+        return pipeRunCmdStartVO;
     }
 
     private void enableVisibilityPolicy(final RunVisibilityPolicy policy) {

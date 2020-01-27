@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.ExecutionPreferences;
+import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
@@ -61,6 +62,7 @@ import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -945,6 +947,34 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
         nodesManager.attachDisk(pipelineRun, request);
         return pipelineRun;
+    }
+
+    /**
+     * Generates launch command for 'pipe run' CLI method.
+     *
+     * @param runVO {@link PipeRunCmdStartVO} contains input arguments for launch command
+     * @return launch command
+     */
+    public String generateLaunchCommand(final PipeRunCmdStartVO runVO) {
+        Assert.notNull(runVO.getPipelineStart(), "Pipeline start must be specified");
+        return new PipeRunCmdBuilder(runVO)
+                .name()
+                .config()
+                .runParameters()
+                .parameters()
+                .yes()
+                .instanceDisk()
+                .instanceType()
+                .dockerImage()
+                .cmdTemplate()
+                .timeout()
+                .quite()
+                .instanceCount()
+                .sync()
+                .priceType()
+                .regionId()
+                .parentNode()
+                .build();
     }
 
     private void adjustInstanceDisk(final PipelineConfiguration configuration) {
