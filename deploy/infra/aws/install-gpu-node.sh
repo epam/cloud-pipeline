@@ -21,6 +21,10 @@ yum install -y  nc \
                 btrfs-progs && \
 curl https://bootstrap.pypa.io/get-pip.py | python -
 
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
+
 # Install nvidia driver deps
 yum install -y  gcc \
                 gcc-c++ \

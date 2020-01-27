@@ -20,6 +20,9 @@ yum install -y  nc \
                 coreutils \
                 btrfs-progs
 
+# Install jq
+wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
+chmod +x /usr/bin/jq
 
 # Install nvidia driver deps
 yum install -y  gcc \
