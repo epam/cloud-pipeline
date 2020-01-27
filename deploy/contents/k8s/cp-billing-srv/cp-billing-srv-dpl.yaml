@@ -26,11 +26,17 @@ spec:
             - configMapRef:
                 name: cp-config-global
           volumeMounts:
-            - mountPath: /opt/billing/logs
-              name: billing-logs
+            - name: billing-logs
+              mountPath: /opt/billing/logs
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
       volumes:
         - name: billing-logs
           hostPath:
             path: /opt/billing/logs
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
