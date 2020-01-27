@@ -303,7 +303,6 @@ _API_TOKEN="@API_TOKEN@"
 _MOUNT_POINT="/ebs"
 _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
-mkdir -p /etc/systemd/system/fsautoscale.service.d
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
