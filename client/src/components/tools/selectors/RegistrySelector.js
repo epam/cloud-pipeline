@@ -65,7 +65,9 @@ export default class RegistrySelector extends React.Component {
       <Dropdown
         trigger={['click']}
         overlay={
-          <div className={styles.navigationDropdownContainer}>
+          <div
+            className={[styles.navigationDropdownContainer, styles.scroll].join(' ')}
+          >
             {
               this.props.registries.filter(r => !this.currentRegistry || r.id !== this.currentRegistry.id).map(registry => {
                 return (

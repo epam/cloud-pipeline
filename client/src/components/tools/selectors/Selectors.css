@@ -4,3 +4,8 @@
   border: 1px solid #ccc;
   box-shadow: 2px 2px 1em #666;
 }
+
+.scroll {
+  max-height: 50vh;
+  overflow: auto;
+}
