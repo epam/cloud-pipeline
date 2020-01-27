@@ -313,6 +313,9 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     private StoragePolicy applySpecialRulesToStoragePolicy(final StoragePolicy policy) {
+        if (policy == null) {
+            return null;
+        }
         final Integer incompleteUploadCleanupDays = preferenceManager
                 .getSystemPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS)
                 .get(pref -> pref == null ? 0 : Integer.parseInt(pref));
