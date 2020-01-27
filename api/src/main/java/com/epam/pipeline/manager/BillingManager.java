@@ -26,11 +26,13 @@ import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -168,12 +170,13 @@ public class BillingManager {
                                                    final List<String> grouping) {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
-
-        grouping.forEach(field -> {
-            final AggregationBuilder fieldAgg = AggregationBuilders.terms(field)
-                .field(field).subAggregation(costAggregation);
-            searchSource.aggregation(fieldAgg);
-        });
+        if (CollectionUtils.isNotEmpty(grouping)) {
+            grouping.forEach(field -> {
+                final AggregationBuilder fieldAgg = AggregationBuilders.terms(field)
+                    .field(field).subAggregation(costAggregation);
+                searchSource.aggregation(fieldAgg);
+            });
+        }
         searchSource.aggregation(costAggregation);
         setFiltersAndPeriodForSearchRequest(from, to, filters, searchSource, searchRequest);
 
@@ -228,13 +231,17 @@ public class BillingManager {
                                                      final Map<String, List<String>> filters,
                                                      final SearchSourceBuilder searchSource,
                                                      final SearchRequest searchRequest) {
-        filters.forEach((k, v) -> searchSource.query(QueryBuilders.termsQuery(k, v)));
+        final BoolQueryBuilder compoundQuery = QueryBuilders.boolQuery();
+        if (MapUtils.isNotEmpty(filters)) {
+            filters.forEach((k, v) -> compoundQuery.filter(QueryBuilders.termsQuery(k, v)));
+        }
+        compoundQuery.filter(QueryBuilders.rangeQuery(BILLING_DATE_FIELD).from(from, true).to(to, true));
         final String[] indices = Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
             .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1)
             .map(date -> String.format(billingIndicesMonthlyPattern, date.getYear(), date.getMonthValue()))
             .toArray(String[]::new);
         searchRequest.indices(indices);
-        searchSource.query(QueryBuilders.rangeQuery(BILLING_DATE_FIELD).from(from, true).to(to, true));
+        searchSource.query(compoundQuery);
         searchRequest.source(searchSource);
     }
 
