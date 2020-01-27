@@ -88,6 +88,7 @@ import {
 import * as prettyUrlGenerator from './utilities/pretty-url';
 import RunSchedulingList from '../../../runs/run-scheduling/run-sheduling-list';
 import pipelinesEquals from './utilities/pipelines-equals';
+import LaunchCommand from './utilities/launch-command';
 import {names} from '../../../../models/utils/ContextualPreference';
 import {
   SubmitButton,
@@ -260,7 +261,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       this.props.fireCloudMethod &&
       this.props.fireCloudMethod.methodOutputs
     ) || [],
-    autoPause: true
+    autoPause: true,
+    showLaunchCommands: false
   };
 
   formItemLayout = {
@@ -319,6 +321,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable outputPaths = [];
   @observable dockerImage = null;
   @observable cmdTemplateValue;
+  @observable launchCommandPayload;
 
   @action
   formFieldsChanged = async () => {
@@ -344,6 +347,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
     this.dockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`) ||
       this.getDefaultValue('docker_image');
+    this.rebuildLaunchCommand();
+  };
+
+  rebuildLaunchCommand = () => {
+    if (!this.props.detached && !this.props.editConfigurationMode) {
+      this.props.form.validateFields(async (err, values) => {
+        if (!err && this.validateFireCloudConnections()) {
+          this.launchCommandPayload = this.generateLaunchPayload(values);
+        } else {
+          this.launchCommandPayload = undefined;
+        }
+      });
+    }
+  };
+
+  showLaunchCommands = () => {
+    this.setState({showLaunchCommands: true});
+  };
+
+  hideLaunchCommands = () => {
+    this.setState({showLaunchCommands: false});
   };
 
   @observable
@@ -841,6 +865,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (values[PARAMETERS] && values[PARAMETERS].keys) {
         for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
           const key = values[PARAMETERS].keys[i];
+          if (
+            !values[PARAMETERS].hasOwnProperty('params') ||
+            !values[PARAMETERS].params.hasOwnProperty(key)
+          ) {
+            continue;
+          }
           const parameter = values[PARAMETERS].params[key];
           if (parameter && parameter.name) {
             payload[PARAMETERS][parameter.name] = {
@@ -864,6 +894,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       if (values[SYSTEM_PARAMETERS] && values[SYSTEM_PARAMETERS].keys) {
         for (let i = 0; i < values[SYSTEM_PARAMETERS].keys.length; i++) {
           const key = values[SYSTEM_PARAMETERS].keys[i];
+          if (
+            !values[SYSTEM_PARAMETERS].hasOwnProperty('params') ||
+            !values[SYSTEM_PARAMETERS].params.hasOwnProperty(key)
+          ) {
+            continue;
+          }
           const parameter = values[SYSTEM_PARAMETERS].params[key];
           if (parameter && parameter.name) {
             payload[PARAMETERS][parameter.name] = {
@@ -979,6 +1015,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (values[PARAMETERS] && values[PARAMETERS].keys) {
       for (let i = 0; i < values[PARAMETERS].keys.length; i++) {
         const key = values[PARAMETERS].keys[i];
+        if (
+          !values[PARAMETERS].hasOwnProperty('params') ||
+          !values[PARAMETERS].params.hasOwnProperty(key)
+        ) {
+          continue;
+        }
         const parameter = values[PARAMETERS].params[key];
         if (parameter && parameter.name && parameter.value) {
           payload.params[parameter.name] = {
@@ -1002,6 +1044,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (values[SYSTEM_PARAMETERS] && values[SYSTEM_PARAMETERS].keys) {
       for (let i = 0; i < values[SYSTEM_PARAMETERS].keys.length; i++) {
         const key = values[SYSTEM_PARAMETERS].keys[i];
+        if (
+          !values[SYSTEM_PARAMETERS].hasOwnProperty('params') ||
+          !values[SYSTEM_PARAMETERS].params.hasOwnProperty(key)
+        ) {
+          continue;
+        }
         const parameter = values[SYSTEM_PARAMETERS].params[key];
         if (parameter && parameter.name && parameter.value) {
           payload.params[parameter.name] = {
@@ -3769,6 +3817,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return (
           <td style={{textAlign: 'right'}}>
             <FormItem style={{margin: 0, marginRight: 10}}>
+              {
+                !this.props.detached && !this.props.editConfigurationMode && (
+                  <Button
+                    disabled={!this.launchCommandPayload}
+                    style={{verticalAlign: 'middle', marginRight: 5}}
+                    onClick={this.showLaunchCommands}
+                  >
+                    <Icon type="code" />
+                  </Button>
+                )
+              }
               <SubmitButton
                 id="launch-pipeline-button"
                 inputs={this.inputPaths}
@@ -4024,6 +4083,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {this.renderParameters(false, PARAMETERS)}
               {this.isFireCloudSelected && this.renderFireCloudConfigConnectionsList()}
             </Collapse.Panel>
+            {
+              !this.state.detached && !this.props.editConfigurationMode && (
+                <LaunchCommand
+                  payload={this.launchCommandPayload}
+                  visible={this.state.showLaunchCommands}
+                  onClose={this.hideLaunchCommands}
+                />
+              )
+            }
           </Collapse>
         </div>
         <BucketBrowser

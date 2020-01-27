@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
+import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -513,5 +514,16 @@ public class PipelineRunController extends AbstractRestController {
     public Result<List<PipelineRun>> loadRunsActivityStats(@RequestParam(value = "from") final LocalDateTime start,
                                                            @RequestParam(value = "to") final LocalDateTime end) {
         return Result.success(runApiService.loadRunsActivityStats(start, end));
+    }
+
+    @PostMapping(value = "/run/cmd")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns launch command for specified run",
+            notes = "Returns launch command for specified run",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<String> generateLaunchCommand(@RequestBody final PipeRunCmdStartVO runVO) {
+        return Result.success(runApiService.generateLaunchCommand(runVO));
     }
 }
