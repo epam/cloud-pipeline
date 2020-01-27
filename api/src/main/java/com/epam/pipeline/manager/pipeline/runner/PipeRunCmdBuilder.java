@@ -51,6 +51,9 @@ public class PipeRunCmdBuilder {
     }
 
     public PipeRunCmdBuilder name() {
+        if (Objects.isNull(runVO.getPipelineId())) {
+            return this;
+        }
         if (StringUtils.isNotBlank(runVO.getVersion())) {
             cmd.add(String.format("%d@%s", runVO.getPipelineId(), runVO.getVersion()));
         } else {
