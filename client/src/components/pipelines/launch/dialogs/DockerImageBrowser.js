@@ -209,26 +209,28 @@ export default class DockerImageBrowser extends React.Component {
                 }}
               />
             </Row>
-            {
-              groups.filter(g => !this.state.groupSearch || !this.state.groupSearch.length ||
-              g.name.toLowerCase().indexOf(this.state.groupSearch.toLowerCase()) >= 0).map(group => {
-                return (
-                  <Row key={group.id} type="flex">
-                    <Button
-                      style={{
-                        textAlign: 'left',
-                        width: '100%',
-                        border: 'none',
-                        fontWeight: group.privateGroup ? 'bold' : 'normal',
-                        fontStyle: group.privateGroup ? 'italic' : 'normal'
-                      }}
-                      onClick={() => onSelectGroup(group.name)}>
-                      {renderGroupName(group)}
-                    </Button>
-                  </Row>
-                );
-              })
-            }
+            <div className={styles.navigationDropdownItemsContainer}>
+              {
+                groups.filter(g => !this.state.groupSearch || !this.state.groupSearch.length ||
+                g.name.toLowerCase().indexOf(this.state.groupSearch.toLowerCase()) >= 0).map(group => {
+                  return (
+                    <Row key={group.id} type="flex">
+                      <Button
+                        style={{
+                          textAlign: 'left',
+                          width: '100%',
+                          border: 'none',
+                          fontWeight: group.privateGroup ? 'bold' : 'normal',
+                          fontStyle: group.privateGroup ? 'italic' : 'normal'
+                        }}
+                        onClick={() => onSelectGroup(group.name)}>
+                        {renderGroupName(group)}
+                      </Button>
+                    </Row>
+                  );
+                })
+              }
+            </div>
           </Row>
         }>
         <Button size="small" style={{border: 'none', fontWeight: 'bold'}}>

@@ -61,6 +61,11 @@
   box-shadow: 2px 2px 1em #666;
 }
 
+.navigation-dropdown-items-container {
+  max-height: 50vh;
+  overflow: auto;
+}
+
 .tool-row {
   cursor: pointer;
 }
