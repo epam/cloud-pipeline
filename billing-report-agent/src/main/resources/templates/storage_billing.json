@@ -4,18 +4,15 @@
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "id": { "type": "keyword", "store": true },
-        "pipeline": { "type": "keyword" },
         "resource_type": { "type": "keyword" },
-        "compute_type": { "type": "keyword" },
-        "cost": {"type": "long"},
-        "run_price": {"type": "long"},
-        "usage": {"type": "long"},
+        "region": { "type": "keyword" },
+        "provider": { "type": "keyword" },
+        "storage_type": { "type": "keyword" },
         "owner": { "type": "keyword" },
         "groups": { "type": "keyword" },
-        "tool": {"type": "keyword"},
-        "instance_type":  { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
-        "cloudRegionId": { "type": "keyword" },
+        "usage": {"type": "long"},
+        "cost": {"type": "long"},
         "created_date": {"type": "date"}
       }
     }

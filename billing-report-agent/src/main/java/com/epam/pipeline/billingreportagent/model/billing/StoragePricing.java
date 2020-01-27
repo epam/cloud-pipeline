@@ -14,9 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model;
+package com.epam.pipeline.billingreportagent.model.billing;
 
-public enum ResourceType {
-    COMPUTE,
-    STORAGE
+import lombok.Getter;
+import lombok.Value;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+public class StoragePricing {
+
+    private final List<StoragePricingEntity> prices = new ArrayList<>();
+
+    public void addPrice(final StoragePricingEntity entity) {
+        prices.add(entity);
+    }
+
+    @Value
+    public static class StoragePricingEntity {
+
+        private Long beginRangeBytes;
+        private Long endRangeBytes;
+        private BigDecimal priceCentsPerGb;
+    }
 }

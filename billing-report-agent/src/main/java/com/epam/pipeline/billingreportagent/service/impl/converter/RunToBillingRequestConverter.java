@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.model.ResourceType;
+import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.EntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -26,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
@@ -47,32 +47,26 @@ import java.util.stream.Collectors;
 
 @Data
 @Slf4j
+@RequiredArgsConstructor
 public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRun> {
 
-    private final String indexPrefix;
     private final EntityMapper<PipelineRunBillingInfo> mapper;
-
-    public RunToBillingRequestConverter(final String indexPrefix,
-                                        final EntityMapper<PipelineRunBillingInfo> mapper) {
-        this.indexPrefix = indexPrefix;
-        this.mapper = mapper;
-    }
 
     /**
      * Creates billing requests for given run
      *
      * @param runContainer Pipeline run to build request
-     * @param indexName index to insert requests into
+     * @param indexPrefix common billing prefix for index to insert requests into
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
     public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRun> runContainer,
-                                                         final String indexName,
+                                                         final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
         return convertRunToBillings(runContainer, previousSync, syncStart).stream()
-            .map(billingInfo -> getDocWriteRequest(indexName, runContainer.getOwner(), billingInfo))
+            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(), billingInfo))
             .collect(Collectors.toList());
     }
 
@@ -85,7 +79,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                                                         syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), pricePerHour, statuses).stream()
-            .filter(billing -> billing.getCost().equals(0L))
+            .filter(billing -> !billing.getCost().equals(0L))
             .collect(Collectors.toMap(PipelineRunBillingInfo::getDate,
                                       Function.identity(),
                                       this::mergeBillings))
@@ -154,11 +148,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         for (int i = 0; i < timePoints.size() - 1; i++) {
             final Duration durationSeconds = Duration.between(timePoints.get(i), timePoints.get(i + 1));
             final Long cost = calculateCostsForPeriod(durationSeconds.getSeconds(), pricePerHour);
-            billings.add(new PipelineRunBillingInfo(timePoints.get(i).toLocalDate(),
-                                                    run,
-                                                    cost,
-                                                    durationSeconds.plusMinutes(1).toMinutes(),
-                                                    ResourceType.COMPUTE));
+            billings.add(PipelineRunBillingInfo.builder()
+                             .date(timePoints.get(i).toLocalDate())
+                             .run(run)
+                             .cost(cost)
+                             .usageMinutes(durationSeconds.plusMinutes(1).toMinutes())
+                             .build());
         }
         return billings;
     }
@@ -168,24 +163,24 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
      *
      * @param durationSecs duration in seconds
      * @param hourlyPrice  price for evaluating resource
-     * @return cost for the given period in cents
+     * @return cost for the given period in hundredths of cents
      */
     private Long calculateCostsForPeriod(final Long durationSecs, final BigDecimal hourlyPrice) {
         final BigDecimal duration = BigDecimal.valueOf(durationSecs);
         return duration.multiply(hourlyPrice)
             .divide(BigDecimal.valueOf(Duration.ofHours(1).getSeconds()), RoundingMode.CEILING)
-            .unscaledValue()
+            .scaleByPowerOfTen(4)
             .longValue();
     }
 
-    private DocWriteRequest getDocWriteRequest(final String periodIndex,
+    private DocWriteRequest getDocWriteRequest(final String indexPrefix,
                                                final PipelineUser owner,
                                                final PipelineRunBillingInfo billing) {
         final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
             .owner(owner)
             .entity(billing)
             .build();
-        final String fullIndex = String.format("%s-%s", periodIndex, parseDateToString(billing.getDate()));
+        final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         return new IndexRequest(fullIndex, INDEX_TYPE).source(mapper.map(entity));
     }
 }

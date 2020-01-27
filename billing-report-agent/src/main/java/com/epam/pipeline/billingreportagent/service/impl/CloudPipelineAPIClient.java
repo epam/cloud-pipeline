@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -44,7 +45,12 @@ public class CloudPipelineAPIClient {
         return QueryUtils.execute(cloudPipelineAPI.loadAllUsers());
     }
 
-    public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final LocalDateTime from, final LocalDateTime to) {
+    public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final String from, final String to) {
         return QueryUtils.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
     }
+
+    public List<AbstractDataStorage> loadAllDataStorages() {
+        return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
 }

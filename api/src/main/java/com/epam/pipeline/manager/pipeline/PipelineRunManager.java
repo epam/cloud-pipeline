@@ -888,6 +888,10 @@ public class PipelineRunManager {
             .map(BaseEntity::getId)
             .collect(Collectors.toList());
 
+        if (CollectionUtils.isEmpty(runIds)) {
+            return Collections.emptyList();
+        }
+
         final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds).entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> adjustStatuses(e.getValue(), start, end)));
 

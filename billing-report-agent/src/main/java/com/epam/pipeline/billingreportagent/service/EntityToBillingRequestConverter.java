@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public interface EntityToBillingRequestConverter<T> {
 
@@ -34,6 +35,16 @@ public interface EntityToBillingRequestConverter<T> {
                                                   String indexName,
                                                   LocalDateTime previousSync,
                                                   LocalDateTime syncStart);
+
+    default List<DocWriteRequest> convertEntitiesToRequests(List<EntityContainer<T>> entityContainers,
+                                                            String indexName,
+                                                            LocalDateTime previousSync,
+                                                            LocalDateTime syncStart) {
+        return entityContainers.stream()
+            .map(entityContainer -> convertEntityToRequests(entityContainer, indexName, previousSync, syncStart))
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
+    }
 
     default String parseDateToString(final LocalDate date) {
         if (date == null) {

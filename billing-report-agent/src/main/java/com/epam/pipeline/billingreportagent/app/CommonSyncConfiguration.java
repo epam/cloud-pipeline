@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,20 @@
 
 package com.epam.pipeline.billingreportagent.app;
 
+import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
-import com.epam.pipeline.billingreportagent.service.impl.PipelineRunSynchronizer;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.PipelineRunLoader;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
+import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
+import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
+import com.epam.pipeline.billingreportagent.service.impl.converter.AwsStorageToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.loader.PipelineRunLoader;
+import com.epam.pipeline.billingreportagent.service.impl.loader.StorageLoader;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -32,8 +39,12 @@ import org.springframework.context.annotation.Configuration;
 public class CommonSyncConfiguration {
 
     private static final String FALSE = "false";
+
     @Value("${sync.index.common.prefix}")
     private String commonIndexPrefix;
+
+    @Value("${sync.bulk.insert.size:1000}")
+    private int bulkSize;
 
     @Bean
     public BulkRequestSender bulkRequestSender(
@@ -44,7 +55,7 @@ public class CommonSyncConfiguration {
     @Bean
     @ConditionalOnProperty(value = "sync.run.disable", matchIfMissing = true, havingValue = FALSE)
     public ElasticsearchSynchronizer pipelineRunSynchronizer(
-        final BillingMapper mapper,
+        final RunBillingMapper mapper,
         final PipelineRunLoader loader,
         final ElasticIndexService indexService,
         final ElasticsearchServiceClient elasticsearchClient,
@@ -59,5 +70,45 @@ public class CommonSyncConfiguration {
                                            indexService,
                                            mapper,
                                            loader);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.s3.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer s3Synchronizer(final @Value("${sync.run.index.mapping}") String runMapping,
+                                              final @Value("${sync.storage.index.name}") String indexName,
+                                              final StorageLoader loader,
+                                              final ElasticIndexService indexService,
+                                              final ElasticsearchServiceClient elasticsearchClient) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE);
+        return new StorageSynchronizer(runMapping,
+                                       commonIndexPrefix,
+                                       indexName,
+                                       bulkSize,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonS3",
+                                                                               StorageType.OBJECT_STORAGE),
+                                       DataStorageType.S3);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "sync.nfs.storage.disable", matchIfMissing = true, havingValue = FALSE)
+    public StorageSynchronizer efsSynchronizer(final @Value("${sync.run.index.mapping}") String runMapping,
+                                              final @Value("${sync.storage.index.name}") String indexName,
+                                              final StorageLoader loader,
+                                              final ElasticIndexService indexService,
+                                              final ElasticsearchServiceClient elasticsearchClient) {
+        final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE);
+        return new StorageSynchronizer(runMapping,
+                                       commonIndexPrefix,
+                                       indexName,
+                                       bulkSize,
+                                       elasticsearchClient,
+                                       loader,
+                                       indexService,
+                                       new AwsStorageToBillingRequestConverter(mapper, elasticsearchClient, "AmazonEFS",
+                                                                               StorageType.FILE_STORAGE),
+                                       DataStorageType.NFS);
     }
 }

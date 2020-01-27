@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.service.impl;
+package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
@@ -22,16 +22,16 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
+import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
+import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverter;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -40,16 +40,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Data
-@Service
 @Slf4j
-@ConditionalOnProperty(value = "sync.run.disable", matchIfMissing = true, havingValue = "false")
 public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
 
-    private final ElasticsearchServiceClient elasticsearchClient;
     private final ElasticIndexService indexService;
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
-    private final String pipelineRunIndexName;
     private final BulkRequestSender requestSender;
     private final EntityToBillingRequestConverter<PipelineRun> runToBillingRequestConverter;
     private final EntityLoader<PipelineRun> loader;
@@ -57,19 +53,17 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     public PipelineRunSynchronizer(final @Value("${sync.run.index.mapping}") String pipelineRunIndexMappingFile,
                                    final @Value("${sync.index.common.prefix}") String indexPrefix,
                                    final @Value("${sync.run.index.name}") String pipelineRunIndexName,
-                                   final @Value("${sync.run.bulk.insert.size:1000}") Integer bulkInsertSize,
+                                   final @Value("${sync.bulk.insert.size:1000}") Integer bulkInsertSize,
                                    final ElasticsearchServiceClient elasticsearchServiceClient,
                                    final ElasticIndexService indexService,
-                                   final BillingMapper mapper,
+                                   final RunBillingMapper mapper,
                                    final EntityLoader<PipelineRun> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
-        this.elasticsearchClient = elasticsearchServiceClient;
         this.indexService = indexService;
-        this.indexPrefix = indexPrefix;
-        this.pipelineRunIndexName = pipelineRunIndexName;
+        this.indexPrefix = indexPrefix + pipelineRunIndexName;
         this.loader = loader;
-        this.runToBillingRequestConverter = new RunToBillingRequestConverter(pipelineRunIndexName, mapper);
-        this.requestSender = new BulkRequestSender(elasticsearchClient, bulkInsertSize);
+        this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
+        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize);
     }
 
     @Override
@@ -112,10 +106,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
                                                             final LocalDateTime previousSync,
                                                             final LocalDateTime syncStart) {
         try {
-            final String commonRunBillingIndexName = indexPrefix + pipelineRunIndexName;
-            final String periodName = "daily";
-            final String indexNameForPipelineRunPeriod = String.format("%s-%s", commonRunBillingIndexName, periodName);
-            return buildDocRequests(pipelineRun, indexNameForPipelineRunPeriod, previousSync, syncStart);
+            return buildDocRequests(pipelineRun, previousSync, syncStart);
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
                       pipelineRun.getEntity().getId(), e.getMessage());
@@ -125,11 +116,10 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     }
 
     private List<DocWriteRequest> buildDocRequests(final EntityContainer<PipelineRun> pipelineRun,
-                                                   final String indexNameForPipelineRun,
                                                    final LocalDateTime previousSync,
                                                    final LocalDateTime syncStart) {
         log.debug("Processing pipeline run {} billings", pipelineRun.getEntity().getId());
-        return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexNameForPipelineRun,
+        return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexPrefix,
                                                                     previousSync, syncStart);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,18 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
-import com.epam.pipeline.billingreportagent.model.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.impl.converter.run.BillingMapper;
+import com.epam.pipeline.billingreportagent.model.ResourceType;
+import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
+import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
+import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
+import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,18 +40,30 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@RunWith(MockitoJUnitRunner.class)
 @SuppressWarnings("checkstyle:magicnumber")
 public class RunToBillingRequestConverterImplTest {
 
-    private static final String TEST_INDEX = "test-index-1";
+    private static final long REGION_ID = 1;
+    private static final String NODE_TYPE = "nodetype.medium";
     private static final Long RUN_ID = 1L;
+    private static final String USER_NAME = "TestUser";
+    private static final String GROUP_1 = "TestGroup1";
+    private static final String GROUP_2 = "TestGroup2";
+    private static final String PIPELINE_NAME = "TestPipeline";
+    private static final String TOOL_IMAGE = "cp/tool:latest";
+    private static final BigDecimal PRICE = BigDecimal.valueOf(4, 2);
+    private static final List<String> USER_GROUPS = java.util.Arrays.asList(GROUP_1, GROUP_2);
+
+    private final PipelineUser testUser = PipelineUser.builder()
+        .userName(USER_NAME)
+        .groups(USER_GROUPS)
+        .build();
 
     private final RunToBillingRequestConverter converter =
-        new RunToBillingRequestConverter(TEST_INDEX, new BillingMapper());
+        new RunToBillingRequestConverter(new RunBillingMapper());
 
     @Test
-    public void convertRunBillings() {
+    public void convertRunToBillings() {
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
@@ -71,13 +86,13 @@ public class RunToBillingRequestConverterImplTest {
         Assert.assertEquals(3, billings.size());
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(12, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
-        Assert.assertEquals(48, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
-        Assert.assertEquals(60, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
+        Assert.assertEquals(1200, reports.get(LocalDate.of(2019, 12, 1)).getCost().longValue());
+        Assert.assertEquals(4800, reports.get(LocalDate.of(2019, 12, 2)).getCost().longValue());
+        Assert.assertEquals(6000, reports.get(LocalDate.of(2019, 12, 3)).getCost().longValue());
     }
 
     @Test
-    public void convertRunBillingWithNoStatuses() {
+    public void convertRunWithNoStatusesToBilling() {
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
@@ -91,6 +106,40 @@ public class RunToBillingRequestConverterImplTest {
 
         final Map<LocalDate, PipelineRunBillingInfo> reports =
             billings.stream().collect(Collectors.toMap(PipelineRunBillingInfo::getDate, Function.identity()));
-        Assert.assertEquals(96, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
+        Assert.assertEquals(9600, reports.get(LocalDate.of(2019, 12, 4)).getCost().longValue());
+    }
+
+    @Test
+    public void testRunConverting() {
+        final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_NAME, TOOL_IMAGE, PRICE,
+                                                                TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
+
+        final EntityContainer<PipelineRun> runContainer =
+            EntityContainer.<PipelineRun>builder()
+                .entity(run)
+                .owner(testUser)
+                .build();
+
+        final LocalDateTime prevSync = LocalDateTime.of(2019, 12, 4, 0, 0);
+        final LocalDateTime syncStart = LocalDateTime.of(2019, 12, 5, 0, 0);
+        final List<DocWriteRequest> billings =
+            converter.convertEntityToRequests(runContainer, TestUtils.RUN_BILLING_PREFIX, prevSync, syncStart);
+        Assert.assertEquals(1, billings.size());
+
+        final DocWriteRequest billing = billings.get(0);
+        final Map<String, Object> requestFieldsMap = ((IndexRequest) billing).sourceAsMap();
+        final String expectedIndex = TestUtils.buildBillingIndex(TestUtils.RUN_BILLING_PREFIX, prevSync);
+        Assert.assertEquals(expectedIndex, billing.index());
+        Assert.assertEquals(run.getId().intValue(), requestFieldsMap.get("id"));
+        Assert.assertEquals(ResourceType.COMPUTE.toString(), requestFieldsMap.get("resource_type"));
+        Assert.assertEquals(run.getPipelineName(), requestFieldsMap.get("pipeline"));
+        Assert.assertEquals(run.getDockerImage(), requestFieldsMap.get("tool"));
+        Assert.assertEquals(run.getInstance().getNodeType(), requestFieldsMap.get("instance_type"));
+        Assert.assertEquals(9600, requestFieldsMap.get("cost"));
+        Assert.assertEquals(1441, requestFieldsMap.get("usage"));
+        Assert.assertEquals(PRICE.unscaledValue().intValue(), requestFieldsMap.get("run_price"));
+        Assert.assertEquals(run.getInstance().getCloudRegionId().intValue(), requestFieldsMap.get("cloudRegionId"));
+        Assert.assertEquals(USER_NAME, requestFieldsMap.get("owner"));
+        TestUtils.verifyStringArray(USER_GROUPS, requestFieldsMap.get("groups"));
     }
 }

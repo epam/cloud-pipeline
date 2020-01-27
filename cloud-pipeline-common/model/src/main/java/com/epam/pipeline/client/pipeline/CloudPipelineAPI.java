@@ -201,5 +201,5 @@ public interface CloudPipelineAPI {
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
     @GET("run/activity")
-    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) LocalDateTime from, @Query(TO) LocalDateTime to);
+    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
 }

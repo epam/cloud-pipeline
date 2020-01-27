@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model;
+package com.epam.pipeline.billingreportagent.model.billing;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.billingreportagent.model.ResourceType;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PipelineRunBillingInfo {
+public abstract class AbstractBillingInfo<T> {
 
     private LocalDate date;
-    private PipelineRun pipelineRun;
+    private T entity;
+
+    /**
+     * Cost in hundredths of cents
+     */
     private Long cost;
-    private Long usageMinutes;
     private ResourceType resourceType;
 }
