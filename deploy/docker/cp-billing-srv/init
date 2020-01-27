@@ -18,7 +18,7 @@ BILLING_RUNTIME_LOG=$CP_BILLING_HOME/logs/runtime.log
 mkdir -p $(dirname $BILLING_RUNTIME_LOG)
 touch $BILLING_RUNTIME_LOG
 
-cd $CP_SEARCH_HOME
+cd $CP_BILLING_HOME
 nohup java $CP_BILLING_JAVA_OPTS -jar billing-report-agent.jar &> $BILLING_RUNTIME_LOG &
 APP_PID="$!"
 

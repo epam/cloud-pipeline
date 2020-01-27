@@ -8,7 +8,7 @@ metadata:
 spec:
   ports:
     - protocol: TCP
-      port: ${CP_billing_INTERNAL_PORT}
+      port: ${CP_BILLING_INTERNAL_PORT}
       targetPort: 8080
       name: cp-billing-srv-port
   selector:
