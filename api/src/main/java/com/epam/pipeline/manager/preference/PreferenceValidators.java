@@ -145,6 +145,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
+        return (pref, dependencies) -> pref == null || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
         return (pref, dependencies) -> {
             Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;

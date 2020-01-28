@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -108,6 +109,16 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getPath(), storagePolicy);
         dataStorage.setStoragePolicy(storagePolicy);
+    }
+
+    @Override
+    public StoragePolicy buildPolicy(final VersioningAwareRegion region, final StoragePolicy storagePolicy) {
+        final StoragePolicy policy = StorageProvider.super.buildPolicy(region, storagePolicy);
+        final Integer incompleteUploadCleanupDays = preferenceManager
+                .getSystemPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS)
+                .get(pref -> pref == null ? null : Integer.parseInt(pref));
+        policy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
+        return policy;
     }
 
     @Override
