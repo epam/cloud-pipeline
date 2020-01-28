@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -125,6 +126,7 @@
                        d.backup_duration as backup_duration,
                        d.sts_duration as sts_duration,
                        d.lts_duration as lts_duration,
+                       d.incomplete_upload_cleanup_days as incomplete_upload_cleanup_days,
                        d.created_date as datastorage_created_date,
                        d.locked as datastorage_locked,
                        d.mount_point as datastorage_mount_point,
@@ -171,6 +173,7 @@
                        null as backup_duration,
                        null as sts_duration,
                        null as lts_duration,
+                       null as incomplete_upload_cleanup_days,
                        null as datastorage_created_date,
                        null as datastorage_locked,
                        null as datastorage_mount_point,
@@ -217,6 +220,7 @@
                        null as backup_duration,
                        null as sts_duration,
                        null as lts_duration,
+                       null as incomplete_upload_cleanup_days,
                        null as datastorage_created_date,
                        null as datastorage_locked,
                        null as datastorage_mount_point,
@@ -305,6 +309,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -351,6 +356,7 @@
                         d.backup_duration as backup_duration,
                         d.sts_duration as sts_duration,
                         d.lts_duration as lts_duration,
+                        d.incomplete_upload_cleanup_days as incomplete_upload_cleanup_days,
                         d.created_date as datastorage_created_date,
                         d.locked as datastorage_locked,
                         d.mount_point as datastorage_mount_point,
@@ -397,6 +403,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -443,6 +450,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -608,6 +616,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -655,6 +664,7 @@
                         d.backup_duration as backup_duration,
                         d.sts_duration as sts_duration,
                         d.lts_duration as lts_duration,
+                        d.incomplete_upload_cleanup_days as incomplete_upload_cleanup_days,
                         d.created_date as datastorage_created_date,
                         d.locked as datastorage_locked,
                         d.mount_point as datastorage_mount_point,
@@ -702,6 +712,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
@@ -749,6 +760,7 @@
                         null as backup_duration,
                         null as sts_duration,
                         null as lts_duration,
+                        null as incomplete_upload_cleanup_days,
                         null as datastorage_created_date,
                         null as datastorage_locked,
                         null as datastorage_mount_point,
