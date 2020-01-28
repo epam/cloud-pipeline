@@ -115,8 +115,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public StoragePolicy buildPolicy(final VersioningAwareRegion region, final StoragePolicy storagePolicy) {
         final StoragePolicy policy = StorageProvider.super.buildPolicy(region, storagePolicy);
         final Integer incompleteUploadCleanupDays = preferenceManager
-                .getSystemPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS)
-                .get(pref -> pref == null ? null : Integer.parseInt(pref));
+                .getPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS);
         policy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
         return policy;
     }
