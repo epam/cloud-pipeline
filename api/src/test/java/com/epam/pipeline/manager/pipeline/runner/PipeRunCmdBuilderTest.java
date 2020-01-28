@@ -84,7 +84,7 @@ public class PipeRunCmdBuilderTest {
                 .regionId()
                 .parentNode()
                 .build();
-        final String expectedResult = String.format("pipe run 1@%s %s '%s' %s %s parent-id 1 -p -y -id 10 " +
+        final String expectedResult = String.format("pipe run -n 1@%s %s '%s' %s %s parent-id 1 -p -y -id 10 " +
                         "-it type -di image -cmd '%s' -t 10 -q -ic 5 -s -pt spot -r 1 -pn 1",
                 TEST_VERSION, TEST_PARAM_NAME_1, TEST_PARAM_VALUE_1, TEST_PARAM_NAME_2, TEST_PARAM_VALUE_2,
                 CMD_TEMPLATE);
