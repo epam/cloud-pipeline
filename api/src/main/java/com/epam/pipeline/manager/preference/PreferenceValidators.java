@@ -146,7 +146,8 @@ public final class PreferenceValidators {
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
-        return (pref, dependencies) -> pref == null || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
+        return (pref, dependencies) -> StringUtils.isBlank(pref)
+                || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
