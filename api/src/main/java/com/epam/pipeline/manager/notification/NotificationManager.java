@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,11 +208,11 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             return;
         }
 
-        final List<TaskStatus> runStatusesToReport = runStatusSettings.getStatusesToInform();
+        final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(runStatusSettings.getStatusesToInform());
         if (CollectionUtils.isEmpty(runStatusesToReport) || !runStatusesToReport.contains(pipelineRun.getStatus())) {
-            LOGGER.info("Pipeline Run status is not in reporting list: [ "
-                    + runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))
-                    + "]! This event will be skipped!");
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
+                    pipelineRun.getStatus(),
+                    runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))));
             return;
         }
 
