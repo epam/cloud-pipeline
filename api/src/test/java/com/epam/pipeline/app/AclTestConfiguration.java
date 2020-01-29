@@ -2,6 +2,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.manager.BillingManager;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -144,6 +145,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunScheduleManager pipelineRunScheduleManager;
+
+    @MockBean
+    public BillingManager billingManager;
 
     @Bean
     public PermissionFactory permissionFactory() {
