@@ -692,11 +692,17 @@ class Logs extends localization.LocalizedReactComponent {
         }
       }
       if (instance.nodeIP) {
+        const {startDate, endDate} = run;
+        const parts = [
+          startDate && `from=${encodeURIComponent(startDate)}`,
+          endDate && `to=${encodeURIComponent(endDate)}`
+        ].filter(Boolean);
+        const query = parts.length > 0 ? `?${parts.join('&')}` : '';
         if (instance.nodeName) {
           details.push({
             key: 'IP',
             value: (
-              <Link to={`/cluster/${instance.nodeName}`}>
+              <Link to={`/cluster/${instance.nodeName}/monitor${query}`}>
                 {instance.nodeName} ({instance.nodeIP})
               </Link>
             )});
@@ -706,7 +712,7 @@ class Logs extends localization.LocalizedReactComponent {
             details.push({
               key: 'IP',
               value: (
-                <Link to={`/cluster/ip-${parts.join('-')}`}>
+                <Link to={`/cluster/ip-${parts.join('-')}/monitor${query}`}>
                   {instance.nodeIP}
                 </Link>
               )

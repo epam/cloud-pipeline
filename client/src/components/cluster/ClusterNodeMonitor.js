@@ -25,8 +25,10 @@ import {
   Dropdown,
   Icon,
   Menu,
+  message,
   Row
 } from 'antd';
+import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
 import LoadingView from '../special/LoadingView';
 import styles from './ClusterNode.css';
@@ -37,6 +39,8 @@ import {
   NetworkUsageChart
 } from './charts';
 import {ResponsiveContainer} from './charts/utilities';
+import ClusterNodeUsageReport, * as usageUtilities
+  from '../../models/cluster/ClusterNodeUsageReport';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -102,7 +106,7 @@ function ChartContainer (
   );
 }
 
-@inject('node', 'chartsData')
+@inject('chartsData')
 @observer
 class ClusterNodeMonitor extends React.Component {
   state = {
@@ -110,31 +114,47 @@ class ClusterNodeMonitor extends React.Component {
     containerHeight: 0,
     start: undefined,
     end: undefined,
-    liveUpdate: true
+    liveUpdate: true,
+    rangeInitialized: false,
+    exporting: false
   };
 
   liveUpdateTimer;
 
   @computed
+  get wholeRangeEnabled () {
+    const {chartsData} = this.props;
+    return !!chartsData.instanceFrom;
+  }
+
+  @computed
   get lastWeekEnabled () {
     const {chartsData} = this.props;
-    return moment
-      .duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
-      moment.duration(1, 'w');
+    return !chartsData.rangeEndIsFixed && (
+      !chartsData.instanceFrom ||
+      moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'w')
+    );
   }
 
   @computed
   get lastDayEnabled () {
     const {chartsData} = this.props;
-    return moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
-      moment.duration(1, 'd');
+    return !chartsData.rangeEndIsFixed && (
+      !chartsData.instanceFrom ||
+      moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'd')
+    );
   }
 
   @computed
   get lastHourEnabled () {
     const {chartsData} = this.props;
-    return moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
-      moment.duration(1, 'h');
+    return !chartsData.rangeEndIsFixed && (
+      !chartsData.instanceFrom ||
+      moment.duration(chartsData.instanceTo - chartsData.instanceFrom, 's') >
+      moment.duration(1, 'h')
+    );
   }
 
   componentDidMount () {
@@ -142,6 +162,11 @@ class ClusterNodeMonitor extends React.Component {
       this.invokeLiveUpdate,
       LIVE_UPDATE_INTERVAL
     );
+    this.initializeRange();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.initializeRange();
   }
 
   componentWillUnmount () {
@@ -156,6 +181,22 @@ class ClusterNodeMonitor extends React.Component {
       containerWidth: width,
       containerHeight: height
     });
+  };
+
+  initializeRange = () => {
+    const {rangeInitialized, start, end} = this.state;
+    const {chartsData} = this.props;
+    if (!rangeInitialized && chartsData.initialized) {
+      this.setState({
+        rangeInitialized: true,
+        start: start || chartsData.from || chartsData.instanceFrom,
+        end: end || chartsData.to || chartsData.instanceTo
+      }, () => {
+        if (chartsData.rangeEndIsFixed) {
+          this.setLiveUpdate(false);
+        }
+      });
+    }
   };
 
   reloadData = () => {
@@ -178,7 +219,9 @@ class ClusterNodeMonitor extends React.Component {
     start = start || chartsData.instanceFrom || moment().add(-1, 'day').unix();
     end = end || chartsData.instanceTo || moment().unix();
     const range = end - start;
-    end = moment().unix();
+    if (!chartsData.rangeEndIsFixed) {
+      end = moment().unix();
+    }
     start = end - range;
     chartsData.from = chartsData.correctDateToFixRange(start);
     chartsData.to = chartsData.correctDateToFixRange(end);
@@ -190,7 +233,7 @@ class ClusterNodeMonitor extends React.Component {
   };
 
   setLiveUpdate = (e, clearEnd = false) => {
-    const liveUpdate = e.target.checked;
+    const liveUpdate = typeof e === 'boolean' ? e : e.target.checked;
     const {chartsData} = this.props;
     if (liveUpdate) {
       chartsData.followCommonRange = true;
@@ -217,7 +260,7 @@ class ClusterNodeMonitor extends React.Component {
     switch (key) {
       case Range.full:
         chartsData.from = chartsData.instanceFrom;
-        chartsData.to = undefined;
+        chartsData.to = chartsData.rangeEndIsFixed ? chartsData.instanceTo : undefined;
         break;
       case Range.week:
         chartsData.to = moment().unix();
@@ -308,7 +351,7 @@ class ClusterNodeMonitor extends React.Component {
       if (final) {
         chartsData.loadData();
       }
-      this.setLiveUpdate({target: {checked: false}});
+      this.setLiveUpdate(false);
     });
   };
 
@@ -317,7 +360,7 @@ class ClusterNodeMonitor extends React.Component {
     chartsData.followCommonRange = e.target.checked;
     chartsData.loadData();
     if (!chartsData.followCommonRange) {
-      this.setLiveUpdate({target: {checked: false}}, true);
+      this.setLiveUpdate(false, true);
     }
   };
 
@@ -330,6 +373,54 @@ class ClusterNodeMonitor extends React.Component {
         date.unix() < chartsData.instanceFrom ||
         date.valueOf() > Date.now()
       );
+  };
+
+  onExportClicked = (opts) => {
+    let {key: tick} = opts || {};
+    this.setState({exporting: true}, async () => {
+      const {chartsData} = this.props;
+      const {start, end} = this.state;
+      const hide = message.loading('Fetching usage report...', 0);
+      try {
+        const format = 'YYYY-MM-DD HH:mm:ss';
+        if (!tick) {
+          tick = usageUtilities.autoDetectTickInterval(start, end);
+        }
+        const pipelineFile = new ClusterNodeUsageReport(
+          chartsData.nodeName,
+          start ? moment.unix(start).utc().format(format) : undefined,
+          end ? moment.unix(end).utc().format(format) : undefined,
+          tick
+        );
+        let res;
+        await pipelineFile.fetch();
+        res = pipelineFile.response;
+        const checkForBlobErrors = (blob) => {
+          return new Promise(resolve => {
+            const fr = new FileReader();
+            fr.onload = function () {
+              const status = JSON.parse(this.result)?.status?.toLowerCase();
+              resolve(status === 'error');
+            };
+            fr.readAsText(blob);
+          });
+        };
+        if (res.type?.includes('application/json') && res instanceof Blob) {
+          checkForBlobErrors(res)
+            .then(error => error
+              ? message.error('Error downloading file', 5)
+              : FileSaver.saveAs(res, 'report.csv')
+            );
+        } else if (res) {
+          FileSaver.saveAs(res, 'report.csv');
+        }
+      } catch (e) {
+        message.error('Failed to download file', 5);
+      } finally {
+        hide();
+        this.setState({exporting: false});
+      }
+    });
   };
 
   render () {
@@ -351,12 +442,13 @@ class ClusterNodeMonitor extends React.Component {
       containerHeight,
       start,
       end,
-      liveUpdate
+      liveUpdate,
+      exporting
     } = this.state;
     const commonChartProps = {
       followCommonScale: chartsData.followCommonRange,
-      start: start || chartsData.instanceFrom,
-      end: end || chartsData.instanceTo,
+      start: start || chartsData.from || chartsData.instanceFrom,
+      end: end || chartsData.to || chartsData.instanceTo,
       containerSize: {containerWidth, containerHeight},
       padding: 5,
       onRangeChanged: this.onRangeChanged
@@ -366,7 +458,7 @@ class ClusterNodeMonitor extends React.Component {
         className={styles.fullHeightContainer}
         style={{flexDirection: 'column', overflow: 'hidden'}}
       >
-        <Row type={'flex'} justify={'end'} align={'middle'} style={{margin: 5}}>
+        <Row type={'flex'} justify={'end'} align={'middle'} style={{marginTop: 5, marginBottom: 5}}>
           <Checkbox
             checked={chartsData.followCommonRange}
             onChange={this.onFollowCommonRangeChanged}
@@ -376,6 +468,7 @@ class ClusterNodeMonitor extends React.Component {
           <Divider />
           <Checkbox
             checked={liveUpdate}
+            disabled={chartsData.rangeEndIsFixed}
             onChange={e => this.setLiveUpdate(e, true)}
           >
             Live update
@@ -384,7 +477,12 @@ class ClusterNodeMonitor extends React.Component {
           <Dropdown
             overlay={(
               <Menu onClick={this.setRange}>
-                <Menu.Item key={Range.full}>Whole range</Menu.Item>
+                <Menu.Item
+                  key={Range.full}
+                  disabled={!this.wholeRangeEnabled}
+                >
+                  Whole range
+                </Menu.Item>
                 <Menu.Item
                   key={Range.week}
                   disabled={!this.lastWeekEnabled}
@@ -419,12 +517,35 @@ class ClusterNodeMonitor extends React.Component {
           />
           <Divider />
           <DatePicker
+            allowClear={!chartsData.rangeEndIsFixed}
             format="YYYY-MM-DD HH:mm"
             placeholder="End"
             onChange={this.onEndChanged}
             value={end ? moment.unix(end) : undefined}
             disabledDate={this.disabledDate}
           />
+          <Divider />
+          <Dropdown
+            overlay={(
+              <Menu onClick={this.onExportClicked}>
+                {
+                  usageUtilities
+                    .getAvailableTickIntervals(start, end)
+                    .map((unit) => (
+                      <Menu.Item key={unit.value}>
+                        Interval: {unit.name}
+                      </Menu.Item>
+                    ))
+                }
+              </Menu>
+            )}>
+            <Button
+              disabled={!start || exporting}
+              onClick={() => this.onExportClicked()}
+            >
+              <Icon type="export" />Export
+            </Button>
+          </Dropdown>
         </Row>
         <ResponsiveContainer
           className={styles.fullHeightContainer}
