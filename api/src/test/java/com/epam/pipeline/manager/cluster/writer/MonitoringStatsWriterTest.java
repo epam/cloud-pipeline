@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.cluster.writer;
 
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
@@ -174,7 +173,6 @@ public class MonitoringStatsWriterTest {
     }
 
     @Value
-    @AllArgsConstructor
     private static class DiskInfo {
 
         private String name;

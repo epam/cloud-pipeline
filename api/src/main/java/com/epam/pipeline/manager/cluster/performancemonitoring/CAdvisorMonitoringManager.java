@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,9 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.Proxy;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -109,6 +111,14 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime start = Optional.ofNullable(from).orElse(LocalDateTime.MIN);
         final LocalDateTime end = Optional.ofNullable(to).orElse(LocalDateTime.MAX);
         return getStats(nodeName, start, end);
+    }
+
+    @Override
+    public InputStream getStatsForNodeAsInputStream(final String nodeName,
+                                                    final LocalDateTime from,
+                                                    final LocalDateTime to,
+                                                    final Duration interval) {
+        throw new UnsupportedOperationException("Currently not supported operation!");
     }
 
     @Override

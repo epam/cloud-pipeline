@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import java.io.InputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -72,6 +74,12 @@ public class ClusterApiService {
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
     public List<MonitoringStats> getStatsForNode(String nodeName, final LocalDateTime from, final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(nodeName, from, to);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
+    public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
+                                              final Duration interval) {
+        return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval);
     }
 
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
