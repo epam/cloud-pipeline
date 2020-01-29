@@ -118,7 +118,8 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
                                                     final LocalDateTime from,
                                                     final LocalDateTime to,
                                                     final Duration interval) {
-        throw new UnsupportedOperationException("Currently not supported operation!");
+        throw new UnsupportedOperationException(messageHelper.getMessage(
+            MessageConstants.CADVISOR_STATS_REPORTS_NOT_SUPPORTED));
     }
 
     @Override

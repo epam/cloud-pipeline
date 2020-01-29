@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -260,7 +260,7 @@ public final class MessageConstants {
     //CAdvicer
     public static final String DEBUG_SEND_CADVISOR_REQUEST = "cadvisor.send.request";
     public static final String DEBUG_RECEIVE_CADVISOR_RESPONSE = "cadvisor.receive.response";
-
+    public static final String CADVISOR_STATS_REPORTS_NOT_SUPPORTED = "cadvisor.reports.not.supported";
 
     // Users
     public static final String ERROR_USER_ID_NOT_FOUND = "user.id.not.found";

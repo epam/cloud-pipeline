@@ -86,7 +86,11 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime oldestMonitoring = oldestMonitoringDate();
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
-        final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, interval);
+        final Duration minDuration = minimalDuration();
+        final Duration adjustedDuration = interval.compareTo(minDuration) < 0
+                                          ? minDuration
+                                          : interval;
+        final List<MonitoringStats> monitoringStats = getStats(nodeName, start, end, adjustedDuration);
         final MonitoringStatsWriter statsWriter = new MonitoringStatsWriter();
         try {
             return new StringInputStream(statsWriter.convertStatsToCsvString(monitoringStats));
