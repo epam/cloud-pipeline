@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.notification;
 
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -58,6 +59,9 @@ public class NotificationSettings {
      * Contains IDs of pipeline user's, that should be explicitly notified by a notification with this settings
      */
     private List<Long> informedUserIds;
+
+    private List<TaskStatus> statusesToInform;
+
     private boolean keepInformedAdmins;
     private boolean keepInformedOwner;
     private NotificationType type;
@@ -68,6 +72,7 @@ public class NotificationSettings {
         settings.setId(type.getId());
         settings.setTemplateId(type.getId());
         settings.setType(type);
+        settings.setStatusesToInform(type.getDefaultStatusesToInform());
         settings.setEnabled(type.isEnabled());
         settings.setThreshold(type.getDefaultThreshold());
         settings.setResendDelay(type.getDefaultResendDelay());
@@ -80,16 +85,16 @@ public class NotificationSettings {
      * */
     public enum NotificationType {
 
-        LONG_RUNNING(1, 3600L, 600L, true, NotificationGroup.LONG_RUNNING),
-        LONG_INIT(2, 3600L, 600L, true, NotificationGroup.LONG_RUNNING),
-        NEW_ISSUE(3, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.ISSUE),
-        NEW_ISSUE_COMMENT(4, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.ISSUE),
+        LONG_RUNNING(1, 3600L, 600L, null, true, NotificationGroup.LONG_RUNNING),
+        LONG_INIT(2, 3600L, 600L, null, true, NotificationGroup.LONG_RUNNING),
+        NEW_ISSUE(3, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, null, true, NotificationGroup.ISSUE),
+        NEW_ISSUE_COMMENT(4, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, null, true, NotificationGroup.ISSUE),
         PIPELINE_RUN_STATUS(5, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD,
-                true, NotificationGroup.PIPELINE_RUN_STATUS),
-        IDLE_RUN(6, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, true, NotificationGroup.IDLE_RUN),
-        HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, true, NotificationGroup.RESOURCE_CONSUMING);
+                Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE), true, NotificationGroup.PIPELINE_RUN_STATUS),
+        IDLE_RUN(6, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, null, true, NotificationGroup.IDLE_RUN),
+        IDLE_RUN_PAUSED(7, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, null, true, NotificationGroup.IDLE_RUN),
+        IDLE_RUN_STOPPED(8, MISSING_TIME_THRESHOLD, MISSING_TIME_THRESHOLD, null, true, NotificationGroup.IDLE_RUN),
+        HIGH_CONSUMED_RESOURCES(9, MISSING_TIME_THRESHOLD, 600L, null, true, NotificationGroup.RESOURCE_CONSUMING);
 
         private static final Map<Long, NotificationType> BY_ID;
 
@@ -100,14 +105,17 @@ public class NotificationSettings {
         private final long id;
         private final Long defaultThreshold;
         private final Long defaultResendDelay;
+        private final List<TaskStatus> defaultStatusesToInform;
         private final boolean enabled;
         private final NotificationGroup group;
 
         NotificationType(final long id, Long defaultThreshold, final Long defaultResendDelay,
-                         final boolean enabled, final NotificationGroup group) {
+                         final List<TaskStatus> defaultStatusesToInform, final boolean enabled,
+                         final NotificationGroup group) {
             this.id = id;
             this.defaultThreshold = defaultThreshold;
             this.defaultResendDelay = defaultResendDelay;
+            this.defaultStatusesToInform = defaultStatusesToInform;
             this.enabled = enabled;
             this.group = group;
         }
@@ -118,6 +126,10 @@ public class NotificationSettings {
 
         public Long getDefaultResendDelay() {
             return defaultResendDelay;
+        }
+
+        public List<TaskStatus> getDefaultStatusesToInform() {
+            return defaultStatusesToInform;
         }
 
         public boolean isEnabled() {
