@@ -925,8 +925,9 @@ Previously, the non-informative error message was shown if the paused run could'
 
 ### Broken layouts
 
-[#553](https://github.com/epam/cloud-pipeline/issues/553), [#619](https://github.com/epam/cloud-pipeline/issues/619), [#643](https://github.com/epam/cloud-pipeline/issues/643), [#644](https://github.com/epam/cloud-pipeline/issues/644)
+[#553](https://github.com/epam/cloud-pipeline/issues/553), [#619](https://github.com/epam/cloud-pipeline/issues/619), [#643](https://github.com/epam/cloud-pipeline/issues/643), [#644](https://github.com/epam/cloud-pipeline/issues/644), [#915](https://github.com/epam/cloud-pipeline/issues/915)
 
 Previously, **pipeline versions page** had broken layout if there were pipeline versions with long description.  
 **Global search page** was not rendered correctly when the search results table had too many records.  
+When a list of items in the **docker groups selection** dialog was long - it was almost impossible to use a search feature, as the list hid immediately.  
 Some of the other page layouts also were broken.

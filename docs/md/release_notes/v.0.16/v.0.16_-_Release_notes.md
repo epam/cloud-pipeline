@@ -15,6 +15,7 @@
 - [Displaying additional node metrics](#displaying-additional-node-metrics-at-the-runs-page)
 - [Export user list](#export-user-list)
 - [Displaying SSH link for the active runs in the Dashboard view](#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view)
+- [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
 
 ***
 
@@ -296,6 +297,20 @@ In **`v0.16`**, a new helpful capability was implemented that allows to open the
     ![CP_v.0.16_ReleaseNotes](attachments/RN016_SSHActiveRuns_2.png)
 
 That SSH link is available for all the non-paused active jobs (interactive and non-interactive) after all run's checks and initializations have passed (same as at the **Run logs** page).
+
+## Enable Slurm workload manager for the Cloud Pipeline's clusters
+
+A new feature for the Cloud Pipeline's clusters was implemented in **`v0.16`**.  
+Now, [**`Slurm`**](https://slurm.schedmd.com/overview.html) can be configured within the `Cluster` tab. It is available only for the fixed size clusters.
+
+To enable this feature - tick the `Enable Slurm` checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable `Slurm` functionality by the `CP_CAP_SLURM` system parameter:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SlurmCluster_1.png)
+
+This feature allows you to use the full stack of `Slurm` cluster's commands to allocate the workload over the cluster, for example:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_SlurmCluster_2.png)
+
+For more information about using `Slurm` via the `Cloud Pipeline` see
+[here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#example-using-of-slurm-for-the-cloud-pipelines-clusters).
 
 ***
 
