@@ -556,8 +556,8 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<PipelineRun> loadRunningPipelineRuns() {
-        return pipelineRunDao.loadRunningPipelineRuns();
+    public List<PipelineRun> loadPipelineRunsByStatus(TaskStatus status) {
+        return pipelineRunDao.loadPipelineRunsByStatus(status);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

@@ -18,9 +18,11 @@ package com.epam.pipeline.manager.notification;
 
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +32,8 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.notification.NotificationTimestamp;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -104,20 +108,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     public void notifyLongRunningTask(PipelineRun run, NotificationSettings settings) {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_SUBMITTED, run.getPodId()));
 
-        NotificationMessage notificationMessage = new NotificationMessage();
-
-        if (settings.isKeepInformedOwner()) {
-            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
-            notificationMessage.setToUserId(pipelineOwner.getId());
-        }
-
-        notificationMessage.setCopyUserIds(getCCUsers(settings));
-
-        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        if (notificationMessage.getTemplate() == null) {
-            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
-                    settings.getTemplateId()));
-        }
+        NotificationMessage notificationMessage = fillNotificationMessage(run, settings);
 
         notificationMessage.setTemplateParameters(PipelineRunMapper.map(run, settings.getThreshold()));
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
@@ -424,5 +415,40 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         final PipelineUser user = userManager.loadUserByName(username);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, username));
         return user;
+    }
+
+    /**
+     * Creates notification message about a long paused run.
+     * @return true if this run also should be terminated
+     * */
+    public boolean notifyPausedRun(final PipelineRun run) {
+        final Optional<RunStatus> lastRunStatus = run.getRunStatuses().stream()
+                .max(Comparator.comparing(RunStatus::getTimestamp));
+        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_PAUSED_RUN.getId());
+        final NotificationMessage notificationMessage = fillNotificationMessage(run, settings);
+        return lastRunStatus.map(runStatus -> {
+            final LocalDateTime now = DateUtils.nowUTC();
+            final LocalDateTime timestamp = runStatus.getTimestamp();
+            monitoringNotificationDao.createMonitoringNotification(notificationMessage);
+            return timestamp.plusSeconds(settings.getThreshold()).isAfter(now);
+        }).orElse(false);
+    }
+
+    private NotificationMessage fillNotificationMessage(final PipelineRun run, final NotificationSettings settings) {
+        NotificationMessage notificationMessage = new NotificationMessage();
+
+        if (settings.isKeepInformedOwner()) {
+            PipelineUser pipelineOwner = userManager.loadUserByName(run.getOwner());
+            notificationMessage.setToUserId(pipelineOwner.getId());
+        }
+
+        notificationMessage.setCopyUserIds(getCCUsers(settings));
+
+        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        if (notificationMessage.getTemplate() == null) {
+            LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_NOT_FOUND,
+                    settings.getTemplateId()));
+        }
+        return notificationMessage;
     }
 }

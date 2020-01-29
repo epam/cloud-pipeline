@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -267,7 +268,7 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNotifyOnce() {
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
             .thenReturn(IdleRunAction.NOTIFY.name());
@@ -306,7 +307,7 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testSkipProlongRun() {
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Collections.singletonList(idleRunToProlong));
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
@@ -403,7 +404,7 @@ public class ResourceMonitoringManagerTest {
         idleOnDemandRun.setLastIdleNotificationTime(nowMinus1);
         idleSpotRun.setLastIdleNotificationTime(nowMinus1);
 
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
         return nowMinus1;
     }
@@ -444,7 +445,7 @@ public class ResourceMonitoringManagerTest {
     public void testSkipAutoscaleClusterNode() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.PAUSE.name());
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Collections.singletonList(autoscaleMasterRun));
 
         Thread.sleep(10);
@@ -554,7 +555,7 @@ public class ResourceMonitoringManagerTest {
         idleOnDemandRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
         idleSpotRun.setLastIdleNotificationTime(now.minusSeconds(HALF_AN_HOUR));
 
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Arrays.asList(okayRun, idleOnDemandRun, idleSpotRun));
 
         Thread.sleep(10);
@@ -573,7 +574,7 @@ public class ResourceMonitoringManagerTest {
 
     @Test
     public void testNotifyAboutHighConsumingResources() {
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING)).thenReturn(
                 Arrays.asList(okayRun, highConsumingRun));
 
         resourceMonitoringManager.monitorResourceUsage();
@@ -590,7 +591,8 @@ public class ResourceMonitoringManagerTest {
         setTagsAndLastNotificationTimeOfRun(okayRun, IDLE_TAGS, HALF_AN_HOUR_BEFORE);
         final PipelineRun spyIdledRun = spy(idleOnDemandRun);
         final PipelineRun spyOkayRun = spy(okayRun);
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyOkayRun));
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING))
+                .thenReturn(Arrays.asList(spyIdledRun, spyOkayRun));
 
         resourceMonitoringManager.monitorResourceUsage();
         assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));
@@ -607,7 +609,8 @@ public class ResourceMonitoringManagerTest {
         okayRun.setLastIdleNotificationTime(HALF_AN_HOUR_BEFORE);
         final PipelineRun spyPressuredRun = spy(highConsumingRun);
         final PipelineRun spyOkayRun = spy(okayRun);
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyPressuredRun, spyOkayRun));
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING))
+                .thenReturn(Arrays.asList(spyPressuredRun, spyOkayRun));
 
         resourceMonitoringManager.monitorResourceUsage();
         assertThat(spyPressuredRun.getTags(), CoreMatchers.is(PRESSURE_TAGS));
@@ -622,7 +625,8 @@ public class ResourceMonitoringManagerTest {
         setTagsAndLastNotificationTimeOfRun(highConsumingRun, PRESSURE_TAGS, HALF_AN_HOUR_BEFORE);
         final PipelineRun spyIdledRun = spy(idleOnDemandRun);
         final PipelineRun spyPressuredRun = spy(highConsumingRun);
-        when(pipelineRunManager.loadRunningPipelineRuns()).thenReturn(Arrays.asList(spyIdledRun, spyPressuredRun));
+        when(pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING))
+                .thenReturn(Arrays.asList(spyIdledRun, spyPressuredRun));
 
         resourceMonitoringManager.monitorResourceUsage();
         assertThat(spyIdledRun.getTags(), CoreMatchers.is(IDLE_TAGS));

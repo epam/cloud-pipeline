@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.extern.slf4j.Slf4j;
@@ -121,9 +122,20 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
     }
 
     public void monitorResourceUsage() {
-        List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
-        processIdleRuns(runs);
-        processOverloadedRuns(runs);
+        List<PipelineRun> running = pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.RUNNING);
+        processIdleRuns(running);
+        processOverloadedRuns(running);
+        List<PipelineRun> paused = pipelineRunManager.loadPipelineRunsByStatus(TaskStatus.PAUSED);
+        processPausedRuns(paused);
+    }
+
+    private void processPausedRuns(final List<PipelineRun> paused) {
+        paused.forEach(run -> {
+           if(notificationManager.notifyPausedRun(run)) {
+               log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_PAUSED_ACTION, run.getId()));
+               pipelineRunManager.terminateRun(run.getId());
+           }
+        });
     }
 
     private void processOverloadedRuns(final List<PipelineRun> runs) {
