@@ -422,7 +422,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * @return true if this run also should be terminated
      * */
     public boolean notifyPausedRun(final PipelineRun run) {
-        final Optional<RunStatus> lastRunStatus = run.getRunStatuses().stream()
+        final Optional<RunStatus> lastRunStatus = ListUtils.emptyIfNull(run.getRunStatuses()).stream()
                 .max(Comparator.comparing(RunStatus::getTimestamp));
         final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_PAUSED_RUN.getId());
         final NotificationMessage notificationMessage = fillNotificationMessage(run, settings);

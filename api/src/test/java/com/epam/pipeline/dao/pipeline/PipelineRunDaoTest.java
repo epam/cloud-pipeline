@@ -737,7 +737,7 @@ public class PipelineRunDaoTest extends AbstractSpringTest {
             assertEquals(loaded.getLastIdleNotificationTime(), lastIdleNotificationDate);
         });
 
-        List<PipelineRun> running = pipelineRunDao.loadRunningPipelineRuns();
+        List<PipelineRun> running = pipelineRunDao.loadPipelineRunsByStatus(TaskStatus.RUNNING);
         assertFalse(running.isEmpty());
         running.forEach(loaded -> {
             assertEquals(loaded.getLastNotificationTime(), lastNotificationDate);

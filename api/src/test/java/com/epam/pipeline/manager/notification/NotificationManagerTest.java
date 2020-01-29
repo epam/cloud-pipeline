@@ -29,7 +29,12 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.pipeline.*;
+import com.epam.pipeline.entity.pipeline.CommitStatus;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
@@ -176,6 +181,10 @@ public class NotificationManagerTest extends AbstractManagerTest {
         createTemplate(IDLE_RUN.getId(), "idle-run-template");
         createSettings(IDLE_RUN, IDLE_RUN.getId(), -1, -1);
 
+        createTemplate(LONG_PAUSED_RUN.getId(), "longPausedTemplate");
+        NotificationSettings longPaused = createSettings(LONG_PAUSED_RUN, LONG_PAUSED_RUN.getId(), 1L, 1L);
+        updateKeepInformedOwner(longPaused, false);
+
         createTemplate(HIGH_CONSUMED_RESOURCES.getId(), "idle-run-template");
         highConsuming = createSettings(HIGH_CONSUMED_RESOURCES, HIGH_CONSUMED_RESOURCES.getId(),
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
@@ -251,6 +260,25 @@ public class NotificationManagerTest extends AbstractManagerTest {
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertNull(messages.get(0).getToUserId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testNotifyLongPausedRun() throws InterruptedException {
+        PipelineRun run = new PipelineRun();
+        run.setId(1L);
+        run.setRunStatuses(Collections.singletonList(new RunStatus(1L, TaskStatus.PAUSED, "", DateUtils.nowUTC())));
+        boolean needToTerminate = notificationManager.notifyPausedRun(run);
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertTrue(messages.isEmpty());
+        Assert.assertFalse(needToTerminate);
+
+        Thread.sleep(1000);
+
+        needToTerminate = notificationManager.notifyPausedRun(run);
+        messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertEquals(1, messages.size());
+        Assert.assertTrue(needToTerminate);
     }
 
     @Test
