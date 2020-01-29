@@ -19,12 +19,14 @@ package com.epam.pipeline.manager.notification;
 import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 import java.util.Collections;
+import java.util.List;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.app.TestApplication;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
 import com.epam.pipeline.entity.notification.NotificationSettings;
 import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,8 @@ import org.springframework.transaction.annotation.Transactional;
 @ContextConfiguration(classes = TestApplication.class)
 public class NotificationSettingsManagerTest extends AbstractSpringTest {
 
+    private static final String TEMPLATE = "template";
+
     @Autowired
     private NotificationSettingsManager notificationSettingsManager;
 
@@ -44,8 +48,9 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateAndUpdate() {
-        NotificationTemplate template = createTemplate(1L, "template");
-        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(), 1L, 1L);
+        NotificationTemplate template = createTemplate(1L, TEMPLATE);
+        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(),
+                1L, 1L, Collections.emptyList());
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
@@ -64,8 +69,9 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCreateWithoutThresholdAndResendDelay() {
-        NotificationTemplate template = createTemplate(1L, "template");
-        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(), null, null);
+        NotificationTemplate template = createTemplate(1L, TEMPLATE);
+        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(),
+                null, null, Collections.emptyList());
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
@@ -75,9 +81,23 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testCreateWithStatusesToNotify() {
+        NotificationTemplate template = createTemplate(5L, TEMPLATE);
+        NotificationSettings settings = createSettings(NotificationType.PIPELINE_RUN_STATUS, template.getId(),
+                null, null, Collections.singletonList(TaskStatus.RESUMING));
+        notificationSettingsManager.createOrUpdate(settings);
+
+        NotificationSettings loaded = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
+        Assert.assertEquals(1, loaded.getStatusesToInform().size());
+        Assert.assertEquals(TaskStatus.RESUMING, loaded.getStatusesToInform().get(0));
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testDelete() {
-        NotificationTemplate template = createTemplate(1L, "template");
-        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(), 1L, 1L);
+        NotificationTemplate template = createTemplate(1L, TEMPLATE);
+        NotificationSettings settings = createSettings(NotificationType.LONG_RUNNING, template.getId(),
+                1L, 1L, Collections.emptyList());
         notificationSettingsManager.createOrUpdate(settings);
 
         NotificationSettings loaded = notificationSettingsManager.load(NotificationType.LONG_RUNNING);
@@ -99,13 +119,14 @@ public class NotificationSettingsManagerTest extends AbstractSpringTest {
     }
 
     private NotificationSettings createSettings(NotificationType type, long templateId,
-                                                Long threshold, Long delay) {
+                                                Long threshold, Long delay, List<TaskStatus> statuses) {
         NotificationSettings settings = new NotificationSettings();
         settings.setType(type);
         settings.setKeepInformedAdmins(true);
         settings.setInformedUserIds(Collections.emptyList());
         settings.setTemplateId(templateId);
         settings.setThreshold(threshold);
+        settings.setStatusesToInform(statuses);
         settings.setResendDelay(delay);
         settings.setKeepInformedOwner(true);
         return settings;

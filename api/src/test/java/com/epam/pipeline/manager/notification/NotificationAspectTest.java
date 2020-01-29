@@ -44,6 +44,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -96,6 +97,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
         settings.setEnabled(true);
         settings.setResendDelay(null);
         settings.setKeepInformedOwner(true);
+        settings.setStatusesToInform(Arrays.asList(TaskStatus.SUCCESS, TaskStatus.FAILURE));
         notificationSettingsDao.createNotificationSettings(settings);
 
         testOwner = new PipelineUser("testOwner");
@@ -124,5 +126,18 @@ public class NotificationAspectTest extends AbstractManagerTest {
 
         Mockito.verify(pipelineRunDao).updateRunStatus(Mockito.any());
         Mockito.verify(runStatusManager).saveStatus(Mockito.any());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
+    public void testNotifyRunStatusChangedNotActiveIfStatusNotConfiguredForNotification() {
+        PipelineRun run = new PipelineRun();
+        run.setStatus(TaskStatus.PAUSED);
+        run.setOwner(testOwner.getUserName());
+        run.setStartDate(new Date());
+
+        pipelineRunManager.updatePipelineStatus(run);
+        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        Assert.assertTrue(messages.isEmpty());
     }
 }
