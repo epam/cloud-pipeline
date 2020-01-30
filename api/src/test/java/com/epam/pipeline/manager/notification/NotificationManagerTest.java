@@ -23,7 +23,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -265,19 +270,19 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyLongPausedRun() throws InterruptedException {
-        PipelineRun run = new PipelineRun();
-        run.setId(1L);
-        run.setRunStatuses(Collections.singletonList(new RunStatus(1L, TaskStatus.PAUSED, "", DateUtils.nowUTC())));
-        boolean needToTerminate = notificationManager.notifyPausedRun(run);
+        PipelineRun run = createTestPipelineRun();
+        LocalDateTime nowUTC = DateUtils.nowUTC();
+        run.setRunStatuses(Collections.singletonList(new RunStatus(1L, TaskStatus.PAUSED, "", nowUTC)));
+        boolean needToTerminate = notificationManager.notifyPausedRun(run, nowUTC);
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertTrue(messages.isEmpty());
+        Assert.assertEquals(1, messages.size());
         Assert.assertFalse(needToTerminate);
 
         Thread.sleep(1000);
 
-        needToTerminate = notificationManager.notifyPausedRun(run);
+        needToTerminate = notificationManager.notifyPausedRun(run, nowUTC);
         messages = monitoringNotificationDao.loadAllNotifications();
-        Assert.assertEquals(1, messages.size());
+        Assert.assertEquals(2, messages.size());
         Assert.assertTrue(needToTerminate);
     }
 
