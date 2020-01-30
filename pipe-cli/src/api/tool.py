@@ -11,7 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import urllib
+
 from src.api.base import API
+from src.model.docker_registry_model import ToolScanResultsModel
 
 
 class Tool(API):
@@ -31,3 +35,23 @@ class Tool(API):
     def load_settings(self, tool_id, version):
         response_data = self.call('/tool/%d/settings?version=%s' % (tool_id, version), None)
         return response_data['payload'] if 'payload' in response_data else None
+
+    def load_tags(self, tool_id):
+        response_data = self.call('/tool/%d/tags' % tool_id, None)
+        if 'payload' in response_data:
+            return response_data['payload'] or []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            return []
+
+    def load_vulnerabilities(self, registry, group, tool):
+        tool_path = group + '/' + tool
+        response_data = self.call('/tool/scan?registry=%s&tool=%s'
+                                  % (urllib.quote(registry), urllib.quote(tool_path)), None)
+        if 'payload' in response_data:
+            return ToolScanResultsModel.load(response_data['payload'])
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            return ToolScanResultsModel.load({})

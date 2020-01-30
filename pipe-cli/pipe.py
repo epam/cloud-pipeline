@@ -15,6 +15,7 @@
 import click
 import requests
 import sys
+import re
 from prettytable import prettytable
 
 from src.api.app_info import ApplicationInfo
@@ -25,6 +26,7 @@ from src.api.user import User
 from src.config import Config, ConfigNotFoundError, silent_print_config_info, is_frozen
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
+from src.utilities.tool_operations import ToolOperations
 from src.utilities import date_utilities, time_zone_param_type, state_utilities
 from src.utilities.acl_operations import ACLOperations
 from src.utilities.datastorage_operations import DataStorageOperations
@@ -1135,6 +1137,64 @@ def update_cli_version(path):
             click.echo("Error: %s" % e, err=True)
     else:
         click.echo("Updating Cloud Pipeline CLI is not available")
+
+
+@cli.command(name='view-tools')
+@click.argument('tool-path', required=False)
+@click.option('-r', '--registry', help='List docker registry tool groups.')
+@click.option('-g', '--group', help='List group tools.')
+@click.option('-t', '--tool', help='List tool details.')
+@click.option('-v', '--version', help='List tool version details.')
+@Config.validate_access_token
+def view_tools(tool_path,
+               registry,
+               group,
+               tool,
+               version):
+    if tool_path and (registry or group or tool or version):
+        click.echo('Tool path positional argument cannot be specified along with the named parameters.', err=True)
+        sys.exit(1)
+    if tool_path:
+        registry, group, tool, version = split_tool_path(tool_path, registry, group, tool, version)
+    elif tool and not registry and not group and not version:
+        registry, group, tool, version = split_tool_path(tool, registry, group, None, version, strict=True)
+    else:
+        if version and not tool:
+            click.echo('Please specify tool name.', err=True)
+            sys.exit(1)
+        if tool and not group:
+            click.echo('Please specify tool group.', err=True)
+            sys.exit(1)
+
+    if not registry and not group and not tool and not version:
+        ToolOperations.view_default_group()
+    elif group and tool and version:
+        ToolOperations.view_version(group, tool, version, registry)
+    elif group and tool:
+        ToolOperations.view_tool(group, tool, registry)
+    elif group:
+        ToolOperations.view_group(group, registry)
+    elif registry:
+        ToolOperations.view_registry(registry)
+    else:
+        click.echo('Specify either registry, group, tool or version parameters', err=True)
+        sys.exit(1)
+
+
+def split_tool_path(tool_path, registry, group, tool, version, strict=False):
+    if tool_path:
+        match = re.search('^([^/]+)(/([^/]+)(/([^/:]+)(:([^/:]+))?)?)?$', tool_path)
+        if match:
+            registry = match.group(1) if match.group(1) else registry
+            group = match.group(3) if match.group(3) else group
+            tool = match.group(5) if match.group(5) else tool
+            version = match.group(7) if match.group(7) else version
+    if strict and (not registry or not group or not tool):
+        click.echo('Please specify full tool path using one of the following patterns:\n'
+                   'registry/group/tool\n'
+                   'registry/group/tool:version', err=True)
+        sys.exit(1)
+    return registry, group, tool, version
 
 
 # Used to run a PyInstaller "freezed" version
