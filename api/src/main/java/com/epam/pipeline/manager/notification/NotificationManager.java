@@ -353,9 +353,10 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
      * */
     public boolean notifyPausedRun(final PipelineRun run, final LocalDateTime pausedAt) {
         final LocalDateTime now = DateUtils.nowUTC();
-        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_PAUSED_RUN.getId());
+        final NotificationSettings settings = notificationSettingsManager.load(NotificationType.LONG_PAUSED_RUN);
         final NotificationMessage message = fillNotificationMessage(run, settings);
-
+        message.setTemplateParameters(PipelineRunMapper.map(run, null));
+        message.getTemplateParameters().put("stoppedTime", ChronoUnit.MINUTES.between(now, pausedAt));
         if (shouldNotify(run.getId(), settings)) {
             monitoringNotificationDao.createMonitoringNotification(message);
             monitoringNotificationDao

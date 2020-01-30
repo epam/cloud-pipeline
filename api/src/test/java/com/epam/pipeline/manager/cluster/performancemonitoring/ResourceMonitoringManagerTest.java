@@ -100,6 +100,9 @@ public class ResourceMonitoringManagerTest {
         Collections.singletonMap(UTILIZATION_LEVEL_LOW, TRUE_VALUE_STRING);
     private static final Map<String, String> PRESSURE_TAGS =
         Collections.singletonMap(UTILIZATION_LEVEL_HIGH, TRUE_VALUE_STRING);
+    public static final int SECONDS_59 = 59;
+    public static final int SECONDS_61 = 61;
+    public static final int ONE_SECOND = 1000;
 
     private ResourceMonitoringManager resourceMonitoringManager;
 
@@ -212,12 +215,13 @@ public class ResourceMonitoringManagerTest {
                 null, null, "autoscaleMasterRun", false, null, null));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
-        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
-                .toEpochMilli()));
+        autoscaleMasterRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
+                ChronoUnit.MINUTES).toEpochMilli()));
         autoscaleMasterRun.setProlongedAtTime(DateUtils.nowUTC().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
                 ChronoUnit.MINUTES));
         autoscaleMasterRun.setTags(stubTagMap);
-        autoscaleMasterRun.setPipelineRunParameters(Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
+        autoscaleMasterRun.setPipelineRunParameters(
+                Collections.singletonList(new PipelineRunParameter("CP_CAP_AUTOSCALE", "true")));
 
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
@@ -257,7 +261,7 @@ public class ResourceMonitoringManagerTest {
         pausedRun.setStatus(TaskStatus.PAUSED);
         pausedRun.setRunStatuses(Arrays.asList(
                 new RunStatus(TEST_PAUSED_RUN_ID, TaskStatus.RUNNING, "", DateUtils.nowUTC().minusHours(1)),
-                new RunStatus(TEST_PAUSED_RUN_ID, TaskStatus.PAUSED, "", DateUtils.nowUTC().minusSeconds(59))));
+                new RunStatus(TEST_PAUSED_RUN_ID, TaskStatus.PAUSED, "", DateUtils.nowUTC().minusSeconds(SECONDS_59))));
 
         pausedExpiredRun = new PipelineRun();
         pausedExpiredRun.setId(TEST_PAUSED_EXPIRED_RUN_ID);
@@ -265,7 +269,7 @@ public class ResourceMonitoringManagerTest {
         pausedExpiredRun.setStatus(TaskStatus.PAUSED);
         pausedExpiredRun.setRunStatuses(Arrays.asList(
                 new RunStatus(TEST_PAUSED_EXPIRED_RUN_ID, TaskStatus.RUNNING, "", DateUtils.nowUTC().minusHours(3)),
-                new RunStatus(TEST_PAUSED_EXPIRED_RUN_ID, TaskStatus.PAUSED, "", DateUtils.nowUTC().minusSeconds(61))));
+                new RunStatus(TEST_PAUSED_EXPIRED_RUN_ID, TaskStatus.PAUSED, "", DateUtils.nowUTC().minusSeconds(SECONDS_61))));
 
         mockStats = new HashMap<>();
         mockStats.put(okayRun.getPodId(), TEST_OK_RUN_CPU_LOAD); // in milicores, equals 80% of core load, per 2 cores,
@@ -342,7 +346,7 @@ public class ResourceMonitoringManagerTest {
         PipelineRun runsToNotify = runToNotifyPausedCaptor.getValue();
         Assert.assertEquals(TEST_PAUSED_EXPIRED_RUN_ID, runsToNotify.getId().longValue());
 
-        Thread.sleep(1000);
+        Thread.sleep(ONE_SECOND);
 
         resourceMonitoringManager.monitorResourceUsage();
 

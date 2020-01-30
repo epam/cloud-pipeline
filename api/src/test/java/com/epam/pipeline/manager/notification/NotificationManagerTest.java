@@ -107,6 +107,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final String BODY = "body";
     private static final String NON_EXISTING_USER = "not_existing_user";
     private static final Map<String, Object> PARAMETERS = Collections.singletonMap("key", "value");
+    public static final int ONE_SECOND = 1000;
 
     @Autowired
     private NotificationManager notificationManager;
@@ -278,7 +279,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         Assert.assertEquals(1, messages.size());
         Assert.assertFalse(needToTerminate);
 
-        Thread.sleep(1000);
+        Thread.sleep(ONE_SECOND);
 
         needToTerminate = notificationManager.notifyPausedRun(run, nowUTC);
         messages = monitoringNotificationDao.loadAllNotifications();

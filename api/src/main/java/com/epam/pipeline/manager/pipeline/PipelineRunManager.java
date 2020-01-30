@@ -819,6 +819,7 @@ public class PipelineRunManager {
         pipelineRun.setStatus(TaskStatus.RESUMING);
         updatePipelineStatus(pipelineRun);
         dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
+
         return pipelineRun;
     }
 
