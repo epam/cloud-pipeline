@@ -87,9 +87,10 @@ class ToolDependencyModel:
     @classmethod
     def load(cls, json):
         instance = ToolDependencyModel()
-        instance.name = json.get('name', None)
-        instance.version = json.get('version', None)
-        instance.ecosystem = json.get('ecosystem', None)
+        # Dependency name and version should be stripped  because some of them contain control characters.
+        instance.name = json.get('name', '').strip() or None
+        instance.version = json.get('version', '').strip() or None
+        instance.ecosystem = json.get('ecosystem', 'None')
         return instance
 
 
