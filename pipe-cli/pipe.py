@@ -1151,6 +1151,41 @@ def view_tools(tool_path,
                group,
                tool,
                version):
+    """
+    Either shows details of a tool / tool version or lists tools / tool groups.
+
+    Notice that docker registry should be specified explicitly if there is more than one
+    allowed docker registry registered in cloud pipeline.
+
+    \b
+    List tools in a personal, library or default tool group:
+      pipe view-tools
+
+    \b
+    List tool groups in a single docker registry:
+      pipe view-tools --registry docker-registry:port
+      pipe view-tools docker-registry:port
+
+    \b
+    List tools in a single tool group:
+      pipe view-tools --group library
+      pipe view-tools --registry docker-registry:port --group library
+      pipe view-tools docker-registry:port/library
+
+    \b
+    Show details of a single tool:
+      pipe view-tools --tool docker-registry:port/library/ubuntu
+      pipe view-tools --group library --tool ubuntu
+      pipe view-tools --registry docker-registry:port --group library --tool ubuntu
+      pipe view-tools docker-registry:port/library/ubuntu
+
+    \b
+    Show details of a single tool version:
+      pipe view-tools --tool docker-registry:port/library/ubuntu:18.04
+      pipe view-tools --group library --tool ubuntu --version 18.04
+      pipe view-tools --registry docker-registry:port --group library --tool ubuntu --version 18.04
+      pipe view-tools docker-registry:port/library/ubuntu:18.04
+    """
     if tool_path and (registry or group or tool or version):
         click.echo('Tool path positional argument cannot be specified along with the named parameters.', err=True)
         sys.exit(1)
