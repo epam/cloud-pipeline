@@ -623,7 +623,7 @@ def view_cluster_for_node(node_name):
 @click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
-              type=click.IntRange(1, MAX_INSTANCE_COUNT, clamp=True), required=False)
+              type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
 @click.option('-nc', '--cores', help='Number of cores that a cluster shall contain. This option will be ignored '
                                      'if -ic (--instance-count) option was specified',
               type=click.IntRange(2, MAX_CORES_COUNT, clamp=True), required=False)
