@@ -16,6 +16,7 @@
 - [Export user list](#export-user-list)
 - [Displaying SSH link for the active runs in the Dashboard view](#displaying-ssh-link-for-the-active-runs-in-the-dashboard-view)
 - [Enable Slurm for the Cloud Pipeline's clusters](#enable-slurm-workload-manager-for-the-cloud-pipelines-clusters)
+- [The ability to generate the `pipe run` command from the GUI](#the-ability-to-generate-the-pipe-run-command-from-the-gui)
 
 ***
 
@@ -311,6 +312,33 @@ This feature allows you to use the full stack of `Slurm` cluster's commands to a
 
 For more information about using `Slurm` via the `Cloud Pipeline` see
 [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#example-using-of-slurm-for-the-cloud-pipelines-clusters).
+
+## The ability to generate the `pipe run` command from the GUI
+
+A user has a couple of options to launch a new job in the Cloud Pipeline:
+
+- `API`
+- `CLI`
+- `GUI`
+
+The easiest way to perform it is the `GUI`. But for automation purposes - the `CLI` is much more handy. Previously, users had to construct the commands manually, which made it hard to use.
+
+Now, the ability to automatically generate the `CLI` commands for job runs appeared in the `GUI`.  
+Now, users can get a generated `CLI` command (that assembled all the run information):
+
+- at the **Launch** form:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_2.png)
+- at the **Run logs** form:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_1.png)  
+    **_Note_**: this button is available for completed runs too
+
+Once click these buttons - the popup with the corresponding `pipe run` command will appear:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_3.png)  
+User can copy such command and paste it to the `CLI` for further launch.  
+Also user can select the **API** tab in that popup and get the `POST` request for a job launch:  
+    ![CP_v.0.16_ReleaseNotes](attachments/RN016_PipeRunGUI_4.png)
+
+See an example [here](../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI.md#generate-pipeline-launch-command-via-the-gui).
 
 ***
 
