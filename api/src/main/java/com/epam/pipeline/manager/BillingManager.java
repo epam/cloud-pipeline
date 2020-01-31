@@ -80,7 +80,9 @@ public class BillingManager {
     private final RestHighLevelClient elasticsearchClient;
     private final String billingIndicesMonthlyPattern;
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
+    private final Map<DateHistogramInterval, ChronoUnit> previousPeriodShifts;
     private final List<DateHistogramInterval> validIntervals;
+    private final List<DateHistogramInterval> validPeriodShifts;
     private final SumAggregationBuilder costAggregation;
 
     @Autowired
@@ -103,9 +105,16 @@ public class BillingManager {
                 put(DateHistogramInterval.YEAR, TemporalAdjusters.lastDayOfYear());
             }
         };
+        this.previousPeriodShifts = new HashMap<DateHistogramInterval, ChronoUnit>() {{
+                put(DateHistogramInterval.MONTH, ChronoUnit.MONTHS);
+                put(DateHistogramInterval.YEAR, ChronoUnit.YEARS);
+            }
+        };
         this.validIntervals = Arrays.asList(DateHistogramInterval.DAY,
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
+        this.validPeriodShifts = Arrays.asList(DateHistogramInterval.MONTH,
+                                               DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
     }
 
@@ -114,17 +123,64 @@ public class BillingManager {
         final LocalDate to = request.getTo();
         final List<String> grouping = request.getGrouping();
         final DateHistogramInterval interval = request.getInterval();
+        final DateHistogramInterval prevPeriodShift = request.getPrevPeriodShift();
+        verifyRequest(from, to, grouping, interval, prevPeriodShift);
         final Map<String, List<String>> filters = request.getFilters();
         setAuthorizationFilters(filters);
+        final List<BillingChartInfo> currentPeriodStats = getPeriodStats(from, to, grouping, interval, filters);
+        if (prevPeriodShift != null) {
+            final ChronoUnit minusPeriod = previousPeriodShifts.get(prevPeriodShift);
+            final LocalDate prevFrom = from.minus(1, minusPeriod);
+            final LocalDate prevTo = to.minus(1, minusPeriod);
+            final List<BillingChartInfo> prevPeriodStats =
+                getPeriodStats(prevFrom, prevTo, grouping, interval, filters);
+            currentPeriodStats.forEach(currentPeriodStat ->
+                prevPeriodStats.stream()
+                    .filter(prevPeriodStat -> prevPeriodStat.getPeriodStart().plus(1, minusPeriod)
+                        .equals(currentPeriodStat.getPeriodStart()))
+                    .findAny()
+                    .ifPresent(matchingPrevStat -> setPreviousPeriodInfo(currentPeriodStat, matchingPrevStat))
+            );
+        }
+        return currentPeriodStats;
+    }
+
+    private List<BillingChartInfo> getPeriodStats(final LocalDate from, final LocalDate to,
+                                                  final List<String> grouping,
+                                                  final DateHistogramInterval interval,
+                                                  final Map<String, List<String>> filters) {
+        return interval != null
+               ? getBillingStats(from, to, filters, interval)
+               : getBillingStats(from, to, filters, grouping);
+    }
+
+    private void verifyRequest(final LocalDate from, final LocalDate to,
+                               final List<String> grouping,
+                               final DateHistogramInterval interval,
+                               final DateHistogramInterval prevPeriod) {
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("Requested period is not correct!");
+        }
         if (interval != null) {
+            if (!validIntervals.contains(interval)) {
+                throw new IllegalArgumentException("Given interval is not supported!");
+            }
             if (CollectionUtils.isNotEmpty(grouping)) {
                 throw new UnsupportedOperationException("Currently field and date grouping at"
                                                         + " the same time isn't supporting!");
             }
-            return getBillingStats(from, to, filters, interval);
-        } else {
-            return getBillingStats(from, to, filters, grouping);
         }
+        if (prevPeriod != null
+            && !validPeriodShifts.contains(prevPeriod)) {
+            throw new IllegalArgumentException("Given period shift is not supported!");
+
+        }
+    }
+
+    private void setPreviousPeriodInfo(final BillingChartInfo current, final BillingChartInfo prev) {
+        current.setPreviousCost(prev.getCost());
+        current.setPreviousStart(prev.getPeriodStart());
+        current.setPreviousEnd(prev.getPeriodEnd());
     }
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {
@@ -139,9 +195,6 @@ public class BillingManager {
     private List<BillingChartInfo> getBillingStats(final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final DateHistogramInterval interval) {
-        if (!validIntervals.contains(interval)) {
-            throw new IllegalArgumentException("Given interval is not supported!");
-        }
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
 

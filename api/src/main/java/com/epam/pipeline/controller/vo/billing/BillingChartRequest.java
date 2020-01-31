@@ -30,5 +30,6 @@ public class BillingChartRequest {
     private LocalDate to;
     private Map<String, List<String>> filters;
     private DateHistogramInterval interval;
+    private DateHistogramInterval prevPeriodShift;
     private List<String> grouping;
 }

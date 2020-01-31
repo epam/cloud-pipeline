@@ -17,12 +17,12 @@
 package com.epam.pipeline.entity.billing;
 
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
-@Value
+@Data
 @Builder
 public class BillingChartInfo {
 
@@ -30,4 +30,7 @@ public class BillingChartInfo {
     private LocalDateTime periodStart;
     private LocalDateTime periodEnd;
     private Long cost;
+    private LocalDateTime previousStart;
+    private LocalDateTime previousEnd;
+    private Long previousCost;
 }
