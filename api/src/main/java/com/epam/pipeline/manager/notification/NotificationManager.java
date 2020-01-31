@@ -69,6 +69,12 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
     private static final double PERCENT = 100.0;
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationManager.class);
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
+    private static final String IDLE_CPU_LEVEL = "idleCpuLevel";
+    private static final String CPU_RATE = "cpuRate";
+    private static final String MEMORY_THRESHOLD = "memoryThreshold";
+    private static final String MEMORY_RATE = "memoryRate";
+    private static final String DISK_THRESHOLD = "diskThreshold";
+    private static final String DISK_RATE = "diskRate";
 
     @Autowired
     private UserManager userManager;
@@ -202,7 +208,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         NotificationSettings runStatusSettings = notificationSettingsManager.load(NotificationType.PIPELINE_RUN_STATUS);
 
         if (runStatusSettings == null || !runStatusSettings.isEnabled()) {
-            LOGGER.info("No template configured for pipeline run status changes notifications or it was disabled!");
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+                    "run status is changed"));
             return;
         }
 
@@ -240,7 +247,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
 
         NotificationSettings idleRunSettings = notificationSettingsManager.load(notificationType);
         if (idleRunSettings == null || !idleRunSettings.isEnabled()) {
-            LOGGER.info("No template configured for idle pipeline run notifications or it was disabled!");
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+                    "idle pipeline run"));
             return;
         }
 
@@ -255,8 +263,8 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(idleRunSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
-            message.getTemplateParameters().put("idleCpuLevel", idleCpuLevel);
-            message.getTemplateParameters().put("cpuRate", pair.getRight() * PERCENT);
+            message.getTemplateParameters().put(IDLE_CPU_LEVEL, idleCpuLevel);
+            message.getTemplateParameters().put(CPU_RATE, pair.getRight() * PERCENT);
 
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());
             message.setCopyUserIds(ccUserIds);
@@ -272,13 +280,14 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
             final NotificationType notificationType) {
         if (CollectionUtils.isEmpty(pipelinesMetrics)) {
-            LOGGER.debug("No pipelines are high loaded, notifications won't be sent!");
+            LOGGER.debug(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_NO_NODE_IS_HIGH_LOADED));
             return;
         }
 
         final NotificationSettings notificationSettings = notificationSettingsManager.load(notificationType);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
-            LOGGER.info("No template configured for high consuming pipeline run notifications or it was disabled!");
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED,
+                    "high consumed pipeline run"));
             return;
         }
 
@@ -302,11 +311,11 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
             NotificationMessage message = new NotificationMessage();
             message.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
             message.setTemplateParameters(PipelineRunMapper.map(pair.getLeft(), null));
-            message.getTemplateParameters().put("memoryThreshold", memThreshold);
-            message.getTemplateParameters().put("memoryRate",
+            message.getTemplateParameters().put(MEMORY_THRESHOLD, memThreshold);
+            message.getTemplateParameters().put(MEMORY_RATE,
                     pair.getRight().getOrDefault(ELKUsageMetric.MEM, 0.0) * PERCENT);
-            message.getTemplateParameters().put("diskThreshold", diskThreshold);
-            message.getTemplateParameters().put("diskRate", pair.getRight()
+            message.getTemplateParameters().put(DISK_THRESHOLD, diskThreshold);
+            message.getTemplateParameters().put(DISK_RATE, pair.getRight()
                     .getOrDefault(ELKUsageMetric.FS, 0.0) * PERCENT);
 
             message.setToUserId(pipelineOwners.getOrDefault(pair.getLeft().getOwner(), new PipelineUser()).getId());

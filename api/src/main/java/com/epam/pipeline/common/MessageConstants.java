@@ -164,12 +164,11 @@ public final class MessageConstants {
     // ResourceMonitoringManager messages
     public static final String INFO_RUN_IDLE_NOTIFY = "info.run.idle.notify";
     public static final String INFO_RUN_IDLE_ACTION = "info.run.idle.action";
-    public static final String DEBUG_CPU_RUN_METRICS_RECEIVED = "debug.cpu.run.metrics.received";
     public static final String DEBUG_RUN_METRICS_REQUEST = "debug.run.metrics.request";
     public static final String DEBUG_RUN_IDLE_SKIP_CHECK = "debug.run.idle.skip.check";
-    public static final String DEBUG_RUN_NOT_IDLED = "debug.run.not.idled";
+    public static final String DEBUG_RUN_IDLE_STATUS = "debug.run.idle.status";
     public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
-    public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
+    public static final String DEBUG_MONITORING_METRICS_RECEIVED = "debug.metrics.received";
 
 
     // Kubernetes messages
@@ -326,6 +325,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
+    public static final String INFO_NOTIFICATION_NO_NODE_IS_HIGH_LOADED = "info.notification.no.node.is.high.loaded";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
     public static final String ERROR_NOTIFICATION_BODY_NOT_SPECIFIED = "error.notification.body.not.specified";
