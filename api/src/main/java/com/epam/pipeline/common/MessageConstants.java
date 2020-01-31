@@ -143,6 +143,7 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
     public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
+    public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";

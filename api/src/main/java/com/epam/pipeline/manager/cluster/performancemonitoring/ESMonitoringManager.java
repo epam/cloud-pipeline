@@ -95,7 +95,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         try {
             return new StringInputStream(statsWriter.convertStatsToCsvString(monitoringStats));
         } catch (IOException e) {
-            throw new IllegalStateException("Written csv stats file encoding differs from UTF-8.", e);
+            throw new IllegalStateException(messageHelper.getMessage(MessageConstants.ERROR_BAD_STATS_FILE_ENCODING),
+                                            e);
         }
     }
 

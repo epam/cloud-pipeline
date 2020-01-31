@@ -45,6 +45,7 @@ public class MonitoringStatsWriterTest {
     private static final List<Long> NETWORK_INTERFACES_RX = Arrays.asList(101L, 201L);
     private static final List<Long> NETWORK_INTERFACES_TX = Arrays.asList(102L, 202L);
     private static final double HUNDRED_PERCENTS = 100.0;
+    private static final int COMMON_INFO_SIZE = 5;
 
     @Test
     public void testMonitoringStatsToCsvConversion() {
@@ -57,7 +58,7 @@ public class MonitoringStatsWriterTest {
             .map(line -> line.replaceAll("\"", ""))
             .map(line -> line.split(",", -1))
             .peek(cells ->
-                      Assert.assertEquals(5 + 2 * DISK_INFOS.size() + 2 * NETWORK_INTERFACES.size(),
+                      Assert.assertEquals(COMMON_INFO_SIZE + 2 * DISK_INFOS.size() + 2 * NETWORK_INTERFACES.size(),
                                           cells.length)
             )
             .collect(Collectors.toList());
@@ -93,6 +94,13 @@ public class MonitoringStatsWriterTest {
         final long outBytes2 = NETWORK_INTERFACES_TX.get(1);
         Assert.assertEquals(inBytes2, Long.parseLong(secondStatEntry[11]));
         Assert.assertEquals(outBytes2, Long.parseLong(secondStatEntry[12]));
+    }
+
+    @Test
+    public void testEmptyStatsConversion() {
+        final List<MonitoringStats> stats = Collections.emptyList();
+        final MonitoringStatsWriter monitoringStatsWriter = new MonitoringStatsWriter();
+        Assert.assertEquals(StringUtils.EMPTY, monitoringStatsWriter.convertStatsToCsvString(stats));
     }
 
     private List<MonitoringStats> createStatsList() {

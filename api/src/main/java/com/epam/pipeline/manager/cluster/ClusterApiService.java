@@ -76,7 +76,7 @@ public class ClusterApiService {
         return usageMonitoringManager.getStatsForNode(nodeName, from, to);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#nodeName, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.nodePermission(#name, 'READ')")
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval);
