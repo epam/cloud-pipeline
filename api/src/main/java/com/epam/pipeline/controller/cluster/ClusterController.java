@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import javax.servlet.http.HttpServletResponse;
 
 @Controller
 @Api(value = "Cluster methods")
@@ -53,6 +57,7 @@ public class ClusterController extends AbstractRestController {
     private static final String NAME = "name";
     private static final String FROM = "from";
     private static final String TO = "to";
+    private static final String INTERVAL = "interval";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final ClusterApiService clusterApiService;
@@ -196,5 +201,27 @@ public class ClusterController extends AbstractRestController {
             @DateTimeFormat(pattern = DATE_TIME_FORMAT)
             @RequestParam(value = TO, required = false) final LocalDateTime to) {
         return Result.success(clusterApiService.getStatsForNode(name, from, to));
+    }
+
+    @GetMapping("/cluster/node/{name}/usage/report")
+    @ResponseBody
+    @ApiOperation(
+        value = "Download resource utilization report for given instance as a csv file.",
+        notes = "Download resource utilization report for given instance as a csv file.",
+        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public void downloadNodeUsageStatisticsReport(
+        @PathVariable(value = NAME) final String name,
+        @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+        @RequestParam(value = FROM, required = false) final LocalDateTime from,
+        @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+        @RequestParam(value = TO, required = false) final LocalDateTime to,
+        @RequestParam(value = INTERVAL, required = false, defaultValue = "PT1M") final Duration interval,
+        final HttpServletResponse response) throws IOException {
+        final InputStream inputStream = clusterApiService.getUsageStatisticsFile(name, from, to, interval);
+        final String reportName = String.format("%s_%s-%s-%s", name, from, to, interval);
+        writeStreamToResponse(response, inputStream, String.format("%s.%s", reportName, "csv"));
     }
 }

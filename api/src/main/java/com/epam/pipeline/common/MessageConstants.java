@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,7 @@ public final class MessageConstants {
     public static final String INFO_INSTANCE_STARTED = "info.instance.started";
     public static final String ERROR_RUN_DISK_ATTACHING_WRONG_STATUS = "error.run.attaching.wrong.status";
     public static final String ERROR_RUN_DISK_SIZE_NOT_FOUND = "error.run.disk.size.not.found";
+    public static final String ERROR_BAD_STATS_FILE_ENCODING = "error.run.stats.file.bad.encoding";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -260,7 +261,7 @@ public final class MessageConstants {
     //CAdvicer
     public static final String DEBUG_SEND_CADVISOR_REQUEST = "cadvisor.send.request";
     public static final String DEBUG_RECEIVE_CADVISOR_RESPONSE = "cadvisor.receive.response";
-
+    public static final String CADVISOR_STATS_REPORTS_NOT_SUPPORTED = "cadvisor.reports.not.supported";
 
     // Users
     public static final String ERROR_USER_ID_NOT_FOUND = "user.id.not.found";
