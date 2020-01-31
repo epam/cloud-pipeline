@@ -30,7 +30,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 
 @RequiredArgsConstructor
-public class StorageBillingMapper implements EntityMapper<StorageBillingInfo> {
+public class StorageBillingMapper extends EntityMapper<StorageBillingInfo> {
 
     private final SearchDocumentType documentType;
 
@@ -47,7 +47,6 @@ public class StorageBillingMapper implements EntityMapper<StorageBillingInfo> {
                 .field("region", billingInfo.getRegionName())
                 .field("provider", storage.getType())
                 .field("storage_type", billingInfo.getStorageType())
-                .field("billing_center", "TBD")
                 .field("usage", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
                 .field("created_date", billingInfo.getDate());
