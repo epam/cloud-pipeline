@@ -104,28 +104,6 @@ function get_current_run_id() {
     grep -v "^null$"
 }
 
-function get_run_info() {
-  _API="$1"
-  _API_TOKEN="$2"
-  _RUN_ID="$3"
-  call_api "$_API" "$_API_TOKEN" "run/$_RUN_ID" "GET"
-}
-
-function get_run_parameter() {
-  _INFO="$1"
-  _PARAMETER="$2"
-  _DEFAULT="$3"
-  VALUE=$(echo "$_INFO" |
-    jq -r ".payload.envVars.$_PARAMETER" |
-    grep -v "^null$")
-  if [[ "$VALUE" ]]
-  then
-    echo "$VALUE"
-  else
-    echo "$_DEFAULT"
-  fi
-}
-
 function is_true() {
   _BOOLEAN="$1"
   LOWER_BOOLEAN=$(echo "$_BOOLEAN" | tr "[:upper:]" "[:lower:]")
@@ -232,21 +210,26 @@ function append_disk_device() {
   btrfs device add "$_DEVICE" "$_MOUNT_POINT"
 }
 
-function get_system_preference() {
+function get_system_preferences() {
   _API="$1"
   _API_TOKEN="$2"
-  _PREFERENCE="$3"
-  _DEFAULT_PREFERENCE_VALUE="$4"
-  PREFERENCE_VALUE=$(
-    call_api "$_API" "$_API_TOKEN" "preferences/$_PREFERENCE" "GET" |
-      jq -r ".payload.value" |
-      grep -v "^null$"
-  )
-  if [[ "$PREFERENCE_VALUE" ]] && [[ "$PREFERENCE_VALUE" != "null" ]]
+  call_api "$_API" "$_API_TOKEN" "preferences" "GET" |
+    jq -r '.payload[] | .name + "=" + .value' |
+    grep -v "^null$"
+}
+
+function resolve_system_preference() {
+  _PREFERENCES="$1"
+  _PREFERENCE="$2"
+  _DEFAULT_VALUE="$3"
+
+  NAME_AND_VALUE=$(echo "$_PREFERENCES" | grep "$_PREFERENCE=")
+  VALUE="${NAME_AND_VALUE#$_PREFERENCE=}"
+  if [[ "$VALUE" ]]
   then
-    echo "$PREFERENCE_VALUE"
+    echo "$VALUE"
   else
-    echo "$_DEFAULT_PREFERENCE_VALUE"
+    echo "$_DEFAULT_VALUE"
   fi
 }
 
@@ -254,6 +237,10 @@ function get_fractional_part() {
   _FLOAT="$1"
   echo "$_FLOAT" | cut -d"." -f2
 }
+
+ERROR_LOG_LEVEL="ERROR"
+INFO_LOG_LEVEL="INFO"
+DEBUG_LOG_LEVEL="DEBUG"
 
 while [[ "$#" -gt "0" ]]
 do
@@ -300,29 +287,27 @@ then
   exit 1
 fi
 
-ERROR_LOG_LEVEL="ERROR"
-INFO_LOG_LEVEL="INFO"
-DEBUG_LOG_LEVEL="DEBUG"
 LOG_TASK="${LOG_TASK:-FilesystemAutoscaling}"
 MONITORING_DELAY="${MONITORING_DELAY:-10}"
 DISK_AVAILABILITY_TIMEOUT="${DISK_AVAILABILITY_TIMEOUT:-10}"
 SCALABLE_FILESYSTEM_TYPE="${SCALABLE_FILESYSTEM_TYPE:-btrfs}"
+
+AUTOSCALE_PREFERENCE="${AUTOSCALE_PREFERENCE:-cluster.instance.hdd.scale.enabled}"
+AUTOSCALE_PREFERENCE_DEFAULT="${AUTOSCALE_PREFERENCE_DEFAULT:-false}"
+MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-cluster.instance.hdd.scale.monitoring.delay}"
+MONITORING_DELAY_PREFERENCE_DEFAULT="${MONITORING_DELAY_PREFERENCE_DEFAULT:-10}"
 THRESHOLD_PREFERENCE="${THRESHOLD_PREFERENCE:-cluster.instance.hdd.scale.threshold.ratio}"
-THRESHOLD_PREFERENCE_DEFAULT_VALUE="${THRESHOLD_PREFERENCE_DEFAULT_VALUE:-0.75}"
+THRESHOLD_PREFERENCE_DEFAULT="${THRESHOLD_PREFERENCE_DEFAULT:-0.75}"
 DELTA_PREFERENCE="${DELTA_PREFERENCE:-cluster.instance.hdd.scale.delta.ratio}"
-DELTA_PREFERENCE_DEFAULT_VALUE="${DELTA_PREFERENCE_DEFAULT_VALUE:-0.5}"
-AUTOSCALE_PARAMETER_NAME="${AUTOSCALE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE}"
-MAX_DEVICE_NUMBER_PARAMETER_NAME=${MAX_DEVICE_NUMBER_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_DISK_COUNT}
-MAX_FS_SIZE_PARAMETER_NAME=${MAX_FS_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_SIZE}
-MIN_DISK_SIZE_PARAMETER_NAME=${MIN_DISK_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MIN_DISK_SIZE}
-MAX_DISK_SIZE_PARAMETER_NAME=${MAX_DISK_SIZE_PARAMETER_NAME:-CP_CAP_FS_AUTOSCALE_MAX_DISK_SIZE}
-DEFAULT_MAX_DEVICE_NUMBER=${DEFAULT_MAX_DEVICE_NUMBER:-40}
-DEFAULT_MAX_FS_SIZE=${DEFAULT_MAX_FS_SIZE:-16384}
-DEFAULT_MIN_DISK_SIZE=${DEFAULT_MIN_DISK_SIZE:-10}
-DEFAULT_MAX_DISK_SIZE=${DEFAULT_MAX_DISK_SIZE:-16384}
-THRESHOLD_RATIO=$(get_system_preference "$API" "$API_TOKEN" "$THRESHOLD_PREFERENCE" "$THRESHOLD_PREFERENCE_DEFAULT_VALUE")
-THRESHOLD=$(get_fractional_part "$THRESHOLD_RATIO")
-DELTA=$(get_system_preference "$API" "$API_TOKEN" "$DELTA_PREFERENCE" "$DELTA_PREFERENCE_DEFAULT_VALUE")
+DELTA_PREFERENCE_DEFAULT="${DELTA_PREFERENCE_DEFAULT:-0.5}"
+MAX_DEVICE_NUMBER_PREFERENCE="${MAX_DEVICE_NUMBER_PREFERENCE:-cluster.instance.hdd.scale.max.devices}"
+MAX_DEVICE_NUMBER_PREFERENCE_DEFAULT="${MAX_DEVICE_NUMBER_PREFERENCE_DEFAULT:-40}"
+MAX_FS_SIZE_PREFERENCE="${MAX_FS_SIZE_PREFERENCE:-cluster.instance.hdd.scale.max.size}"
+MAX_FS_SIZE_PREFERENCE_DEFAULT="${MAX_FS_SIZE_PREFERENCE_DEFAULT:-16384}"
+MIN_DISK_SIZE_PREFERENCE="${MIN_DISK_SIZE_PREFERENCE:-cluster.instance.hdd.scale.disk.min.size}"
+MIN_DISK_SIZE_PREFERENCE_DEFAULT="${MIN_DISK_SIZE_PREFERENCE_DEFAULT:-10}"
+MAX_DISK_SIZE_PREFERENCE="${MAX_DISK_SIZE_PREFERENCE:-cluster.instance.hdd.scale.disk.max.size}"
+MAX_DISK_SIZE_PREFERENCE_DEFAULT="${MAX_DISK_SIZE_PREFERENCE_DEFAULT:-16384}"
 
 if ! is_filesystem_scalable "$MOUNT_POINT" "$SCALABLE_FILESYSTEM_TYPE"
 then
@@ -334,31 +319,30 @@ pipe_log_debug "Starting filesystem $MOUNT_POINT autoscaling process for node $N
 while true
 do
   sleep "$MONITORING_DELAY"
-  RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-  if [[ -z "$RUN_ID" ]]
+  PREFERENCES=$(get_system_preferences "$API" "$API_TOKEN")
+  MONITORING_DELAY=$(resolve_system_preference "$PREFERENCES" "$MONITORING_DELAY_PREFERENCE" "$MONITORING_DELAY_PREFERENCE_DEFAULT")
+  AUTOSCALING_ENABLED=$(resolve_system_preference "$PREFERENCES" "$AUTOSCALE_PREFERENCE" "$AUTOSCALE_PREFERENCE_DEFAULT")
+  THRESHOLD_RATIO=$(resolve_system_preference "$PREFERENCES" "$THRESHOLD_PREFERENCE" "$THRESHOLD_PREFERENCE_DEFAULT")
+  THRESHOLD=$(get_fractional_part "$THRESHOLD_RATIO")
+  DELTA=$(resolve_system_preference "$PREFERENCES" "$DELTA_PREFERENCE" "$DELTA_PREFERENCE_DEFAULT")
+  MAX_DEVICE_NUMBER=$(resolve_system_preference "$PREFERENCES" "$MAX_DEVICE_NUMBER_PREFERENCE" "$MAX_DEVICE_NUMBER_PREFERENCE_DEFAULT")
+  MAX_FS_SIZE=$(resolve_system_preference "$PREFERENCES" "$MAX_FS_SIZE_PREFERENCE" "$MAX_FS_SIZE_PREFERENCE_DEFAULT")
+  MIN_DISK_SIZE=$(resolve_system_preference "$PREFERENCES" "$MIN_DISK_SIZE_PREFERENCE" "$MIN_DISK_SIZE_PREFERENCE_DEFAULT")
+  MAX_DISK_SIZE=$(resolve_system_preference "$PREFERENCES" "$MAX_DISK_SIZE_PREFERENCE" "$MAX_DISK_SIZE_PREFERENCE_DEFAULT")
+  if is_true "$AUTOSCALING_ENABLED"
   then
-    pipe_log_debug "No run is assigned to the node."
-    continue
-  fi
-  pipe_log_debug "Run #$RUN_ID is assigned to the node."
-  RUN_INFO=$(get_run_info "$API" "$API_TOKEN" "$RUN_ID")
-  AUTOSCALE_PARAMETER_VALUE=$(get_run_parameter "$RUN_INFO" "$AUTOSCALE_PARAMETER_NAME")
-  if is_true "$AUTOSCALE_PARAMETER_VALUE"
-  then
-    pipe_log_debug "Run #$RUN_ID has filesystem autoscaling capability being enabled."
+    pipe_log_debug "Filesystem autoscaling capability is enabled."
     CURRENT_USAGE=$(get_current_disk_usage "$MOUNT_POINT")
     if [[ "$CURRENT_USAGE" -ge "$THRESHOLD" ]]
     then
       pipe_log_debug "Filesystem $MOUNT_POINT usage overflows the configured threshold $CURRENT_USAGE% >= $THRESHOLD% and it's capacity will be expanded by the delta of $DELTA."
-      MOUNTED_DEVICE_NUMBER=$(get_mounted_devices "$MOUNT_POINT"| wc -l)
-      MAX_DEVICE_NUMBER=$(get_run_parameter "$RUN_INFO" "$MAX_DEVICE_NUMBER_PARAMETER_NAME" "$DEFAULT_MAX_DEVICE_NUMBER")
+      MOUNTED_DEVICE_NUMBER=$(get_mounted_devices "$MOUNT_POINT" | wc -l)
       if [[ "$MOUNTED_DEVICE_NUMBER" -ge "$MAX_DEVICE_NUMBER" ]]
       then
         pipe_log_debug "Allowed number of $MAX_DEVICE_NUMBER devices has been already reached for the filesystem $MOUNT_POINT."
         continue
       fi
       TOTAL_SIZE=$(get_total_disk_size "$MOUNT_POINT")
-      MAX_FS_SIZE=$(get_run_parameter "$RUN_INFO" "$MAX_FS_SIZE_PARAMETER_NAME" "$DEFAULT_MAX_FS_SIZE")
       REQUIRED_SIZE=$(get_required_disk_size "$TOTAL_SIZE" "$DELTA")
       if [[ "$REQUIRED_SIZE" -ge "$MAX_FS_SIZE" ]]
       then
@@ -370,11 +354,15 @@ do
         pipe_log_debug "Filesystem $MOUNT_POINT cannot be autoscaled even further."
         continue
       fi
-      MIN_DISK_SIZE=$(get_run_parameter "$RUN_INFO" "$MIN_DISK_SIZE_PARAMETER_NAME" "$DEFAULT_MIN_DISK_SIZE")
-      MAX_DISK_SIZE=$(get_run_parameter "$RUN_INFO" "$MAX_DISK_SIZE_PARAMETER_NAME" "$DEFAULT_MAX_DISK_SIZE")
       ADDITIONAL_DISK_SIZE=$(get_additional_disk_size "$TOTAL_SIZE" "$REQUIRED_SIZE" "$MIN_DISK_SIZE" "$MAX_DISK_SIZE")
       RESULTING_SIZE=$((TOTAL_SIZE + ADDITIONAL_DISK_SIZE))
       pipe_log_debug "Scaling filesystem $MOUNT_POINT ${TOTAL_SIZE}G + ${ADDITIONAL_DISK_SIZE}G = ${RESULTING_SIZE}G..."
+      RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+      if [[ -z "$RUN_ID" ]]
+      then
+        pipe_log_debug "No run is assigned to the node. Filesystem won't be autoscaled."
+        continue
+      fi
       if attach_new_disk "$API" "$API_TOKEN" "$RUN_ID" "$ADDITIONAL_DISK_SIZE"
       then
         pipe_log_debug "New disk ${ADDITIONAL_DISK_SIZE}G was attached to the node."
@@ -403,6 +391,6 @@ do
       pipe_log_debug "Filesystem $MOUNT_POINT usage satisfies the configured threshold $CURRENT_USAGE% < $THRESHOLD%."
     fi
   else
-    pipe_log_debug "Run #$RUN_ID has disk autoscaling capability being disabled."
+    pipe_log_debug "Filesystem autoscaling capability is disabled."
   fi
 done
