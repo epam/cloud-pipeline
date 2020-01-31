@@ -819,7 +819,6 @@ public class PipelineRunManager {
         pipelineRun.setStatus(TaskStatus.RESUMING);
         updatePipelineStatus(pipelineRun);
         dockerContainerOperationManager.resumeRun(pipelineRun, tool.getEndpoints());
-
         return pipelineRun;
     }
 
@@ -904,7 +903,7 @@ public class PipelineRunManager {
     /**
      * Adjust statuses to the given period: all the statuses after the end of the period are removed,
      * activity periods completed before start of the period are removed as well.
-     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#timestamp}
+     * If run was in {@link TaskStatus#RUNNING} state during {@code start} moment, its {@link RunStatus#getTimestamp()}
      * will be adjusted to {@code start} time point.
      *
      * @param runStatuses statuses to be adjusted
