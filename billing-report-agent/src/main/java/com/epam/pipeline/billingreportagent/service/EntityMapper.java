@@ -26,7 +26,7 @@ import java.io.IOException;
 public abstract class EntityMapper<T> {
 
     @Value("${sync.billing.center.key}")
-    String billingCenterKey;
+    private String billingCenterKey;
 
     abstract public XContentBuilder map(EntityContainer<T> doc);
 

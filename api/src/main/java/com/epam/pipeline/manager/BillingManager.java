@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -75,6 +76,7 @@ public class BillingManager {
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
     private static final String ES_BILLABLE_RESOURCE_WILDCARD = "*";
+    private static final LocalDate FIRST_DAY_OF_BILLING = LocalDate.of(2019, 4, 19);
 
     private final AuthManager authManager;
     private final RestHighLevelClient elasticsearchClient;
@@ -107,6 +109,7 @@ public class BillingManager {
         };
         this.previousPeriodShifts = new HashMap<DateHistogramInterval, ChronoUnit>() {{
                 put(DateHistogramInterval.MONTH, ChronoUnit.MONTHS);
+                put(DateHistogramInterval.QUARTER, ChronoUnit.YEARS);
                 put(DateHistogramInterval.YEAR, ChronoUnit.YEARS);
             }
         };
@@ -114,18 +117,19 @@ public class BillingManager {
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
         this.validPeriodShifts = Arrays.asList(DateHistogramInterval.MONTH,
+                                               DateHistogramInterval.QUARTER,
                                                DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
-        final LocalDate from = request.getFrom();
-        final LocalDate to = request.getTo();
-        final List<String> grouping = request.getGrouping();
-        final DateHistogramInterval interval = request.getInterval();
-        final DateHistogramInterval prevPeriodShift = request.getPrevPeriodShift();
-        verifyRequest(from, to, grouping, interval, prevPeriodShift);
-        final Map<String, List<String>> filters = request.getFilters();
+        final BillingChartRequest adjustedRequest = verifyRequest(request);
+        final LocalDate from = adjustedRequest.getFrom();
+        final LocalDate to = adjustedRequest.getTo();
+        final List<String> grouping = adjustedRequest.getGrouping();
+        final DateHistogramInterval interval = adjustedRequest.getInterval();
+        final DateHistogramInterval prevPeriodShift = adjustedRequest.getPrevPeriodShift();
+        final Map<String, List<String>> filters = adjustedRequest.getFilters();
         setAuthorizationFilters(filters);
         final List<BillingChartInfo> currentPeriodStats = getPeriodStats(from, to, grouping, interval, filters);
         if (prevPeriodShift != null) {
@@ -154,10 +158,16 @@ public class BillingManager {
                : getBillingStats(from, to, filters, grouping);
     }
 
-    private void verifyRequest(final LocalDate from, final LocalDate to,
-                               final List<String> grouping,
-                               final DateHistogramInterval interval,
-                               final DateHistogramInterval prevPeriod) {
+    private BillingChartRequest verifyRequest(final BillingChartRequest request) {
+        final LocalDate to = (request.getTo() == null)
+                             ? LocalDate.now()
+                             : request.getTo();
+        final DateHistogramInterval prevPeriodShift = request.getPrevPeriodShift();
+        final LocalDate from = (request.getFrom() == null)
+                               ? calculatePeriodStart(to, prevPeriodShift)
+                               : request.getFrom();
+        final List<String> grouping = request.getGrouping();
+        final DateHistogramInterval interval = request.getInterval();
         if (from.isAfter(to)) {
             throw new IllegalArgumentException("Requested period is not correct!");
         }
@@ -170,10 +180,35 @@ public class BillingManager {
                                                         + " the same time isn't supporting!");
             }
         }
-        if (prevPeriod != null
-            && !validPeriodShifts.contains(prevPeriod)) {
-            throw new IllegalArgumentException("Given period shift is not supported!");
+        if (prevPeriodShift != null) {
+            if (!validPeriodShifts.contains(prevPeriodShift)) {
+                throw new IllegalArgumentException("Given period shift is not supported!");
+            } else {
+                final long requestedPeriodDays = ChronoUnit.DAYS.between(from, to);
+                final long prevPeriodShiftDays = previousPeriodShifts.get(prevPeriodShift).getDuration().toDays();
+                if (requestedPeriodDays > prevPeriodShiftDays) {
+                    throw new IllegalArgumentException("Requested period clashes with the previous one!");
+                }
+                return new BillingChartRequest(from, to, request.getFilters(), interval, prevPeriodShift, grouping);
+            }
+        }
+        return new BillingChartRequest(from, to, request.getFilters(), interval, prevPeriodShift, grouping);
+    }
 
+    private LocalDate calculatePeriodStart(final LocalDate periodEnd, final DateHistogramInterval prevPeriodShift) {
+        final String period = (prevPeriodShift == null)
+                              ? StringUtils.EMPTY
+                              : prevPeriodShift.toString();
+        switch (period) {
+            case "1M":
+                return periodEnd.with(periodEnd.withDayOfMonth(1));
+            case "1q":
+                return periodEnd.with(periodEnd.getMonth().firstMonthOfQuarter())
+                    .with(TemporalAdjusters.firstDayOfMonth());
+            case "1y":
+                return periodEnd.with(periodEnd.withDayOfYear(1));
+            default:
+                return FIRST_DAY_OF_BILLING;
         }
     }
 
@@ -210,7 +245,11 @@ public class BillingManager {
 
         try {
             final SearchResponse searchResponse = elasticsearchClient.search(searchRequest);
-            final ParsedDateHistogram histogram = searchResponse.getAggregations().get(HISTOGRAM_AGGREGATION_NAME);
+            final Aggregations aggregations = searchResponse.getAggregations();
+            if (aggregations == null) {
+                return Collections.emptyList();
+            }
+            final ParsedDateHistogram histogram = aggregations.get(HISTOGRAM_AGGREGATION_NAME);
             return parseHistogram(interval, histogram);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
