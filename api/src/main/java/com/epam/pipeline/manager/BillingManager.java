@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
@@ -159,9 +160,11 @@ public class BillingManager {
     }
 
     private BillingChartRequest verifyRequest(final BillingChartRequest request) {
-        final LocalDate to = (request.getTo() == null)
-                             ? LocalDate.now()
-                             : request.getTo();
+        final LocalDate yesterday = LocalDate.now().minusDays(1);
+        final LocalDate requestedTo = request.getTo();
+        final LocalDate to = (requestedTo == null)
+                             ? yesterday
+                             : ObjectUtils.min(requestedTo, yesterday);
         final DateHistogramInterval prevPeriodShift = request.getPrevPeriodShift();
         final LocalDate from = (request.getFrom() == null)
                                ? calculatePeriodStart(to, prevPeriodShift)
