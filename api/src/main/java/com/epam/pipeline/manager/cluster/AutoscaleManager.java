@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
@@ -51,6 +52,7 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -83,6 +85,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
     private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
     private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
+    private final Map<String, LocalDateTime> nodeLostTimestamps = new ConcurrentHashMap<>();
+
 
     private static final String FREE_NODE_PREFIX = "f";
 
@@ -160,6 +164,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     private void checkFreeNodes(Set<String> scheduledRuns, KubernetesClient client,
             Set<String> pods) {
         NodeList nodeList = getAvailableNodes(client);
+        cleanupNodeLostTimestamps(nodeList);
         RunInstance defaultInstance = autoscalerService.getDefaultInstance();
         List<RunInstance> requiredInstances = getRequiredInstances(scheduledRuns, client);
         nodeList.getItems().forEach(node -> {
@@ -220,6 +225,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         if (minClusterSize > 0 && currentClusterSize < minClusterSize) {
             createFreeNodes(nodeList);
         }
+    }
+
+    private void cleanupNodeLostTimestamps(final NodeList nodeList) {
+        Set<String> livingNodeNames = nodeList.getItems()
+                .stream()
+                .map(node -> node.getMetadata().getName())
+                .collect(Collectors.toSet());
+        nodeLostTimestamps.keySet().removeIf(key -> !livingNodeNames.contains(key));
     }
 
     private List<RunInstance> getRequiredInstances(Set<String> scheduledRuns, KubernetesClient client) {
@@ -515,20 +528,34 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 .isPresent();
     }
 
-    private boolean isNodeAvailable(final Node node) {
+    boolean isNodeAvailable(final Node node) {
         if (node == null) {
             return false;
         }
-        List<NodeCondition> conditions = node.getStatus().getConditions();
+        final List<NodeCondition> conditions = node.getStatus().getConditions();
         if (CollectionUtils.isEmpty(conditions)) {
+            // no conditions here, so reset "node lost" timestamp just in case
+            nodeLostTimestamps.remove(node.getMetadata().getName());
             return true;
         }
-        String lastReason = conditions.get(0).getReason();
-        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
-            if (lastReason.contains(reason)) {
+
+        final String lastReason = conditions.get(0).getReason();
+        if (KubernetesConstants.NODE_OUT_OF_ORDER_REASONS.stream().anyMatch(lastReason::contains)) {
+            final Integer tolerantSeconds = preferenceManager.getPreference(
+                    SystemPreferences.CLUSTER_NODE_LOST_TOLERANT_SECONDS);
+            final LocalDateTime nowUTC = DateUtils.nowUTC();
+            // save new nodeLostTimestamp if was empty since we have one of NODE_OUT_OF_ORDER_REASONS
+            final LocalDateTime nodeLostTimestamp = nodeLostTimestamps
+                    .computeIfAbsent(node.getMetadata().getName(), id -> nowUTC);
+
+            if (nodeLostTimestamp.plusSeconds(tolerantSeconds).isBefore(nowUTC)) {
                 LOGGER.debug("Node is out of order: {}", conditions);
                 return false;
             }
+        } else {
+            // clean up since we check that here is no reasons from NODE_OUT_OF_ORDER_REASONS
+            // so we need to reset "node lost" timestamp
+            nodeLostTimestamps.remove(node.getMetadata().getName());
         }
         return true;
     }

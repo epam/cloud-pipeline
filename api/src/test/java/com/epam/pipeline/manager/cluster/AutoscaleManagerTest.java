@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
@@ -30,7 +31,9 @@ import com.epam.pipeline.util.KubernetesTestUtils;
 import io.fabric8.kubernetes.api.model.DoneableNode;
 import io.fabric8.kubernetes.api.model.DoneablePod;
 import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.NodeStatus;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodCondition;
@@ -43,6 +46,7 @@ import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.PodResource;
 import io.fabric8.kubernetes.client.dsl.Resource;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -58,8 +62,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class AutoscaleManagerTest {
+
     private static final String TEST_KUBE_NAMESPACE = "testNamespace";
+    private static final String NODE_NAME = "testNode";
     private static final Long TEST_RUN_ID = 111L;
+    private static final String NODE_STATUS_UNKNOWN = "NodeStatusUnknown";
+    private static final String KUBELET_READY = "KubeletReady";
 
     @Mock
     private PipelineRunManager pipelineRunManager;
@@ -108,6 +116,7 @@ public class AutoscaleManagerTest {
             .thenReturn(SystemPreferences.CLUSTER_RANDOM_SCHEDULING.getDefaultValue());
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY))
             .thenReturn(SystemPreferences.CLUSTER_HIGH_NON_BATCH_PRIORITY.getDefaultValue());
+        when(preferenceManager.getPreference(SystemPreferences.CLUSTER_NODE_LOST_TOLERANT_SECONDS)).thenReturn(0);
 
         when(kubernetesManager.getKubernetesClient(any(Config.class))).thenReturn(kubernetesClient);
 
@@ -175,5 +184,61 @@ public class AutoscaleManagerTest {
         verify(cloudFacade, times(2))
             .scaleUpNode(Mockito.eq(TEST_RUN_ID), argThat(
                 Matchers.hasProperty("spot", Matchers.is(false))));
+    }
+
+    @Test
+    public void isNodeAvailableWorkWithTolerantSecondsPrefTest() throws InterruptedException {
+        Node node = getUnavailableNode();
+
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+        Thread.sleep(1);
+        Assert.assertFalse(autoscaleManager.isNodeAvailable(node));
+    }
+
+    @Test
+    public void checkThatNodeLostTimestampsIsClearedWhenConditionsChange() throws InterruptedException {
+        Node node = getUnavailableNode();
+
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+        Thread.sleep(1);
+        Assert.assertFalse(autoscaleManager.isNodeAvailable(node));
+
+        node.getStatus().setConditions(Collections.singletonList(
+                new NodeCondition(DateUtils.now().toString(), DateUtils.now().toString(),
+                        "", KUBELET_READY, "", "")
+        ));
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+        Thread.sleep(1);
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+    }
+
+    @Test
+    public void checkThatNodeLostTimestampsIsClearedWhenConditionsAreEmpty() throws InterruptedException {
+        Node node = getUnavailableNode();
+
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+        Thread.sleep(1);
+        Assert.assertFalse(autoscaleManager.isNodeAvailable(node));
+
+        node.getStatus().setConditions(Collections.emptyList());
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+        Thread.sleep(1);
+        Assert.assertTrue(autoscaleManager.isNodeAvailable(node));
+    }
+
+    private Node getUnavailableNode() {
+        Node node = new Node();
+        ObjectMeta metadata = new ObjectMeta();
+        metadata.setName(NODE_NAME);
+        NodeStatus status = new NodeStatus();
+        status.setConditions(
+                Collections.singletonList(
+                        new NodeCondition(DateUtils.now().toString(), DateUtils.now().toString(),
+                                "", NODE_STATUS_UNKNOWN, "", "")
+                )
+        );
+        node.setStatus(status);
+        node.setMetadata(metadata);
+        return node;
     }
 }

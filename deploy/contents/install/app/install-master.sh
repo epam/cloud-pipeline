@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -181,8 +181,11 @@ sleep 10
 #14
 # Allow services to bind to 80+ ports, as the default range is 30000-32767
 # --service-node-port-range option is added as a next line after init command "- kube-apiserver"
-# kubelet monitors /etc/kubernetes/manifests folder, so kube-api pod will be recreated automatically
+# kubelet monitors /etc/kubernetes/manifests folder, so kube-api and  kube-controller-manager pods will be recreated automatically
 sed -i '/- kube-apiserver/a \    \- --service-node-port-range=80-32767' /etc/kubernetes/manifests/kube-apiserver.yaml
+
+# increase pod-eviction-timeout from 300s to be able to save unresponsive pods from deletion
+sed -i "/- kube-controller-manager/a \    \- --pod-eviction-timeout=${CP_KUBE_POD_EVICTION_TIMEOUT:-900s}" /etc/kubernetes/manifests/kube-controller-manager.yaml
 
 sleep 30
 
