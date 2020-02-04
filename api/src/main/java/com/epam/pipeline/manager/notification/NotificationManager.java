@@ -209,7 +209,7 @@ public class NotificationManager { // TODO: rewrite with Strategy pattern?
         }
 
         final List<TaskStatus> runStatusesToReport = ListUtils.emptyIfNull(runStatusSettings.getStatusesToInform());
-        if (CollectionUtils.isEmpty(runStatusesToReport) || !runStatusesToReport.contains(pipelineRun.getStatus())) {
+        if (!CollectionUtils.isEmpty(runStatusesToReport) && !runStatusesToReport.contains(pipelineRun.getStatus())) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION,
                     pipelineRun.getStatus(),
                     runStatusesToReport.stream().map(TaskStatus::name).collect(Collectors.joining(", "))));
