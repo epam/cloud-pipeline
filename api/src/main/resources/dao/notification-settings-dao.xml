@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -30,7 +30,8 @@
                         ns.informed_user_ids,
                         ns.keep_informed_admins,
                         ns.keep_informed_owner,
-                        ns.enabled
+                        ns.enabled,
+                        ns.statuses_to_inform
                     FROM
                         pipeline.notification_settings ns
                     WHERE ns.id = ?
@@ -48,7 +49,8 @@
                         ns.informed_user_ids,
                         ns.keep_informed_admins,
                         ns.keep_informed_owner,
-                        ns.enabled
+                        ns.enabled,
+                        ns.statuses_to_inform
                     FROM
                         pipeline.notification_settings ns
                 ]]>
@@ -65,7 +67,8 @@
                         informed_user_ids = :INFORMED_USER_IDS,
                         keep_informed_admins = :KEEP_INFORMED_ADMINS,
                         keep_informed_owner = :KEEP_INFORMED_OWNER,
-                        enabled = :ENABLED
+                        enabled = :ENABLED,
+                        statuses_to_inform = :STATUSES_TO_INFORM
                     WHERE
                        id = :ID
                 ]]>
@@ -89,7 +92,8 @@
                         informed_user_ids,
                         keep_informed_admins,
                         keep_informed_owner,
-                        enabled)
+                        enabled,
+                        statuses_to_inform)
                     VALUES (
                         :ID,
                         :TEMPLATE_ID,
@@ -98,7 +102,8 @@
                         :INFORMED_USER_IDS,
                         :KEEP_INFORMED_ADMINS,
                         :KEEP_INFORMED_OWNER,
-                        :ENABLED)
+                        :ENABLED,
+                        :STATUSES_TO_INFORM)
                 ]]>
             </value>
         </property>
