@@ -99,12 +99,13 @@ def call_api(method_url, data=None):
                         if response_data['status'] == 'OK':
                                 print('API call status OK')
                                 result = response_data
-                                break
                         else:
                                 err_msg = 'No error message available'
                                 if 'message' in response_data:
                                         err_msg = response_data['message']
                                 print('Error ocurred while calling API ({})\n{}'.format(method_url, err_msg))
+                                print('As the API technically succeeded, it will not be retried')
+                        break
                 except Exception as api_exception:
                         print('Error ocurred while calling API ({})\n{}'.format(method_url, str(api_exception)))
 
