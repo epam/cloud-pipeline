@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.acl.billing;
+package com.epam.pipeline.entity.billing;
 
-import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
-import com.epam.pipeline.entity.billing.BillingChartInfo;
-import com.epam.pipeline.manager.billing.BillingManager;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+public enum BillingGrouping {
+    RUN_INSTANCE_TYPE("instance_type"),
+    RUN_COMPUTE_TYPE("compute_type"),
+    PIPELINE("pipeline"),
+    TOOL("tool"),
+    STORAGE("id"),
+    STORAGE_TYPE("storage_type"),
+    USER("owner");
 
-import java.util.List;
+    private String correspondingField;
 
-@Service
-@RequiredArgsConstructor
-public class BillingApiService {
+    BillingGrouping(String correspondingField) {
+        this.correspondingField = correspondingField;
+    }
 
-    private final BillingManager billingManager;
-
-    public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
-        return billingManager.getBillingChartInfo(request);
+    public String getCorrespondingField() {
+        return correspondingField;
     }
 }

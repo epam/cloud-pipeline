@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager;
+package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
+import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -75,6 +76,7 @@ public class BillingManager {
 
     private static final String COST_FIELD = "cost";
     private static final String ACCUMULATED_COST = "accumulatedCost";
+    private static final String USAGE_FIELD = "usage";
     private static final String BILLING_DATE_FIELD = "created_date";
     private static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
@@ -86,13 +88,17 @@ public class BillingManager {
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
     private final SumAggregationBuilder costAggregation;
+    private final SumAggregationBuilder usageAggregation;
+    private final EntityDetailsBillingInfoLoader entityDetailsLoader;
 
     @Autowired
     public BillingManager(final AuthManager authManager,
                           final PreferenceManager preferenceManager,
-                          final @Value("${billing.index.common.prefix}") String commonPrefix) {
+                          final @Value("${billing.index.common.prefix}") String commonPrefix,
+                          final EntityDetailsBillingInfoLoader entityDetailsLoader) {
         this.preferenceManager = preferenceManager;
         this.authManager = authManager;
+        this.entityDetailsLoader = entityDetailsLoader;
         this.billingIndicesMonthlyPattern = String.join("-",
                                                         commonPrefix,
                                                         ES_BILLABLE_RESOURCE_WILDCARD,
@@ -106,13 +112,14 @@ public class BillingManager {
                                             DateHistogramInterval.MONTH,
                                             DateHistogramInterval.YEAR);
         this.costAggregation = AggregationBuilders.sum(COST_FIELD).field(COST_FIELD);
+        this.usageAggregation = AggregationBuilders.sum(USAGE_FIELD).field(USAGE_FIELD);
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         final RestHighLevelClient elasticsearchClient = buildClient(preferenceManager);
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
-        final List<String> grouping = request.getGrouping();
+        final List<BillingGrouping> grouping = request.getGrouping();
         final DateHistogramInterval interval = request.getInterval();
         final Map<String, List<String>> filters = request.getFilters();
         setAuthorizationFilters(filters);
@@ -183,13 +190,15 @@ public class BillingManager {
     private List<BillingChartInfo> getBillingStats(final RestHighLevelClient elasticsearchClient,
                                                    final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
-                                                   final List<String> grouping) {
+                                                   final List<BillingGrouping> grouping) {
         final SearchRequest searchRequest = new SearchRequest();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
         if (CollectionUtils.isNotEmpty(grouping)) {
             grouping.forEach(field -> {
-                final AggregationBuilder fieldAgg = AggregationBuilders.terms(field)
-                    .field(field).subAggregation(costAggregation);
+                final AggregationBuilder fieldAgg = AggregationBuilders.terms(field.getCorrespondingField())
+                    .field(field.getCorrespondingField());
+                fieldAgg.subAggregation(costAggregation);
+                fieldAgg.subAggregation(usageAggregation);
                 searchSource.aggregation(fieldAgg);
             });
         }
@@ -206,16 +215,21 @@ public class BillingManager {
     }
 
     private List<BillingChartInfo> getBillingChartInfoForGrouping(final LocalDate from, final LocalDate to,
-                                                                  final List<String> grouping,
+                                                                  final List<BillingGrouping> grouping,
                                                                   final SearchResponse searchResponse) {
         final Aggregations allAggregations = searchResponse.getAggregations();
         if (CollectionUtils.isNotEmpty(grouping)) {
             return grouping.stream()
                 .map(field -> {
-                    final ParsedStringTerms terms = allAggregations.get(field);
+                    final String groupingField = field.getCorrespondingField();
+                    final ParsedStringTerms terms = allAggregations.get(groupingField);
                     return terms.getBuckets().stream().map(bucket -> {
                         final Aggregations aggregations = bucket.getAggregations();
-                        return getCostAggregation(from, to, field, (String) bucket.getKey(), aggregations);
+                        return getCostAggregation(from, to,
+                                                  field,
+                                                  (String) bucket.getKey(),
+                                                  aggregations,
+                                                  true);
                     });
                 })
                 .flatMap(Function.identity())
@@ -223,23 +237,36 @@ public class BillingManager {
         } else {
             return CollectionUtils.isEmpty(allAggregations.asList())
                    ? Collections.emptyList()
-                   : Collections.singletonList(getCostAggregation(from, to, null, null, allAggregations));
+                   : Collections.singletonList(getCostAggregation(from, to, null, null, allAggregations, false));
         }
     }
 
     private BillingChartInfo getCostAggregation(final LocalDate from, final LocalDate to,
-                                                final String groupField,
+                                                final BillingGrouping groupField,
                                                 final String groupValue,
-                                                final Aggregations aggregations) {
+                                                final Aggregations aggregations,
+                                                final boolean loadDetails) {
         final ParsedSum sumAggResult = aggregations.get(COST_FIELD);
         final long costVal = new Double(sumAggResult.getValue()).longValue();
         final BillingChartInfo.BillingChartInfoBuilder builder = BillingChartInfo.builder()
             .periodStart(from.atStartOfDay())
             .periodEnd(to.atTime(LocalTime.MAX))
             .cost(costVal);
+        final Map<String, String> groupingInfo = new HashMap<>();
         if (groupField != null) {
-            builder.groupingInfo(Collections.singletonMap(groupField, groupValue));
+            groupingInfo.put(groupField.toString(), groupValue);
         }
+        if (loadDetails) {
+            final ParsedSum usageAggResult = aggregations.get(USAGE_FIELD);
+            final long usageVal = new Double(usageAggResult.getValue()).longValue();
+            groupingInfo.put(USAGE_FIELD, Long.toString(usageVal));
+            try {
+                groupingInfo.putAll(entityDetailsLoader.loadDetails(groupField, groupValue));
+            } catch (NullPointerException | IllegalArgumentException ex) {
+                log.info(String.format("%s entity for %s grouping is not found", groupValue, groupField));
+            }
+        }
+        builder.groupingInfo(groupingInfo);
         return builder.build();
     }
 
