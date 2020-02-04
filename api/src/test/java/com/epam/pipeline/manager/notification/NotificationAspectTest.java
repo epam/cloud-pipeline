@@ -49,8 +49,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.*;
-
 @DirtiesContext
 @ContextConfiguration(classes = TestApplicationWithAclSecurity.class)
 public class NotificationAspectTest extends AbstractManagerTest {
@@ -91,7 +89,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
         notificationTemplateDao.createNotificationTemplate(statusTemplate);
 
         NotificationSettings settings = new NotificationSettings();
-        settings.setType(NotificationType.PIPELINE_RUN_STATUS);
+        settings.setType(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS);
         settings.setKeepInformedAdmins(true);
         settings.setInformedUserIds(Collections.emptyList());
         settings.setTemplateId(statusTemplate.getId());
@@ -147,7 +145,7 @@ public class NotificationAspectTest extends AbstractManagerTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testNotifyRunStatusChangedActiveIfSettingsDoesntHaveStatusesConfigured() {
         NotificationSettings toUpdate = notificationSettingsDao
-                .loadNotificationSettings(NotificationType.PIPELINE_RUN_STATUS.getId());
+                .loadNotificationSettings(NotificationSettings.NotificationType.PIPELINE_RUN_STATUS.getId());
         toUpdate.setStatusesToInform(Collections.emptyList());
         notificationSettingsDao.updateNotificationSettings(toUpdate);
         PipelineRun run = new PipelineRun();
