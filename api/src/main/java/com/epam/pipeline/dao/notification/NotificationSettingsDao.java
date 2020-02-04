@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,10 @@
 
 package com.epam.pipeline.dao.notification;
 
-import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
-
-import java.sql.Array;
-import java.sql.Connection;
-import java.util.Arrays;
-import java.util.List;
-
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -32,6 +27,14 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+
+import java.sql.Array;
+import java.sql.Connection;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.epam.pipeline.entity.notification.NotificationSettings.NotificationType;
 
 public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
 
@@ -104,6 +107,7 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
         THRESHOLD,
         RESEND_DELAY,
         KEEP_INFORMED_ADMINS,
+        STATUSES_TO_INFORM,
         INFORMED_USER_IDS,
         ENABLED,
         KEEP_INFORMED_OWNER;
@@ -120,6 +124,10 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
                     DaoHelper.mapListLongToSqlArray(settings.getInformedUserIds(), connection));
             params.addValue(KEEP_INFORMED_OWNER.name(), settings.isKeepInformedOwner());
             params.addValue(ENABLED.name(), settings.isEnabled());
+            params.addValue(STATUSES_TO_INFORM.name(),
+                    DaoHelper.mapListLongToSqlArray(
+                            CollectionUtils.emptyIfNull(settings.getStatusesToInform()).stream()
+                            .map(TaskStatus::getId).collect(Collectors.toList()), connection));
             return params;
         }
 
@@ -157,6 +165,13 @@ public class NotificationSettingsDao extends NamedParameterJdbcDaoSupport {
                 if (userIdsSqlArray != null) {
                     List<Long> userIds = Arrays.asList((Long[]) userIdsSqlArray.getArray());
                     settings.setInformedUserIds(userIds);
+                }
+                Array statusesSqlArray = rs.getArray(STATUSES_TO_INFORM.name());
+                if (statusesSqlArray != null) {
+                    List<TaskStatus> statusesToInform = Arrays.stream((Long[]) statusesSqlArray.getArray())
+                            .map(TaskStatus::getById)
+                            .collect(Collectors.toList());
+                    settings.setStatusesToInform(statusesToInform);
                 }
                 return settings;
             };
