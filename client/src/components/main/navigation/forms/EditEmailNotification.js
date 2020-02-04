@@ -88,9 +88,9 @@ export default class EditEmailNotification extends React.Component {
     const checkIntPropModified = (prop) => {
       return +this.props.template[prop] !== +this.props.form.getFieldValue(prop);
     };
-    const checkArrayPropModified = (prop) => {
+    const checkArrayPropModified = (prop, comparerFn = ((a, b) => a === b)) => {
       return !compareArrays((this.props.template[prop] || []).map(i => i),
-        this.props.form.getFieldValue(prop), (a, b) => +a === +b);
+        this.props.form.getFieldValue(prop), comparerFn);
     };
     return checkPropModified('enabled') ||
       checkPropModified('keepInformedAdmins') ||
@@ -99,7 +99,7 @@ export default class EditEmailNotification extends React.Component {
       checkPropModified('body', '') ||
       checkIntPropModified('threshold') ||
       checkIntPropModified('resendDelay') ||
-      checkArrayPropModified('informedUserIds') ||
+      checkArrayPropModified('informedUserIds', (a, b) => +a === +b) ||
       checkArrayPropModified('statusesToInform');
   }
 
@@ -196,7 +196,7 @@ export default class EditEmailNotification extends React.Component {
             label="Statuses to inform:"
             className="edit-email-notification-statuses-to-inform-container">
             {getFieldDecorator('statusesToInform', {
-              initialValue: (this.props.template.statusesToInform || [])
+              initialValue: (this.props.template.statusesToInform || []).map(s => s)
             })(
               <Select
                 size="small"
