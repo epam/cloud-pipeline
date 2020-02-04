@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -109,7 +110,8 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     @Test
     public void testLoadAllRunSchedules() {
         runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
-        final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesByRunId(testRunSchedule.getRunId());
+        final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesByRunIdAndType(
+                testRunSchedule.getRunId(), ScheduleType.PIPELINE_RUN);
         assertEquals(1, runSchedules.size());
     }
 
@@ -126,7 +128,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     @Test
     public void testDeleteRunSchedulesForRun() {
         runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        runScheduleDao.deleteRunSchedulesForRun(testRunSchedule.getRunId());
+        runScheduleDao.deleteRunSchedulesForRunnable(testRunSchedule.getRunId(), ScheduleType.PIPELINE_RUN);
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
         assertEquals(runSchedules.get(0).getId(), testRunSchedule2.getId());

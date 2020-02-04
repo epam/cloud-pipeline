@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao.RunScheduleParameters.*;
 
 public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
 
@@ -71,9 +74,12 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().batchUpdate(updateRunScheduleQuery, params);
     }
 
-    public List<RunSchedule> loadAllRunSchedulesByRunId(final Long runId) {
-        return getJdbcTemplate().query(loadAllRunSchedulesByRunIdQuery,
-                                       PipelineRunScheduleDao.RunScheduleParameters.getRowMapper(), runId);
+    public List<RunSchedule> loadAllRunSchedulesByRunIdAndType(final Long runId, final ScheduleType scheduleType) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(RUN_ID.name(), runId);
+        params.addValue(TYPE.name(), scheduleType);
+        return getNamedParameterJdbcTemplate().query(loadAllRunSchedulesByRunIdQuery,
+                                       params, PipelineRunScheduleDao.RunScheduleParameters.getRowMapper());
     }
 
     public List<RunSchedule> loadAllRunSchedules() {
@@ -97,14 +103,18 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunSchedulesForRun(final Long runId) {
-        getJdbcTemplate().update(deleteRunSchedulesForRunQuery, runId);
+    public void deleteRunSchedulesForRunnable(final Long runId, final ScheduleType scheduleType) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(RUN_ID.name(), runId);
+        params.addValue(TYPE.name(), scheduleType);
+        getNamedParameterJdbcTemplate().update(deleteRunSchedulesForRunQuery, params);
     }
 
     enum RunScheduleParameters {
         ID,
         ACTION,
         RUN_ID,
+        TYPE,
         CRON_EXPRESSION,
         CREATED_DATE,
         TIME_ZONE;
@@ -114,6 +124,7 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
             params.addValue(ID.name(), schedule.getId());
             params.addValue(ACTION.name(), schedule.getAction().getId());
             params.addValue(RUN_ID.name(), schedule.getRunId());
+            params.addValue(TYPE.name(), schedule.getType());
             params.addValue(CRON_EXPRESSION.name(), schedule.getCronExpression());
             params.addValue(CREATED_DATE.name(), schedule.getCreatedDate());
             params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getID());
@@ -132,6 +143,7 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
                 schedule.setId(rs.getLong(ID.name()));
                 schedule.setAction(RunScheduledAction.getById(rs.getLong(ACTION.name())));
                 schedule.setRunId(rs.getLong(RUN_ID.name()));
+                schedule.setType(ScheduleType.valueOf(rs.getString(TYPE.name())));
                 schedule.setCronExpression(rs.getString(CRON_EXPRESSION.name()));
                 schedule.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
                 schedule.setTimeZone(TimeZone.getTimeZone(rs.getString(TIME_ZONE.name())));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronExpression;
@@ -100,7 +101,9 @@ public class PipelineRunScheduler {
 
     private JobDetail jobDetail(final RunSchedule runSchedule) {
         JobDetailFactoryBean jobDetailFactory = new JobDetailFactoryBean();
-        jobDetailFactory.setJobClass(RunScheduleJob.class);
+        jobDetailFactory.setJobClass(runSchedule.getType() == ScheduleType.PIPELINE_RUN
+                ? RunScheduleJob.class
+                : ConfigurationScheduleJob.class);
         jobDetailFactory.getJobDataMap().put("RunId", runSchedule.getRunId());
         jobDetailFactory.getJobDataMap().put("Action", runSchedule.getAction().name());
         jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getRunId(), runSchedule.getId()));

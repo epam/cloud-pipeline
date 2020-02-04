@@ -94,6 +94,9 @@ public class ConfigurationProviderManager {
     }
 
     private void checkAllEntriesOfTheSameType(List<AbstractRunConfigurationEntry> entries) {
+        if (CollectionUtils.isEmpty(entries)) {
+            return;
+        }
         AbstractRunConfigurationEntry firstEntry = entries.get(0);
         if (entries.stream()
                 .anyMatch(entry -> entry.getExecutionEnvironment() != firstEntry.getExecutionEnvironment())) {

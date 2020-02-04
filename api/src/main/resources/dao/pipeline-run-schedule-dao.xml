@@ -11,6 +11,7 @@
                         id,
                         action,
                         run_id,
+                        type,
                         cron_expression,
                         created_date,
                         time_zone)
@@ -18,6 +19,7 @@
                         :ID,
                         :ACTION,
                         :RUN_ID,
+                        :TYPE,
                         :CRON_EXPRESSION,
                         :CREATED_DATE,
                         :TIME_ZONE)
@@ -50,6 +52,7 @@
                         s.id as id,
                         s.action as action,
                         s.run_id as run_id,
+                        s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
                         s.time_zone as time_zone
@@ -68,13 +71,14 @@
                         s.id as id,
                         s.action as action,
                         s.run_id as run_id,
+                        s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
                         s.time_zone as time_zone
                     FROM
                         pipeline.run_schedule s
                     WHERE
-                        run_id = ?
+                        run_id = :RUN_ID AND type = :TYPE
                     ORDER BY
                         created_date
                 ]]>
@@ -87,6 +91,7 @@
                         s.id as id,
                         s.action as action,
                         s.run_id as run_id,
+                        s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
                         s.time_zone as time_zone
@@ -98,7 +103,7 @@
         <property name="deleteRunSchedulesForRunQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.run_schedule WHERE run_id = ?
+                    DELETE FROM pipeline.run_schedule WHERE run_id = :RUN_ID AND type = :TYPE
                 ]]>
             </value>
         </property>

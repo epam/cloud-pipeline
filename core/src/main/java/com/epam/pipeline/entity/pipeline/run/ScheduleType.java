@@ -16,32 +16,7 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public enum RunScheduledAction {
-    PAUSE(0), RESUME(1), RUN(2);
-
-    private final long id;
-
-    private static Map<Long, RunScheduledAction> idMap = new HashMap<>();
-    static {
-        idMap.put(PAUSE.id, PAUSE);
-        idMap.put(RESUME.id, RESUME);
-    }
-
-    RunScheduledAction(final long id) {
-        this.id = id;
-    }
-
-    public Long getId() {
-        return this.id;
-    }
-
-    public static RunScheduledAction getById(final Long id) {
-        if (id == null) {
-            return null;
-        }
-        return idMap.get(id);
-    }
+public enum ScheduleType {
+    PIPELINE_RUN,
+    RUN_CONFIGURATION
 }
