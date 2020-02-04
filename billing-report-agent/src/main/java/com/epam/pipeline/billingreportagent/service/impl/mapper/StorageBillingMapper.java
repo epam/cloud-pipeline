@@ -20,7 +20,7 @@ import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchron
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
-import com.epam.pipeline.billingreportagent.service.EntityMapper;
+import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import java.io.IOException;
 
 @RequiredArgsConstructor
-public class StorageBillingMapper extends EntityMapper<StorageBillingInfo> {
+public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInfo> {
 
     private final SearchDocumentType documentType;
 

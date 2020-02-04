@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
+import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
@@ -35,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -57,6 +60,7 @@ public class RunToBillingRequestConverterImplTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(USER_NAME)
         .groups(USER_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     private final RunToBillingRequestConverter converter =
@@ -78,7 +82,8 @@ public class RunToBillingRequestConverterImplTest {
         statuses.add(new RunStatus(RUN_ID, TaskStatus.STOPPED, LocalDateTime.of(2019, 12, 4, 15, 0)));
         run.setRunStatuses(statuses);
 
-        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
                                            LocalDateTime.of(2019, 12, 1, 0, 0),
@@ -96,7 +101,8 @@ public class RunToBillingRequestConverterImplTest {
         final PipelineRun run = new PipelineRun();
         run.setId(RUN_ID);
         run.setPricePerHour(BigDecimal.valueOf(4, 2));
-        final EntityContainer<PipelineRun> runContainer = EntityContainer.<PipelineRun>builder().entity(run).build();
+        final EntityContainer<PipelineRunWithType> runContainer = EntityContainer.<PipelineRunWithType>builder()
+            .entity(new PipelineRunWithType(run, ComputeType.CPU)).build();
 
         final Collection<PipelineRunBillingInfo> billings =
             converter.convertRunToBillings(runContainer,
@@ -114,9 +120,9 @@ public class RunToBillingRequestConverterImplTest {
         final PipelineRun run = TestUtils.createTestPipelineRun(RUN_ID, PIPELINE_NAME, TOOL_IMAGE, PRICE,
                                                                 TestUtils.createTestInstance(REGION_ID, NODE_TYPE));
 
-        final EntityContainer<PipelineRun> runContainer =
-            EntityContainer.<PipelineRun>builder()
-                .entity(run)
+        final EntityContainer<PipelineRunWithType> runContainer =
+            EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, ComputeType.CPU))
                 .owner(testUser)
                 .build();
 

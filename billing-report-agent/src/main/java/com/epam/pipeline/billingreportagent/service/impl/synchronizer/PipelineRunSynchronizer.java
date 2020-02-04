@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
@@ -26,7 +27,6 @@ import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
 import com.epam.pipeline.billingreportagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.billingreportagent.service.impl.converter.RunToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -47,8 +47,8 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
     private final BulkRequestSender requestSender;
-    private final EntityToBillingRequestConverter<PipelineRun> runToBillingRequestConverter;
-    private final EntityLoader<PipelineRun> loader;
+    private final EntityToBillingRequestConverter<PipelineRunWithType> runToBillingRequestConverter;
+    private final EntityLoader<PipelineRunWithType> loader;
 
     public PipelineRunSynchronizer(final @Value("${sync.run.index.mapping}") String pipelineRunIndexMappingFile,
                                    final @Value("${sync.index.common.prefix}") String indexPrefix,
@@ -57,7 +57,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
                                    final ElasticsearchServiceClient elasticsearchServiceClient,
                                    final ElasticIndexService indexService,
                                    final RunBillingMapper mapper,
-                                   final EntityLoader<PipelineRun> loader) {
+                                   final EntityLoader<PipelineRunWithType> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
         this.indexService = indexService;
         this.indexPrefix = indexPrefix + pipelineRunIndexName;
@@ -69,7 +69,7 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     @Override
     public void synchronize(final LocalDateTime lastSyncTime, final LocalDateTime syncStart) {
         log.debug("Started pipeline run billing synchronization");
-        final List<EntityContainer<PipelineRun>> pipelineRuns;
+        final List<EntityContainer<PipelineRunWithType>> pipelineRuns;
         if (lastSyncTime == null) {
             pipelineRuns = loader.loadAllEntities();
         } else {
@@ -102,23 +102,23 @@ public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private List<DocWriteRequest> createPipelineRunBillings(final EntityContainer<PipelineRun> pipelineRun,
+    private List<DocWriteRequest> createPipelineRunBillings(final EntityContainer<PipelineRunWithType> pipelineRun,
                                                             final LocalDateTime previousSync,
                                                             final LocalDateTime syncStart) {
         try {
             return buildDocRequests(pipelineRun, previousSync, syncStart);
         } catch (Exception e) {
             log.error("An error during pipeline run billing {} synchronization: {}",
-                      pipelineRun.getEntity().getId(), e.getMessage());
+                      pipelineRun.getEntity().getPipelineRun().getId(), e.getMessage());
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
     }
 
-    private List<DocWriteRequest> buildDocRequests(final EntityContainer<PipelineRun> pipelineRun,
+    private List<DocWriteRequest> buildDocRequests(final EntityContainer<PipelineRunWithType> pipelineRun,
                                                    final LocalDateTime previousSync,
                                                    final LocalDateTime syncStart) {
-        log.debug("Processing pipeline run {} billings", pipelineRun.getEntity().getId());
+        log.debug("Processing pipeline run {} billings", pipelineRun.getEntity().getPipelineRun().getId());
         return runToBillingRequestConverter.convertEntityToRequests(pipelineRun, indexPrefix,
                                                                     previousSync, syncStart);
     }

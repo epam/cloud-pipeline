@@ -23,15 +23,15 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 
-public abstract class EntityMapper<T> {
+public abstract class AbstractEntityMapper<T> {
 
     @Value("${sync.billing.center.key}")
     private String billingCenterKey;
 
-    abstract public XContentBuilder map(EntityContainer<T> doc);
+    public abstract XContentBuilder map(EntityContainer<T> doc);
 
     protected XContentBuilder buildUserContent(final PipelineUser user,
-                                             final XContentBuilder jsonBuilder) throws IOException {
+                                               final XContentBuilder jsonBuilder) throws IOException {
         if (user != null) {
             jsonBuilder
                     .field("owner", user.getUserName())

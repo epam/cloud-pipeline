@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.billingreportagent.model.billing;
 
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -26,12 +26,12 @@ import java.time.LocalDate;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class PipelineRunBillingInfo extends AbstractBillingInfo<PipelineRun> {
+public class PipelineRunBillingInfo extends AbstractBillingInfo<PipelineRunWithType> {
 
     private Long usageMinutes;
 
     @Builder
-    public PipelineRunBillingInfo(final LocalDate date, final PipelineRun run,
+    public PipelineRunBillingInfo(final LocalDate date, final PipelineRunWithType run,
                                   final Long cost, final Long usageMinutes) {
         super(date, run, cost, ResourceType.COMPUTE);
         this.usageMinutes = usageMinutes;
