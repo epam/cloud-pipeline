@@ -37,7 +37,6 @@ import java.util.Date;
 import java.util.Properties;
 
 import org.quartz.Scheduler;
-import org.springframework.util.Assert;
 
 import javax.annotation.PostConstruct;
 

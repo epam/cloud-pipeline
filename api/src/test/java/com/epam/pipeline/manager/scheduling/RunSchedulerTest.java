@@ -28,7 +28,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.microsoft.schemas.office.visio.x2012.main.SheetType;
+import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -38,23 +38,21 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.*;
 
 public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
-    private static final int TEST_PERIOD_DURATION = 10;
-    private static final int TEST_INVOCATION_PERIOD = 10;
+    private static final int TEST_PERIOD_DURATION = 1;
+    private static final int TEST_INVOCATION_PERIOD = 1;
 
     /**
      * This cron expression should correspond with {@link #TEST_INVOCATION_PERIOD}
      */
-    private static final String CRON_EXPRESSION = "0/10 * * * * ?"; // to run every 10 seconds
+    private static final String CRON_EXPRESSION = "* * * * * ?"; // to run every 10 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
+    private static final long CONFIGURATION_ID = 2L;
 
     @Autowired
     private RunScheduler runScheduler;
@@ -67,6 +65,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
 
     @MockBean
     private PipelineRunManager pipelineRunManager;
+
+    @MockBean
+    private ConfigurationRunner configurationRunner;
 
     @Before
     public void setUp() {
@@ -92,17 +93,42 @@ public class RunSchedulerTest extends AbstractSpringTest {
     }
 
     @Test
-    public void testUnscheduleRunSchedule() throws InterruptedException {
-        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
-                RunScheduledAction.PAUSE, CRON_EXPRESSION);
-
-        runScheduler.unscheduleRunSchedule(runSchedule);
+    public void testScheduleRunConfigurationScheduleAndCheckJobExecution() throws InterruptedException {
+        final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
+                ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RUN, CRON_EXPRESSION);
 
         runScheduler.scheduleRunSchedule(runSchedule);
 
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
-        verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        verify(configurationRunner, times(numberOfInvocations)).runConfiguration(any(), any(), any());
+
+        runScheduler.unscheduleRunSchedule(runSchedule);
+    }
+
+    @Test
+    public void testScheduleRunConfigurationWontExecuteWrongAction() throws InterruptedException {
+        final RunSchedule runSchedule = getRunSchedule(CONFIGURATION_ID, CONFIGURATION_ID,
+                ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RESUME, CRON_EXPRESSION);
+
+        runScheduler.scheduleRunSchedule(runSchedule);
+
+        TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
+        verify(configurationRunner, never()).runConfiguration(any(), any(), any());
+
+        runScheduler.unscheduleRunSchedule(runSchedule);
+    }
+
+    @Test
+    public void testUnscheduleRunSchedule() throws InterruptedException {
+        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.PAUSE, CRON_EXPRESSION);
+
+        runScheduler.scheduleRunSchedule(runSchedule);
+        runScheduler.unscheduleRunSchedule(runSchedule);
+
+        TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
+        verify(pipelineRunManager, never()).pauseRun(RUN_ID, true);
     }
 
     private RunSchedule getRunSchedule(final Long id, final Long runId, final ScheduleType type,
