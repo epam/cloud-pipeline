@@ -19,8 +19,8 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -31,23 +31,24 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Slf4j
-@RequiredArgsConstructor
 public class AWSPriceListReader {
 
-    private static final Set<String> COMPUTE_FAMILY = new HashSet<>();
-    static {
-        COMPUTE_FAMILY.add(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
-        COMPUTE_FAMILY.add("Compute Instance (bare metal)");
+    private final Long regionId;
+    private final Set<String> computeFamily;
+
+    public AWSPriceListReader(final Long regionId, final Set<String> computeFamily) {
+        this.regionId = regionId;
+        this.computeFamily = CollectionUtils.isEmpty(computeFamily) ?
+                Collections.singleton(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY) :
+                computeFamily;
     }
 
-    private final Long regionId;
 
     public List<InstanceOffer> readPriceCsv(BufferedReader reader) {
         try(CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
@@ -88,7 +89,7 @@ public class AWSPriceListReader {
     }
 
     private String parseProductFamily(final String productFamily) {
-        if (COMPUTE_FAMILY.contains(productFamily)) {
+        if (computeFamily.contains(productFamily)) {
             return CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY;
         }
         return productFamily;
