@@ -23,10 +23,12 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.microsoft.schemas.office.visio.x2012.main.SheetType;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
@@ -42,7 +44,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class PipelineRunSchedulerTest extends AbstractSpringTest {
+public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
     private static final int TEST_PERIOD_DURATION = 10;
@@ -55,7 +57,7 @@ public class PipelineRunSchedulerTest extends AbstractSpringTest {
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     @Autowired
-    private PipelineRunScheduler runScheduler;
+    private RunScheduler runScheduler;
 
     @Autowired
     private CloudRegionDao regionDao;
@@ -79,7 +81,8 @@ public class PipelineRunSchedulerTest extends AbstractSpringTest {
 
     @Test
     public void testScheduleRunScheduleAndCheckJobExecution() throws InterruptedException {
-        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, RunScheduledAction.PAUSE, CRON_EXPRESSION);
+        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.PAUSE, CRON_EXPRESSION);
 
         runScheduler.scheduleRunSchedule(runSchedule);
 
@@ -90,7 +93,8 @@ public class PipelineRunSchedulerTest extends AbstractSpringTest {
 
     @Test
     public void testUnscheduleRunSchedule() throws InterruptedException {
-        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, RunScheduledAction.PAUSE, CRON_EXPRESSION);
+        final RunSchedule runSchedule = getRunSchedule(RUN_ID, RUN_ID, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.PAUSE, CRON_EXPRESSION);
 
         runScheduler.unscheduleRunSchedule(runSchedule);
 
@@ -101,11 +105,12 @@ public class PipelineRunSchedulerTest extends AbstractSpringTest {
         verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
     }
 
-    private RunSchedule getRunSchedule(final Long id, final Long runId, final RunScheduledAction action,
-                                       final String cronExpression) {
+    private RunSchedule getRunSchedule(final Long id, final Long runId, final ScheduleType type,
+                                       final RunScheduledAction action, final String cronExpression) {
         final RunSchedule runSchedule = new RunSchedule();
         runSchedule.setId(id);
-        runSchedule.setRunId(runId);
+        runSchedule.setSchedulableId(runId);
+        runSchedule.setType(type);
         runSchedule.setAction(action);
         runSchedule.setCronExpression(cronExpression);
         runSchedule.setCreatedDate(DateUtils.now());

@@ -2,7 +2,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
-    <bean class="com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao" id="pipelineRunScheduleDao" autowire="byName">
+    <bean class="com.epam.pipeline.dao.pipeline.RunScheduleDao" id="pipelineRunScheduleDao" autowire="byName">
         <property name="scheduleSequence" value="pipeline.s_schedule"/>
         <property name="createRunScheduleQuery">
             <value>
@@ -10,7 +10,7 @@
                     INSERT INTO pipeline.run_schedule (
                         id,
                         action,
-                        run_id,
+                        schedulable_id,
                         type,
                         cron_expression,
                         created_date,
@@ -18,7 +18,7 @@
                     VALUES (
                         :ID,
                         :ACTION,
-                        :RUN_ID,
+                        :SCHEDULABLE_ID,
                         :TYPE,
                         :CRON_EXPRESSION,
                         :CREATED_DATE,
@@ -51,7 +51,7 @@
                     SELECT
                         s.id as id,
                         s.action as action,
-                        s.run_id as run_id,
+                        s.schedulable_id as schedulable_id,
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
@@ -70,7 +70,7 @@
                     SELECT
                         s.id as id,
                         s.action as action,
-                        s.run_id as run_id,
+                        s.schedulable_id as schedulable_id,
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
@@ -78,7 +78,7 @@
                     FROM
                         pipeline.run_schedule s
                     WHERE
-                        run_id = :RUN_ID AND type = :TYPE
+                        schedulable_id = :SCHEDULABLE_ID AND type = :TYPE
                     ORDER BY
                         created_date
                 ]]>
@@ -90,7 +90,7 @@
                     SELECT
                         s.id as id,
                         s.action as action,
-                        s.run_id as run_id,
+                        s.schedulable_id as schedulable_id,
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
@@ -103,7 +103,7 @@
         <property name="deleteRunSchedulesForRunQuery">
             <value>
                 <![CDATA[
-                    DELETE FROM pipeline.run_schedule WHERE run_id = :RUN_ID AND type = :TYPE
+                    DELETE FROM pipeline.run_schedule WHERE schedulable_id = :SCHEDULABLE_ID AND type = :TYPE
                 ]]>
             </value>
         </property>

@@ -22,7 +22,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.RUN_ID_READ;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
-import com.epam.pipeline.manager.pipeline.PipelineRunScheduleManager;
+import com.epam.pipeline.manager.pipeline.RunScheduleManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -34,15 +34,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RunScheduleApiService {
 
-    private final PipelineRunScheduleManager runScheduleManager;
+    private static final String RUN_CONFIGURATION_EXECUTE = "hasRole('ADMIN') OR "
+            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')";
+    private static final String RUN_CONFIGURATION_READ = "hasRole('ADMIN') OR "
+            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'READ')";
+
+    private final RunScheduleManager runScheduleManager;
 
     @PreAuthorize(RUN_ID_EXECUTE)
     public List<RunSchedule> createRunSchedules(final Long runId, final List<PipelineRunScheduleVO> runScheduleVOs) {
         return runScheduleManager.createSchedules(runId, ScheduleType.PIPELINE_RUN, runScheduleVOs);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+    @PreAuthorize(RUN_CONFIGURATION_EXECUTE)
     public List<RunSchedule> createRunConfigurationSchedules(final Long configurationId,
                                                              final List<PipelineRunScheduleVO> runScheduleVOs) {
         return runScheduleManager.createSchedules(configurationId, ScheduleType.RUN_CONFIGURATION, runScheduleVOs);
@@ -53,8 +57,7 @@ public class RunScheduleApiService {
         return runScheduleManager.updateSchedules(runId, ScheduleType.PIPELINE_RUN, schedules);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+    @PreAuthorize(RUN_CONFIGURATION_EXECUTE)
     public List<RunSchedule> updateRunConfigurationSchedules(final Long configurationId,
                                                              final List<PipelineRunScheduleVO> schedules) {
         return runScheduleManager.updateSchedules(configurationId, ScheduleType.RUN_CONFIGURATION, schedules);
@@ -67,8 +70,7 @@ public class RunScheduleApiService {
         return runScheduleManager.deleteSchedules(runId, ScheduleType.PIPELINE_RUN, scheduleIds);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+    @PreAuthorize(RUN_CONFIGURATION_EXECUTE)
     public List<RunSchedule> deleteRunConfigurationSchedule(final Long configurationId,
                                                             final List<PipelineRunScheduleVO> schedules) {
         final List<Long> scheduleIds =
@@ -81,8 +83,7 @@ public class RunScheduleApiService {
         runScheduleManager.deleteSchedules(runId, ScheduleType.PIPELINE_RUN);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
+    @PreAuthorize(RUN_CONFIGURATION_EXECUTE)
     public void deleteAllRunConfigurationSchedules(final Long configurationId) {
         runScheduleManager.deleteSchedules(configurationId, ScheduleType.RUN_CONFIGURATION);
     }
@@ -92,8 +93,7 @@ public class RunScheduleApiService {
         return runScheduleManager.loadAllSchedulesBySchedulableId(runId, ScheduleType.PIPELINE_RUN);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'READ')")
+    @PreAuthorize(RUN_CONFIGURATION_READ)
     public List<RunSchedule> loadAllRunConfigurationSchedulesByConfigurationId(final Long runId) {
         return runScheduleManager.loadAllSchedulesBySchedulableId(runId, ScheduleType.RUN_CONFIGURATION);
     }

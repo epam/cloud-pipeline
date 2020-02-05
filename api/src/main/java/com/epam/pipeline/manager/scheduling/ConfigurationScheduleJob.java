@@ -42,12 +42,11 @@ public class ConfigurationScheduleJob implements Job {
     public void execute(final JobExecutionContext context) {
         log.debug("Job " + context.getJobDetail().getKey().getName() + " fired " + context.getFireTime());
 
-        final Long configurationId = context.getMergedJobDataMap().getLongValue("ConfigurationId");
+        final Long configurationId = context.getMergedJobDataMap().getLongValue("SchedulableId");
         final String action = context.getMergedJobDataMap().getString("Action");
         Assert.notNull(configurationId,
                        messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, configurationId));
-        RunConfigurationWithEntitiesVO configuration = new RunConfigurationWithEntitiesVO();
-        configuration.setId(configurationId);
+        final RunConfigurationWithEntitiesVO configuration = createConfigurationVOToRun(configurationId);
         if (action.equals(RunScheduledAction.RUN.name())) {
             log.debug("Execute a configuration with id: "+ configurationId);
             configurationRunner.runConfiguration(null, configuration, null);
@@ -55,5 +54,11 @@ public class ConfigurationScheduleJob implements Job {
             log.error("Wrong type of action for scheduling configuration, allowed RUN, actual: " + action);
         }
         log.debug("Next job scheduled " + context.getNextFireTime());
+    }
+
+    private RunConfigurationWithEntitiesVO createConfigurationVOToRun(final Long configurationId) {
+        RunConfigurationWithEntitiesVO configuration = new RunConfigurationWithEntitiesVO();
+        configuration.setId(configurationId);
+        return configuration;
     }
 }

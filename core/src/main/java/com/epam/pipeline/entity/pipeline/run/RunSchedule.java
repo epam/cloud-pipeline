@@ -27,7 +27,7 @@ import java.util.TimeZone;
 public class RunSchedule {
     private Long id;
     private RunScheduledAction action;
-    private Long runId;
+    private Long schedulableId;
     private ScheduleType type;
     private String cronExpression;
     private Date createdDate;

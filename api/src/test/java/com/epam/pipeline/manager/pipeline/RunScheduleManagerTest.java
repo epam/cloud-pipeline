@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.assertEquals;
 
 @Transactional
-public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
+public class RunScheduleManagerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
     private static final String CRON_EXPRESSION1 = "0 0 12 * * ?";
@@ -55,7 +55,7 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
 
     @Autowired
-    private PipelineRunScheduleManager runScheduleManager;
+    private RunScheduleManager runScheduleManager;
 
     @Autowired
     private PipelineDao pipelineDao;
@@ -173,7 +173,7 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
         final RunSchedule runSchedule =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Collections.singletonList(testRunScheduleVO)).get(0);
-        runScheduleManager.loadSchedule(runSchedule.getRunId());
+        runScheduleManager.loadSchedule(runSchedule.getSchedulableId());
     }
 
     private PipelineRunScheduleVO getRunScheduleVO(final RunScheduledAction action, final String cronExpression) {
@@ -195,7 +195,7 @@ public class PipelineRunScheduleManagerTest extends AbstractSpringTest {
 
     private void loadAndAssertSchedule(final RunSchedule schedule) {
         final RunSchedule loadRunSchedule = runScheduleManager.loadSchedule(schedule.getId());
-        assertEquals(schedule.getRunId(), loadRunSchedule.getRunId());
+        assertEquals(schedule.getSchedulableId(), loadRunSchedule.getSchedulableId());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.getCronExpression());
         assertEquals(schedule.getAction(), loadRunSchedule.getAction());
     }

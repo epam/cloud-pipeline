@@ -41,7 +41,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
+public class RunScheduleDaoTest extends AbstractSpringTest {
 
     private static final Long RUN_ID_1 = 1L;
     private static final Long RUN_ID_2 = 2L;
@@ -52,7 +52,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     private static final String TEST_PIPELINE_REPO_SSH = "git@test";
 
     @Autowired
-    private PipelineRunScheduleDao runScheduleDao;
+    private RunScheduleDao runScheduleDao;
 
     @Autowired
     private CloudRegionDao regionDao;
@@ -81,10 +81,14 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
         createPipelineRun(RUN_ID_1, testPipeline.getId());
         createPipelineRun(RUN_ID_2, testPipeline.getId());
 
-        testRunSchedule = getRunSchedule(RUN_ID_1, RunScheduledAction.PAUSE, CRON_EXPRESSION1);
-        testUpdatedRunSchedule = getRunSchedule(RUN_ID_1, RunScheduledAction.RESUME, CRON_EXPRESSION2);
-        testRunSchedule2 = getRunSchedule(RUN_ID_2, RunScheduledAction.RESUME, CRON_EXPRESSION2);
-        testUpdatedRunSchedule2 = getRunSchedule(RUN_ID_2, RunScheduledAction.RESUME, CRON_EXPRESSION1);
+        testRunSchedule = getRunSchedule(RUN_ID_1, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.PAUSE, CRON_EXPRESSION1);
+        testUpdatedRunSchedule = getRunSchedule(RUN_ID_1, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.RESUME, CRON_EXPRESSION2);
+        testRunSchedule2 = getRunSchedule(RUN_ID_2, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.RESUME, CRON_EXPRESSION2);
+        testUpdatedRunSchedule2 = getRunSchedule(RUN_ID_2, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.RESUME, CRON_EXPRESSION1);
     }
 
     @Test
@@ -110,8 +114,8 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     @Test
     public void testLoadAllRunSchedules() {
         runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testRunSchedule2));
-        final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesByRunIdAndType(
-                testRunSchedule.getRunId(), ScheduleType.PIPELINE_RUN);
+        final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesBySchedulableIdAndType(
+                testRunSchedule.getSchedulableId(), ScheduleType.PIPELINE_RUN);
         assertEquals(1, runSchedules.size());
     }
 
@@ -128,7 +132,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     @Test
     public void testDeleteRunSchedulesForRun() {
         runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        runScheduleDao.deleteRunSchedulesForRunnable(testRunSchedule.getRunId(), ScheduleType.PIPELINE_RUN);
+        runScheduleDao.deleteRunSchedules(testRunSchedule.getSchedulableId(), ScheduleType.PIPELINE_RUN);
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(1, runSchedules.size());
         assertEquals(runSchedules.get(0).getId(), testRunSchedule2.getId());
@@ -142,10 +146,12 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
         assertEquals(0, runSchedules.size());
     }
 
-    private RunSchedule getRunSchedule(final Long runId, final RunScheduledAction action, final String cronExpression) {
+    private RunSchedule getRunSchedule(final Long runId, final ScheduleType type,
+                                       final RunScheduledAction action, final String cronExpression) {
         final RunSchedule runSchedule = new RunSchedule();
-        runSchedule.setRunId(runId);
+        runSchedule.setSchedulableId(runId);
         runSchedule.setAction(action);
+        runSchedule.setType(type);
         runSchedule.setCronExpression(cronExpression);
         runSchedule.setCreatedDate(DateUtils.now());
         runSchedule.setTimeZone(TimeZone.getTimeZone("UTC"));
@@ -163,7 +169,7 @@ public class PipelineRunScheduleDaoTest extends AbstractSpringTest {
     private void loadAndAssertSchedule(final RunSchedule schedule) {
         final Optional<RunSchedule> loadRunSchedule = runScheduleDao.loadRunSchedule(schedule.getId());
         assertTrue(loadRunSchedule.isPresent());
-        assertEquals(schedule.getRunId(), loadRunSchedule.get().getRunId());
+        assertEquals(schedule.getSchedulableId(), loadRunSchedule.get().getSchedulableId());
         assertEquals(schedule.getAction(), loadRunSchedule.get().getAction());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
     }

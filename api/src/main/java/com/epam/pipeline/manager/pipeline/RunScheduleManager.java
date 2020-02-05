@@ -19,15 +19,14 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
-import com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao;
+import com.epam.pipeline.dao.pipeline.RunScheduleDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
-import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
-import com.epam.pipeline.manager.scheduling.PipelineRunScheduler;
+import com.epam.pipeline.manager.scheduling.RunScheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronExpression;
@@ -52,12 +51,12 @@ import javax.annotation.PostConstruct;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class PipelineRunScheduleManager {
+public class RunScheduleManager {
 
-    private final PipelineRunScheduleDao runScheduleDao;
+    private final RunScheduleDao runScheduleDao;
     private final PipelineRunManager pipelineRunManager;
     private final RunConfigurationManager configurationManager;
-    private final PipelineRunScheduler scheduler;
+    private final RunScheduler scheduler;
     private final MessageHelper messageHelper;
 
     @PostConstruct
@@ -70,20 +69,13 @@ public class PipelineRunScheduleManager {
                                              final List<PipelineRunScheduleVO> runScheduleVOs) {
         Assert.isTrue(checkCronsAreUnique(runScheduleVOs),
                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IDENTICAL));
+
+        verifySchedulable(schedulableId, scheduleType);
         final List<RunSchedule> schedules = runScheduleVOs.stream()
-            .peek(vo -> {
-                if (scheduleType == ScheduleType.PIPELINE_RUN) {
-                    PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(schedulableId);
-                    checkPipelineRunNewScheduleRequirements(schedulableId, pipelineRun, vo);
-                } else {
-                    //check that we can load configuration
-                    configurationManager.load(schedulableId);
-                    checkRunConfigurationNewScheduleRequirements(schedulableId, vo);
-                }
-            })
+            .peek(vo -> checkNewRunScheduleRequirements(schedulableId, vo, scheduleType))
             .map(vo -> {
                 final RunSchedule runSchedule = new RunSchedule();
-                runSchedule.setRunId(schedulableId);
+                runSchedule.setSchedulableId(schedulableId);
                 runSchedule.setType(scheduleType);
                 runSchedule.setAction(vo.getAction());
                 runSchedule.setCronExpression(vo.getCronExpression());
@@ -99,8 +91,9 @@ public class PipelineRunScheduleManager {
         return schedules;
     }
 
-    public List<RunSchedule> loadAllSchedulesBySchedulableId(final Long schedulableId, final ScheduleType scheduleType) {
-        return runScheduleDao.loadAllRunSchedulesByRunIdAndType(schedulableId, scheduleType);
+    public List<RunSchedule> loadAllSchedulesBySchedulableId(final Long schedulableId,
+                                                             final ScheduleType scheduleType) {
+        return runScheduleDao.loadAllRunSchedulesBySchedulableIdAndType(schedulableId, scheduleType);
     }
 
     public List<RunSchedule> loadAllSchedules() {
@@ -111,7 +104,7 @@ public class PipelineRunScheduleManager {
     public List<RunSchedule> updateSchedules(final Long schedulableId, final ScheduleType scheduleType,
                                              final List<PipelineRunScheduleVO> runScheduleVOs) {
         checkCronsAreUnique(runScheduleVOs);
-        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(schedulableId);
+        verifySchedulable(schedulableId, scheduleType);
         final Map<Long, RunSchedule> loadedSchedules =
             loadAllSchedulesBySchedulableId(schedulableId, scheduleType).stream()
                 .collect(Collectors.toMap(RunSchedule::getId, Function.identity()));
@@ -119,7 +112,7 @@ public class PipelineRunScheduleManager {
         final List<RunSchedule> updatedSchedules = runScheduleVOs.stream()
             .map(vo -> {
                 final RunSchedule runSchedule = loadedSchedules.get(vo.getScheduleId());
-                verifyRunSchedule(schedulableId, pipelineRun, vo);
+                verifyRunSchedule(schedulableId, vo);
                 final String prevCron = runSchedule.getCronExpression();
                 final String newCron = vo.getCronExpression();
                 if (prevCron.equals(newCron)) {
@@ -154,8 +147,10 @@ public class PipelineRunScheduleManager {
                                              final List<Long> scheduleIds) {
         final List<RunSchedule> schedules = scheduleIds.stream()
             .map(this::loadSchedule)
-            .peek(schedule -> Assert.isTrue(schedulableId.equals(schedule.getRunId()) && schedule.getType() == scheduleType,
-                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ID_NOT_CORRESPONDING)))
+            .peek(schedule -> Assert.isTrue(
+                    schedulableId.equals(schedule.getSchedulableId()) && schedule.getType() == scheduleType,
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ID_NOT_CORRESPONDING))
+            )
             .peek(scheduler::unscheduleRunSchedule)
             .collect(Collectors.toList());
         runScheduleDao.deleteRunSchedules(scheduleIds);
@@ -164,7 +159,7 @@ public class PipelineRunScheduleManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSchedules(final Long schedulableId, final ScheduleType scheduleType) {
-        runScheduleDao.deleteRunSchedulesForRunnable(schedulableId, scheduleType);
+        runScheduleDao.deleteRunSchedules(schedulableId, scheduleType);
     }
 
     public RunSchedule loadSchedule(final Long id) {
@@ -172,38 +167,42 @@ public class PipelineRunScheduleManager {
             messageHelper.getMessage(MessageConstants.ERROR_RUN_SCHEDULE_NOT_FOUND, id)));
     }
 
-    private void checkPipelineRunNewScheduleRequirements(final Long runId, final PipelineRun pipelineRun,
-                                                         final PipelineRunScheduleVO runScheduleVO) {
-        checkIdenticalCronExpressionForRun(runId, ScheduleType.PIPELINE_RUN, runScheduleVO);
-        verifyRunSchedule(runId, pipelineRun, runScheduleVO);
+    private void checkNewRunScheduleRequirements(final Long schedulableId, final PipelineRunScheduleVO runScheduleVO,
+                                                 final ScheduleType scheduleType) {
+        checkIdenticalCronExpression(schedulableId, scheduleType, runScheduleVO);
+        verifyRunSchedule(schedulableId, runScheduleVO);
     }
 
-    private void checkRunConfigurationNewScheduleRequirements(final Long configurationId,
-                                                              final PipelineRunScheduleVO runScheduleVO) {
-        checkIdenticalCronExpressionForRun(configurationId, ScheduleType.RUN_CONFIGURATION, runScheduleVO);
-        verifyCronExpression(configurationId, runScheduleVO);
-        Assert.notNull(runScheduleVO.getAction(),
-                messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_PROVIDED, configurationId));
-        Assert.isTrue(StringUtils.hasText(runScheduleVO.getTimeZone()),
-                messageHelper.getMessage(MessageConstants.ERROR_TIME_ZONE_IS_NOT_PROVIDED, configurationId));
-    }
-
-    private void verifyRunSchedule(final Long runId, final PipelineRun pipelineRun,
-                                   final PipelineRunScheduleVO runScheduleVO) {
+    private void verifyRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
         verifyCronExpression(runId, runScheduleVO);
         Assert.notNull(runScheduleVO.getAction(),
                        messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_PROVIDED, runId));
-        Assert.notNull(pipelineRun,
-                       messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
-        Assert.isTrue(!pipelineRun.getInstance().getSpot(), messageHelper.getMessage(
-            MessageConstants.ERROR_ON_DEMAND_REQUIRED));
-        Assert.isTrue(!pipelineRun.getStatus().isFinal(), messageHelper.getMessage(
-            MessageConstants.ERROR_PIPELINE_RUN_FINISHED, runId));
         Assert.isTrue(StringUtils.hasText(runScheduleVO.getTimeZone()),
                       messageHelper.getMessage(MessageConstants.ERROR_TIME_ZONE_IS_NOT_PROVIDED, runId));
-        Assert.isTrue(!(runScheduleVO.getAction().equals(RunScheduledAction.PAUSE)
-                        && isNonPauseOrClusterRun(pipelineRun)),
-                      messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK));
+    }
+
+    private void verifySchedulable(final Long schedulableId, final ScheduleType scheduleType) {
+        switch (scheduleType) {
+            case PIPELINE_RUN:
+                PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(schedulableId);
+                Assert.notNull(pipelineRun, messageHelper
+                        .getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
+                Assert.isTrue(!pipelineRun.getInstance().getSpot(), messageHelper.getMessage(
+                        MessageConstants.ERROR_ON_DEMAND_REQUIRED));
+                Assert.isTrue(!pipelineRun.getStatus().isFinal(), messageHelper.getMessage(
+                        MessageConstants.ERROR_PIPELINE_RUN_FINISHED, schedulableId));
+                Assert.isTrue(!isNonPauseOrClusterRun(pipelineRun),
+                        messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK));
+                break;
+            case RUN_CONFIGURATION:
+                RunConfiguration load = configurationManager.load(schedulableId);
+                Assert.notNull(load,
+                        messageHelper.getMessage(MessageConstants.ERROR_RUN_CONFIG_NOT_FOUND, schedulableId));
+                break;
+            default:
+                log.error(messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IDENTICAL));
+        }
+
     }
 
     private boolean isNonPauseOrClusterRun(final PipelineRun pipelineRun) {
@@ -211,16 +210,17 @@ public class PipelineRunScheduleManager {
                || pipelineRun.isNonPause();
     }
 
-    private void verifyCronExpression(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
+    private void verifyCronExpression(final Long schedulableId, final PipelineRunScheduleVO runScheduleVO) {
         Assert.notNull(runScheduleVO.getCronExpression(),
-                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_PROVIDED, runId));
+                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_PROVIDED, schedulableId));
         Assert.isTrue(CronExpression.isValidExpression(runScheduleVO.getCronExpression()),
-                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_VALID, runId));
+                      messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_IS_NOT_VALID, schedulableId));
     }
 
-    private void checkIdenticalCronExpressionForRun(final Long runId, final ScheduleType type,
-                                                    final PipelineRunScheduleVO runScheduleVO) {
-        final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedulesByRunIdAndType(runId, type);
+    private void checkIdenticalCronExpression(final Long schedulableId, final ScheduleType type,
+                                              final PipelineRunScheduleVO runScheduleVO) {
+        final List<RunSchedule> runSchedules = runScheduleDao
+                .loadAllRunSchedulesBySchedulableIdAndType(schedulableId, type);
         final Optional<RunSchedule> identicalCronExpressionForRun = runSchedules.stream()
             .filter(runSchedule -> runSchedule.getTimeZone().equals(TimeZone.getTimeZone(runScheduleVO.getTimeZone()))
                                    && runSchedule.getCronExpression().equals(runScheduleVO.getCronExpression()))
@@ -228,7 +228,7 @@ public class PipelineRunScheduleManager {
         Assert.isTrue(!identicalCronExpressionForRun.isPresent(),
                       messageHelper.getMessage(MessageConstants.CRON_EXPRESSION_ALREADY_EXISTS,
                                                runScheduleVO.getCronExpression(),
-                                               runId));
+                                               schedulableId));
     }
 
     private boolean checkCronsAreUnique(final List<PipelineRunScheduleVO> runScheduleVOs) {

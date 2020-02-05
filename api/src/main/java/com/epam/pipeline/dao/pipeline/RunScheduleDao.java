@@ -34,9 +34,10 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.dao.pipeline.PipelineRunScheduleDao.RunScheduleParameters.*;
+import static com.epam.pipeline.dao.pipeline.RunScheduleDao.RunScheduleParameters.SCHEDULABLE_ID;
+import static com.epam.pipeline.dao.pipeline.RunScheduleDao.RunScheduleParameters.TYPE;
 
-public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
+public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
 
     @Autowired
     private DaoHelper daoHelper;
@@ -74,23 +75,24 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
         getNamedParameterJdbcTemplate().batchUpdate(updateRunScheduleQuery, params);
     }
 
-    public List<RunSchedule> loadAllRunSchedulesByRunIdAndType(final Long runId, final ScheduleType scheduleType) {
+    public List<RunSchedule> loadAllRunSchedulesBySchedulableIdAndType(final Long schedulableId,
+                                                                       final ScheduleType scheduleType) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(RUN_ID.name(), runId);
-        params.addValue(TYPE.name(), scheduleType);
+        params.addValue(SCHEDULABLE_ID.name(), schedulableId);
+        params.addValue(TYPE.name(), scheduleType.name());
         return getNamedParameterJdbcTemplate().query(loadAllRunSchedulesByRunIdQuery,
-                                       params, PipelineRunScheduleDao.RunScheduleParameters.getRowMapper());
+                                       params, RunScheduleDao.RunScheduleParameters.getRowMapper());
     }
 
     public List<RunSchedule> loadAllRunSchedules() {
         return getJdbcTemplate().query(loadAllRunSchedulesQuery,
-                                       PipelineRunScheduleDao.RunScheduleParameters.getRowMapper());
+                                       RunScheduleDao.RunScheduleParameters.getRowMapper());
     }
 
     public Optional<RunSchedule> loadRunSchedule(final Long id) {
         return getJdbcTemplate()
             .query(loadRunScheduleQuery,
-                   PipelineRunScheduleDao.RunScheduleParameters.getRowMapper(), id).stream().findFirst();
+                   RunScheduleDao.RunScheduleParameters.getRowMapper(), id).stream().findFirst();
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -103,17 +105,17 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunSchedulesForRunnable(final Long runId, final ScheduleType scheduleType) {
+    public void deleteRunSchedules(final Long runId, final ScheduleType scheduleType) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(RUN_ID.name(), runId);
-        params.addValue(TYPE.name(), scheduleType);
+        params.addValue(SCHEDULABLE_ID.name(), runId);
+        params.addValue(TYPE.name(), scheduleType.name());
         getNamedParameterJdbcTemplate().update(deleteRunSchedulesForRunQuery, params);
     }
 
     enum RunScheduleParameters {
         ID,
         ACTION,
-        RUN_ID,
+        SCHEDULABLE_ID,
         TYPE,
         CRON_EXPRESSION,
         CREATED_DATE,
@@ -123,8 +125,8 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
             final MapSqlParameterSource params = new MapSqlParameterSource();
             params.addValue(ID.name(), schedule.getId());
             params.addValue(ACTION.name(), schedule.getAction().getId());
-            params.addValue(RUN_ID.name(), schedule.getRunId());
-            params.addValue(TYPE.name(), schedule.getType());
+            params.addValue(SCHEDULABLE_ID.name(), schedule.getSchedulableId());
+            params.addValue(TYPE.name(), schedule.getType().name());
             params.addValue(CRON_EXPRESSION.name(), schedule.getCronExpression());
             params.addValue(CREATED_DATE.name(), schedule.getCreatedDate());
             params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getID());
@@ -142,7 +144,7 @@ public class PipelineRunScheduleDao  extends NamedParameterJdbcDaoSupport {
                 final RunSchedule schedule = new RunSchedule();
                 schedule.setId(rs.getLong(ID.name()));
                 schedule.setAction(RunScheduledAction.getById(rs.getLong(ACTION.name())));
-                schedule.setRunId(rs.getLong(RUN_ID.name()));
+                schedule.setSchedulableId(rs.getLong(SCHEDULABLE_ID.name()));
                 schedule.setType(ScheduleType.valueOf(rs.getString(TYPE.name())));
                 schedule.setCronExpression(rs.getString(CRON_EXPRESSION.name()));
                 schedule.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
