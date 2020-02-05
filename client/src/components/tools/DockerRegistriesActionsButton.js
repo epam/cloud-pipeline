@@ -34,6 +34,7 @@ import EnableToolForm from './forms/EnableToolForm';
 import EditRegistryForm from './forms/EditRegistryForm';
 import DockerConfiguration from './forms/DockerConfiguration';
 import registryName from './registryName';
+import deleteToolConfirmModal from './tool-deletion-warning';
 import styles from './Tools.css';
 
 @observer
@@ -50,9 +51,7 @@ export default class DockerRegistriesActionsButton extends React.Component {
     enableToolFormVisible: false,
     createToolGroupFormVisible: false,
     configurationFormVisible: false,
-    registryOperationInProgress: false,
-    removeToolGroup: false,
-    removeToolGroupConfirmed: false
+    registryOperationInProgress: false
   };
 
   @computed
@@ -168,15 +167,13 @@ export default class DockerRegistriesActionsButton extends React.Component {
 
   _confirmDeleteRegistry = () => {
     const deleteRegistry = this._deleteRegistry;
-    Modal.confirm({
-      title: `Are you sure you want to delete registry ${registryName(this.props.registry)}?`,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk () {
-        deleteRegistry();
-      }
-    });
+    deleteToolConfirmModal({registry: this.props.registry}, this.props.router)
+      .then((confirm) => {
+        if (confirm) {
+          return deleteRegistry();
+        }
+        return Promise.resolve();
+      });
   };
 
   _openEditGroupForm = () => {
@@ -285,27 +282,18 @@ export default class DockerRegistriesActionsButton extends React.Component {
       message.error(request.error, 5);
     } else {
       hide();
-      this.setState({
-        removeToolGroup: false
-      }, async() => {
-        this.props.onRefresh && await this.props.onRefresh();
-        this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
-      });
+      this.props.onRefresh && await this.props.onRefresh();
+      this.props.onNavigate && this.props.onNavigate(this.props.registry.id);
     }
   };
 
   _confirmDeleteGroup = () => {
-    this.setState({
-      removeToolGroup: true,
-      removeToolGroupConfirmed: !this.groupHasChildTools
-    });
-  };
-
-  _cancelRemoveGroup = () => {
-    this.setState({
-      removeToolGroup: false,
-      removeToolGroupConfirmed: false
-    });
+    deleteToolConfirmModal({group: this.props.group}, this.props.router)
+      .then((confirm) => {
+        if (confirm) {
+          return this._deleteGroup();
+        }
+      });
   };
 
   _openDockerConfigurationForm = () => {
@@ -476,50 +464,6 @@ export default class DockerRegistriesActionsButton extends React.Component {
               group={this.props.group}
               visible={this.state.configurationFormVisible}
               onClose={this._closeDockerConfigurationForm}/>
-            <Modal
-              title={`Are you sure you want to delete '${this.props.group ? this.props.group.name : ''}'?`}
-              onCancel={this._cancelRemoveGroup}
-              style={{
-                wordWrap: 'break-word'
-              }}
-              footer={
-                <Row type="flex" justify="end">
-                  <Button id="cancel-remove-group" onClick={this._cancelRemoveGroup}>Cancel</Button>
-                  <Button
-                    type="danger"
-                    id="confirm-remove-group"
-                    disabled={this.groupHasChildTools ? !this.state.removeToolGroupConfirmed : false}
-                    onClick={this._deleteGroup}>
-                    Delete
-                  </Button>
-                </Row>
-              }
-              visible={this.state.removeToolGroup}>
-              {
-                this.groupHasChildTools &&
-                <Row>
-                  <Row>
-                    Group <b>{this.props.group ? this.props.group.name : ''}</b> has child tools, do you want to delete
-                    them?
-                  </Row>
-                  <Row style={{
-                    fontSize: 12,
-                    color: 'rgba(0,0,0,.65)',
-                    marginTop: 8,
-                    marginBottom: 8
-                  }}>
-                    <Checkbox
-                      checked={this.state.removeToolGroupConfirmed}
-                      onChange={(e) => {
-                        this.setState({removeToolGroupConfirmed: e.target.checked});
-                      }}>Delete child tools</Checkbox>
-                  </Row>
-                </Row>
-              }
-              <Row>
-                This operation cannot be undone.
-              </Row>
-            </Modal>
           </Button>
         </Dropdown>
       );
@@ -534,5 +478,6 @@ DockerRegistriesActionsButton.propTypes = {
   group: PropTypes.object,
   hasPersonalGroup: PropTypes.bool,
   onRefresh: PropTypes.func,
-  onNavigate: PropTypes.func
+  onNavigate: PropTypes.func,
+  router: PropTypes.any
 };

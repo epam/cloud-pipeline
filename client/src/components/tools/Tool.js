@@ -75,6 +75,7 @@ import VersionScanResult from './elements/VersionScanResult';
 import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
 import InstanceTypesManagementForm
   from '../main/navigation/instance-types-management/InstanceTypesManagementForm';
+import deleteToolConfirmModal from './tool-deletion-warning';
 
 const MarkdownRenderer = new Remarkable('full', {
   html: true,
@@ -222,28 +223,24 @@ export default class Tool extends localization.LocalizedReactComponent {
 
   deleteToolConfirm = () => {
     const deleteToolVersion = this.deleteToolVersion;
-    Modal.confirm({
-      title: 'Are you sure you want to delete tool?',
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk () {
-        return deleteToolVersion();
-      }
-    });
+    deleteToolConfirmModal({tool: this.props.toolId}, this.props.router)
+      .then((confirm) => {
+        if (confirm) {
+          return deleteToolVersion();
+        }
+        return Promise.resolve();
+      });
   };
 
   deleteToolVersionConfirm = (version) => {
     const deleteToolVersion = this.deleteToolVersion;
-    Modal.confirm({
-      title: `Are you sure you want to delete version '${version}'?`,
-      style: {
-        wordWrap: 'break-word'
-      },
-      onOk () {
-        return deleteToolVersion(version);
-      }
-    });
+    deleteToolConfirmModal({tool: this.props.toolId, version}, this.props.router)
+      .then((confirm) => {
+        if (confirm) {
+          return deleteToolVersion(version);
+        }
+        return Promise.resolve();
+      });
   };
 
   deleteToolVersion = async (version) => {
