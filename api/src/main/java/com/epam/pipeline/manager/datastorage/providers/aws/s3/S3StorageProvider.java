@@ -237,10 +237,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private StoragePolicy buildStoragePolicy(final AwsRegion awsRegion,
                                              final StoragePolicy storagePolicy) {
+        final Integer incompleteUploadCleanupDays = preferenceManager
+                .getSystemPreference(SystemPreferences.STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS)
+                .get(pref -> pref == null ? null : Integer.parseInt(pref));
         if (storagePolicy == null) {
             StoragePolicy defaultPolicy = new StoragePolicy();
             defaultPolicy.setVersioningEnabled(awsRegion.isVersioningEnabled());
             defaultPolicy.setBackupDuration(awsRegion.getBackupDuration());
+            defaultPolicy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
             return defaultPolicy;
         }
         if (storagePolicy.getVersioningEnabled() == null) {
@@ -249,6 +253,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (storagePolicy.getBackupDuration() == null) {
             storagePolicy.setBackupDuration(awsRegion.getBackupDuration());
         }
+        storagePolicy.setIncompleteUploadCleanupDays(incompleteUploadCleanupDays);
         return storagePolicy;
     }
 }

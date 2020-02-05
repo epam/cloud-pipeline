@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -133,7 +134,10 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_OBJECT_PREFIX = new StringPreference("storage.object.prefix",
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
-            new LongPreference("storage.listing.time.limit",3000L, DATA_STORAGE_GROUP, pass);
+            new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
+            new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
+                    isNullOrGreaterThan(0));
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
