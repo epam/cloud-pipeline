@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.pipeline.PipelineManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,6 +63,9 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
 
     @Autowired
     private PipelineDao pipelineDao;
+
+    @Autowired
+    private PipelineManager pipelineManager;
 
     private Pipeline testPipeline;
     private RunSchedule testRunSchedule;
@@ -141,7 +145,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
     @Test
     public void testScheduleRemovalAfterRunIsRemoved() {
         runScheduleDao.createRunSchedules(Arrays.asList(testRunSchedule, testUpdatedRunSchedule, testRunSchedule2));
-        pipelineRunDao.deleteRunsByPipeline(testPipeline.getId());
+        pipelineManager.delete(testPipeline.getId(), true);
         final List<RunSchedule> runSchedules = runScheduleDao.loadAllRunSchedules();
         assertEquals(0, runSchedules.size());
     }
@@ -170,6 +174,7 @@ public class RunScheduleDaoTest extends AbstractSpringTest {
         final Optional<RunSchedule> loadRunSchedule = runScheduleDao.loadRunSchedule(schedule.getId());
         assertTrue(loadRunSchedule.isPresent());
         assertEquals(schedule.getSchedulableId(), loadRunSchedule.get().getSchedulableId());
+        assertEquals(schedule.getType(), loadRunSchedule.get().getType());
         assertEquals(schedule.getAction(), loadRunSchedule.get().getAction());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.get().getCronExpression());
     }

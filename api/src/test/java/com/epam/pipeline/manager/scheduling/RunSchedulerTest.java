@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.scheduling;
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import org.junit.Before;
@@ -44,15 +46,15 @@ import static org.mockito.Mockito.*;
 public class RunSchedulerTest extends AbstractSpringTest {
 
     private static final Long RUN_ID = 1L;
-    private static final int TEST_PERIOD_DURATION = 1;
-    private static final int TEST_INVOCATION_PERIOD = 1;
+    private static final long CONFIGURATION_ID = 2L;
+    private static final int TEST_PERIOD_DURATION = 10;
+    private static final int TEST_INVOCATION_PERIOD = 10;
 
     /**
      * This cron expression should correspond with {@link #TEST_INVOCATION_PERIOD}
      */
-    private static final String CRON_EXPRESSION = "* * * * * ?"; // to run every 10 seconds
+    private static final String CRON_EXPRESSION = "*/10 * * * * ?"; // to run every 10 seconds
     private static final TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
-    private static final long CONFIGURATION_ID = 2L;
 
     @Autowired
     private RunScheduler runScheduler;
@@ -67,6 +69,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
     private PipelineRunManager pipelineRunManager;
 
     @MockBean
+    private RunConfigurationManager configurationManager;
+
+    @MockBean
     private ConfigurationRunner configurationRunner;
 
     @Before
@@ -74,10 +79,12 @@ public class RunSchedulerTest extends AbstractSpringTest {
         MockitoAnnotations.initMocks(this);
 
         final PipelineRun pipelineRun = createPipelineRun(RUN_ID, RUN_ID);
+        final RunConfiguration runConfiguration = createRunConfiguration();
 
         when(pipelineRunDao.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
         when(pipelineRunManager.loadPipelineRun(anyLong())).thenReturn(pipelineRun);
         when(pipelineRunManager.pauseRun(anyLong(), anyBoolean())).thenReturn(pipelineRun);
+        when(configurationManager.load(anyLong())).thenReturn(runConfiguration);
     }
 
     @Test
@@ -90,6 +97,25 @@ public class RunSchedulerTest extends AbstractSpringTest {
         TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
         final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
         verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
+    }
+
+    @Test
+    public void testScheduleForRunAndConfWithSameId() throws InterruptedException {
+        final RunSchedule runSchedule = getRunSchedule(1L, RUN_ID, ScheduleType.PIPELINE_RUN,
+                RunScheduledAction.PAUSE, CRON_EXPRESSION);
+        final RunSchedule confSchedule = getRunSchedule(2L, RUN_ID,
+                ScheduleType.RUN_CONFIGURATION, RunScheduledAction.RUN, CRON_EXPRESSION);
+
+        runScheduler.scheduleRunSchedule(runSchedule);
+        runScheduler.scheduleRunSchedule(confSchedule);
+
+        TimeUnit.SECONDS.sleep(TEST_PERIOD_DURATION);
+        final int numberOfInvocations = TEST_PERIOD_DURATION / TEST_INVOCATION_PERIOD;
+        verify(pipelineRunManager, times(numberOfInvocations)).pauseRun(RUN_ID, true);
+        verify(configurationRunner, times(numberOfInvocations)).runConfiguration(any(), any(), any());
+
+        runScheduler.unscheduleRunSchedule(runSchedule);
+        runScheduler.unscheduleRunSchedule(confSchedule);
     }
 
     @Test
@@ -151,5 +177,11 @@ public class RunSchedulerTest extends AbstractSpringTest {
         run.setStatus(TaskStatus.RUNNING);
         run.getInstance().setSpot(false);
         return run;
+    }
+
+    private RunConfiguration createRunConfiguration() {
+        RunConfiguration runConfiguration = new RunConfiguration();
+        runConfiguration.setId(CONFIGURATION_ID);
+        return runConfiguration;
     }
 }

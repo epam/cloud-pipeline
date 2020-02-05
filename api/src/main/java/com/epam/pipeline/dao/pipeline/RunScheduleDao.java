@@ -50,6 +50,8 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
     private String loadRunScheduleQuery;
     private String loadAllRunSchedulesQuery;
     private String loadAllRunSchedulesByRunIdQuery;
+    private String deleteRunSchedulesForRunByPipelineIdQuery;
+
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createScheduleId() {
@@ -110,6 +112,10 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
         params.addValue(SCHEDULABLE_ID.name(), runId);
         params.addValue(TYPE.name(), scheduleType.name());
         getNamedParameterJdbcTemplate().update(deleteRunSchedulesForRunQuery, params);
+    }
+
+    public void deleteRunSchedulesForRunByPipeline(final Long pipelineId) {
+        getJdbcTemplate().update(deleteRunSchedulesForRunByPipelineIdQuery, pipelineId);
     }
 
     enum RunScheduleParameters {
@@ -194,4 +200,8 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
         this.deleteRunSchedulesForRunQuery = deleteRunSchedulesForRunQuery;
     }
 
+    @Required
+    public void setDeleteRunSchedulesForRunByPipelineIdQuery(final String deleteRunSchedulesForRunByPipelineIdQuery) {
+        this.deleteRunSchedulesForRunByPipelineIdQuery = deleteRunSchedulesForRunByPipelineIdQuery;
+    }
 }

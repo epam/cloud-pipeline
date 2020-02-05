@@ -21,10 +21,12 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.dao.configuration.RunConfigurationDao;
+import com.epam.pipeline.dao.pipeline.RunScheduleDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
@@ -66,6 +68,9 @@ public class RunConfigurationManager implements SecuredEntityManager {
 
     @Autowired
     private ConfigurationProviderManager configurationProvider;
+
+    @Autowired
+    private RunScheduleDao runScheduleDao;
 
     @Override
     public RunConfiguration load(Long id) {
@@ -127,6 +132,7 @@ public class RunConfigurationManager implements SecuredEntityManager {
     public RunConfiguration delete(Long id) {
         RunConfiguration configuration = load(id);
         runConfigurationDao.delete(id);
+        runScheduleDao.deleteRunSchedules(id, ScheduleType.RUN_CONFIGURATION);
         return configuration;
     }
 

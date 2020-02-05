@@ -19,7 +19,10 @@ package com.epam.pipeline.manager.scheduling;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
@@ -28,12 +31,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.stream.Collectors;
+
 @Component
 @Slf4j
 public class ConfigurationScheduleJob implements Job {
 
     @Autowired
     private ConfigurationRunner configurationRunner;
+
+    @Autowired
+    private RunConfigurationManager configurationManager;
 
     @Autowired
     private MessageHelper messageHelper;
@@ -57,7 +65,14 @@ public class ConfigurationScheduleJob implements Job {
     }
 
     private RunConfigurationWithEntitiesVO createConfigurationVOToRun(final Long configurationId) {
-        RunConfigurationWithEntitiesVO configuration = new RunConfigurationWithEntitiesVO();
+        final RunConfiguration runConfiguration = configurationManager.load(configurationId);
+        final RunConfigurationWithEntitiesVO configuration = new RunConfigurationWithEntitiesVO();
+        configuration.setEntries(
+                runConfiguration.getEntries()
+                        .stream()
+                        .filter(AbstractRunConfigurationEntry::isDefaultConfiguration)
+                        .collect(Collectors.toList())
+        );
         configuration.setId(configurationId);
         return configuration;
     }

@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.pipeline.RunScheduleDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
+import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
@@ -112,7 +113,7 @@ public class RunScheduleManager {
         final List<RunSchedule> updatedSchedules = runScheduleVOs.stream()
             .map(vo -> {
                 final RunSchedule runSchedule = loadedSchedules.get(vo.getScheduleId());
-                verifyRunSchedule(schedulableId, vo);
+                verifyRunSchedule(schedulableId, vo, scheduleType);
                 final String prevCron = runSchedule.getCronExpression();
                 final String newCron = vo.getCronExpression();
                 if (prevCron.equals(newCron)) {
@@ -167,18 +168,38 @@ public class RunScheduleManager {
             messageHelper.getMessage(MessageConstants.ERROR_RUN_SCHEDULE_NOT_FOUND, id)));
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void deleteSchedulesForRunByPipeline(final Long pipelineId) {
+        runScheduleDao.deleteRunSchedulesForRunByPipeline(pipelineId);
+    }
+
     private void checkNewRunScheduleRequirements(final Long schedulableId, final PipelineRunScheduleVO runScheduleVO,
                                                  final ScheduleType scheduleType) {
         checkIdenticalCronExpression(schedulableId, scheduleType, runScheduleVO);
-        verifyRunSchedule(schedulableId, runScheduleVO);
+        verifyRunSchedule(schedulableId, runScheduleVO, scheduleType);
     }
 
-    private void verifyRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO) {
+    private void verifyRunSchedule(final Long runId, final PipelineRunScheduleVO runScheduleVO,
+                                   final ScheduleType type) {
         verifyCronExpression(runId, runScheduleVO);
         Assert.notNull(runScheduleVO.getAction(),
                        messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_PROVIDED, runId));
         Assert.isTrue(StringUtils.hasText(runScheduleVO.getTimeZone()),
                       messageHelper.getMessage(MessageConstants.ERROR_TIME_ZONE_IS_NOT_PROVIDED, runId));
+        switch (type) {
+            case PIPELINE_RUN:
+                Assert.isTrue(runScheduleVO.getAction() == RunScheduledAction.PAUSE
+                        || runScheduleVO.getAction() == RunScheduledAction.RESUME,
+                        messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_ALLOWED,
+                                RunScheduledAction.RESUME.name() + ", " + RunScheduledAction.PAUSE.name(),
+                                runScheduleVO.getAction()));
+                break;
+            case RUN_CONFIGURATION:
+                Assert.isTrue(runScheduleVO.getAction() == RunScheduledAction.RUN,
+                        messageHelper.getMessage(MessageConstants.SCHEDULE_ACTION_IS_NOT_ALLOWED,
+                                RunScheduledAction.RUN.name(), runScheduleVO.getAction()));
+                break;
+        }
     }
 
     private void verifySchedulable(final Long schedulableId, final ScheduleType scheduleType) {
@@ -195,8 +216,8 @@ public class RunScheduleManager {
                         messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK));
                 break;
             case RUN_CONFIGURATION:
-                RunConfiguration load = configurationManager.load(schedulableId);
-                Assert.notNull(load,
+                RunConfiguration configuration = configurationManager.load(schedulableId);
+                Assert.notNull(configuration,
                         messageHelper.getMessage(MessageConstants.ERROR_RUN_CONFIG_NOT_FOUND, schedulableId));
                 break;
             default:

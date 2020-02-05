@@ -107,5 +107,16 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRunSchedulesForRunByPipelineIdQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.run_schedule s
+                    USING
+                        pipeline.pipeline_run r
+                    WHERE
+                        s.type = 'PIPELINE_RUN' AND s.schedulable_id = r.run_id AND r.pipeline_id = ?
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

@@ -18,9 +18,12 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.PipelineRunScheduleVO;
+import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -66,8 +69,13 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
     @Autowired
     private CloudRegionDao regionDao;
 
+    @Autowired
+    private RunConfigurationDao configurationDao;
+
     private PipelineRunScheduleVO testRunScheduleVO;
     private PipelineRunScheduleVO testRunScheduleVO2;
+    private PipelineRunScheduleVO testRunScheduleVO3;
+    private RunConfiguration runConfiguration;
 
     @Before
     public void setUp() {
@@ -79,9 +87,11 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         pipelineDao.createPipeline(testPipeline);
 
         createPipelineRun(RUN_ID, testPipeline.getId());
+        runConfiguration = createRunConfiguration();
 
         testRunScheduleVO = getRunScheduleVO(RunScheduledAction.PAUSE, CRON_EXPRESSION1);
         testRunScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2);
+        testRunScheduleVO3 = getRunScheduleVO(RunScheduledAction.RUN, CRON_EXPRESSION2);
     }
 
     @Test
@@ -90,6 +100,8 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         final List<RunSchedule> runSchedules =
             runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                     Arrays.asList(testRunScheduleVO, testRunScheduleVO2));
+        runScheduleManager.createSchedules(runConfiguration.getId(), ScheduleType.RUN_CONFIGURATION,
+                Collections.singletonList(testRunScheduleVO3));
         runSchedules.forEach(this::loadAndAssertSchedule);
     }
 
@@ -109,6 +121,13 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         final PipelineRunScheduleVO runScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
         runScheduleManager.createSchedules(RUN_ID, ScheduleType.PIPELINE_RUN,
                 Arrays.asList(runScheduleVO, runScheduleVO2));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void  createSchedulesWithWrongAction() {
+        final PipelineRunScheduleVO runScheduleVO = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION1);
+        runScheduleManager.createSchedules(RUN_ID, ScheduleType.RUN_CONFIGURATION,
+                Collections.singletonList(runScheduleVO));
     }
 
     @Test
@@ -193,9 +212,22 @@ public class RunScheduleManagerTest extends AbstractSpringTest {
         pipelineRunDao.createPipelineRun(run);
     }
 
+    private RunConfiguration createRunConfiguration() {
+        //create
+        RunConfigurationEntry entry =
+                ObjectCreatorUtils.createConfigEntry("entry", true, null);
+
+        RunConfiguration configuration =
+                ObjectCreatorUtils.createConfiguration(TEST_NAME, null, null,
+                        "TEST_USER", Collections.singletonList(entry));
+        return configurationDao.create(configuration);
+    }
+
+
     private void loadAndAssertSchedule(final RunSchedule schedule) {
         final RunSchedule loadRunSchedule = runScheduleManager.loadSchedule(schedule.getId());
         assertEquals(schedule.getSchedulableId(), loadRunSchedule.getSchedulableId());
+        assertEquals(schedule.getType(), loadRunSchedule.getType());
         assertEquals(schedule.getCronExpression(), loadRunSchedule.getCronExpression());
         assertEquals(schedule.getAction(), loadRunSchedule.getAction());
     }

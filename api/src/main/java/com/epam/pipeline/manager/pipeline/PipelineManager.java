@@ -98,6 +98,9 @@ public class PipelineManager implements SecuredEntityManager {
     private RunStatusManager runStatusManager;
 
     @Autowired
+    private RunScheduleManager runScheduleManager;
+
+    @Autowired
     private NotificationManager notificationManager;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
@@ -238,6 +241,7 @@ public class PipelineManager implements SecuredEntityManager {
         notificationManager.removeNotificationTimestampsByPipelineId(id);
         restartRunManager.deleteRestartedRunsForPipeline(id);
         runStatusManager.deleteRunStatusForPipeline(id);
+        runScheduleManager.deleteSchedulesForRunByPipeline(id);
         pipelineRunDao.deleteRunsByPipeline(id);
         dataStorageRuleDao.deleteRulesByPipeline(id);
         pipelineDao.deletePipeline(id);
