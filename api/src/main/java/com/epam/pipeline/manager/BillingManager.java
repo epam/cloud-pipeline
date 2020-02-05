@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -76,8 +77,8 @@ public class BillingManager {
     private static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
     private static final String ES_BILLABLE_RESOURCE_WILDCARD = "*";
 
+    private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
-    private final RestHighLevelClient elasticsearchClient;
     private final String billingIndicesMonthlyPattern;
     private final Map<DateHistogramInterval, TemporalAdjuster> periodAdjusters;
     private final List<DateHistogramInterval> validIntervals;
@@ -87,12 +88,7 @@ public class BillingManager {
     public BillingManager(final AuthManager authManager,
                           final PreferenceManager preferenceManager,
                           final @Value("${billing.index.common.prefix}") String commonPrefix) {
-        final RestClient lowLevelClient =
-            RestClient.builder(new HttpHost(preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST),
-                                            preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT),
-                                            preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME)))
-                .build();
-        this.elasticsearchClient = new RestHighLevelClient(lowLevelClient);
+        this.preferenceManager = preferenceManager;
         this.authManager = authManager;
         this.billingIndicesMonthlyPattern = String.join("-",
                                                         commonPrefix,
@@ -110,6 +106,7 @@ public class BillingManager {
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
+        final RestHighLevelClient elasticsearchClient = buildClient(preferenceManager);
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final List<String> grouping = request.getGrouping();
@@ -121,10 +118,23 @@ public class BillingManager {
                 throw new UnsupportedOperationException("Currently field and date grouping at"
                                                         + " the same time isn't supporting!");
             }
-            return getBillingStats(from, to, filters, interval);
+            return getBillingStats(elasticsearchClient, from, to, filters, interval);
         } else {
-            return getBillingStats(from, to, filters, grouping);
+            return getBillingStats(elasticsearchClient, from, to, filters, grouping);
         }
+    }
+
+    private RestHighLevelClient buildClient(final PreferenceManager preferenceManager) {
+        final String elasticHost = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
+        final Integer elasticPort = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
+        final String elasticScheme = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
+        if (StringUtils.isBlank(elasticHost) || elasticPort == null ||  StringUtils.isBlank(elasticScheme)) {
+            throw new IllegalArgumentException("Missing search engine configuration. Billing info is not available.");
+        }
+        final RestClient lowLevelClient =
+                RestClient.builder(new HttpHost(elasticHost, elasticPort, elasticScheme))
+                        .build();
+        return new RestHighLevelClient(lowLevelClient);
     }
 
     private void setAuthorizationFilters(final Map<String, List<String>> filters) {
@@ -136,7 +146,8 @@ public class BillingManager {
         filters.put("groups", authorizedUser.getGroups());
     }
 
-    private List<BillingChartInfo> getBillingStats(final LocalDate from, final LocalDate to,
+    private List<BillingChartInfo> getBillingStats(final RestHighLevelClient elasticsearchClient,
+                                                   final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final DateHistogramInterval interval) {
         if (!validIntervals.contains(interval)) {
@@ -165,7 +176,8 @@ public class BillingManager {
         }
     }
 
-    private List<BillingChartInfo> getBillingStats(final LocalDate from, final LocalDate to,
+    private List<BillingChartInfo> getBillingStats(final RestHighLevelClient elasticsearchClient,
+                                                   final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final List<String> grouping) {
         final SearchRequest searchRequest = new SearchRequest();
