@@ -17,10 +17,10 @@
 package com.epam.pipeline.billingreportagent.service.impl.converter;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.EntityMapper;
+import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -48,9 +48,9 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 @RequiredArgsConstructor
-public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRun> {
+public class RunToBillingRequestConverter implements EntityToBillingRequestConverter<PipelineRunWithType> {
 
-    private final EntityMapper<PipelineRunBillingInfo> mapper;
+    private final AbstractEntityMapper<PipelineRunBillingInfo> mapper;
 
     /**
      * Creates billing requests for given run
@@ -61,7 +61,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
-    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRun> runContainer,
+    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRunWithType> runContainer,
                                                          final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
@@ -70,11 +70,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             .collect(Collectors.toList());
     }
 
-    protected Collection<PipelineRunBillingInfo> convertRunToBillings(final EntityContainer<PipelineRun> runContainer,
-                                                                      final LocalDateTime previousSync,
-                                                                      final LocalDateTime syncStart) {
-        final BigDecimal pricePerHour = runContainer.getEntity().getPricePerHour();
-        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getRunStatuses(),
+    protected Collection<PipelineRunBillingInfo> convertRunToBillings(
+        final EntityContainer<PipelineRunWithType> runContainer,
+        final LocalDateTime previousSync,
+        final LocalDateTime syncStart) {
+        final BigDecimal pricePerHour = runContainer.getEntity().getPipelineRun().getPricePerHour();
+        final List<RunStatus> statuses = adjustStatuses(runContainer.getEntity().getPipelineRun().getRunStatuses(),
                                                         previousSync,
                                                         syncStart);
 
@@ -104,7 +105,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return statuses;
     }
 
-    private List<PipelineRunBillingInfo> createBillingsForPeriod(final PipelineRun run,
+    private List<PipelineRunBillingInfo> createBillingsForPeriod(final PipelineRunWithType run,
                                                                  final BigDecimal pricePerHour,
                                                                  final List<RunStatus> statuses) {
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();
@@ -135,7 +136,7 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private List<PipelineRunBillingInfo> createRunBillingsForActivePeriod(final LocalDateTime start,
                                                                           final LocalDateTime end,
-                                                                          final PipelineRun run,
+                                                                          final PipelineRunWithType run,
                                                                           final BigDecimal pricePerHour) {
         final List<LocalDateTime> timePoints = new ArrayList<>();
         final List<PipelineRunBillingInfo> billings = new ArrayList<>();

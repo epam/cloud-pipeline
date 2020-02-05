@@ -20,9 +20,8 @@ import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchron
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
-import com.epam.pipeline.billingreportagent.service.EntityMapper;
+import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.NoArgsConstructor;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -33,13 +32,13 @@ import java.io.IOException;
 
 @Component
 @NoArgsConstructor
-public class RunBillingMapper implements EntityMapper<PipelineRunBillingInfo> {
+public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInfo> {
 
     @Override
     public XContentBuilder map(final EntityContainer<PipelineRunBillingInfo> container) {
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final PipelineRunBillingInfo billingInfo = container.getEntity();
-            final PipelineRun run = billingInfo.getEntity();
+            final PipelineRun run = billingInfo.getEntity().getPipelineRun();
             jsonBuilder
                 .startObject()
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
@@ -48,12 +47,11 @@ public class RunBillingMapper implements EntityMapper<PipelineRunBillingInfo> {
                 .field("pipeline", run.getPipelineName())
                 .field("tool", run.getDockerImage())
                 .field("instance_type", run.getInstance().getNodeType())
-                .field("compute_type", getComputeType(run.getInstance()))
+                .field("compute_type", billingInfo.getEntity().getRunType())
                 .field("cost", billingInfo.getCost())
                 .field("usage", billingInfo.getUsageMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
-                .field("billing_center", "TBD")
                 .field("created_date", billingInfo.getDate());
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
@@ -61,10 +59,5 @@ public class RunBillingMapper implements EntityMapper<PipelineRunBillingInfo> {
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
         }
-    }
-
-    private String getComputeType(final RunInstance instance) {
-        // TODO parse real compute type (CPU, GPU)
-        return instance.getNodeType();
     }
 }

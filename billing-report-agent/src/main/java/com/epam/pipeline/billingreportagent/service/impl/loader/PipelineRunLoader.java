@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.loader;
 
+import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -33,25 +37,49 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class PipelineRunLoader implements EntityLoader<PipelineRun> {
+public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
 
     @Autowired
     private CloudPipelineAPIClient apiClient;
 
     @Override
-    public List<EntityContainer<PipelineRun>> loadAllEntities() {
+    public List<EntityContainer<PipelineRunWithType>> loadAllEntities() {
         return loadAllEntitiesActiveInPeriod(LocalDate.ofEpochDay(0).atStartOfDay(), LocalDateTime.now());
     }
 
     @Override
-    public List<EntityContainer<PipelineRun>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
-                                                                            final LocalDateTime to) {
+    public List<EntityContainer<PipelineRunWithType>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
+                                                                                    final LocalDateTime to) {
         final Map<String, PipelineUser> users =
             apiClient.loadAllUsers().stream().collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
-        return apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
-                                                           DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to))
+
+        final List<PipelineRun> runs =
+            apiClient.loadAllPipelineRunsActiveInPeriod(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(from),
+                                                        DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(to));
+
+        final Map<Long, List<InstanceType>> regionOffers = runs.stream()
+            .map(PipelineRun::getInstance)
+            .map(RunInstance::getCloudRegionId)
+            .distinct()
+            .collect(Collectors
+                         .toMap(Function.identity(), regionId -> apiClient.loadAllInstanceTypesForRegion(regionId)));
+
+        return runs
             .stream()
-            .map(run -> EntityContainer.<PipelineRun>builder().entity(run).owner(users.get(run.getOwner())).build())
+            .map(run -> EntityContainer.<PipelineRunWithType>builder()
+                .entity(new PipelineRunWithType(run, getRunType(run, regionOffers)))
+                .owner(users.get(run.getOwner())).build())
             .collect(Collectors.toList());
+    }
+
+    private ComputeType getRunType(final PipelineRun run, final Map<Long, List<InstanceType>> regionOffers) {
+        return regionOffers.get(run.getInstance().getCloudRegionId())
+            .stream()
+            .filter(instanceOffer -> instanceOffer.getName().equals(run.getInstance().getNodeType()))
+            .findAny()
+            .map(instanceOffer -> instanceOffer.getGpu() > 0
+                                  ? ComputeType.GPU
+                                  : ComputeType.CPU)
+            .orElse(ComputeType.CPU);
     }
 }

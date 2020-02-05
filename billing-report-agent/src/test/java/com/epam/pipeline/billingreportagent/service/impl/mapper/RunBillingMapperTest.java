@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
+import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +56,7 @@ public class RunBillingMapperTest {
     private final PipelineUser testUser = PipelineUser.builder()
         .userName(TEST_USER_NAME)
         .groups(TEST_GROUPS)
+        .attributes(Collections.emptyMap())
         .build();
 
     @Test
@@ -61,7 +65,7 @@ public class RunBillingMapperTest {
             TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE, TEST_TOOL_IMAGE, TEST_PRICE,
                                             TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
         final PipelineRunBillingInfo billing = PipelineRunBillingInfo.builder()
-            .run(run)
+            .run(new PipelineRunWithType(run, ComputeType.CPU))
             .date(TEST_DATE)
             .cost(TEST_COST)
             .usageMinutes(TEST_USAGE_MINUTES)
