@@ -32,5 +32,5 @@ public class RunSchedule {
     private String cronExpression;
     private Date createdDate;
     private TimeZone timeZone;
-
+    private String user;
 }

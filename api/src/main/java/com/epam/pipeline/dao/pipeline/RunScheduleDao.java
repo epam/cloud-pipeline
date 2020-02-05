@@ -125,7 +125,8 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
         TYPE,
         CRON_EXPRESSION,
         CREATED_DATE,
-        TIME_ZONE;
+        TIME_ZONE,
+        USER_NAME;
 
         static MapSqlParameterSource getParameters(final RunSchedule schedule) {
             final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -136,6 +137,7 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CRON_EXPRESSION.name(), schedule.getCronExpression());
             params.addValue(CREATED_DATE.name(), schedule.getCreatedDate());
             params.addValue(TIME_ZONE.name(), schedule.getTimeZone().getID());
+            params.addValue(USER_NAME.name(), schedule.getUser());
             return params;
         }
 
@@ -155,6 +157,7 @@ public class RunScheduleDao extends NamedParameterJdbcDaoSupport {
                 schedule.setCronExpression(rs.getString(CRON_EXPRESSION.name()));
                 schedule.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
                 schedule.setTimeZone(TimeZone.getTimeZone(rs.getString(TIME_ZONE.name())));
+                schedule.setUser(rs.getString(USER_NAME.name()));
                 return schedule;
             };
         }

@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronExpression;
@@ -59,6 +60,7 @@ public class RunScheduleManager {
     private final RunConfigurationManager configurationManager;
     private final RunScheduler scheduler;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
 
     @PostConstruct
     public void init() {
@@ -79,6 +81,7 @@ public class RunScheduleManager {
                 runSchedule.setSchedulableId(schedulableId);
                 runSchedule.setType(scheduleType);
                 runSchedule.setAction(vo.getAction());
+                runSchedule.setUser(authManager.getCurrentUser().getUserName());
                 runSchedule.setCronExpression(vo.getCronExpression());
                 runSchedule.setCreatedDate(DateUtils.now());
                 runSchedule.setTimeZone(TimeZone.getTimeZone(vo.getTimeZone()));
@@ -121,6 +124,7 @@ public class RunScheduleManager {
                 } else {
                     runSchedule.setId(vo.getScheduleId());
                     runSchedule.setAction(vo.getAction());
+                    runSchedule.setUser(authManager.getCurrentUser().getUserName());
                     runSchedule.setCronExpression(newCron);
                     runSchedule.setCreatedDate(DateUtils.now());
                     loadedSchedules.put(vo.getScheduleId(), runSchedule);

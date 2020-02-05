@@ -19,6 +19,10 @@ package com.epam.pipeline.manager.scheduling;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.security.UserContext;
+import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.CronExpression;
 import org.quartz.JobDetail;
@@ -48,6 +52,12 @@ public class RunScheduler {
     private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
     public static final String ID = " id: ";
     private final Scheduler quartzScheduler;
+
+    @Autowired
+    private AuthManager authManager;
+
+    @Autowired
+    private UserManager userManager;
 
     @Autowired
     RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
@@ -109,6 +119,9 @@ public class RunScheduler {
                 ? RunScheduleJob.class
                 : ConfigurationScheduleJob.class);
         jobDetailFactory.getJobDataMap().put("SchedulableId", runSchedule.getSchedulableId());
+        jobDetailFactory.getJobDataMap().put(
+                "UserToken", authManager.issueToken(userManager.loadUserContext(runSchedule.getUser()), null).getToken()
+        );
         jobDetailFactory.getJobDataMap().put("Action", runSchedule.getAction().name());
         jobDetailFactory.setName(String.format("run_%s-%s", runSchedule.getSchedulableId(), runSchedule.getId()));
         jobDetailFactory.setDescription("Invoke run schedule job service...");

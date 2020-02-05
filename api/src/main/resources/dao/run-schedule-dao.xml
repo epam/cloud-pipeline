@@ -14,7 +14,8 @@
                         type,
                         cron_expression,
                         created_date,
-                        time_zone)
+                        time_zone,
+                        user_name)
                     VALUES (
                         :ID,
                         :ACTION,
@@ -22,7 +23,8 @@
                         :TYPE,
                         :CRON_EXPRESSION,
                         :CREATED_DATE,
-                        :TIME_ZONE)
+                        :TIME_ZONE,
+                        :USER_NAME)
                 ]]>
             </value>
         </property>
@@ -32,7 +34,8 @@
                     UPDATE pipeline.run_schedule SET
                         action = :ACTION,
                         cron_expression = :CRON_EXPRESSION,
-                        created_date = :CREATED_DATE
+                        created_date = :CREATED_DATE,
+                        user_name = :USER_NAME
                     WHERE id = :ID
                 ]]>
             </value>
@@ -55,7 +58,8 @@
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
-                        s.time_zone as time_zone
+                        s.time_zone as time_zone,
+                        s.user_name as user_name
                     FROM
                         pipeline.run_schedule s
                     WHERE
@@ -74,7 +78,8 @@
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
-                        s.time_zone as time_zone
+                        s.time_zone as time_zone,
+                        s.user_name as user_name
                     FROM
                         pipeline.run_schedule s
                     WHERE
@@ -94,7 +99,8 @@
                         s.type as type,
                         s.cron_expression as cron_expression,
                         s.created_date as created_date,
-                        s.time_zone as time_zone
+                        s.time_zone as time_zone,
+                        s.user_name as user_name
                     FROM
                         pipeline.run_schedule s
                 ]]>
