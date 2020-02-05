@@ -22,11 +22,13 @@ export default class PipelineRunSingleFilter extends RemotePost {
   static auto = false;
   params;
 
-  constructor (params, loadLinks = false) {
+  constructor (params, loadLinks = false, fetch = true) {
     super();
     this.params = params;
     this.url = `/run/filter?loadLinks=${loadLinks}`;
-    this.filter();
+    if (fetch) {
+      this.filter();
+    }
   };
 
   @observable _total = 0;
@@ -35,7 +37,7 @@ export default class PipelineRunSingleFilter extends RemotePost {
     return this._total;
   }
 
-  async filter (params) {
+  filter (params) {
     if (params) {
       this.params = params;
     }
